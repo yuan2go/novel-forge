@@ -34,7 +34,7 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
         ensure_migrated()
 
     @staticmethod
-    def release_evidence(project_id: str):
+    def release_evidence(project_id: str, *, current_state_contract: bool = False):
         def report(asset_type: str, dimensions: tuple[str, ...]) -> dict[str, object]:
             return {
                 "asset_version_id": f"{project_id}:{asset_type}-v1",
@@ -239,6 +239,10 @@ class PostgreSQLOnlyChapterSliceTests(unittest.TestCase):
                 ),
             ),
         )
+        if current_state_contract:
+            from tests.integration.quality_context_state_fixture import current_state_inputs
+
+            candidates = current_state_inputs(project_id, candidates)
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
                 content = dict(

@@ -473,8 +473,10 @@ def build_quality_context_view(
     )
     body["coverage_report"] = coverage
     body["contract_version"] = (
-        "stage-quality-context-v5" if work_requirements else "stage-quality-context-v4"
+        "stage-quality-context-v6" if work_requirements else "stage-quality-context-v4"
     )
+    if work_requirements:
+        body["evaluation_semantics_version"] = "work-quality.v2"
     body["context_digest"] = _digest(body)
     final_tokens = _estimate_payload(body, estimator)
     if final_tokens > token_budget:

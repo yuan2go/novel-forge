@@ -301,10 +301,15 @@ class ChapterHandlerRequest:
     worker_id: str = ""
     database_url: str = ""
     definition_version: str = ""
+    source_definition_version: str = ""
+
+    @property
+    def semantic_definition_version(self) -> str:
+        return self.source_definition_version if self.definition_version in {"2.2.0", "2.3.0"} else self.definition_version
 
     @property
     def work_requirements_enabled(self) -> bool:
-        return self.definition_version in {"3.6.0", "3.6.0-author-input.v2", "3.7.0", "3.7.0-author-input.v2"}
+        return self.semantic_definition_version in {"3.6.0", "3.6.0-author-input.v2", "3.7.0", "3.7.0-author-input.v2", "3.8.0", "3.8.0-author-input.v2"}
 
     def require_input(self, asset_type: str) -> ChapterInputAsset:
         matching = [item for item in self.inputs if item.asset_type == asset_type]

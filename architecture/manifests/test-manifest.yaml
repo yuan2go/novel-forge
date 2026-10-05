@@ -8,6 +8,66 @@
   ],
   "classification_rules": [
     {
+      "id": "quality-context-formal-mock-e2e",
+      "patterns": [
+        "tests/integration/test_quality_context_formal_e2e_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "quality-context-formal-mock-e2e",
+      "production_target": "src/novel_forge/modules/book_authority/production.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "context-feedback-native-receipts",
+      "patterns": [
+        "tests/integration/test_context_feedback_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-authority",
+      "capability": "context-feedback-native-receipts",
+      "production_target": "src/novel_forge/modules/authority_handler_runtime/context_feedback.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "context-compression-routing",
+      "patterns": [
+        "tests/unit/test_context_compression_routing.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "context-builder",
+      "capability": "context-compression-routing",
+      "production_target": "src/novel_forge/modules/context_builder/task_compression.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-applicability-binding",
+      "patterns": [
+        "tests/unit/test_work_applicability_binding.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "work-applicability-binding",
+      "production_target": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-quality-semantics",
+      "patterns": [
+        "tests/unit/test_work_quality_semantics.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-quality-authority",
+      "capability": "work-quality-semantics",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/work_semantics.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
       "id": "work-intent-consistency",
       "patterns": [
         "tests/unit/test_work_intent_consistency.py"

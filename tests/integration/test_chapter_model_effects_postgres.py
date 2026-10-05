@@ -1256,7 +1256,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             project_id=project_id, task_type="draft", candidate=candidate,
         ), [])
 
-    def test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(self) -> None:
+    def test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(self, *, routed=False) -> None:
         from unittest.mock import patch
 
         from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
@@ -1366,6 +1366,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT": "262144",
             }
             execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=fixture)
+            if routed:
+                from tests.integration.quality_context_routed_support import attach_mock_qualified_router
+
+                attach_mock_qualified_router(execution, DATABASE_URL)
             application = build_chapter_authority_application(settings, execution=execution, env=env)
             history = {
                 "asset_version_id": f"{project_id}:episodic-context-source-v1",
@@ -1382,19 +1386,31 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             }
             candidates = self._release_evidence(
                 project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id,
-                extra_context_candidates=(history,),
+                extra_context_candidates=(history,
+                    {"asset_version_id": f"{project_id}:work-style:v1", "asset_type": "style_policy",
+                     "project_id": project_id, "safe_summary": "Explicit fixture style",
+                     "constraints": ["Concrete witnessed choices"], "structured_facts": [],
+                     "estimated_tokens": 20, "narrative_function": "work_style"}, *(
+                    {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
+                     "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
+                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary"}
+                    for kind in ("story_state_snapshot", "canon_snapshot")
+                )),
             )
             self._seed_intrinsic_semantic_commit_policy(project_id)
             with patch.object(_ContextHandler, "execute", execute_with_semantic_subeffects):
-                result = application.run(SingleChapterRequest(
+                with self.assertRaises(KernelError) as unresolved:
+                    application.run(SingleChapterRequest(
                     project_id=project_id, workspace_id=harness.workspace_id, actor_id="context-semantic-worker",
                     chapter=1, title="An Extracted Promise", premise="A public promise becomes irreversible.",
                     trace_id=identifier("trace"), correlation_id=identifier("correlation"),
                     application_build_id="context-semantic-test", commit_sha="e" * 40,
                     context_candidates=candidates, context_token_budget=32_768,
+                    context_version_refs={"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
+                                          "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"},
                     preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
-                ))
-            self.assertEqual((result.root_status, result.saga_status), ("SUCCEEDED", "SUCCEEDED"))
+                    ))
+                self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
         self.assertEqual(semantic_dispatches, ["context_compress", "context_fidelity"] * 2)
         self.assertEqual(len(semantic_results), 2)
         with transaction() as connection, connection.cursor() as cursor:
@@ -1441,6 +1457,17 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 self.assertGreater(reserved, frozen["max_output_tokens"])
                 self.assertLessEqual(frozen["max_output_tokens"], 4096 if capability.endswith("compress") else 2048)
                 self.assertEqual(runtime["pack_ref"], f"{harness.pack_id}@1.0.0")
+                if routed:
+                    self.assertEqual(runtime["routing_decision"]["status"], "SELECTED")
+                    self.assertEqual(runtime["routing_decision"]["policy"]["quality_metric"], "DOMAIN_GATE_ACCEPTANCE")
+            from novel_forge.modules.authority_handler_runtime.context_feedback import context_gate_outcomes
+
+            cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE project_id=%s AND capability IN ('model.context_compress','model.context_fidelity')", [project_id])
+            self.assertEqual(context_gate_outcomes(cursor, project_id=project_id, effect_ids=[row[0] for row in cursor.fetchall()]), {})
+            cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name IN ('chapter.draft.generate','chapter.review.evaluate') AND status='SUCCEEDED'", [project_id])
+            self.assertEqual(cursor.fetchone()[0], 2)
+            cursor.execute("SELECT content->'blocking_dimensions' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
+            self.assertTrue(cursor.fetchone()[0])
 
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,

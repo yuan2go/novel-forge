@@ -276,7 +276,7 @@ def _momentum(rows: Sequence[Mapping[str, Any]]) -> MomentumEvidence:
         observed.append(chapter)
         state_requirement = row.get("required_state_delta")
         confirmed_zero = (
-            row.get("work_quality_semantic_version") == "work-quality.v1"
+            row.get("work_quality_semantic_version") in {"work-quality.v1", "work-quality.v2"}
             and isinstance(state_requirement, Mapping)
             and state_requirement.get("status") == "NO_INCREMENT"
         )
@@ -575,7 +575,7 @@ def _repetition(
             status = "REPETITION_OBSERVED"
         else:
             status = "DIVERSE"
-        if all(row.get("work_quality_semantic_version") == "work-quality.v1" for row in rows):
+        if all(row.get("work_quality_semantic_version") in {"work-quality.v1", "work-quality.v2"} for row in rows):
             status = "REPETITION_OBSERVED" if repeated else "DIVERSE"
         reports[dimension] = RepetitionEvidence(
             dimension=dimension,
@@ -646,7 +646,7 @@ def build_longitudinal_quality_evidence(
     )
     observed = bool(rows)
     return LongitudinalQualityEvidence(
-        contract_version="accepted-longitudinal-quality-v2" if rows and all(row.get("work_quality_semantic_version") == "work-quality.v1" for row in rows) else "accepted-longitudinal-quality-v1",
+        contract_version="accepted-longitudinal-quality-v2" if rows and all(row.get("work_quality_semantic_version") in {"work-quality.v1", "work-quality.v2"} for row in rows) else "accepted-longitudinal-quality-v1",
         observation_status="MEASURED" if observed else "NOT_OBSERVED",        chapter_range=(chapters[0], chapters[-1]) if chapters else (),
         momentum=_momentum(rows),
         promise_payoff=_promise_payoff(rows),

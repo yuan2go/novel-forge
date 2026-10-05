@@ -55,7 +55,7 @@ def _handler_definition_version(
             )
             row = uow.cursor.fetchone()
         recoverable = (
-            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2"}
+            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2"}
             if author_input and node is ChapterNode.DRAFT
             else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
         )
@@ -77,12 +77,25 @@ class _ChapterHandlerAdapter:
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         stage = "canon_support" if self.node is ChapterNode.CANON_PROPOSAL else self.node.value
         snapshot = None
+        source_version = ""
         if self.sampling:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 snapshot = load_bootstrap_authorization(uow.cursor, project_id=request.project_id,
                                                        operation_id=request.operation_id, check_expiry=False)
             if snapshot is None:
                 raise KernelError("CHAPTER_SAMPLE_AUTHORIZATION_REQUIRED", "sample materialization requires its frozen authorization")
+            if request.definition_version in {"2.2.0", "2.3.0"}:
+                from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
+                payload = request.command["payload"]
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("""SELECT definition_name,definition_version,command_payload,input_asset_snapshot
+                        FROM authority_operation WHERE project_id=%s AND operation_id=%s""",
+                        [request.project_id, payload["chapter_sampling"]["source_operation_id"]])
+                    source = uow.cursor.fetchone()
+                validate_chapter_sample_origin(payload, source, project_id=request.project_id)
+                if source[1] not in {"3.4.1", "3.8.0", "3.8.0-author-input.v2"}:
+                    raise KernelError("CHAPTER_SAMPLE_SOURCE_CONTRACT_INVALID", "New samples require an explicitly declared frozen source contract")
+                source_version = source[1]
         chapter_request = ChapterHandlerRequest(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -105,6 +118,7 @@ class _ChapterHandlerAdapter:
             worker_id=self.worker_id,
             database_url=self.database_url,
             definition_version=request.definition_version,
+            source_definition_version=source_version,
         )
         reference = None
         if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":
@@ -138,6 +152,8 @@ class _ChapterHandlerAdapter:
                     "schema_version": "chapter-provider-sample.v1", "routing_eligibility": "BENCHMARK_ONLY",
                     "production_eligible": False, "stage": stage,
                     "source_operation_id": chapter_request.command["chapter_sampling"]["source_operation_id"],
+                    **({"source_definition_version": source_version, "sample_definition_version": request.definition_version}
+                       if source_version else {}),
                     "authorization_id": grant["authorization_id"], "campaign": grant["campaign"],
                     "sampled_asset_type": output.asset_type, "sampled_output": output.content,
                     **({"reference_evaluation": agreement} if agreement is not None else {}),

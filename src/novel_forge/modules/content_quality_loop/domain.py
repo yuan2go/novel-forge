@@ -114,6 +114,14 @@ def evaluate_quality_evidence(
             ),
         ),
     ]
+    if "creative_baseline" in revision:
+        dimensions[0].update(
+            score=None, weight=0.0, semantic_verdict=str(review.get("decision") or "UNKNOWN"),
+            threshold_evaluation="NOT_EVALUATED", applicability="APPLICABLE",
+            evidence_status="UNQUALIFIED", required_action="NONE" if rereview_passed else "EVIDENCE_REASSESSMENT",
+            gate_status="UNCALIBRATED" if rereview_passed else "FAILED",
+            blocking=not rereview_passed, evaluation_semantics_version="work-quality.v2",
+        )
     for report in evidence_reports:
         if "creative_baseline" in revision:
             from novel_forge.modules.chapter_authority.chapter_plan_views import (
@@ -126,7 +134,7 @@ def evaluate_quality_evidence(
             if (
                 review.get("creative_baseline_digest") != digest
                 or report.get("creative_baseline_digest") != digest
-                or report.get("evaluation_semantics_version") != "work-quality.v1"
+                or report.get("evaluation_semantics_version") != "work-quality.v2"
             ):
                 raise KernelError(
                     "QUALITY_EVALUATION_SEMANTICS_DRIFT",
@@ -229,13 +237,13 @@ def evaluate_quality_evidence(
             },
         },
         "required_actions": required_actions,
-        "quality_contract_version": "chapter-quality-aggregate-v4",
+        "quality_contract_version": "chapter-quality-aggregate-v5" if "creative_baseline" in revision else "chapter-quality-aggregate-v4",
         **(
             {
                 "creative_baseline_digest": revision["creative_baseline"][
                     "baseline_digest"
                 ],
-                "evaluation_semantics_version": "work-quality.v1",
+                "evaluation_semantics_version": "work-quality.v2",
             }
             if "creative_baseline" in revision
             else {}
@@ -273,12 +281,14 @@ def derive_quality_actions(
         )
         evidence_only = item.get(
             "evaluation_semantics_version"
-        ) == "work-quality.v1" and (
+        ) in {"work-quality.v1", "work-quality.v2"} and (
             status != "FAILED"
             or not any(
                 location.get("quote") for location in item.get("evidence_locations", [])
             )
         )
+        if item.get("evaluation_semantics_version") == "work-quality.v2" and item.get("required_action") == "EVIDENCE_REASSESSMENT":
+            evidence_only = True
         if evidence_only:
             action = "EVIDENCE_REASSESSMENT"
         actions.append(
@@ -346,7 +356,7 @@ def _normalize_evidence_dimension(
         ),
         waiver=dict(report.get("waiver") or {}),
     )
-    if report.get("evaluation_semantics_version") == "work-quality.v1":
+    if report.get("evaluation_semantics_version") in {"work-quality.v1", "work-quality.v2"}:
         result.update(
             {
                 key: report[key]
@@ -355,6 +365,7 @@ def _normalize_evidence_dimension(
                     "quality_policy_digest",
                     "creative_baseline_digest",
                     "evidence_locations",
+                    "applicability", "semantic_verdict", "threshold", "threshold_evaluation", "required_action", "evidence_status",
                 )
                 if key in report
             }

@@ -279,6 +279,12 @@ def build_draft_plan_view(
     if work_requirements:
         result["contract_version"] = "draft-plan-view-v2"
         result["style_constraints"] = plan.get("style_constraints", [])
+        source = {**dict(plan.get("source_extensions") or {}), **plan}
+        if source.get("runtime_projection_version") == "2.0.0":
+            result["contract_version"] = "draft-plan-view-v3"
+            result["method_choices"] = {key: source[key] for key in (
+                "reward_action", "promise_action", "ending_hook", "antagonist_actions",
+            ) if key in source}
     binding = (plan.get("constraint_envelope") or {}).get("author_design")
     if binding:
         result["author_design_guidance"] = project_author_design(binding, target="CHAPTER", chapter=int(plan["chapter"]))
@@ -315,6 +321,11 @@ def build_draft_style_view(
         segment for segment in context_bundle.get("context_segments", [])
         if segment.get("asset_type") == "style_policy"
     ]
+    if work_requirements:
+        selected = context_bundle.get("production_input_manifest", {}).get("style_policy_version_id")
+        style_segments = [segment for segment in style_segments if segment.get("asset_version_id") == selected]
+        if len(style_segments) != 1:
+            raise KernelError("WORK_STYLE_SELECTION_INVALID", "The work baseline needs exactly its selected style version")
     return {
         "contract_version": "draft-style-view-v2"
         if work_requirements
@@ -358,7 +369,7 @@ def build_draft_style_view(
     }
 
 
-def _method_requirements(plan: dict[str, Any]) -> dict[str, Any]:
+def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -> dict[str, Any]:
     fields = {
         "golden_opening": ("golden_opening",),
         "reader_promise": ("promise_action", "reader_promise_actions"),
@@ -396,7 +407,50 @@ def _method_requirements(plan: dict[str, Any]) -> dict[str, Any]:
             if confirmed
             else "UNDETERMINED",
             "source_fields": present,
+            **({"selected_values": {name: source[name] for name in present}}
+               if source.get("runtime_projection_version") == "2.0.0" else {}),
         }
+    aliases = {"$.serialization_potential": "serialization_function"}
+    selected_style = context_bundle.get("production_input_manifest", {}).get("style_policy_version_id")
+    book_id = context_bundle.get("book_id") or plan.get("book_id")
+    bound_styles = [segment for segment in context_bundle.get("context_segments", [])
+                    if segment.get("asset_type") == "style_policy" and segment.get("asset_version_id") == selected_style]
+    if len(bound_styles) > 1:
+        raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Selected style must have one exact Context projection")
+    for segment in context_bundle.get("context_segments", []):
+        if segment.get("asset_type") != "style_policy":
+            continue
+        for fact in segment.get("structured_facts", []):
+            if fact.get("key") != "work_applicability":
+                continue
+            binding = fact.get("value") or {}
+            if segment not in bound_styles:
+                raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Unselected style cannot declare work requirements")
+            if (not binding.get("source_asset_version_id") or not binding.get("source_content_hash")
+                    or binding.get("scope") != "BOOK" or not book_id or binding.get("book_id") != book_id
+                    or {"asset_version_id": binding.get("source_asset_version_id"),
+                        "content_hash": binding.get("source_content_hash")} not in binding.get("source_bindings", [])):
+                raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Work choices need exact approved Foundation provenance")
+            for declaration in binding.get("declarations", []):
+                dimension = aliases.get(declaration.get("field_path"))
+                if not dimension:
+                    continue
+                status = declaration.get("status")
+                if status not in {"APPLICABLE", "NOT_APPLICABLE", "PROHIBITED", "UNDETERMINED"}:
+                    raise KernelError("WORK_APPLICABILITY_INVALID", "Unknown work method choice")
+                local = result[dimension]
+                prior = local.get("work_requirement")
+                if prior and prior["status"] != status:
+                    raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Frozen work decisions contradict each other")
+                local["work_requirement"] = {**declaration, **{key: binding[key] for key in ("scope", "source_asset_version_id", "source_content_hash")}}
+                if status in {"PROHIBITED", "NOT_APPLICABLE", "UNDETERMINED"}:
+                    if local["status"] == "APPLICABLE":
+                        raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter selection contradicts the frozen work method decision")
+                    local["status"] = status
+                elif status == "APPLICABLE":
+                    if local["status"] == "NOT_APPLICABLE":
+                        raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter omission contradicts the frozen work requirement")
+                    local["status"] = status
     return result
 
 
@@ -416,7 +470,7 @@ def build_creative_baseline(
             "content_hash": view["source_chapter_plan_content_hash"],
         },
         "style_constraints": view["style_constraints"],
-        "method_requirements": _method_requirements(plan),
+        "method_requirements": _method_requirements(plan, context_bundle),
         "point_of_view": view.get("point_of_view"),
         "target_word_count": view.get("target_word_count"),
         "prohibited_outcomes": view.get("prohibited_outcomes"),

@@ -243,9 +243,12 @@ class PostgresChapterGroupAuthority:
                 "CHAPTER_GROUP_EXECUTION_POLICY_LIMIT",
                 "ChapterGroup exceeds the frozen Book execution window policy",
             )
+        from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
+
         validate_chapter_function_matrix(
             list(content["chapter_function_matrix"]),
             group_objective=str(content["local_objective"]),
+            work_requirements=uses_work_requirements(content),
         )
         accepted_through = int(book["accepted_through_chapter"])
         if not chapter_range.start - 1 <= accepted_through < chapter_range.end:

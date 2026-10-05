@@ -1,0 +1,20 @@
+{
+  "remote_main_sha": "4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52",
+  "user_branch": "codex/wp02-author-approved-run",
+  "user_head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "user_status": [
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-configure-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-query.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-approval-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/live-supervision-after-budget.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/logs/",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/mode-receipt.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/shared-evidence-secret-scan.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/status.json",
+    "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/user-authorization.json"
+  ],
+  "branch": "codex/work-intent-context-e2e-20261005",
+  "evidence_ceiling": "STATIC",
+  "real_provider_authorized": false
+}

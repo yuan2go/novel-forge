@@ -6,13 +6,22 @@ from unittest.mock import MagicMock
 import pytest
 
 from novel_forge.modules.chapter_authority import runtime
-from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRegistry, ChapterNode
-from novel_forge.modules.chapter_authority.definitions import chapter_provider_sample_definitions
-from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterHandlerRegistry,
+    ChapterNode,
+)
+from novel_forge.modules.chapter_authority.definitions import (
+    chapter_provider_sample_definitions,
+)
+from novel_forge.modules.chapter_authority.execution_gateway import (
+    PostgresChapterExecutionContractBinder,
+)
 from novel_forge.modules.chapter_authority.sampling import _existing_sample_definition
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.command_kernel.routing_bootstrap import chapter_sample_definition_supported
+from novel_forge.modules.command_kernel.routing_bootstrap import (
+    chapter_sample_definition_supported,
+)
 from novel_forge.storage.authority_repositories import definition_hash
 
 
@@ -29,13 +38,26 @@ def test_sample_contract_versions_and_target_kind_are_exact(name, version, kind,
     assert chapter_sample_definition_supported('chapter.provider.sample.' + name, version, reference_samples=kind) is supported
 
 
-@pytest.mark.parametrize('reference,version', [(False, '2.0.0'), (True, '2.1.0')])
-def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts(reference, version):
-    definitions = chapter_provider_sample_definitions(application_build_id='test-build', commit_sha='e' * 40, reference_samples=reference)
-    assert {item['definition_version'] for item in definitions} == {version}
-    assert all(item['policy']['source_definition_versions'] == ['3.4.1', '3.5.0'] for item in definitions)
+@pytest.mark.parametrize("reference,version", [(False, "2.2.0"), (True, "2.3.0")])
+def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts(
+    reference, version
+):
+    definitions = chapter_provider_sample_definitions(
+        application_build_id="test-build",
+        commit_sha="e" * 40,
+        reference_samples=reference,
+    )
+    assert {item["definition_version"] for item in definitions} == {version}
+    assert all(
+        item["policy"]["source_definition_versions"]
+        == ["3.4.1", "3.8.0", "3.8.0-author-input.v2"]
+        for item in definitions
+    )
     if reference:
-        assert {item['name'] for item in definitions} == {'chapter.provider.sample.review', 'chapter.provider.sample.rereview'}
+        assert {item["name"] for item in definitions} == {
+            "chapter.provider.sample.review",
+            "chapter.provider.sample.rereview",
+        }
 
 
 @pytest.mark.parametrize('version,node', [('1.0.0', ChapterNode.DRAFT), ('2.0.0', ChapterNode.DRAFT), ('1.1.0', ChapterNode.REVIEW), ('2.1.0', ChapterNode.REVIEW)])
@@ -113,19 +135,41 @@ def test_api_replay_reads_published_definition_without_rebuilding_it(change):
     uow.repositories.definitions.register.assert_not_called()
 
 
-@pytest.mark.parametrize('reference,samples,workflow', [(False, False, 'chapter_provider_sampling@2.0.0'),
-    (True, False, 'chapter_reference_sampling@2.0.0'), (True, True, 'chapter_reference_sampling@2.1.0')])
-def test_new_derived_pack_has_an_immutable_exact_semver_identity(reference, samples, workflow):
-    from novel_forge.modules.capability_packs.validation_deployment import chapter_provider_sampling_manifest
+@pytest.mark.parametrize(
+    "reference,samples,workflow",
+    [
+        (False, False, "chapter_provider_sampling@2.2.0"),
+        (True, False, "chapter_reference_sampling@2.2.0"),
+        (True, True, "chapter_reference_sampling@2.3.0"),
+    ],
+)
+def test_new_derived_pack_has_an_immutable_exact_semver_identity(
+    reference, samples, workflow
+):
+    from novel_forge.modules.capability_packs.validation_deployment import (
+        chapter_provider_sampling_manifest,
+    )
 
-    source = json.loads((Path(__file__).parents[2] / 'config/capability_packs/chapter_generation_pack.json').read_text())
+    source = json.loads(
+        (
+            Path(__file__).parents[2]
+            / "config/capability_packs/chapter_generation_pack.json"
+        ).read_text()
+    )
     frozen_source = json.loads(json.dumps(source))
-    manifest = chapter_provider_sampling_manifest(source, application_build_id='test-build', commit_sha='e' * 40,
-        reference=reference, reference_samples=samples)
-    source_parts = source['identity']['version'].split('.')
-    assert manifest['identity']['version'] == '.'.join([str(int(source_parts[0]) + 1), *source_parts[1:]])
-    template = manifest['workflow_template']
-    assert template['workflow_id'] + '@' + template['workflow_version'] == workflow
+    manifest = chapter_provider_sampling_manifest(
+        source,
+        application_build_id="test-build",
+        commit_sha="e" * 40,
+        reference=reference,
+        reference_samples=samples,
+    )
+    source_parts = source["identity"]["version"].split(".")
+    assert manifest["identity"]["version"] == ".".join(
+        [str(int(source_parts[0]) + 1), *source_parts[1:]]
+    )
+    template = manifest["workflow_template"]
+    assert template["workflow_id"] + "@" + template["workflow_version"] == workflow
     assert source == frozen_source
 
 
@@ -214,3 +258,134 @@ def test_prior_reference_snapshot_cannot_change_the_frozen_contract(monkeypatch,
     with pytest.raises(KernelError, match='CHAPTER_SAMPLE_PRODUCER_DRIFT'):
         invoke()
     binder.pack_resolver.resolve_in_uow.assert_not_called()
+
+
+@pytest.mark.parametrize("reference,version", [(False, "2.0.0"), (True, "2.1.0")])
+def test_published_sample_policy_does_not_change_when_current_chapter_contract_changes(
+    reference, version
+):
+    definitions = chapter_provider_sample_definitions(
+        application_build_id="test-build",
+        commit_sha="e" * 40,
+        reference_samples=reference,
+        definition_version=version,
+    )
+    assert {row["definition_version"] for row in definitions} == {version}
+    assert all(
+        row["policy"]["source_definition_versions"] == ["3.4.1", "3.5.0"]
+        for row in definitions
+    )
+    assert all(
+        chapter_sample_definition_supported(
+            row["name"], version, reference_samples=reference
+        )
+        for row in definitions
+    )
+
+
+@pytest.mark.parametrize(
+    "sample_version,source_version,work_enabled",
+    [
+        ("2.2.0", "3.8.0", True),
+        ("2.3.0", "3.8.0", True),
+        ("2.2.0", "3.8.0-author-input.v2", True),
+        ("2.2.0", "3.4.1", False),
+        ("2.0.0", "3.8.0", False),
+        ("2.1.0", "3.8.0", False),
+    ],
+)
+def test_new_sample_adapter_uses_exact_source_semantics_without_changing_sample_execution_version(
+    monkeypatch, sample_version, source_version, work_enabled
+):
+    from novel_forge.modules.authority_handler_runtime.contracts import (
+        AuthorityHandlerRequest,
+    )
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerOutput
+    from novel_forge.modules.chapter_authority.chapter_plan_views import (
+        build_draft_plan_view,
+    )
+    from novel_forge.modules.command_kernel.routing_bootstrap import authorization_hash
+    from tests.unit.test_work_intent_consistency import work_input
+
+    source_command = {"project_id": "project", "book_id": "book", "chapter": 1}
+    payload = {
+        **source_command,
+        "generator_operation_name": "draft",
+        "logical_key": "source",
+        "idempotency_key": "sample-key",
+        "input_versions": [],
+        "chapter_predecessor_operation_id": None,
+        "routing_bootstrap_authorization_id": "authorization",
+        "chapter_sampling": {
+            "source_operation_id": "source",
+            "source_command_hash": authorization_hash(source_command),
+        },
+    }
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.return_value = (
+        "chapter.draft.generate",
+        source_version,
+        source_command,
+        [],
+    )
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda _: uow)
+    monkeypatch.setattr(
+        runtime,
+        "load_bootstrap_authorization",
+        lambda *args, **kwargs: {
+            "authorization": {
+                "purpose": "GENERATOR",
+                "authorization_id": "authorization",
+                "campaign": {},
+            }
+        },
+    )
+    plan, _, _ = work_input("观察")
+    plan.update(
+        runtime_projection_version="2.0.0",
+        source_extensions={"reward_action": "EXACT_SAMPLE_REWARD"},
+    )
+    requests = []
+
+    class ProjectionHandler:
+        def execute(self, request):
+            requests.append(request)
+            return ChapterHandlerOutput(
+                "draft_chapter",
+                "draft",
+                "primary",
+                build_draft_plan_view(
+                    plan, work_requirements=request.work_requirements_enabled
+                ),
+            )
+
+    registry = ChapterHandlerRegistry(model_effects_required=True)
+    registry.register(ChapterNode.DRAFT, ProjectionHandler())
+    adapter = runtime._ChapterHandlerAdapter(
+        ChapterNode.DRAFT, registry, "attempt", 1, "worker", "offline", sampling=True
+    )
+    request = AuthorityHandlerRequest(
+        "sample",
+        "project",
+        "workspace",
+        "worker",
+        "trace",
+        "correlation",
+        "chapter.provider.sample.draft",
+        sample_version,
+        {"payload": payload},
+        (),
+    )
+    output = adapter.execute(request)
+    assert requests[0].definition_version == sample_version
+    assert requests[0].work_requirements_enabled is work_enabled
+    assert (
+        "EXACT_SAMPLE_REWARD" in json.dumps(output.content["sampled_output"])
+    ) is work_enabled
+    if sample_version in {"2.2.0", "2.3.0"}:
+        assert output.content["source_definition_version"] == source_version
+        assert output.content["sample_definition_version"] == sample_version
+        assert requests[0].semantic_definition_version == source_version
+    else:
+        assert "source_definition_version" not in output.content

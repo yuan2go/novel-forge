@@ -1,5 +1,7 @@
 # Novel Forge 作品意图贯穿与创作指令体系一致性：工程交付
 
+> HISTORICAL_SNAPSHOT / NOT_RUNTIME_AUTHORITY：以下结论仅对应文内冻结身份；不是最新 main、运行实例或本工作包的结论。原证据包保留。
+
 本轮完成正式链上的代码、合同、Prompt/Skill 资产、质量动作、接纳与恢复修改；不是再一次只读审计。工程结论的上限为受影响主链的 `WIRED` / `EXECUTABLE`。未授予 `QUALIFIED`、`PRODUCTION_PROVEN`、`PRODUCTION_READY` 或 `CREATIVE_QUALITY_PROVEN`。
 
 ## 1. 冻结身份与边界
