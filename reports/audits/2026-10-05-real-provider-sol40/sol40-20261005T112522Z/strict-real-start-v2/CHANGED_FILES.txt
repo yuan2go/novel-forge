@@ -1,0 +1,15 @@
+architecture/reality-evidence.json
+docs/runtime-operations.md
+scripts/creation_comparison.py
+scripts/run_creation_synthesis.py
+scripts/run_world_production_smoke.py
+src/novel_forge/api/authority_dependencies.py
+src/novel_forge/modules/production_execution/cost_routing.py
+src/novel_forge/modules/production_execution/provider_admission.py
+src/novel_forge/modules/production_execution/routing_runtime.py
+tests/unit/test_author_supervised_routing.py
+tests/unit/test_chapter_authority_dependencies.py
+tests/unit/test_cost_aware_routing.py
+tests/unit/test_creation_pilot.py
+tests/unit/test_routing_bootstrap.py
+tests/unit/test_single_book_creation_resume.py

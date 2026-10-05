@@ -1,0 +1,35 @@
+{
+  "source_sha": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "branch": "codex/work-intent-context-e2e-20261005",
+  "starting_remote_main": "4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52",
+  "evidence_classes": [
+    "STATIC",
+    "OFFLINE",
+    "REAL_CAPTURE"
+  ],
+  "capability_ceiling": "EXECUTABLE",
+  "qualification_upgrade": false,
+  "inference_calls": 0,
+  "accepted_chapters": 0,
+  "target_chapters": 40,
+  "direct_user_decision": "保持严格资格，先完成独立盲评与裁决",
+  "human_literary_evaluation_records": 0,
+  "book_status": "DESIGN_PENDING",
+  "statuses": {
+    "QUALITY_SEMANTICS_CLOSED": "PASS",
+    "CONTEXT_COMPRESSION_PRODUCTION_READY": "BLOCKED",
+    "AUTHOR_INTENT_PROPAGATION": "NOT_VERIFIED",
+    "FORMAL_PRODUCTION_E2E": "BLOCKED",
+    "ACCEPTANCE_AND_NEXT_UNIT": "NOT_VERIFIED",
+    "RECOVERY_PATH": "NOT_VERIFIED",
+    "LEGACY_ASSET_SAFETY": "PASS",
+    "REAL_PROVIDER_VALIDATED": "NOT_VERIFIED",
+    "CREATIVE_QUALITY_PROVEN": "NOT_VERIFIED",
+    "PRODUCTION_READY": "FAIL"
+  },
+  "status_scope": {
+    "QUALITY_SEMANTICS_CLOSED": "Prior STATIC/OFFLINE/MOCK_E2E engineering proof, not a real chapter result",
+    "LEGACY_ASSET_SAFETY": "Targeted OFFLINE compatibility; actual historical real-Provider recovery NOT_VERIFIED",
+    "PRODUCTION_READY": "Current requested strict real-run scope; unresolved primary lane and qualification cold-start"
+  }
+}

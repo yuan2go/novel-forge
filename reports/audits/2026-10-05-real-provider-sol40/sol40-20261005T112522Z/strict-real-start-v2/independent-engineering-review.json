@@ -1,0 +1,10 @@
+{
+  "evidence_classes": [
+    "STATIC",
+    "OFFLINE"
+  ],
+  "reviewer": "/root/quality_independent_review",
+  "human_literary_evaluation": false,
+  "source_sha": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "conclusion": "No new must-fix found in MIXED-budget patch. Formal entry passes configuration and stops at missing ACTIVE Pack Deployment. TRUSTED compilation cannot replace duties-separated approval/deployment/activation. Codex primary lane, strict qualification cold-start, actual blind evaluation/adjudication remain unresolved. Native model calls and acceptance are zero."
+}

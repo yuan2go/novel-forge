@@ -1,0 +1,14 @@
+{
+  "container_name": "nf-sol40-20261005T112522Z-objects",
+  "container_id": "1a3f2bd20a80fca55ccf69a0f462ec6f60e856ea017e485065e52b1079b6024e",
+  "volume_name": "nf-sol40-20261005T112522Z-objects-data",
+  "owner_run": "sol40-20261005T112522Z",
+  "port": 51143,
+  "existing_stores_modified": false,
+  "image": "minio/minio:RELEASE.2024-07-16T23-46-41Z",
+  "bucket_names": [
+    "nf-sol40-20261005t112522z-raw",
+    "nf-sol40-20261005t112522z-artifacts",
+    "nf-sol40-20261005t112522z-exports"
+  ]
+}

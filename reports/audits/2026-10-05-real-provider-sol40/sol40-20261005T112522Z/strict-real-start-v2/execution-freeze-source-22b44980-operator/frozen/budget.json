@@ -1,0 +1,83 @@
+{
+  "contract_version": "creative-provider-campaign-budget.v4",
+  "experiment_id": "sol40-20261005T112522Z",
+  "manifest_hash": "sha256:d49c16e69ce3f8e79a11ba9fd54cf59efdf203eafb76a85a378b4c93ac8508bc",
+  "expires_at": "2026-10-12T00:00:00+00:00",
+  "accounting_basis": "MIXED",
+  "shared_total": {
+    "calls": 1600,
+    "tokens": 80000000,
+    "priced_usd": "20"
+  },
+  "arms": [
+    {
+      "arm": "SINGLE",
+      "project_id": "nf-sol40-20261005T112522Z",
+      "book_id": "nf-sol40-20261005T112522Z-book",
+      "project_total": {
+        "calls": 1600,
+        "tokens": 80000000,
+        "priced_usd": "20"
+      },
+      "chapter_ranges": {
+        "PRODUCTION": [
+          1,
+          40
+        ]
+      },
+      "reference_allocation": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "screening_allocation": {
+        "calls": 40,
+        "tokens": 2000000,
+        "priced_usd": "0"
+      },
+      "calibration_allocation": {
+        "calls": 40,
+        "tokens": 2000000,
+        "priced_usd": "1"
+      },
+      "holdout_allocation": {
+        "calls": 20,
+        "tokens": 1000000,
+        "priced_usd": "0"
+      },
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0,
+        "priced_usd": "0"
+      },
+      "design_allocation": {
+        "calls": 160,
+        "tokens": 8000000,
+        "priced_usd": "4"
+      },
+      "production_allocation": {
+        "calls": 1180,
+        "tokens": 59000000,
+        "priced_usd": "12"
+      },
+      "repair_allocation": {
+        "calls": 160,
+        "tokens": 8000000,
+        "priced_usd": "3"
+      }
+    }
+  ],
+  "entitlements": [
+    {
+      "provider": "codex-cli",
+      "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+      "calls": 1600,
+      "tokens": 80000000
+    }
+  ],
+  "previous_policy": {
+    "policy_version": "sol40-20261005T112522Z:normal-budget-v1",
+    "policy_hash": "518a3fbde18eb9d91f85db221061ad0eb240ba88b71a3106e362bd58664ca514",
+    "contract_hash": "sha256:53c94b2cc1e5b68e63ca1d0892ddf690abc8fc28320b097eadfabbfce57b7c59"
+  }
+}

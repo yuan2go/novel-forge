@@ -1,0 +1,25 @@
+{
+  "evidence_class": "STATIC",
+  "mode": "STRICT_QUALIFICATION",
+  "human_identity_status": "PENDING_ACTUAL_PARTICIPANTS",
+  "blind_evaluators_required": 2,
+  "distinct_adjudicator_required": 1,
+  "pack_approver_must_differ_from_compiler": true,
+  "compiler": "operator:sol40-20261005T112522Z",
+  "existing_content_commands": [
+    "quality.human_evaluation.record",
+    "quality.adjudication.record"
+  ],
+  "existing_entry": "POST /product/content-authority/commands",
+  "planning_ui_entry": "POST /product/content-authority/reference-evaluations",
+  "exact_target_samples_available": 0,
+  "native_human_records_created": 0,
+  "submit_generated_labels_as_humans": false,
+  "source": "docs/runtime-operations.md; native Content/Chapter admission",
+  "blocked_dependencies": [
+    "ACTUAL_INDEPENDENT_IDENTITIES",
+    "PACK_DUTIES_SEPARATED_APPROVAL_AND_DEPLOYMENT",
+    "VERSIONED_CODEX_PRIMARY_LANE",
+    "STRICT_COLD_START_SOURCE_AND_PHASE_BUDGET_COVERAGE"
+  ]
+}

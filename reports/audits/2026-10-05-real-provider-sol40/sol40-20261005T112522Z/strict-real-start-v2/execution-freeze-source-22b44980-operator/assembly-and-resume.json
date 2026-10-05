@@ -1,0 +1,1751 @@
+{
+  "evidence_class": "OFFLINE",
+  "source_sha": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "formal_assembly": "build_production_execution_composition",
+  "author_entry": "scripts.run_creation_synthesis",
+  "native_budget_binding": {
+    "owner": "CREATIVE_EXPERIMENT_BUDGET",
+    "policy_version": "sol40-20261005T112522Z:normal-budget-deepseek20-v2",
+    "policy_hash": "a333d68d18cae7d0aefa6457a03b81912fb0f3ece81c71e3cd774d49f2cb3c93",
+    "contract_hash": "sha256:b51b5b74eb651785e2c091dfc9ef575bc528f1072ac47757f39590946ce476a5",
+    "subject_id": "project:nf-sol40-20261005T112522Z",
+    "authorization": {
+      "book_id": "nf-sol40-20261005T112522Z-book",
+      "project_id": "nf-sol40-20261005T112522Z",
+      "evidence_hash": "sha256:a0410ae71c96755744d382178ca810b5f43e148749b0ff0df09f753491b8b4c1",
+      "business_scope": {
+        "design_allowed": true,
+        "source_allowed": false,
+        "max_chapter_number": 40
+      },
+      "authorization_ref": "sol40-20261005T112522Z:approved-deepseek-review20-v2",
+      "authorized_cumulative_caps": {
+        "DESIGN": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "4"
+        },
+        "REPAIR": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "3"
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "HOLDOUT": {
+          "calls": 20,
+          "tokens": 1000000,
+          "priced_usd": "0"
+        },
+        "REFERENCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SCREENING": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        },
+        "PRODUCTION": {
+          "calls": 1180,
+          "tokens": 59000000,
+          "priced_usd": "12"
+        },
+        "CALIBRATION": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "1"
+        }
+      }
+    }
+  },
+  "provider_authorization": {
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+    "authorized_total_usd": null,
+    "monetary_cost_status": "UNKNOWN"
+  },
+  "frozen_configuration": {
+    "contract_version": "creation-pilot.v1",
+    "run_key": "sol40-20261005T112522Z:author-v2-fantasy-comedy",
+    "brief_input_hash": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266",
+    "creation_policy": {
+      "contract_version": "creation-input-policy.v1",
+      "purpose": "作者明确选择玄幻轻喜剧并禁止武侠/悬疑的40章单书真实验证输入；非预算授权或文学证明。",
+      "profiles": {
+        "production_profile": {
+          "operation": "book.production_profile.author",
+          "content": {
+            "type": "production_profile",
+            "safe_summary": "原创玄幻轻喜剧40章；每章5000–6000汉字；禁止武侠和悬疑题材。",
+            "structured_facts": [],
+            "profile_id": "sol40-20261005T112522Z-fantasy-comedy-v2",
+            "target_chapter_count": 40,
+            "language_contract": {
+              "language": "zh",
+              "script": "Hans"
+            },
+            "authority_boundary": "FUTURE_INTENT",
+            "knowledge_access_policy": {
+              "policy_id": "sol40-20261005T112522Z-external-deny-all",
+              "policy_version": 1,
+              "mode": "DENY_ALL",
+              "allowed_knowledge_card_asset_version_ids": []
+            }
+          }
+        },
+        "previous_volume_outcome": {
+          "operation": "book.previous_volume_outcome.author",
+          "content": {
+            "type": "previous_volume_outcome",
+            "safe_summary": "Explicit bounded creation policy: previous_volume_outcome; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "status": "NO_PREVIOUS_VOLUME",
+            "actual_outcomes": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "previous_chapter_group_outcome": {
+          "operation": "book.previous_chapter_group_outcome.author",
+          "content": {
+            "type": "previous_chapter_group_outcome",
+            "safe_summary": "Explicit bounded creation policy: previous_chapter_group_outcome; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "status": "NO_PREVIOUS_CHAPTER_GROUP",
+            "actual_outcomes": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "previous_chapter_outcome": {
+          "operation": "book.previous_chapter_outcome.author",
+          "content": {
+            "type": "previous_chapter_outcome",
+            "safe_summary": "Explicit bounded creation policy: previous_chapter_outcome; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "status": "NO_PREVIOUS_CHAPTER",
+            "actual_outcomes": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "arc_portfolio": {
+          "operation": "book.arc_portfolio.author",
+          "content": {
+            "type": "arc_portfolio",
+            "safe_summary": "Explicit bounded creation policy: arc_portfolio; no accepted history.",
+            "structured_facts": [],
+            "portfolio_id": "initial-arc-window",
+            "contract_version": "v1",
+            "authority_boundary": "FUTURE_INTENT"
+          }
+        },
+        "ending_reachability": {
+          "operation": "book.ending_reachability.author",
+          "content": {
+            "type": "ending_reachability",
+            "safe_summary": "Explicit bounded creation policy: ending_reachability; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "status": "PLANNED_NOT_ACTUAL",
+            "authority_boundary": "ADVISORY"
+          }
+        },
+        "conflict_state": {
+          "operation": "book.conflict_state.author",
+          "content": {
+            "type": "conflict_state",
+            "safe_summary": "Explicit bounded creation policy: conflict_state; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "entries": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "foreshadowing_ledger": {
+          "operation": "book.foreshadowing_ledger.author",
+          "content": {
+            "type": "foreshadowing_ledger",
+            "safe_summary": "Explicit bounded creation policy: foreshadowing_ledger; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "entries": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "character_state": {
+          "operation": "book.character_state.author",
+          "content": {
+            "type": "character_state_snapshot",
+            "safe_summary": "Explicit bounded creation policy: character_state; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "entries": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "foreshadowing_state": {
+          "operation": "book.foreshadowing_state.author",
+          "content": {
+            "type": "foreshadow_snapshot",
+            "safe_summary": "Explicit bounded creation policy: foreshadowing_state; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "entries": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "reward_ledger": {
+          "operation": "book.reward_ledger.author",
+          "content": {
+            "type": "reward_ledger_snapshot",
+            "safe_summary": "Explicit bounded creation policy: reward_ledger; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "entries": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "promise_ledger": {
+          "operation": "book.promise_ledger.author",
+          "content": {
+            "type": "promise_ledger_snapshot",
+            "safe_summary": "Explicit bounded creation policy: promise_ledger; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "entries": [],
+            "authority_boundary": "PRE_CHAPTER_0"
+          }
+        },
+        "reader_segment": {
+          "operation": "book.reader_segment.author",
+          "content": {
+            "type": "reader_segment_profile",
+            "safe_summary": "Explicit bounded creation policy: reader_segment; no accepted history.",
+            "structured_facts": [],
+            "profile_id": "bounded-reader-proxy",
+            "profile_version": "reader-outcome-v3",
+            "authority_boundary": "ADVISORY"
+          }
+        },
+        "reader_contract": {
+          "operation": "book.reader_contract.author",
+          "content": {
+            "type": "reader_contract",
+            "safe_summary": "Explicit bounded creation policy: reader_contract; no accepted history.",
+            "structured_facts": [],
+            "profile_id": "bounded-reader-proxy",
+            "profile_version": "reader-outcome-v3",
+            "authority_boundary": "ADVISORY"
+          }
+        },
+        "reader_state": {
+          "operation": "book.reader_state.author",
+          "content": {
+            "type": "reader_state",
+            "safe_summary": "Explicit bounded creation policy: reader_state; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "reader-state-genesis-v1",
+            "profile_version": "reader-outcome-v3",
+            "status": "NOT_OBSERVED",
+            "accepted_through_chapter": 0,
+            "observations": [],
+            "evidence_class": "READER_PROXY_ADVISORY",
+            "authority_boundary": "ADVISORY"
+          }
+        },
+        "quality_trend": {
+          "operation": "book.quality_trend.author",
+          "content": {
+            "type": "quality_trend",
+            "safe_summary": "Explicit bounded creation policy: quality_trend; no accepted history.",
+            "structured_facts": [],
+            "contract_version": "v1",
+            "status": "NO_ACCEPTED_CHAPTERS",
+            "authority_boundary": "ADVISORY"
+          }
+        },
+        "platform_profile": {
+          "operation": "chapter.platform_profile.author",
+          "content": {
+            "type": "platform_profile",
+            "safe_summary": "玄幻轻喜剧，简体中文，每章5000–6000汉字，禁止武侠和悬疑。",
+            "structured_facts": [
+              {
+                "key": "platform_rules",
+                "value": {
+                  "chapter_length": {
+                    "unit": "HAN_CHARACTERS_V1",
+                    "minimum": 5000,
+                    "maximum": 6000
+                  },
+                  "format": {
+                    "paragraph_max": 500
+                  },
+                  "sensitive_content": [],
+                  "ai_content": {
+                    "mode": "internal"
+                  },
+                  "opening": [
+                    "依本书选择的玄幻轻喜剧方向，通过具体行动、人物互动和奇幻日常建立场景"
+                  ],
+                  "rhythm": [
+                    "是否采用及怎样采用技法由本书要求与批准计划决定，不固定公共章节套路"
+                  ],
+                  "publish_metadata": {
+                    "title_required": true
+                  }
+                }
+              }
+            ],
+            "profile_id": "sol40-20261005T112522Z-fantasy-comedy-platform-v2",
+            "constraints": [
+              "本作品题材明确为玄幻轻喜剧；禁止武侠题材与悬疑题材，不得把江湖门派、武学争霸、侦查推理、追凶破案、阴谋揭谜作为故事主轴。一本原创小说，共40章，每章正文5000–6000汉字（HAN_CHARACTERS_V1，不计标点、数字、空白和拉丁字母）。生成模型固定Codex gpt-6-sol、推理medium。",
+              "简体中文，玄幻轻喜剧，基调明快、温暖、有生活气，第三人称限知、主要视角固定陆圆。通过动作、对白节奏和可信的奇幻日常形成幽默，允许轻松的困难与适量冒险。角色保持基本尊严和判断力；不靠全员降智、恶意羞辱、密集网络热梗、反复口头解释笑点或强行误会制造喜剧。局势与感情的推进须自然接续，不以沉重的悬疑氛围、秘密调查和谜底吊胃口。",
+              "本作品选择轻喜剧日常、谨慎但主动的经营选择、渐进修炼、人物关系中的互相帮助与合理摩擦。可选：有因果支持的小收获、偶尔出乎意料的奇幻行动反馈、局部笑点回收；由规划明确其适用与范围。明确不采用：每章强制悬念钩子、固定商业节拍、必须打脸、必须升级、故意设置谜案、毫无代价的系统奖励。不得用通用Quality阈值把未选择的方法变成正文要求。",
+              "原创边界：不复制参考作品的角色、宗门、神通或系统、具体情节链、可识别的人物组合与反转、对白或表达。所有新设定与事实由本书作者输入和正式批准/接纳资产决定。外部作品正文未导入，不声称已读原书；参考标题留在档案中，不能当成模仿指令。其他书状态、失败稿和未接纳候选不提供本书既成历史；角色所知与客观事实分开。",
+              "每章必须有5000–6000汉字的完整正文，禁止摘要、重复段落或无效解释凑长度；40章完成本书当前主问题，结局由已有行动与人物选择支撑。",
+              "完整经历正式Foundation、规划、Draft、Review、必要Revision、ReReview、Quality、原子接纳与下一章状态读取；实际稿件未产生前不能宣称符合题材或文学质量通过。"
+            ]
+          }
+        },
+        "quality_rubric": {
+          "operation": "chapter.quality_rubric.author",
+          "content": {
+            "type": "quality_rubric",
+            "safe_summary": "Explicit bounded creation policy: quality_rubric; no accepted history.",
+            "structured_facts": [],
+            "profile_id": "grounded-creation",
+            "dimensions": [
+              "continuity",
+              "causality",
+              "character_consistency",
+              "pacing",
+              "style"
+            ]
+          }
+        }
+      },
+      "chapter_group_execution": {
+        "policy_version": "sol40-20261005T112522Z-groups",
+        "maximum_chapters": 3,
+        "preferred_chapters": 2
+      },
+      "reading_checkpoints": [
+        10,
+        20,
+        30,
+        40
+      ],
+      "pilot_stop_after_chapter": 0
+    },
+    "formation_policy": {
+      "contract_version": "formation-generation.v2",
+      "approval_mode": "REVIEW_PLAN",
+      "creative_candidates": 2,
+      "target_chapters": 40,
+      "title": "这家灵兽食堂有点忙"
+    },
+    "implementation_identity": "sha256:4421d1e4d3a3cd2cfdabf0f8d562d208d75bac15e6b6b62e7a1bbebbe4334a13",
+    "models": {
+      "agent_session": {
+        "model_profile": {
+          "profile_id": "chapter.agent_session.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:agent-workspace-execute:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:agent_session:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.agent_session.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.agent_session.default",
+          "allowed_model_profile_ids": [
+            "chapter.agent_session.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:agent_session:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.agent_session.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.agent_session.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "chapter-agent_session-prompt-v1",
+        "skill_version": "chapter-agent_session-skill-v1",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:agent-workspace-execute:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "canon_extraction": {
+        "model_profile": {
+          "profile_id": "chapter.canon_extraction.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:canon-extract:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:canon_extraction:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.canon_extraction.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.canon_extraction.default",
+          "allowed_model_profile_ids": [
+            "chapter.canon_extraction.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:canon_extraction:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.canon_extraction.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.canon_extraction.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "canon-continuity-graph@canon-continuity-graph-v2",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:canon-extract:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "canon_support": {
+        "model_profile": {
+          "profile_id": "chapter.canon_support.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:canon-extract:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:canon_support:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.canon_support.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.canon_support.default",
+          "allowed_model_profile_ids": [
+            "chapter.canon_support.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:canon_support:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.canon_support.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.canon_support.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "canon-continuity-graph@canon-continuity-graph-v2",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:canon-extract:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "context_compress": {
+        "model_profile": {
+          "profile_id": "chapter.context_compress.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:context_compress:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.context_compress.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.context_compress.default",
+          "allowed_model_profile_ids": [
+            "chapter.context_compress.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:context_compress:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.context_compress.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.context_compress.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "context-builder-source-isolation@context-builder-source-isolation-v2",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:8135e20e5076c38c5613a5b13dc1eb0f35aa343ea7df051e55a35545c15e2326",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:review-chapter-evaluate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "context_fidelity": {
+        "model_profile": {
+          "profile_id": "chapter.context_fidelity.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:context_fidelity:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.context_fidelity.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.context_fidelity.default",
+          "allowed_model_profile_ids": [
+            "chapter.context_fidelity.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:context_fidelity:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.context_fidelity.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.context_fidelity.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "context-builder-source-isolation@context-builder-source-isolation-v2",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:8135e20e5076c38c5613a5b13dc1eb0f35aa343ea7df051e55a35545c15e2326",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:review-chapter-evaluate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "draft": {
+        "model_profile": {
+          "profile_id": "chapter.draft.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:prose-chapter-draft:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:draft:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.draft.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.draft.default",
+          "allowed_model_profile_ids": [
+            "chapter.draft.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:draft:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.draft.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.draft.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "prose-generation@prose-generation-v4",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:prose-chapter-draft:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "longform_prose_review": {
+        "model_profile": {
+          "profile_id": "chapter.longform_prose_review.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:longform_prose_review:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.longform_prose_review.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.longform_prose_review.default",
+          "allowed_model_profile_ids": [
+            "chapter.longform_prose_review.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:longform_prose_review:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.longform_prose_review.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.longform_prose_review.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:review-chapter-evaluate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "memo": {
+        "model_profile": {
+          "profile_id": "chapter.memo.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:planning-chapter-generate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:memo:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.memo.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.memo.default",
+          "allowed_model_profile_ids": [
+            "chapter.memo.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:memo:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.memo.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.memo.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "chapter-outline@chapter-plan-skill-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:planning-chapter-generate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "narrative_semantic_evaluation": {
+        "model_profile": {
+          "profile_id": "story-design.narrative-semantic-evaluator.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:narrative_semantic_evaluation:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "story-design.narrative-semantic-evaluator.route",
+          "policy_version": 1,
+          "default_model_profile_id": "story-design.narrative-semantic-evaluator.default",
+          "allowed_model_profile_ids": [
+            "story-design.narrative-semantic-evaluator.default"
+          ],
+          "rule_set_ref": "route-rules:story-design:narrative-semantic-evaluator:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "story-design.narrative-semantic-evaluator.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "story-design.narrative-semantic-evaluator.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-intrinsic-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "quality_commercial": {
+        "model_profile": {
+          "profile_id": "chapter.quality_commercial.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:quality_commercial:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.quality_commercial.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.quality_commercial.default",
+          "allowed_model_profile_ids": [
+            "chapter.quality_commercial.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:quality_commercial:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.quality_commercial.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.quality_commercial.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-intrinsic-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "quality_longform": {
+        "model_profile": {
+          "profile_id": "chapter.quality_longform.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:quality_longform:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.quality_longform.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.quality_longform.default",
+          "allowed_model_profile_ids": [
+            "chapter.quality_longform.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:quality_longform:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.quality_longform.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.quality_longform.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-intrinsic-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "quality_platform": {
+        "model_profile": {
+          "profile_id": "chapter.quality_platform.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-platform-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:quality_platform:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.quality_platform.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.quality_platform.default",
+          "allowed_model_profile_ids": [
+            "chapter.quality_platform.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:quality_platform:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.quality_platform.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.quality_platform.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-platform-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "quality_source_originality": {
+        "model_profile": {
+          "profile_id": "chapter.quality_source_originality.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-originality-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:quality_source_originality:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.quality_source_originality.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.quality_source_originality.default",
+          "allowed_model_profile_ids": [
+            "chapter.quality_source_originality.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:quality_source_originality:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.quality_source_originality.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.quality_source_originality.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-originality-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "quality_structural": {
+        "model_profile": {
+          "profile_id": "chapter.quality_structural.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:quality_structural:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.quality_structural.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.quality_structural.default",
+          "allowed_model_profile_ids": [
+            "chapter.quality_structural.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:quality_structural:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.quality_structural.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.quality_structural.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-intrinsic-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "reader_outcome": {
+        "model_profile": {
+          "profile_id": "chapter.reader_outcome.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:quality-reader_outcome-judge:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:reader_outcome:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.reader_outcome.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.reader_outcome.default",
+          "allowed_model_profile_ids": [
+            "chapter.reader_outcome.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:reader_outcome:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.reader_outcome.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.reader_outcome.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:quality-reader_outcome-judge:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "rereview": {
+        "model_profile": {
+          "profile_id": "chapter.rereview.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:rereview:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.rereview.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.rereview.default",
+          "allowed_model_profile_ids": [
+            "chapter.rereview.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:rereview:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.rereview.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.rereview.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:review-chapter-evaluate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "retrieval_query_expansion": {
+        "model_profile": {
+          "profile_id": "chapter.retrieval_query_expansion.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:retrieval-query-expand:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:retrieval_query_expansion:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.retrieval_query_expansion.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.retrieval_query_expansion.default",
+          "allowed_model_profile_ids": [
+            "chapter.retrieval_query_expansion.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:retrieval_query_expansion:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.retrieval_query_expansion.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.retrieval_query_expansion.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "context-builder-source-isolation@context-builder-source-isolation-v2",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:8135e20e5076c38c5613a5b13dc1eb0f35aa343ea7df051e55a35545c15e2326",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:retrieval-query-expand:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "review": {
+        "model_profile": {
+          "profile_id": "chapter.review.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:review:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.review.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.review.default",
+          "allowed_model_profile_ids": [
+            "chapter.review.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:review:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.review.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.review.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:review-chapter-evaluate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "revision": {
+        "model_profile": {
+          "profile_id": "chapter.revision.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:revision-chapter-revise:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:revision:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.revision.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.revision.default",
+          "allowed_model_profile_ids": [
+            "chapter.revision.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:revision:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.revision.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.revision.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "prose-generation@prose-generation-v4",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:revision-chapter-revise:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "screenplay_generate": {
+        "model_profile": {
+          "profile_id": "chapter.screenplay_generate.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:prose-chapter-draft:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:screenplay_generate:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.screenplay_generate.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.screenplay_generate.default",
+          "allowed_model_profile_ids": [
+            "chapter.screenplay_generate.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:screenplay_generate:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.screenplay_generate.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.screenplay_generate.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "prose-generation@prose-generation-v4",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:prose-chapter-draft:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "screenplay_review": {
+        "model_profile": {
+          "profile_id": "chapter.screenplay_review.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:screenplay_review:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.screenplay_review.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.screenplay_review.default",
+          "allowed_model_profile_ids": [
+            "chapter.screenplay_review.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:screenplay_review:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.screenplay_review.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.screenplay_review.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "quality-review@quality-review-v3",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:review-chapter-evaluate:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      },
+      "screenplay_revision": {
+        "model_profile": {
+          "profile_id": "chapter.screenplay_revision.default",
+          "profile_version": 1,
+          "backend_id": "remote-provider-deepseek",
+          "runtime_class": "REMOTE_PROVIDER_API",
+          "model_provider": "deepseek",
+          "model_id": "deepseek-flash",
+          "reasoning_effort": "low",
+          "timeout_policy_ref": "timeout:revision-chapter-revise:v1",
+          "workspace_policy_ref": "workspace:chapter-authority:v1",
+          "output_policy_ref": "output:chapter:screenplay_revision:json:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "status": "ACTIVE",
+          "capability_probe_ref": "capability-probe:deepseek:provider-capability-v2"
+        },
+        "route_policy": {
+          "policy_id": "chapter.screenplay_revision.route",
+          "policy_version": 1,
+          "default_model_profile_id": "chapter.screenplay_revision.default",
+          "allowed_model_profile_ids": [
+            "chapter.screenplay_revision.default"
+          ],
+          "rule_set_ref": "route-rules:chapter:screenplay_revision:v1",
+          "fallback_policy": "FAIL_CLOSED",
+          "fallback_policy_ref": "chapter.screenplay_revision.fail-closed",
+          "fallback_policy_version": 1,
+          "reasoning_downgrade_policy": "PROHIBITED",
+          "status": "ACTIVE"
+        },
+        "fallback_policy": {
+          "policy_id": "chapter.screenplay_revision.fail-closed",
+          "policy_version": 1,
+          "mode": "FAIL_CLOSED",
+          "allowed_route_ids": [],
+          "triggers": [],
+          "maximum_route_changes": 0,
+          "approval_required": true,
+          "quality_revalidation_required": true,
+          "status": "ACTIVE"
+        },
+        "backend_version": "1.0.0",
+        "auth_profile_ref": "auth:chatgpt-codex-cli:codex:d071cae862313ff0c96f8aacb21641ae3ae236a543f970c7733591ed43677bd4",
+        "prompt_version": "prompt-system:chapter-generation-pack@v3",
+        "skill_version": "prose-generation@prose-generation-v4",
+        "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+        "template_hash": "sha256:7fe85ce1d587c1c2ad299538397e4f2d00d3d8aade70f7232e925505f635dbe0",
+        "skill_content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+        "prompt_compiler_version": "chapter-prompt-compiler:v9",
+        "output_schema_ref": "schema:execution-output:revision-chapter-revise:v1",
+        "model_context_limit": 1000000,
+        "token_accounting_method": "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1",
+        "token_accounting_evidence_ref": "deepseek-official-2026-09-16",
+        "token_safety_margin": 256,
+        "token_framing_overhead": 16
+      }
+    },
+    "cost_accounting": {
+      "accounting_basis": "MIXED",
+      "authorization_ref": "sol40-20261005T112522Z:approved-deepseek-review20-v2",
+      "authorized_total_usd": "20",
+      "monetary_cost_status": "PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN"
+    },
+    "runtime_settings": {
+      "NOVEL_FORGE_CODEX_ACCOUNTING_MODE": "ACCOUNT_ENTITLEMENT",
+      "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+      "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF": "local-configured-chatgpt-account",
+      "NOVEL_FORGE_CODEX_CONFIGURATION_REF": "sol40-20261005T112522Z:authorized-gpt-6-sol-medium-v1",
+      "NOVEL_FORGE_CODEX_CLI_VERSION": "codex-cli 0.155.1",
+      "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256": "sha256:8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e",
+      "NOVEL_FORGE_CODEX_RETRY_POLICY": "codex-no-transport-retry.v1",
+      "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT": "1600",
+      "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT": "80000000",
+      "NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT": "262144",
+      "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT": "medium",
+      "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE": "{\"codex-cli\": [\"agent_session\", \"arc_plan.generate\", \"book_plan.generate\", \"canon_extraction\", \"canon_high_impact_conflict\", \"chapter_group_plan.generate\", \"chapter_plan.generate\", \"character.cast.generate\", \"character.generate\", \"character_analysis\", \"classification\", \"climax\", \"context_compress\", \"core_character_arc\", \"core_world_rules\", \"creative.candidates.generate\", \"creative_foundation.generate\", \"critical_chapter\", \"cross_volume_repair\", \"deconstruction\", \"draft\", \"ending.generate\", \"ending.intent.generate\", \"fact_candidate\", \"knowledge_extraction\", \"major_reversal\", \"memo\", \"metadata\", \"reader.promise.generate\", \"reader_promise.generate\", \"relationship_analysis\", \"retrieval_query\", \"retrieval_query_expansion\", \"revision\", \"screenplay_generate\", \"screenplay_revision\", \"source.content.classify\", \"source.deconstruction.observe\", \"source.mkaos.extract\", \"summary\", \"tagging\", \"theme.candidates.generate\", \"theme.generate\", \"volume_plan.generate\", \"world.design.generate\", \"world.generate\", \"world_candidates.actor_0\", \"world_candidates.actor_1\", \"world_candidates.actor_2\", \"world_candidates.generate\"], \"deepseek\": [\"canon_support\", \"context_fidelity\", \"longform_prose_review\", \"narrative_semantic_evaluation\", \"quality_commercial\", \"quality_longform\", \"quality_platform\", \"quality_source_originality\", \"quality_structural\", \"reader_outcome\", \"rereview\", \"review\", \"screenplay_review\", \"world_candidates.evaluate\"]}",
+      "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL": "2",
+      "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP": "20",
+      "NOVEL_FORGE_DAILY_PROVIDER_CAP": "20",
+      "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP": "20",
+      "NOVEL_FORGE_OPERATION_PROVIDER_CAP": "20",
+      "NOVEL_FORGE_BOOK_OPENING_PROVIDER_CALL_LIMIT": "160",
+      "NOVEL_FORGE_BOOK_OPENING_PROVIDER_TOKEN_LIMIT": "8000000",
+      "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT": "262144",
+      "NOVEL_FORGE_BOOK_OPENING_PROVIDER_COST_LIMIT": "4",
+      "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT": "2",
+      "NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY": "{\"accounting_basis\": \"ACCOUNT_ENTITLEMENT\", \"authorization_ref\": \"sol40-20261005T112522Z:user-normal-budget:codex-v1\", \"authorization_version\": \"sol40-20261005T112522Z:authorized-gpt-6-sol-medium-v1\", \"cost_observability\": \"UNKNOWN\", \"currency\": \"UNKNOWN\", \"execution_mode\": \"PROVIDER_ALLOWED\", \"model_id\": \"gpt-6-sol\", \"per_call_token_limit\": 262144, \"provider\": \"codex-cli\", \"provider_call_limit\": 160, \"token_limit\": 8000000}"
+    },
+    "comparison_budget": {
+      "contract_version": "creative-provider-campaign-budget.v4",
+      "experiment_id": "sol40-20261005T112522Z",
+      "manifest_hash": "sha256:d49c16e69ce3f8e79a11ba9fd54cf59efdf203eafb76a85a378b4c93ac8508bc",
+      "expires_at": "2026-10-12T00:00:00+00:00",
+      "accounting_basis": "MIXED",
+      "shared_total": {
+        "calls": 1600,
+        "tokens": 80000000,
+        "priced_usd": "20"
+      },
+      "arms": [
+        {
+          "arm": "SINGLE",
+          "project_id": "nf-sol40-20261005T112522Z",
+          "book_id": "nf-sol40-20261005T112522Z-book",
+          "project_total": {
+            "calls": 1600,
+            "tokens": 80000000,
+            "priced_usd": "20"
+          },
+          "chapter_ranges": {
+            "PRODUCTION": [
+              1,
+              40
+            ]
+          },
+          "reference_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "screening_allocation": {
+            "calls": 40,
+            "tokens": 2000000,
+            "priced_usd": "0"
+          },
+          "calibration_allocation": {
+            "calls": 40,
+            "tokens": 2000000,
+            "priced_usd": "1"
+          },
+          "holdout_allocation": {
+            "calls": 20,
+            "tokens": 1000000,
+            "priced_usd": "0"
+          },
+          "source_allocation": {
+            "calls": 0,
+            "tokens": 0,
+            "priced_usd": "0"
+          },
+          "design_allocation": {
+            "calls": 160,
+            "tokens": 8000000,
+            "priced_usd": "4"
+          },
+          "production_allocation": {
+            "calls": 1180,
+            "tokens": 59000000,
+            "priced_usd": "12"
+          },
+          "repair_allocation": {
+            "calls": 160,
+            "tokens": 8000000,
+            "priced_usd": "3"
+          }
+        }
+      ],
+      "entitlements": [
+        {
+          "provider": "codex-cli",
+          "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+          "calls": 1600,
+          "tokens": 80000000
+        }
+      ],
+      "previous_policy": {
+        "policy_version": "sol40-20261005T112522Z:normal-budget-v1",
+        "policy_hash": "518a3fbde18eb9d91f85db221061ad0eb240ba88b71a3106e362bd58664ca514",
+        "contract_hash": "sha256:53c94b2cc1e5b68e63ca1d0892ddf690abc8fc28320b097eadfabbfce57b7c59"
+      }
+    },
+    "input_snapshot": {
+      "manifest_file_hash": "sha256:c1f6c00c956af5b326630c7accd7e0f322e8ed861736e90c89b74f92e4591eda",
+      "integrity": "PINNED_MANIFEST_AND_FILES",
+      "files": {
+        "brief": {
+          "name": "brief.json",
+          "content_hash": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266"
+        },
+        "creation": {
+          "name": "creation.json",
+          "content_hash": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff"
+        },
+        "formation": {
+          "name": "formation.json",
+          "content_hash": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460"
+        },
+        "knowledge": {
+          "name": "deny-all.json",
+          "content_hash": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da"
+        },
+        "budget": {
+          "name": "budget.json",
+          "content_hash": "sha256:9492abd13196d13855ea586199fc3a964cf5a0c54dfa451ca64943acc7c59c7f"
+        }
+      }
+    },
+    "runtime_identity": {
+      "project_id": "nf-sol40-20261005T112522Z",
+      "book_id": "nf-sol40-20261005T112522Z-book",
+      "workspace_id": "nf-sol40-20261005T112522Z-workspace",
+      "run_key": "sol40-20261005T112522Z:author-v2-fantasy-comedy",
+      "runtime_root": "/Users/yuan/.codex/worktrees/work-intent-context-e2e/novel-forge",
+      "provider_execution_root": "/Users/yuan/.local/share/novel-forge/runs/sol40-20261005T112522Z/codex-executions"
+    }
+  },
+  "execution_freeze_manifest_hash": "sha256:c1f6c00c956af5b326630c7accd7e0f322e8ed861736e90c89b74f92e4591eda",
+  "immutable_author_bytes_preserved": true,
+  "resume_roundtrip": "PASS",
+  "changed_router_effort_changes_resume_identity": true,
+  "native_effect_facts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0
+  },
+  "real_provider_calls": 0,
+  "accepted_chapters": 0,
+  "formal_execute_called": false,
+  "not_a_book_checkpoint": true
+}

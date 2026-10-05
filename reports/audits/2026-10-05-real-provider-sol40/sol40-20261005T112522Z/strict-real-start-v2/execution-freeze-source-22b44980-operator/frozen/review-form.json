@@ -1,0 +1,55 @@
+{
+  "axes": {
+    "causality": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    },
+    "character": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    },
+    "desire_to_continue": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    },
+    "knowledge_accuracy": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    },
+    "natural_integration": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    },
+    "pacing": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    },
+    "voice": {
+      "chapter": null,
+      "quote": null,
+      "reason": null,
+      "score": null
+    }
+  },
+  "knowledge_accuracy_reference": "Use the same approved abstract mechanism reference sheet for both samples after prose-only evaluation; keep treatment identity hidden.",
+  "reviewer_id": null,
+  "sample_token": null,
+  "scale": {
+    "maximum": 5,
+    "minimum": 1,
+    "unknown": "CANNOT_JUDGE"
+  },
+  "status": "NOT_REVIEWED"
+}

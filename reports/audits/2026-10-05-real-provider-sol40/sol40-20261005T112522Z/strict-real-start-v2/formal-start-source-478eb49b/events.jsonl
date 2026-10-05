@@ -1,0 +1,1 @@
+{"kind": "FAILURE", "stage": "CONFIGURATION", "error": {"type": "ValueError", "message": "account entitlement cannot use monetary Provider caps: NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL, NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP"}}

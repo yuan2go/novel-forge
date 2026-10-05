@@ -1,0 +1,1 @@
+{"kind": "FAILURE", "stage": "CONFIGURATION", "error": {"type": "ValueError", "message": "a configured operator Principal is required"}}

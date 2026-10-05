@@ -1,0 +1,50 @@
+{
+  "source_sha": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "compiler_principal": "operator:sol40-20261005T112522Z",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "evidence_class": "OFFLINE",
+  "packs": [
+    {
+      "pack_id": "chapter_generation_pack",
+      "pack_version": "2.12.0",
+      "compilation_id": "1c1b9b27-4449-4d65-8d4b-d9137ce262fe",
+      "manifest_hash": "sha256:152c10085b78582589efd5caacd0c5e24d3b9dc2b3a0b2ac9155fe6580c66f3b",
+      "compilation_hash": "sha256:175fe40f242905e2d339b5fc1fdd4e131f95289eadb04518b382b2877695eeed",
+      "approved": false,
+      "activated": false,
+      "compilation_status": "TRUSTED"
+    },
+    {
+      "pack_id": "story_planning_pack",
+      "pack_version": "2.10.0",
+      "compilation_id": "4ff6955a-75a5-4ca0-a9bf-fd12191dbfa9",
+      "manifest_hash": "sha256:0d5a1696458356451bfe3ef80fe8012886bb385ffd2b43f80818d97c850a76eb",
+      "compilation_hash": "sha256:bab887fdbecc1573d58e815fca8d4c2fa8daea9ab004814efc1a718918d9ad7c",
+      "approved": false,
+      "activated": false,
+      "compilation_status": "TRUSTED"
+    },
+    {
+      "pack_id": "narrative_semantic_evaluation_pack",
+      "pack_version": "2.12.0",
+      "compilation_id": "aeea0b3a-9477-4b5f-b43b-656daf85a254",
+      "manifest_hash": "sha256:f8193d353fb7609d2e2ee000f0344238334fbb38c6e1c52d4cd3830e3e7f9c17",
+      "compilation_hash": "sha256:0a5716d6be4a66429b87a6ac5b045ff988535ef12396d6d8c7ec019525f03733",
+      "approved": false,
+      "activated": false,
+      "compilation_status": "TRUSTED"
+    },
+    {
+      "pack_id": "reader_outcome_pack",
+      "pack_version": "1.2.0",
+      "compilation_id": "b3f5c0cc-915c-46e8-84f4-4fa95aff577c",
+      "manifest_hash": "sha256:551432064215e59bb576d6bdceba2f9abb39bd1b4badd6ef8be1f781becba373",
+      "compilation_hash": "sha256:ec721601b3a832ed4d6279ecedeb8ba94f35a5a7ac45c1f1e8637b63f5eedcd4",
+      "approved": false,
+      "activated": false,
+      "compilation_status": "TRUSTED"
+    }
+  ],
+  "provider_calls": 0,
+  "duties_separation_preserved": true
+}

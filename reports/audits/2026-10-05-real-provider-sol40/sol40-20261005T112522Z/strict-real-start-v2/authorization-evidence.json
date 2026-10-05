@@ -1,0 +1,34 @@
+{
+  "schema_version": "operator-authorization-evidence.v1",
+  "source": "DIRECT_HUMAN_MESSAGE_IN_CURRENT_TASK",
+  "user_quote": "允许预算方案，开始验证",
+  "approved_proposal": {
+    "codex_provider": "codex-cli",
+    "codex_model": "gpt-6-sol",
+    "reasoning_effort": "medium",
+    "independent_reviewer_provider": "deepseek",
+    "priced_usd_ceiling": "20",
+    "shared_calls_ceiling": 1600,
+    "shared_tokens_ceiling": 80000000,
+    "book_chapters": 40,
+    "chapter_han_characters": [
+      5000,
+      6000
+    ],
+    "genre": "玄幻轻喜剧"
+  },
+  "paid_provider_scope": [
+    "INDEPENDENT_REVIEW",
+    "REREVIEW",
+    "SEMANTIC_EVALUATION_AND_QUALIFICATION"
+  ],
+  "scope_reason": "The approved prior proposal confines DeepSeek to independent review and semantic evaluation; generation remains the named Codex model.",
+  "authorization_ref": "sol40-20261005T112522Z:approved-deepseek-review20-v2",
+  "predecessor_policy": {
+    "policy_version": "sol40-20261005T112522Z:normal-budget-v1",
+    "policy_hash": "518a3fbde18eb9d91f85db221061ad0eb240ba88b71a3106e362bd58664ca514",
+    "contract_hash": "sha256:53c94b2cc1e5b68e63ca1d0892ddf690abc8fc28320b097eadfabbfce57b7c59"
+  },
+  "source_and_external_knowledge": "DENY_ALL_SOURCE_IMPORT_PENDING",
+  "no_automatic_budget_renewal": true
+}
