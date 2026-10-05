@@ -1,11 +1,8 @@
 from __future__ import annotations
-
 from copy import deepcopy
 import hashlib
 import json
 from typing import Any, Mapping, Sequence
-
-
 from novel_forge.modules.command_kernel.errors import KernelError
 
 PROSE_REVIEW_DEFINITION = "longform.prose_review"
@@ -134,6 +131,7 @@ def freeze_manifest(
     book_run_id: str,
     sources: Sequence[Mapping[str, Any]],
     policy: Mapping[str, Any],
+    work_intent: bool = True,
 ) -> dict[str, Any]:
     required = {
         "policy_version",
@@ -202,6 +200,18 @@ def freeze_manifest(
             )
         }
         record.update(text_hash=text_digest(text), codepoints=len(text))
+        if work_intent:
+            from novel_forge.modules.chapter_authority.chapter_plan_views import (
+                validate_creative_baseline,
+            )
+            baseline = source.get("creative_baseline")
+            record["creative_baseline"] = validate_creative_baseline(baseline) if baseline is not None else None
+            if baseline is not None and baseline["chapter"] != record["chapter_number"]:
+                raise KernelError(
+                    "LONGFORM_PROSE_SOURCE_BASELINE_DRIFT",
+                    "Accepted prose and its creative baseline must identify the same chapter",
+                )
+            record["work_intent_status"] = "FROZEN_CANDIDATE_BASELINE" if baseline is not None else "UNKNOWN_LEGACY_BASELINE"
         if policy.get("relation_retrieval_version") == "accepted-state-relations.v2":
             record["relation_evidence_digest"] = completion_digest(source.get("relation_evidence", []))
         records.append(record)
@@ -241,7 +251,7 @@ def freeze_manifest(
             "manifest needs distinct accepted chapters",
         )
     body = {
-        "schema_version": "longform-prose-manifest.v1",
+        "schema_version": "longform-prose-manifest.v2" if work_intent else "longform-prose-manifest.v1",
         "project_id": project_id,
         "workspace_id": workspace_id,
         "book_run_id": book_run_id,

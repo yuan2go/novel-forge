@@ -1,12 +1,8 @@
 from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Any
-
 from novel_forge.modules.command_kernel.errors import KernelError
-
 from .foundation import FoundationBinding, FoundationRole, foundation_upstream_digest
-
 
 _CREATIVE_FIELDS = (
     "target_reader",
@@ -65,7 +61,7 @@ def validate_foundation_layer(
     }
     work_requirements = (
         dict(content.get("constraint_envelope") or {}).get("contract_version")
-        == "foundation-generation.v2"
+        in {"foundation-generation.v2", "foundation-generation.v3"}
     )
     if work_requirements:
         from novel_forge.modules.story_planning_runtime.foundation_generation import (

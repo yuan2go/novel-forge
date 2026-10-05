@@ -1,22 +1,20 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, replace
 import json
 from typing import Any
 from uuid import uuid4
-
 from novel_forge.modules.chapter_authority.contracts import (
+    QUALITY_GROUP_NODES,
     ChapterHandlerRegistry,
     ChapterNode,
-    QUALITY_GROUP_NODES,
 )
 from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_SLICE_DEFINITION_VERSION,
     CHAPTER_SLICE_ROOT_DEFINITION_NAME,
     CHAPTER_SLICE_ROOT_HANDLER_KEY,
+    chapter_definition_version,
     chapter_operation_definitions,
     chapter_root_operation_definition,
-    chapter_definition_version,
 )
 from novel_forge.modules.chapter_authority.evidence import (
     build_chapter_slice_evidence_manifest,
@@ -392,7 +390,7 @@ def run_single_chapter_slice(
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if definition_version == "3.6.0"
+                        if definition_version in {"3.6.0", "3.7.0"}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )
@@ -688,7 +686,7 @@ def _command(
 ) -> dict[str, Any]:
     if definition_name == ChapterNode.DRAFT.definition_name and (request.preparation_report or {}).get("author_draft_adoption"):
         from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
-        definition_version = CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+        definition_version = ("3.6.0-author-input.v2" if definition_version == "3.6.0" else CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
     return {
         "definition_name": definition_name,
         "definition_version": definition_version,
@@ -905,6 +903,7 @@ def _retrieval_admission_snapshot(
     dependencies = None
     if str(dict(dict(request.preparation_report or {}).get("stage_context_profile_versions") or {}).get("draft") or "") == "draft-context-profile-v4":
         from novel_forge.modules.context_builder.production_retrieval import build_task_dependency_refs
+
         from .context_compression_provider import compression_boundary_identity
 
         current_candidates = [

@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
@@ -7,7 +6,6 @@ import hashlib
 import json
 import math
 from typing import Any, Mapping, Protocol
-
 from novel_forge.modules.chapter_authority.contracts import (
     ChapterHandlerRequest,
     resolve_stage_context_token_budget,
@@ -17,7 +15,6 @@ from novel_forge.modules.command_kernel.provider_failure_accounting import (
     failed_provider_budget_decision as _model_failed_provider_budget_decision,
     failed_provider_measurement as _failed_provider_measurement,
 )
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
@@ -514,7 +511,7 @@ class ExternalEffectChapterModelPort:
             "workspace_id": request.workspace_id,
             "_production_execution": {
                 **({"creative_requirements_contract": "work-requirements.v1"}
-                   if request.work_requirements_enabled else {}),
+                   if isinstance(request, ChapterHandlerRequest) and request.work_requirements_enabled else {}),
                 "operation_id": request.operation_id,
                 "attempt_id": request.attempt_id,
                 "fencing_token": execution_fencing_token,
@@ -1940,8 +1937,18 @@ def _normalize_model_output(
             normalized.append(
                 {**item, "code": code, "severity": severity, "message": message}
             )
-        decision = "NEEDS_REVISION" if normalized or score < 80 else "PASSED"
+        from .provider_output_contracts import is_work_review_schema_ref
+        from novel_forge.modules.review.diagnostics import prose_repair_diagnoses
+
+        work_review = is_work_review_schema_ref(output_schema_ref)
+        # WHY: Scores and non-executable advice cannot manufacture an edit scope.
+        requires_repair = (
+            bool(prose_repair_diagnoses({"issues": normalized}, work_requirements=True))
+            if work_review else bool(normalized) or score < 80
+        )
+        decision = "NEEDS_REVISION" if requires_repair else "PASSED"
         return {
+            **({"review_decision_contract": "work-review-decision.v1"} if work_review else {}),
             "decision": decision,
             "score": score,
             "issues": normalized,
@@ -2125,11 +2132,16 @@ def _normalize_model_output(
         for item in raw.get("resolved_issue_codes", [])
         if str(item).strip()
     ]
-    from .provider_output_contracts import is_targeted_revision_schema_ref
+    from .provider_output_contracts import (
+        allows_empty_revision_schema_ref,
+        is_targeted_revision_schema_ref,
+    )
 
     targeted_edits_only = is_targeted_revision_schema_ref(output_schema_ref)
     if not text.strip() and not raw.get("scene_artifacts") and not (
-        targeted_edits_only and raw.get("edits")
+        targeted_edits_only
+        and isinstance(raw.get("edits"), list)
+        and (raw["edits"] or allows_empty_revision_schema_ref(output_schema_ref))
     ):
         raise KernelError(
             "MODEL_RESPONSE_INVALID", "revision response has no revised prose"

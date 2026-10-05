@@ -1,11 +1,9 @@
 from __future__ import annotations
-
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Mapping, Sequence
 from uuid import uuid4
-
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.capability_packs.artifacts import (
     ArtifactKind,
@@ -39,7 +37,6 @@ from novel_forge.modules.production_execution.capability_registry import (
     default_capability_registry,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .definitions import (
     CAPABILITY_PACK_ADMIN_HANDLER_KEY,
     CAPABILITY_PACK_AUTHORITY_OPERATIONS,
@@ -449,7 +446,7 @@ def _select_capability_skill(
     calibrated = {str(item.get("skill_ref")): str(item.get("version")) for item in skills}
     if capability_id == "reader.promise.generate" and calibrated.get("topic-development") == "topic-development-qualification-v2":
         preferred_skill = "topic-development"
-    if capability_id in {"planning.book.generate", "planning.volume.generate", "planning.arc.generate", "planning.chapter_group.generate"} and calibrated.get("long-outline") == "long-outline-v2":
+    if capability_id in {"planning.book.generate", "planning.volume.generate", "planning.arc.generate", "planning.chapter_group.generate"} and calibrated.get("long-outline") in {"long-outline-v2", "long-outline-v3"}:
         preferred_skill = "long-outline"
     preferred = [
         dict(item)

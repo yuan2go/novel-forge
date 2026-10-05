@@ -185,7 +185,7 @@ and served model identity. Its group report retains these references and marks t
 dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
 a global Quality profile. Native reference calibration recognizes the current Chapter
-definition `3.6.0` and recoverable frozen `3.4.1`/`3.5.0`; other versions remain ineligible.
+definition `3.7.0` and recoverable frozen `3.4.1`/`3.5.0`/`3.6.0`; other versions remain ineligible.
 Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
 For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
@@ -1108,13 +1108,26 @@ objective interface limits remain separate hard boundaries. Private author spans
 host-side except for explicitly permitted role/scope projections.
 
 The 2026-10-04 Prompt/Skill audit remains historical diagnostic evidence. Current
-new Planning Pack 2.9.0 uses `story-planning` 1.17.0, `foundation-generation.v2`, BookDesign v6
-and work qualification profiles v2. Optional costs, escalation, rewards and closure
-use explicit applicability with rationale; null is not missing or unknown. A selected
+new Planning Pack 2.10.0 uses `story-planning` 1.18.0, `foundation-generation.v3`, BookDesign v7
+and work qualification profiles v3. Theme exploration and ending alignment follow selected
+methods; absent choices or closure are evaluated against the coherent chosen alternative,
+with PASS alignment evidence and no repair, not as missing universal requirements.
+Explicit commitments still fail when missing. Profile semantics participate in the hash.
+BookDesign and Formation use the same explicit 1–10000 chapter range, and volume allocation
+exactly covers the selected positive length. Optional costs, escalation, rewards and closure
+use explicit applicability with rationale; null is interpreted through that declaration,
+and UNDETERMINED does not establish that a method is absent. A selected
 requirement or an existing due obligation remains mandatory. Old generation v1,
 BookDesign v5 and historical profile hashes retain their original contracts.
 
-Chapter 3.6.0 and Pack 2.10.0/template v8 freeze `work-requirements.v1` semantics.
+Chapter 3.7.0 and Pack 2.11.0/template v9 retain `work-requirements.v1` semantics.
+Ordinary bounded revision permits empty edits when there are no executable prose diagnoses;
+hard findings still require resolution and aesthetic/evidence advice cannot authorize changes.
+Planning 1.17, Foundation v2, BookDesign v6, work profiles v2 and Chapter 3.6/template v8
+remain available for frozen recovery with their exact prior identities.
+New Longform Prose Review Pack 1.3 and windows/manifests v2 freeze the accepted candidate creative baseline per
+source chapter, including an explicit UNKNOWN legacy basis. They do not infer a genre or
+require transformation; old v1 windows rebuild and resume with their original source identity.
 Production Preparation preserves independent `style_policy.constraints` and rejects
 conflicting duplicate representations. Draft Plan/Style v2 and ExecutionIntent v4
 carry Chapter style, POV, target length, author guidance and selected methods. The
@@ -1476,7 +1489,7 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.10.0 binds System v3, Prompt Template v8 and
+reconciliation chain. Chapter Pack 2.11.0 binds System v3, Prompt Template v9 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot

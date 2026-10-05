@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
@@ -7,9 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Any, Callable
-
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
-
 from novel_forge.modules.capability_pack_authority import (
     CapabilityPackAttemptSnapshot,
 )
@@ -23,8 +20,8 @@ from novel_forge.modules.command_kernel.asset_commands import (
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetReservationRequest,
     reserve_provider_budget,
-    resolve_provider_token_reservation_contract,
     resolve_provider_budget_failure,
+    resolve_provider_token_reservation_contract,
     settle_provider_budget,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -116,15 +113,14 @@ from novel_forge.storage.authority_asset_store import (
     AuthorityAssetWriter,
 )
 from novel_forge.storage.database_runtime import get_database_runtime
-
 from .binder import PreparedPlanningExecution
 from .domain import (
     CHAPTER_READER_SCHEDULE_FIELDS,
     CHAPTER_SCHEDULE_FIELDS,
-    FrozenPlanningInput,
     STORY_PLANNING_MAX_ATTEMPTS,
     STORY_PLANNING_OPERATION_DEFINITION_REF,
     STORY_PLANNING_OPERATION_TIMEOUT_SECONDS,
+    FrozenPlanningInput,
     StoryPlanningGenerationCommand,
     build_planning_constraint_envelope,
     canonical_hash,
@@ -135,14 +131,11 @@ from .narrative_search import (
     NARRATIVE_SEARCH_PROJECTION_VERSION,
     narrative_search_projection_schema,
 )
-
-
 from .foundation_generation import (
     FOUNDATION_GENERATORS,
     foundation_output_schema,
     foundation_task,
 )
-
 
 _PLANNING_STAGES = frozenset(
     {
@@ -2320,6 +2313,7 @@ def planning_provider_output_schema(
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
     work_requirements: bool = False,
+    aligned_methods: bool = False,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -2760,7 +2754,7 @@ def planning_provider_output_schema(
         )
     )
     if work_requirements:
-        _apply_work_planning_schema(properties)
+        _apply_work_planning_schema(properties, isolated=aligned_methods)
     if contract_type is PlanContractType.CHAPTER:
         realization = dict(narrative_realization or {})
         if not realization:
@@ -2847,7 +2841,7 @@ def planning_provider_output_schema(
     }
 
 
-def _apply_work_planning_schema(properties: dict[str, Any]) -> None:
+def _apply_work_planning_schema(properties: dict[str, Any], *, isolated: bool = False) -> None:
     optional_text = set(
         "central_conflict_engine protagonist_transformation antagonist_escalation stage_conflict stage_antagonist irreversible_change midpoint climax next_volume_bridge resistance escalation turn choice cost trigger resistance_escalation local_climax information_release antagonist_actions promise_action foreshadow_action reward_action ending_hook reward_mode expected_change".split()
     )
@@ -2878,6 +2872,19 @@ def _apply_work_planning_schema(properties: dict[str, Any]) -> None:
         if isinstance(node.get("items"), dict):
             visit(node["items"])
 
+    if isolated:
+        # WHY: deepcopy retains aliases; rebuild each occurrence before nullable mutations.
+        def detach(value: Any) -> Any:
+            if isinstance(value, dict):
+                return {key: detach(child) for key, child in value.items()}
+            if isinstance(value, list):
+                return [detach(child) for child in value]
+            return value
+
+        detached = detach(properties)
+        properties.clear()
+        properties.update(detached)
+        optional_text.add("conflict")
     visit({"properties": properties})
     if "chapter_contract_schema_version" in properties:
         properties["chapter_contract_schema_version"]["const"] = (
@@ -3804,10 +3811,11 @@ class PostgresPlanningExecutionPreparer:
         definition: GeneratorDefinition,
         attempt_snapshot: CapabilityPackAttemptSnapshot,
     ) -> PreparedPlanningExecution:
-        from .world_preparation import PlanningWorldPreparation
         from novel_forge.modules.production_execution.domain_execution import (
             DomainModelOperation,
         )
+
+        from .world_preparation import PlanningWorldPreparation
 
         arguments = dict(
             operation_id=operation_id,
@@ -3951,7 +3959,7 @@ class PostgresPlanningExecutionPreparer:
         output_schema = (
             foundation_output_schema(
                 command.generator_operation_name,
-                work_requirements=command.execution_contract_version == "1.17.0",
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
             )
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else planning_provider_output_schema(
@@ -3970,7 +3978,8 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
-                work_requirements=command.execution_contract_version == "1.17.0",
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+                aligned_methods=command.execution_contract_version == "1.18.0",
             )
         )
         if (
@@ -4010,9 +4019,9 @@ class PostgresPlanningExecutionPreparer:
             )
         )
         if command.generator_operation_name in FOUNDATION_GENERATORS:
-            output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v{2 if command.execution_contract_version == '1.17.0' else 1}"
-        if command.execution_contract_version == "1.17.0" and command.generator_operation_name not in FOUNDATION_GENERATORS:
-            output_schema_ref += ":work-v2"
+            output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v{3 if command.execution_contract_version == '1.18.0' else 2 if command.execution_contract_version == '1.17.0' else 1}"
+        if command.execution_contract_version in {"1.17.0", "1.18.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            output_schema_ref += ":work-v3" if command.execution_contract_version == "1.18.0" else ":work-v2"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4142,7 +4151,8 @@ class PostgresPlanningExecutionPreparer:
             },
             candidate_payload={},
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version == "1.17.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+            aligned_methods=command.execution_contract_version == "1.18.0",
         )
         try:
             context_policy = json.loads(frozen.context_policy_payload_json)
@@ -4163,14 +4173,15 @@ class PostgresPlanningExecutionPreparer:
                         "foundation_task": foundation_task(
                             command.generator_operation_name,
                             work_requirements=command.execution_contract_version
-                            == "1.17.0",
+                            in {"1.17.0", "1.18.0"},
+                            aligned_methods=command.execution_contract_version == "1.18.0",
                         )
                     }
                     if command.generator_operation_name in FOUNDATION_GENERATORS
                     else {}
                 ),
                 "planning_command": {
-                    **({"creative_requirements_contract": "work-requirements.v1"} if command.execution_contract_version == "1.17.0" else {}),
+                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version == "1.18.0" else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0"} else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "generation_operation_id": operation_id,
@@ -5399,7 +5410,8 @@ class PostgresPlanningExecutionPreparer:
                     "foundation_task": foundation_task(
                         command.generator_operation_name,
                         work_requirements=command.execution_contract_version
-                        == "1.17.0",
+                        in {"1.17.0", "1.18.0"},
+                        aligned_methods=command.execution_contract_version == "1.18.0",
                     )
                 }
                 if command.generator_operation_name in FOUNDATION_GENERATORS
@@ -5431,10 +5443,12 @@ class PostgresPlanningExecutionPreparer:
                     "capability_id": profile.capability_id,
                     "skill_ref": profile.skill_ref,
                     "criteria": list(profile.criteria),
+                    **({"criterion_semantics": profile.criterion_semantics} if profile.criterion_semantics else {}),
                 }
                 for profile in required_qualification_profiles(
                     command.generator_operation_name,
-                    work_requirements=command.execution_contract_version == "1.17.0",
+                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+                    profile_version="3.0.0" if command.execution_contract_version == "1.18.0" else "2.0.0",
                 )
             ],
             "trace_id": command.trace_id,

@@ -44,10 +44,31 @@ from tests.integration.synthesis_production_support import SynthesisTransport
 from tests.integration.test_core_functional_loops_postgres import _principal
 
 
-@pytest.mark.parametrize("author_guided,result_repair,runtime_recovery,evaluation_recovery,manual_review", [(False, False, False, False, False), (True, False, False, False, False), (False, True, False, False, False), (False, False, True, False, False), (False, False, False, True, False), pytest.param(False, False, False, False, True, id="manual-second-candidate")])
-def test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery, evaluation_recovery, manual_review):
+@pytest.mark.parametrize(
+    "author_guided,result_repair,runtime_recovery,evaluation_recovery,manual_review,advice_only,target_chapters",
+    [
+        pytest.param(False, False, False, False, False, False, 3, id="current-production"),
+        pytest.param(True, False, False, False, False, False, 3, id="author-guided"),
+        pytest.param(False, True, False, False, False, False, 3, id="result-repair"),
+        pytest.param(False, False, True, False, False, False, 3, id="legacy-runtime-recovery"),
+        pytest.param(False, False, False, True, False, False, 3, id="evaluation-recovery"),
+        pytest.param(False, False, False, False, True, False, 3, id="manual-second-candidate"),
+        pytest.param(False, False, False, False, False, True, 3, id="advice-only-production"),
+        pytest.param(False, False, False, False, False, False, 1, id="single-chapter-production"),
+    ],
+)
+def test_native_formation_generates_foundation_from_author_brief(
+    tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
+    evaluation_recovery, manual_review, advice_only, target_chapters,
+):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
+    if advice_only:
+        from novel_forge.modules.review.prose_window import WINDOW_POLICY
+
+        fixture_production_profile["cross_chapter_review_policy"] = {
+            "version": WINDOW_POLICY, "source_token_budget": 8000,
+        }
     harness = CapabilityPackPostgresHarness(
         "synthesis-formation-author" if author_guided else "synthesis-formation",
         production_profile=fixture_production_profile,
@@ -85,7 +106,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
         historical.setattr(formation_generation, "StoryPlanningGenerationCommand", lambda **values: replace(original_command(**values), execution_contract_version="1.15.0"))
     definition = story_planning_generation_definition(
         application_build_id="synthesis-formation", commit_sha=RELEASE_SHA,
-        definition_version="1.15.0" if runtime_recovery else "1.17.0",
+        definition_version="1.15.0" if runtime_recovery else "1.18.0",
     )
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.repositories.definitions.register(definition)
@@ -183,6 +204,10 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
     )
     registry = ProviderAdapterRegistry()
     transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
+    if advice_only:
+        from tests.integration.synthesis_production_support import AdviceOnlySynthesisChapterTransport
+
+        transport.chapter = AdviceOnlySynthesisChapterTransport()
     if result_repair:
         normal_planning = transport.planning
         damaged_world = False
@@ -246,7 +271,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                         "contract_version": "formation-generation.v2",
                         "approval_mode": "REVIEW_PLAN" if manual_review else "AUTO",
                         "creative_candidates": 2,
-                        "target_chapters": 3,
+                        "target_chapters": target_chapters,
                         "title": "Witness Map",
                         **({} if manual_review else {"auto_authorization": {
                             "contract_version": "formation-auto-authorization.v1",
@@ -594,6 +619,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
             ).read_text()
         )
         policy["profiles"]["production_profile"]["content"].update(fixture_production_profile)
+        policy["profiles"]["production_profile"]["content"]["target_chapter_count"] = target_chapters
         prepared = prepare_creation_inputs(
             composition=composition,
             content=content,
@@ -643,7 +669,7 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
                 snapshot,
                 actor=principal.principal_id,
                 run_key=f"{harness.project_id}:synthesis:production",
-                chapters=3,
+                chapters=target_chapters,
             ),
             principal=principal,
         )
@@ -672,7 +698,47 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
             chapter_application=chapter,
             book_run_id=book_run.book_run_id,
             transport=transport.chapter,
+            minimum_chapters=min(2, target_chapters),
         )
+        if advice_only:
+            from novel_forge.modules.review.diagnostics import prose_repair_diagnoses
+
+            for workspace in workspaces["workspaces"]:
+                candidates = {item["asset_type"]: item for item in workspace["artifacts"]["candidates"]}
+                draft = candidates["draft_chapter"]["content"]
+                revision = candidates["draft_version"]["content"]
+                assert revision["text"] == draft["text"]
+                assert revision["scene_artifacts"] == draft["scene_artifacts"]
+                assert candidates["best_draft_candidate"]["content"]["selected_source_asset_version_id"] == candidates["draft_chapter"]["asset_version_id"]
+            reviews = [call for call in transport.chapter.calls if call["stage"] == "review"]
+            assert len(reviews) == 3
+            assert all(call["output"]["issues"][0]["judgment_kind"] == "AESTHETIC_SUGGESTION" for call in reviews)
+            revisions = [call for call in transport.chapter.calls if call["stage"] == "revision"]
+            assert len(revisions) == 3
+            assert any(call["input"]["review"].get("cross_chapter_window") for call in revisions)
+            assert all(not prose_repair_diagnoses(call["input"]["review"], work_requirements=True) for call in revisions)
+            targeted = [call for call in revisions if call["input"]["review"].get("cross_chapter_window") or call["input"]["review"].get("craft_targets")]
+            assert targeted
+            assert all(call["output"] == {"edits": [], "resolved_issue_codes": []} for call in targeted)
+            from novel_forge.modules.book_followup_authority.prose_coordinator import load_accepted_sources
+            from novel_forge.modules.book_followup_authority.prose_review import freeze_manifest
+
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                sources = load_accepted_sources(uow, book_run.book_run_id, harness.project_id)
+            baselines = {
+                workspace["acceptance"]["accepted_through_chapter"]: next(
+                    item["content"]["creative_baseline"] for item in workspace["artifacts"]["candidates"]
+                    if item["asset_type"] == "best_draft_candidate"
+                ) for workspace in workspaces["workspaces"]
+            }
+            assert {source["chapter_number"]: source["creative_baseline"] for source in sources} == baselines
+            manifest = freeze_manifest(
+                project_id=harness.project_id, workspace_id=harness.workspace_id,
+                book_run_id=book_run.book_run_id, sources=sources,
+                policy={"policy_version": "work-fixture", "window_codepoints": 2048,
+                        "overlap_codepoints": 64, "context_token_budget": 16000, "maximum_windows": 20},
+            )
+            assert all(source["work_intent_status"] == "FROZEN_CANDIDATE_BASELINE" for source in manifest["sources"])
         from novel_forge.modules.chapter_outcome.acceptance_contract import resolve_accepted_manuscript
 
         for workspace in workspaces["workspaces"]:
@@ -750,8 +816,8 @@ def test_native_formation_generates_foundation_from_author_brief(tmp_path, monke
         )
         from scripts.compare_creation_exports import chapters
         from scripts.creation_pilot import prepare_pilot_book
-        assert set(chapters(tmp_path)) == {1, 2, 3}
-        assert len(list(tmp_path.glob("accepted-chapter-*.txt"))) == 3
+        assert set(chapters(tmp_path)) == set(range(1, target_chapters + 1))
+        assert len(list(tmp_path.glob("accepted-chapter-*.txt"))) == target_chapters
         assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key=formation_key)["formation_run_id"] == admitted.formation_run_id
         assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="different-key") is None
         assert composition.opening.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key=f"{harness.project_id}:synthesis:opening")["opening_run_id"] == opening.opening_run_id

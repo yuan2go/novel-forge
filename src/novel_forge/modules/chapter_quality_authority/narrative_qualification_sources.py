@@ -1,15 +1,10 @@
 from __future__ import annotations
-
 from novel_forge.modules.story_design_authority.qualification import (
-    uses_work_requirements,
-)
-
-from decimal import Decimal, InvalidOperation
-from typing import Any
-
-from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profile_options,
     required_qualification_profiles,
 )
+from decimal import Decimal, InvalidOperation
+from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.hierarchical_planning.application import (
     PostgresHierarchicalPlanningAuthority,
@@ -22,9 +17,7 @@ from novel_forge.storage.narrative_realization_repositories import (
     NarrativeRealizationRepository,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .narrative_qualification import NarrativeReceipt, narrative_digest
-
 
 _LAYER_MAP = {
     "STORY_INTENT": "INTENT",
@@ -219,7 +212,7 @@ def load_native_narrative_receipts(
             if generator == "character.cast.generate":
                 layer = "FOUNDATION"
             profiles = required_qualification_profiles(
-                generator, work_requirements=uses_work_requirements(row[26])
+                generator, **qualification_profile_options(row[26])
             )
             expected_profiles = {
                 (profile.profile_id, profile.profile_hash) for profile in profiles

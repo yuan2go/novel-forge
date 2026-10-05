@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .prose_budget import frozen_prose_budget_scope
 from .prose_coordinator import load_accepted_sources
 from .prose_review import freeze_manifest, validate_window_report
@@ -38,7 +36,8 @@ def require_prose_planning_evidence(database_url, *, command, asset_version_id, 
             raise failure
         frozen_prose_budget_scope(uow.cursor, {"operation_id": operation, "command_payload": payload, "request_payload": request}, project_id=command.project_id)
         current = freeze_manifest(project_id=command.project_id, workspace_id=command.workspace_id, book_run_id=run_id,
-            sources=load_accepted_sources(uow, run_id, command.project_id), policy=manifest["policy"])
+            sources=load_accepted_sources(uow, run_id, command.project_id), policy=manifest["policy"],
+            work_intent=manifest["schema_version"] == "longform-prose-manifest.v2")
         if current["sources"] != manifest["sources"]:
             raise KernelError("PLANNING_PROSE_EVIDENCE_STALE", "Re-review the current accepted manuscript before replacing future plans")
         window = next((item for item in manifest["windows"] if item["window_id"] == document.content.get("window_id")), None)

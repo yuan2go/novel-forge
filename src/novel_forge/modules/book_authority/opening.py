@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timedelta
@@ -8,9 +7,7 @@ import json
 import re
 from typing import Any, Mapping
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_design_authority import (
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
@@ -19,8 +16,8 @@ from novel_forge.modules.book_design_authority import (
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.budget_runtime import (
     BudgetScopeRequest,
-    canonical_budget_reservation_snapshot,
     canonical_budget_policy,
+    canonical_budget_reservation_snapshot,
     create_or_get_budget_scope_in_uow,
     deterministic_budget_operation_binding_id,
     lock_budget_scope_in_uow,
@@ -47,7 +44,6 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.foundation_repositories import (
     require_current_foundation_set,
 )
-
 from .input_resolver import (
     BookProductionInputResolver,
     BookProductionInputSnapshot,
@@ -72,7 +68,6 @@ from .recovery import (
     book_opening_execution_contract_version,
     book_opening_runtime_job_identity,
 )
-
 
 _RESOLVER_ROLE_BY_PLANNING_ROLE = {
     "production_profile": "production_profile_version",
@@ -5980,7 +5975,7 @@ class PostgresBookOpeningApplication:
         if (
             row is None
             or str(row[1])
-            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}
+            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6", "book-design.v7"}
             or tuple(str(item) for item in row[2:5]) != ("ACTIVE", "ELIGIBLE", "CLEAR")
         ):
             raise KernelError(

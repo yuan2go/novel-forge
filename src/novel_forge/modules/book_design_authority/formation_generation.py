@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from typing import Any
-
 from novel_forge.modules.authority_security import (
     Principal,
     build_manual_formation_continuation_evidence,
@@ -19,7 +17,6 @@ from novel_forge.modules.story_planning_runtime.foundation_generation import (
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.story_formation_repositories import StoryFormationRepository
-
 from .formation_domain import (
     FormationLayerInput,
     StoryFormationInput,
@@ -125,7 +122,9 @@ class FormationGeneration:
             state = self.planning.story_design.require(
                 project_id=run["project_id"], asset_version_id=candidate_id
             )
-            from novel_forge.modules.story_design_authority.author_supervision import supervised_state
+            from novel_forge.modules.story_design_authority.author_supervision import (
+                supervised_state,
+            )
             if state["qualification"] != "QUALIFIED" and not supervised_state(state):
                 raise KernelError(
                     "STORY_FORMATION_GENERATION_BLOCKED",
@@ -218,9 +217,11 @@ class FormationGeneration:
         from novel_forge.storage.foundation_repositories import (
             require_current_foundation_set,
         )
+
         from .application import BookDesignAuthorityCommand
         from .domain import (
             FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+            LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION,
             WORK_BOOK_DESIGN_SCHEMA_VERSION,
         )
 
@@ -256,7 +257,7 @@ class FormationGeneration:
         )
         work_requirements = all(
             value.get("constraint_envelope", {}).get("contract_version")
-            == "foundation-generation.v2"
+            in {"foundation-generation.v2", "foundation-generation.v3"}
             for value in content.values()
         )
         if not invariants and not work_requirements:
@@ -265,7 +266,7 @@ class FormationGeneration:
                 "Generated foundations lack operational constraints",
             )
         payload = {
-            "schema_version": WORK_BOOK_DESIGN_SCHEMA_VERSION
+            "schema_version": (WORK_BOOK_DESIGN_SCHEMA_VERSION if all(value.get("constraint_envelope", {}).get("contract_version") == "foundation-generation.v3" for value in content.values()) else LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION)
             if work_requirements
             else FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
             "title": policy["title"],

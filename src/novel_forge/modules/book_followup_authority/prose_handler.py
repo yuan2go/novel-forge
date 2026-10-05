@@ -1,13 +1,10 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
-
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityHandlerOutput,
     AuthorityHandlerRequest,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
-
 from .contracts import ReaderOutcomeModelPort
 from .prose_review import validate_window_report
 
@@ -27,7 +24,7 @@ class LongformProseReviewHandler:
         content = source.content
         payload = request.command["payload"]
         if (
-            content.get("schema_version") != "longform-prose-window.v1"
+            content.get("schema_version") not in {"longform-prose-window.v1", "longform-prose-window.v2"}
             or content.get("source_isolation") != "ACCEPTED_PROSE_ONLY"
             or any(
                 content.get(key) != payload.get(key)
@@ -42,6 +39,7 @@ class LongformProseReviewHandler:
 
         def assert_current(*, dispatch: bool = False) -> None:
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
             from .prose_coordinator import load_accepted_sources
             from .prose_review import freeze_manifest
 
@@ -77,6 +75,7 @@ class LongformProseReviewHandler:
                         uow, content["book_run_id"], request.project_id
                     ),
                     policy=content["policy"],
+                    work_intent=content["schema_version"] == "longform-prose-window.v2",
                 )
                 run_id, manifest = rows[0]
                 if (

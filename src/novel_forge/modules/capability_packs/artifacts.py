@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -9,9 +8,7 @@ from pathlib import Path
 import re
 from types import MappingProxyType
 from typing import Any, Protocol
-
 from novel_forge.modules.production_execution.security import assert_no_inline_secrets
-
 
 _FLOATING = re.compile(
     r"(?:^|[:/@._-])"
@@ -386,6 +383,12 @@ def default_chapter_artifact_resolver(
             "prompt-template:chapter-generation-pack",
             "v8",
             "config/capability_packs/artifacts/chapter_generation_template_v8.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v9",
+            "config/capability_packs/artifacts/chapter_generation_template_v9.md",
         ),
     ):
         text = (root / source).read_bytes().decode("utf-8", errors="strict")

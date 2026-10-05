@@ -1,11 +1,9 @@
 from __future__ import annotations
-
 from collections.abc import Mapping
 from dataclasses import asdict
 import hashlib
 import json
 from typing import Any
-
 from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRequest
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
@@ -35,11 +33,10 @@ from .evaluation_runtime import NarrativeProviderEvaluation
 from .replacement_gate import assert_narrative_replacement_execution_gate
 from .qualification import (
     NarrativeQualificationProfile,
+    qualification_profile_options,
     qualification_provider_schema,
     validate_narrative_qualification,
-    uses_work_requirements,
 )
-
 
 NARRATIVE_EVALUATION_STAGE = "narrative_semantic_evaluation"
 NARRATIVE_EVALUATION_WORKFLOW_REF = "story_design_semantic_evaluation@1.0.0"
@@ -182,9 +179,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         )
         schema = qualification_provider_schema(
             operation_name,
-            work_requirements=uses_work_requirements(
-                request_payload.get("input", {}).get("candidate", {})
-            ),
+            **qualification_profile_options(request_payload.get("input", {}).get("candidate", {})),
         )
         schema_hash = _canonical_hash(schema).removeprefix("sha256:")[:16]
         return (
@@ -443,7 +438,7 @@ class PostgresNarrativeEvaluationExecutionContractBinder(
         """
         if document.asset_type != "book_design" or document.content.get(
             "schema_version"
-        ) not in {"book-design.v5", "book-design.v6"}:
+        ) not in {"book-design.v5", "book-design.v6", "book-design.v7"}:
             return ()
         foundation = document.content.get("foundation_set")
         if not isinstance(foundation, Mapping):
@@ -580,6 +575,7 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
                 **asdict(profile),
                 "layer": profile.layer.value,
                 "profile_hash": profile.profile_hash,
+                **({"criterion_semantics": profile.criterion_semantics} if profile.criterion_semantics else {}),
             }
             for profile in profiles
         ]
@@ -646,7 +642,7 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             generator_operation_name=generator_operation_name,
             value=result.output,
             require_pass=False,
-            work_requirements=uses_work_requirements(candidate.content),
+            **qualification_profile_options(candidate.content),
         )
         del qualification
         execution_request = (
@@ -718,8 +714,8 @@ class GatewayNarrativeSemanticEvaluationExecutionPort:
             )
         cross_review = None
         if request.command["payload"].get("evaluation_purpose") == "AUTHOR_ADVISORY":
-            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
             from novel_forge.modules.production_execution.cross_model_review import reviewer_rejection
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("""SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}'
                     FROM authority_external_effect WHERE project_id=%s AND external_effect_id=%s AND status='SUCCEEDED'""",

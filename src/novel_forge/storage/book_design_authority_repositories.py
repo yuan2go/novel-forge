@@ -1,19 +1,16 @@
 from __future__ import annotations
-
 from novel_forge.modules.story_design_authority.qualification import (
     qualification_profiles_for_asset,
 )
-
 from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.book_design_authority.domain import (
     BOOK_DESIGN_SCHEMA_VERSION,
     EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
+    LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION,
     WORK_BOOK_DESIGN_SCHEMA_VERSION,
     BookDesignPayload,
     BookScope,
@@ -24,12 +21,12 @@ from novel_forge.storage.foundation_repositories import (
     require_current_foundation_set,
 )
 
-
 _PROGRESSIVE_BOOK_DESIGN_SCHEMAS = {
     BOOK_DESIGN_SCHEMA_VERSION,
     EVOLUTION_BOOK_DESIGN_SCHEMA_VERSION,
     FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
     WORK_BOOK_DESIGN_SCHEMA_VERSION,
+    LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION,
 }
 
 
@@ -132,7 +129,7 @@ class BookDesignAuthorityRepository:
         trace_id: str,
         checkpoint: Callable[[str], None],
     ) -> dict[str, str]:
-        if design.schema_version in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}:
+        if design.schema_version in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION, LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION}:
             current_foundation = require_current_foundation_set(
                 self.cursor,
                 project_id=book["project_id"],
@@ -341,7 +338,7 @@ class BookDesignAuthorityRepository:
             if recorded is not None and recorded[0] == target_eligibility and dict(recorded[1]) == expected:
                 return {"asset_version_id": asset_version_id, "status": target_status, "eligibility": target_eligibility}
             raise KernelError("BOOK_DESIGN_EVALUATION_CONFLICT", "BookDesign candidate evaluation is already terminal with different evidence")
-        if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}:
+        if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION, LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION}:
             self._require_v5_foundation(book, asset_version_id)
         self.cursor.execute(
             """
@@ -420,7 +417,7 @@ class BookDesignAuthorityRepository:
                 "BOOK_DESIGN_DECISION_CONFLICT",
                 "only a validated candidate can be decided",
             )
-        if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}:
+        if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION, LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION}:
             self._require_v5_foundation(book, asset_version_id)
         if author_supervision:
             from novel_forge.modules.book_design_authority.author_supervision import proposed_supervision
@@ -498,7 +495,7 @@ class BookDesignAuthorityRepository:
                 "BOOK_DESIGN_ACTIVATION_CONFLICT",
                 "only an approved candidate can activate",
             )
-        if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION}:
+        if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION, LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION}:
             self._require_v5_foundation(book, asset_version_id)
         self.cursor.execute(
             """

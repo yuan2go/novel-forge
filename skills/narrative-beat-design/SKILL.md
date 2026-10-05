@@ -11,7 +11,7 @@ Use frozen author intent, character motives and approved design facts. Ground th
 
 ## Theme question
 
-Form a dramatic question that characters can test through competing choices and consequences. Let opposing answers have credible human or social pressures. Connect the question to the supplied premise without dictating a moral lecture or forcing every scene to state the theme. Provide the requested original alternatives and their story implications.
+Develop this work's thematic question and means of exploring it from the supplied premise and author intent. Observation, ambiguity, reflection, exposition or competing choices can each support a theme. Use choices and opposing answers when selected by the work; their absence is not a defect. Explain how each proposed alternative can be expressed in the planned story, preserving its intended degree of resolution and presentation. Do not turn a chosen method into a rule for every scene. Provide the requested original alternatives and their story implications.
 
 ## Beat planning
 

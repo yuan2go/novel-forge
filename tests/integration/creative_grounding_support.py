@@ -58,7 +58,7 @@ class CreativeGroundingTransport(AutonomousWorldTransport):
         return result
 
 
-def verify_creative_workspace(*, composition, chapter_application, book_run_id, transport):
+def verify_creative_workspace(*, composition, chapter_application, book_run_id, transport, minimum_chapters=2):
     from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
     from novel_forge.modules.canon_graph.grounding import text_hash
     book = composition.authority.require(book_run_id)
@@ -93,17 +93,18 @@ def verify_creative_workspace(*, composition, chapter_application, book_run_id, 
             assert best["content"]["selected_source_asset_version_id"] == drafts["draft_version"]["asset_version_id"]
             assert selected["resolution_checks"]
         workspaces.append(workspace)
-    assert len(workspaces) >= 2
+    assert len(workspaces) >= minimum_chapters
     for stage in ("memo", "draft", "review", "revision", "rereview", "canon_extraction", "canon_support"):
-        assert len([call for call in transport.calls if call["stage"] == stage]) >= 2
+        assert len([call for call in transport.calls if call["stage"] == stage]) >= minimum_chapters
     for call in transport.calls:
         if call["stage"] == "revision" and not transport.retain_original:
             assert call["input"]["review"]["issues"][0]["acceptance_criteria"]
         if call["stage"] == "canon_extraction":
             assert call["input"]["revision"]["selected_review"]["decision"] == "PASSED"
     ordered = sorted(workspaces, key=lambda item: item["acceptance"]["accepted_through_chapter"])
-    second_intent = next(item for item in ordered[1]["artifacts"]["inputs"] if item["asset_type"] == "chapter_execution_intent")
-    assert second_intent["content"]["accepted_boundary"]["story_state_asset_version_id"] == ordered[0]["acceptance"]["story_state_asset_version_id"]
+    if len(ordered) > 1:
+        second_intent = next(item for item in ordered[1]["artifacts"]["inputs"] if item["asset_type"] == "chapter_execution_intent")
+        assert second_intent["content"]["accepted_boundary"]["story_state_asset_version_id"] == ordered[0]["acceptance"]["story_state_asset_version_id"]
     return {"proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY", "workspaces": workspaces}
 
 

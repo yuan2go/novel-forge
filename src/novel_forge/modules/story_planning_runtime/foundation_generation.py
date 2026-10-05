@@ -1,12 +1,9 @@
 from __future__ import annotations
-
 import json
 from typing import Any, Mapping
-
 from novel_forge.modules.book_design_authority.foundation import FoundationRole
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority.domain import GENERATOR_CATALOG
-
 
 FOUNDATION_GENERATORS = {
     "creative.candidates.generate": FoundationRole.CREATIVE_FOUNDATION,
@@ -249,7 +246,7 @@ def foundation_output_schema(
 
 
 def foundation_task(
-    generator: str, *, work_requirements: bool = False
+    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     tasks = {
@@ -270,7 +267,7 @@ def foundation_task(
             FoundationRole.CHARACTER_CAST: "Design characters suitable for this work and distinct voices grounded in their circumstances. Wounds, false beliefs, secrets and transformation are optional, not mandatory identities. Preserve exact references, capabilities, knowledge and approved initial conditions; never invent accepted history.",
         }
     return {
-        "contract_version": "foundation-generation.v2"
+        "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
         if work_requirements
         else "foundation-generation.v1",
         "role": role.value,
@@ -294,7 +291,7 @@ def foundation_task(
 
 
 def foundation_envelope(
-    *, generator: str, inputs: tuple[Any, ...], work_requirements: bool = False
+    *, generator: str, inputs: tuple[Any, ...], work_requirements: bool = False, aligned_methods: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     by_role = {item.role: item for item in inputs}
@@ -304,7 +301,7 @@ def foundation_envelope(
             "Foundation input roles differ from the frozen dependency contract",
         )
     return {
-        "contract_version": "foundation-generation.v2"
+        "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
         if work_requirements
         else "foundation-generation.v1",
         "role": role.value,
@@ -356,7 +353,7 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload["world_foundation_json"] = json.dumps(
             world, ensure_ascii=False, separators=(",", ":")
         )
-    work_requirements = envelope.get("contract_version") == "foundation-generation.v2"
+    work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3"}
     schema = foundation_output_schema(generator, work_requirements=work_requirements)
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions

@@ -683,7 +683,7 @@ with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idemp
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
 `chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
-definition version `3.6.0` or its frozen published predecessors `3.4.1`/`3.5.0`.
+definition version `3.7.0` or its frozen published predecessors `3.4.1`/`3.5.0`/`3.6.0`.
 The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
 use the returned book, command and input identities in the same campaign grant. Dry-run
 performs no admission or Provider call. Admit the identical request without `dry_run`.
@@ -1526,9 +1526,12 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.10.0 requires System v3,
-Template v8 and prose-generation-v4 identities; new Planning Pack 2.9.0 binds Operation 1.17.0, System v8 and stage-matched
-qualification-v2 methods. Screenplay requires prose-generation-v4 or quality-review-v3
+materialization before an authorized run. Chapter Pack 2.11.0 requires System v3,
+Template v9 and prose-generation-v4 identities; new Planning Pack 2.10.0 binds Operation 1.18.0, System v8,
+long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
+retaining qualification-v2 identities. Qualification profile v3 includes work applicability
+semantics in its hash. New longform windows v2 include per-candidate creative baselines;
+legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Screenplay requires prose-generation-v4 or quality-review-v3
 and its separate adaptation schema. Historical artifacts remain available for recovery.
 New retrieval plans bind writer_projection_version=accepted-writer-history.v2. Inspect
 the exact semantic view and source/projection hashes: narrative history should contain

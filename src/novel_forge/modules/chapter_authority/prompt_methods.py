@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from novel_forge.modules.command_kernel.errors import KernelError
 
 _METHODS = {
@@ -37,7 +36,7 @@ def project_sections(text: str, *headings: str) -> str:
 
 
 def project_skill_method(text: str, *, ref: str, version: str, stage: str, targeted: bool) -> str:
-    calibrated = version == _VERSIONS.get(ref) or (ref in _METHODS and version == ref + "-qualification-v2")
+    calibrated = version == _VERSIONS.get(ref) or (ref == "long-outline" and version == "long-outline-v3") or (ref == "narrative-beat-design" and version == "narrative-beat-design-qualification-v3") or (ref in _METHODS and version == ref + "-qualification-v2")
     if not calibrated:
         return text
     method = "Quality dimension" if ref == "quality-review" and stage.startswith("quality_") else _METHODS[ref].get(stage)

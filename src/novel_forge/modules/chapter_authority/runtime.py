@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
-
 from novel_forge.modules.authority_handler_runtime import (
     AuthorityAuxiliaryOutput,
     AuthorityExecutionResult,
@@ -29,7 +27,6 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
     CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name, chapter_sample_definition_supported, load_bootstrap_authorization,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
 from .definitions import CHAPTER_SAMPLE_COMPLETION_TOPIC, CHAPTER_SAMPLE_OUTPUT_KEY
 
 
@@ -58,7 +55,7 @@ def _handler_definition_version(
             )
             row = uow.cursor.fetchone()
         recoverable = (
-            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION}
+            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2"}
             if author_input and node is ChapterNode.DRAFT
             else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
         )

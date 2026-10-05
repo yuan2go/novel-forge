@@ -1,15 +1,12 @@
 from __future__ import annotations
-
 from collections import defaultdict
 from typing import Any, Mapping, Sequence
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_design_authority.qualification import (
+    qualification_profile_options,
     required_qualification_profiles,
-    uses_work_requirements,
     validate_narrative_qualification,
 )
-
 from novel_forge.modules.production_execution.cost_routing import snapshot_hash
 
 
@@ -140,7 +137,7 @@ def planning_gate_outcomes(
                 generator_operation_name=generator,
                 value=evidence.get("result"),
                 require_pass=False,
-                work_requirements=uses_work_requirements(candidate_content),
+                **qualification_profile_options(candidate_content),
             )
         except (KernelError, TypeError, ValueError):
             continue
@@ -160,7 +157,7 @@ def planning_gate_outcomes(
         if effect_id in result:
             continue
         profiles = required_qualification_profiles(
-            rows[0][3], work_requirements=uses_work_requirements(rows[0][8])
+            rows[0][3], **qualification_profile_options(rows[0][8])
         )
         expected = {(p.layer.value, p.profile_id, p.profile_hash) for p in profiles}
         actual = {
@@ -403,8 +400,8 @@ def domain_gate_outcomes(
     cursor: Any, *, project_id: str, effect_ids: Sequence[str]
 ) -> dict[str, dict[str, Any]]:
     from novel_forge.modules.chapter_quality_authority.reference_sampling import chapter_reference_outcomes
-    from novel_forge.modules.story_planning_runtime.world_sampling import world_reference_outcomes
     from novel_forge.modules.story_design_authority.evaluation_reference import narrative_reference_outcomes
+    from novel_forge.modules.story_planning_runtime.world_sampling import world_reference_outcomes
 
     planning = planning_gate_outcomes(
         cursor, project_id=project_id, effect_ids=effect_ids
@@ -436,10 +433,11 @@ def domain_gate_outcomes(
             **failure,
             "evidence_refs": evidence_refs,
         }
-    from .generator_feedback import generator_sample_outcomes
-    from novel_forge.modules.story_planning_runtime.world_sampling import actor_sample_outcomes
     from novel_forge.modules.book_followup_authority.prose_sample_feedback import prose_sample_outcomes
     from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import screenplay_sample_outcomes
+    from novel_forge.modules.story_planning_runtime.world_sampling import actor_sample_outcomes
+
+    from .generator_feedback import generator_sample_outcomes
     return {
         **planning,
         **generator_sample_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),

@@ -1,14 +1,11 @@
 from __future__ import annotations
-
 from typing import Any, Mapping
-
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import (
     authorization_hash, load_bootstrap_authorization, validate_reference_evaluation_binding,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
-from .qualification import validate_narrative_qualification, uses_work_requirements
+from .qualification import qualification_profile_options, uses_work_requirements, validate_narrative_qualification
 
 
 def reference_execution_gate(
@@ -168,7 +165,7 @@ def _require_reference_review(
         generator_operation_name=payload["generator_operation_name"],
         value=content.get("evaluation"),
         require_pass=False,
-        work_requirements=work_requirements,
+        **qualification_profile_options(candidate_row[0]),
     )
     adjudicated = None
     if reference.get("adjudicated_reference"):
@@ -199,6 +196,7 @@ def _require_reference_review(
     return {
         "content": content,
         "work_requirements": work_requirements,
+        "profile_version": qualification_profile_options(candidate_row[0])["profile_version"],
         "author_actor_id": author,
         "operation_id": operation_id,
         **({"adjudicated_reference": adjudicated} if adjudicated else {}),
@@ -217,6 +215,7 @@ def reference_agreement(
             value=value,
             require_pass=False,
             work_requirements=bool(reference.get("work_requirements")),
+            profile_version=str(reference.get("profile_version") or "2.0.0"),
         )
         return {(layer["layer"], criterion["criterion"]): criterion["verdict"]
                 for layer in value["evaluations"] for criterion in layer["criteria"]}

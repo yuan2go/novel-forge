@@ -1,12 +1,9 @@
 from __future__ import annotations
-
 from collections.abc import Callable
 from hashlib import sha256
 from typing import Any
 from uuid import uuid4
-
 from psycopg.types.json import Jsonb
-
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.artifact_lineage import (
     ArtifactLineageEdge,
@@ -32,7 +29,6 @@ from novel_forge.storage.book_opening_plan_fence import (
 from novel_forge.storage.legacy_migration_lineage import (
     require_approved_legacy_migration_lineage,
 )
-
 from .definitions import (
     PLAN_BINDING_DEFINITION_VERSION,
     PLAN_BINDING_HANDLER_KEY,
@@ -43,7 +39,6 @@ from .domain import (
     PlanExecutionScope,
     validate_planning_contract,
 )
-
 
 _PARENT_TYPES = {
     PlanContractType.VOLUME: PlanContractType.BOOK,
@@ -1029,7 +1024,7 @@ class PostgresHierarchicalPlanningAuthority:
             row is None
             or str(row[1]) != str(design_ref.get("content_hash") or "")
             or str(row[2])
-            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6"}
+            not in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, "book-design.v6", "book-design.v7"}
             or tuple(str(item) for item in row[3:6]) != ("ACTIVE", "ELIGIBLE", "CLEAR")
             or str(row[6]) != str(design_ref.get("asset_version_id") or "")
         ):
