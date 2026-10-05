@@ -243,6 +243,11 @@ def main(argv=None):
                 raise ValueError("Native experiment budget differs from the frozen opportunity plan")
             budget_binding = native_budget["budget_binding"]
             report.update(native_budget)
+            from scripts.creation_pilot import freeze_campaign_accounting
+            report["provider_authorization"] = dict(authorization)
+            authorization = freeze_campaign_accounting(authorization, native_budget, values)
+            report.update(authorization)
+            report["cost_accounting"] = authorization
         settings = IndustrialSettings.from_env(values, root=args.root)
         resolver = build_trusted_principal_resolver(env=values)
         principal = resolver.resolve_api_principal()

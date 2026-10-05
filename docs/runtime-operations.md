@@ -1026,6 +1026,14 @@ A priced envelope without that lane still rejects entitlement execution. Both la
 the parent call/token budget; progress reports retain unknown entitlement monetary cost
 separately from priced USD expenditure.
 
+The native whole-campaign budget (`creative-provider-campaign-budget.v4` and its renewal)
+separates priced USD allowance from account entitlement. The creation entry's frozen
+accounting and resume adapter retains that distinction and validates the exact native
+campaign grant, entitlement identity and business scope. A zero priced allowance permits
+only entitled execution; it does not mean the entitlement has zero monetary cost.
+The adapter rejects a campaign presented as a legacy single-account budget before
+initializing a Book. Historical single-account freezes retain their original semantics.
+
 The current routing migration extends the existing versioned policy owner constraint
 and adds a chain lookup index. It does not rewrite Provider identities or backfill
 historical decisions. Planning semantic repair follows durable predecessor relationships

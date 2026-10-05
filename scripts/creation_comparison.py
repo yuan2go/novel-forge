@@ -134,8 +134,8 @@ def _budget_binding(value: Any, arm: dict[str, Any], contract: dict[str, Any], *
     _hash(binding["contract_hash"], "budget binding contract_hash")
     if binding["contract_hash"] != comparison_contract_hash(contract):
         raise ValueError("Comparison native budget binding differs from the frozen contract")
-    from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSIONS
-    single_book = contract.get("contract_version") in SINGLE_BOOK_VERSIONS
+    from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSIONS, PROVIDER_BUDGET_VERSIONS
+    single_book = contract.get("contract_version") in SINGLE_BOOK_VERSIONS | PROVIDER_BUDGET_VERSIONS
     authorization = _object(binding["authorization"], "native budget authorization", fields={
         "authorization_ref", "evidence_hash", "project_id", "book_id", "authorized_cumulative_caps",
     } | ({"business_scope"} if single_book else set()))
@@ -250,6 +250,23 @@ def _runtime(identity: dict[str, Any], frozen: dict[str, Any], arm: dict[str, An
             raise ValueError("Comparison runtime authorization is not bound to its budget")
         if runtime.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") != "ACCOUNT_ENTITLEMENT":
             raise ValueError("Comparison runtime accounting mode differs")
+    elif contract["accounting_basis"] == "MIXED":
+        lanes = [lane for lane in contract["entitlements"]
+                 if lane["provider"] == "codex-cli"
+                 and lane["authorization_ref"] == runtime.get(_AUTHORIZATION_SETTING)]
+        if len(lanes) != 1 or runtime.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") != "ACCOUNT_ENTITLEMENT":
+            raise ValueError("Creation campaign requires its exact Codex entitlement")
+        for key in ("NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF", "NOVEL_FORGE_CODEX_CLI_VERSION",
+                    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256", "NOVEL_FORGE_CODEX_CONFIGURATION_REF"):
+            _text(runtime.get(key), key)
+        try:
+            amount = Decimal(accounting["authorized_total_usd"])
+        except (InvalidOperation, TypeError, ValueError) as exc:
+            raise ValueError("Creation campaign priced allowance is invalid") from exc
+        if (not amount.is_finite() or amount < 0
+            or amount != Decimal(contract["shared_total"]["priced_usd"])
+            or accounting["monetary_cost_status"] != "PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN"):
+            raise ValueError("Creation campaign must retain its exact priced allowance and unknown entitlement cost")
     else:
         try:
             amount = Decimal(accounting["authorized_total_usd"])

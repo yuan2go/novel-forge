@@ -162,20 +162,35 @@ def test_review_purpose_is_read_from_native_frozen_command(frozen):
     assert result["purpose"] == (frozen or "STRICT_QUALIFICATION")
 
 
-def test_mixed_design_reuses_exact_existing_qualification_without_relabeling():
+@pytest.mark.parametrize("candidate,profile_options", [
+    ({"schema_version": "book-design.v5"}, {}),
+    ({"schema_version": "book-design.v7"}, {"work_requirements": True, "profile_version": "3.0.0"}),
+])
+def test_mixed_design_reuses_exact_existing_qualification_without_relabeling(candidate, profile_options):
     from novel_forge.modules.story_design_authority.author_supervision import reusable_qualified_design_receipt
     from novel_forge.modules.story_design_authority.qualification import required_qualification_profiles
     class Cursor:
         rows = [(p.layer.value,p.profile_id,p.profile_version,p.profile_hash,"q-hash","e-hash","evaluation","target-hash")
-                for p in required_qualification_profiles("book_plan.generate")]
+                for p in required_qualification_profiles("book_plan.generate", **profile_options)]
         def execute(self, sql, args):
-            assert "evaluator_execution_class='MODEL_PROVIDER'" in sql
+            if "authority_current_narrative_design_qualification" in sql:
+                assert "evaluator_execution_class='MODEL_PROVIDER'" in sql
+                assert args == ["project", "book", "qualified-plan"]
+            else:
+                assert "SELECT v.content FROM authority_asset_version" in sql
+                assert args == ["project", "qualified-plan"]
         def fetchall(self): return self.rows
+        def fetchone(self): return (self.candidate,)
     cursor=Cursor()
+    cursor.candidate=candidate
     args=dict(project_id="project",book_id="book",asset_version_id="qualified-plan",generator="book_plan.generate")
     receipt=reusable_qualified_design_receipt(cursor,**args)
     assert receipt["mode"] == "STRICT_QUALIFIED"
     assert receipt["asset_version_id"] == "qualified-plan"
+    cursor.candidate={"schema_version": "book-design.v7" if not profile_options else "book-design.v5"}
+    with pytest.raises(KernelError,match="QUALIFICATION_INCOMPLETE"):
+        reusable_qualified_design_receipt(cursor,**args)
+    cursor.candidate=candidate
     cursor.rows=cursor.rows[:-1]
     with pytest.raises(KernelError,match="QUALIFICATION_INCOMPLETE"):
         reusable_qualified_design_receipt(cursor,**args)
