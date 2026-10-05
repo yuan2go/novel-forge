@@ -1,0 +1,6 @@
+{
+  "evidence_class": "STATIC",
+  "model": "gpt-6.1-sol",
+  "high_supported_by_local_catalog": true,
+  "real_inference_availability": "NOT_VERIFIED"
+}

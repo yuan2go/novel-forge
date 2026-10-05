@@ -1,0 +1,75 @@
+{
+  "schema_version": "operator-model-panel-selection.v1",
+  "evidence_class": "STATIC",
+  "not_runtime_authority": true,
+  "captured_at": "2026-10-05T14:40:28.317265+00:00",
+  "user_instruction": "盲评者和裁决者用codex 6.1sol high来实现",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "selection_version": "sol40-20261005T112522Z:codex61-high-model-panel-v1",
+  "scope": [
+    "BLIND_EVALUATOR_A",
+    "BLIND_EVALUATOR_B",
+    "ADJUDICATOR"
+  ],
+  "roles": [
+    {
+      "role": "BLIND_EVALUATOR_A",
+      "provider": "codex-cli",
+      "model_id": "gpt-6.1-sol",
+      "reasoning_effort": "high",
+      "execution_id_policy": "DISTINCT_NATIVE_EFFECT_AND_SESSION",
+      "inherits_other_roles_history": false
+    },
+    {
+      "role": "BLIND_EVALUATOR_B",
+      "provider": "codex-cli",
+      "model_id": "gpt-6.1-sol",
+      "reasoning_effort": "high",
+      "execution_id_policy": "DISTINCT_NATIVE_EFFECT_AND_SESSION",
+      "inherits_other_roles_history": false
+    },
+    {
+      "role": "ADJUDICATOR",
+      "provider": "codex-cli",
+      "model_id": "gpt-6.1-sol",
+      "reasoning_effort": "high",
+      "execution_id_policy": "DISTINCT_NATIVE_EFFECT_AND_SESSION",
+      "inherits_other_roles_history": false
+    }
+  ],
+  "generator": {
+    "model_id": "gpt-6-sol",
+    "reasoning_effort": "medium"
+  },
+  "human_evidence": false,
+  "human_preference_proven": false,
+  "calibration_or_qualification_claim": false,
+  "same_model_family": "CORRELATED_MODEL_CONSENSUS; NOT_STATISTICALLY_INDEPENDENT_HUMANS",
+  "blindness": [
+    "SOURCE_PROVIDER_MODEL_AND_ROUTE_WITHHELD_FROM_VISIBLE_INPUT",
+    "NO_PEER_RESULTS_IN_FIRST_TWO_REVIEWS",
+    "ADJUDICATOR_READS_BOTH_VERSION_BOUND_REPORTS",
+    "REVIEWERS_CANNOT_READ_WORKSPACE_OR_CHAT_HISTORY"
+  ],
+  "source_binding": [
+    "project_id",
+    "book_id",
+    "source_operation_id",
+    "asset_version_id",
+    "content_hash",
+    "creative_baseline_hash",
+    "protocol_hash",
+    "source_release_sha",
+    "prompt_skill_schema_hashes"
+  ],
+  "budget_constraints": {
+    "maximum_total_calls": 1600,
+    "maximum_total_tokens": 80000000,
+    "maximum_priced_usd": "20",
+    "automatic_renewal": false,
+    "native_policy_amended": false
+  },
+  "user_choice_on_reference_basis": "PENDING_CLARIFICATION",
+  "status": "SELECTED_NOT_WIRED"
+}

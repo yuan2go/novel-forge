@@ -1,0 +1,24 @@
+{
+  "evidence_class": "OFFLINE",
+  "source_sha": "427433aac3d78bbc7d48fdaa782d5d2a50209110",
+  "selection_hash": "sha256:e1e40ad8b19872eedaaab7b12e9e8a7357a91eef662543c53f634dfdc12dd011",
+  "native_counts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0,
+    "authority_book_chapter_acceptance": 0,
+    "authority_capability_pack_approval": 0,
+    "authority_capability_pack_activation": 0,
+    "authority_capability_pack_deployment": 0
+  },
+  "available_native_review_subjects": 0,
+  "native_mutations": 0,
+  "provider_inference_calls": 0,
+  "blockers": [
+    "MODEL_REFERENCE_CONTRACT_NOT_IMPLEMENTED",
+    "CODEX_MULTI_MODEL_ROUTER_NOT_SUPPORTED",
+    "PACK_ACTIVE_DEPLOYMENT_ABSENT",
+    "NO_NATIVE_REVIEW_TARGET"
+  ],
+  "proof_limits": "Selection is operator intent; it has not been admitted as a runtime policy or qualification reference."
+}
