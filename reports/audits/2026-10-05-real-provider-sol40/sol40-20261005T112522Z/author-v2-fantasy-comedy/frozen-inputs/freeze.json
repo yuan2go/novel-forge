@@ -1,0 +1,53 @@
+{
+  "analysis_target": {
+    "intended_use": "ABSTRACT_GENERATION",
+    "status": "PENDING_AUTHORITY_PREFLIGHT",
+    "target_book_id": "nf-sol40-20261005T112522Z-book"
+  },
+  "arm_a_binding": "KNOWLEDGE_APPROVAL_AND_EXACT_VERSION_BINDING_REQUIRED",
+  "contract_version": "knowledge-closure-freeze.v1",
+  "files": {
+    "brief.json": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266",
+    "creation.json": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff",
+    "deny-all.json": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da",
+    "formation.json": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460",
+    "review-form.json": "sha256:a4759491a50361ddf92cf8186334345f562c512be6f2eefd6ee64c4685d71e20"
+  },
+  "freeze_integrity_version": "creation-freeze-integrity.v1",
+  "human_editorial": "NOT_RUN",
+  "input_directory": "/Users/yuan/.local/share/novel-forge/runs/sol40-20261005T112522Z/author-v2-fantasy-comedy/inputs",
+  "input_files": [
+    "brief.json",
+    "creation.json",
+    "deny-all.json",
+    "formation.json"
+  ],
+  "input_mode": "EXPLICIT_DIRECTORY",
+  "manifest_content_hash": "sha256:bb81e91fa0d79306e8784389d7bc037b8a68db98ae7059d6fe6012e7e25b53a8",
+  "model_binding": "REQUIRED_AUTHORIZED_EXACT_ROUTE_FOR_BOTH_ARMS",
+  "output_directory": "/Users/yuan/.local/share/novel-forge/runs/sol40-20261005T112522Z/author-v2-fantasy-comedy/frozen",
+  "real_provider_execution": "NOT_RUN",
+  "required_authorization": [
+    "provider/backend and exact model",
+    "account identity and permitted purpose",
+    "total calls, input/output tokens and priced cost or explicit accounting basis",
+    "revision/retry allocation within the same total",
+    "independent Books and upper plans; frozen project sublimits sum within the shared grant"
+  ],
+  "source_files": {
+    "brief.json": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266",
+    "creation.json": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff",
+    "deny-all.json": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da",
+    "formation.json": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460"
+  },
+  "source_production_qualification": {
+    "account_entitlement": "EXACT_AUTHORIZATION_ACCOUNT_AND_ENTITLEMENT_SNAPSHOT_REQUIRED",
+    "card_approval": "SEPARATE_GOVERNANCE_REVIEW_AND_AUTHORITY_RECHECK_REQUIRED",
+    "required_scope": "EXACT_SOURCE_CAPABILITY_D0",
+    "supported_accounting_bases": [
+      "PRICED",
+      "ACCOUNT_ENTITLEMENT"
+    ]
+  },
+  "status": "READY_FOR_AUTHORIZATION"
+}

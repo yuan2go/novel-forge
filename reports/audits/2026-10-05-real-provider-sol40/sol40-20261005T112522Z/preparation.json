@@ -1,0 +1,67 @@
+{
+  "run_id": "sol40-20261005T112522Z",
+  "runtime_root": "/Users/yuan/.local/share/novel-forge/runs/sol40-20261005T112522Z",
+  "source_repo": "/Users/yuan/.codex/worktrees/work-intent-context-e2e/novel-forge",
+  "source_sha": "b710aeec29eb06ca9ca560863a82e7736a7596cc",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "workspace_id": "nf-sol40-20261005T112522Z-workspace",
+  "run_key": "sol40-20261005T112522Z",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "medium",
+  "target_chapters": 40,
+  "chapter_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "minimum": 5000,
+    "maximum": 6000
+  },
+  "cli": {
+    "executable": "/Users/yuan/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "version": "codex-cli 0.155.1",
+    "sha256": "sha256:8eaf1ad12fe6bf89b1710330f58900014322c7c5af677e43be116d8ac5fc0a9e"
+  },
+  "frozen_manifest_hash": "sha256:4b21599e1fc49e2713f2d47485835ccccff931fd336ebfb649ec58e1c3ac5de7",
+  "source_reference": {
+    "title": "苟在女魔头身边偷偷修炼",
+    "status": "SOURCE_IMPORT_PENDING",
+    "book_page": "https://book.qidian.com/info/1033280302/",
+    "book_page_fetch": "403",
+    "full_text_read": false,
+    "source_text_used": false,
+    "reference_claim": "USER_REFERENCE_TITLE_ONLY; genre-level direction is AI_ASSISTED_AUTHOR_INPUT, not source analysis"
+  },
+  "authorization": {
+    "real_validation": true,
+    "book_scope": 40,
+    "codex_model": "gpt-6-sol",
+    "reasoning": "medium",
+    "finite_budget_confirmation": "PENDING",
+    "independent_provider_confirmation": "PENDING",
+    "paid_api_authorized": false
+  },
+  "budget_proposal": {
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "maximum_calls": 1600,
+    "maximum_tokens": 80000000,
+    "status": "PROPOSED_NOT_AUTHORIZED"
+  },
+  "evidence_class": "STATIC",
+  "real_provider_calls": 0,
+  "accepted_chapters": 0,
+  "blockers": [
+    "FINITE_ACCOUNT_BUDGET_CONFIRMATION_REQUIRED",
+    "CODEX_ROUTER_FORCES_HIGH_REASONING",
+    "CROSS_MODEL_REVIEW_DIFFERENT_PROVIDER_REQUIRED",
+    "REAL_TASK_QUALIFICATION_NOT_VERIFIED"
+  ],
+  "implementation": {
+    "head": "b710aeec29eb06ca9ca560863a82e7736a7596cc",
+    "branch": "codex/work-intent-context-e2e-20261005",
+    "status": ""
+  },
+  "protected_original": {
+    "head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+    "branch": "codex/wp02-author-approved-run",
+    "status": "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-configure-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-query.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-approval-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/live-supervision-after-budget.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/logs/\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/mode-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/shared-evidence-secret-scan.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/status.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/user-authorization.json\n"
+  }
+}

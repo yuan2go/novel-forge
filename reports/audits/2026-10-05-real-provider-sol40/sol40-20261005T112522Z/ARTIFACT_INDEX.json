@@ -1,0 +1,18 @@
+{
+  "PREFLIGHT.md": "sha256:6a2759481c42b6e09cd673e95cd39f8f7f84ca2dfebd0e94dcc8a67fe1d4fc8d",
+  "STATUS.json": "sha256:59c2d8b6bd00d8da43569d7b4e535c4357784e28e54ed1dd1b6b67fd6cf6dc8a",
+  "formal-composition-preflight.json": "sha256:b4e9fb1c5097190cea44ebb0f2a132a6138cb557443f1c9378b7a74ff594a3d7",
+  "frozen-inputs/brief.json": "sha256:52d52203a04e065866c69d072f5a555e7108b86f97ae7541dc3b62954c0b4ee8",
+  "frozen-inputs/creation.json": "sha256:1ef1b5539d8385d1695f384c6256ed976761bf4dc761dcd8ead2acf258edb9cc",
+  "frozen-inputs/deny-all.json": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da",
+  "frozen-inputs/formation.json": "sha256:5961151caadf9052ff5c7c15d5879c593cf63d5f0d813f46cfb9eb66ad316036",
+  "frozen-inputs/freeze.json": "sha256:4b21599e1fc49e2713f2d47485835ccccff931fd336ebfb649ec58e1c3ac5de7",
+  "frozen-inputs/review-form.json": "sha256:a4759491a50361ddf92cf8186334345f562c512be6f2eefd6ee64c4685d71e20",
+  "migration.json": "sha256:8ec95df3a2a3bbacd5a3090a796e035734eb8e88c384d35ba9ea5450cabf7e33",
+  "native-author-input-receipt.json": "sha256:82be7cee7fc3e0b871f18257598cde039f011d41a89fec93f7d8797c20aaaa4f",
+  "official-author-entry.json": "sha256:833a87e6ab0549a3dbe8ac2d36bb5bac09396586eef9931cc6d888a34867af9d",
+  "official-input-entry-command.json": "sha256:0e6bd0a9cdc31cd605a74038deb022bd6b1e8f53743806ba4285c162ba083417",
+  "official-input-entry.log": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "preparation.json": "sha256:f80a534ae06d248824f42f3823c0d4f78263a5ce07cb5d5cf98e0c81fb4f6c6e",
+  "resources.json": "sha256:579b8a9cbb3474a4bb3a41a0c7a33fdf739b34ca81fbd026331788655c52a245"
+}

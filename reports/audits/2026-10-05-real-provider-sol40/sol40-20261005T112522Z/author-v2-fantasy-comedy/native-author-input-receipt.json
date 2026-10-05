@@ -1,0 +1,57 @@
+{
+  "evidence_class": "OFFLINE",
+  "status": "AUTHOR_INPUT_REGISTERED_NOT_APPROVED",
+  "user_steering": "不允许武侠悬疑类，选择玄幻轻喜剧",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "workspace_id": "nf-sol40-20261005T112522Z-workspace",
+  "source_sha": "b710aeec29eb06ca9ca560863a82e7736a7596cc",
+  "new_run_key": "sol40-20261005T112522Z:author-v2-fantasy-comedy",
+  "genre": "玄幻轻喜剧",
+  "prohibited_genres": [
+    "武侠",
+    "悬疑"
+  ],
+  "title": "这家灵兽食堂有点忙",
+  "title_and_premise_evidence": "AI_ASSISTED_AUTHOR_INPUT_NOT_APPROVED_FOUNDATION",
+  "chapter_count": 40,
+  "chapter_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "minimum": 5000,
+    "maximum": 6000
+  },
+  "model": "gpt-6-sol",
+  "reasoning_effort": "medium",
+  "new_author_input": {
+    "operation_id": "f8d38a34-ac05-4df7-aa74-840260008124",
+    "asset_version_id": "authority-output:f8d38a34-ac05-4df7-aa74-840260008124:creative.brief:v1",
+    "content_hash": "sha256:5bbeb22750f0a1951a19b242a228f7bb12331725f015a88ef77f93254898aa16"
+  },
+  "previous_author_input": {
+    "asset_version_id": "authority-output:caeb6b2b-2aa5-4684-9eca-717a62644bfb:creative.brief:v1",
+    "content_hash": "sha256:e8cd71f2de4c4156b816a0e24e16342ec28605565f2e9af76852cf63eeec6939",
+    "operation_id": "caeb6b2b-2aa5-4684-9eca-717a62644bfb"
+  },
+  "previous_input_preserved": true,
+  "previous_frozen_manifest_hash": "sha256:4b21599e1fc49e2713f2d47485835ccccff931fd336ebfb649ec58e1c3ac5de7",
+  "new_frozen_manifest_hash": "sha256:d51b47db4a41a44ee3b178d4b8fe038aa1c55688f89d50ad654f0fcab46bda50",
+  "frozen_directory": "/Users/yuan/.local/share/novel-forge/runs/sol40-20261005T112522Z/author-v2-fantasy-comedy/frozen",
+  "exact_replay": "PASS",
+  "required_genre_projected_to_all_formal_roles": "PASS_OFFLINE_NOT_REAL_PROVIDER_PROPAGATION",
+  "native_facts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0
+  },
+  "provider_calls": 0,
+  "accepted_chapters": 0,
+  "budget_confirmation": "PENDING",
+  "independent_reviewer_authorization": "PENDING",
+  "runtime_blockers_unchanged": [
+    "FINITE_ACCOUNT_BUDGET_CONFIRMATION_REQUIRED",
+    "CODEX_ROUTER_FORCES_HIGH_REASONING",
+    "CROSS_MODEL_REVIEW_DIFFERENT_PROVIDER_REQUIRED",
+    "REAL_TASK_QUALIFICATION_NOT_VERIFIED"
+  ],
+  "original_worktree_unchanged": true
+}

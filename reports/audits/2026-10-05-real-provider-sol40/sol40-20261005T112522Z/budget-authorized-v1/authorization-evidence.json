@@ -1,0 +1,33 @@
+{
+  "schema_version": "operator-authorization-evidence.v1",
+  "source": "DIRECT_HUMAN_MESSAGES_IN_CURRENT_TASK",
+  "user_quotes": [
+    "启动真实 Provider 与连续稿验证，验证一本小说，40章内容，每章5000-6000字，参考《苟在女魔头身边偷偷修炼》 调用codex 6 sol 中等 模型完成工作",
+    "不允许武侠悬疑类，选择玄幻轻喜剧",
+    "预算按照正常的来就行"
+  ],
+  "operator_interpretation": "Use the previously proposed finite cumulative ceiling; the numeric values are an operator allocation, not a literal numeric user quote.",
+  "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "authorized_provider": "codex-cli",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "medium",
+  "cumulative_caps": {
+    "calls": 1600,
+    "tokens": 80000000
+  },
+  "chapter_scope": [
+    1,
+    40
+  ],
+  "genre": "玄幻轻喜剧",
+  "priced_provider_usd_authorized": "0",
+  "independent_deepseek_authorization": "PENDING_DISTINCT_PROVIDER_SELECTION",
+  "entitlement_monetary_cost": "UNKNOWN",
+  "source_author_input": {
+    "operation_id": "f8d38a34-ac05-4df7-aa74-840260008124",
+    "asset_version_id": "authority-output:f8d38a34-ac05-4df7-aa74-840260008124:creative.brief:v1",
+    "content_hash": "sha256:5bbeb22750f0a1951a19b242a228f7bb12331725f015a88ef77f93254898aa16"
+  }
+}

@@ -1,0 +1,417 @@
+{
+  "source_sha": "5740414f8e2a171ea5df21b59f227d5c86ab3ef7",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "run_key": "sol40-20261005T112522Z:author-v2-fantasy-comedy",
+  "stage": "CONFIGURATION",
+  "implementation_identity": "sha256:32e068c504e88484064be14cb7e6f201aebcef8bbad3d5b59ff4fd74d1f8dc58",
+  "real_provider": "NOT_RUN",
+  "human_editorial": "NOT_RUN",
+  "longitudinal": "NOT_PROVEN",
+  "input_snapshot": {
+    "manifest_file_hash": "sha256:e651867fabb02a21a167b1c32b0eb66d79d76c87f1c8bc131cc34c5aeaeba671",
+    "integrity": "PINNED_MANIFEST_AND_FILES",
+    "files": {
+      "brief": {
+        "name": "brief.json",
+        "content_hash": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266"
+      },
+      "creation": {
+        "name": "creation.json",
+        "content_hash": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff"
+      },
+      "formation": {
+        "name": "formation.json",
+        "content_hash": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460"
+      },
+      "knowledge": {
+        "name": "deny-all.json",
+        "content_hash": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da"
+      },
+      "budget": {
+        "name": "budget.json",
+        "content_hash": "sha256:852384b80b805105dc45481c57d72dcf9d7ce9fcb8e6b4967237fa4652b10e9c"
+      }
+    }
+  },
+  "creation_policy": {
+    "contract_version": "creation-input-policy.v1",
+    "purpose": "作者明确选择玄幻轻喜剧并禁止武侠/悬疑的40章单书真实验证输入；非预算授权或文学证明。",
+    "profiles": {
+      "production_profile": {
+        "operation": "book.production_profile.author",
+        "content": {
+          "type": "production_profile",
+          "safe_summary": "原创玄幻轻喜剧40章；每章5000–6000汉字；禁止武侠和悬疑题材。",
+          "structured_facts": [],
+          "profile_id": "sol40-20261005T112522Z-fantasy-comedy-v2",
+          "target_chapter_count": 40,
+          "language_contract": {
+            "language": "zh",
+            "script": "Hans"
+          },
+          "authority_boundary": "FUTURE_INTENT",
+          "knowledge_access_policy": {
+            "policy_id": "sol40-20261005T112522Z-external-deny-all",
+            "policy_version": 1,
+            "mode": "DENY_ALL",
+            "allowed_knowledge_card_asset_version_ids": []
+          }
+        }
+      },
+      "previous_volume_outcome": {
+        "operation": "book.previous_volume_outcome.author",
+        "content": {
+          "type": "previous_volume_outcome",
+          "safe_summary": "Explicit bounded creation policy: previous_volume_outcome; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "status": "NO_PREVIOUS_VOLUME",
+          "actual_outcomes": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "previous_chapter_group_outcome": {
+        "operation": "book.previous_chapter_group_outcome.author",
+        "content": {
+          "type": "previous_chapter_group_outcome",
+          "safe_summary": "Explicit bounded creation policy: previous_chapter_group_outcome; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "status": "NO_PREVIOUS_CHAPTER_GROUP",
+          "actual_outcomes": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "previous_chapter_outcome": {
+        "operation": "book.previous_chapter_outcome.author",
+        "content": {
+          "type": "previous_chapter_outcome",
+          "safe_summary": "Explicit bounded creation policy: previous_chapter_outcome; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "status": "NO_PREVIOUS_CHAPTER",
+          "actual_outcomes": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "arc_portfolio": {
+        "operation": "book.arc_portfolio.author",
+        "content": {
+          "type": "arc_portfolio",
+          "safe_summary": "Explicit bounded creation policy: arc_portfolio; no accepted history.",
+          "structured_facts": [],
+          "portfolio_id": "initial-arc-window",
+          "contract_version": "v1",
+          "authority_boundary": "FUTURE_INTENT"
+        }
+      },
+      "ending_reachability": {
+        "operation": "book.ending_reachability.author",
+        "content": {
+          "type": "ending_reachability",
+          "safe_summary": "Explicit bounded creation policy: ending_reachability; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "status": "PLANNED_NOT_ACTUAL",
+          "authority_boundary": "ADVISORY"
+        }
+      },
+      "conflict_state": {
+        "operation": "book.conflict_state.author",
+        "content": {
+          "type": "conflict_state",
+          "safe_summary": "Explicit bounded creation policy: conflict_state; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "entries": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "foreshadowing_ledger": {
+        "operation": "book.foreshadowing_ledger.author",
+        "content": {
+          "type": "foreshadowing_ledger",
+          "safe_summary": "Explicit bounded creation policy: foreshadowing_ledger; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "entries": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "character_state": {
+        "operation": "book.character_state.author",
+        "content": {
+          "type": "character_state_snapshot",
+          "safe_summary": "Explicit bounded creation policy: character_state; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "entries": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "foreshadowing_state": {
+        "operation": "book.foreshadowing_state.author",
+        "content": {
+          "type": "foreshadow_snapshot",
+          "safe_summary": "Explicit bounded creation policy: foreshadowing_state; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "entries": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "reward_ledger": {
+        "operation": "book.reward_ledger.author",
+        "content": {
+          "type": "reward_ledger_snapshot",
+          "safe_summary": "Explicit bounded creation policy: reward_ledger; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "entries": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "promise_ledger": {
+        "operation": "book.promise_ledger.author",
+        "content": {
+          "type": "promise_ledger_snapshot",
+          "safe_summary": "Explicit bounded creation policy: promise_ledger; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "entries": [],
+          "authority_boundary": "PRE_CHAPTER_0"
+        }
+      },
+      "reader_segment": {
+        "operation": "book.reader_segment.author",
+        "content": {
+          "type": "reader_segment_profile",
+          "safe_summary": "Explicit bounded creation policy: reader_segment; no accepted history.",
+          "structured_facts": [],
+          "profile_id": "bounded-reader-proxy",
+          "profile_version": "reader-outcome-v3",
+          "authority_boundary": "ADVISORY"
+        }
+      },
+      "reader_contract": {
+        "operation": "book.reader_contract.author",
+        "content": {
+          "type": "reader_contract",
+          "safe_summary": "Explicit bounded creation policy: reader_contract; no accepted history.",
+          "structured_facts": [],
+          "profile_id": "bounded-reader-proxy",
+          "profile_version": "reader-outcome-v3",
+          "authority_boundary": "ADVISORY"
+        }
+      },
+      "reader_state": {
+        "operation": "book.reader_state.author",
+        "content": {
+          "type": "reader_state",
+          "safe_summary": "Explicit bounded creation policy: reader_state; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "reader-state-genesis-v1",
+          "profile_version": "reader-outcome-v3",
+          "status": "NOT_OBSERVED",
+          "accepted_through_chapter": 0,
+          "observations": [],
+          "evidence_class": "READER_PROXY_ADVISORY",
+          "authority_boundary": "ADVISORY"
+        }
+      },
+      "quality_trend": {
+        "operation": "book.quality_trend.author",
+        "content": {
+          "type": "quality_trend",
+          "safe_summary": "Explicit bounded creation policy: quality_trend; no accepted history.",
+          "structured_facts": [],
+          "contract_version": "v1",
+          "status": "NO_ACCEPTED_CHAPTERS",
+          "authority_boundary": "ADVISORY"
+        }
+      },
+      "platform_profile": {
+        "operation": "chapter.platform_profile.author",
+        "content": {
+          "type": "platform_profile",
+          "safe_summary": "玄幻轻喜剧，简体中文，每章5000–6000汉字，禁止武侠和悬疑。",
+          "structured_facts": [
+            {
+              "key": "platform_rules",
+              "value": {
+                "chapter_length": {
+                  "unit": "HAN_CHARACTERS_V1",
+                  "minimum": 5000,
+                  "maximum": 6000
+                },
+                "format": {
+                  "paragraph_max": 500
+                },
+                "sensitive_content": [],
+                "ai_content": {
+                  "mode": "internal"
+                },
+                "opening": [
+                  "依本书选择的玄幻轻喜剧方向，通过具体行动、人物互动和奇幻日常建立场景"
+                ],
+                "rhythm": [
+                  "是否采用及怎样采用技法由本书要求与批准计划决定，不固定公共章节套路"
+                ],
+                "publish_metadata": {
+                  "title_required": true
+                }
+              }
+            }
+          ],
+          "profile_id": "sol40-20261005T112522Z-fantasy-comedy-platform-v2",
+          "constraints": [
+            "本作品题材明确为玄幻轻喜剧；禁止武侠题材与悬疑题材，不得把江湖门派、武学争霸、侦查推理、追凶破案、阴谋揭谜作为故事主轴。一本原创小说，共40章，每章正文5000–6000汉字（HAN_CHARACTERS_V1，不计标点、数字、空白和拉丁字母）。生成模型固定Codex gpt-6-sol、推理medium。",
+            "简体中文，玄幻轻喜剧，基调明快、温暖、有生活气，第三人称限知、主要视角固定陆圆。通过动作、对白节奏和可信的奇幻日常形成幽默，允许轻松的困难与适量冒险。角色保持基本尊严和判断力；不靠全员降智、恶意羞辱、密集网络热梗、反复口头解释笑点或强行误会制造喜剧。局势与感情的推进须自然接续，不以沉重的悬疑氛围、秘密调查和谜底吊胃口。",
+            "本作品选择轻喜剧日常、谨慎但主动的经营选择、渐进修炼、人物关系中的互相帮助与合理摩擦。可选：有因果支持的小收获、偶尔出乎意料的奇幻行动反馈、局部笑点回收；由规划明确其适用与范围。明确不采用：每章强制悬念钩子、固定商业节拍、必须打脸、必须升级、故意设置谜案、毫无代价的系统奖励。不得用通用Quality阈值把未选择的方法变成正文要求。",
+            "原创边界：不复制参考作品的角色、宗门、神通或系统、具体情节链、可识别的人物组合与反转、对白或表达。所有新设定与事实由本书作者输入和正式批准/接纳资产决定。外部作品正文未导入，不声称已读原书；参考标题留在档案中，不能当成模仿指令。其他书状态、失败稿和未接纳候选不提供本书既成历史；角色所知与客观事实分开。",
+            "每章必须有5000–6000汉字的完整正文，禁止摘要、重复段落或无效解释凑长度；40章完成本书当前主问题，结局由已有行动与人物选择支撑。",
+            "完整经历正式Foundation、规划、Draft、Review、必要Revision、ReReview、Quality、原子接纳与下一章状态读取；实际稿件未产生前不能宣称符合题材或文学质量通过。"
+          ]
+        }
+      },
+      "quality_rubric": {
+        "operation": "chapter.quality_rubric.author",
+        "content": {
+          "type": "quality_rubric",
+          "safe_summary": "Explicit bounded creation policy: quality_rubric; no accepted history.",
+          "structured_facts": [],
+          "profile_id": "grounded-creation",
+          "dimensions": [
+            "continuity",
+            "causality",
+            "character_consistency",
+            "pacing",
+            "style"
+          ]
+        }
+      }
+    },
+    "chapter_group_execution": {
+      "policy_version": "sol40-20261005T112522Z-groups",
+      "maximum_chapters": 3,
+      "preferred_chapters": 2
+    },
+    "reading_checkpoints": [
+      10,
+      20,
+      30,
+      40
+    ],
+    "pilot_stop_after_chapter": 0
+  },
+  "knowledge_access_policy": {
+    "schema_version": "book-knowledge-access-policy.v1",
+    "policy_id": "sol40-20261005T112522Z-external-deny-all",
+    "policy_version": 1,
+    "project_id": "nf-sol40-20261005T112522Z",
+    "book_id": "nf-sol40-20261005T112522Z-book",
+    "mode": "DENY_ALL",
+    "allowed_knowledge_card_asset_version_ids": [],
+    "configured_explicitly": true,
+    "policy_hash": "sha256:3e2410117413cd57f16a0887037b785015a8f6a1167e2796304acb3257eadb39"
+  },
+  "formation_policy": {
+    "contract_version": "formation-generation.v2",
+    "approval_mode": "REVIEW_PLAN",
+    "creative_candidates": 2,
+    "target_chapters": 40,
+    "title": "这家灵兽食堂有点忙"
+  },
+  "book_target_chapter_count": 40,
+  "pilot_stop_after_chapter": 0,
+  "reading_checkpoints": [
+    10,
+    20,
+    30,
+    40
+  ],
+  "production_scope": "AUTHOR_GUIDED_SINGLE_BOOK",
+  "full_book_completion": "NOT_PROVEN",
+  "brief_input_hash": "sha256:a11e3f96f321a7dc10984d719ee3a80e290b0ffd30cec91f19cda2d8705c95e3",
+  "comparison_budget": {
+    "contract_version": "creative-provider-campaign-budget.v4",
+    "experiment_id": "sol40-20261005T112522Z",
+    "manifest_hash": "sha256:d49c16e69ce3f8e79a11ba9fd54cf59efdf203eafb76a85a378b4c93ac8508bc",
+    "expires_at": "2026-10-12T00:00:00+00:00",
+    "accounting_basis": "MIXED",
+    "shared_total": {
+      "calls": 1600,
+      "tokens": 80000000,
+      "priced_usd": "0"
+    },
+    "arms": [
+      {
+        "arm": "SINGLE",
+        "project_id": "nf-sol40-20261005T112522Z",
+        "book_id": "nf-sol40-20261005T112522Z-book",
+        "project_total": {
+          "calls": 1600,
+          "tokens": 80000000,
+          "priced_usd": "0"
+        },
+        "chapter_ranges": {
+          "PRODUCTION": [
+            1,
+            40
+          ]
+        },
+        "reference_allocation": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "screening_allocation": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        },
+        "calibration_allocation": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        },
+        "holdout_allocation": {
+          "calls": 20,
+          "tokens": 1000000,
+          "priced_usd": "0"
+        },
+        "source_allocation": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "design_allocation": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "0"
+        },
+        "production_allocation": {
+          "calls": 1180,
+          "tokens": 59000000,
+          "priced_usd": "0"
+        },
+        "repair_allocation": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "0"
+        }
+      }
+    ],
+    "entitlements": [
+      {
+        "provider": "codex-cli",
+        "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+        "calls": 1600,
+        "tokens": 80000000
+      }
+    ]
+  },
+  "status": "CONFIGURATION_VALIDATED_NO_PROVIDER_CALL",
+  "invocation_elapsed_seconds": 0.0
+}
