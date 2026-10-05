@@ -1,0 +1,30 @@
+{
+  "schema_version": "operator-campaign-manifest.v1",
+  "purpose": "FROZEN_OPERATOR_INPUT_NOT_RUNTIME_AUTHORITY",
+  "campaign_id": "sol40-20261005T112522Z",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "workspace_id": "nf-sol40-20261005T112522Z-workspace",
+  "author_input": {
+    "operation_id": "f8d38a34-ac05-4df7-aa74-840260008124",
+    "asset_version_id": "authority-output:f8d38a34-ac05-4df7-aa74-840260008124:creative.brief:v1",
+    "content_hash": "sha256:5bbeb22750f0a1951a19b242a228f7bb12331725f015a88ef77f93254898aa16"
+  },
+  "author_freeze_manifest_hash": "sha256:d51b47db4a41a44ee3b178d4b8fe038aa1c55688f89d50ad654f0fcab46bda50",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "medium",
+  "target_chapters": 40,
+  "chapter_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "minimum": 5000,
+    "maximum": 6000
+  },
+  "external_knowledge": "DENY_ALL",
+  "reference_source": "SOURCE_IMPORT_PENDING",
+  "budget_caps": {
+    "calls": 1600,
+    "tokens": 80000000
+  },
+  "authorization_evidence_hash": "sha256:a73c3b75fd4d7786959b45d8501308a4bd7a4cf49918811209866bd6dd08bd8e",
+  "expires_at": "2026-10-12T00:00:00+00:00"
+}

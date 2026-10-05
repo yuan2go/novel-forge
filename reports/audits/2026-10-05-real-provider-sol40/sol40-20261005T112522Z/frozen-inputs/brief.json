@@ -1,0 +1,147 @@
+{
+  "creative_brief_contract_version": "creative-brief-v3",
+  "idea": "暂定名《潮灯藏火》。原创架空修真海城，低阶灯器修补匠陆砚靠长期维护和有成本的试验积累本领；他的收益来自技艺、节约与可信合作，不靠系统赠送或抄取他人功法。城内数个势力依赖同一潮汐屏障而又互不信任，他从局部异常与具体委托逐步看见风险。低调有实际作用和代价；沉默可能保护自身，也可能让已知危险落在他人身上。权力人物及主要关系由本书正式Foundation独立生成，不采用特定参考作品的人物组合或识别性反转。40章完成一个有后果的中篇主问题，不把每章都写成升级、打脸或 cliffhanger。第三人称限知，主要视角固定陆砚；轻微冷幽默，行动具体、叙述克制。",
+  "genre": "原创仙侠，谨慎生存与技艺积累",
+  "audience": "喜欢低调成长、信息差、可信关系与持续因果的成年中文类型小说读者",
+  "constraints": [
+    "验证一本原创中文仙侠小说，共40章，每章正文5000–6000汉字（HAN_CHARACTERS_V1，标点、数字、空白、拉丁字母不计），总正文20万–24万汉字。模型固定Codex gpt-6-sol，推理medium。完整经历作者输入、Foundation、规划、正文、审读、必要修订、Quality、原子接纳和下一章状态读取；失败不得冒充完成。",
+    "本作品选择：谨慎决策、渐进积累、因果可追的收益与代价、有限视角的信息差和逐步建立的信任。可选技巧必须由规划明确决定适用与范围。明确不采用：每章强制悬念钩子、固定商业节拍、无代价连续升级、必须打脸的章节套路、为了冲突强迫角色犯低级错误。奖励只在行动确有相应后果时适用，不能从通用数值阈值制造。",
+    "原创要求：不复制参考作品角色姓名、宗门名称、神通/系统设定、女强男弱的识别性人物组合、开篇遭遇、独特反转、具体情节链、对白或表达。所有新设定与事件只由本书作者意图和正式生成/批准资产决定。未接纳候选、失败稿、其他书的Canon不得提供既成事实；传闻、推测、未来意图、角色所知与客观事实保持区别。",
+    "不得用摘要、重复段落或无效解释凑足长度。每章接纳后，后续章节仅消费精确已接纳正文所对应的Canon和Story State。",
+    "40章完成本书当前主问题，保留合理世界余波；结局必须由前文具体行动与代价支撑，不能以到达章数宣布一切成功。"
+  ],
+  "source_boundaries": [
+    "仅本书作者输入、获准原创Foundation/Planning及本书已接纳状态进入生产。",
+    "外部知识DENY_ALL；参考作品正文未导入，不声称已读原书，不以简介或模型印象替代原文分析。",
+    "参考书名及其来源状态仅在运行档案保留，不作为模仿指令或原文上下文。"
+  ],
+  "author_design": {
+    "contract_version": "author-design-input.v1",
+    "project_id": "nf-sol40-20261005T112522Z",
+    "book_id": "nf-sol40-20261005T112522Z-book",
+    "version": "sol40-20261005T112522Z-author-v1",
+    "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+    "source_task": "sol40-20261005T112522Z:user-authorized-real-validation",
+    "documents": [
+      {
+        "path": "author/author-contract.txt",
+        "content": "验证一本原创中文仙侠小说，共40章，每章正文5000–6000汉字（HAN_CHARACTERS_V1，标点、数字、空白、拉丁字母不计），总正文20万–24万汉字。模型固定Codex gpt-6-sol，推理medium。完整经历作者输入、Foundation、规划、正文、审读、必要修订、Quality、原子接纳和下一章状态读取；失败不得冒充完成。",
+        "content_hash": "sha256:8b8ffa145912b11a62101321314c5d650af98d7ef20a4a47406e11996a3c4f94"
+      },
+      {
+        "path": "author/original-premise.txt",
+        "content": "暂定名《潮灯藏火》。原创架空修真海城，低阶灯器修补匠陆砚靠长期维护和有成本的试验积累本领；他的收益来自技艺、节约与可信合作，不靠系统赠送或抄取他人功法。城内数个势力依赖同一潮汐屏障而又互不信任，他从局部异常与具体委托逐步看见风险。低调有实际作用和代价；沉默可能保护自身，也可能让已知危险落在他人身上。权力人物及主要关系由本书正式Foundation独立生成，不采用特定参考作品的人物组合或识别性反转。40章完成一个有后果的中篇主问题，不把每章都写成升级、打脸或 cliffhanger。第三人称限知，主要视角固定陆砚；轻微冷幽默，行动具体、叙述克制。",
+        "content_hash": "sha256:708771a4974067f1349100eb53f9b120eba653d420a6cbd158b19368f394f601"
+      },
+      {
+        "path": "author/work-craft.txt",
+        "content": "本作品选择：谨慎决策、渐进积累、因果可追的收益与代价、有限视角的信息差和逐步建立的信任。可选技巧必须由规划明确决定适用与范围。明确不采用：每章强制悬念钩子、固定商业节拍、无代价连续升级、必须打脸的章节套路、为了冲突强迫角色犯低级错误。奖励只在行动确有相应后果时适用，不能从通用数值阈值制造。",
+        "content_hash": "sha256:1bd8be705eeff1e931bc110f3a0ebe2e3a12cc03b6e4a87ce0c5563a8fc68b36"
+      },
+      {
+        "path": "author/originality-and-boundaries.txt",
+        "content": "原创要求：不复制参考作品角色姓名、宗门名称、神通/系统设定、女强男弱的识别性人物组合、开篇遭遇、独特反转、具体情节链、对白或表达。所有新设定与事件只由本书作者意图和正式生成/批准资产决定。未接纳候选、失败稿、其他书的Canon不得提供既成事实；传闻、推测、未来意图、角色所知与客观事实保持区别。",
+        "content_hash": "sha256:823faa33ef27f48dd0569964624954a9f9d85428c1f0d34e8d97809657363f7c"
+      }
+    ],
+    "fragments": [
+      {
+        "fragment_id": "author-contract",
+        "source_path": "author/author-contract.txt",
+        "start": 0,
+        "end": 175,
+        "content_hash": "sha256:8b8ffa145912b11a62101321314c5d650af98d7ef20a4a47406e11996a3c4f94",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "THEME_CONTRACT",
+          "ENDING_INTENT",
+          "READER_PROMISE",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      },
+      {
+        "fragment_id": "original-premise",
+        "source_path": "author/original-premise.txt",
+        "start": 0,
+        "end": 275,
+        "content_hash": "sha256:708771a4974067f1349100eb53f9b120eba653d420a6cbd158b19368f394f601",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "THEME_CONTRACT",
+          "ENDING_INTENT",
+          "READER_PROMISE",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "DIRECTION"
+      },
+      {
+        "fragment_id": "work-craft",
+        "source_path": "author/work-craft.txt",
+        "start": 0,
+        "end": 145,
+        "content_hash": "sha256:1bd8be705eeff1e931bc110f3a0ebe2e3a12cc03b6e4a87ce0c5563a8fc68b36",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "READER_PROMISE",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      },
+      {
+        "fragment_id": "originality-and-boundaries",
+        "source_path": "author/originality-and-boundaries.txt",
+        "start": 0,
+        "end": 147,
+        "content_hash": "sha256:823faa33ef27f48dd0569964624954a9f9d85428c1f0d34e8d97809657363f7c",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      }
+    ]
+  }
+}

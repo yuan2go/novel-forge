@@ -1428,16 +1428,17 @@ class StoryPlanningGenerationApplication:
         correlation_id: str,
     ) -> dict[str, Any]:
 
+        candidate = self._require_asset(
+            project_id=generation["project_id"], asset_version_id=candidate_asset_version_id,
+        )
+        from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
+        projection_version = "2.0.0" if (uses_work_requirements(candidate["content"]) and candidate["content"].get("chapter_contract_schema_version") == "chapter-mission-scene.v3") else "1.0.0"
         definition = chapter_plan_projection_definition(
             application_build_id=self.application_build_id,
-            commit_sha=self.commit_sha,
+            commit_sha=self.commit_sha, definition_version=projection_version,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(definition)
-            candidate = self._require_asset(
-                project_id=generation["project_id"],
-                asset_version_id=candidate_asset_version_id,
-            )
             uow.commit()
         generation_command = self._generation_command(
             generation["generation_operation_id"]
@@ -1493,7 +1494,7 @@ class StoryPlanningGenerationApplication:
                         )
             checkpoint("after_domain_validation")
             content = {
-                **_chapter_runtime_projection(dict(candidate["content"])),
+                **_chapter_runtime_projection(dict(candidate["content"]), projection_version=projection_version),
                 "source_planning_candidate_asset_version_id": (
                     candidate_asset_version_id
                 ),
@@ -1509,7 +1510,7 @@ class StoryPlanningGenerationApplication:
                     project_id=generation["project_id"],
                     asset_id=f"chapter-plan:{candidate_asset_version_id}",
                     asset_type="chapter_plan",
-                    schema_version="activated-chapter-plan.v1",
+                    schema_version="activated-chapter-plan.v2" if projection_version == "2.0.0" else "activated-chapter-plan.v1",
                     logical_ref=(
                         "story_planning/chapter_plans/"
                         f"{candidate_asset_version_id}.json"
@@ -1561,7 +1562,7 @@ class StoryPlanningGenerationApplication:
                     self.database_url,
                     {
                         "definition_name": CHAPTER_PLAN_PROJECTION_DEFINITION,
-                        "definition_version": "1.0.0",
+                        "definition_version": projection_version,
                         "project_id": generation["project_id"],
                         "workspace_id": generation["workspace_id"],
                         "book_id": generation["book_id"],
@@ -3313,7 +3314,7 @@ class StoryPlanningGenerationApplication:
 
 
 def chapter_plan_projection_definition(
-    *, application_build_id: str, commit_sha: str
+    *, application_build_id: str, commit_sha: str, definition_version: str = "2.0.0"
 ) -> dict[str, Any]:
     command = {
         "type": "object",
@@ -3343,7 +3344,7 @@ def chapter_plan_projection_definition(
     }
     return {
         "name": CHAPTER_PLAN_PROJECTION_DEFINITION,
-        "definition_version": "1.0.0",
+        "definition_version": definition_version,
         "family": "story_planning",
         "command_schema_version": "story-planning-chapter-plan-projection.command.v1",
         "result_schema_version": "story-planning-chapter-plan-projection.result.v1",
@@ -3401,12 +3402,39 @@ def chapter_plan_projection_definition(
     }
 
 
-def _chapter_runtime_projection(candidate: dict[str, Any]) -> dict[str, Any]:
+def _chapter_runtime_projection(candidate: dict[str, Any], *, projection_version: str = "2.0.0") -> dict[str, Any]:
     from novel_forge.modules.hierarchical_planning.chapter_contracts import (
         require_chapter_contracts,
     )
 
     require_chapter_contracts(candidate)
+
+    from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
+    if (projection_version == "2.0.0" and uses_work_requirements(candidate)
+            and candidate.get("chapter_contract_schema_version") == "chapter-mission-scene.v3"):
+        return {
+            **candidate,
+            "chapter": int(candidate.get("chapter_number") or candidate.get("chapter") or 0),
+            "title": str(candidate.get("title") or ""),
+            "premise": str(candidate.get("premise") or candidate.get("objective") or ""),
+            "runtime_projection_version": "2.0.0",
+            "chapter_function": candidate["primary_function"],
+            "chapter_objective": str(candidate.get("objective") or ""),
+            "scene_sequence": list(candidate.get("scene_plan") or ()),
+            "chapter_hook": candidate.get("ending_hook"),
+            "next_chapter_bridge": candidate.get("next_chapter_bridge"),
+            "reward_setup": list(candidate.get("reward_setup") or ()),
+            "reward_payoff": list(candidate.get("reward_payoff") or ()),
+            "reader_promise_actions": list(candidate.get("required_payoffs") or ())
+                or ([candidate["promise_action"]] if candidate.get("promise_action") is not None else []),
+            "emotional_curve": list(candidate.get("emotional_curve") or ()),
+            "suspense_curve": list(candidate.get("suspense_curve") or ()),
+            "protagonist_charm_mechanism": candidate.get("protagonist_charm_mechanism"),
+            "antagonist_pressure": candidate.get("antagonist_pressure"),
+            "conflict_chain": list(candidate.get("conflict_chain") or ()),
+            "conflict_escalation": list(candidate.get("conflict_escalation") or ()),
+            "information_reveals": list(candidate.get("information_reveals") or ()),
+        }
 
     primary = str(candidate.get("primary_function") or "progression")
     objective = str(candidate.get("objective") or candidate.get("premise") or "")

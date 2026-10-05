@@ -14,6 +14,94 @@ from tests.unit.test_creation_comparison import comparison_identities
 from tests.unit.test_single_book_budget_contract import single_book_policy
 
 
+def campaign_resume_inputs():
+    from tests.unit.test_creative_budget_contract import provider_campaign_policy
+    frozen, _ = single_resume_inputs()
+    policy = provider_campaign_policy()
+    scope = frozen['runtime_identity']
+    policy['comparison_budget']['arms'][0].update(project_id=scope['project_id'], book_id=scope['book_id'])
+    policy['authorization'].update(project_id=scope['project_id'], book_id=scope['book_id'])
+    frozen['comparison_budget'] = policy['comparison_budget']
+    frozen['runtime_settings'].update(NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT='16',
+        NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT='16000',
+        NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF='fixture-codex-entitlement')
+    frozen['cost_accounting'] = {'accounting_basis': 'MIXED',
+        'authorization_ref': policy['authorization']['authorization_ref'],
+        'authorized_total_usd': '8', 'monetary_cost_status': 'PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN'}
+    binding = {'owner': 'CREATIVE_EXPERIMENT_BUDGET', 'policy_version': policy['policy_version'],
+        'policy_hash': policy_hash(policy), 'contract_hash': contract_hash(policy['comparison_budget']),
+        'subject_id': 'project:' + scope['project_id'], 'authorization': policy['authorization']}
+    return frozen, binding
+
+
+def test_campaign_freeze_separates_native_money_grant_from_codex_entitlement():
+    from scripts.creation_pilot import freeze_campaign_accounting
+    frozen, binding = campaign_resume_inputs()
+    provider_authorization = {'accounting_basis': 'ACCOUNT_ENTITLEMENT',
+        'authorization_ref': 'fixture-codex-entitlement', 'authorized_total_usd': None,
+        'monetary_cost_status': 'UNKNOWN'}
+    actual = freeze_campaign_accounting(provider_authorization,
+        {'comparison_budget': frozen['comparison_budget'], 'budget_binding': binding},
+        frozen['runtime_settings'])
+    assert actual == frozen['cost_accounting']
+    assert provider_authorization['authorized_total_usd'] is None
+    assert creation_resume_semantics(frozen, binding)
+
+
+@pytest.mark.parametrize('field,value', [
+    ('NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF', 'another-entitlement'),
+    ('NOVEL_FORGE_CODEX_ACCOUNTING_MODE', 'PRICED'),
+])
+def test_campaign_resume_rejects_wrong_entitlement(field, value):
+    frozen, binding = campaign_resume_inputs()
+    frozen['runtime_settings'][field] = value
+    with pytest.raises(ValueError, match='entitlement'):
+        creation_resume_semantics(frozen, binding)
+
+
+def test_campaign_resume_preserves_money_ceiling_and_unknown_account_cost():
+    frozen, binding = campaign_resume_inputs()
+    frozen['cost_accounting']['authorized_total_usd'] = '9'
+    with pytest.raises(ValueError, match='campaign'):
+        creation_resume_semantics(frozen, binding)
+    frozen['cost_accounting']['authorized_total_usd'] = '8'
+    frozen['cost_accounting']['monetary_cost_status'] = 'ESTIMATED'
+    with pytest.raises(ValueError, match='campaign'):
+        creation_resume_semantics(frozen, binding)
+
+
+@pytest.mark.parametrize('initialize', [False, True])
+def test_campaign_existing_book_can_resume_with_design_permission_closed(monkeypatch, initialize):
+    frozen, binding = campaign_resume_inputs()
+    binding['authorization']['business_scope']['design_allowed'] = False
+    binding['authorization']['authorized_cumulative_caps']['DESIGN'] = {'calls': 0, 'tokens': 0, 'priced_usd': '0'}
+    binding['policy_hash'] = policy_hash({'policy_version': binding['policy_version'],
+        'comparison_budget': frozen['comparison_budget'], 'authorization': binding['authorization']})
+    normalized = creation_resume_semantics(frozen, binding)
+    scope = frozen['runtime_identity']
+    book = {'project_id': scope['project_id'], 'book_id': scope['book_id'],
+            'runtime_policy': {'creation_pilot': normalized}, 'version': 10}
+    monkeypatch.setattr(creation_pilot, 'BookDesignAuthorityQuery', lambda _: SimpleNamespace(require_book=Mock(return_value=book)))
+    monkeypatch.setattr(creation_pilot, 'ProjectAuthorityQuery', lambda _: SimpleNamespace(require_project=Mock(return_value={
+        'status': 'ACTIVE', 'workspace_id': scope['workspace_id']})))
+    application = SimpleNamespace(database_url='not-connected', execute=Mock())
+    composition = SimpleNamespace(formation=SimpleNamespace(generation=SimpleNamespace(book_design=application)))
+    assert creation_pilot.prepare_pilot_book(composition=composition, principal=Mock(),
+        project_id=scope['project_id'], workspace_id=scope['workspace_id'], book_id=scope['book_id'],
+        run_key=frozen['run_key'], title='Frozen campaign continuation', frozen=frozen,
+        initialize=initialize, budget_binding=binding) == book
+    assert application.execute.call_count == int(initialize)
+    monkeypatch.setattr(creation_pilot, 'BookDesignAuthorityQuery', lambda _: SimpleNamespace(
+        require_book=Mock(side_effect=KernelError('BOOK_NOT_FOUND', 'No existing Book'))))
+    application.execute.reset_mock()
+    with pytest.raises(ValueError, match='requires native design authorization'):
+        creation_pilot.prepare_pilot_book(composition=composition, principal=Mock(),
+            project_id=scope['project_id'], workspace_id=scope['workspace_id'], book_id=scope['book_id'],
+            run_key=frozen['run_key'], title='Unauthorized new Book', frozen=frozen,
+            initialize=True, budget_binding=binding)
+    application.execute.assert_not_called()
+
+
 def single_resume_inputs():
     identity = comparison_identities(Path('/tmp/fixture-single-resume-not-written'))[0]
     frozen = deepcopy(identity['frozen_configuration'])

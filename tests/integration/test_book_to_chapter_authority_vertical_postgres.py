@@ -373,7 +373,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             )
             candidates = (
                 chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
-                    project_id
+                    project_id, current_state_contract=True
                 )
             )
             longform_versions = self._seed_book_inputs(project_id)
@@ -1498,7 +1498,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             authentication_source="integration-test",
         )
         candidates = list(
-            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
+            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
         )
         self._seed_two_chapter_plans(project_id, candidates)
         versions = self._seed_book_inputs(project_id)
@@ -1710,6 +1710,10 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             "title": "The Debt Compounds",
             "chapter_objective": "Escalate the cost created by chapter one.",
         }
+        if second_content.get("narrative_realization_slice"):
+            second_content["narrative_realization_slice"] = {
+                **second_content["narrative_realization_slice"], "chapter_number": 2
+            }
         if canonical_execution:
             second_content.update(
                 {

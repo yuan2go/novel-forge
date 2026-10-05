@@ -585,6 +585,7 @@ def build_chapter_execution_intent(
                 "target_word_count",
                 "prohibited_outcomes",
                 "author_design_guidance",
+                "method_choices",
             )
             if key in view
         }

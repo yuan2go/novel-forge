@@ -306,6 +306,15 @@ def test_benchmark_grant_preserves_unknown_quality_and_production_rejections():
         )
 
 
+def test_benchmark_grant_cannot_waive_provider_task_authorization():
+    _, _, snapshot = contract()
+    decision = ordinary_decision(task_overrides={"declared_requirements": {
+        "provider_task_scope": {"deepseek": ["review"]}}})
+    result = benchmark_decision(decision, snapshot, environment="validation").to_dict()
+    assert result["status"] == "BLOCKED"
+    assert "PROVIDER_TASK_NOT_AUTHORIZED" in result["candidates"][0]["rejected_reasons"]
+
+
 @pytest.mark.parametrize(
     "overrides,reason",
     [
@@ -789,8 +798,23 @@ def test_routing_complete_request_meter_rejects_oversized_diagnostic_before_sele
     assert "BUDGET_HARD_LIMIT" in task_limited["candidates"][0]["rejected_reasons"]
 
 
-@pytest.mark.parametrize("version", ["3.3.0", "3.4.0", "3.4.2", "3.7.0", "4.0.0", "3.4.1-author-input.v1", None, []])
+@pytest.mark.parametrize("version", ["3.3.0", "3.4.0", "3.4.2", "3.7.1", "3.70.0", "4.0.0", "3.4.1-author-input.v1", None, []])
 def test_chapter_sample_source_versions_reject_unsupported_contracts(version):
     from novel_forge.modules.command_kernel.routing_bootstrap import chapter_sample_source_version_supported
 
     assert not chapter_sample_source_version_supported(version)
+
+
+@pytest.mark.parametrize("version", ["3.4.1", "3.5.0", "3.6.0", "3.7.0", "3.8.0", "3.8.0-author-input.v2"])
+def test_chapter_sample_source_versions_keep_exact_recoverable_contracts(version):
+    from novel_forge.modules.command_kernel.routing_bootstrap import chapter_sample_source_version_supported
+    assert chapter_sample_source_version_supported(version)
+
+
+def test_reservation_cannot_dispatch_outside_frozen_provider_task_scope():
+    from novel_forge.modules.production_execution.routing_runtime import validate_routed_reservation
+    _, _, authorization = contract()
+    sampled = benchmark_decision(ordinary_decision(), authorization, environment="validation").to_dict()
+    sampled["task"]["declared_requirements"]["provider_task_scope"] = {"deepseek": ["review"]}
+    with pytest.raises(KernelError, match="PROVIDER_TASK_NOT_AUTHORIZED"):
+        validate_routed_reservation(sampled, reserved_tokens=1100, reserved_amount=".001")

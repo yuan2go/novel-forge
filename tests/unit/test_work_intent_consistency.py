@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -82,8 +81,11 @@ def work_input(style: str, thresholds: dict | None = None) -> tuple[dict, dict, 
     return plan, context, candidate
 
 
-def final_input(stage: str, style: str) -> tuple[str, dict]:
+def final_input(stage: str, style: str, method_choices: dict | None = None) -> tuple[str, dict]:
     plan, context, candidate = work_input(style)
+    if method_choices is not None:
+        plan.update(runtime_projection_version="2.0.0", source_extensions=method_choices)
+        candidate["creative_baseline"] = build_creative_baseline(plan, context)
     context["host_quality_evidence"] = {"contract_version": "accepted-quality-host-projection.v1",
         "provider_visibility": "INTERNAL_QUALITY_ONLY", "segments": [{"structured_facts": [{"private": "SYNTHETIC_HOST_ONLY_MARKER"}]}]}
     materialization = _prompt_materialization(context)
@@ -197,11 +199,12 @@ def test_missing_aesthetic_measurement_does_not_use_legacy_sentence_or_paragraph
     action = derive_quality_actions([pending])[0]
     assert action["required_action"] == "EVIDENCE_REASSESSMENT"
     assert action["permitted_change_scope"] == "EVIDENCE_ONLY"
-    failed = deepcopy(pending)
-    failed.update(
-        gate_status="FAILED", evidence_locations=[{"quote": "不合本书要求的精确原文"}]
-    )
-    assert derive_quality_actions([failed])[0]["required_action"] == "LOCAL_REPAIR"
+    failed = next(item for item in quality_result({"maximum_average_paragraph": 6})["dimensions"]
+                  if item["dimension"] == "paragraph_structure")
+    assert failed["gate_status"] == "FAILED"
+    assert failed["calibration_status"] == "DETERMINISTIC"
+    assert derive_quality_actions([failed])[0]["required_action"] == "EVIDENCE_REASSESSMENT"
+    assert derive_quality_actions([failed])[0]["permitted_change_scope"] == "EVIDENCE_ONLY"
 
 
 def test_quality_rejects_baseline_version_drift_instead_of_rescoring_another_work():

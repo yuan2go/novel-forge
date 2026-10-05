@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 import tempfile
 import unittest
@@ -567,6 +568,7 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                 "NOVEL_FORGE_ENVIRONMENT": "production",
                 "NOVEL_FORGE_ROUTER_PROVIDERS": "codex-cli",
                 "NOVEL_FORGE_ROUTER_CODEX_ESCALATION": "false",
+                "NOVEL_FORGE_REASONING_EFFORT": "medium",
             })
             environment.pop("DEEPSEEK_API_KEY")
             environment.pop("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL")
@@ -589,6 +591,8 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         candidates = execution.gateway.provider_router.candidates
         self.assertEqual(len(candidates), 1)
         self.assertEqual(candidates[0].provider, "codex-cli")
+        self.assertEqual(candidates[0].reasoning, "high")
+        self.assertTrue(candidates[0].candidate_id.endswith(":high"))
         self.assertTrue(candidates[0].escalation_only)
         self.assertEqual(candidates[0].quota_remaining, 3)
         self.assertEqual(candidates[0].pricing.accounting_basis, "ACCOUNT_ENTITLEMENT")
@@ -597,6 +601,69 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertTrue(all(route.token_accounting_method ==
                             "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
                             for route in execution.gateway.routes.values()))
+
+    def test_explicit_codex_router_effort_reaches_selected_request(self) -> None:
+        from dataclasses import asdict
+        from scripts.creation_comparison import COMPARISON_RUNTIME_SETTINGS
+
+        repository_root = Path(__file__).resolve().parents[2]
+        for providers in ("codex-cli", "deepseek,codex-cli"):
+            with self.subTest(providers=providers), tempfile.TemporaryDirectory() as directory:
+                environment = _mixed_router_environment(Path(directory))
+                environment.update({
+                    "NOVEL_FORGE_ROUTER_PROVIDERS": providers,
+                    "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT": "medium",
+                    "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE": json.dumps({
+                        provider: ["draft", "revision"] if provider == "codex-cli" else ["review", "rereview"]
+                        for provider in providers.split(",")
+                    }),
+                })
+                if providers == "codex-cli":
+                    environment.pop("DEEPSEEK_API_KEY")
+                    environment.pop("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL")
+                with (
+                    patch("novel_forge.storage.object_store.MinioObjectStore",
+                          return_value=SimpleNamespace(client=object())),
+                    patch("novel_forge.api.authority_dependencies.observe_codex_cli_version",
+                          return_value="codex-test 1.0"),
+                ):
+                    execution = build_production_execution_composition(
+                        IndustrialSettings(root=repository_root, database_url="postgresql://authority"),
+                        env=environment,
+                    )
+                router = execution.gateway.provider_router
+                self.assertEqual(router.provider_task_scope["codex-cli"], ["draft", "revision"])
+                candidate = next(item for item in router.candidates if item.provider == "codex-cli")
+                self.assertEqual(candidate.reasoning, "medium")
+                self.assertEqual(candidate.candidate_id, f"codex-cli:{candidate.model}:medium")
+                self.assertEqual(candidate.quota_remaining, 3)
+                self.assertEqual(candidate.pricing.accounting_basis, "ACCOUNT_ENTITLEMENT")
+                base = execution.gateway.routes["draft"]
+                selected = router._selected_route(base, {
+                    "status": "SELECTED", "task": {"task_type": "draft", "declared_requirements": {
+                        "provider_task_scope": router.provider_task_scope}},
+                    "selected": {"candidate": asdict(candidate)},
+                })
+                self.assertEqual(selected.model_profile.model_provider, "codex-cli")
+                self.assertEqual(selected.model_profile.reasoning_effort, "medium")
+                if providers == "codex-cli":
+                    self.assertTrue(all(route.model_profile.reasoning_effort == "medium"
+                                        for route in execution.gateway.routes.values()))
+                else:
+                    self.assertEqual(base.model_profile.model_provider, "deepseek")
+        self.assertIn("NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT", COMPARISON_RUNTIME_SETTINGS)
+        self.assertIn("NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE", COMPARISON_RUNTIME_SETTINGS)
+
+    def test_explicit_invalid_codex_router_effort_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            environment = _mixed_router_environment(Path(directory))
+            for effort in ("", "unknown", "ultra"):
+                with self.subTest(effort=effort), self.assertRaisesRegex(ValueError, "ROUTER_REASONING_EFFORT"):
+                    build_production_execution_composition(
+                        IndustrialSettings(root=Path(__file__).resolve().parents[2],
+                                           database_url="postgresql://authority"),
+                        env={**environment, "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT": effort},
+                    )
 
     def test_configured_mixed_router_fails_closed_when_codex_lane_is_unavailable(
         self,
@@ -612,8 +679,19 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
                         root=repository_root,
                         database_url="postgresql://authority",
                     ),
-                    env=environment,
-                )
+                        env=environment,
+                    )
+
+    def test_explicit_null_or_non_object_provider_scope_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            environment = _mixed_router_environment(Path(directory))
+            for value in ("null", "[]", '"unrestricted"'):
+                environment["NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE"] = value
+                with self.subTest(value=value), self.assertRaisesRegex(ValueError, "PROVIDER_TASK_SCOPE_INVALID"):
+                    build_production_execution_composition(
+                        IndustrialSettings(root=Path(__file__).resolve().parents[2], database_url="postgresql://authority"),
+                        env=environment,
+                    )
 
     def test_configured_mixed_router_fails_closed_when_deepseek_lane_is_unavailable(
         self,

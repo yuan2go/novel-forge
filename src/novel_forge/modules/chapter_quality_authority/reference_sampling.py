@@ -386,7 +386,7 @@ def reference_decision_qualifies(decision: Mapping[str, Any], *, evidence: Mappi
     route = execution.get("route_snapshot") or {}
     process = execution.get("process_evidence") or {}
     strata = benchmark.get("reference_label_strata") or {}
-    compatible_versions = {POLICY_VERSION} | ({"quality-constrained-routing.v10"} if stage != "canon_support" else set())
+    compatible_versions = {POLICY_VERSION} | ({"quality-constrained-routing.v10", "quality-constrained-routing.v11"} if stage != "canon_support" else set())
     if (stage not in REFERENCE_TASKS or decision.get("schema_version") not in compatible_versions
         or decision.get("status") != "SELECTED" or decision.get("bootstrap_authorization")
         or decision.get("production_eligible") is False or selected.get("rejected_reasons")

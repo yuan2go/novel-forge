@@ -206,6 +206,32 @@ def authorize_execution(
     }
 
 
+def freeze_campaign_accounting(
+    provider_authorization: dict[str, Any], native_budget: dict[str, Any], values: dict[str, str]
+) -> dict[str, Any]:
+    from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_BUDGET_VERSIONS
+    from scripts.creation_comparison import _budget_binding
+
+    plan = native_budget["comparison_budget"]
+    if plan["contract_version"] not in PROVIDER_BUDGET_VERSIONS:
+        return dict(provider_authorization)
+    binding = _budget_binding(native_budget["budget_binding"], plan["arms"][0], plan)
+    configured_ref = values.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF")
+    lanes = [lane for lane in plan["entitlements"]
+             if lane["provider"] == "codex-cli" and lane["authorization_ref"] == configured_ref]
+    if (len(lanes) != 1 or provider_authorization["accounting_basis"] != "ACCOUNT_ENTITLEMENT"
+        or provider_authorization["authorization_ref"] != configured_ref
+        or provider_authorization["authorized_total_usd"] is not None
+        or provider_authorization["monetary_cost_status"] != "UNKNOWN"):
+        raise ValueError("Creation campaign must retain the exact Codex entitlement authorization")
+    return {
+        "accounting_basis": "MIXED",
+        "authorization_ref": binding["authorization"]["authorization_ref"],
+        "authorized_total_usd": plan["shared_total"]["priced_usd"],
+        "monetary_cost_status": "PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN",
+    }
+
+
 def prepare_pilot_book(
     *,
     composition: Any,
@@ -224,8 +250,8 @@ def prepare_pilot_book(
     if frozen.get("comparison_budget"):
         from scripts.creation_comparison import creation_resume_semantics
         registered_frozen = creation_resume_semantics(frozen, budget_binding)
-        from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSIONS
-        single_book = frozen["comparison_budget"].get("contract_version") in SINGLE_BOOK_VERSIONS
+        from novel_forge.modules.command_kernel.creative_budget_contract import SINGLE_BOOK_VERSIONS, PROVIDER_BUDGET_VERSIONS
+        single_book = frozen["comparison_budget"].get("contract_version") in SINGLE_BOOK_VERSIONS | PROVIDER_BUDGET_VERSIONS
         authorization = budget_binding["authorization"]
         if not single_book:
             creation_caps = authorization["authorized_cumulative_caps"]["CREATION"]

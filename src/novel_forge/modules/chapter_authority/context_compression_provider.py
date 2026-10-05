@@ -51,6 +51,8 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         or not 1 <= int(task.get("target_tokens") or 0) <= 512_000
     ):
         raise KernelError("CONTEXT_COMPRESSION_TASK_INVALID", "compression needs a bounded source chunk and frozen task boundary")
+    if not reference:
+        compression_boundary_identity(boundary, strict=True)
     ids = []
     projected = []
     for unit in units:

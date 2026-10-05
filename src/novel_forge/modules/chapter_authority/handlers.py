@@ -222,6 +222,11 @@ class _PlanHandler:
                 "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
                 "ChapterPlan command identity does not match the frozen AssetVersion",
             )
+        if (request.definition_version in {"3.8.0", "3.8.0-author-input.v2"}
+                and source_plan.content.get("source_planning_candidate_asset_version_id")
+                and source_plan.content.get("runtime_projection_version") != "2.0.0"):
+            raise KernelError("CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED",
+                "Current production cannot select a legacy projection with fabricated work methods")
         plan, qualification = normalize_authoritative_chapter_plan(
             project_id=request.project_id,
             expected_chapter=chapter,
@@ -271,6 +276,9 @@ class _PlanHandler:
             manifest = {
                 **payload,
                 "workspace_id": request.workspace_id,
+                **({"style_policy_version_id": next(
+                    (item["asset_version_id"] for item in selected if item["asset_type"] == "style_policy"), ""
+                )} if request.definition_version == "3.8.0" else {}),
                 "quality_profile_version_id": next(
                     (
                         item["asset_version_id"]
@@ -352,6 +360,16 @@ class _ExecutionIntentHandler:
             policies = [
                 item for item in request.inputs if item.asset_type == "style_policy"
             ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+                    raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
             if len(policies) > 1:
                 raise KernelError(
                     "STYLE_POLICY_INPUT_AMBIGUOUS",
@@ -2017,6 +2035,9 @@ class _QualityGroupHandler:
         context_content = dict(context.content)
         generated: ModelProviderResult | None = None
         reference_calibration = None
+        if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2"}:
+            raise KernelError("QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED",
+                              "Frozen work-quality.v1 cannot safely continue under v2; retain receipts and admit an explicit replacement")
         quality_context = build_quality_context_view(
             group=self.group,
             revision=revision.content,
@@ -2091,7 +2112,7 @@ class _QualityGroupHandler:
                                 "quality_policy_digest": quality_context[
                                     "compiled_quality_policy"
                                 ]["policy_digest"],
-                                "evaluation_semantics_version": "work-quality.v1",
+                                "evaluation_semantics_version": "work-quality.v2",
                             }
                             if request.work_requirements_enabled
                             else {}
@@ -2343,7 +2364,8 @@ class _QualityHandler:
                             }
                             if action.get("required_action") != "EVIDENCE_REASSESSMENT"
                             and (
-                                (review.content.get("cross_chapter_window") or {}).get(
+                                request.work_requirements_enabled
+                                or (review.content.get("cross_chapter_window") or {}).get(
                                     "contract_version"
                                 )
                                 == "cross-chapter-review-window.v2"

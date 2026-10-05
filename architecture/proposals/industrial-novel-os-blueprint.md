@@ -8,8 +8,12 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `d943e401e8f9599db689895831a662d0b2054990`
-Baseline implementation identity: `sha256:52d03d242189d062a1e56cfb8cba424311bc34c71748fdd77a28316d1fb89edb`
+Current-reality baseline: `a57b8dbb959f790c606c59c98fccfbe863434a40`
+Baseline implementation identity: `sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36`
+
+2026-10-05 baseline revalidation includes work Quality semantics and Context routing.
+Remaining proposal decisions retain their declared status. MOCK_E2E does not establish
+full backend qualification, real-Provider qualification or literary quality.
 
 <!-- proposal-lifecycle
 {
@@ -18,8 +22,8 @@ Baseline implementation identity: `sha256:52d03d242189d062a1e56cfb8cba424311bc34
   "reviewed_on": "2026-10-05",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "d943e401e8f9599db689895831a662d0b2054990",
-    "implementation_tree_sha": "sha256:52d03d242189d062a1e56cfb8cba424311bc34c71748fdd77a28316d1fb89edb"
+    "sha": "a57b8dbb959f790c606c59c98fccfbe863434a40",
+    "implementation_tree_sha": "sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",

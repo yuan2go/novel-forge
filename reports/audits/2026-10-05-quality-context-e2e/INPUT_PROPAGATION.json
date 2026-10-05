@@ -1,0 +1,2503 @@
+{
+  "evidence_class": "MOCK_E2E",
+  "qualification_source": "CONTROLLED_TEST_OBSERVATIONS_NOT_PERSISTED",
+  "runtime_declared_sha_is_synthetic": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "real_provider_validated": false,
+  "creative_quality_proven": false,
+  "implementation_commit": "a57b8dbb959f790c606c59c98fccfbe863434a40",
+  "scenarios": [
+    {
+      "artifact_directory": "test_formal_author_formation_a0",
+      "scenario": {
+        "genre": "serious realist observation",
+        "audience": "adult reflective readers",
+        "tone": "克制、观察性、保留含混",
+        "pov": "第三人称限知",
+        "structure": "三章短篇、场景并置",
+        "character": "制图学徒保留犹疑，不强制成长弧线",
+        "world": "档案由普通机构管理，无超自然权力",
+        "prohibition": "禁止救世结局和新能力解决问题",
+        "optional": "允许环境观察；不采用奖励机制或悬念钩子"
+      },
+      "formation_id": "story-formation:8d611cc80b8fa1b3711555dd5d0e8b4c4325ad9269049a2ee5875f51c237ecc2",
+      "book_id": "book:project-dea93b8ab50e4522a05a117b58e8f991",
+      "frozen_author_input_digest": "sha256:cb0e856a94ff3b7c6f59fce865cbd5274bab586c137236f76391f4b43e9de454",
+      "foundation_set_digest": "sha256:f8876b8428e715355e357b0866899a73d4aaf8286b1f49f6f3492d3f8ae40bad",
+      "accepted_through_chapter": 3,
+      "routing_effect_count": 70,
+      "route_policy_versions": [
+        "quality-constrained-routing.v12"
+      ],
+      "native_stages": [
+        "arc_plan.generate",
+        "book_plan.generate",
+        "canon_extraction",
+        "canon_support",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+        "character.cast.generate",
+        "creative.candidates.generate",
+        "draft",
+        "ending.intent.generate",
+        "memo",
+        "quality_commercial",
+        "quality_longform",
+        "quality_platform",
+        "quality_source_originality",
+        "quality_structural",
+        "reader.promise.generate",
+        "rereview",
+        "review",
+        "revision",
+        "theme.candidates.generate",
+        "volume_plan.generate",
+        "world.design.generate",
+        "world_candidates.evaluate",
+        "world_candidates.generate"
+      ],
+      "chapters": [
+        {
+          "chapter": 1,
+          "root_operation_id": "602e0d2b-24bf-4ff3-b4e6-ee3a57a92332",
+          "baseline_digest": "sha256:f4b5050fcb74762d9af59ad5ccd567e95df924bf7ed3df660bc02d0e3454c3e7",
+          "source_plan": {
+            "content_hash": "sha256:10f0cd1d2a6bea2bc4be9b618a33eb20b6a6814a1f17501af891189cd3369661",
+            "asset_version_id": "4fb6fca6-f069-4caa-92d3-2a47e06829eb"
+          },
+          "style_policy_version_id": "authority-output:57eda889-87fe-4e07-912f-4ffd9f546a5d:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-dea93b8ab50e4522a05a117b58e8f991",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:cbcf92c3485c2129265a29eef4a3e6584a0ffb067aad56e354b0a24c7e49b649",
+                "asset_version_id": "5bc8a061-ecd4-45ab-a0f9-41aa68bca39d"
+              },
+              {
+                "content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+                "asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:0b9989872451b7d8ceeb6e8f1597936b0c79f35ff69cc5a357e4963a09c40e2a",
+                "asset_version_id": "authority-output:8203753c-c091-4a60-9549-4dc38be71797:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+            "source_asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "genre: serious realist observation\naudience: adult reflective readers\ntone: 克制、观察性、保留含混\npov: 第三人称限知\nstructure: 三章短篇、场景并置\ncharacter: 制图学徒保留犹疑，不强制成长弧线\nworld: 档案由普通机构管理，无超自然权力\nprohibition: 禁止救世结局和新能力解决问题\noptional: 允许环境观察；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:022a35cf048bd262d59961ff5f10354da6e7d47af22c91a961f2f86cc2b26537",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              1,
+              1
+            ],
+            "binding_digest": "sha256:06e88460d201010659e5a3682cbab5b95b9cad506e4092f9fb2a704f50db8ef0",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:c2d6939022dee11cb2de365a0e6b42175e22cc3bf1259a1d1c75566996104dec",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 2,
+              "metadata_count": 2
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:11bd27d65a72f381d0920398fbc6cd22c1c974d0e11d63d8b0bb4770758c3e01",
+            "brief_asset_version_id": "authority-output:2ff74853-5c79-41f2-9346-8832ca3f8767:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "克制、观察性、保留含混",
+            "constraints": [
+              "克制、观察性、保留含混",
+              "第三人称限知",
+              "三章短篇、场景并置",
+              "制图学徒保留犹疑，不强制成长弧线",
+              "档案由普通机构管理，无超自然权力",
+              "禁止救世结局和新能力解决问题",
+              "允许环境观察；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "serious realist observation",
+            "subgenre": "institutional mystery",
+            "target_reader": "adult reflective readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "setup"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+                "source_asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:2322a8e9-2682-4cf0-8f15-f4402a1fe78e:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:546887c1-b542-4e17-ad64-dda229821477:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:aac63bf4-a036-4d24-a44f-8ffa7c3de39a:book.bootstrap.initial_story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:d861318f-390f-4376-92a8-67dd720d6c75:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:f4b5050fcb74762d9af59ad5ccd567e95df924bf7ed3df660bc02d0e3454c3e7",
+          "candidate_asset_version_id": "authority-output:a4ff77c0-14bf-4620-af56-07a331c01f18:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:3d5e0368b99cefb4d98206b47e496f5ff127536568a314501798f5dd5b191a47",
+            "candidate_asset_version_id": "authority-output:a4ff77c0-14bf-4620-af56-07a331c01f18:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:3603d9154bb78fe7bde534388675b34cbf542631bb3298d4b456d76e664cf9cf",
+            "outcome_asset_version_id": "authority-output:bd973b90-f26f-4db0-8d6e-ba185b0b1673:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:bd973b90-f26f-4db0-8d6e-ba185b0b1673:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:bd973b90-f26f-4db0-8d6e-ba185b0b1673:chapter.canon.current:v1",
+            "text_hash": "sha256:1f2020d617847cd7c74e9e9040afa036d7fca80129a2a174ec6cd46569992f88"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:fa0816f46173da35b86346ac0c5bc08dbaae20c119259fbd74441ad3471a3d17"
+        },
+        {
+          "chapter": 2,
+          "root_operation_id": "e8432f26-963f-4806-8e0a-db248c224af7",
+          "baseline_digest": "sha256:bc6c2cd427b8ca83d4eaf8d03bbfd5fa65d41f6386ba3db607c7c654a28d6d41",
+          "source_plan": {
+            "content_hash": "sha256:b7b3d93685dc1ec3769d7240ab839f7d42713618d3f732631fccf15abef98a7f",
+            "asset_version_id": "264aa45f-aab9-4cf5-8536-580c28455cb6"
+          },
+          "style_policy_version_id": "authority-output:57eda889-87fe-4e07-912f-4ffd9f546a5d:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-dea93b8ab50e4522a05a117b58e8f991",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:cbcf92c3485c2129265a29eef4a3e6584a0ffb067aad56e354b0a24c7e49b649",
+                "asset_version_id": "5bc8a061-ecd4-45ab-a0f9-41aa68bca39d"
+              },
+              {
+                "content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+                "asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:0b9989872451b7d8ceeb6e8f1597936b0c79f35ff69cc5a357e4963a09c40e2a",
+                "asset_version_id": "authority-output:8203753c-c091-4a60-9549-4dc38be71797:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+            "source_asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "genre: serious realist observation\naudience: adult reflective readers\ntone: 克制、观察性、保留含混\npov: 第三人称限知\nstructure: 三章短篇、场景并置\ncharacter: 制图学徒保留犹疑，不强制成长弧线\nworld: 档案由普通机构管理，无超自然权力\nprohibition: 禁止救世结局和新能力解决问题\noptional: 允许环境观察；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:022a35cf048bd262d59961ff5f10354da6e7d47af22c91a961f2f86cc2b26537",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              2,
+              2
+            ],
+            "binding_digest": "sha256:06e88460d201010659e5a3682cbab5b95b9cad506e4092f9fb2a704f50db8ef0",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:9cf39444a18538e4720d77bf1b4024010d77ce8ee3cb79aa2ce2d38f569d11b5",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 2,
+              "metadata_count": 2
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:11bd27d65a72f381d0920398fbc6cd22c1c974d0e11d63d8b0bb4770758c3e01",
+            "brief_asset_version_id": "authority-output:2ff74853-5c79-41f2-9346-8832ca3f8767:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "克制、观察性、保留含混",
+            "constraints": [
+              "克制、观察性、保留含混",
+              "第三人称限知",
+              "三章短篇、场景并置",
+              "制图学徒保留犹疑，不强制成长弧线",
+              "档案由普通机构管理，无超自然权力",
+              "禁止救世结局和新能力解决问题",
+              "允许环境观察；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "serious realist observation",
+            "subgenre": "institutional mystery",
+            "target_reader": "adult reflective readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "reversal"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+                "source_asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:84559778-075a-4296-b4ed-3c1ed3e45cdc:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:bd973b90-f26f-4db0-8d6e-ba185b0b1673:chapter.canon.current:v1",
+            "accepted_through_chapter": 1,
+            "story_state_snapshot_version": "authority-output:bd973b90-f26f-4db0-8d6e-ba185b0b1673:chapter.story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:9aa83e99-ced5-4500-8201-944c775b56ac:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:bc6c2cd427b8ca83d4eaf8d03bbfd5fa65d41f6386ba3db607c7c654a28d6d41",
+          "candidate_asset_version_id": "authority-output:427f85bc-a9fa-49df-ad2c-25de2e0d3d66:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:7e4f5ea6f9a41cf362671db64c05eb604d95fa3dcd7edc5599a8c5d5e9da0f9a",
+            "candidate_asset_version_id": "authority-output:427f85bc-a9fa-49df-ad2c-25de2e0d3d66:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:1313fe8ac57cb5fd7a355602a549690ef4d1d5a9e7f17e3f0403f8106e88d5d8",
+            "outcome_asset_version_id": "authority-output:dd664dac-e0ba-4368-91dc-d524f2b6b86f:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:dd664dac-e0ba-4368-91dc-d524f2b6b86f:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:dd664dac-e0ba-4368-91dc-d524f2b6b86f:chapter.canon.current:v1",
+            "text_hash": "sha256:643925bf5653088fd7f70dc11d72ef4be839cf6d9f7d37b3d843ef5cac882827"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:24dc397f2761b8d404e5ce656aff028c9e46ac1f2b1c5f375069e952954b6bc0"
+        },
+        {
+          "chapter": 3,
+          "root_operation_id": "1d2d9e1d-17ec-40a1-8755-f4b7b2b2c415",
+          "baseline_digest": "sha256:b759f2131532271fd9fe85d745552c4199798b140a1481a74b282144fe80014a",
+          "source_plan": {
+            "content_hash": "sha256:21fd819a0840032d1dc8302917f4004ad1dabbdb93dd6eb555695de1b5034030",
+            "asset_version_id": "58ac9743-7099-4d74-9f22-b27dff633819"
+          },
+          "style_policy_version_id": "authority-output:57eda889-87fe-4e07-912f-4ffd9f546a5d:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-dea93b8ab50e4522a05a117b58e8f991",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:cbcf92c3485c2129265a29eef4a3e6584a0ffb067aad56e354b0a24c7e49b649",
+                "asset_version_id": "5bc8a061-ecd4-45ab-a0f9-41aa68bca39d"
+              },
+              {
+                "content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+                "asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:0b9989872451b7d8ceeb6e8f1597936b0c79f35ff69cc5a357e4963a09c40e2a",
+                "asset_version_id": "authority-output:8203753c-c091-4a60-9549-4dc38be71797:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+            "source_asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "The third chapter must preserve the prior witnessed cost.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-2",
+                "content_hash": "sha256:a2d9631d3c85c1c55da249d42dcebec62a0138a31bdf2adcda7f279c13429f92",
+                "chapter_range": [
+                  3,
+                  3
+                ]
+              },
+              {
+                "text": "genre: serious realist observation\naudience: adult reflective readers\ntone: 克制、观察性、保留含混\npov: 第三人称限知\nstructure: 三章短篇、场景并置\ncharacter: 制图学徒保留犹疑，不强制成长弧线\nworld: 档案由普通机构管理，无超自然权力\nprohibition: 禁止救世结局和新能力解决问题\noptional: 允许环境观察；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:022a35cf048bd262d59961ff5f10354da6e7d47af22c91a961f2f86cc2b26537",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              3,
+              3
+            ],
+            "binding_digest": "sha256:06e88460d201010659e5a3682cbab5b95b9cad506e4092f9fb2a704f50db8ef0",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:badf2a02f018ea869fc06141d4414a0676baa55805860efa568ad429e3c7d22c",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 1,
+              "metadata_count": 3
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:11bd27d65a72f381d0920398fbc6cd22c1c974d0e11d63d8b0bb4770758c3e01",
+            "brief_asset_version_id": "authority-output:2ff74853-5c79-41f2-9346-8832ca3f8767:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "克制、观察性、保留含混",
+            "constraints": [
+              "克制、观察性、保留含混",
+              "第三人称限知",
+              "三章短篇、场景并置",
+              "制图学徒保留犹疑，不强制成长弧线",
+              "档案由普通机构管理，无超自然权力",
+              "禁止救世结局和新能力解决问题",
+              "允许环境观察；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "serious realist observation",
+            "subgenre": "institutional mystery",
+            "target_reader": "adult reflective readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "payoff"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:9e25211552f040fd07f69bd7a048c1f788cec19430a3e61223d6fccb95147f47",
+                "source_asset_version_id": "authority-output:83222ba3-4917-4720-a130-7032d428e8f2:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:1ad9af86-cbe4-4427-9be5-91c389e84b64:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:dd664dac-e0ba-4368-91dc-d524f2b6b86f:chapter.canon.current:v1",
+            "accepted_through_chapter": 2,
+            "story_state_snapshot_version": "authority-output:dd664dac-e0ba-4368-91dc-d524f2b6b86f:chapter.story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:5356aa41-b685-4a21-8dad-42e97cb723db:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:b759f2131532271fd9fe85d745552c4199798b140a1481a74b282144fe80014a",
+          "candidate_asset_version_id": "authority-output:4c354ec1-d2fc-4f30-a020-9427039a51d9:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:8cd02dd33e2871b40e7134d8c45f6e2ad78e23c697d634773c2939a006dee0b1",
+            "candidate_asset_version_id": "authority-output:4c354ec1-d2fc-4f30-a020-9427039a51d9:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:9609977d048302cc4c900b6306535674a5d83ae89044973111395ef1a1d559a8",
+            "outcome_asset_version_id": "authority-output:fb28c5ef-2a94-4c48-9af3-32785ba9ea20:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:fb28c5ef-2a94-4c48-9af3-32785ba9ea20:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:fb28c5ef-2a94-4c48-9af3-32785ba9ea20:chapter.canon.current:v1",
+            "text_hash": "sha256:ef96a5d5388237eb35aefe6e6e088819f176faaed6ffe72f003f29f5d2666650"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:b6d6ab664104daea3fe434619dc6ec3ad63885961f4340b946bb411215599088"
+        }
+      ]
+    },
+    {
+      "artifact_directory": "test_formal_author_formation_a1",
+      "scenario": {
+        "genre": "light fantasy adventure",
+        "audience": "young adult adventure readers",
+        "tone": "轻松、温暖、具体动作",
+        "pov": "第三人称限知",
+        "structure": "三章短冒险、保留场景完整性",
+        "character": "制图学徒好奇而谨慎，允许小幅变化",
+        "world": "幻想港口有固定规则，不临时发明能力",
+        "prohibition": "禁止血腥描写和万能救援",
+        "optional": "允许幽默；不采用奖励机制或悬念钩子"
+      },
+      "formation_id": "story-formation:fee2ecdfb1047cd3de48f51058a1be3378c21b853ef280b6118effefc22cdf07",
+      "book_id": "book:project-e194feff92c64f58a9bf97d2f0e56084",
+      "frozen_author_input_digest": "sha256:c1da3ad5536460e89050faedccd224c08edbe74e447c95e8c822ae4732dacfde",
+      "foundation_set_digest": "sha256:5601821cfa1607205d5589920cb08cefd0ca4d4d9e09158e1cea3f589b11e1e0",
+      "accepted_through_chapter": 3,
+      "routing_effect_count": 70,
+      "route_policy_versions": [
+        "quality-constrained-routing.v12"
+      ],
+      "native_stages": [
+        "arc_plan.generate",
+        "book_plan.generate",
+        "canon_extraction",
+        "canon_support",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+        "character.cast.generate",
+        "creative.candidates.generate",
+        "draft",
+        "ending.intent.generate",
+        "memo",
+        "quality_commercial",
+        "quality_longform",
+        "quality_platform",
+        "quality_source_originality",
+        "quality_structural",
+        "reader.promise.generate",
+        "rereview",
+        "review",
+        "revision",
+        "theme.candidates.generate",
+        "volume_plan.generate",
+        "world.design.generate",
+        "world_candidates.evaluate",
+        "world_candidates.generate"
+      ],
+      "chapters": [
+        {
+          "chapter": 1,
+          "root_operation_id": "908aa086-857a-4de2-8349-3adc244ddfe3",
+          "baseline_digest": "sha256:1c361949606fb37d2fe51b1934dda7b5e33ae47f2cd2aa21171723b5cb7c62c5",
+          "source_plan": {
+            "content_hash": "sha256:889bf54e6250607b05bfce1d5340b0a42d13d1c1944f15ef41a4b38067d2cba1",
+            "asset_version_id": "8c936e24-1c2a-46b6-9d0e-b09576375987"
+          },
+          "style_policy_version_id": "authority-output:eb810198-aac6-4f82-aebe-b130d75bf455:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-e194feff92c64f58a9bf97d2f0e56084",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:4fc183b29a22266c6d3aa58b0a94e97c98f9ce42adfa2ecc4397b1b5d51d8352",
+                "asset_version_id": "d7436f40-a1b5-4744-9e81-71fb8e9a8611"
+              },
+              {
+                "content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+                "asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:0359317f103f1cd68206a5a7e1245119ecb6ccc5ee370c179443bfa0136d3644",
+                "asset_version_id": "authority-output:c54799c4-8500-457b-85ae-6f818ade1c11:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+            "source_asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "genre: light fantasy adventure\naudience: young adult adventure readers\ntone: 轻松、温暖、具体动作\npov: 第三人称限知\nstructure: 三章短冒险、保留场景完整性\ncharacter: 制图学徒好奇而谨慎，允许小幅变化\nworld: 幻想港口有固定规则，不临时发明能力\nprohibition: 禁止血腥描写和万能救援\noptional: 允许幽默；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:d7f706cb293fb83338561c5b1e79f19dc3597417df95a1760fe1c75ae6bf8086",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              1,
+              1
+            ],
+            "binding_digest": "sha256:af93fef9c4b863136f092d92341d32afc5af78cc2f9f1fd10cf1a56802619604",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:85d8387f00cdd9e1d14d99aaac8c5d01acc6768d5dcca45dd78f3064ef959bbd",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 2,
+              "metadata_count": 2
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:b9207ff7e2184eaf893478ca2711ef2f9c1f424d13d120fc322474a642a128f7",
+            "brief_asset_version_id": "authority-output:0fcb7216-4bc4-4e02-809f-363eac843ecd:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "轻松、温暖、具体动作",
+            "constraints": [
+              "轻松、温暖、具体动作",
+              "第三人称限知",
+              "三章短冒险、保留场景完整性",
+              "制图学徒好奇而谨慎，允许小幅变化",
+              "幻想港口有固定规则，不临时发明能力",
+              "禁止血腥描写和万能救援",
+              "允许幽默；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "light fantasy adventure",
+            "subgenre": "institutional mystery",
+            "target_reader": "young adult adventure readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "setup"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+                "source_asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:cd3099b9-5c9a-43d0-b77d-8b7b818b9218:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:eea027ea-1d35-4f05-8cb7-28539649f019:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:c92ae4de-ccfa-4589-8d72-45b5e0688537:book.bootstrap.initial_story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:c6b8f75c-7608-45b9-a196-9e1a8fa92ae0:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:1c361949606fb37d2fe51b1934dda7b5e33ae47f2cd2aa21171723b5cb7c62c5",
+          "candidate_asset_version_id": "authority-output:2df9fe66-9005-4b7a-acfa-93cbdd5bee84:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:6813ee01aa7308587268d848af938dec0305bbe332ff9d44daa52896a9032a39",
+            "candidate_asset_version_id": "authority-output:2df9fe66-9005-4b7a-acfa-93cbdd5bee84:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:6e927d291af7509719ae439fccd086d0f0cdb831fba242862e71fb637764552a",
+            "outcome_asset_version_id": "authority-output:7602ded4-ef37-4e5f-ad07-418c0f248a7e:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:7602ded4-ef37-4e5f-ad07-418c0f248a7e:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:7602ded4-ef37-4e5f-ad07-418c0f248a7e:chapter.canon.current:v1",
+            "text_hash": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:265bfa341d744225f7eda8a766b568c549adfdb2d39f9fc06609439f0fcbaccc"
+        },
+        {
+          "chapter": 2,
+          "root_operation_id": "47fb2873-60c5-499e-af2a-b63a06a0bfc7",
+          "baseline_digest": "sha256:c8b0733785f90f42d010e58185cd2086d600dcc83714aa8073676b2ed6cf4179",
+          "source_plan": {
+            "content_hash": "sha256:7a9a49eeb33d124476bf1cb0fa1838da767328876cb21da49afbdc039242b33a",
+            "asset_version_id": "177a490e-d682-46aa-bca1-ebe4c6fae6bc"
+          },
+          "style_policy_version_id": "authority-output:eb810198-aac6-4f82-aebe-b130d75bf455:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-e194feff92c64f58a9bf97d2f0e56084",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:4fc183b29a22266c6d3aa58b0a94e97c98f9ce42adfa2ecc4397b1b5d51d8352",
+                "asset_version_id": "d7436f40-a1b5-4744-9e81-71fb8e9a8611"
+              },
+              {
+                "content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+                "asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:0359317f103f1cd68206a5a7e1245119ecb6ccc5ee370c179443bfa0136d3644",
+                "asset_version_id": "authority-output:c54799c4-8500-457b-85ae-6f818ade1c11:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+            "source_asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "genre: light fantasy adventure\naudience: young adult adventure readers\ntone: 轻松、温暖、具体动作\npov: 第三人称限知\nstructure: 三章短冒险、保留场景完整性\ncharacter: 制图学徒好奇而谨慎，允许小幅变化\nworld: 幻想港口有固定规则，不临时发明能力\nprohibition: 禁止血腥描写和万能救援\noptional: 允许幽默；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:d7f706cb293fb83338561c5b1e79f19dc3597417df95a1760fe1c75ae6bf8086",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              2,
+              2
+            ],
+            "binding_digest": "sha256:af93fef9c4b863136f092d92341d32afc5af78cc2f9f1fd10cf1a56802619604",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:dd1150d52fe6ca79330bdef0e736a14433bba7f04916ce4d08a1a0f8c79fd405",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 2,
+              "metadata_count": 2
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:b9207ff7e2184eaf893478ca2711ef2f9c1f424d13d120fc322474a642a128f7",
+            "brief_asset_version_id": "authority-output:0fcb7216-4bc4-4e02-809f-363eac843ecd:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "轻松、温暖、具体动作",
+            "constraints": [
+              "轻松、温暖、具体动作",
+              "第三人称限知",
+              "三章短冒险、保留场景完整性",
+              "制图学徒好奇而谨慎，允许小幅变化",
+              "幻想港口有固定规则，不临时发明能力",
+              "禁止血腥描写和万能救援",
+              "允许幽默；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "light fantasy adventure",
+            "subgenre": "institutional mystery",
+            "target_reader": "young adult adventure readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "reversal"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+                "source_asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:1a0d7d1e-c86b-4872-94c8-f1c0a9a7410e:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:7602ded4-ef37-4e5f-ad07-418c0f248a7e:chapter.canon.current:v1",
+            "accepted_through_chapter": 1,
+            "story_state_snapshot_version": "authority-output:7602ded4-ef37-4e5f-ad07-418c0f248a7e:chapter.story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:06a6076a-c9be-49dc-8a3f-1808c0b6dff4:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:c8b0733785f90f42d010e58185cd2086d600dcc83714aa8073676b2ed6cf4179",
+          "candidate_asset_version_id": "authority-output:30f6d34e-2cb4-4532-b2bd-bb95f6eabf96:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:891e63c18269fb5918bfbf5fcc66d2841e2681ced1e2e38fa7e5260f00cf094c",
+            "candidate_asset_version_id": "authority-output:30f6d34e-2cb4-4532-b2bd-bb95f6eabf96:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:a140d7cf8a86cf8b38f84003887cbc7838942c4ce19ac04b3b743321bbc1a186",
+            "outcome_asset_version_id": "authority-output:bf67f52e-894e-4cbd-983b-33ee2b3dc526:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:bf67f52e-894e-4cbd-983b-33ee2b3dc526:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:bf67f52e-894e-4cbd-983b-33ee2b3dc526:chapter.canon.current:v1",
+            "text_hash": "sha256:d1d99c869472d05d037891955aafb210242d95b0c49d14d80d5137c69f063413"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:3b4b79416f1a487fe8f3bad316dd3cc1de7f42970b4f0c8713f331f43d02ae58"
+        },
+        {
+          "chapter": 3,
+          "root_operation_id": "1de4fdcc-5900-486b-9a9b-080689bfc550",
+          "baseline_digest": "sha256:d1f0f7d8b309deec1d31c0ad3608d0b997c5b705ee71f43ab2461def6fd71cfc",
+          "source_plan": {
+            "content_hash": "sha256:4409755b6787ed1f5810370eeade2ce5731ad6a9c53b8281f646c3dccefb4a3f",
+            "asset_version_id": "4fb8479e-f56f-4542-a25f-f61034850a83"
+          },
+          "style_policy_version_id": "authority-output:eb810198-aac6-4f82-aebe-b130d75bf455:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-e194feff92c64f58a9bf97d2f0e56084",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:4fc183b29a22266c6d3aa58b0a94e97c98f9ce42adfa2ecc4397b1b5d51d8352",
+                "asset_version_id": "d7436f40-a1b5-4744-9e81-71fb8e9a8611"
+              },
+              {
+                "content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+                "asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:0359317f103f1cd68206a5a7e1245119ecb6ccc5ee370c179443bfa0136d3644",
+                "asset_version_id": "authority-output:c54799c4-8500-457b-85ae-6f818ade1c11:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+            "source_asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "The third chapter must preserve the prior witnessed cost.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-2",
+                "content_hash": "sha256:a2d9631d3c85c1c55da249d42dcebec62a0138a31bdf2adcda7f279c13429f92",
+                "chapter_range": [
+                  3,
+                  3
+                ]
+              },
+              {
+                "text": "genre: light fantasy adventure\naudience: young adult adventure readers\ntone: 轻松、温暖、具体动作\npov: 第三人称限知\nstructure: 三章短冒险、保留场景完整性\ncharacter: 制图学徒好奇而谨慎，允许小幅变化\nworld: 幻想港口有固定规则，不临时发明能力\nprohibition: 禁止血腥描写和万能救援\noptional: 允许幽默；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:d7f706cb293fb83338561c5b1e79f19dc3597417df95a1760fe1c75ae6bf8086",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              3,
+              3
+            ],
+            "binding_digest": "sha256:af93fef9c4b863136f092d92341d32afc5af78cc2f9f1fd10cf1a56802619604",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:bf001d0bf75d18ee1a04ca499d2bf94dd28b6f1054e1f1876b6fdd290baa7c78",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 1,
+              "metadata_count": 3
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:b9207ff7e2184eaf893478ca2711ef2f9c1f424d13d120fc322474a642a128f7",
+            "brief_asset_version_id": "authority-output:0fcb7216-4bc4-4e02-809f-363eac843ecd:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "轻松、温暖、具体动作",
+            "constraints": [
+              "轻松、温暖、具体动作",
+              "第三人称限知",
+              "三章短冒险、保留场景完整性",
+              "制图学徒好奇而谨慎，允许小幅变化",
+              "幻想港口有固定规则，不临时发明能力",
+              "禁止血腥描写和万能救援",
+              "允许幽默；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "light fantasy adventure",
+            "subgenre": "institutional mystery",
+            "target_reader": "young adult adventure readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "payoff"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:2c0c4af0a1814ed188061a6369641ccadfe3ca0165cb2d158cd2dcc42fb7266e",
+                "source_asset_version_id": "authority-output:f64be2fc-36ad-4611-83eb-f2247e0a31de:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:aa89d4f8-1d6a-4082-ae7b-b28b7268d8b6:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:bf67f52e-894e-4cbd-983b-33ee2b3dc526:chapter.canon.current:v1",
+            "accepted_through_chapter": 2,
+            "story_state_snapshot_version": "authority-output:bf67f52e-894e-4cbd-983b-33ee2b3dc526:chapter.story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:1af26b01-06fb-4cf5-a9c3-6e07a50cae60:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:d1f0f7d8b309deec1d31c0ad3608d0b997c5b705ee71f43ab2461def6fd71cfc",
+          "candidate_asset_version_id": "authority-output:d6e930a6-c41f-4b87-89c4-e9a952e04edd:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:1a4fcf27deee48f5f52db6bb9dcf8ab06d1f008826d7c69667fa451208de8975",
+            "candidate_asset_version_id": "authority-output:d6e930a6-c41f-4b87-89c4-e9a952e04edd:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:e7bc5604235f54fd4864c9f84d02add663c31115dc24996a4da00a2cf4eea5ab",
+            "outcome_asset_version_id": "authority-output:045c7920-1ece-48f8-8724-967a70c1b078:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:045c7920-1ece-48f8-8724-967a70c1b078:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:045c7920-1ece-48f8-8724-967a70c1b078:chapter.canon.current:v1",
+            "text_hash": "sha256:ccf8043073366d8e022c9696899499baf92f3c7871d5a2dde717283a5de1aac9"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:9a7179ae06ec655cc14eaf8b841aec9625c5ae6155117a34ab268bb7f7b3ed37"
+        }
+      ]
+    },
+    {
+      "artifact_directory": "test_formal_author_formation_a2",
+      "scenario": {
+        "genre": "restrained science fiction",
+        "audience": "adult science fiction readers",
+        "tone": "节制、清晰、避免技术说教",
+        "pov": "第三人称限知",
+        "structure": "三章短篇、有限技术解释",
+        "character": "制图学徒必须承认知识边界",
+        "world": "资料系统有可解释的信息边界",
+        "prohibition": "禁止突然升级技术与全知叙述",
+        "optional": "允许留白；不采用奖励机制或悬念钩子"
+      },
+      "formation_id": "story-formation:40ded6f02388979b4bfdcb67d83eb15a1593a28e226b87ec43a64cad7730e042",
+      "book_id": "book:project-8136290c66fb486e999f025f50c3e8fa",
+      "frozen_author_input_digest": "sha256:91ee85f3a239eae0daa40212883a3d7e0f17f775fb6c2edab7c42945506ca740",
+      "foundation_set_digest": "sha256:29436310f6df3b88220131ae2582178286a6d72e3c2bfe7f7847f57120ffb20f",
+      "accepted_through_chapter": 3,
+      "routing_effect_count": 70,
+      "route_policy_versions": [
+        "quality-constrained-routing.v12"
+      ],
+      "native_stages": [
+        "arc_plan.generate",
+        "book_plan.generate",
+        "canon_extraction",
+        "canon_support",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+        "character.cast.generate",
+        "creative.candidates.generate",
+        "draft",
+        "ending.intent.generate",
+        "memo",
+        "quality_commercial",
+        "quality_longform",
+        "quality_platform",
+        "quality_source_originality",
+        "quality_structural",
+        "reader.promise.generate",
+        "rereview",
+        "review",
+        "revision",
+        "theme.candidates.generate",
+        "volume_plan.generate",
+        "world.design.generate",
+        "world_candidates.evaluate",
+        "world_candidates.generate"
+      ],
+      "chapters": [
+        {
+          "chapter": 1,
+          "root_operation_id": "dcf7a654-e4d5-420e-8af2-c831f173669b",
+          "baseline_digest": "sha256:7b2bf42d5e39438eae7c9dd217f68a6f352fc0f882eb5638d3ba4cfa83558c8a",
+          "source_plan": {
+            "content_hash": "sha256:b0a7ed0eea092a8d05b6c59007cce3b0ba1335a646ec73c4ac7b0223677b5f91",
+            "asset_version_id": "9346b46b-e0f6-47e8-8b06-2a0c1446e641"
+          },
+          "style_policy_version_id": "authority-output:920a8563-0acd-4071-9eb8-3ce7277a7c99:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-8136290c66fb486e999f025f50c3e8fa",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:d4f0076d88bed352a1e61ac8f403a52cfd4423cd1ecf987574b7ac8c519f7316",
+                "asset_version_id": "4c1ac214-fca4-4471-ae56-5f3662a8392b"
+              },
+              {
+                "content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+                "asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:e38395f0e366bef83f21630e2a94a2356dcac2ab424e50e2bd10bc9d1ae53568",
+                "asset_version_id": "authority-output:59dc9df9-f4d5-48e8-8311-3ed423feff9e:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+            "source_asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "genre: restrained science fiction\naudience: adult science fiction readers\ntone: 节制、清晰、避免技术说教\npov: 第三人称限知\nstructure: 三章短篇、有限技术解释\ncharacter: 制图学徒必须承认知识边界\nworld: 资料系统有可解释的信息边界\nprohibition: 禁止突然升级技术与全知叙述\noptional: 允许留白；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:7d12275a6c44f08e638f65aa27edb090963834d7e54e5b8832121b6b67c41216",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              1,
+              1
+            ],
+            "binding_digest": "sha256:24777436c8c5c9d8a1d571961eed4dca16e9106bf2a70b87d4bd1e77bc13b391",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:b47fd968cd5c80ba1223ee166ea6a338e010c3cd905be0f3e3fb9a650a3dc4d3",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 2,
+              "metadata_count": 2
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:a814b97bddc037b02f86d92a38045b46841b87f655f0625f20f6963304aff0c3",
+            "brief_asset_version_id": "authority-output:3d6355c8-f27c-4df8-90b1-c830428af9bd:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "节制、清晰、避免技术说教",
+            "constraints": [
+              "节制、清晰、避免技术说教",
+              "第三人称限知",
+              "三章短篇、有限技术解释",
+              "制图学徒必须承认知识边界",
+              "资料系统有可解释的信息边界",
+              "禁止突然升级技术与全知叙述",
+              "允许留白；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "restrained science fiction",
+            "subgenre": "institutional mystery",
+            "target_reader": "adult science fiction readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "setup"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+                "source_asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:29133018-6ff1-498d-b45e-3690b5209b7d:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:a2cc2306-3374-434a-99e9-759e7dc87fc0:book.bootstrap.initial_canon:v1",
+            "accepted_through_chapter": 0,
+            "story_state_snapshot_version": "authority-output:d8a13c10-db8f-456e-aa29-6f07de3a3d38:book.bootstrap.initial_story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:3bd4101f-f641-47bf-a430-587e44b90819:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:7b2bf42d5e39438eae7c9dd217f68a6f352fc0f882eb5638d3ba4cfa83558c8a",
+          "candidate_asset_version_id": "authority-output:401c5672-4457-4de5-ba55-2a54be1a34cb:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:6933a856e1351c042c3a14dd8400a923abeabb92a56f22f5eb420064c3ff0b14",
+            "candidate_asset_version_id": "authority-output:401c5672-4457-4de5-ba55-2a54be1a34cb:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:f452b2d8a6f09ae24c30af0779ab1860c15e0d3ed276dfff86a2d5ec20abee6a",
+            "outcome_asset_version_id": "authority-output:efe06e22-a36c-4973-8b92-f856d58d0ff9:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:efe06e22-a36c-4973-8b92-f856d58d0ff9:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:efe06e22-a36c-4973-8b92-f856d58d0ff9:chapter.canon.current:v1",
+            "text_hash": "sha256:c74b386da4e1f67da14549c8f47bc61ba51a2b09ac93dbb5c76b109d38518f96"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:2143b079d04517027283edd8bfcef05e6f75cbea1c0838721175452d81c07ad6"
+        },
+        {
+          "chapter": 2,
+          "root_operation_id": "feda7e07-ea75-4d78-bb4a-7f89263b7673",
+          "baseline_digest": "sha256:0517616233cc53478d68ebee9399c20f75350568dcf619b28216ebab665fcb57",
+          "source_plan": {
+            "content_hash": "sha256:ee7b67444504a27e8c57b232fde7aca77f82229a44c9930b8f608e7408fef47d",
+            "asset_version_id": "3c79fb76-6203-4adf-b479-fdb39cb5a4e9"
+          },
+          "style_policy_version_id": "authority-output:920a8563-0acd-4071-9eb8-3ce7277a7c99:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-8136290c66fb486e999f025f50c3e8fa",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:d4f0076d88bed352a1e61ac8f403a52cfd4423cd1ecf987574b7ac8c519f7316",
+                "asset_version_id": "4c1ac214-fca4-4471-ae56-5f3662a8392b"
+              },
+              {
+                "content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+                "asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:e38395f0e366bef83f21630e2a94a2356dcac2ab424e50e2bd10bc9d1ae53568",
+                "asset_version_id": "authority-output:59dc9df9-f4d5-48e8-8311-3ed423feff9e:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+            "source_asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "genre: restrained science fiction\naudience: adult science fiction readers\ntone: 节制、清晰、避免技术说教\npov: 第三人称限知\nstructure: 三章短篇、有限技术解释\ncharacter: 制图学徒必须承认知识边界\nworld: 资料系统有可解释的信息边界\nprohibition: 禁止突然升级技术与全知叙述\noptional: 允许留白；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:7d12275a6c44f08e638f65aa27edb090963834d7e54e5b8832121b6b67c41216",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              2,
+              2
+            ],
+            "binding_digest": "sha256:24777436c8c5c9d8a1d571961eed4dca16e9106bf2a70b87d4bd1e77bc13b391",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:792de8319f08e6cc34240389dbdfa51b09775eb54280c449481939bcc1da9779",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 2,
+              "metadata_count": 2
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:a814b97bddc037b02f86d92a38045b46841b87f655f0625f20f6963304aff0c3",
+            "brief_asset_version_id": "authority-output:3d6355c8-f27c-4df8-90b1-c830428af9bd:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "节制、清晰、避免技术说教",
+            "constraints": [
+              "节制、清晰、避免技术说教",
+              "第三人称限知",
+              "三章短篇、有限技术解释",
+              "制图学徒必须承认知识边界",
+              "资料系统有可解释的信息边界",
+              "禁止突然升级技术与全知叙述",
+              "允许留白；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "restrained science fiction",
+            "subgenre": "institutional mystery",
+            "target_reader": "adult science fiction readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "reversal"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+                "source_asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:9e9f3281-3b71-4ec0-92df-cebdcad9df77:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:efe06e22-a36c-4973-8b92-f856d58d0ff9:chapter.canon.current:v1",
+            "accepted_through_chapter": 1,
+            "story_state_snapshot_version": "authority-output:efe06e22-a36c-4973-8b92-f856d58d0ff9:chapter.story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:00e04c24-cbed-4f5b-aa93-de736cebbd21:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:0517616233cc53478d68ebee9399c20f75350568dcf619b28216ebab665fcb57",
+          "candidate_asset_version_id": "authority-output:641e5bdc-3260-46dc-ad16-73bd92e5a948:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:e777df0c46a453ec5bf6bc4f13b3182a249d73fa062e491f4ecc800476ac3598",
+            "candidate_asset_version_id": "authority-output:641e5bdc-3260-46dc-ad16-73bd92e5a948:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:dd88cd88ad46ea498fea679340094448782e844ca25c26637fab6c5e2a828277",
+            "outcome_asset_version_id": "authority-output:ca782de1-9659-4e28-8c12-15af95680f97:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:ca782de1-9659-4e28-8c12-15af95680f97:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:ca782de1-9659-4e28-8c12-15af95680f97:chapter.canon.current:v1",
+            "text_hash": "sha256:d1d99c869472d05d037891955aafb210242d95b0c49d14d80d5137c69f063413"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:c59fb7d86def772a1dd6ae721c6e3233b683b692644c74831429b9b8d426c518"
+        },
+        {
+          "chapter": 3,
+          "root_operation_id": "977cb5b0-d451-4dff-8ab7-dc919786f18f",
+          "baseline_digest": "sha256:ecbae2964002aa113d26a5e957616646c41dea0ba37f578892bdf4c72ab900fd",
+          "source_plan": {
+            "content_hash": "sha256:d83836fc42f7f295e12cab70fa72cf23cfb2ea15b2fdeec5fe2ab8b85f0e94c5",
+            "asset_version_id": "b16d4c25-f594-43f2-83e3-6c88f57fd07b"
+          },
+          "style_policy_version_id": "authority-output:920a8563-0acd-4071-9eb8-3ce7277a7c99:chapter.style_policy:v1",
+          "style_sources": {
+            "scope": "BOOK",
+            "book_id": "book:project-8136290c66fb486e999f025f50c3e8fa",
+            "declarations": [
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.subgenre"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_desire"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_fear"
+              },
+              {
+                "status": "APPLICABLE",
+                "rationale": "Explicit strategy of this synthetic design fixture",
+                "field_path": "$.core_conflict"
+              },
+              {
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential"
+              }
+            ],
+            "source_bindings": [
+              {
+                "content_hash": "sha256:d4f0076d88bed352a1e61ac8f403a52cfd4423cd1ecf987574b7ac8c519f7316",
+                "asset_version_id": "4c1ac214-fca4-4471-ae56-5f3662a8392b"
+              },
+              {
+                "content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+                "asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+              },
+              {
+                "content_hash": "sha256:e38395f0e366bef83f21630e2a94a2356dcac2ab424e50e2bd10bc9d1ae53568",
+                "asset_version_id": "authority-output:59dc9df9-f4d5-48e8-8311-3ed423feff9e:story_planning.candidate:v1"
+              }
+            ],
+            "source_content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+            "source_asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+          },
+          "author_guidance": {
+            "target": "CHAPTER",
+            "authority": "AUTHOR_INTENT_NOT_CANON",
+            "fragments": [
+              {
+                "text": "Keep the witnessed choice costly.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-0",
+                "content_hash": "sha256:ff32eb32063b90fc2fe701818ecf1dfb906168f0a5d2f602cd5ed0265b8fd8a7",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              },
+              {
+                "text": "The third chapter must preserve the prior witnessed cost.",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "author-fixture-2",
+                "content_hash": "sha256:a2d9631d3c85c1c55da249d42dcebec62a0138a31bdf2adcda7f279c13429f92",
+                "chapter_range": [
+                  3,
+                  3
+                ]
+              },
+              {
+                "text": "genre: restrained science fiction\naudience: adult science fiction readers\ntone: 节制、清晰、避免技术说教\npov: 第三人称限知\nstructure: 三章短篇、有限技术解释\ncharacter: 制图学徒必须承认知识边界\nworld: 资料系统有可解释的信息边界\nprohibition: 禁止突然升级技术与全知叙述\noptional: 允许留白；不采用奖励机制或悬念钩子",
+                "strength": "REQUIRED",
+                "visibility": "SCENE_INTENT",
+                "fragment_id": "work-intent-scenario",
+                "content_hash": "sha256:7d12275a6c44f08e638f65aa27edb090963834d7e54e5b8832121b6b67c41216",
+                "chapter_range": [
+                  1,
+                  3
+                ]
+              }
+            ],
+            "chapter_range": [
+              3,
+              3
+            ],
+            "binding_digest": "sha256:24777436c8c5c9d8a1d571961eed4dca16e9106bf2a70b87d4bd1e77bc13b391",
+            "design_version": "fixture-author-v2",
+            "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+            "source_receipt": {
+              "reason": "ROLE_SOURCE_METADATA_ONLY",
+              "content_hash": "sha256:1ad370e502af296ee6d22d824acf6937bb5f75cd48182159ee6988b159bbac48",
+              "json_pointer": "/author_design_projection",
+              "excluded_count": 1,
+              "metadata_count": 3
+            },
+            "contract_version": "author-design-provider-view.v1",
+            "brief_content_hash": "sha256:a814b97bddc037b02f86d92a38045b46841b87f655f0625f20f6963304aff0c3",
+            "brief_asset_version_id": "authority-output:3d6355c8-f27c-4df8-90b1-c830428af9bd:creative.brief:v1"
+          },
+          "creative_style": {
+            "pov": "第三人称限知",
+            "narrator": "节制、清晰、避免技术说教",
+            "constraints": [
+              "节制、清晰、避免技术说教",
+              "第三人称限知",
+              "三章短篇、有限技术解释",
+              "制图学徒必须承认知识边界",
+              "资料系统有可解释的信息边界",
+              "禁止突然升级技术与全知叙述",
+              "允许留白；不采用奖励机制或悬念钩子"
+            ],
+            "genre_conventions": [
+              "Reveal evidence before explanations"
+            ],
+            "original_examples": [
+              {
+                "example": "她按住地图的一角，没有把那个名字念出来。",
+                "purpose": "Let hesitation expose uncertainty",
+                "explanation": "A physical choice carries the withheld knowledge"
+              }
+            ]
+          },
+          "creative_direction": {
+            "genre": "restrained science fiction",
+            "subgenre": "institutional mystery",
+            "target_reader": "adult science fiction readers",
+            "emotional_contract": "wonder becomes costly shared responsibility"
+          },
+          "method_requirements": {
+            "reward": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": null,
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": null,
+                "chapter_hook": ""
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "payoff"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "advance",
+                "reader_promise_actions": [
+                  "advance"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": null
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "NOT_APPLICABLE",
+                "rationale": "Author requested a bounded three-chapter work",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:a21551a0d8481ffe156693841caaf1ec44fbe3d3e711e9ba952b0b0607472e3a",
+                "source_asset_version_id": "authority-output:afda1aac-7785-4731-9913-475737178c46:story_planning.candidate:v1"
+              }
+            }
+          },
+          "context_asset_version_id": "authority-output:e2d8e5ff-abcb-4b46-8a65-91a77680bfb5:chapter.context:v1",
+          "accepted_boundary_read": {
+            "canon_snapshot_version": "authority-output:ca782de1-9659-4e28-8c12-15af95680f97:chapter.canon.current:v1",
+            "accepted_through_chapter": 2,
+            "story_state_snapshot_version": "authority-output:ca782de1-9659-4e28-8c12-15af95680f97:chapter.story_state:v1"
+          },
+          "quality_asset_version_id": "authority-output:a27ef4b2-8c89-48f6-82bf-e3103e3077d7:chapter.quality:v1",
+          "quality_semantics": "work-quality.v2",
+          "quality_blocking_dimensions": [],
+          "quality_baseline_digest": "sha256:ecbae2964002aa113d26a5e957616646c41dea0ba37f578892bdf4c72ab900fd",
+          "candidate_asset_version_id": "authority-output:42ca4719-4681-410a-976e-aabcd495fb90:chapter.best_candidate:v1",
+          "selected_candidate_source": null,
+          "accepted": {
+            "acceptance_status": "COMMITTED",
+            "acceptance_id": "chapter-acceptance:d1b3a5b94905e2f57ce0efd11169b0964100dd6bae1be832f4b507ede9edc974",
+            "candidate_asset_version_id": "authority-output:42ca4719-4681-410a-976e-aabcd495fb90:chapter.best_candidate:v1",
+            "candidate_content_hash": "sha256:28bde0457dd010167589cad015247bcfadac75a84a29a8465ff62703a9ceafe1",
+            "outcome_asset_version_id": "authority-output:632d9837-20f1-409b-8225-97f4b38b4f6d:chapter.outcome:v1",
+            "story_state_asset_version_id": "authority-output:632d9837-20f1-409b-8225-97f4b38b4f6d:chapter.story_state:v1",
+            "canon_snapshot_asset_version_id": "authority-output:632d9837-20f1-409b-8225-97f4b38b4f6d:chapter.canon.current:v1",
+            "text_hash": "sha256:ccf8043073366d8e022c9696899499baf92f3c7871d5a2dde717283a5de1aac9"
+          },
+          "canon_extraction_status": null,
+          "projection_set_id": "longform-projection:9514aeeeda3b8b1c859d211f053fefc337711528ed962476df05e4ca794c1cce"
+        }
+      ]
+    }
+  ]
+}

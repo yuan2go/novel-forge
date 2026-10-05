@@ -760,7 +760,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             authentication_source="integration-test",
         )
         candidates = list(
-            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id)
+            chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
         )
         versions = BookToChapterAuthorityVerticalPostgresTests._seed_book_inputs(
             project_id
@@ -830,6 +830,7 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             chapter_plan_asset_version_id=plan["asset_version_id"],
             chapter_plan_content_hash=plan["content_hash"],
             context_candidates=candidates,
+            context_token_budget=196_608,
             parent_group_version_id=fixture["group_plan"]["asset_version_id"],
         )
 
@@ -904,6 +905,10 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 "title": f"Group Chapter {chapter}",
                 "chapter_objective": matrix[chapter - 1]["required_state_delta"],
             }
+            if content.get("narrative_realization_slice"):
+                content["narrative_realization_slice"] = {
+                    **content["narrative_realization_slice"], "chapter_number": chapter
+                }
             chapter_plans[chapter] = ChapterGroupAuthorityPostgresTests._seed_asset(
                 project_id,
                 "chapter_plan",

@@ -215,6 +215,7 @@ def compile_task_context(
             keep = set()
             restored = set()
             evidence = []
+            assessments = []
             candidate_target = max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible)))
             group_weights = [serialized_token_upper_bound(group) for group in groups]
             weight_total = max(1, sum(group_weights))
@@ -250,12 +251,29 @@ def compile_task_context(
                     if missing and not distorted and verdict.get("supported") is True:
                         chosen.update(missing)
                         check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen)}))
+                        assessments.append({
+                            "task": chunk, "selected_unit_ids": selected,
+                            "fidelity_selected_unit_ids": sorted(chosen),
+                            "fidelity": {key: value for key, value in check.items() if key != "_execution_evidence"},
+                            "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
+                            "fidelity_evidence": dict(check.get("_execution_evidence") or {}),
+                            "recheck": True,
+                        })
                         evidence.append(dict(check.get("_execution_evidence") or {}))
                         if check.get("supported") is not True or check.get("coverage_complete") is not True or check.get("missing_unit_ids") or check.get("distorted_unit_ids"):
                             chosen = allowed
                     else:
                         chosen = allowed
                     restored.update(chosen - set(selected))
+                assessments.append({
+                    "task": chunk, "selected_unit_ids": selected,
+                    "fidelity_selected_unit_ids": sorted(set(selected) | required),
+                    "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"},
+                    "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
+                    "fidelity_evidence": dict(verdict.get("_execution_evidence") or {}),
+                    "extract_accepted": chosen == set(selected) | required and verdict.get("supported") is True
+                        and verdict.get("coverage_complete") is True and not missing and not distorted,
+                })
                 keep.update(chosen)
                 evidence.extend([dict(selected_result.get("_execution_evidence") or {}), dict(verdict.get("_execution_evidence") or {})])
                 call_count += 1
@@ -264,7 +282,7 @@ def compile_task_context(
             from .writer_projection import WRITER_PROJECTION_VERSION
             writer_projection = (candidate.provenance or {}).get("writer_projection_version") in {WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"}
             payload = {"safe_summary": "\n\n".join(texts).strip() if writer_projection else "\n\n".join(texts), "structured_facts": list(facts)}
-            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence}
+            trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"]} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence, "routing_assessments": assessments}
             if writer_projection:
                 trace["writer_projection_version"] = candidate.provenance["writer_projection_version"]
             replacements[candidate.asset_version_id] = replace(candidate, safe_summary=payload["safe_summary"], structured_facts=facts, estimated_tokens=max(1, serialized_token_upper_bound(payload)), context_class=ContextClass.COMPRESSIBLE, compression_method=trace["method"], compression_trace=(trace,))

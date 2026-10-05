@@ -95,6 +95,22 @@ def test_quality_floor_precedes_price_and_equal_quality_uses_effective_cost():
     assert result["selected"]["candidate"]["candidate_id"] == "flash"
 
 
+def test_qualified_cheaper_provider_cannot_escape_authorized_task_scope():
+    cheap = candidate()
+    generator = replace(candidate("codex", "3"), provider="codex-cli")
+    allowed = {"deepseek": ["review"], "codex-cli": ["classification"]}
+    scoped = task(declared_requirements={"provider_task_scope": allowed})
+    result = route(scoped, [cheap, generator], {"flash": samples(), "codex": samples()})
+    assert result["selected"]["candidate"]["provider"] == "codex-cli"
+    rejected = next(row for row in result["candidates"] if row["candidate"]["provider"] == "deepseek")
+    assert rejected["rejected_reasons"] == ["PROVIDER_TASK_NOT_AUTHORIZED"]
+    legacy = route(task(), [cheap, generator], {"flash": samples(), "codex": samples()})
+    assert legacy["selected"]["candidate"]["provider"] == "deepseek"
+    denied = route(task(declared_requirements={"provider_task_scope": {"deepseek": []}}),
+                   [cheap], {"flash": samples()})
+    assert denied["status"] == "BLOCKED"
+
+
 def test_failed_outputs_cannot_hide_behind_surviving_high_quality_scores():
     successes = samples(n=10)
     failures = [
@@ -403,6 +419,10 @@ def test_missing_latency_is_uncertain_under_sla():
         "strict_binding",
         "source_codex",
         "source_codex_reasoning",
+        "provider_scope_added",
+        "provider_scope_removed",
+        "provider_scope_changed",
+        "provider_scope_denied_selection",
     ],
 )
 def test_frozen_route_requires_original_scope_input_and_admission(drift):
@@ -515,8 +535,21 @@ def test_frozen_route_requires_original_scope_input_and_admission(drift):
         ] = frozen
     elif drift in {"protocol", "reasoning_effort", "pricing_policy_json"}:
         identity[drift] = "{}" if drift == "pricing_policy_json" else "other"
+    runtime_scope = None
+    if drift.startswith("provider_scope_"):
+        if drift != "provider_scope_added":
+            original["task"]["declared_requirements"]["provider_task_scope"] = {
+                "deepseek": ["review"] if drift == "provider_scope_denied_selection" else ["classification"]}
+            original["decision_id"] = "routing-decision:" + snapshot_hash(
+                {key: value for key, value in original.items() if key != "decision_id"}
+            ).removeprefix("sha256:")
+            payload["_production_execution"]["capability_runtime"]["routing_decision"] = {
+                **deepcopy(original), "asset_version_id": "decision-version"}
+        if drift != "provider_scope_removed":
+            runtime_scope = {"deepseek": ["review"]}
     router = ProductionProviderRouter(
-        "unused", candidates=[candidate()], task_money_limit="1", task_token_limit=10000
+        "unused", candidates=[candidate()], task_money_limit="1", task_token_limit=10000,
+        provider_task_scope=runtime_scope,
     )
     router.registry.query.require = Mock(
         side_effect=lambda **kw: documents[kw["asset_version_id"]]

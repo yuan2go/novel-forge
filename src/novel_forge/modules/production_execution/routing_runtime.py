@@ -22,6 +22,7 @@ from .cost_routing import (
     ModelCandidate,
     RoutingDecision,
     RoutingTask,
+    TASK_TAXONOMY,
     snapshot_hash,
 )
 from .contracts import ExecutionRuntimeClass
@@ -753,6 +754,7 @@ class ProductionProviderRouter:
         execution_environment: str = "production",
         provider_auth_profiles: Mapping[str, str] | None = None,
         review_requirement_resolver: Callable[..., dict[str, Any]] | None = None,
+        provider_task_scope: Mapping[str, Sequence[str]] | None = None,
     ) -> None:
         self.registry = PostgresRoutingRegistry(
             database_url, outcome_projection=outcome_projection
@@ -767,6 +769,14 @@ class ProductionProviderRouter:
         self.execution_environment = execution_environment
         self.provider_auth_profiles = dict(provider_auth_profiles or {})
         self.review_requirement_resolver = review_requirement_resolver
+        self.provider_task_scope = None
+        if provider_task_scope is not None:
+            if (not isinstance(provider_task_scope, dict)
+                or set(provider_task_scope) != {candidate.provider for candidate in self.candidates}
+                or any(not isinstance(tasks, list) or any(not isinstance(task, str) or task not in TASK_TAXONOMY for task in tasks)
+                       for tasks in provider_task_scope.values())):
+                raise ValueError("ROUTING_PROVIDER_TASK_SCOPE_INVALID")
+            self.provider_task_scope = {provider: sorted(set(tasks)) for provider, tasks in sorted(provider_task_scope.items())}
         money_limit = Decimal(task_money_limit)
         if self.task_token_limit <= 0 or not money_limit.is_finite() or money_limit < 0:
             raise ValueError("ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED")
@@ -838,6 +848,7 @@ class ProductionProviderRouter:
                             "risk": risk,
                             "quality_floor": quality_floor,
                             "chapter": chapter,
+                            **({"provider_task_scope": self.provider_task_scope} if self.provider_task_scope is not None else {}),
                             **({"cross_model_review": original["declared_requirements"]["cross_model_review"]}
                                if original.get("declared_requirements", {}).get("cross_model_review") else {}),
                         },
@@ -978,6 +989,7 @@ class ProductionProviderRouter:
                 "risk": risk,
                 "quality_floor": quality_floor,
                 "chapter": chapter,
+                **({"provider_task_scope": self.provider_task_scope} if self.provider_task_scope is not None else {}),
             },
             policy_snapshot=policy_snapshot,
             **requirements,
@@ -1122,6 +1134,9 @@ class ProductionProviderRouter:
         return budgets
 
     def _selected_route(self, base: Any, snapshot: Mapping[str, Any]) -> Any:
+        frozen_scope = snapshot["task"].get("declared_requirements", {}).get("provider_task_scope")
+        if frozen_scope != self.provider_task_scope:
+            raise KernelError("ROUTING_REQUEST_DRIFT", "Provider task authorization differs from the frozen request")
         if snapshot.get("status") == "BENCHMARK_SELECTED":
             from novel_forge.modules.command_kernel.routing_bootstrap import (
                 load_bootstrap_authorization,
@@ -1157,6 +1172,8 @@ class ProductionProviderRouter:
                 "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
             )
         candidate = snapshot["selected"]["candidate"]
+        if frozen_scope is not None and snapshot["task"]["task_type"] not in frozen_scope.get(candidate["provider"], ()):
+            raise KernelError("PROVIDER_TASK_NOT_AUTHORIZED", "Selected Provider is outside its frozen task scope")
         cross_review = snapshot["task"].get("declared_requirements", {}).get("cross_model_review")
         if cross_review:
             from .cross_model_review import reviewer_rejection
@@ -1326,6 +1343,11 @@ class ProductionProviderRouter:
                 or task.get("request_hash") != snapshot_hash(payload.get("input"))
             ):
                 raise KernelError("ROUTING_DECISION_SCOPE_MISMATCH", version_id)
+            frozen_scope = task.get("declared_requirements", {}).get("provider_task_scope")
+            if frozen_scope != self.provider_task_scope:
+                raise KernelError("ROUTING_REQUEST_DRIFT", "Provider task authorization differs from the frozen Effect")
+            if frozen_scope is not None and task["task_type"] not in frozen_scope.get(content["selected"]["candidate"]["provider"], ()):
+                raise KernelError("PROVIDER_TASK_NOT_AUTHORIZED", "Effect Provider is outside its frozen task scope")
             admission = self.registry.query.require(
                 project_id=task["project_id"],
                 asset_version_id=str(
@@ -1382,6 +1404,9 @@ def validate_routed_reservation(
     if decision.get("status") not in {"SELECTED", "BENCHMARK_SELECTED", "AUTHOR_SUPERVISED_SELECTED"} or not selected:
         raise KernelError("ROUTING_RESERVATION_DECISION_INVALID", "reservation requires a selected route")
     task, candidate = decision["task"], selected["candidate"]
+    provider_scope = task.get("declared_requirements", {}).get("provider_task_scope")
+    if provider_scope is not None and task["task_type"] not in provider_scope.get(candidate["provider"], ()):
+        raise KernelError("PROVIDER_TASK_NOT_AUTHORIZED", "Reservation Provider is outside its frozen task scope")
     budget = task.get("budget_snapshot", {}).get("candidates", {}).get(candidate["candidate_id"], {})
     token_limits = [int(task["remaining_tokens"])]
     if "remaining_tokens" in budget:

@@ -12,10 +12,10 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 )
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
-CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.7.0"
-CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS = frozenset({"3.4.1", "3.5.0", "3.6.0"})
+CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.8.0"
+CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS = frozenset({"3.4.1", "3.5.0", "3.6.0", "3.7.0"})
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION = "3.4.1"
-CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.7.0-author-input.v2"
+CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.8.0-author-input.v2"
 CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION = "3.4.1-author-input.v1"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_ID = "chapter_authority_slice"
 CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION = CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
@@ -74,6 +74,7 @@ CHAPTER_REFERENCE_WORKFLOW_REF = f"{CHAPTER_REFERENCE_WORKFLOW_ID}@{CHAPTER_SAMP
 
 def chapter_provider_sample_definitions(
     *, application_build_id: str, commit_sha: str, reference_samples: bool = False,
+    definition_version: str | None = None,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError("Chapter sampling requires an exact implementation identity")
@@ -100,7 +101,7 @@ def chapter_provider_sample_definitions(
         name = chapter_sample_definition_name(stage)
         definitions.append({
             "name": name,
-            "definition_version": CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION,
+            "definition_version": definition_version or (CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION),
             "family": "chapter_authority",
             "enabled": True,
             "command_schema": command_schema,
@@ -127,7 +128,7 @@ def chapter_provider_sample_definitions(
             "projection_consumers": ["operation_timeline", "provider_routing_campaign"],
             "policy": {
                 "source_definition_name": node.definition_name,
-                "source_definition_versions": sorted({CHAPTER_SAMPLE_SOURCE_VERSION, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION}),
+                "source_definition_versions": ["3.4.1", "3.5.0"] if definition_version in {"2.0.0", "2.1.0"} else sorted({CHAPTER_SAMPLE_SOURCE_VERSION, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION}),
                 "routing_bootstrap_sample": True,
                 "production_eligible": False,
                 **({"chapter_reference_sample_input_allowed": True} if reference_samples else {}),

@@ -1,0 +1,241 @@
+{
+  "evidence_class": "OFFLINE",
+  "source_sha": "5740414f8e2a171ea5df21b59f227d5c86ab3ef7",
+  "source_branch": "codex/work-intent-context-e2e-20261005",
+  "budget": "AUTHORIZED_AND_NATIVE_REGISTERED",
+  "medium_routing": "PASS",
+  "formal_configuration_preview": "PASS",
+  "native_campaign_freeze_and_resume": "PASS",
+  "author_input": "AUTHOR_V2_FANTASY_LIGHT_COMEDY_EXACT_BYTES_PRESERVED",
+  "calls_authorized": 1600,
+  "tokens_authorized": 80000000,
+  "priced_usd_authorized": "0",
+  "entitlement_monetary_cost": "UNKNOWN",
+  "provider_calls": 0,
+  "accepted_chapters": 0,
+  "target_chapters": 40,
+  "real_validation": "BLOCKED",
+  "remaining_gates": [
+    "INDEPENDENT_REVIEW_PROVIDER_AUTHORIZATION",
+    "NATIVE_PACK_COMPILATION_AND_ACTIVATION",
+    "REAL_ROUTE_QUALIFICATION_AND_NATIVE_REVIEW_ADMISSION",
+    "OWNED_OBJECT_STORAGE"
+  ],
+  "real_provider_validated": "NOT_VERIFIED",
+  "creative_quality_proven": "NOT_VERIFIED",
+  "production_ready_for_this_real_run": "BLOCKED",
+  "protected_original": {
+    "head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+    "branch": "codex/wp02-author-approved-run",
+    "status": "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-configure-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-query.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-approval-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/live-supervision-after-budget.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/logs/\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/mode-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/shared-evidence-secret-scan.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/status.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/user-authorization.json\n"
+  },
+  "protected_original_unchanged": true,
+  "focused_tests": {
+    "cases": 211,
+    "subtests": 5,
+    "status": "PASS"
+  },
+  "checks": {
+    "documentation_reality": {
+      "status": "PASS",
+      "errors": [],
+      "full_output_hash": "sha256:8695e56ee8acba8e9f0d052d6b46908f234af6b160f25b9269158a4979029659"
+    },
+    "instruction_surface": {
+      "status": "PASS",
+      "errors": [],
+      "full_output_hash": "sha256:524783069343330a1e93d9dca91e19827e53f4d1916fd8201a6747c47732a3e1"
+    },
+    "test_reality": {
+      "status": "PASS",
+      "errors": [],
+      "full_output_hash": "sha256:1a61de721062ce6412215617ebdf8d490ebc29960e3b4f62e0f8ad290acb2cf1"
+    }
+  },
+  "ruff_changed_surfaces": "PASS",
+  "initial_failures": [
+    {
+      "category": "MEDIUM_ROUTER_REGRESSION",
+      "actual": "high",
+      "expected": "medium",
+      "retained": true
+    },
+    {
+      "category": "CAMPAIGN_FREEZE_ADAPTER",
+      "reason": "native authorization business_scope rejected by legacy adapter",
+      "retained": true
+    },
+    {
+      "category": "STALE_REVIEW_TEST_DOUBLE",
+      "reason": "test Cursor rejected immutable candidate-content query",
+      "retained": true
+    },
+    {
+      "category": "DOCUMENTATION_PROJECTION_STALE",
+      "resolution": "refresh implementation-tree identity without upgrading qualification"
+    }
+  ],
+  "native_budget_binding": {
+    "owner": "CREATIVE_EXPERIMENT_BUDGET",
+    "policy_version": "sol40-20261005T112522Z:normal-budget-v1",
+    "policy_hash": "518a3fbde18eb9d91f85db221061ad0eb240ba88b71a3106e362bd58664ca514",
+    "contract_hash": "sha256:53c94b2cc1e5b68e63ca1d0892ddf690abc8fc28320b097eadfabbfce57b7c59",
+    "subject_id": "project:nf-sol40-20261005T112522Z",
+    "authorization": {
+      "book_id": "nf-sol40-20261005T112522Z-book",
+      "project_id": "nf-sol40-20261005T112522Z",
+      "evidence_hash": "sha256:a73c3b75fd4d7786959b45d8501308a4bd7a4cf49918811209866bd6dd08bd8e",
+      "business_scope": {
+        "design_allowed": true,
+        "source_allowed": false,
+        "max_chapter_number": 40
+      },
+      "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1",
+      "authorized_cumulative_caps": {
+        "DESIGN": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "0"
+        },
+        "REPAIR": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "0"
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "HOLDOUT": {
+          "calls": 20,
+          "tokens": 1000000,
+          "priced_usd": "0"
+        },
+        "REFERENCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SCREENING": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        },
+        "PRODUCTION": {
+          "calls": 1180,
+          "tokens": 59000000,
+          "priced_usd": "0"
+        },
+        "CALIBRATION": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        }
+      }
+    }
+  },
+  "native_budget_usage": {
+    "contract_hash": "sha256:53c94b2cc1e5b68e63ca1d0892ddf690abc8fc28320b097eadfabbfce57b7c59",
+    "project_id": "nf-sol40-20261005T112522Z",
+    "book_id": "nf-sol40-20261005T112522Z-book",
+    "phases": {
+      "REFERENCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "SCREENING": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "CALIBRATION": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "HOLDOUT": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "PRODUCTION": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 0,
+      "conservative_tokens": 0,
+      "recorded_actual_tokens": 0,
+      "unmeasured_reserved_tokens": 0,
+      "priced_usd": "0",
+      "unpriced_calls": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 0,
+      "conservative_tokens": 0,
+      "recorded_actual_tokens": 0,
+      "unmeasured_reserved_tokens": 0,
+      "priced_usd": "0",
+      "unpriced_calls": 0
+    },
+    "reservation_ids": [],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null,
+    "entitlements": [],
+    "entitlement_usd": null,
+    "invoice_status": "NOT_VERIFIED"
+  },
+  "native_effect_facts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0
+  },
+  "actual_execution_freeze_manifest_hash": "sha256:e651867fabb02a21a167b1c32b0eb66d79d76c87f1c8bc131cc34c5aeaeba671",
+  "real_execute_called": false,
+  "full_backend_qualification": "NOT_RUN",
+  "source_import": "SOURCE_IMPORT_PENDING",
+  "push_or_merge_performed": false
+}

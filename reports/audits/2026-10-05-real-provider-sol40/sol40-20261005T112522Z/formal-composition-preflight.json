@@ -1,0 +1,135 @@
+{
+  "evidence_class": "OFFLINE",
+  "status": "BLOCKED",
+  "source_sha": "b710aeec29eb06ca9ca560863a82e7736a7596cc",
+  "requested": {
+    "provider": "codex-cli",
+    "model": "gpt-6-sol",
+    "reasoning_effort": "medium"
+  },
+  "actual_formal_routes": {
+    "memo": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "canon_support": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "draft": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "review": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "revision": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "rereview": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "canon_extraction": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "quality_structural": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "quality_commercial": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "quality_source_originality": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "quality_longform": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "quality_platform": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "longform_prose_review": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "reader_outcome": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "narrative_semantic_evaluation": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "context_compress": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "context_fidelity": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "screenplay_generate": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "screenplay_review": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "screenplay_revision": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "agent_session": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    },
+    "retrieval_query_expansion": {
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "high"
+    }
+  },
+  "medium_request_preserved": false,
+  "independent_review_policy_check": {
+    "source": "EXPLICIT_OFFLINE_EXAMPLE_NOT_REAL_RECEIPT",
+    "codex_reviewer_rejection": "CROSS_MODEL_REVIEW_DIFFERENT_PROVIDER_REQUIRED"
+  },
+  "budget_configuration": "PROPOSED_PREFLIGHT_VALUES_ONLY_NO_NATIVE_GRANT",
+  "provider_calls": 0,
+  "native_facts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0
+  },
+  "no_dispatch_called": true
+}

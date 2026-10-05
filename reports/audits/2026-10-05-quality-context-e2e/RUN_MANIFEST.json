@@ -1,0 +1,176 @@
+{
+  "implementation_commit": "a57b8dbb959f790c606c59c98fccfbe863434a40",
+  "evidence_classes": [
+    "STATIC",
+    "OFFLINE",
+    "MOCK_E2E"
+  ],
+  "paid_or_real_provider_calls": 0,
+  "test_counts_are_not_summed": "Overlapping runs are separate evidence, never a quality denominator",
+  "runtime_environment": {
+    "python": "/tmp/nf-quality-context-venv/bin/python",
+    "installation": "editable .[test]; optional minio installed for dependency tests",
+    "database_name": "nf_quality_context_e2e_20261005_test",
+    "port": 58231,
+    "container_id": "7e458a3ea4b43de670d4e035289317680dd963fb6bec4268c4eb773015161d53",
+    "image": "pgvector/pgvector:pg16",
+    "serial_postgres": true
+  },
+  "runs": [
+    {
+      "id": "quality-context-units",
+      "evidence": "OFFLINE",
+      "result": "PASS",
+      "passed": 164,
+      "log": "nf-qc-units-style-final.log",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_work_quality_semantics.py",
+        "tests/unit/test_work_applicability_binding.py",
+        "tests/unit/test_work_intent_consistency.py",
+        "tests/unit/test_work_intent_residuals.py",
+        "tests/unit/test_context_compression_routing.py",
+        "tests/unit/test_task_context_admission.py",
+        "tests/unit/test_chapter_sample_contract_versions.py"
+      ],
+      "proves": "Applicability/verdict/calibration/actions, exact source/style/version and method propagation",
+      "log_sha256": "24384d3292f685581f549a5ea096d7eac231b53947ff59e40e6f0f08a4f7446a",
+      "final_summary": "164 passed in 1.79s"
+    },
+    {
+      "id": "native-boundaries",
+      "evidence": "OFFLINE",
+      "result": "PASS",
+      "passed": 77,
+      "log": "nf-qc-boundaries-style-final.log",
+      "command": [
+        "/tmp/nf-quality-context-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/integration/test_chapter_dispatch_recovery_postgres.py::test_native_reserved_group_dispatch_recovers_same_request_root_and_delegation",
+        "tests/integration/test_chapter_dispatch_recovery_postgres.py::test_native_ungrouped_scheduler_recovers_reserved_request_without_duplicate_admission",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_author_workspace_keeps_frozen_profile_and_project_book_scope",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_chapter_dispatch_idempotency",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_reconcile_after_worker_restart",
+        "tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_accept_requires_all_evidence",
+        "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_success_records_effect_receipt_model_call_and_cost_once",
+        "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_provider_admission_rejection_creates_no_external_effect",
+        "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_measured_retry_uses_frozen_operation_envelope_and_settles_both_calls",
+        "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_exception_after_send_is_unknown_and_not_blindly_retried"
+      ],
+      "proves": "Strict Router/PEP, Kernel failure recovery, Book scope, idempotency and unknown outcome settlement",
+      "log_sha256": "66bbe27c432b9b7c1942d926da9fc7544f356f59335f944e31b041fa0c10c088",
+      "final_summary": "77 passed in 17.52s"
+    },
+    {
+      "id": "acceptance-state-invariants",
+      "evidence": "OFFLINE",
+      "result": "PASS",
+      "passed": 5,
+      "log": "nf-qc-state-style-final.log",
+      "selectors": [
+        "BookToChapterAuthorityVerticalPostgresTests::test_book_cursor_advances_once",
+        "BookToChapterAuthorityVerticalPostgresTests::test_book_resume_reconciles_existing_child",
+        "BookToChapterAuthorityVerticalPostgresTests::test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership",
+        "ChapterGroupAuthorityPostgresTests::test_chapter_group_three_chapter_vertical_and_rolling_horizon",
+        "ChapterGroupAuthorityPostgresTests::test_observational_realization_preserves_zero_changes_across_lost_response"
+      ],
+      "proves": "Original rollback/concurrent acceptance/projection/resume/zero-change assertions retained; OFFLINE input migration",
+      "log_sha256": "46ea55d6f473d6d591dda3b978cd59a6965c0dc39946136903c30c600db05c04",
+      "final_summary": "5 passed in 88.40s (0:01:28)"
+    },
+    {
+      "id": "formal-production-and-feedback",
+      "evidence": [
+        "MOCK_E2E",
+        "OFFLINE"
+      ],
+      "result": "PASS",
+      "passed": 15,
+      "mock_e2e_cases": 6,
+      "offline_feedback_cases": 9,
+      "log": "nf-qc-formal-delivery2.log",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--basetemp=/tmp/nf-qc-final-evidence2",
+        "tests/integration/test_quality_context_formal_e2e_postgres.py",
+        "tests/integration/test_context_feedback_postgres.py"
+      ],
+      "proves": "3x3 author-entry acceptance/next units, 2 recovery, native overflow plus receipt/negative-history tests",
+      "log_sha256": "e992bc1257155d81458769ce9f6147539213f3547352111d29570028d0b8a521",
+      "final_summary": "15 passed in 474.82s (0:07:54)"
+    },
+    {
+      "id": "overflow-native-receipt-capture",
+      "evidence": "MOCK_E2E",
+      "result": "PASS",
+      "passed": 1,
+      "log": "nf-qc-overflow-style-capture.log",
+      "command": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume"
+      ],
+      "proves": "Same test repeated only to preserve exact native DB snapshot before task-owned cleanup",
+      "log_sha256": "42403b3237535effb4d094c37f8d86274061c962392db3e494518ffacb49a4e1",
+      "final_summary": "1 passed in 14.51s"
+    },
+    {
+      "id": "starting-main-quality-counterexamples",
+      "evidence": "OFFLINE",
+      "result": "FAIL",
+      "expected_red": true,
+      "failed": 4,
+      "log": "nf-qc-baseline-regression-final.log",
+      "implementation_sha": "4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52",
+      "log_sha256": "a338a485ef63c6a425179d730de71aaeb37b6b951c9ed31114371a5d0a3ddb5e",
+      "final_summary": "4 failed, 10 deselected in 0.72s"
+    },
+    {
+      "id": "before-style-admission-counterexamples",
+      "evidence": "OFFLINE",
+      "result": "FAIL",
+      "expected_red": true,
+      "failed": 3,
+      "log": "nf-qc-style-before-regression.log",
+      "implementation_sha": "eef323b28b931fa8c31422b73e57f206053821f0",
+      "selector": "current_execution_entry_rejects_selected_legacy_style_before_writer",
+      "log_sha256": "d0337567641f892125675dbcb93db276b138a1a151b4a54e5c7c0f2dc19e4fed",
+      "final_summary": "3 failed, 17 deselected in 1.18s"
+    }
+  ],
+  "full_backend_qualification_matrix": "NOT_RUN_BY_USER_FOCUSED_SCOPE",
+  "preserved_intermediate_failures": [
+    "nf-qc-formal2.log",
+    "nf-qc-formal3.log",
+    "nf-qc-native-boundaries.log",
+    "nf-qc-legacy-boundaries1.log",
+    "nf-qc-state-migration1.log",
+    "nf-qc-state-migration2.log",
+    "nf-qc-state-final.log"
+  ],
+  "verification": {
+    "manifests": "PASS",
+    "ruff_ratchet": "PASS current=97 baseline=515",
+    "new_module_lint": "PASS",
+    "compileall": "PASS",
+    "diff_check": "PASS",
+    "static_gate_reports": "STATIC_GATES.json"
+  },
+  "boundaries": [
+    "Synthetic routing observations were not persisted as real qualification",
+    "Fake runtime SHA e*40 is not a deployment identity",
+    "Fixtures and native mock transcripts do not establish literary quality",
+    "Legacy compatibility is not automatic promotion to new semantics"
+  ]
+}

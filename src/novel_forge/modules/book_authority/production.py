@@ -3501,7 +3501,7 @@ def _validate_chapter_acceptance_evidence(
         if (
             quality.get("creative_baseline_digest") != baseline["baseline_digest"]
             or rereview.get("creative_baseline_digest") != baseline["baseline_digest"]
-            or quality.get("evaluation_semantics_version") != "work-quality.v1"
+            or quality.get("evaluation_semantics_version") not in {"work-quality.v1", "work-quality.v2"}
             or baseline["source_plan"]
             != {
                 "asset_version_id": plan.get("source_chapter_plan_asset_version_id"),

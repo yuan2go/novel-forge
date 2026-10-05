@@ -1,0 +1,40 @@
+{
+  "run_id": "sol40-20261005T112522Z",
+  "source_sha": "b710aeec29eb06ca9ca560863a82e7736a7596cc",
+  "evidence_classes": [
+    "STATIC",
+    "OFFLINE"
+  ],
+  "status": "BLOCKED",
+  "author_input_registered": "PASS",
+  "chapter_scope": 40,
+  "chapter_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "minimum": 5000,
+    "maximum": 6000
+  },
+  "requested_model": "gpt-6-sol",
+  "requested_reasoning": "medium",
+  "real_provider_calls": 0,
+  "accepted_chapters": 0,
+  "native_external_facts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0
+  },
+  "budget_confirmation": "PENDING",
+  "independent_reviewer_authorization": "PENDING",
+  "medium_routing": "FAIL",
+  "real_task_qualification": "NOT_VERIFIED",
+  "real_provider_validated": "NOT_VERIFIED",
+  "creative_quality_proven": "NOT_VERIFIED",
+  "continuous_manuscript_validation": "BLOCKED",
+  "runtime_root": "/Users/yuan/.local/share/novel-forge/runs/sol40-20261005T112522Z",
+  "protected_original_unchanged": true,
+  "retained_database": "IDLE_NO_WORKERS; not discarded; see resources.json",
+  "preflight_first_configuration_failure": {
+    "category": "MISSING_PREFLIGHT_CONFIGURATION",
+    "error": "NOVEL_FORGE_AGENT_SESSION_SYSTEM_INSTRUCTION_HASH or NOVEL_FORGE_PROMPT_SYSTEM_INSTRUCTION_HASH is required in a controlled environment",
+    "resolution": "Bind actual current Pack hashes for construction-only preflight. No dispatch, schema or qualification gate was bypassed."
+  }
+}

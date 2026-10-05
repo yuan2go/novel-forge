@@ -415,7 +415,7 @@ def _observation(
         from novel_forge.modules.chapter_authority.chapter_plan_views import validate_creative_baseline
         validate_creative_baseline(baseline)
         work_semantics = {
-            "work_quality_semantic_version": "work-quality.v1",
+            "work_quality_semantic_version": quality.get("evaluation_semantics_version", "work-quality.v1"),
             "creative_baseline_digest": baseline["baseline_digest"],
             "method_requirements": baseline["method_requirements"],
             "required_state_delta": plan.get("required_state_delta", (plan.get("source_extensions") or {}).get("required_state_delta")),

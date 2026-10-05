@@ -1,0 +1,177 @@
+{
+  "creative_brief_contract_version": "creative-brief-v3",
+  "idea": "暂定名《这家灵兽食堂有点忙》。原创玄幻小镇，人与灵兽共同生活。主角陆圆想把一间不起眼的小食堂经营下去，练习有限且有成本的食火术；灵兽的食性、人的愿望与各自认真过头的生活习惯，让普通委托常常变得热闹。故事以经营日常、修炼中的小进步、朋友相处和灵兽闹出的生活麻烦为中心。奇幻规则具体而能反复验证，笑点来自人物欲望错位、体型或能力差异、行动反馈与关系默契；主角谨慎但愿意做事。由正式Foundation独立生成配角、世界规则和人物关系，不预设参考作品的识别性角色组合。",
+  "genre": "玄幻轻喜剧",
+  "audience": "喜欢轻松玄幻、灵兽日常、渐进修炼与温暖人物关系的成年中文类型小说读者",
+  "constraints": [
+    "本作品题材明确为玄幻轻喜剧；禁止武侠题材与悬疑题材，不得把江湖门派、武学争霸、侦查推理、追凶破案、阴谋揭谜作为故事主轴。一本原创小说，共40章，每章正文5000–6000汉字（HAN_CHARACTERS_V1，不计标点、数字、空白和拉丁字母）。生成模型固定Codex gpt-6-sol、推理medium。",
+    "简体中文，玄幻轻喜剧，基调明快、温暖、有生活气，第三人称限知、主要视角固定陆圆。通过动作、对白节奏和可信的奇幻日常形成幽默，允许轻松的困难与适量冒险。角色保持基本尊严和判断力；不靠全员降智、恶意羞辱、密集网络热梗、反复口头解释笑点或强行误会制造喜剧。局势与感情的推进须自然接续，不以沉重的悬疑氛围、秘密调查和谜底吊胃口。",
+    "本作品选择轻喜剧日常、谨慎但主动的经营选择、渐进修炼、人物关系中的互相帮助与合理摩擦。可选：有因果支持的小收获、偶尔出乎意料的奇幻行动反馈、局部笑点回收；由规划明确其适用与范围。明确不采用：每章强制悬念钩子、固定商业节拍、必须打脸、必须升级、故意设置谜案、毫无代价的系统奖励。不得用通用Quality阈值把未选择的方法变成正文要求。",
+    "原创边界：不复制参考作品的角色、宗门、神通或系统、具体情节链、可识别的人物组合与反转、对白或表达。所有新设定与事实由本书作者输入和正式批准/接纳资产决定。外部作品正文未导入，不声称已读原书；参考标题留在档案中，不能当成模仿指令。其他书状态、失败稿和未接纳候选不提供本书既成历史；角色所知与客观事实分开。",
+    "每章必须有5000–6000汉字的完整正文，禁止摘要、重复段落或无效解释凑长度；40章完成本书当前主问题，结局由已有行动与人物选择支撑。",
+    "完整经历正式Foundation、规划、Draft、Review、必要Revision、ReReview、Quality、原子接纳与下一章状态读取；实际稿件未产生前不能宣称符合题材或文学质量通过。"
+  ],
+  "source_boundaries": [
+    "仅本书作者输入、获准原创Foundation/Planning及本书已接纳状态进入生产。",
+    "外部知识DENY_ALL；参考作品正文未导入，不声称已读原书，不以简介或模型印象替代原文分析。",
+    "参考书名及其来源状态仅在运行档案保留，不作为模仿指令或原文上下文。"
+  ],
+  "author_design": {
+    "contract_version": "author-design-input.v1",
+    "project_id": "nf-sol40-20261005T112522Z",
+    "book_id": "nf-sol40-20261005T112522Z-book",
+    "version": "sol40-20261005T112522Z-author-v2-fantasy-comedy",
+    "evidence_class": "AI_ASSISTED_AUTHOR_INPUT",
+    "source_task": "sol40-20261005T112522Z:user-genre-correction",
+    "documents": [
+      {
+        "path": "author-v2/author-contract.txt",
+        "content": "本作品题材明确为玄幻轻喜剧；禁止武侠题材与悬疑题材，不得把江湖门派、武学争霸、侦查推理、追凶破案、阴谋揭谜作为故事主轴。一本原创小说，共40章，每章正文5000–6000汉字（HAN_CHARACTERS_V1，不计标点、数字、空白和拉丁字母）。生成模型固定Codex gpt-6-sol、推理medium。",
+        "content_hash": "sha256:076dddf9ad76e8f312ddf89b3cd4b84586fbc842be76002cb33138f8e37b4702"
+      },
+      {
+        "path": "author-v2/original-premise.txt",
+        "content": "暂定名《这家灵兽食堂有点忙》。原创玄幻小镇，人与灵兽共同生活。主角陆圆想把一间不起眼的小食堂经营下去，练习有限且有成本的食火术；灵兽的食性、人的愿望与各自认真过头的生活习惯，让普通委托常常变得热闹。故事以经营日常、修炼中的小进步、朋友相处和灵兽闹出的生活麻烦为中心。奇幻规则具体而能反复验证，笑点来自人物欲望错位、体型或能力差异、行动反馈与关系默契；主角谨慎但愿意做事。由正式Foundation独立生成配角、世界规则和人物关系，不预设参考作品的识别性角色组合。",
+        "content_hash": "sha256:6db6b9a4c1d4fd9542546c31a7125cee3b8248a8c3c130621dda2ea5b5b670b9"
+      },
+      {
+        "path": "author-v2/tone-and-pov.txt",
+        "content": "简体中文，玄幻轻喜剧，基调明快、温暖、有生活气，第三人称限知、主要视角固定陆圆。通过动作、对白节奏和可信的奇幻日常形成幽默，允许轻松的困难与适量冒险。角色保持基本尊严和判断力；不靠全员降智、恶意羞辱、密集网络热梗、反复口头解释笑点或强行误会制造喜剧。局势与感情的推进须自然接续，不以沉重的悬疑氛围、秘密调查和谜底吊胃口。",
+        "content_hash": "sha256:4e3ea15253faaf8867ecc2d136aa218ad904973ab014798c9e2aa1cb737f0f26"
+      },
+      {
+        "path": "author-v2/work-craft.txt",
+        "content": "本作品选择轻喜剧日常、谨慎但主动的经营选择、渐进修炼、人物关系中的互相帮助与合理摩擦。可选：有因果支持的小收获、偶尔出乎意料的奇幻行动反馈、局部笑点回收；由规划明确其适用与范围。明确不采用：每章强制悬念钩子、固定商业节拍、必须打脸、必须升级、故意设置谜案、毫无代价的系统奖励。不得用通用Quality阈值把未选择的方法变成正文要求。",
+        "content_hash": "sha256:e8abc3a1f21e7152a26cdf32a6f2793e4d369b6cd914e0ba719c56a273370c89"
+      },
+      {
+        "path": "author-v2/originality-and-boundaries.txt",
+        "content": "原创边界：不复制参考作品的角色、宗门、神通或系统、具体情节链、可识别的人物组合与反转、对白或表达。所有新设定与事实由本书作者输入和正式批准/接纳资产决定。外部作品正文未导入，不声称已读原书；参考标题留在档案中，不能当成模仿指令。其他书状态、失败稿和未接纳候选不提供本书既成历史；角色所知与客观事实分开。",
+        "content_hash": "sha256:0d0b82bcc21ed4ba00b4c83b836e668960226b8a89552a660f6f7b856e5b6c1b"
+      }
+    ],
+    "fragments": [
+      {
+        "fragment_id": "author-contract",
+        "source_path": "author-v2/author-contract.txt",
+        "start": 0,
+        "end": 154,
+        "content_hash": "sha256:076dddf9ad76e8f312ddf89b3cd4b84586fbc842be76002cb33138f8e37b4702",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "THEME_CONTRACT",
+          "ENDING_INTENT",
+          "READER_PROMISE",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      },
+      {
+        "fragment_id": "original-premise",
+        "source_path": "author-v2/original-premise.txt",
+        "start": 0,
+        "end": 231,
+        "content_hash": "sha256:6db6b9a4c1d4fd9542546c31a7125cee3b8248a8c3c130621dda2ea5b5b670b9",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "THEME_CONTRACT",
+          "ENDING_INTENT",
+          "READER_PROMISE",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "DIRECTION"
+      },
+      {
+        "fragment_id": "tone-and-pov",
+        "source_path": "author-v2/tone-and-pov.txt",
+        "start": 0,
+        "end": 160,
+        "content_hash": "sha256:4e3ea15253faaf8867ecc2d136aa218ad904973ab014798c9e2aa1cb737f0f26",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "READER_PROMISE",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      },
+      {
+        "fragment_id": "work-craft",
+        "source_path": "author-v2/work-craft.txt",
+        "start": 0,
+        "end": 166,
+        "content_hash": "sha256:e8abc3a1f21e7152a26cdf32a6f2793e4d369b6cd914e0ba719c56a273370c89",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "READER_PROMISE",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      },
+      {
+        "fragment_id": "originality-and-boundaries",
+        "source_path": "author-v2/originality-and-boundaries.txt",
+        "start": 0,
+        "end": 151,
+        "content_hash": "sha256:0d0b82bcc21ed4ba00b4c83b836e668960226b8a89552a660f6f7b856e5b6c1b",
+        "targets": [
+          "CREATIVE_FOUNDATION",
+          "WORLD_BIBLE",
+          "CHARACTER_CAST",
+          "BOOK",
+          "VOLUME",
+          "ARC",
+          "NEAR_TERM",
+          "CHAPTER"
+        ],
+        "chapter_range": [
+          1,
+          40
+        ],
+        "visibility": "SCENE_INTENT",
+        "strength": "REQUIRED"
+      }
+    ]
+  }
+}

@@ -10,9 +10,11 @@ def test_task_dependency_admission_is_wired_only_for_the_frozen_v4_profile(monke
     from novel_forge.modules.chapter_authority import orchestrator
     from novel_forge.modules.context_builder.production_retrieval import RetrievalDiscovery
 
-    boundary = {"accepted_through_chapter": 8}
+    boundary = {"accepted_through_chapter": 8, "story_state_asset_version_id": "state:v8", "canon_snapshot_asset_version_id": "canon:v8"}
     contents = {"plan:v1": {"book_id": "book:novel", "required_long_distance_fact_ids": ["fact:hook"]},
                 "intent:v1": _intent(), "memo:v1": _memo()}
+    contents["intent:v1"]["accepted_boundary"] = boundary
+    contents["memo:v1"]["accepted_boundary"] = boundary
     monkeypatch.setattr(orchestrator, "_asset_content", lambda _url, **values: contents[values["asset_version_id"]])
     source_rows = [["sha256:" + "a" * 64, "ACTIVE", "ELIGIBLE", "CLEAR"]]
 

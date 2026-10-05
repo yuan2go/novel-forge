@@ -1,0 +1,33 @@
+{
+  "purpose": "AUDIT_COPY_NOT_RUNTIME_AUTHORITY",
+  "source_sha": "5740414f8e2a171ea5df21b59f227d5c86ab3ef7",
+  "evidence_class": "OFFLINE",
+  "files": {
+    "REPORT.md": "sha256:3dac26000aca7c0f38c2e10b9e424d4810b34b8ddba1328ac2e50e59fb132757",
+    "STATUS.json": "sha256:50540a2d1c6e2526afc3081a7771404d9925da768d21f681cd3a1f4c72b16884",
+    "authorization-evidence.json": "sha256:a73c3b75fd4d7786959b45d8501308a4bd7a4cf49918811209866bd6dd08bd8e",
+    "budget-policy.json": "sha256:309885e709faabe621bc97465a74e1a073ec72b817f7a30b58a1894dac569a93",
+    "campaign-manifest.json": "sha256:d49c16e69ce3f8e79a11ba9fd54cf59efdf203eafb76a85a378b4c93ac8508bc",
+    "configure-1.json": "sha256:b4a1c100492e4af90cf4785cfc03f3f5ef9d37e14f2afac3a731507beffb1c69",
+    "configure-2.json": "sha256:9170003d7427a537efc1c7858455961a78628e73c7a6992174b8e2151fe1da8a",
+    "execution-freeze-v1/assembly-and-resume.json": "sha256:d577dbe49ec34e589b5e0a98be2b691f543a1d4273c8a12aa665f0715d96751f",
+    "execution-freeze-v1/formal-preview/creation-run.json": "sha256:97dcbdd59e6449a6ad7e21ade4fec4eae2f2e48644d04e2ac0b962809a5f5126",
+    "execution-freeze-v1/formal-preview-command.json": "sha256:8cc8f37cba4dae75dfb53ae56a845af5366fd792f5dd0baa360354f6ece9a2c6",
+    "execution-freeze-v1/frozen/brief.json": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266",
+    "execution-freeze-v1/frozen/budget.json": "sha256:852384b80b805105dc45481c57d72dcf9d7ce9fcb8e6b4967237fa4652b10e9c",
+    "execution-freeze-v1/frozen/creation.json": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff",
+    "execution-freeze-v1/frozen/deny-all.json": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da",
+    "execution-freeze-v1/frozen/formation.json": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460",
+    "execution-freeze-v1/frozen/freeze.json": "sha256:e651867fabb02a21a167b1c32b0eb66d79d76c87f1c8bc131cc34c5aeaeba671",
+    "execution-freeze-v1/frozen/review-form.json": "sha256:a4759491a50361ddf92cf8186334345f562c512be6f2eefd6ee64c4685d71e20",
+    "execution-freeze-v1/inputs/brief.json": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266",
+    "execution-freeze-v1/inputs/budget.json": "sha256:852384b80b805105dc45481c57d72dcf9d7ce9fcb8e6b4967237fa4652b10e9c",
+    "execution-freeze-v1/inputs/creation.json": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff",
+    "execution-freeze-v1/inputs/deny-all.json": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da",
+    "execution-freeze-v1/inputs/formation.json": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460",
+    "focused-tests.xml": "sha256:f2291721a2c0303bc391a432ba87722774539d472ad58d70ab512a603ab6c031",
+    "formal-composition-after-fix.json": "sha256:0e4fb11c4d6c73f268a0e2460bfa110dd135366267893dc20f29364e78345279",
+    "native-query.json": "sha256:d8dd12bc623610affbe1368a9c72c11cc8c089c1d1acc10e28d0bc5e06a8726b",
+    "production-budget.json": "sha256:852384b80b805105dc45481c57d72dcf9d7ce9fcb8e6b4967237fa4652b10e9c"
+  }
+}

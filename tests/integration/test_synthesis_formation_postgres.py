@@ -60,6 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
+    *, complete_after_result_repair=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -601,7 +602,8 @@ def test_native_formation_generates_foundation_from_author_brief(
                 assert uow.cursor.fetchone()[0] == "FAILED_FINAL"
                 uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id IN (%s,%s)", [failed[0], repaired[0]])
                 assert uow.cursor.fetchone()[0] == 2
-            return
+            if not complete_after_result_repair:
+                return
         from novel_forge.modules.book_authority.creation_inputs import (
             prepare_creation_inputs,
         )

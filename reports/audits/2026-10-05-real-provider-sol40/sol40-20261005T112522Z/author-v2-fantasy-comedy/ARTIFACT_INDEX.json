@@ -1,0 +1,11 @@
+{
+  "AUTHOR_UPDATE.md": "sha256:8b2e95d1b1ebfa6077e6cb11962fc409bc8c5d102dd306d132ea001bd8d303c5",
+  "author-role-projections.json": "sha256:1b16fc341159ae7288635686239d6e83cfc08087835ffa82c19ac8e019364243",
+  "frozen-inputs/brief.json": "sha256:0d49d8e6be74c73bfa29ce1bd1a533cbfbf2293c90c8edd1d1fea54947ced266",
+  "frozen-inputs/creation.json": "sha256:8838ad082ed1331e2c82418a20763b3999f91b1f32660e97b224c50231dbefff",
+  "frozen-inputs/deny-all.json": "sha256:973ed831b8ac5cb7cbf4e6e6c1e8da3eda055e03bf6cc7ebc62d36c370ab54da",
+  "frozen-inputs/formation.json": "sha256:b14d7d92f63aa30a899dc4a4cde862dceaafefaba39ad8374f4690d93b874460",
+  "frozen-inputs/freeze.json": "sha256:d51b47db4a41a44ee3b178d4b8fe038aa1c55688f89d50ad654f0fcab46bda50",
+  "frozen-inputs/review-form.json": "sha256:a4759491a50361ddf92cf8186334345f562c512be6f2eefd6ee64c4685d71e20",
+  "native-author-input-receipt.json": "sha256:381c1b64c7058565586df6c662e9af8ec1406d4f07701142bd5b88f1b56ccff0"
+}

@@ -190,6 +190,34 @@ boundaries, not a product or narrative development sequence.
 
 ## Task Context capacity and assembly
 
+At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
+semantic overflow effects existed but formal Router selection rejected context tasks
+with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v12`
+classifies `context_compress` and `context_fidelity` as HIGH-risk tasks using independent
+`DOMAIN_GATE_ACCEPTANCE` qualification (20 effective samples and the existing conservative
+quality floor). A cold or failed cohort blocks before dispatch; no direct Provider path
+is added. This is extract/reconstruction engineering qualification, not literary fidelity
+calibration. Budget, timeout, retry, PEP admission and frozen native receipts remain owned
+by the existing production execution and Command Kernel.
+
+Compression freezes source version/hash, Book and accepted frontier, original required
+units and selected units. Independent fidelity checks a separate Effect. Missing mandatory
+units are restored from that exact frozen source and fidelity rechecked independently;
+failed fidelity or mandatory overflow fails closed. Positive feedback requires a successful
+Context output and matching native verified receipts. Every fidelity assessment and failed
+Context terminal outcome remains in the feedback denominator. Dispatch generation and receipt
+integrity determine which native result is used; retry failure history cannot be washed away.
+Restoration reconstructs original attributed units for the normal Draft/Review Context.
+Replay uses the durable Effect result and exact Pack, Prompt, Skill, Schema and baseline;
+changed sources, cross-Book frontier or stale binding cannot silently replace them.
+
+Scoped verification uses a caller-owned disposable PostgreSQL instance and formal author,
+Formation, Planning, Book and Chapter assemblers. Controlled candidate qualification observations
+and scripted Provider output are `MOCK_E2E`, never reusable native real qualification. Their
+fixture waivers are explicitly scoped, and no paid Provider is authorized by this diagnostic.
+The audit delivery records exact inputs, effects, accepted projections, next-unit reads and
+recovery results; global backend qualification and literary proof remain separate.
+
 For future Chapter work, author `book-chapter-context.v1` with
 `draft_profile: draft-context-profile-v4`, a positive `draft_token_budget` at most
 512,000, and the desired quality task budget. World/Director roles may use
@@ -683,7 +711,7 @@ with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idemp
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
 `chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
-definition version `3.7.0` or its frozen published predecessors `3.4.1`/`3.5.0`/`3.6.0`.
+definition version `3.8.0` or its frozen published predecessors `3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`.
 The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
 use the returned book, command and input identities in the same campaign grant. Dry-run
 performs no admission or Provider call. Admit the identical request without `dry_run`.
@@ -693,13 +721,15 @@ advance the source Chapter Saga. The worker root is the single registered Saga s
 Saga coordination follows terminal worker completion, so ordinary Chapter orchestration
 cannot admit production descendants from a sample.
 
-Install the separately approved `chapter_provider_sampling@2.0.0` binding through
+Install the separately approved `chapter_provider_sampling@2.2.0` binding through
 `install_chapter_validation_pack(..., provider_sampling=True)` in the existing Capability
 Pack authority workflow. It derives `<configured_chapter_pack_id>.provider_sampling`
 from the supplied Chapter pack and retains its Prompt, Skill, Schema and source isolation.
-New sampler definitions use version `2.0.0`; sample-target review/rereview use `2.1.0`.
-Their derived Pack advances the supplied Pack major version (currently `2.7.0` to
-`3.7.0`) under its distinct sampler Pack ID. Published `1.0.0`/`1.1.0` definitions,
+New sampler definitions use version `2.2.0`; sample-target review/rereview use `2.3.0`.
+Their source handler semantics bind the exact native source version separately from
+the sampler Operation version; frozen `2.0.0`/`2.1.0` keep their original codec and policy.
+Their derived Pack advances the supplied Pack major version (currently `2.12.0` to
+`3.12.0`) under its distinct sampler Pack ID. Published `1.0.0`/`1.1.0` and `2.0.0`/`2.1.0` definitions,
 original source `3.4.1`, and frozen Pack snapshots retain their original identities and
 hashes. Idempotent replay selects the persisted definition and successful receipts; it
 does not register a replacement definition or dispatch another call. Unknown definition
@@ -797,7 +827,7 @@ and rereview use respectively `review_decision` and `rereview_decision`. Freeze 
 `REFERENCE_EVALUATION` grant with the exact binding and producer contract. Install the
 approved `<configured_chapter_pack_id>.reference_sampling` pack with
 `install_chapter_validation_pack(..., provider_sampling=True, reference_sampling=True)`;
-its native binding is `chapter_reference_sampling@2.0.0`. Reference labels are checked
+its native binding is `chapter_reference_sampling@2.2.0`. Reference labels are checked
 before inference and compared with the exact successful ModelCallLog afterward. They
 never enter Provider task inputs. The sample retains status agreement, score-range
 agreement and all reference hashes separately, with `calibration_claim_allowed: false`
@@ -813,7 +843,7 @@ claims, source prose/hash, evaluation dimensions and required annotation fields 
 evaluations plus a distinct adjudicator for every claim (or the explicit no-change
 dimension), with source Unicode locations and reasoning, then supply their immutable
 adjudications as `reference_evaluation`. Admission refuses missing labels. Negative and
-uncertain support samples remain inspectable and never advance Canon. New v11 Router
+uncertain support samples remain inspectable and never advance Canon. New v12 Router
 decisions require independent HIGH-risk reference agreement for this task.
 
 To annotate a completed Chapter generator sample, use the existing
@@ -834,7 +864,7 @@ and independent `reference_evaluation` adjudications targeting that sample. The 
 native generator must be respectively `chapter.draft.generate` or `chapter.revision.apply`.
 Install the approved Pack with `install_chapter_validation_pack(...,
 provider_sampling=True, reference_sampling=True, reference_samples=True)`; this uses
-`.reference_samples`, `chapter_reference_sampling@2.1.0` and version `2.1.0` of the
+`.reference_samples`, `chapter_reference_sampling@2.3.0` and version `2.3.0` of the
 native review sample definitions. Preflight returns the actual reviewer producer identity,
 including its Skill and Schema, for the grant. It performs no persistent admission or
 Provider call; any provisional Pack canary assignment is rolled back with its read unit
@@ -977,11 +1007,36 @@ Optional Codex escalation requires `NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true`, a
 `NOVEL_FORGE_CODEX_ESCALATION_MODEL`, positive `NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT`,
 `NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT`, `NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT`,
 and timezone-aware `NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM` / `VALID_UNTIL`, together with
-the existing verified CLI/entitlement configuration. Unavailable configured lanes fail
+the existing verified CLI/entitlement configuration.
+`NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT` selects the
+Codex candidate effort explicitly (`low`, `medium`, `high`, `xhigh`, or `max`). Absence
+retains `high` for historical compatibility; an invalid explicit value must fail closed.
+The selected effort binds candidate identity, the routed request,
+and the frozen creation configuration. A recovery must retain that identity. This does not
+qualify a candidate or waive independent review. Unavailable configured lanes fail
 closed; disabling the lane does not authorize a quality downgrade. Call limits count
 accounted reservation generations, including paid retries, while released unsent calls
 do not consume capacity. Shared usage locks prevent USD and entitlement reservations
 from racing through global token/call caps.
+Mixed Provider availability and phase USD allowances do not impose generation/review
+role separation. A named model in a route template is still subject to Router selection.
+Deployments requiring a restricted Provider authorization must use
+`NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE`: a JSON object mapping every configured Provider
+to a list of allowed formal task taxonomy names. An explicit empty list denies that
+Provider all tasks; malformed, unknown or incomplete scopes fail closed. The Router
+must reject a candidate outside its scope before cost/quality selection, including
+benchmark and author-supervised decisions. Scope binds each routing request and the
+creation freeze; changed scope cannot replay an old decision. Absence preserves legacy
+unrestricted routing and is insufficient evidence of role separation. This restriction
+does not replace legitimate qualification samples, independent blind evaluations,
+adjudication or Capability Pack approval by a principal distinct from its compiler.
+The current Codex Router candidate is an escalation lane even when Codex is the only
+configured Provider. It requires two semantic failures, or HIGH risk with an explicit
+escalation reason. Strict qualification and a generation-only Provider scope do not
+make it eligible as the first MEDIUM-risk Draft generator. A deployment requiring Codex
+as its primary generator needs an explicitly versioned primary lane across Router,
+entitlement reservation, Book Opening and benchmark authorization; that lane is currently
+unimplemented. Do not fabricate semantic failures or escalation reasons to start it.
 Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`
 with its Codex model, authorization reference/version and finite call/token quota. The
 deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as
@@ -989,6 +1044,14 @@ JSON; composition requires an exact match with the configured Codex escalation i
 A priced envelope without that lane still rejects entitlement execution. Both lanes consume
 the parent call/token budget; progress reports retain unknown entitlement monetary cost
 separately from priced USD expenditure.
+
+The native whole-campaign budget (`creative-provider-campaign-budget.v4` and its renewal)
+separates priced USD allowance from account entitlement. The creation entry's frozen
+accounting and resume adapter retains that distinction and validates the exact native
+campaign grant, entitlement identity and business scope. A zero priced allowance permits
+only entitled execution; it does not mean the entitlement has zero monetary cost.
+The adapter rejects a campaign presented as a legacy single-account budget before
+initializing a Book. Historical single-account freezes retain their original semantics.
 
 The current routing migration extends the existing versioned policy owner constraint
 and adds a chain lookup index. It does not rewrite Provider identities or backfill
@@ -1526,13 +1589,18 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.11.0 requires System v3,
+materialization before an authorized run. Chapter Pack 2.12.0 requires System v3,
 Template v9 and prose-generation-v4 identities; new Planning Pack 2.10.0 binds Operation 1.18.0, System v8,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
 retaining qualification-v2 identities. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
 legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Screenplay requires prose-generation-v4 or quality-review-v3
 and its separate adaptation schema. Historical artifacts remain available for recovery.
+For new Chapter 3.8 work, selected style must be foundation-style-projection.v4 with
+source-bound Book applicability. An explicit preparation asset override does not waive
+this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer;
+inspect and explicitly migrate through the owning Content/Book commands. Frozen older
+Chapter tasks retain their exact style and baseline rather than substituting the new one.
 New retrieval plans bind writer_projection_version=accepted-writer-history.v2. Inspect
 the exact semantic view and source/projection hashes: narrative history should contain
 accepted prose and visible facts, with historical review/comparison/Provider evidence

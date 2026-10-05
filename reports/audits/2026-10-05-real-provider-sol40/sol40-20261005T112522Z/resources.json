@@ -1,0 +1,9 @@
+{
+  "container_name": "nf-sol40-20261005T112522Z-data",
+  "container_id": "a671caa047319c48f82435a18e571891550b80703e13ef141af4eb51678d01ae",
+  "volume_name": "nf-sol40-20261005T112522Z-data-pgdata",
+  "database_name": "nf_sol40_20261005T112522Z_test",
+  "port": 49480,
+  "owner": "sol40-20261005T112522Z",
+  "purpose": "isolated real validation; native author input only until grants and route gates close"
+}

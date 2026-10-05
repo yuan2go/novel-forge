@@ -185,7 +185,7 @@ and served model identity. Its group report retains these references and marks t
 dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
 a global Quality profile. Native reference calibration recognizes the current Chapter
-definition `3.7.0` and recoverable frozen `3.4.1`/`3.5.0`/`3.6.0`; other versions remain ineligible.
+definition `3.8.0` and recoverable frozen `3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`; other versions remain ineligible.
 Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
 For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
@@ -984,7 +984,7 @@ these engineering paths do not establish real task qualification or independent 
 Canon support is an independent `canon_support` evaluator task: native
 `chapter.canon.propose` consumes grounded extraction and exact prose. Its reference sample
 path retains every claim judgment, including unsupported/uncertain and no-change outcomes,
-without creating a Canon proposal. The explicit v11 routing policy requires HIGH-risk
+without creating a Canon proposal. The explicit v12 routing policy requires HIGH-risk
 reference agreement; two actual blind reviewers and a separate adjudicator supply located
 claim evidence under `canon-support-independent-reference.v1`. Fixture labels never count
 as real task admission. Frozen prior routing decisions keep their original policy.
@@ -1100,6 +1100,21 @@ invalidation. Accepted and executed history remains outside replan mutation scop
 
 ## Creative requirements and compatibility boundary
 
+The work-intent/context closure boundary was checked at remote main
+`4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`. At that starting revision, work Quality
+still allowed a generic threshold to reactivate an explicitly non-applicable method
+and to replace an independent semantic failure with a passing score. Compression and
+fidelity were wired into Chapter effects but absent from the formal Router taxonomy.
+These are historical implementation gaps at that frozen revision, not literary findings.
+The scoped engineering target is independent applicability, verdict, measurement and
+calibration decisions, plus routed overflow/reconstruction/recovery on the existing
+Chapter/Context/Kernel owners. Formal author-to-next-unit verification follows those
+repairs in an isolated instance. Controlled Provider evidence is `MOCK_E2E`; real
+Provider, literary quality and production operation require separate evidence.
+Historical reports under `reports/audits/` bind their own snapshots and do not assert
+current-main readiness or grant execution permission.
+
+
 Author input and selected presets establish the work's creative direction. Accepted
 Foundation and future plans refine that direction within their authorized scope;
 methods and aesthetic advice cannot promote permissions into requirements or expand
@@ -1120,7 +1135,37 @@ and UNDETERMINED does not establish that a method is absent. A selected
 requirement or an existing due obligation remains mandatory. Old generation v1,
 BookDesign v5 and historical profile hashes retain their original contracts.
 
-Chapter 3.7.0 and Pack 2.11.0/template v9 retain `work-requirements.v1` semantics.
+Current work ChapterPlan projection 2.0.0 / activated-chapter-plan.v2 copies only selected
+Mission/Scene decisions: it cannot fill an absent hook, reward, emotional or suspense
+curve, protagonist charm, antagonist pressure or escalating conflict. Frozen projection
+1.0.0 and Mission/Scene v2 preserve their historical semantics; existing projections
+are reused by immutable source identity.
+
+New Chapter 3.8.0 and Pack 2.12.0/template v9 retain `work-requirements.v1` inputs
+and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,
+ExecutionIntent and every candidate/review/Quality baseline; statuses alone are not
+a sufficient Writer contract. Fresh 3.8 admission rejects legacy polluted projections
+with CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED. New sampler definitions 2.2/2.3
+bind the exact source Operation semantics separately from their own execution version;
+2.0/2.1 remain readable with frozen published source policies. Selected Book requirements and Chapter choices
+must agree: neither a generic threshold nor a Chapter NOT_APPLICABLE can override an
+effective requirement. Foundation style compile 2.1.4/v4 binds applicability to the
+selected Book Foundation and its approved source versions; frozen 2.1.1 emits v3.
+New 3.8 ExecutionIntent admission requires that v4 source-bound applicability projection,
+including when preparation explicitly selects an older asset. Legacy v2/v3 styles fail
+with STYLE_PROJECTION_MIGRATION_REQUIRED. A migration must use a new explicit owning
+command; it cannot replace an old task's frozen style or baseline during recovery.
+QualityContext v6 and aggregate v5 keep applicability, semantic verdict, numerical
+score, threshold evaluation, calibration, blocking and required action separate.
+An independent FAILED verdict survives a high score. Unqualified or incomplete
+measurement requires evidence reassessment. Only qualified located failures authorize
+bounded prose repair. The exact-candidate Review verdict retains its veto, while its
+uncalibrated score has zero aggregate weight. Every work Quality dimension remains
+required as evidence; non-applicable dimensions are visible without blocking.
+Old work Quality v1 cannot be reinterpreted under v2. Already accepted v1 snapshots
+remain readable; a pending frozen Chapter 3.6/3.7 Quality operation fails closed with
+QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED instead of silently changing contracts.
+Chapter 3.7/Pack 2.11 and Chapter 3.6/Pack 2.10 remain historical compatibility assets.
 Ordinary bounded revision permits empty edits when there are no executable prose diagnoses;
 hard findings still require resolution and aesthetic/evidence advice cannot authorize changes.
 Planning 1.17, Foundation v2, BookDesign v6, work profiles v2 and Chapter 3.6/template v8
@@ -1129,11 +1174,11 @@ New Longform Prose Review Pack 1.3 and windows/manifests v2 freeze the accepted 
 source chapter, including an explicit UNKNOWN legacy basis. They do not infer a genre or
 require transformation; old v1 windows rebuild and resume with their original source identity.
 Production Preparation preserves independent `style_policy.constraints` and rejects
-conflicting duplicate representations. Draft Plan/Style v2 and ExecutionIntent v4
+conflicting duplicate representations. Current Draft Plan v3 (projection2), Draft Style v2 and ExecutionIntent v4
 carry Chapter style, POV, target length, author guidance and selected methods. The
 public `creative-baseline.v1` binds the exact source plan and these stage projections;
 it is derived evidence, not another semantic Authority. Draft, Review, Revision,
-ReReview, QualityContext v5, candidate comparison and Book acceptance consume the
+ReReview, QualityContext v6, candidate comparison and Book acceptance consume the
 same baseline digest. Provider projection includes authorized guidance and necessary
 voice contracts; private source/author spans and internal quality history stay outside
 Writer input. `accepted-quality-host-projection.v1` retains exact accepted observations

@@ -172,7 +172,7 @@ def build_quality_group_evidence(
             )
         )
         if (
-            quality_context.get("contract_version") != "stage-quality-context-v5"
+            quality_context.get("contract_version") != "stage-quality-context-v6"
             or quality_context.get("target_revision_asset_version_id")
             != revision_asset_version_id
             or quality_context.get("creative_baseline")
@@ -218,55 +218,13 @@ def build_quality_group_evidence(
         for dimension in QUALITY_GROUPS[group]
     ]
     if policy is not None:
-        for report in reports:
-            report.update(
-                contract_version="chapter-quality-evidence-v3",
-                evaluation_semantics_version="work-quality.v1",
-                quality_policy_digest=policy["policy_digest"],
-                creative_baseline_digest=revision["creative_baseline"][
-                    "baseline_digest"
-                ],
-            )
-            if report["calibration_status"] != "DETERMINISTIC":
-                threshold = policy["thresholds"].get(report["dimension"])
-                report["threshold"] = threshold
-                if (
-                    report["score"] is not None
-                    and threshold is not None
-                    and report["gate_status"]
-                    in {
-                        "PASSED",
-                        "FAILED",
-                        "PASSED_WITH_WARNINGS",
-                        "PASSED_WITH_UNCALIBRATED",
-                    }
-                ):
-                    report["gate_status"] = (
-                        (
-                            "PASSED_WITH_UNCALIBRATED"
-                            if report["calibration_status"] == "UNCALIBRATED"
-                            else "PASSED"
-                        )
-                        if report["score"] >= threshold
-                        else "FAILED"
-                    )
-            selected_requirement = method_requirements.get(report["dimension"], {}).get("status") == "APPLICABLE"
-            configured_threshold = report["dimension"] in policy["thresholds"]
-            if selected_requirement or configured_threshold:
-                report["blocking"] = True
-            report["weight"] = (
-                float(policy["dimension_weights"].get(report["dimension"], 1.0))
-                if report["score"] is not None
-                else 0.0
-            )
-            if report["gate_status"] not in {
-                "PASSED",
-                "PASSED_WITH_WARNINGS",
-                "PASSED_WITH_UNCALIBRATED",
-                "FAILED",
-                "WAIVED_BY_APPROVAL",
-            }:
-                report.update(score=None, weight=0.0)
+        from .work_semantics import finalize_work_dimension
+
+        reports = [finalize_work_dimension(
+            report, policy=policy,
+            requirement=method_requirements.get(report["dimension"]),
+            baseline_digest=revision["creative_baseline"]["baseline_digest"],
+        ) for report in reports]
     blocked = [
         item
         for item in reports
@@ -590,7 +548,7 @@ def _longitudinal_dimensions(
     }
     reports: list[dict[str, Any]] = []
     work_semantics = work_requirements or bool(observations) and all(
-        item.get("work_quality_semantic_version") == "work-quality.v1" for item in observations
+        item.get("work_quality_semantic_version") in {"work-quality.v1", "work-quality.v2"} for item in observations
     )
     for dimension in LONGITUDINAL_QUALITY_DIMENSIONS:
         value, threshold, evidence = values[dimension]
@@ -703,8 +661,7 @@ def _evaluate(
 ) -> dict[str, Any]:
     if (
         quality_policy is not None
-        and applicability in {"NOT_APPLICABLE", "UNDETERMINED"}
-        and dimension not in quality_policy["thresholds"]
+        and applicability in {"NOT_APPLICABLE", "PROHIBITED", "UNDETERMINED"}
     ):
         report = _report(
             group,
@@ -712,7 +669,7 @@ def _evaluate(
             project_id,
             target,
             "NOT_APPLICABLE"
-            if applicability == "NOT_APPLICABLE"
+            if applicability in {"NOT_APPLICABLE", "PROHIBITED"}
             else "INSUFFICIENT_EVIDENCE",
             score=None,
             calibration="WORK_APPLICABILITY",
@@ -1083,7 +1040,7 @@ def _calibrated_evidence(
                 != dimension
             ):
                 continue
-            if quality_policy_digest and (entry.get("quality_policy_digest") != quality_policy_digest or entry.get("creative_baseline_digest") != creative_baseline_digest or entry.get("evaluation_semantics_version") != "work-quality.v1"):
+            if quality_policy_digest and (entry.get("quality_policy_digest") != quality_policy_digest or entry.get("creative_baseline_digest") != creative_baseline_digest or entry.get("evaluation_semantics_version") != "work-quality.v2"):
                 continue
             target = str(entry.get("target_asset_version_id") or "")
             fixture_protocol = fixture and entry.get("fixture_protocol_only") is True
