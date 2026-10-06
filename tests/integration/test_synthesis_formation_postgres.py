@@ -281,6 +281,33 @@ def test_native_formation_generates_foundation_from_author_brief(
             return result
         transport.planning = consistent_fixture
     if world_result_repair:
+        if world_result_repair == "reference-checkpoint":
+            from copy import deepcopy
+            from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation, PlanningProviderStage
+            from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass
+            normal_stage = PlanningWorldPreparation.generation_stage
+            normal_classify = WorkerFailureClassifier.classify
+            old_stage_used = False
+            old_classification_used = False
+            def legacy_world_stage(*args, **kwargs):
+                nonlocal old_stage_used
+                stage = normal_stage(*args, **kwargs)
+                if old_stage_used:
+                    return stage
+                old_stage_used = True
+                schema = deepcopy(stage.output_schema)
+                refs = schema["properties"]["candidates"]["items"]["properties"]["arc_refs"]
+                refs.pop("maxItems", None)
+                refs["items"].pop("enum", None)
+                return PlanningProviderStage(stage.name, stage.task, schema)
+            def legacy_world_classify(error):
+                nonlocal old_classification_used
+                if getattr(error, "code", "") == "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN" and not old_classification_used:
+                    old_classification_used = True
+                    return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
+                return normal_classify(error)
+            monkeypatch.setattr(PlanningWorldPreparation, "generation_stage", staticmethod(legacy_world_stage))
+            monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(legacy_world_classify))
         normal_world_planning = transport.planning
         damaged_world_transition = False
         def invalid_world_payload_once(stage, inputs):
@@ -291,11 +318,16 @@ def test_native_formation_generates_foundation_from_author_brief(
                 assert task["transition_contract"]["payload_schema"]["properties"]["story_time"]["type"] == "object"
                 if not damaged_world_transition and result["candidates"]:
                     damaged_world_transition = True
-                    transition = json.loads(result["candidates"][0]["transition"]["payload_json"])
-                    transition["story_time"] = "chapter:1:morning"
-                    result["candidates"][0]["transition"]["payload_json"] = json.dumps(transition)
+                    if world_result_repair == "reference-checkpoint":
+                        result["candidates"][0]["arc_refs"] = ["unknown:arc"]
+                    else:
+                        transition = json.loads(result["candidates"][0]["transition"]["payload_json"])
+                        transition["story_time"] = "chapter:1:morning"
+                        result["candidates"][0]["transition"]["payload_json"] = json.dumps(transition)
                 else:
-                    assert task["result_repair"]["diagnostic"]["error_code"] == "WORLD_PROVIDER_TRANSITION_INVALID"
+                    assert task["result_repair"]["diagnostic"]["error_code"] == (
+                        "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN" if world_result_repair == "reference-checkpoint"
+                        else "WORLD_PROVIDER_TRANSITION_INVALID")
             return result
         transport.planning = invalid_world_payload_once
     if semantic_repair:
@@ -832,6 +864,22 @@ def test_native_formation_generates_foundation_from_author_brief(
                     chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
                     env=env, registry=registry, transport=transport, admitted=admitted, monkeypatch=monkeypatch,
                     routing=True, input_order=input_order_continuation)
+            if world_result_repair == "reference-checkpoint":
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_SOURCE_INVALID"):
+                    continue_creation(composition=composition, content=content, chapter=chapter,
+                        formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                        book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT o.operation_id FROM authority_operation o
+                        JOIN authority_story_planning_generation g USING(operation_id)
+                        WHERE o.project_id=%s AND o.status='WAITING_EXTERNAL_RESULT'
+                        AND g.generator_operation_name='chapter_plan.generate'""", [harness.project_id])
+                    checkpoint_operation = uow.cursor.fetchone()[0]
+                    uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [checkpoint_operation])
+                    assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
+                    uow.cursor.execute("SELECT status,checkpoint->>'error_code' FROM authority_attempt WHERE operation_id=%s", [checkpoint_operation])
+                    assert uow.cursor.fetchall() == [("CHECKPOINTED", "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN")]
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
@@ -1413,3 +1461,8 @@ def test_native_failed_final_input_order_successor_preserves_terminal_history_an
 def test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance(tmp_path, monkeypatch):
     test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
         False, False, False, False, False, False, 1, creative_validation=True, world_result_repair=True)
+
+
+def test_native_world_identifier_checkpoint_recovers_settled_effect_without_resend(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        False, False, False, False, False, False, 1, creative_validation=True, world_result_repair="reference-checkpoint")

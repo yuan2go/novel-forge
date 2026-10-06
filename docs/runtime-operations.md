@@ -667,6 +667,7 @@ and `test_native_failed_final_input_order_successor_preserves_terminal_history_a
 there, plus `tests/unit/test_native_planning_repair_routing.py`.
 For world payload or recovery changes also run
 `test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance` there,
+and `test_native_world_identifier_checkpoint_recovers_settled_effect_without_resend`,
 with `tests/unit/test_world_causal_preparation.py` and `tests/unit/test_world_actor_isolation.py`.
 Run integration modules serially in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
@@ -688,6 +689,10 @@ identity; the owner verifies the source asset, exact succeeded/settled receipt, 
 world frontier and complete input roles. It sends a new repair with the full typed payload
 schema and actual diagnostic. The former result and usage remain immutable. A valid result,
 another Book's source, stale frontier or unknown Effect cannot authorize that repair.
+For a historical world identifier error checkpoint, continue the same creation identity.
+The owner verifies the original completed receipt, settlement, checkpoint diagnosis and
+released lease before using Kernel completed-effect recovery. It makes no remote resend.
+Reference validation remains strict; a rejected result consumes the existing repair bound.
 
 ## Credentialed Provider qualification
 

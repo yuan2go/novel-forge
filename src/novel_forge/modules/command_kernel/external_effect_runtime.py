@@ -150,6 +150,17 @@ def read_failed_operation_success(
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
+def read_checkpointed_operation_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+            [context.operation_id, context.project_id])
+        row = uow.cursor.fetchone()
+        if row is None or row[0] not in {'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED'}:
+            raise KernelError('EFFECT_RETAINED_RESULT_OWNER_INVALID', 'Completed checkpoint recovery requires a waiting owner')
+        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
+
+
 def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
     effect = repository.get_for_update(effect_id)
     _require_project(effect, context.project_id)
@@ -1543,9 +1554,15 @@ def resume_operation_from_completed_effect(
 
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
-        _require_context(repository, context)
+        _validate_effect_context(context)
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+            [context.operation_id, context.project_id])
+        if uow.cursor.fetchone() is None:
+            raise KernelError('OPERATION_NOT_FOUND', 'Completed effect recovery requires its existing owner')
         effect = repository.get_for_update(effect_id)
         _require_project(effect, context.project_id)
+        if effect['operation_id'] != context.operation_id:
+            raise KernelError('EFFECT_OPERATION_CONFLICT', 'Completed effect belongs to another Operation')
         if effect["status"] != "SUCCEEDED":
             raise KernelError(
                 "EFFECT_STATUS_CONFLICT",

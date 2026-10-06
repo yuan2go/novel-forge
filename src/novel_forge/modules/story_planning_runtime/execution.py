@@ -2287,6 +2287,8 @@ def world_schema_evidence_identity(
         root / "chapter_authority" / "provider_views.py",
     ]
     bound_paths = {
+        ("properties", "candidates", "items", "properties", "arc_refs", "items", "enum"),
+        ("properties", "candidates", "items", "properties", "obligation_refs", "items", "enum"),
         ("properties", "actor_id", "enum"),
         ("properties", "basis_refs", "items", "enum"),
         ("properties", "actor_adjudications", "items", "properties", "actor_id", "enum"),

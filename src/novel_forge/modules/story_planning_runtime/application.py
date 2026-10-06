@@ -767,6 +767,9 @@ class StoryPlanningGenerationApplication:
                 execution_probe=execution_probe,
             )
         self._probe(execution_probe)
+        if command.world_preparation_request:
+            from .world_result_recovery import resume_world_result_checkpoint
+            resume_world_result_checkpoint(self.database_url, command=command, operation_id=operation_id)
         try:
             scheduled = ContentAuthorityScheduler(
                 self.database_url,
@@ -774,8 +777,9 @@ class StoryPlanningGenerationApplication:
                 worker_id=self.worker_id,
             ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
         except KernelError as error:
+            from .world_result_recovery import WORLD_GENERATION_CONTRACT_ERRORS
             if error.code != "PLANNING_GENERATION_RESULT_INVALID" and not (
-                command.world_preparation_request and error.code == "WORLD_PROVIDER_TRANSITION_INVALID"
+                command.world_preparation_request and error.code in WORLD_GENERATION_CONTRACT_ERRORS
             ):
                 raise
             return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)

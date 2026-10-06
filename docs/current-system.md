@@ -76,6 +76,10 @@ retains its exact world source, Book frontier, inputs and receipt, and adds a bo
 successor; it neither rewrites the failed Operation nor invents state to normalize it.
 Valid generation and evaluation receipts are reused on recovery. Unknown calls require
 reconciliation before repair, and strict policy does not acquire validation routing rights.
+The task also declares the exact selected Arc and accepted obligation references. An
+unknown identifier is a known contract rejection, distinct from an unknown remote outcome.
+An older misclassified world checkpoint resumes only from its original verified completed
+Effect with settled usage and no unresolved sibling call, then reruns local validation.
 
 The creative-validation work contract separates internal creative acceptance from
 strict production certification. It is a `CONFIGURABLE_POLICY`: selecting validation

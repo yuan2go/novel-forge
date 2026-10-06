@@ -232,7 +232,8 @@ class PlanningWorldPreparation:
         from .knowledge_translation import validate_knowledge_translations
 
         if generation_document is None:
-            stage = self.generation_stage(source, source_ref, knowledge_selection, actor_proposals=actor_proposals)
+            stage = self.generation_stage(source, source_ref, knowledge_selection, actor_proposals=actor_proposals,
+                allowed_references=world_plan_references(source, command))
             if world_repair:
                 stage = PlanningProviderStage(stage.name, {**stage.task, "result_repair": {
                     "contract_version": "world-result-repair.v1",
@@ -359,15 +360,19 @@ class PlanningWorldPreparation:
         return action_document
 
     @classmethod
-    def generation_stage(cls, source, source_ref, knowledge_selection, *, actor_proposals=None):
+    def generation_stage(cls, source, source_ref, knowledge_selection, *, actor_proposals=None, allowed_references=None):
         from .knowledge_translation import add_translation_contract
 
         if source.get("actor_experiment") is not None and not actor_proposals:
             raise KernelError("WORLD_ACTOR_PROPOSAL_REQUIRED", "Actor intervention requires its frozen independent proposals; unified sampling cannot substitute for them")
         task = {**cls._task(source, source_ref, "WORLD_REASONER"), "narrative_intelligence": knowledge_selection}
+        if allowed_references is not None:
+            task["plan_reference_contract"] = {"version": "world-plan-references.v1", **allowed_references,
+                "instruction": "References must belong to these exact selected Arc and accepted obligation lists. Other visible arcs are background, not authority for this task."}
         schema = add_translation_contract(world_generation_schema(
             WorldProductionPolicy(**source["policy"]),
             audience_scoped=source["contract_version"] == "world-preparation-source.v2",
+            **({key: tuple(value) for key, value in allowed_references.items()} if allowed_references is not None else {}),
         ), knowledge_selection)
         if actor_proposals:
             from novel_forge.modules.worldbuilding.actor_isolation import actor_judge_schema
@@ -496,14 +501,8 @@ class PlanningWorldPreparation:
             for entry in state.get("character_state", [])
             if entry["state"].get("character_id")
         }
-        arcs = {
-            command.input_versions.get("arc_plans"),
-            *command.related_arc_plan_version_ids,
-        }
-        obligations = {
-            entry["state"].get("obligation_id")
-            for entry in state.get("narrative_obligation", [])
-        }
+        refs = world_plan_references(source, command)
+        arcs, obligations = set(refs["arc_refs"]), set(refs["obligation_refs"])
         for candidate in candidates:
             transitions = [
                 candidate["transition"],
@@ -555,3 +554,13 @@ class PlanningWorldPreparation:
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
         )
+
+
+def world_plan_references(source, command):
+    return {
+        'arc_refs': sorted({value for value in (command.input_versions.get('arc_plans'),
+            *command.related_arc_plan_version_ids) if value}),
+        'obligation_refs': sorted({entry['state']['obligation_id']
+            for entry in source['reality']['current_state'].get('narrative_obligation', [])
+            if entry['state'].get('obligation_id')}),
+    }

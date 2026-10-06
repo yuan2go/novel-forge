@@ -137,6 +137,13 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
         self.assertEqual(len(failures), 1)
         self.assertEqual(failures[0].classification, WorkerFailureClass.FINAL_FAILURE)
 
+    def test_unknown_world_identifier_is_not_unknown_external_outcome(self) -> None:
+        for code in ("WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN", "WORLD_GENERATION_IDENTITY_UNKNOWN"):
+            self.assertEqual(WorkerFailureClassifier.classify(KernelError(code, "known rejected identifier")),
+                WorkerFailureClass.FINAL_FAILURE)
+        self.assertEqual(WorkerFailureClassifier.classify(KernelError("EFFECT_STATE_UNKNOWN", "unconfirmed send")),
+            WorkerFailureClass.UNKNOWN_EXTERNAL_STATE)
+
     def test_supervision_snapshot_exposes_restart_and_fatal_contract(self) -> None:
         observed = []
         supervisor = WorkerSupervisor(

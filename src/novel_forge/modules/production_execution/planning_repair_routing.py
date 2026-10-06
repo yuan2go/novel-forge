@@ -8,20 +8,21 @@ REPAIRABLE_FAILURES = {"SCHEMA_REJECTION", "MALFORMED_STRUCTURED_OUTPUT"}
 
 
 def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_type, lineage, evidence_version=REPAIR_VERSION):
+    from novel_forge.modules.story_planning_runtime.world_result_recovery import WORLD_GENERATION_CONTRACT_ERRORS
     if evidence_version not in {REPAIR_VERSION,LEGACY_REPAIR_VERSION}:
         raise KernelError("NATIVE_PLANNING_REPAIR_VERSION_INVALID","Repair evidence requires an exact supported version")
     cursor.execute("""SELECT o.command_payload->'payload',g.input_snapshot_hash,g.input_snapshot
         FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id)
         WHERE o.operation_id=%s AND o.project_id=%s AND g.book_id=%s
           AND (g.generator_operation_name=%s OR (%s='world_candidates.generate'
-            AND o.command_payload #>> '{payload,repair_result_diagnostic,error_code}'='WORLD_PROVIDER_TRANSITION_INVALID'))
+            AND o.command_payload #>> '{payload,repair_result_diagnostic,error_code}'=ANY(%s)))
           AND o.definition_name='story_planning.generate'""",
-        [operation_id,project_id,book_id,task_type,task_type])
+        [operation_id,project_id,book_id,task_type,task_type,sorted(WORLD_GENERATION_CONTRACT_ERRORS)])
     current = cursor.fetchone()
     if not current:
         return None
     command, input_hash, inputs = current
-    world_repair = (command.get('repair_result_diagnostic') or {}).get('error_code') == 'WORLD_PROVIDER_TRANSITION_INVALID'
+    world_repair = (command.get('repair_result_diagnostic') or {}).get('error_code') in WORLD_GENERATION_CONTRACT_ERRORS
     if world_repair and task_type != 'world_candidates.generate':
         return None
     candidate = command.get("repair_of_candidate_id")

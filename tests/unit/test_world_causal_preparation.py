@@ -900,3 +900,30 @@ def test_world_provider_delivers_typed_nested_payload_without_normalizing_invali
             validate(schema, damaged)
         with pytest.raises(KernelError, match="WORLD_PROVIDER_TRANSITION_INVALID"):
             decode_world_generation({"candidates": [{"transition": {"payload_json": json.dumps(damaged)}, "preparation_paths": []}]})
+
+
+def test_world_reference_contract_uses_selected_arcs_and_accepted_obligations_only():
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation, world_plan_references
+    from novel_forge.modules.worldbuilding.production_schema import world_generation_schema
+    from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
+
+    source = {"entity_ids": ["faction:caravan", "supply"], "reality": {"current_state": {
+        "narrative_obligation": [{"state": {"obligation_id": "accepted:obligation"}}]}}}
+    command = SimpleNamespace(input_versions={"arc_plans": "selected:arc"},
+        related_arc_plan_version_ids=("selected:character-arc",))
+    refs = world_plan_references(source, command)
+    assert refs == {"arc_refs": ["selected:arc", "selected:character-arc"], "obligation_refs": ["accepted:obligation"]}
+    properties = world_generation_schema(WorldProductionPolicy(),
+        **{key: tuple(value) for key, value in refs.items()})["properties"]["candidates"]["items"]["properties"]
+    for key in refs:
+        assert properties[key]["items"]["enum"] == refs[key]
+        assert properties[key]["maxItems"] == len(refs[key])
+    empty = world_generation_schema(WorldProductionPolicy(), arc_refs=(), obligation_refs=())["properties"]["candidates"]["items"]["properties"]
+    assert empty["obligation_refs"]["maxItems"] == 0
+    candidates = generated_paths()["candidates"]
+    candidates[0]["arc_refs"] = refs["arc_refs"]
+    PlanningWorldPreparation._validate_references(source, candidates, command)
+    candidates[0]["arc_refs"].append("visible-but-unselected:arc")
+    with pytest.raises(KernelError, match="WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN"):
+        PlanningWorldPreparation._validate_references(source, candidates, command)
