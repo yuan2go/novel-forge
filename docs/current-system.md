@@ -2240,3 +2240,31 @@ assessment, invalid prose evidence, or an actual unresolved defect. Terminal con
 references completed native correction steps as well as base steps; it does not rerun
 accepted work or rewrite the previous terminal Root. Strict production retains its
 original contract and certification requirements.
+
+Canon evidence localization is CONFIGURABLE_POLICY; a committed evidence locator must
+still identify the exact unchanged candidate and Unicode code-point span. The explicit
+creative successor may localize a Provider quotation differing only in the four Chinese
+curly quotation glyphs when its folded text matches exactly one candidate span. It
+retains the original Provider quote, actual quote, difference map, source version/hash
+and normalization status. Word changes, omissions, ambiguous matches and mismatched
+explicit offsets remain failures. This is mechanical localization, not proof that a
+claim is true. Independent Canon support and normal reduction remain mandatory; strict
+production retains literal-only Provider quotation admission. Retained terminal results
+require the native immutable continuation and original settled receipt; known failed
+transport attempts remain failed and may be superseded only after the new derivation
+succeeds. Completed base and correction steps are referenced, never regenerated.
+
+The Canon Provider projection must bind each change field to the claim kinds accepted
+by the Canon domain. Reader Disclosure cannot use character Knowledge Acquisition.
+A settled output whose complete native validation still fails after mechanical quote
+localization requires a fresh bounded output repair against the same frozen candidate;
+it cannot be derived into a successful Canon result. The original raw output, failures,
+transport retries and settled use remain evidence. Completion and downstream semantic
+support remain unchanged; fresh repair has its own real identity and receipt.
+
+Creative template v9 may wait and retry a known settled membership transport failure
+within the existing Operation Attempt bounds. The driver keeps the original Root and
+candidate, verifies the trusted template and authorization, and leaves failed receipts
+unchanged. Unknown outcomes, unsettled reservations, exhausted attempts, cancellation
+and strict production do not enter this waiting policy. Waiting is execution control,
+not a Book budget extension or a different billing channel.

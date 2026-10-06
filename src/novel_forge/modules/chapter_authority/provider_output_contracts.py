@@ -1131,7 +1131,7 @@ def validate_chapter_provider_output_semantics(
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
-    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25"))
+    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25", ":v26"))
     if stage == "canon_extraction":
         if output_schema_ref:
             if output_schema_ref not in {
@@ -1143,13 +1143,14 @@ def validate_chapter_provider_output_semantics(
                 "schema:chapter-provider-output:canon_extraction:v23",
                 "schema:chapter-provider-output:canon_extraction:v24",
                 "schema:chapter-provider-output:canon_extraction:v25",
+                "schema:chapter-provider-output:canon_extraction:v26",
             }:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED",
                     "unknown frozen Canon output contract",
                 )
             host_bind_known_metadata = output_schema_ref.endswith(
-                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25")
+                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25", ":v26")
             )
         original_realization = {item.get("planned_event_id"): item for item in normalized.get("realization_evidence", [])}
         normalized = _without_null_object_properties(normalized)
@@ -1519,3 +1520,14 @@ def bind_delivered_knowledge_scope(schema: dict[str, Any], targets: list[dict[st
     if identities:
         checks['items']['properties']['knowledge_card_asset_version_id'] = {'type':'string','enum':sorted(identities)}
     return result
+
+
+def bind_canon_field_kinds(schema):
+    from copy import deepcopy
+    from novel_forge.modules.canon_graph.grounding import claim_kinds_for_field
+    bound = inline_shared_canon_schema(deepcopy(schema))
+    for field, value in bound["properties"].items():
+        claim = value.get("items", {}).get("properties", {}).get("claim_kind")
+        if claim is not None:
+            value["items"]["properties"]["claim_kind"] = {"type": "string", "enum": sorted(claim_kinds_for_field(field))}
+    return shared_canon_schema(bound)

@@ -20,7 +20,7 @@ CHAPTER_REVISION_DEFINITION_VERSION = "3.9.16"
 CHAPTER_RETAINED_REVISION_DEFINITION_VERSION = "3.9.17"
 CHAPTER_BEST_DEFINITION_VERSION = "3.9.18"
 CHAPTER_CANON_REDUCTION_DEFINITION_VERSION = "3.9.10"
-CHAPTER_CANON_DEFINITION_VERSION = "3.9.7"
+CHAPTER_CANON_DEFINITION_VERSION = "3.9.21"
 CHAPTER_SUPPORT_DEFINITION_VERSION = "3.9.8"
 CHAPTER_QUALITY_DEFINITION_VERSION = "3.9.9"
 CHAPTER_INTERNAL_QUALITY_DEFINITION_VERSION = "3.9.11"
@@ -536,9 +536,10 @@ def _definition(
             **({"canon_validation_contract":"grounded-canon-validation.v2"} if model_effects_required and node is ChapterNode.CANON and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION=="3.9.0" else {}),
             **({"quality_applicability_contract":"quality-host-applicability.v1"} if model_effects_required and node in {ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION=="3.9.0" and CHAPTER_QUALITY_DEFINITION_VERSION=="3.9.9" else {}),
             **({"support_kind_contract": "canon-support-kinds.v2"} if model_effects_required and node is ChapterNode.CANON_PROPOSAL and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_SUPPORT_DEFINITION_VERSION == "3.9.8" else {}),
-            **({"canon_wire_projection": "codex-canonical-json.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION == "3.9.7" else {}),
+            **({"canon_field_kind_contract": "canon-field-kinds.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_CANON_DEFINITION_VERSION == "3.9.21" else {}),
+            **({"canon_wire_projection": "codex-canonical-json.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION in {"3.9.7", "3.9.21"} else {}),
             **({"canon_wire_projection": "codex-structured-schema.v4"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION == "3.9.6" else {}),
-            **({"canon_schema_projection": "canon-provider-shared-types.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION in {"3.9.5", "3.9.6", "3.9.7"} else {}),
+            **({"canon_schema_projection": "canon-provider-shared-types.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION in {"3.9.5", "3.9.6", "3.9.7", "3.9.21"} else {}),
             **({"chapter_length_scope": "chapter-length-repair.v1"} if model_effects_required and node is ChapterNode.REVISION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_REVISION_DEFINITION_VERSION in {"3.9.4", "3.9.16"} else {}),
             **({"review_knowledge_scope": "delivered-card-scope.v1"} if model_effects_required and node in {ChapterNode.REVIEW, ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_REVIEW_DEFINITION_VERSION in {"3.9.3", "3.9.19"} else {}),
             **({"scene_information_flow": "scene-information-flow.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.2" else {}),

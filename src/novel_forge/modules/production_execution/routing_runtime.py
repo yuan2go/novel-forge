@@ -1021,12 +1021,12 @@ class ProductionProviderRouter:
             policy_snapshot=policy_snapshot,
             **requirements,
         )
-        if template and template["version"] in {"creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5","creative-execution-template.v6","creative-execution-template.v7", "creative-execution-template.v8"} and template["mode"] == "CREATIVE_VALIDATION":
+        if template and template["version"] in {"creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5","creative-execution-template.v6","creative-execution-template.v7", "creative-execution-template.v8", "creative-execution-template.v9"} and template["mode"] == "CREATIVE_VALIDATION":
             from .planning_repair_routing import native_planning_repair
             with AuthorityUnitOfWork(self.registry.database_url) as uow:
                 repair_evidence = native_planning_repair(uow.cursor,project_id=project_id,book_id=work_id,
                     operation_id=operation_id,task_type=task_type,lineage=lineage,
-                    evidence_version='native-planning-repair-evidence.v3' if template['version'] in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7','creative-execution-template.v8'} else 'native-planning-repair-evidence.v2')
+                    evidence_version='native-planning-repair-evidence.v3' if template['version'] in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7','creative-execution-template.v8','creative-execution-template.v9'} else 'native-planning-repair-evidence.v2')
             if repair_evidence:
                 task = replace(task,declared_requirements={**task.declared_requirements,
                     "native_planning_repair":repair_evidence})

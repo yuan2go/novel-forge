@@ -110,6 +110,12 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                         continue
                     if scheduler.has_ready_quality_work(project_id=book["project_id"], root_operation_id=active):
                         continue
+                    if error.code == "MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE":
+                        from .member_retry import wait_settled_member_retry
+                        if wait_settled_member_retry(composition.authority, book_run_id=book_run_id,
+                                root_id=active, principal=composition.principal, deadline=deadline):
+                            events({"kind": "MEMBERSHIP_TRANSPORT_RETRY_WAIT", "operation_id": active})
+                            continue
                     return error.code
                 events({"kind": "CHAPTER_TICK", "result": asdict(result)})
                 if result.recovery_mode.startswith(('derived_canon_','derived_quality_')) and result.operation_status=='SUCCEEDED':

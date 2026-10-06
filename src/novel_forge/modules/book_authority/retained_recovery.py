@@ -51,7 +51,7 @@ def recover_retained_quality(authority, *, book_run_id, principal):
         )
         if (
             template.get("chapter_graph_recovery")
-            not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT"}
+            not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
             or template["mode"] != "CREATIVE_VALIDATION"
         ):
             return False

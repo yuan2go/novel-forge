@@ -257,3 +257,22 @@ def test_quality_result_recovery_requires_explicit_successor_and_cannot_weaken_s
     value['require_literary_qualification']=True
     with pytest.raises(KernelError):
         validate_templates({'execution_templates':[value]})
+
+
+def test_canon_localization_is_explicit_creative_policy_and_preserves_legacy_schema():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    value=template(version='creative-execution-template.v9',world_future_preparation='DISABLED',repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',canon_validation_contract='grounded-canon-validation.v2',chapter_graph_recovery='RETAIN_SETTLED_CREATIVE_RESULT',canon_evidence_localization='TYPOGRAPHIC_QUOTE_EQUIVALENCE_V1')
+    validate_templates({'execution_templates':[value]})
+    current=owned_policy_definition(owner='PROVIDER_ROUTING',content={'execution_templates':[value]},application_build_id='test',commit_sha='a'*40)
+    assert current['definition_version']=='1.14.0'
+    for invalid in ({**value,'version':'creative-execution-template.v8'},
+                    {**value,'mode':'STRICT_PRODUCTION','require_literary_qualification':True,'world_future_preparation':'REQUIRED','canon_validation_contract':None}):
+        with pytest.raises(KernelError):
+            validate_templates({'execution_templates':[invalid]})
+    previous={k:v for k,v in value.items() if k!='canon_evidence_localization'}
+    previous.update(version='creative-execution-template.v8',chapter_graph_recovery='RETAIN_SETTLED_QUALITY_RESULT')
+    old=owned_policy_definition(owner='PROVIDER_ROUTING',content={'execution_templates':[previous]},application_build_id='test',commit_sha='a'*40)
+    assert old['definition_version']=='1.13.0'
+    schema=old['command_schema']['properties']['policy']['properties']['execution_templates']['items']
+    assert 'canon_evidence_localization' not in schema['properties']
+    assert 'creative-execution-template.v9' not in schema['properties']['version']['enum']

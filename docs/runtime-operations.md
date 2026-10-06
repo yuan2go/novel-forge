@@ -3179,3 +3179,10 @@ base and correction work in a new Root/Saga, and derives a normal rereview asset
 another Provider call. Unknown outcomes, unrelated failures and accepted chapters remain
 ineligible. Native candidate selection, Quality reevaluation and Book acceptance must
 still execute. The old result and failure remain available for inspection.
+
+For a creative Canon quotation glyph mismatch, retain the raw receipt and terminal
+failure. The explicit evidence-localization successor can continue the same unaccepted
+Book frontier without resending that successful result. Restore and verify its backup,
+install the successor template/Pack, then run the original native continuation command.
+Inspect normalization mappings separately from independent semantic support; no literal
+failure, unknown outcome, identity, accounting or certification record may be rewritten.

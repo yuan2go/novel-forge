@@ -34,6 +34,16 @@ def validate_payoff_reference(item: dict[str, Any]) -> None:
         _fail("prose payoff requires final-candidate/current-claim references, never Provider-authored Authority IDs")
 
 
+def claim_kinds_for_field(field):
+    return {
+        "character_knowledge_changes": {"KNOWLEDGE_ACQUISITION"},
+        "character_belief_changes": {"BELIEF", "SUSPICION", "HEARSAY", "DIALOGUE_ASSERTION"},
+        "disclosure_events": {"READER_DISCLOSURE"},
+        "arc_evidence": {"NARRATIVE_OBSERVATION"},
+        "realization_evidence": {"NARRATIVE_OBSERVATION"},
+    }.get(field, {"OBJECTIVE_EVENT", "OBJECTIVE_STATE"})
+
+
 def _validate_claim(
     item: dict[str, Any], *, field: str, text: str, project_id: str,
     revision_id: str,
@@ -51,13 +61,7 @@ def _validate_claim(
         if key in item and item[key] != expected:
             _fail(f"stale or cross-project grounding: {key}")
     kind = item.get("claim_kind")
-    allowed = {
-        "character_knowledge_changes": {"KNOWLEDGE_ACQUISITION"},
-        "character_belief_changes": {"BELIEF", "SUSPICION", "HEARSAY", "DIALOGUE_ASSERTION"},
-        "disclosure_events": {"READER_DISCLOSURE"},
-        "arc_evidence": {"NARRATIVE_OBSERVATION"},
-        "realization_evidence": {"NARRATIVE_OBSERVATION"},
-    }.get(field, {"OBJECTIVE_EVENT", "OBJECTIVE_STATE"})
+    allowed = claim_kinds_for_field(field)
     if kind not in allowed:
         _fail(f"claim kind {kind!r} cannot authorize {field}")
     if kind == "KNOWLEDGE_ACQUISITION" and not item.get("character_id"):

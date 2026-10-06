@@ -62,14 +62,15 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
             "Retain the exact terminal root and extension history",
         )
     cursor.execute(
-        "SELECT to_jsonb(o) FROM authority_operation o WHERE root_operation_id=%s AND idempotency_key LIKE %s ORDER BY created_at",
-        [root_id, "%:quality-correction:%"],
+        "SELECT DISTINCT to_jsonb(o) FROM authority_operation o WHERE (root_operation_id=%s AND idempotency_key LIKE %s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s AND step_key LIKE %s) ORDER BY to_jsonb(o)",
+        [root_id, "%:quality-correction:%", saga["saga_id"], "quality-correction:%"],
     )
-    extension = [r[0] for r in cursor.fetchall()]
+    extension = sorted([r[0] for r in cursor.fetchall()], key=lambda o: o["created_at"])
     failed = [o for o in extension if o["status"] == "FAILED_FINAL"]
     if len(failed) != 1 or any(o["actor_id"] != actor_id or o["project_id"] != project_id or o["workspace_id"] != root["workspace_id"] for o in extension):
         raise KernelError("RETAINED_GRAPH_FAILURE_AMBIGUOUS", "One exact reproduced Quality result failure and original actor are required")
     source = failed[0]
+    canon_recovery = source["definition_name"] == "chapter.canon.extract"
     review_recovery = source["definition_name"] == "chapter.revision.review"
     if review_recovery:
         from novel_forge.modules.chapter_authority.quality_review_recovery import retained_quality_review
@@ -80,11 +81,22 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 or source["idempotency_key"] != root["idempotency_key"] + ":rereview:quality-correction:1"):
             raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Only the completed retained revision and its exact failed independent rereview may continue")
         proof, _ = retained_quality_review(cursor, source)
+    elif canon_recovery:
+        from novel_forge.modules.chapter_authority.canon_output_recovery import retained_canon_output
+        prefix = extension[:-1]
+        if (len(prefix) != 3 or extension[-1] != source
+                or [(o['definition_name'],o['definition_version'],o['status']) for o in prefix] != [
+                    ('chapter.revision.apply','3.9.17','SUCCEEDED'),
+                    ('chapter.revision.review','3.9.20','SUCCEEDED'),
+                    ('chapter.candidate.select_best','3.9.18','SUCCEEDED')]
+                or source['idempotency_key'] != root['idempotency_key']+':canon_extraction:quality-correction:1'):
+            raise KernelError('RETAINED_GRAPH_EXTENSION_CONFLICT', 'Retain the exact completed correction prefix and failed Canon extraction')
+        proof, _ = retained_canon_output(cursor, source)
     else:
         if extension != [source] or source["definition_name"] != "chapter.revision.apply":
             raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Other correction work retains its own recovery ownership")
         proof, _ = retained_quality_revision(cursor, source)
-    effects = _settled_graph(cursor, root_id)
+    effects = _settled_graph(cursor, root_id, verified_nonproducing_effects=proof.get("known_failed_effects", ()))
     cursor.execute(
         """SELECT to_jsonb(step),to_jsonb(o) FROM authority_saga_step step JOIN authority_operation o USING(operation_id)
         WHERE step.saga_id=%s ORDER BY step.ordinal FOR UPDATE OF step,o""",
@@ -94,11 +106,17 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
     cursor.execute("""SELECT ref.source_step_snapshot,to_jsonb(o) FROM authority_saga_retained_step ref
         JOIN authority_operation o USING(operation_id) WHERE ref.saga_id=%s ORDER BY ref.ordinal FOR SHARE OF ref,o""", [saga["saga_id"]])
     inherited_rows = cursor.fetchall()
-    if review_recovery:
-        operation = extension[0]
+    retained_keys = {row[0]["step_key"] for row in inherited_rows}
+    completed_prefix = extension[:-1] if canon_recovery else extension[:1] if review_recovery else []
+    correction_keys = set()
+    for index, operation in enumerate(completed_prefix):
+        key = "quality-correction:1:" + ["revision", "rereview", "best_candidate"][index]
+        correction_keys.add(key)
+        if key in retained_keys:
+            continue
         inherited_rows.append(({
             "saga_id": saga["saga_id"], "operation_id": operation["operation_id"],
-            "step_key": "quality-correction:1:revision", "ordinal": 2001,
+            "step_key": key, "ordinal": 2001 + index,
             "compensation_status": "NOT_REQUIRED", "compensation_definition_ref": "",
             "reference_source": "native-completed-correction-command.v1",
             "command_hash": snapshot_hash(operation["command_payload"]),
@@ -114,7 +132,7 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
         ChapterNode.FINAL_RELEASE_GATE.value,
     }
     for step, operation in sorted([*native_rows, *inherited_rows], key=lambda item: item[0]["ordinal"]):
-        correction_step = review_recovery and step["step_key"] == "quality-correction:1:revision"
+        correction_step = step["step_key"] in correction_keys
         if step["step_key"] not in expected and not correction_step:
             if operation[
                 "definition_name"
@@ -137,7 +155,7 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 )
             continue
         if (
-            operation["definition_name"] != ("chapter.revision.apply" if correction_step else definitions[step["step_key"]])
+            operation["definition_name"] != (definitions[step["step_key"].split(":")[-1]] if correction_step else definitions[step["step_key"]])
             or operation["project_id"] != project_id
             or operation["workspace_id"] != root["workspace_id"]
             or operation["actor_id"] != actor_id
@@ -173,7 +191,7 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 "outputs": [list(r) for r in outputs],
             }
         )
-    if {item["step"]["step_key"] for item in steps} != expected | ({"quality-correction:1:revision"} if review_recovery else set()):
+    if {item["step"]["step_key"] for item in steps} != expected | correction_keys:
         raise KernelError(
             "RETAINED_GRAPH_STEP_MISSING", "Retain the complete pre-publication graph"
         )
@@ -225,8 +243,9 @@ def continue_graph_in_uow(uow, *, source, request, context):
     if (
         not template
         or template.get("chapter_graph_recovery")
-        not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT"}
-        or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_QUALITY_RESULT"
+        not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
+        or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") not in {"RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
+        or source["retained_result"]["contract_version"] == "chapter-canon-output-repair.v1" and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
         or admission != binding.get("admission")
         or template["member_authorization_ref"]
         != source["retained_result"]["cost_authorization_ref"]
@@ -380,13 +399,14 @@ def acknowledge_retained_result(cursor, effects, root_id):
         """SELECT o.operation_id,v.content FROM authority_operation o JOIN authority_operation_output_asset output USING(operation_id)
         JOIN authority_asset_version v USING(asset_version_id) WHERE (o.root_operation_id=%s OR o.operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=(SELECT successor_saga_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s))) AND o.definition_version=%s
         AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
-        [root_id, root_id, "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
+        [root_id, root_id, "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
     )
     successors = cursor.fetchall()
     if len(successors) != 1:
         return
     successor, content = successors[0]
-    derived = content.get("retained_result_derivation") or {}
+    fresh_repair = proof["contract_version"] == "chapter-canon-output-repair.v1"
+    derived = content.get("retained_result_repair" if fresh_repair else "retained_result_derivation") or {}
     if (
         any(
             derived.get(k) != proof.get(k)
@@ -399,7 +419,7 @@ def acknowledge_retained_result(cursor, effects, root_id):
                 "source_output_hash",
             )
         )
-        or derived.get("provider_invoked") is not False
+        or derived.get("provider_invoked") is not fresh_repair
     ):
         raise KernelError(
             "RETAINED_GRAPH_EVIDENCE_DRIFT",
@@ -416,3 +436,15 @@ def acknowledge_retained_result(cursor, effects, root_id):
             effect["settled_candidate_superseded"] = True
             effect["successor_operation_id"] = successor
             effect["retained_result_contract"] = proof["contract_version"]
+
+    if fresh_repair:
+        for effect in effects:
+            recorded = next((r for r in proof['known_failed_effects'] if r[0] == effect['external_effect_id']), None)
+            if not recorded or effect['operation_id'] != proof['source_operation_id'] or effect['status'] != 'FAILED_RETRYABLE' or effect['attempt_status'] != 'FAILED_RETRYABLE':
+                continue
+            cursor.execute("SELECT e.request_hash,e.status,r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref' FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.external_effect_id=%s", [effect['external_effect_id']])
+            if list(cursor.fetchone()) != recorded[1:]:
+                raise KernelError('RETAINED_GRAPH_EVIDENCE_DRIFT', 'Retain the exact settled transport failure')
+            effect['settled_nonproducing_superseded'] = True
+            effect['successor_operation_id'] = successor
+            effect['retained_result_contract'] = proof['contract_version']

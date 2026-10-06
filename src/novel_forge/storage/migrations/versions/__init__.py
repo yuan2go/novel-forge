@@ -169,6 +169,7 @@ from . import (
     v20261007_0165_derived_step_revalidation,
     v20261007_0166_retained_graph_continuation,
     v20261007_0167_quality_review_namespace,
+    v20261007_0168_canon_output_repair,
 )
 
 VERSION_MODULES = [
@@ -340,6 +341,7 @@ VERSION_MODULES = [
     v20261007_0165_derived_step_revalidation,
     v20261007_0166_retained_graph_continuation,
     v20261007_0167_quality_review_namespace,
+    v20261007_0168_canon_output_repair,
 ]
 
 __all__ = ["VERSION_MODULES"]

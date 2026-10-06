@@ -1,5 +1,5 @@
 {
-  "version": "creative-execution-template.v8",
+  "version": "creative-execution-template.v9",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
@@ -16,5 +16,6 @@
   },
   "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
   "canon_validation_contract": "grounded-canon-validation.v2",
-  "chapter_graph_recovery": "RETAIN_SETTLED_QUALITY_RESULT"
+  "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+  "canon_evidence_localization": "TYPOGRAPHIC_QUOTE_EQUIVALENCE_V1"
 }

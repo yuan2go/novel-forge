@@ -18,7 +18,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 CONTRACT = "kernel-derived-step-successor.v1"
 
 
-def _settled_graph(cursor, root_id):
+def _settled_graph(cursor, root_id, *, verified_nonproducing_effects=()):
     cursor.execute(
         """SELECT e.external_effect_id,e.request_hash,e.status,r.status,r.accounting_basis,
         r.evidence->>'cost_authorization_ref' FROM authority_external_effect e
@@ -34,6 +34,8 @@ def _settled_graph(cursor, root_id):
                 "Reconcile all membership effects before revalidation",
             )
         if effect[2] == "SUCCEEDED":
+            continue
+        if list(effect) in verified_nonproducing_effects and effect[2] == "FAILED_RETRYABLE":
             continue
         if effect[2] not in {"FAILED_FINAL", "FAILED_RETRYABLE"}:
             raise KernelError(

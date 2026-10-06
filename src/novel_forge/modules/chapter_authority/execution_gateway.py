@@ -939,7 +939,7 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
                 "Capability Pack does not authorize model.provider.invoke for this stage",
             )
-        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6", "3.9.7"} and materialization.prompt_template.version != ("v11" if graph["definition_version"]=="3.9.7" else "v10"):
+        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6", "3.9.7", "3.9.21"} and materialization.prompt_template.version != ("v11" if graph["definition_version"] in {"3.9.7", "3.9.21"} else "v10"):
             raise KernelError("CHAPTER_CANON_SCHEMA_PROJECTION_REQUIRED", "Canon requires its exact versioned Schema and transport Prompt binding")
         provider_schema, provider_schema_ref = self._provider_output_contract(
             stage=stage,
@@ -947,6 +947,8 @@ class PostgresChapterExecutionContractBinder:
             legacy_contract=materialization.prompt_template.version == "v2",
             prompt_contract_version=materialization.prompt_template.version,
         )
+        if stage == "canon_extraction" and graph["definition_version"] == "3.9.21" and provider_schema_ref != "schema:chapter-provider-output:canon_extraction:v26":
+            raise KernelError("CHAPTER_CANON_FIELD_KIND_CONTRACT_REQUIRED", "Canon requires its exact native field taxonomy Schema")
         if stage == "canon_support" and graph["definition_version"]=="3.9.8" and provider_schema_ref!="schema:chapter-provider-output:canon_support:v2":
             raise KernelError("CHAPTER_CANON_SUPPORT_CONTRACT_REQUIRED", "Support requires its exact finite taxonomy Schema binding")
         if stage.startswith("quality_") and graph["definition_version"] in {"3.9.9", "3.9.12"} and provider_schema_ref!=f"schema:chapter-provider-output:{stage}:v5":
@@ -1327,6 +1329,10 @@ class PostgresChapterExecutionContractBinder:
             from .provider_output_contracts import shared_canon_schema
             schema = shared_canon_schema(schema)
             schema_ref = "schema:chapter-provider-output:canon_extraction:v25" if prompt_contract_version=="v11" else "schema:chapter-provider-output:canon_extraction:v24"
+        if stage == "canon_extraction" and inputs.get("canon_field_kind_contract") == "canon-field-kinds.v1":
+            from .provider_output_contracts import bind_canon_field_kinds
+            schema = bind_canon_field_kinds(schema)
+            schema_ref = "schema:chapter-provider-output:canon_extraction:v26"
         if stage == "canon_support" and inputs.get("support_kind_contract")=="canon-support-kinds.v2":
             from novel_forge.modules.canon_graph.grounding import SUPPORT_CLAIM_KINDS
             schema['properties']['claims']['items']['properties']['observed_kind']={'type':'string','enum':list(SUPPORT_CLAIM_KINDS)}
@@ -2116,7 +2122,7 @@ class PostgresChapterExecutionContractBinder:
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) in {"3.9.3", "3.9.19"})
         compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1]) in {"3.9.9", "3.9.12"})
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_PROPOSAL.definition_name and str(row[1])=="3.9.8")
-        compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7"})
+        compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7", "3.9.21"})
         compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) in {"3.9.4", "3.9.16"})
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
@@ -4627,7 +4633,7 @@ def _materialize_production_codex_prompt(
         stage_semantic_contract += "\nUse the host-bound per-dimension status choices in the Schema. Absence of a selected commercial technique does not remove mandatory safety, continuity or basic craft checks. Evaluate an applicable dimension against actual prose and its frozen comparison inputs; report FAILED or INSUFFICIENT_EVIDENCE where appropriate. Never invent supporting evidence or a positive score.\n"
     if stage == "canon_support" and schema.get("ref")=="schema:chapter-provider-output:canon_support:v2":
         stage_semantic_contract += "\nUse only the canonical epistemic kinds listed in observed_kind enum. Classify the actual prose independently. A different allowed kind, UNSUPPORTED or UNCERTAIN is valid evidence and prevents admission; do not copy the claimant's kind to manufacture agreement. Describe finer content categories in reason, not observed_kind.\n"
-    if stage == "canon_extraction" and schema.get("ref") == "schema:chapter-provider-output:canon_extraction:v25":
+    if stage == "canon_extraction" and schema.get("ref") in {"schema:chapter-provider-output:canon_extraction:v25", "schema:chapter-provider-output:canon_extraction:v26"}:
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
     prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",

@@ -1980,6 +1980,12 @@ class _CanonExtractionHandler:
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
+        localization = None
+        repair = None
+        current_contract = request.definition_version == "3.9.21"
+        if current_contract and request.database_url:
+            from .canon_output_recovery import repair_feedback
+            repair = repair_feedback(request)
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -1988,12 +1994,18 @@ class _CanonExtractionHandler:
                 stage="canon_extraction",
                 payload={
                     "revision": revision.content,
+                    **({"canon_field_kind_contract": "canon-field-kinds.v1"} if current_contract else {}),
+                    **({"canon_output_repair": repair} if repair else {}),
                     "execution_expectations": dict(
                         context.content.get("chapter_execution_expectations") or {}
                     ),
                 },
             )
-            provider_extraction = _canon_provider_extraction(generated)
+            extraction_result = generated
+            if current_contract and request.database_url:
+                from .canon_output_recovery import localize_new_result
+                extraction_result, localization = localize_new_result(request, generated, revision)
+            provider_extraction = _canon_provider_extraction(extraction_result)
         from novel_forge.modules.canon_graph.grounding import extract_grounded_candidates
         extractor = extract_grounded_candidates if generated is not None else build_canon_extraction
         content = extractor(
@@ -2009,6 +2021,11 @@ class _CanonExtractionHandler:
             extraction=content,
             binding=dict((context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}),
         )
+        if localization:
+            content["quote_localization"] = localization
+        if repair:
+            proof = request.command["preparation_report"]["retained_graph_continuation"]["retained_result"]
+            content["retained_result_repair"] = {k: proof[k] for k in ("contract_version", "source_operation_id", "source_effect_id", "source_dispatch_id", "source_output_hash", "source_request_hash", "provider_invoked", "strict_certification_eligible")}
         if generated is None:
             return _output(ChapterNode.CANON_EXTRACTION, content)
         return _model_output(

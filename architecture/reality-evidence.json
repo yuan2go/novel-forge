@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0167_quality_review_namespace",
+  "migration_head": "20261007_0168_canon_output_repair",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7546,6 +7546,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/quality_review_recovery.py",
           "symbol": "materialize_retained_rereview"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/canon_output_recovery.py",
+          "symbol": "repair_feedback"
         }
       ],
       "domain_symbols": [
@@ -8888,6 +8892,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261007_0167_quality_review_namespace.py",
           "locator": "MIGRATION_ID = '20261007_0167_quality_review_namespace'",
           "id": "20261007_0167_quality_review_namespace"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_canon_output_repair.py",
+          "locator": "MIGRATION_ID = '20261007_0168_canon_output_repair'",
+          "id": "20261007_0168_canon_output_repair"
         }
       ],
       "external_effects": {
@@ -9396,7 +9405,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:966b6d7fce4fd8e25853fb18c020f817cbb3ba6a60793c7fed942ae14bed4547"
+    "implementation_tree_sha": "sha256:17cfa9c4639b46cc352d6a74d0f21b7128bc83516ee75933fdab6e0e3cb50c34"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

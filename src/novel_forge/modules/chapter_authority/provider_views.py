@@ -1006,11 +1006,17 @@ def build_provider_task_view(
         return task
     if stage == "canon_extraction":
         from novel_forge.modules.canon_graph.background import without_private_world
-        return _task(
+        task = _task(
             stage,
             final_candidate=_prose(inputs.get("revision")),
             execution_expectations=_compact(without_private_world(inputs.get("execution_expectations"))),
         )
+        if inputs.get("canon_field_kind_contract") == "canon-field-kinds.v1":
+            task["contract_version"] = "provider-task-view-v2"
+            task["canon_field_kind_contract"] = inputs["canon_field_kind_contract"]
+            if inputs.get("canon_output_repair"):
+                task["canon_output_repair"] = deepcopy(inputs["canon_output_repair"])
+        return task
     if stage.startswith("quality_"):
         return _task(
             stage,
