@@ -7,6 +7,7 @@ import { loadFormation, submitFormationDecision, type Formation, type FormationC
 type Decision = "SELECT" | "APPROVE" | "REJECT" | "REQUEST_CHANGES";
 type Pending = {candidate_asset_version_id: string; candidate_content_hash: string; expected_version: number; idempotency_key: string; reason: string; decision: Decision};
 const labels: Record<string, string> = {core_conflict: "核心冲突", reader_promise: "阅读承诺", narrative_engine: "叙事承载力", differentiation: "差异化", emotional_contract: "情绪承诺", thematic_question: "主题问题", ending_direction: "结局方向", protagonist_cost: "人物代价", constraints: "约束", characters: "人物驱动", character_cast: "人物驱动"};
+const diagnosticFields = new Set(["type","schema_version","parent_bindings","frozen_inputs","execution_evidence","project_id","workspace_id","book_id","logical_key","planning_scope","parent_version_id","generator_operation_name","context_profile_ref","budget_policy_ref"]);
 export function describe(value: unknown): string {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.map(describe).join("；");
@@ -58,9 +59,9 @@ export function FormationReviewPanel({formation, onChange}: {formation: Formatio
       const selected = formation.recovery_instruction?.candidate_asset_version_id === candidate.asset_version_id;
       return <article className="panel" key={candidate.asset_version_id}>
         <h4>候选 {index + 1}{selected ? " · 当前选择" : ""}</h4>
-        <dl>{Object.entries(payload as Record<string, unknown>).filter(([key]) => !["schema_version", "parent_bindings"].includes(key)).map(([key, value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{describe(value)}</dd></div>)}</dl>
+        <dl>{Object.entries(payload as Record<string, unknown>).filter(([key]) => !diagnosticFields.has(key)).map(([key, value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{describe(value)}</dd></div>)}</dl>
         <p>资格：{describe(candidate.state.qualification) || "由设计审批检查"} · 审批：{describe(candidate.state.approval) || "待决定"}</p>
-        <small>{candidate.content_hash}</small>
+        <details><summary>候选来源与诊断</summary><small>{candidate.asset_version_id} · {candidate.content_hash}</small><pre>{JSON.stringify(Object.fromEntries(Object.entries(payload as Record<string,unknown>).filter(([key])=>diagnosticFields.has(key))),null,2)}</pre></details>
         <div className="actions">{([["SELECT", "选择此候选"], ["APPROVE", "批准此候选"], ["REJECT", "拒绝此候选"], ["REQUEST_CHANGES", "提交修改意见"]] as const).map(([decision, label]) => <button key={decision} disabled={busy || !!pending || !note.trim() || formation.lifecycle !== "WAITING_APPROVAL"} onClick={() => decide(candidate, decision)}>{label}</button>)}</div>
       </article>;
     })}

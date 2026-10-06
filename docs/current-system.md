@@ -29,7 +29,10 @@ structurally validated candidates under a native template receipt with literary 
 recorded `NOT_RUN`; Book Design and context preparation verify that receipt and the exact
 six-layer lineage.
 `AUTO` is explicit policy authorization, while `REVIEW_PLAN` exposes the frozen
-candidate comparison through the author production page. Author choices, rejection and
+candidate comparison through the author production page. Progress reports the accepted
+chapter count, original responsible executor and next action separately from Formation
+completion. Candidate provenance and runtime internals remain available in diagnostics.
+Author choices, rejection and
 change requests retain exact candidate hashes, reasons and authenticated identities in
 Formation Operations and stage checkpoints. Approval calls the existing Planning or
 Book Design Authority; resume consumes the persisted choice, including a non-first

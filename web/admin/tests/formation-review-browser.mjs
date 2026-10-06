@@ -80,7 +80,7 @@ try {
   await creationPage.route('**/product/projects', route=>route.fulfill({json:[{project_id:'continuous-project',workspace_id:'continuous-workspace',title:'隔离连续 UI'}]}));
   await creationPage.route('**/author-workspace?*',route=>route.fulfill({json:{books:[{book_id:'continuous-book',workspace_id:'continuous-workspace',title:'原创调查',version:1,status:'ACTIVE',production_profile:{},runtime_policy:{}}],profiles:[],snapshots:[],runs:[],budget_scopes:[]}}));
   await creationPage.route('**/operations/saved-brief?*',route=>route.fulfill({json:{operation_id:'saved-brief',status:'SUCCEEDED',outputs:[{asset_version_id:'exact-saved-brief',content_hash:sourceHash}]}}));
-  let formation={formation_run_id:'continuous-source',version:1,lifecycle:'ADMITTED',current_stage:'CREATIVE_SEARCH',creation:{author_state:'PRODUCING',stage:'CREATIVE_SEARCH',cancellation:null,coordination:{status:'READY',result:null},progress:[]}};
+  let formation={formation_run_id:'continuous-source',version:1,lifecycle:'ADMITTED',current_stage:'CREATIVE_SEARCH',creation:{author_state:'PRODUCING',responsible_party:'BOOK_AUTHORITY_WORKER',next_action:'WAIT_FOR_NATIVE_EXECUTOR',production:{book_run_id:'continuous-book-run',state:'READY',accepted_chapters:0,target_chapters:12,version:0},stage:'CREATIVE_SEARCH',cancellation:null,coordination:{status:'READY',result:null},progress:[]}};
   const requests=[];
   await creationPage.route('**/books/continuous-book/formation-runs',async route=>{
     requests.push(route.request().postDataJSON());
@@ -106,6 +106,8 @@ try {
   await creationPage.reload();
   await creationPage.getByRole('button',{name:'恢复上次提交（保留原输入和幂等键）',exact:true}).click();
   await creationPage.getByRole('button',{name:'取消连续创作',exact:true}).waitFor();
+  await creationPage.getByRole('status').filter({hasText:'创作进度：正在创作。已接纳 0/12 章。'}).waitFor();
+  assert.ok((await creationPage.getByRole('status').filter({hasText:'创作进度：'}).innerText()).includes('下一动作：等待执行器自动推进'));
   assert.deepEqual(requests[0],requests[1]);
   assert.equal(requests[0].creative_brief_asset_version_id,'exact-saved-brief');
   assert.equal(requests[0].creative_brief_content_hash,sourceHash);
@@ -123,7 +125,7 @@ try {
   assert.ok(recoveries[0].idempotency_key);
   checks.push('CONTINUOUS_RECOVERY_LOST_RESPONSE_ORIGINAL_IDENTITY');
   await creationPage.getByRole('button',{name:'取消连续创作',exact:true}).click();
-  await creationPage.getByText('取消已保存，正在由原阶段责任方处理',{exact:false}).waitFor();
+  await creationPage.getByRole('status').filter({hasText:'创作进度：已取消。'}).waitFor();
   assert.equal(await creationPage.getByRole('button',{name:'取消连续创作',exact:true}).isDisabled(),true);
   checks.push('CONTINUOUS_NATIVE_INTENT_LOST_RESPONSE_AND_CANCELLATION');
 } finally {await creationContext.close();}
