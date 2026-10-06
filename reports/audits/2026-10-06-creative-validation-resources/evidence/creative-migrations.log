@@ -1,0 +1,202 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_previous_head_upgrade_retains_historical_unknown_reservation_and_frozen_intent _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10880f1d0>
+
+    def test_previous_head_upgrade_retains_historical_unknown_reservation_and_frozen_intent(monkeypatch):
+        with disposable_database_at_migration(support.DATABASE_URL, prefix="creative_resource", target_migration_id="20261005_0149_zero_increment_chapter_outcome") as url:
+            monkeypatch.setattr(support, "DATABASE_URL", url)
+            support.seed_authority_project_book(project_id="migration-project", workspace_id="migration-workspace", book_id="migration-book")
+            with support.transaction() as connection, connection.cursor() as cursor:
+                support.insert_definition(cursor, "fixture.creative.resource")
+                support.insert_operation(cursor, operation_id="historical-operation", definition_name="fixture.creative.resource", project_id="migration-project", status="EXECUTING")
+            effect = plan_external_effect(url, EffectCommandContext("historical-operation", "migration-project", "integration-operator", "migration-trace", "migration-book"),
+                effect_type="model.invoke", provider="deepseek", capability="model.fixture", stable_idempotency_key="historical-effect",
+                request_payload={"stage": "draft", "_production_execution": {"book_id": "migration-book"}}, max_attempts=2, reversible=False)["external_effect_id"]
+>           reservation = reserve_provider_budget(url, BudgetReservationRequest("historical-operation", effect, "migration-project", "historical-reservation", "deepseek", "USD", "0.5", 1000,
+                work_id="migration-book", model_id="deepseek-chat", accounting_basis="PRICED"))
+
+tests/integration/test_creative_resource_migration_postgres.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/command_kernel/budget_runtime.py:2773: in reserve_provider_budget
+    result = reserve_provider_budget_in_uow(uow, request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+uow = <novel_forge.storage.authority_uow.AuthorityUnitOfWork object at 0x109ac2a20>
+request = BudgetReservationRequest(operation_id='historical-operation', external_effect_id='9dc33dba-93c9-4f77-adba-2ef9ce74b748...evision=None, accounting_basis='PRICED', cost_authorization_ref='', model_id='deepseek-chat', work_id='migration-book')
+
+    def reserve_provider_budget_in_uow(
+        uow: AuthorityUnitOfWork,
+        request: BudgetReservationRequest,
+    ) -> dict[str, Any]:
+    
+        accounting_basis = request.accounting_basis.strip().upper()
+        if accounting_basis not in {"PRICED", "ACCOUNT_ENTITLEMENT"}:
+            raise KernelError(
+                "BUDGET_RESERVATION_INVALID", "budget accounting basis is invalid"
+            )
+        cost_observability_schema = _has_budget_cost_observability_schema(uow)
+        if accounting_basis == "ACCOUNT_ENTITLEMENT" and not cost_observability_schema:
+            raise KernelError(
+                "BUDGET_SCHEMA_UPGRADE_REQUIRED",
+                "account entitlement requires the budget cost-observability migration",
+            )
+        if accounting_basis == "ACCOUNT_ENTITLEMENT":
+            if request.estimated_amount is not None or not request.cost_authorization_ref:
+                raise KernelError(
+                    "BUDGET_RESERVATION_INVALID",
+                    "account entitlement reservation requires UNKNOWN cost and authorization",
+                )
+            amount: Decimal | None = None
+        else:
+            if request.estimated_amount is None:
+                raise KernelError(
+                    "BUDGET_RESERVATION_INVALID",
+                    "priced reservation requires an estimated amount",
+                )
+            amount = _amount(request.estimated_amount)
+        if (
+            not all(
+                (
+                    request.operation_id,
+                    request.external_effect_id,
+                    request.project_id,
+                    request.stable_idempotency_key,
+                    request.provider,
+                    request.currency,
+                    request.budget_timezone,
+                )
+            )
+            or request.estimated_tokens < 0
+            or (request.chapter is not None and request.chapter <= 0)
+        ):
+            raise KernelError(
+                "BUDGET_RESERVATION_INVALID", "budget reservation is incomplete"
+            )
+        if (
+            request.expected_budget_scope_revision is not None
+            and not request.budget_scope_id
+        ):
+            raise KernelError(
+                "BUDGET_RESERVATION_INVALID",
+                "budget scope revision requires a budget_scope_id",
+            )
+        caps = {key: _amount(value) for key, value in (request.caps or {}).items()}
+        call_caps = _canonical_usage_caps(request.call_caps, kind="call")
+        token_caps = _canonical_usage_caps(request.token_caps, kind="token")
+        locked_budget_scope = resolve_book_opening_budget_scope_in_uow(
+            uow,
+            operation_id=request.operation_id,
+            project_id=request.project_id,
+            currency=request.currency,
+        )
+        if locked_budget_scope is not None:
+            if request.estimated_tokens <= 0:
+                raise KernelError(
+                    "BOOK_OPENING_PROVIDER_TOKEN_CEILING_REQUIRED",
+                    "Book Opening Provider execution requires a positive frozen token ceiling",
+                )
+            if request.budget_scope_id and request.budget_scope_id != str(
+                locked_budget_scope["budget_scope_id"]
+            ):
+                raise KernelError(
+                    "BOOK_OPENING_BUDGET_SCOPE_DRIFT",
+                    "reservation requested a different live Opening BudgetScope",
+                )
+            if (
+                request.expected_budget_scope_revision is not None
+                and request.expected_budget_scope_revision
+                != int(locked_budget_scope["revision"])
+            ):
+                raise KernelError(
+                    "BUDGET_SCOPE_REASSESS_REQUIRED",
+                    "reservation requested a stale live Opening policy revision",
+                )
+        elif request.budget_scope_id:
+            locked_budget_scope = lock_budget_scope_in_uow(
+                uow,
+                budget_scope_id=request.budget_scope_id,
+                project_id=request.project_id,
+            )
+            if not _scope_currency_authorized(locked_budget_scope, request.currency):
+                raise KernelError(
+                    "BUDGET_SCOPE_CONFLICT",
+                    "budget reservation currency differs from its BudgetScope",
+                )
+            if str(locked_budget_scope["owner_kind"]) == "BOOK_OPENING":
+                raise KernelError(
+                    "BOOK_OPENING_EXACT_BUDGET_BINDING_REQUIRED",
+                    "Book Opening BudgetScope cannot be selected without exact Operation lineage",
+                )
+        else:
+            acquire_budget_locks_in_uow(uow, currencies=(request.currency,))
+        from novel_forge.modules.production_execution.execution_template import enforce_template_resources
+        channel_resources = enforce_template_resources(uow.cursor, request, amount)
+        if locked_budget_scope and locked_budget_scope.get("resource_successor") and not channel_resources:
+            raise KernelError("EXECUTION_TEMPLATE_PROVENANCE_INVALID", request.operation_id)
+        if channel_resources:
+            caps, call_caps, token_caps = {}, {}, {}
+            if locked_budget_scope is not None and locked_budget_scope["policy_snapshot"].get("resource_control_version") != "billing-channel-resources.v1":
+                raise KernelError("BUDGET_RESOURCE_SUCCESSOR_REQUIRED", "Frozen historical Opening requires a native resource-policy successor before unstarted work changes contract")
+        if locked_budget_scope is not None:
+            scope_policy = canonical_budget_policy(
+                dict(locked_budget_scope.get("policy_snapshot") or {})
+            )["policy_snapshot"]
+            if accounting_basis == "ACCOUNT_ENTITLEMENT" and scope_policy.get("account_entitlement_lane"):
+                scope_policy = dict(scope_policy["account_entitlement_lane"])
+            scope_basis = str(scope_policy.get("accounting_basis") or "PRICED").upper()
+            if not channel_resources and (scope_basis != accounting_basis or (
+                accounting_basis == "PRICED" and request.currency.upper() != str(locked_budget_scope["currency"]).upper()
+            )):
+                raise KernelError(
+                    "BUDGET_SCOPE_CONFLICT",
+                    "reservation accounting basis differs from its BudgetScope",
+                )
+            if (
+                accounting_basis == "ACCOUNT_ENTITLEMENT"
+                and str(scope_policy.get("authorization_ref") or "")
+                != request.cost_authorization_ref
+            ):
+                raise KernelError(
+                    "BUDGET_SCOPE_CONFLICT",
+                    "reservation authorization differs from its BudgetScope",
+                )
+        effective_budget_scope_id = (
+            str(locked_budget_scope["budget_scope_id"])
+            if locked_budget_scope is not None
+            else ""
+        )
+        effective_budget_scope_revision = (
+            int(locked_budget_scope["revision"])
+            if locked_budget_scope is not None
+            else None
+        )
+        uow.cursor.execute(
+            """
+            SELECT operation.project_id,effect.project_id,
+                   COALESCE(
+                       NULLIF(operation.command_payload->'payload'->>'book_id',''),
+                       NULLIF(operation.command_payload->>'book_id',''),
+                       ''
+                   ), effect.model_id,
+                   effect.request_payload #>> '{_production_execution,book_id}'
+            FROM authority_operation AS operation
+            JOIN authority_external_effect AS effect
+              ON effect.external_effect_id = %s AND effect.operation_id = operation.operation_id
+            WHERE operation.operation_id = %s
+            FOR UPDATE OF operation, effect
+            """,
+            [request.external_effect_id, request.operation_id],
+        )
+        operation_scope = uow.cursor.fetchone()
+        if operation_scope and ((request.model_id and str(operation_scope[3]) != request.model_id)
+            or (request.work_id and str(operation_scope[4]) != request.work_id)):
+>           raise KernelError("BUDGET_SCOPE_CONFLICT", "budget model or work differs from frozen Effect")
+E           novel_forge.modules.command_kernel.errors.KernelError: BUDGET_SCOPE_CONFLICT: budget model or work differs from frozen Effect
+
+src/novel_forge/modules/command_kernel/budget_runtime.py:2950: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_creative_resource_migration_postgres.py::test_previous_head_upgrade_retains_historical_unknown_reservation_and_frozen_intent
+1 failed, 1 passed in 8.44s

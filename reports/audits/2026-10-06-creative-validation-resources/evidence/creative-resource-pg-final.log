@@ -1,0 +1,83 @@
+....F............                                                        [100%]
+=================================== FAILURES ===================================
+_ test_paid_dispatch_rejects_credential_rotation_and_soft_lane_caps_do_not_block _
+
+work = ('creative-project-4392e101-e730-4047-bea5-af81748b1259', 'creative-book-4889babc-8575-4fe4-9af7-e1effa6362d0', <function work.<locals>.configure at 0x10c0809a0>)
+
+    def test_paid_dispatch_rejects_credential_rotation_and_soft_lane_caps_do_not_block(work):
+        from novel_forge.modules.production_execution.membership_identity import observed_paid_binding
+        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+        value = request(work)
+        identity = observed_paid_binding("fixture-account", "fixture-credential")
+>       router = ProductionProviderRouter(DATABASE_URL, candidates=(candidate(), membership()), task_money_limit="0", task_token_limit=0,
+            execution_environment="validation", money_caps={"operation": "0"}, token_caps={"project": 1}, call_caps={"project": 1},
+            provider_billing_accounts={"deepseek": "fixture-account"}, provider_billing_identities={"deepseek": identity})
+
+tests/integration/test_creative_channel_resources_postgres.py:151: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.production_execution.routing_runtime.ProductionProviderRouter object at 0x10bf962a0>
+database_url = 'postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:65045/novel_forge_authority_test'
+candidates = (ModelCandidate(candidate_id='flash', provider='deepseek', model='flash', reasoning='high', tier='flash', capabilities...revision='model-v1', estimated_price_multiplier='1', entitlement_role='PRIMARY', authorized_tasks=('classification',)))
+task_money_limit = '0', task_token_limit = 0, soft_money_limit = None
+money_caps = {'operation': '0'}, token_caps = {'project': 1}
+call_caps = {'project': 1}, outcome_projection = None
+execution_environment = 'validation', provider_auth_profiles = None
+review_requirement_resolver = None, provider_task_scope = None
+membership_identity = None
+provider_billing_accounts = {'deepseek': 'fixture-account'}
+provider_billing_identities = {'deepseek': {'version': 'configured-api-billing-binding.v1', 'provider': 'deepseek', 'account_ref': 'fixture-account', 'credential_ref': 'sha256:97173de4d100b1aec0c74c1c4367961238aa508352383c4cfd5ea1a83a25eae7'}}
+
+    def __init__(
+        self,
+        database_url: str,
+        *,
+        candidates: Sequence[ModelCandidate],
+        task_money_limit: str,
+        task_token_limit: int,
+        soft_money_limit: str | None = None,
+        money_caps: Mapping[str, str] | None = None,
+        token_caps: Mapping[str, int] | None = None,
+        call_caps: Mapping[str, int] | None = None,
+        outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
+        execution_environment: str = "production",
+        provider_auth_profiles: Mapping[str, str] | None = None,
+        review_requirement_resolver: Callable[..., dict[str, Any]] | None = None,
+        provider_task_scope: Mapping[str, Sequence[str]] | None = None,
+        membership_identity: Mapping[str, str] | None = None,
+        provider_billing_accounts: Mapping[str, str] | None = None,
+        provider_billing_identities: Mapping[str, Mapping[str, str]] | None = None,
+    ) -> None:
+        self.registry = PostgresRoutingRegistry(
+            database_url, outcome_projection=outcome_projection
+        )
+        self.candidates = tuple(candidates)
+        self.task_money_limit = task_money_limit
+        self.task_token_limit = task_token_limit
+        self.soft_money_limit = soft_money_limit
+        self.money_caps = dict(money_caps or {})
+        self.token_caps = dict(token_caps or {})
+        self.call_caps = dict(call_caps or {})
+        self.execution_environment = execution_environment
+        self.provider_auth_profiles = dict(provider_auth_profiles or {})
+        self.membership_identity = dict(membership_identity or {})
+        self.provider_billing_accounts = dict(provider_billing_accounts or {})
+        self.provider_billing_identities = {key: dict(value) for key, value in (provider_billing_identities or {}).items()}
+        self.review_requirement_resolver = review_requirement_resolver
+        self.provider_task_scope = None
+        if provider_task_scope is not None:
+            if (not isinstance(provider_task_scope, dict)
+                or set(provider_task_scope) != {candidate.provider for candidate in self.candidates}
+                or any(not isinstance(tasks, list) or any(not isinstance(task, str) or task not in TASK_TAXONOMY for task in tasks)
+                       for tasks in provider_task_scope.values())):
+                raise ValueError("ROUTING_PROVIDER_TASK_SCOPE_INVALID")
+            self.provider_task_scope = {provider: sorted(set(tasks)) for provider, tasks in sorted(provider_task_scope.items())}
+        money_limit = Decimal(task_money_limit)
+        if self.task_token_limit <= 0 or not money_limit.is_finite() or money_limit < 0:
+>           raise ValueError("ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED")
+E           ValueError: ROUTING_NONNEGATIVE_MONEY_AND_POSITIVE_TOKEN_BUDGET_REQUIRED
+
+src/novel_forge/modules/production_execution/routing_runtime.py:793: ValueError
+=========================== short test summary info ============================
+FAILED tests/integration/test_creative_channel_resources_postgres.py::test_paid_dispatch_rejects_credential_rotation_and_soft_lane_caps_do_not_block
+1 failed, 16 passed in 44.05s

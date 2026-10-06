@@ -1,0 +1,71 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain _
+
+self = <tests.integration.test_authority_migrations_postgres.AuthorityMigrationsPostgresTests testMethod=test_clean_database_applies_complete_migration_chain>
+
+    def test_clean_database_applies_complete_migration_chain(self) -> None:
+        status = run_migrations(self.test_url)
+    
+        self.assertTrue(status["ok"])
+        self.assertEqual(status["current"], LATEST_MIGRATION_ID)
+        self.assertEqual(
+            [row["migration_id"] for row in status["applied"]],
+            [migration.migration_id for migration in MIGRATIONS],
+        )
+        with psycopg.connect(self.test_url) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    to_regclass('authority_operation'),
+                    to_regclass('authority_external_receipt'),
+                    to_regprocedure('authority_acquire_attempt_lease(text,text,text,integer)'),
+                    to_regprocedure('authority_record_inbox_message(text,text,text,jsonb)')
+                """
+            ).fetchone()
+            missing_foreign_key_indexes = connection.execute(
+                """
+                SELECT constraint_row.conrelid::regclass::text, constraint_row.conname
+                FROM pg_constraint AS constraint_row
+                JOIN pg_class AS table_row ON table_row.oid = constraint_row.conrelid
+                WHERE constraint_row.contype = 'f'
+                  AND table_row.relname LIKE 'authority_%'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM pg_index AS index_row
+                      WHERE index_row.indrelid = constraint_row.conrelid
+                        AND index_row.indisvalid
+                        AND constraint_row.conkey::smallint[]
+                            <@ index_row.indkey::smallint[]
+                  )
+                ORDER BY constraint_row.conrelid::regclass::text, constraint_row.conname
+                """
+            ).fetchall()
+        self.assertEqual(
+            tuple(str(value) for value in row),
+            (
+                "authority_operation",
+                "authority_external_receipt",
+                "authority_acquire_attempt_lease(text,text,text,integer)",
+                "authority_record_inbox_message(text,text,text,jsonb)",
+            ),
+        )
+>       self.assertEqual(missing_foreign_key_indexes, [])
+E       AssertionError: Lists differ: [('authority_book_opening_resource_success[243 chars]ey')] != []
+E       
+E       First list contains 3 additional elements.
+E       First extra element 0:
+E       ('authority_book_opening_resource_successor', 'authority_book_opening_resource_successor_project_id_fkey')
+E       
+E       + []
+E       - [('authority_book_opening_resource_successor',
+E       -   'authority_book_opening_resource_successor_project_id_fkey'),
+E       -  ('authority_effect_resource_denial',
+E       -   'authority_effect_resource_denial_operation_id_fkey'),
+E       -  ('authority_effect_resource_denial',
+E       -   'authority_effect_resource_denial_project_id_fkey')]
+
+tests/integration/test_authority_migrations_postgres.py:663: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_authority_migrations_postgres.py::AuthorityMigrationsPostgresTests::test_clean_database_applies_complete_migration_chain
+1 failed in 4.41s
