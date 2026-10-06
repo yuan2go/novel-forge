@@ -1779,6 +1779,10 @@ class StoryPlanningGenerationApplication:
             from .runtime_continuation import follow
             return follow(self, str(row[0]), command, principal=principal)
         if row[2] == "FAILED_FINAL" and not row[4]:
+            from .gateway_result_recovery import recover
+            revalidated = recover(self, command=command, operation_id=str(row[0]), principal=principal)
+            if revalidated is not None:
+                return self.generate(command, principal=principal)
             return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
         if row[2] == "FAILED_FINAL" and row[4]:
             with AuthorityUnitOfWork(self.database_url) as uow:

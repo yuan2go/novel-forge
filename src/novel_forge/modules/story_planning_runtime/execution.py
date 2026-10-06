@@ -161,7 +161,7 @@ def require_candidate_repair_operation(
     book_id: str, generator_operation_name: str, logical_key: str,
 ) -> str:
     cursor.execute(
-        """SELECT generation.operation_id,candidate.content_hash,version.content_hash,version.content
+        """SELECT generation.operation_id,candidate.content_hash,version.content_hash,version.content,operation.status
            FROM authority_story_planning_candidate candidate
            JOIN authority_story_planning_generation generation USING(generation_id)
            JOIN authority_asset_version version ON version.asset_version_id=candidate.candidate_asset_version_id
@@ -172,7 +172,6 @@ def require_candidate_repair_operation(
              AND candidate.book_id=generation.book_id AND generation.generator_operation_name=%s
              AND generation.logical_key=%s AND asset.project_id=candidate.project_id
              AND asset.asset_type='planning_generation_candidate'
-             AND operation.status IN ('WAITING_GATE','SUCCEEDED')
              AND operation.project_id=generation.project_id
              AND operation.command_payload #>> '{payload,book_id}'=generation.book_id
              AND operation.definition_name='story_planning.generate'""",
@@ -180,6 +179,11 @@ def require_candidate_repair_operation(
     )
     row = cursor.fetchone()
     content = dict(row[3]) if row and isinstance(row[3], Mapping) else {}
+    if row and row[4] not in {"WAITING_GATE","SUCCEEDED"}:
+        from novel_forge.modules.story_design_authority.creative_validation import candidate_validation
+        recovered = candidate_validation(cursor,project_id=project_id,asset_version_id=candidate_asset_version_id)
+        if not recovered or recovered["generation_operation_id"] != row[0] or recovered["book_id"] != book_id:
+            raise KernelError("PLANNING_REPAIR_SOURCE_OPERATION_INVALID", "Repair requires an admissible source or its native validation result recovery")
     if (
         not row or row[1] != row[2] or row[2] != canonical_hash(content)
         or content.get("project_id") != project_id or content.get("book_id") != book_id

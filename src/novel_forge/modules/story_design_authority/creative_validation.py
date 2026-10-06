@@ -20,9 +20,14 @@ def candidate_validation(cursor: Any, *, project_id: str, asset_version_id: str)
           AND recovery.recovery_operation_id=output.operation_id
         LEFT JOIN authority_operation recovery_operation ON recovery_operation.operation_id=recovery.recovery_operation_id
         JOIN authority_external_effect e ON e.operation_id=COALESCE(recovery.source_operation_id,output.operation_id) AND e.project_id=a.project_id
-        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+        WHERE a.project_id=%s AND v.asset_version_id=%s AND (e.status='SUCCEEDED' OR (e.status='FAILED_FINAL'
+            AND recovery_operation.definition_name='story_planning.gateway_result.revalidate'
+            AND recovery.evidence->>'contract_version'='planning-gateway-result-revalidation.v1'
+            AND recovery.evidence->>'original_gateway_outcome'='FINAL_FAILURE'
+            AND recovery.evidence->>'current_result_validation'='VALID'
+            AND recovery.evidence->'provider_invoked'='false'::jsonb))
           AND (recovery.recovery_id IS NULL OR (recovery_operation.status='SUCCEEDED'
-            AND recovery_operation.definition_name='story_planning.result_admission.recover'
+            AND recovery_operation.definition_name IN ('story_planning.result_admission.recover','story_planning.gateway_result.revalidate')
             AND recovery.external_effect_id=e.external_effect_id
             AND recovery.evidence->>'target_release_sha'=recovery_operation.definition_snapshot->>'commit_sha'
             AND recovery.project_id=a.project_id AND recovery.book_id=v.content->>'book_id'

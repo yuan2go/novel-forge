@@ -1,0 +1,651 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from pathlib import Path
+from uuid import uuid4
+
+from psycopg.types.json import Jsonb
+
+from novel_forge.modules.authority_handler_runtime.contracts import (
+    AuthorityHandlerRequest,
+    AuthorityInputAsset,
+)
+from novel_forge.modules.authority_security import PrincipalType
+from novel_forge.modules.capability_pack_authority.runtime import (
+    CapabilityPackRuntimeResolver,
+)
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    read_rejected_structured_completion,
+)
+from novel_forge.modules.command_kernel.service import (
+    AdmissionContext,
+    execute_transaction_command,
+)
+from novel_forge.modules.production_execution.execution_template import (
+    verify_template_provenance,
+)
+from novel_forge.modules.production_execution.process_supervisor import (
+    ExecutionDirectoryLayout,
+    PersistentExecutionDirectory,
+    ProcessReceipt,
+)
+from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from .binder import PlanningCapabilityBinding, _identity
+from .domain import (
+    FrozenPlanningInput,
+    PlanningExecutionEvidence,
+    PlanningGenerationCandidate,
+    canonical_hash,
+)
+
+NAME = "story_planning.gateway_result.revalidate"
+HANDLER = "novel_forge." + NAME
+VERSION = "planning-gateway-result-revalidation.v1"
+
+
+def literal_null_paths(schema, value, path="$"):
+    paths = [path] if schema.get("type") == "null" and value is None else []
+    for branch in schema.get("anyOf", []):
+        paths.extend(literal_null_paths(branch, value, path))
+    if isinstance(value, dict):
+        for key, child in schema.get("properties", {}).items():
+            if key in value:
+                paths.extend(literal_null_paths(child, value[key], path + "." + key))
+    if isinstance(value, list) and isinstance(schema.get("items"), dict):
+        for index, item in enumerate(value):
+            paths.extend(literal_null_paths(schema["items"], item, f"{path}[{index}]"))
+    return sorted(set(paths))
+
+
+def retained_output(query, *, project_id, provider, request):
+    production = provider["production_execution"]
+    result = production["execution_result"]
+
+    def read(reference, kind):
+        if not reference.startswith("authority-asset-version:"):
+            raise KernelError(
+                "PLANNING_GATEWAY_RESULT_EVIDENCE_INVALID",
+                "Require original Authority-backed process evidence",
+            )
+        document = query.require(
+            project_id=project_id, asset_version_id=reference.split(":", 1)[1]
+        )
+        content = document.content
+        payload = content.get("payload")
+        if (
+            document.asset_type != "execution_evidence"
+            or content.get("kind") != kind
+            or content.get("execution_id") != request["execution_id"]
+            or not isinstance(payload, dict)
+            or content.get("payload_hash")
+            != canonical_hash(payload).removeprefix("sha256:")
+        ):
+            raise KernelError(
+                "PLANNING_GATEWAY_RESULT_EVIDENCE_INVALID",
+                "Retain exact process and rejected-output payload digests",
+            )
+        return document, payload
+
+    process_doc, process = read(result["process_receipt_ref"], "process-receipt")
+    raw_doc, metadata = read(result["raw_output_ref"], "rejected-output")
+    if (
+        process.get("status") != "SUCCEEDED"
+        or process.get("returncode") != 0
+        or process.get("result_integrity") != "VALID"
+        or process.get("operation_id") != request["operation_id"]
+        or process.get("attempt_id") != request["attempt_id"]
+        or process.get("fencing_token") != request["fencing_token"]
+        or not process.get("authority_bound")
+        or metadata.get("validation") != "REJECTED"
+        or metadata.get("generation_allowed") is not False
+        or metadata.get("result_path") != process.get("result_path")
+        or metadata.get("input_sha256") != process.get("input_sha256")
+        or process.get("input_sha256")
+        != provider["capability_runtime"]["provider_view"]["component_hashes"][
+            "fully_rendered_prompt"
+        ].removeprefix("sha256:")
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_PROCESS_INVALID",
+            "Only an intact successful frozen process can be locally revalidated",
+        )
+    layout = ExecutionDirectoryLayout(
+        request["execution_id"], Path(process["execution_directory"])
+    )
+    receipt = ProcessReceipt.from_dict(process)
+    PersistentExecutionDirectory._validate_receipt_paths(layout, receipt)
+    path = Path(process["result_path"])
+    if (
+        path.resolve(strict=True) != path
+        or path.is_symlink()
+        or layout.receipt_path.resolve(strict=True) != layout.receipt_path
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_PATH_INVALID",
+            "Retained result and receipt must remain in their original native directory",
+        )
+    current = json.loads(layout.receipt_path.read_text())
+    identity = json.loads(layout.metadata_path.read_text())
+    if (
+        current != process
+        or identity.get("execution_id") != request["execution_id"]
+        or identity.get("request_digest") != process.get("request_digest")
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_PROCESS_DRIFT",
+            "The retained native process identity changed",
+        )
+    data = path.read_bytes()
+    if (
+        len(data) != metadata["byte_size"]
+        or "sha256:" + hashlib.sha256(data).hexdigest() != metadata["result_sha256"]
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_HASH_DRIFT", "The original rejected output changed"
+        )
+    raw = json.loads(data)
+    schema = production["process_evidence"]["output_schema"]
+    if canonical_hash(schema) != provider["capability_runtime"]["output_schema_hash"]:
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_SCHEMA_DRIFT",
+            "Revalidate only the exact original full Schema",
+        )
+    paths = literal_null_paths(schema, raw)
+    if not paths:
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_FAILURE_NOT_ALLOWED",
+            "This recovery corrects only the known literal-null engine rejection",
+        )
+    from novel_forge.api.authority_dependencies import (
+        validate_production_structured_result,
+    )
+
+    normalized = validate_production_structured_result(
+        production["process_evidence"]["stage"],
+        schema,
+        raw,
+        output_schema_ref=production["process_evidence"]["output_schema_version"],
+    )
+    if normalized != raw:
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_NORMALIZATION_FORBIDDEN",
+            "Local recovery must preserve the complete Provider result",
+        )
+    return raw, paths, process_doc, raw_doc
+
+
+def recover(application, *, command, operation_id, principal):
+    principal.require("story_planning.authority.execute", command.project_id)
+    if command.generator_operation_name not in {
+        "book_plan.generate",
+        "volume_plan.generate",
+        "arc_plan.generate",
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }:
+        return None
+    if (
+        principal.principal_id != command.actor_id
+        and principal.principal_type is not PrincipalType.LOCAL_OPERATOR
+    ):
+        raise PermissionError(
+            "Recovery requires the actual source actor or a scoped trusted operator"
+        )
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.cursor.execute(
+            "SELECT o.status,o.command_payload->'payload',g.input_snapshot,g.version,g.candidate_asset_version_id FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.operation_id=%s AND o.project_id=%s",
+            [operation_id, command.project_id],
+        )
+        source = uow.cursor.fetchone()
+        from .application import _command_payload
+
+        if (
+            not source
+            or source[0] != "FAILED_FINAL"
+            or source[4]
+            or source[1] != _command_payload(command)
+        ):
+            return None
+        uow.cursor.execute(
+            "SELECT e.external_effect_id,e.request_payload,e.last_error FROM authority_external_effect e WHERE e.operation_id=%s AND e.status='FAILED_FINAL' AND e.request_payload->>'stage'=%s",
+            [operation_id, command.generator_operation_name],
+        )
+        effects = uow.cursor.fetchall()
+        if (
+            len(effects) != 1
+            or effects[0][2]
+            .get("production_execution", {})
+            .get("process_evidence", {})
+            .get("failure_code")
+            != "OUTPUT_SCHEMA_FAILURE"
+        ):
+            return None
+        effect_id, payload, _ = effects[0]
+        runtime = payload["_production_execution"]["capability_runtime"]
+        template = verify_template_provenance(uow.cursor, runtime["routing_decision"])
+        if (
+            not template
+            or template["mode"] != "CREATIVE_VALIDATION"
+            or template["require_literary_qualification"]
+        ):
+            return None
+        uow.cursor.execute(
+            "SELECT v.asset_version_id,v.content_hash FROM authority_operation_output_asset output JOIN authority_asset a USING(asset_id) JOIN authority_asset_version v USING(asset_version_id) WHERE output.operation_id=%s AND a.asset_type='model_call_log' AND v.content->>'stage'=%s",
+            [operation_id, command.generator_operation_name],
+        )
+        logs = uow.cursor.fetchall()
+        if len(logs) != 1:
+            raise KernelError(
+                "PLANNING_GATEWAY_RESULT_SOURCE_INVALID",
+                "Require the one original native model-call record",
+            )
+    retained = read_rejected_structured_completion(
+        application.database_url,
+        EffectCommandContext(
+            operation_id=operation_id,
+            project_id=command.project_id,
+            actor_id=command.actor_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        ),
+        effect_id=effect_id,
+    )
+    provider = retained["provider_evidence"]
+    production = provider["production_execution"]
+    request = production["execution_request"]
+    if (
+        request["external_effect_id"] != effect_id
+        or request["operation_id"] != operation_id
+        or request["project_id"] != command.project_id
+        or request["book_id"] != command.book_id
+        or request["stage"] != command.generator_operation_name
+        or any(
+            runtime[key] != provider["capability_runtime"][key]
+            for key in (
+                "materialization_hash",
+                "provider_request_envelope_hash",
+                "provider_admission_asset_version_id",
+            )
+        )
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_SCOPE_DRIFT",
+            "Retain the exact dispatched scope and runtime",
+        )
+    query = AuthorityAssetQuery(application.database_url)
+    model_log = query.require(
+        project_id=command.project_id, asset_version_id=logs[0][0]
+    )
+    if model_log.content_hash != logs[0][1] or any(
+        model_log.content.get(key) != value for key, value in provider.items()
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_EVIDENCE_DRIFT",
+            "Retain the immutable owned model-call evidence for the failed dispatch",
+        )
+    raw, null_paths, process_doc, raw_doc = retained_output(
+        query, project_id=command.project_id, provider=provider, request=request
+    )
+    from .result_recovery import validate_raw_result
+
+    validate_raw_result(
+        command.generator_operation_name,
+        raw,
+        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+        aligned_methods=command.execution_contract_version == "1.18.0",
+    )
+    snapshot = CapabilityPackRuntimeResolver(
+        application.database_url
+    ).require_attempt_snapshot(
+        attempt_id=request["attempt_id"],
+        snapshot_id=runtime["snapshot_id"],
+        snapshot_hash=runtime["snapshot_hash"],
+    )
+    if (
+        snapshot.operation_id != operation_id
+        or snapshot.execution_fencing_token != request["fencing_token"]
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_SNAPSHOT_DRIFT",
+            "Retain the exact original fenced Pack snapshot",
+        )
+    frozen = snapshot.execution_snapshot
+    context_ref = production["input_manifest"]["context_bundle_version"]
+    context = query.require(project_id=command.project_id, asset_version_id=context_ref)
+    artifact = next(
+        a
+        for a in production["input_manifest"]["input_artifacts"]
+        if a["asset_version_id"] == context_ref
+    )
+    if context.content_hash != artifact["content_hash"]:
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_CONTEXT_DRIFT",
+            "Retain the exact dispatched Context",
+        )
+    inputs = tuple(FrozenPlanningInput(**i) for i in source[2])
+    documents = [
+        query.require(
+            project_id=command.project_id, asset_version_id=i.asset_version_id
+        )
+        for i in inputs
+    ]
+    if any(
+        d.content_hash != i.content_hash or d.asset_type != i.asset_type
+        for i, d in zip(inputs, documents, strict=True)
+    ):
+        raise KernelError(
+            "PLANNING_GATEWAY_RESULT_INPUT_DRIFT",
+            "Retain every original input and role",
+        )
+    selection_hash = context.content["narrative_intelligence"]["selection_digest"]
+    binding = PlanningCapabilityBinding(
+        binding_id=_identity("planning-capability-binding", request["attempt_id"]),
+        operation_id=operation_id,
+        attempt_id=request["attempt_id"],
+        fencing_token=request["fencing_token"],
+        project_id=command.project_id,
+        workspace_id=command.workspace_id,
+        book_id=command.book_id,
+        capability_ref=frozen.capability_ref,
+        capability_hash=frozen.capability_hash,
+        execution_capability_id=frozen.execution_capability_id,
+        execution_capability_hash=frozen.execution_capability_hash,
+        input_manifest_ref=request["input_manifest_ref"],
+        context_bundle_asset_version_id=context_ref,
+        context_bundle_hash=context.content_hash,
+        narrative_intelligence_selection_digest=selection_hash,
+        commit_authority=frozen.commit_authority,
+        capability_pack_attempt_snapshot_id=snapshot.snapshot_id,
+        capability_pack_attempt_snapshot_hash=snapshot.snapshot_hash,
+    )
+    recovery_id = "planning-gateway-revalidation:" + operation_id
+    provenance = {
+        "contract_version": VERSION,
+        "source_operation_id": operation_id,
+        "external_effect_id": effect_id,
+        "recovery_id": recovery_id,
+        "source_result_asset_version_id": logs[0][0],
+        "source_result_hash": canonical_hash(raw),
+        "source_release_sha": frozen.release_sha,
+        "target_release_sha": application.commit_sha,
+        "operator_id": principal.principal_id,
+        "source_pack_snapshot_id": snapshot.snapshot_id,
+        "source_pack_snapshot_hash": snapshot.snapshot_hash,
+        "source_context_asset_version_id": context_ref,
+        "source_context_hash": context.content_hash,
+        "original_failure": "OUTPUT_SCHEMA_FAILURE",
+        "original_gateway_outcome": "FINAL_FAILURE",
+        "current_result_validation": "VALID",
+        "legacy_literal_null_paths": null_paths,
+        "raw_output_receipt": {
+            "asset_version_id": raw_doc.asset_version_id,
+            "content_hash": raw_doc.content_hash,
+        },
+        "process_receipt": {
+            "asset_version_id": process_doc.asset_version_id,
+            "content_hash": process_doc.content_hash,
+        },
+        "provider_invoked": False,
+        "literary_qualification": "NOT_RUN",
+        "reason": "Correct known literal-null Schema engine rejection without resending the completed process",
+    }
+    from .result_admission import definition_for
+
+    definition = definition_for(application)
+    definition.update(
+        name=NAME,
+        handler_key=HANDLER,
+        handler_contract_version=VERSION,
+        policy={
+            "execution_classification": "transaction_command",
+            "source_actor_or_scoped_operator_required": True,
+            "provider_dispatch_allowed": False,
+        },
+        idempotency_scope="book:planning-gateway-revalidation",
+        concurrency_key_template="book:{book_id}:planning-gateway-revalidation",
+        completion_contract={
+            **definition["completion_contract"],
+            "required_outbox_events": [NAME],
+        },
+    )
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.repositories.definitions.register(definition)
+        uow.commit()
+
+    def materialize(uow, registration_id, checkpoint):
+        uow.cursor.execute(
+            "SELECT status FROM authority_operation WHERE operation_id=%s FOR UPDATE",
+            [operation_id],
+        )
+        if uow.cursor.fetchone() != ("FAILED_FINAL",):
+            raise KernelError(
+                "PLANNING_GATEWAY_RESULT_OWNER_DRIFT",
+                "Retain the failed-final original owner",
+            )
+        uow.cursor.execute(
+            "SELECT candidate_asset_version_id,version FROM authority_story_planning_generation WHERE operation_id=%s FOR UPDATE",
+            [operation_id],
+        )
+        if uow.cursor.fetchone() != (None, source[3]):
+            raise KernelError(
+                "PLANNING_GATEWAY_RESULT_STALE",
+                "Source generation changed before atomic result admission",
+            )
+        uow.cursor.execute(
+            "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND status NOT IN ('SUCCEEDED','FAILED_FINAL')) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status<>'SETTLED') OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=%s AND l.status='HELD')",
+            [operation_id] * 3,
+        )
+        if uow.cursor.fetchone()[0]:
+            raise KernelError(
+                "PLANNING_GATEWAY_RESULT_RECONCILIATION_REQUIRED",
+                "No unresolved source call or usage may enter recovery",
+            )
+        validation = uow.repositories.asset_documents.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=registration_id,
+                project_id=command.project_id,
+                asset_id=recovery_id + ":validation",
+                asset_type="planning_gateway_result_revalidation",
+                schema_version=VERSION,
+                logical_ref=f"planning/gateway_revalidation/{operation_id}/validation",
+                category="runs",
+                output_key="story_planning.gateway_revalidation",
+                role="local_validation",
+                content={"evidence": provenance, "raw_result": raw},
+                qualification_policy="planning-local-schema-validation-not-certified-v1",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            )
+        )
+        reference = "authority-asset-version:" + validation.asset_version_id
+        pep = PlanningExecutionEvidence(
+            operation_id=operation_id,
+            attempt_id=request["attempt_id"],
+            fencing_token=request["fencing_token"],
+            route_snapshot_id=request["route_snapshot_id"],
+            input_manifest_ref=request["input_manifest_ref"],
+            output_manifest_ref=reference,
+            validation_manifest_ref=reference,
+            usage_receipt_ref=production["execution_result"]["usage_receipt_ref"],
+            cost_receipt_ref=production["execution_result"]["cost_receipt_ref"],
+            external_receipt_ref=effect_id,
+            capability_pack_attempt_snapshot_id=snapshot.snapshot_id,
+            capability_pack_attempt_snapshot_hash=snapshot.snapshot_hash,
+            capability_execution_ref=binding.binding_id,
+            capability_execution_hash=binding.binding_hash,
+            capability_runtime_binding_ref=snapshot.snapshot_id,
+            capability_runtime_binding_hash=snapshot.snapshot_hash,
+            commit_authority=frozen.commit_authority,
+            fixture_protocol_only=bool(provider["fixture_protocol_only"]),
+            real_provider_proven=bool(
+                provider["real_model_call"] and not provider["fixture_protocol_only"]
+            ),
+            context_bundle_asset_version_id=context_ref,
+            context_bundle_hash=context.content_hash,
+            narrative_intelligence_selection_digest=selection_hash,
+        )
+        candidate = PlanningGenerationCandidate(
+            command.generator_operation_name,
+            command.planning_scope,
+            command.logical_key,
+            raw,
+            inputs,
+            pep,
+            raw,
+        )
+
+        class RetainedBinder:
+            def execute(self, **kwargs):
+                if (
+                    kwargs["operation_id"] != operation_id
+                    or kwargs["attempt_id"] != request["attempt_id"]
+                    or kwargs["fencing_token"] != request["fencing_token"]
+                    or kwargs["command"] != command
+                ):
+                    raise KernelError(
+                        "PLANNING_GATEWAY_RESULT_BINDING_DRIFT",
+                        "Local validation requires its exact original request",
+                    )
+                return candidate
+
+        from .application import _PlanningGenerationHandler
+
+        handler_request = AuthorityHandlerRequest(
+            operation_id=operation_id,
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            actor_id=command.actor_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            definition_name="story_planning.generate",
+            definition_version=command.execution_contract_version,
+            command={"payload": source[1]},
+            inputs=tuple(
+                AuthorityInputAsset(
+                    d.asset_version_id, d.asset_type, d.content_hash, d.content
+                )
+                for d in documents
+            ),
+            attempt_id=request["attempt_id"],
+            fencing_token=request["fencing_token"],
+            worker_id="native-local-result-revalidation",
+        )
+        output = _PlanningGenerationHandler(
+            RetainedBinder(), application.database_url
+        )._execute(handler_request)
+        content = {**output.content, "result_admission_recovery": provenance}
+        document = uow.repositories.asset_documents.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=registration_id,
+                project_id=command.project_id,
+                asset_id=recovery_id,
+                asset_type=output.asset_type,
+                schema_version="story-design.authority.v1",
+                logical_ref=f"planning/gateway_revalidation/{operation_id}/candidate",
+                category="runs",
+                output_key=output.output_key,
+                role=output.role,
+                content=content,
+                qualification_policy="planning-revalidated-candidate-only-v1",
+                lifecycle="CANDIDATE",
+                eligibility="INELIGIBLE",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                causation_id=operation_id,
+            )
+        )
+        uow.cursor.execute(
+            "INSERT INTO authority_planning_result_admission(recovery_id,project_id,book_id,source_operation_id,recovery_operation_id,source_result_asset_version_id,candidate_asset_version_id,external_effect_id,source_generation_version,evidence) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            [
+                recovery_id,
+                command.project_id,
+                command.book_id,
+                operation_id,
+                registration_id,
+                logs[0][0],
+                document.asset_version_id,
+                effect_id,
+                source[3],
+                Jsonb(provenance),
+            ],
+        )
+        uow.cursor.execute(
+            "INSERT INTO authority_story_planning_candidate(candidate_id,generation_id,project_id,book_id,candidate_asset_version_id,content_hash,attempt_id,repair_of_candidate_id) VALUES (%s,%s,%s,%s,%s,%s,%s,NULLIF(%s,''))",
+            [
+                "planning-candidate:" + document.asset_version_id,
+                "planning-generation:" + operation_id,
+                command.project_id,
+                command.book_id,
+                document.asset_version_id,
+                document.content_hash,
+                request["attempt_id"],
+                command.repair_of_candidate_id,
+            ],
+        )
+        uow.cursor.execute(
+            "UPDATE authority_story_planning_generation SET candidate_asset_version_id=%s,status='CANDIDATE_MATERIALIZED',version=version+1,updated_at=NOW() WHERE operation_id=%s AND version=%s",
+            [document.asset_version_id, operation_id, source[3]],
+        )
+        uow.repositories.operation_graph.record_event(
+            dict(
+                event_id=str(uuid4()),
+                audit_id=str(uuid4()),
+                outbox_id=str(uuid4()),
+                aggregate_type="planning_result_admission",
+                aggregate_id=recovery_id,
+                operation_id=registration_id,
+                project_id=command.project_id,
+                event_type=NAME,
+                correlation_id=command.correlation_id,
+                causation_id=operation_id,
+                payload={
+                    "operation_id": registration_id,
+                    "trace_id": command.trace_id,
+                    "candidate_asset_version_id": document.asset_version_id,
+                    "provider_invoked": False,
+                },
+            )
+        )
+        return {
+            "recovery_id": recovery_id,
+            "asset_version_id": document.asset_version_id,
+            "content_hash": document.content_hash,
+            "provider_invoked": False,
+        }
+
+    return execute_transaction_command(
+        application.database_url,
+        dict(
+            definition_name=NAME,
+            definition_version="1.0.0",
+            project_id=command.project_id,
+            workspace_id=command.workspace_id,
+            book_id=command.book_id,
+            actor_id=principal.principal_id,
+            idempotency_scope="book:planning-gateway-revalidation",
+            idempotency_key=recovery_id,
+            trace_id=command.trace_id,
+            span_id=str(uuid4()),
+            correlation_id=command.correlation_id,
+            causation_id=operation_id,
+            causation_operation_id=operation_id,
+            input=provenance,
+            input_assets=[
+                {"asset_version_id": i.asset_version_id, "content_hash": i.content_hash}
+                for i in [*documents, process_doc, raw_doc]
+            ],
+        ),
+        context=AdmissionContext(
+            principal.principal_id,
+            frozenset({"story_planning.authority.execute"}),
+            frozenset({HANDLER}),
+            application.application_build_id,
+            application.commit_sha,
+        ),
+        handler=materialize,
+    )

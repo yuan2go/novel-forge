@@ -2054,6 +2054,8 @@ class CodexCliExecutionBackend:
                 )
             except ValueError as exc:
                 code = str(getattr(exc, "code", ""))
+                record.raw_evidence["structured_validation_error"] = {
+                    "contract_version": "structured-validation-error.v1", "code": code, "message": str(exc)}
                 failure_code = (
                     "OUTPUT_SCHEMA_FAILURE"
                     if "SCHEMA" in code

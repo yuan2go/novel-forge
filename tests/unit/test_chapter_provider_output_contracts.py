@@ -1205,3 +1205,15 @@ def test_provider_schema_has_no_open_object_escape_hatch() -> None:
 
     for stage in ("canon_extraction", "quality_structural", "reader_outcome"):
         assert_closed(chapter_provider_output_schema(stage))
+
+
+def test_literal_null_branch_retains_nullable_const_and_rejects_other_types():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    schema = {"type":"object", "required":["value"], "additionalProperties":False,
+        "properties":{"value":{"anyOf":[{"type":"null"},{"type":"string"}]}}}
+    _validate(schema, {"value":None}, path="$")
+    _validate(schema, {"value":"text"}, path="$")
+    with pytest.raises(ValueError):
+        _validate(schema, {"value":1}, path="$")
+    with pytest.raises(ValueError):
+        _validate({"type":["string","null"],"const":"frozen"}, None, path="$")

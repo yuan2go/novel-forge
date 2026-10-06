@@ -671,7 +671,9 @@ and `test_native_world_identifier_checkpoint_recovers_settled_effect_without_res
 with `tests/unit/test_world_causal_preparation.py` and `tests/unit/test_world_actor_isolation.py`.
 For v3 optional world preparation also run `test_native_disabled_world_future_reaches_review_acceptance_without_simulation`
 and `test_native_settled_optional_world_failure_continues_without_repeating_calls` there,
-plus `tests/unit/test_creative_execution_template.py`.
+plus `tests/unit/test_creative_execution_template.py`. For local Schema result recovery also run
+`test_native_rejected_null_schema_result_revalidates_without_resend_then_accepts` there
+and `tests/unit/test_chapter_provider_output_contracts.py`.
 Run integration modules serially in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
 process protocol, state owners and recovery; it proves no real membership entitlement,
@@ -707,6 +709,15 @@ same authenticated route and repair counter. The owner creates a successor and p
 the former failed Operation and rejected action. Resume the original Formation identity;
 no user budget allocation or manual database edit is required. Independent actor experiments,
 accepted preparation commitments, strict policy and genuinely unknown calls still block.
+
+A known local Schema-engine rejection can use native Planning result revalidation only
+when the original process receipt is intact and successful, the rejected-output digest
+remains exact, every original call and usage entry is terminal and settled, and the
+unchanged frozen Schema now validates that exact output. Apply migration 0161 after
+verified backup/restore; continue the same Formation identity. Recovery appends evidence and
+a candidate for the ordinary owner gates; it leaves failed Effect/Attempt history and
+usage untouched. Unknown, missing, corrupt, unauthorized or actually invalid output
+cannot enter this path. Strict certification does not use validation recovery admission.
 
 ## Credentialed Provider qualification
 

@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -385,6 +385,48 @@ def test_native_formation_generates_foundation_from_author_brief(
 
         monkeypatch.setattr(planning_module.StoryPlanningGenerationApplication, "_record_generation", historical_unordered_record)
         monkeypatch.setattr(routing_module, "native_planning_repair", historical_exact_order_guard)
+    if gateway_null_recovery:
+        from novel_forge.modules.story_planning_runtime import execution as planning_execution
+        from novel_forge.api import authority_dependencies as dependencies
+        from novel_forge.modules.command_kernel.errors import KernelError
+        original_schema = planning_execution.planning_provider_output_schema
+        original_validation = dependencies.validate_production_structured_result
+        historical_rejection = False
+        null_planning = transport.planning
+        def retained_null_field(stage, inputs):
+            value = null_planning(stage,inputs)
+            if stage == "chapter_plan.generate":
+                value["local_contract_nullable_probe"] = None
+            return value
+        transport.planning = retained_null_field
+        def literal_null_schema(*args, **kwargs):
+            schema = original_schema(*args, **kwargs)
+            def project(value):
+                if isinstance(value, dict):
+                    if value.get("type") == ["string", "null"] and "enum" not in value and "const" not in value:
+                        value["anyOf"] = [{"type":"null"}, {**value,"type":"string"}]
+                        value.pop("type")
+                        return
+                    for child in value.values():
+                        project(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        project(child)
+            project(schema)
+            if "scene_plan" in schema.get("properties", {}):
+                schema["properties"]["local_contract_nullable_probe"] = {"type":"null"}
+                schema["required"].append("local_contract_nullable_probe")
+            return schema
+        def historical_null_validator(stage, schema, value, **kwargs):
+            nonlocal historical_rejection
+            if stage == "chapter_plan.generate" and not historical_rejection:
+                historical_rejection = True
+                from novel_forge.modules.story_planning_runtime.gateway_result_recovery import literal_null_paths
+                assert literal_null_paths(schema,value)
+                raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "$.serialization_function uses unsupported schema type null")
+            return original_validation(stage, schema, value, **kwargs)
+        monkeypatch.setattr(planning_execution,"planning_provider_output_schema",literal_null_schema)
+        monkeypatch.setattr(dependencies,"validate_production_structured_result",historical_null_validator)
     registry.register(transport)
     if creative_validation:
         from tests.integration.creative_validation_production_support import controlled_member_environment
@@ -879,6 +921,40 @@ def test_native_formation_generates_foundation_from_author_brief(
                     chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
                     env=env, registry=registry, transport=transport, admitted=admitted, monkeypatch=monkeypatch,
                     routing=True, input_order=input_order_continuation)
+            if gateway_null_recovery:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with pytest.raises(KernelError,match="MODEL_EFFECT_FINAL_PLANNING"):
+                    continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT e.external_effect_id,e.operation_id,e.last_error FROM authority_external_effect e WHERE e.project_id=%s AND e.status='FAILED_FINAL'",[harness.project_id])
+                    rejected = uow.cursor.fetchone()
+                    assert rejected and rejected[2]['production_execution']['execution_result']['outcome']=='FINAL_FAILURE'
+                    uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s",[rejected[1]])
+                    retained_attempt = uow.cursor.fetchone()[0]
+                from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext,read_rejected_structured_completion
+                from novel_forge.modules.story_planning_runtime.gateway_result_recovery import retained_output
+                request = rejected[2]['production_execution']['execution_request']
+                context = EffectCommandContext(operation_id=rejected[1],project_id=harness.project_id,
+                    actor_id=worker.principal_id,trace_id='trace:revalidation',correlation_id=harness.project_id)
+                with pytest.raises(KernelError,match='EFFECT_REJECTED_RESULT_OWNER_INVALID'):
+                    read_rejected_structured_completion(DATABASE_URL,replace(context,actor_id='unauthorized:actor'),effect_id=rejected[0])
+                with pytest.raises(KernelError,match='EFFECT_REJECTED_RESULT_OWNER_INVALID'):
+                    read_rejected_structured_completion(DATABASE_URL,replace(context,project_id='foreign:project'),effect_id=rejected[0])
+                from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+                query = AuthorityAssetQuery(DATABASE_URL)
+                receipt_ref=rejected[2]['production_execution']['execution_result']['process_receipt_ref'].split(':',1)[1]
+                receipt=query.require(project_id=harness.project_id,asset_version_id=receipt_ref)
+                raw_path=Path(receipt.content['payload']['result_path'])
+                exact_raw = raw_path.read_bytes()
+                try:
+                    raw_path.write_bytes(exact_raw+b' ')
+                    with pytest.raises(KernelError,match='PLANNING_GATEWAY_RESULT_HASH_DRIFT'):
+                        retained_output(query,project_id=harness.project_id,provider=rejected[2],request=request)
+                finally:
+                    raw_path.write_bytes(exact_raw)
+                before_local_calls = len(transport.chapter.calls)
             if world_optional_recovery:
                 from novel_forge.modules.command_kernel.errors import KernelError
                 with pytest.raises(KernelError,match='WORLD_PREPARATION_BLOCKED'):
@@ -909,6 +985,24 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            if gateway_null_recovery:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s",[rejected[0]])
+                    assert uow.cursor.fetchone()==('FAILED_FINAL',)
+                    uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s",[rejected[1]])
+                    assert uow.cursor.fetchone()[0]==retained_attempt
+                    uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s",[rejected[0]])
+                    assert uow.cursor.fetchone()==('SETTLED',)
+                    uow.cursor.execute("SELECT o.status,g.status,g.repair_number FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.operation_id=%s",[rejected[1]])
+                    assert uow.cursor.fetchone()==('FAILED_FINAL','ACTIVE',0)
+                    uow.cursor.execute("SELECT r.evidence,o.status FROM authority_planning_result_admission r JOIN authority_operation o ON o.operation_id=r.recovery_operation_id WHERE r.source_operation_id=%s",[rejected[1]])
+                    local = uow.cursor.fetchone()
+                    assert local[1]=='SUCCEEDED' and local[0]['provider_invoked'] is False
+                    assert local[0]['current_result_validation']=='VALID' and local[0]['literary_qualification']=='NOT_RUN'
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage'='chapter_plan.generate'",[rejected[1]])
+                    assert uow.cursor.fetchone()==(1,)
+                assert len([c for c in transport.chapter.calls if c['stage']=='chapter_plan.generate'])==1
+                assert len(transport.chapter.calls)>before_local_calls
             if world_disabled or world_optional_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT e.status,r.status FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.project_id=%s AND e.request_payload->>'stage' IN ('world_candidates.generate','world_candidates.evaluate')", [harness.project_id])
@@ -1517,3 +1611,8 @@ def test_native_disabled_world_future_reaches_review_acceptance_without_simulati
 def test_native_settled_optional_world_failure_continues_without_repeating_calls(tmp_path, monkeypatch):
     test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
         False, False, False, False, False, False, 1, creative_validation=True, world_optional_recovery=True)
+
+
+def test_native_rejected_null_schema_result_revalidates_without_resend_then_accepts(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        False, False, False, False, False, False, 1, creative_validation=True, world_disabled=True, gateway_null_recovery=True)

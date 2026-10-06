@@ -408,6 +408,7 @@ class PostgresHierarchicalPlanningAuthority:
             project_id=project_id,
             book_id=book_id,
             content=content,
+            asset_version_id=asset_version_id,
         )
         checkpoint("after_domain_validation")
         parent_binding = None
@@ -1046,6 +1047,7 @@ class PostgresHierarchicalPlanningAuthority:
         project_id: str,
         book_id: str,
         content: dict[str, Any],
+        asset_version_id: str,
     ) -> None:
         envelope = content.get("constraint_envelope")
         if not isinstance(envelope, dict):
@@ -1094,10 +1096,18 @@ class PostgresHierarchicalPlanningAuthority:
             [generation_operation_id, project_id],
         )
         if cursor.fetchone() is None:
-            raise KernelError(
-                "PLANNING_REALIZATION_GENERATION_LINEAGE_STALE",
-                "realization frozen Operation is missing or no longer admissible",
-            )
+            from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+            recovered = approved_validation_design(cursor, project_id=project_id, book_id=book_id,
+                asset_version_id=asset_version_id)
+            if recovered is not None and recovered["generation_operation_id"] == generation_operation_id:
+                recovered = True
+            else:
+                recovered = False
+            if not recovered:
+                raise KernelError(
+                    "PLANNING_REALIZATION_GENERATION_LINEAGE_STALE",
+                    "realization frozen Operation is missing or no longer admissible",
+                )
         for (asset_version_id, _role), reference in references.items():
             cursor.execute(
                 """

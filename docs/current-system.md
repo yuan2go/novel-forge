@@ -146,6 +146,12 @@ commitments and independent actor experiments cannot use this optional deferral.
 original input, repair lineage and counter stay exact. It leaves all older migration
 bodies and zero-dispatch continuation rules intact.
 
+Known local Schema-engine rejection of an intact completed Codex process may be
+revalidated against its exact frozen Schema. Native result revalidation preserves the
+failed Effect, Attempt, original rejected-output hash and settled usage. A versioned
+recovery candidate still enters the ordinary Planning/Story Design and acceptance
+checks; this does not certify a failed Provider contract or permit unknown-call replay.
+
 The following sections describe existing strict and historical campaign contracts;
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes

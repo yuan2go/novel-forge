@@ -1358,6 +1358,7 @@ def _validate(
     if isinstance(expected, list):
         allowed = tuple(str(item) for item in expected)
         if value is None and "null" in allowed:
+            _validate({**schema, "type": "null"}, value, path=path)
             return
         concrete = tuple(item for item in allowed if item != "null")
         if len(concrete) != 1:
@@ -1421,6 +1422,9 @@ def _validate(
             raise ValueError(f"{path} must be at least {minimum}")
         if maximum is not None and value > maximum:
             raise ValueError(f"{path} must be at most {maximum}")
+    elif expected == "null":
+        if value is not None:
+            raise ValueError(f"{path} must be null")
     elif expected == "boolean":
         if not isinstance(value, bool):
             raise ValueError(f"{path} must be a boolean")
