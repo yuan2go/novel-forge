@@ -35,6 +35,7 @@ from novel_forge.modules.command_kernel.lease_heartbeat import LeaseHeartbeatGua
 from novel_forge.modules.command_kernel.external_effect_adapters import (
     ExternalEffectAdapter,
     ExternalEffectAdapterError,
+    MinioObjectStoreExternalEffectAdapter,
 )
 from novel_forge.modules.provider_control.contracts import (
     ProviderCapabilityProfile,
@@ -532,12 +533,6 @@ def dispatch_external_effect(
     budget_reservation_id: str = "",
     pre_send_assertion: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
-    assert_legacy_execution_allowed(
-        component="ExternalEffect adapter",
-        gateway_backed=bool(
-            getattr(adapter, "production_execution_gateway_backed", False)
-        ),
-    )
     effect = _read_effect(database_url, effect_id, context.project_id)
     if adapter.provider != effect["provider"]:
         raise KernelError(
@@ -545,6 +540,7 @@ def dispatch_external_effect(
             "adapter provider differs from the frozen effect intent",
         )
     _validate_frozen_adapter_capability(effect, adapter)
+    _admit_effect_adapter(database_url, context, effect=effect, adapter=adapter)
     dispatch = prepare_effect_dispatch(database_url, context, effect_id=effect_id)
     lease = acquire_effect_dispatch(
         database_url,
@@ -1799,6 +1795,34 @@ def compensate_external_effect(
         completion_policy=effect["completion_policy"],
         compensates_effect_id=effect_id,
     )
+
+
+def _admit_effect_adapter(database_url: str, context: EffectCommandContext, *, effect: dict[str, Any],
+                          adapter: ExternalEffectAdapter) -> None:
+    if (type(adapter) is MinioObjectStoreExternalEffectAdapter
+            and effect["effect_type"] == "blob.upload" and effect["capability"] == "object_store.put"):
+        payload = effect["request_payload"]
+        with AuthorityUnitOfWork(database_url) as uow:
+            repository = uow.repositories.external_effects
+            _require_context(repository, context)
+            blob = uow.repositories.asset_blobs.blob_for_update(str(payload.get("blob_id") or ""))
+            if (effect["operation_id"] != context.operation_id
+                    or _hash(payload) != effect["request_hash"]
+                    or blob["upload_effect_id"] != effect["external_effect_id"]
+                    or blob["project_id"] != context.project_id
+                    or any(blob[key] != payload.get(key) for key in (
+                        "project_id", "provider", "object_key", "expected_hash", "expected_size", "media_type"))
+                    or blob["provider"] != adapter.provider):
+                raise KernelError("BLOB_EXECUTION_ADMISSION_CONFLICT", "Storage intent differs from its Authority reservation")
+            _record(repository, context, effect["external_effect_id"], "external_effect.storage_admitted", {
+                "policy_version": "authority-blob-execution.v1", "blob_id": blob["blob_id"],
+                "request_hash": effect["request_hash"], "gateway_backed": False,
+                "production_verified": False,
+            })
+            uow.commit()
+        return
+    assert_legacy_execution_allowed(component="ExternalEffect adapter",
+        gateway_backed=bool(getattr(adapter, "production_execution_gateway_backed", False)))
 
 
 def _read_effect(database_url: str, effect_id: str, project_id: str) -> dict[str, Any]:

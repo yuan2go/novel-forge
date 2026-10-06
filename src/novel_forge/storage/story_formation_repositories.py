@@ -837,9 +837,14 @@ class StoryFormationRepository:
         rows = self.cursor.fetchall()
         unique = set(tuple(str(value) for value in row) for row in rows)
         supervised = len(unique) != 1
+        creative = False
         if supervised:
             from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
             approved = approved_design_receipt(self.cursor, project_id=project_id, book_id=book_id, asset_version_id=candidate_id)
+            if approved is None:
+                from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+                approved = approved_validation_design(self.cursor, project_id=project_id, book_id=book_id, asset_version_id=candidate_id)
+                creative = approved is not None
             if approved is None or approved["lifecycle"] != "ACTIVE":
                 raise KernelError("FOUNDATION_GENERATION_EVIDENCE_REQUIRED", "Foundation needs independent qualification or exact supervised author approval")
             self.cursor.execute("""SELECT generation.generator_operation_name, version.content_hash, version.schema_version,
@@ -861,7 +866,7 @@ class StoryFormationRepository:
             content_hash=row[1], schema_version=row[2], generation_operation_id=row[3],
             qualification_evidence_asset_version_id=row[4], qualification_hash=row[5],
             activation_operation_id=row[6], candidate_asset_version_ids=candidates, selection_reason=reasons,
-            selection_basis="AUTHOR_COMPARISON" if supervised else "INDEPENDENT_COMPARISON",
+            selection_basis="TEMPLATE_VALIDATION" if creative else "AUTHOR_COMPARISON" if supervised else "INDEPENDENT_COMPARISON",
         )
         self._require_qualification(project_id, layer)
         return layer
@@ -906,7 +911,20 @@ class StoryFormationRepository:
             [list(requested)],
         )
         rows = {str(row[0]): row for row in self.cursor.fetchall()}
-        if selected.selection_basis != "INDEPENDENT_COMPARISON":
+        if selected.selection_basis == "TEMPLATE_VALIDATION":
+            from novel_forge.modules.story_design_authority.creative_validation import candidate_validation, approved_validation_design
+            self.cursor.execute("SELECT project_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s", [formation_run_id])
+            project_id, book_id = self.cursor.fetchone()
+            if set(rows) != set(requested):
+                raise KernelError("CREATIVE_SEARCH_CANDIDATE_EVIDENCE_INVALID", "Missing validation candidates")
+            for identity, row in rows.items():
+                scope = candidate_validation(self.cursor, project_id=project_id, asset_version_id=identity)
+                if scope is None or scope["book_id"] != book_id or row[2:4] != ("STRUCTURALLY_VALID", "CURRENT") or row[6] != "CLEAR":
+                    raise KernelError("CREATIVE_SEARCH_CANDIDATE_EVIDENCE_INVALID", "Validation comparison requires exact structural evidence")
+            approved = approved_validation_design(self.cursor, project_id=project_id, book_id=book_id, asset_version_id=selected.asset_version_id)
+            if approved is None or approved["lifecycle"] != "ACTIVE":
+                raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "Validation selection is not active")
+        elif selected.selection_basis != "INDEPENDENT_COMPARISON":
             from novel_forge.modules.story_design_authority.author_supervision import candidate_supervision, approved_design_receipt
             self.cursor.execute("SELECT project_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s", [formation_run_id])
             project_id, book_id = self.cursor.fetchone()
@@ -1037,7 +1055,7 @@ class StoryFormationRepository:
             or expected_scope.value != layer.role.value
             or str(row[8]) != layer.role.value
             or tuple(str(item) for item in row[9:13])
-            != ("ACTIVE", "SEMANTICALLY_VALID" if dict(row[14]).get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED" else "QUALIFIED", "APPROVED", "CURRENT")
+            != ("ACTIVE", "STRUCTURALLY_VALID" if dict(row[14]).get("creative_validation", {}).get("mode") == "CREATIVE_VALIDATION" else "SEMANTICALLY_VALID" if dict(row[14]).get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED" else "QUALIFIED", "APPROVED", "CURRENT")
             or str(row[13]) != layer.activation_operation_id
             or str(dict(row[14]).get("operation_id") or "")
             != layer.generation_operation_id
@@ -1225,6 +1243,14 @@ class StoryFormationRepository:
         row = self.cursor.fetchone()
         evidence = dict(row[4]) if row is not None else {}
         qualification = evidence.get("qualification")
+        if evidence.get("evidence", {}).get("creative_validation", {}).get("mode") == "CREATIVE_VALIDATION":
+            from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+            scope = evidence["evidence"]["creative_validation"]
+            approved = approved_validation_design(self.cursor, project_id=project_id, book_id=scope["book_id"], asset_version_id=layer.asset_version_id)
+            if (approved is None or approved["decision_asset_version_id"] != layer.qualification_evidence_asset_version_id
+                    or approved["decision_content_hash"] != layer.qualification_hash or approved["content_hash"] != layer.content_hash):
+                raise KernelError("FOUNDATION_VALIDATION_DRIFT", "Validation receipt differs from the exact Foundation")
+            return
         if evidence.get("evidence", {}).get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED":
             from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
             scope = evidence["evidence"]["author_supervision"]

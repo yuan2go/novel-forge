@@ -545,11 +545,29 @@ class ChapterAuthorityScheduler:
                     f"cannot admit {node.value} before predecessor Completion",
                 )
             if operation["status"] != "SUCCEEDED":
+                if node in QUALITY_GROUP_NODES and (operation["status"] in {
+                    "FAILED_RETRYABLE", "WAITING_GATE", "WAITING_APPROVAL",
+                    "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}
+                    or (operation["status"] == "READY" and operation.get("failed_attempts", 0) > 0)):
+                    for sibling in QUALITY_GROUP_NODES:
+                        ready = children.get(sibling)
+                        if (ready and ready["status"] in {"READY", "ADMITTED"}
+                                and (operation["status"] != "READY"
+                                     or ready.get("failed_attempts", 0) < operation.get("failed_attempts", 0))):
+                            return sibling, ready
                 return node, operation
         # INVARIANT: coordinate_saga should have made the Saga terminal after all children succeeded.
         raise KernelError(
             "CHAPTER_SAGA_COORDINATION_LAG", "completed graph is not terminal"
         )
+
+    def has_ready_quality_work(self, *, project_id: str, root_operation_id: str) -> bool:
+        root, saga, children = self._graph_state(project_id, root_operation_id)
+        if root["status"] in {"FAILED_FINAL", "CANCELLED", "DEAD_LETTER"} or saga["status"] in {"FAILED", "CANCELLED"}:
+            return False
+        if any(row["status"] in {"FAILED_FINAL", "CANCELLED", "DEAD_LETTER"} for row in children.values()):
+            return False
+        return any(children.get(node, {}).get("status") in {"READY", "ADMITTED"} for node in QUALITY_GROUP_NODES)
 
     def _admit_node(
         self,
@@ -1534,7 +1552,10 @@ class ChapterAuthorityScheduler:
             uow.cursor.execute(
                 """
                 SELECT operation_id, definition_name, status,
-                       COALESCE((definition_snapshot->'retry_policy'->>'max_attempts')::int, 1)
+                       COALESCE((definition_snapshot->'retry_policy'->>'max_attempts')::int, 1),
+                       (SELECT count(*) FROM authority_attempt attempt
+                           WHERE attempt.operation_id=authority_operation.operation_id
+                             AND attempt.status='FAILED_RETRYABLE')
                 FROM authority_operation
                 WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
                   AND idempotency_key=ANY(%s)
@@ -1555,6 +1576,7 @@ class ChapterAuthorityScheduler:
                 "definition_name": item[1],
                 "status": item[2],
                 "max_attempts": item[3],
+                "failed_attempts": int(item[4]),
             }
             for item in rows
             if str(item[1]) in by_definition

@@ -688,6 +688,12 @@ class CapabilityPackAuthorityRepository:
             "decision": ApprovalDecision(decision).value,
         }
 
+    def require_admitted_compilation(self, compilation_id: str, *, project_id: str, environment: str, book_id: str) -> dict[str, Any]:
+        from novel_forge.modules.capability_pack_authority.validation_admission import require_validation_admission
+        compilation = self.require_compilation(compilation_id, project_id=project_id, for_update=True)
+        admitted = require_validation_admission(self, compilation, environment=environment, book_id=book_id)
+        return admitted if admitted is not None else self.require_approved_compilation(compilation_id, project_id=project_id)
+
     def require_approved_compilation(
         self, compilation_id: str, *, project_id: str = ""
     ) -> dict[str, Any]:
@@ -812,7 +818,7 @@ class CapabilityPackAuthorityRepository:
     ) -> dict[str, Any]:
         self._validate_scope_exists(scope)
         CapabilityPackApprovalScope.from_payload(
-            dict(compilation["approval_scope"])
+            dict(compilation.get("admission_scope") or compilation["approval_scope"])
         ).require_admission(
             scope=scope,
             environment=environment,
@@ -2060,6 +2066,19 @@ class CapabilityPackAuthorityRepository:
                 "CAPABILITY_PACK_DEPLOYMENT_BLOCKED",
                 "disabled, retired, or rollback-required Deployment cannot activate",
             )
+        from novel_forge.modules.capability_pack_authority.validation_admission import require_validation_admission
+        compilation = self.require_compilation(str(deployment["compilation_id"]))
+        admitted = require_validation_admission(self, compilation, environment=str(deployment["environment"]), book_id=str(deployment.get("book_id") or ""))
+        if admitted is not None:
+            CapabilityPackApprovalScope.from_payload(admitted["admission_scope"]).require_admission(
+                scope=CapabilityPackScope(ScopeType(str(deployment["target_scope_type"])),
+                    project_id=str(deployment.get("project_id") or ""), workspace_id=str(deployment.get("workspace_id") or ""), book_id=str(deployment.get("book_id") or "")),
+                environment=str(deployment["environment"]), runtime_profile=str(deployment["runtime_profile"]),
+                release_channel=str(deployment["release_channel"]), workflow_definition_ref=str(deployment["workflow_definition_ref"]))
+            deprecation = self.latest_deprecation(str(deployment["pack_id"]), str(deployment["pack_version"]))
+            if deprecation and deprecation["retired"]:
+                raise KernelError("CAPABILITY_PACK_VERSION_RETIRED", "retired validation Pack cannot activate")
+            return
         approval = self.latest_approval(str(deployment["compilation_id"]))
         if approval is None or approval["decision"] != ApprovalDecision.APPROVED.value:
             raise KernelError(

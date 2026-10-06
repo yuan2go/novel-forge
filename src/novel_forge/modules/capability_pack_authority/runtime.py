@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 import json
 from typing import Any, Mapping
 
@@ -9,7 +8,6 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 from .domain import (
-    ApprovalDecision,
     CapabilityPackArtifactMaterialization,
     CapabilityPackAttemptSnapshot,
     CapabilityPackExecutionSnapshot,
@@ -20,7 +18,6 @@ from .domain import (
     MaterializedCapabilityArtifact,
     canonical_hash,
 )
-from .policy import CapabilityPackApprovalScope
 
 
 @dataclass(frozen=True, slots=True)
@@ -927,30 +924,10 @@ def _validate_deployment(
             "CAPABILITY_PACK_DEPLOYMENT_COMPATIBILITY_DRIFT",
             "Pack Deployment is incompatible with runtime: " + ", ".join(mismatches),
         )
-    approval = repository.latest_approval(str(deployment["compilation_id"]))
-    if (
-        approval is None
-        or approval["decision"] != ApprovalDecision.APPROVED.value
-        or approval["compilation_hash"] != deployment["compilation_hash"]
-        or (
-            approval["expires_at"] is not None
-            and approval["expires_at"] <= datetime.now(timezone.utc)
-        )
-    ):
-        raise KernelError(
-            "CAPABILITY_PACK_APPROVAL_INVALID",
-            "Pack Deployment no longer has a current exact approval",
-        )
-    CapabilityPackApprovalScope.from_payload(
-        dict(approval["approval_scope"])
-    ).require_admission(
-        scope=scope,
-        environment=request.environment,
-        runtime_profile=request.runtime_profile,
-        release_channel=request.release_channel,
-        workflow_definition_ref=request.workflow_definition_ref,
-        limitations=tuple(approval.get("structured_limitations") or ()),
-    )
+    from .validation_admission import require_deployment_authorization
+    require_deployment_authorization(repository, deployment, scope=scope,
+        environment=request.environment, runtime_profile=request.runtime_profile,
+        release_channel=request.release_channel, workflow_definition_ref=request.workflow_definition_ref)
     deprecation = repository.latest_deprecation(
         str(deployment["pack_id"]), str(deployment["pack_version"])
     )

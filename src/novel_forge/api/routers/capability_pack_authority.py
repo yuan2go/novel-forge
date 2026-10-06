@@ -133,6 +133,10 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             compilation_id=compilation_id,
         )
 
+    @router.post("/compilations/{compilation_id}/validation-admission")
+    def validation_admission(compilation_id: str, request: CapabilityPackCommandRequest) -> dict[str, Any]:
+        return execute("capability_pack.validation.admit", request, compilation_id=compilation_id)
+
     @router.post("/deployments")
     def create_deployment(
         request: CapabilityPackCommandRequest,

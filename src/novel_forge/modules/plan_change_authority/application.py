@@ -850,9 +850,18 @@ class PostgresPlanChangeAuthority:
         state = self.story_design.require(
             project_id=project_id, asset_version_id=asset_version_id
         )
+        from novel_forge.modules.story_design_authority.creative_validation import candidate_validation
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            validation = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=asset_version_id)
+        admitted = state["qualification"] == "QUALIFIED" or (
+            validation is not None
+            and state["qualification"] == "STRUCTURALLY_VALID"
+            and state["execution_evidence"].get("creative_validation") == validation
+        )
         if (
             state["approval"] not in {"PENDING", "APPROVED"}
-            or state["qualification"] != "QUALIFIED"
+            or not admitted
             or state["lifecycle"] != "MATERIALIZED"
         ):
             raise KernelError(

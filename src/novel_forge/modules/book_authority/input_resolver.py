@@ -705,6 +705,23 @@ class BookProductionInputResolver:
         from novel_forge.modules.production_execution.author_supervision import selected_book_supervision
         from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt, reusable_qualified_design_receipt
 
+        from novel_forge.modules.book_design_authority.creative_validation import approved_validation_book
+        from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+        from novel_forge.modules.production_execution.execution_template import selected_book_template
+        validation_book = approved_validation_book(cursor, project_id=command.project_id, book_id=command.book_id, asset_version_id=book_design_version)
+        if validation_book is not None:
+            if selected_book_template(cursor, project_id=command.project_id, book_id=command.book_id) is None:
+                raise KernelError("CREATIVE_DESIGN_STRICT_PROOF_REQUIRED", book_design_version)
+            receipts = []
+            for stage, ids in stage_assets:
+                for identity in ids:
+                    receipt = validation_book if stage == "book_design.propose" else approved_validation_design(cursor, project_id=command.project_id, book_id=command.book_id, asset_version_id=identity)
+                    if receipt is None or receipt["lifecycle"] != "ACTIVE":
+                        raise KernelError("CREATIVE_DESIGN_APPROVAL_REQUIRED", identity)
+                    receipts.append({**receipt, "design_layer": stage})
+            return {"schema_version": "creative-validation-design-admission.v1", "admission": "CREATIVE_VALIDATION_DESIGN",
+                "project_id": command.project_id, "book_id": command.book_id, "book_version": command.expected_book_version,
+                "literary_qualification": "NOT_RUN", "receipts": receipts}
         author_design = approved_book_design_receipt(cursor, project_id=command.project_id,
             book_id=command.book_id, asset_version_id=book_design_version)
         book_supervision = selected_book_supervision(cursor, project_id=command.project_id, book_id=command.book_id)

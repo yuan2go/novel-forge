@@ -2154,6 +2154,11 @@ class _QualityGroupHandler:
             if request.work_requirements_enabled
             else None,
         )
+        if generated is not None:
+            from novel_forge.modules.chapter_quality_authority.creative_validation import model_quality_receipt
+            validation = model_quality_receipt(request, generated, target=revision.asset_version_id)
+            if validation is not None:
+                content["validation_receipt"] = validation
         content["quality_context_type"] = quality_context["type"]
         content["quality_context_digest"] = quality_context["context_digest"]
         content["quality_context_coverage"] = dict(quality_context["coverage_report"])
@@ -2314,6 +2319,10 @@ class _QualityHandler:
             context_bundle=context.content,
             evidence_reports=group_reports,
         )
+        from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
+        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id)
+        if admission is not None:
+            content["internal_admission"] = admission
         primary = _output(
             ChapterNode.QUALITY,
             content,
@@ -2664,6 +2673,9 @@ class _PublishGateHandler:
         canon = request.require_input("canon_patch")
         quality = request.require_input("quality_score_report")
         context = request.require_input("context_bundle")
+        if quality.content.get("internal_admission") is not None:
+            from novel_forge.modules.chapter_quality_authority.creative_validation import verify_internal_quality
+            verify_internal_quality(request.database_url, quality.content["internal_admission"], project_id=request.project_id)
         return _output(
             ChapterNode.PUBLISH_GATE,
             build_publish_gate(

@@ -277,7 +277,7 @@ class ModelCandidate:
     available: bool = True
     availability_reason: str = ""
     escalation_only: bool = False
-    quota_remaining: int = 0
+    quota_remaining: int | None = 0
     authorization_ref: str = ""
     model_revision: str = ""
     estimated_price_multiplier: str = "1"
@@ -312,7 +312,7 @@ class ModelCandidate:
             self.provider != "codex-cli" or self.escalation_only
             or self.pricing.accounting_basis != "ACCOUNT_ENTITLEMENT"
             or self.pricing.currency != "UNKNOWN" or not self.authorization_ref
-            or self.quota_remaining <= 0 or not self.authorized_tasks
+            or (self.quota_remaining is not None and self.quota_remaining <= 0) or not self.authorized_tasks
             or self.pricing.source != self.authorization_ref
             or self.pricing.version != self.capability_version
             or not self.model_revision
@@ -332,7 +332,7 @@ def authorized_codex_entitlement(candidate: Mapping[str, Any]) -> bool:
         return base
     return bool(base and scoped and price.get("source") == candidate.get("authorization_ref")
         and price.get("version") == candidate.get("capability_version")
-        and candidate.get("model_revision") and int(candidate.get("quota_remaining") or 0) > 0)
+        and candidate.get("model_revision") and (candidate.get("quota_remaining") is None or int(candidate.get("quota_remaining") or 0) > 0))
 
 
 @dataclass(frozen=True)
@@ -876,7 +876,7 @@ class CostAwareRouter:
                     or (policy.risk == "HIGH" and task.escalation_reason)
                 ):
                     reasons.append("ESCALATION_THRESHOLD_NOT_MET")
-                if candidate.quota_remaining <= 0 or not candidate.authorization_ref:
+                if (candidate.quota_remaining is not None and candidate.quota_remaining <= 0) or not candidate.authorization_ref:
                     reasons.append("ESCALATION_CAPACITY_OR_AUTHORIZATION_MISSING")
                 if escalations >= policy.max_escalations:
                     reasons.append("ESCALATION_LIMIT_REACHED")
@@ -944,16 +944,17 @@ class CostAwareRouter:
             candidate_budget = task.budget_snapshot.get("candidates", {}).get(
                 candidate.candidate_id, {}
             )
-            remaining_tokens = min(
+            channel_resources = candidate_budget.get("resource_control_version") == "billing-channel-resources.v1"
+            remaining_tokens = int(candidate_budget["remaining_tokens"]) if channel_resources else min(
                 task.remaining_tokens,
                 int(candidate_budget.get("remaining_tokens", task.remaining_tokens)),
             )
-            remaining_money = min(
+            remaining_money = Decimal(str(candidate_budget["remaining_money"] or "0")) if channel_resources else min(
                 Decimal(task.remaining_money),
-                Decimal(
-                    str(candidate_budget.get("remaining_money", task.remaining_money))
-                ),
+                Decimal(str(candidate_budget.get("remaining_money", task.remaining_money))),
             )
+            if channel_resources and candidate.provider == "deepseek" and not candidate_budget.get("paid_authorized"):
+                reasons.append("PAID_TEMPLATE_AUTHORIZATION_REQUIRED")
             if (
                 candidate_budget.get("remaining_calls") == 0
                 or task.input_tokens + task.output_tokens > remaining_tokens

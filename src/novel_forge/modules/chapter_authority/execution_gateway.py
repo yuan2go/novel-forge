@@ -4968,6 +4968,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
         account_authorization_ref: str = "",
         provider_call_caps: Mapping[str, int] | None = None,
         provider_token_caps: Mapping[str, int] | None = None,
+        resource_control_version: str = "",
     ) -> None:
         route_names = set(routes)
         if not _STAGES.issubset(route_names) or not route_names.issubset(
@@ -4996,7 +4997,10 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             and not self.account_authorization_ref
         ):
             raise ValueError("account entitlement requires an authorization reference")
-        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+        if resource_control_version not in {"", "billing-channel-resources.v1"}:
+            raise ValueError("unsupported billing channel resource contract")
+        self.resource_control_version = resource_control_version
+        if self.cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and not resource_control_version and (
             not self.provider_call_caps or not self.provider_token_caps
         ):
             raise ValueError(

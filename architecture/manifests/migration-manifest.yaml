@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261005_0149_zero_increment_chapter_outcome",
+  "head": "20261006_0156_resource_journal_indexes",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -152,6 +152,13 @@
     "20260927_0146_edition_prefix_inheritance",
     "20260927_0147_runtime_job_dispatch_pause",
     "20260928_0148_author_supervised_design",
-    "20261005_0149_zero_increment_chapter_outcome"
+    "20261005_0149_zero_increment_chapter_outcome",
+    "20261006_0150_creative_pack_admission",
+    "20261006_0151_creative_design_admission",
+    "20261006_0152_validation_realization_admission",
+    "20261006_0153_resource_opening_successor",
+    "20261006_0154_opening_resource_policy_succession",
+    "20261006_0155_unsent_resource_route_succession",
+    "20261006_0156_resource_journal_indexes"
   ]
 }

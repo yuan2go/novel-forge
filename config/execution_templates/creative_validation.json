@@ -1,0 +1,12 @@
+{
+  "version": "creative-execution-template.v1",
+  "book_id": "FROM_CURRENT_BOOK",
+  "mode": "CREATIVE_VALIDATION",
+  "allowed_candidates": [],
+  "member_authorization_ref": "FROM_AUTHENTICATED_MEMBERSHIP",
+  "deepseek": null,
+  "optional_enhancements": [],
+  "require_literary_qualification": false,
+  "require_independent_review": false,
+  "require_pack_human_approval": false
+}

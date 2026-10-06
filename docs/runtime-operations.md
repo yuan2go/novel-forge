@@ -481,6 +481,181 @@ query-plan and Compose runtime gates. The eight-domain controlled prose corpus i
 fixture data; its scripted expectations are not calibrated semantic evaluation. Only a
 separately authorized real-Provider/editorial campaign can establish creative quality.
 
+## Creative validation resource operations
+
+Treat the campaign commands and quota examples below as historical/strict contracts.
+They do not require a membership-only Book to allocate per-phase budgets. Paid DeepSeek
+execution must inherit an already authorized template; never infer spending permission
+from a credential or model name. Inspect the selected account and currency before send.
+
+For policy succession, preserve old frozen commands, Pack snapshots, Provider identities,
+usage and accepted chapters. Apply a successor only to unstarted work through its owning
+Authority. Reconcile RESERVED/HELD_UNKNOWN effects before replacement; cancellation
+without proof of no remote execution cannot release a paid reservation. Resuming the
+same Operation reuses its durable receipts and accepted cursor. A new task, release or
+run key cannot create a fresh spending allowance for the same work.
+
+Validation results advance internal production only with a native versioned validation
+admission receipt. Strict certification rejects missing required proofs. Omitted literary
+calibration, blind review and publication checks retain `NOT_RUN` and their reason.
+The shipped files are `config/execution_templates/creative_validation.json` and
+`config/execution_templates/creation_inputs.json`. The first selects optional objectives,
+allowed authenticated routes and inherited paid authorization; the second supplies genesis
+state and quality floors. `creation-request.v1` supplies the current work's brief, title,
+target chapter count, required language and optional chapter-length bounds. These inputs
+are frozen together as `formation-generation.v4`; continue uses that snapshot even if the
+template file later changes. A yield at the CLI execution-window boundary is a saved
+checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
+
+Configure the deployment once with the existing trusted local operator, exact release,
+PostgreSQL, MinIO and authenticated Codex configuration. The operator still needs native
+Project, Book, content, Pack compiler/deployer and Agent-admin permissions in the selected
+project. Workers retain their own existing scoped roles. The CLI uses the existing Project
+and Workspace Authorities to create missing scope; it rejects another Book's workspace,
+paused projects, another project's Formation and a replacement task key for an admitted
+Book. It never infers authority from the request's actor text.
+
+Set these mode selectors in that deployment configuration:
+
+```bash
+export NOVEL_FORGE_ENVIRONMENT=validation
+export NOVEL_FORGE_RESOURCE_CONTROL_VERSION=billing-channel-resources.v1
+export NOVEL_FORGE_PROVIDER_ROUTER=quality-cost-v1
+export NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true
+export NOVEL_FORGE_ROUTER_PROVIDERS=codex-cli
+export NOVEL_FORGE_MODEL_PROVIDER=codex-cli
+export NOVEL_FORGE_PLANNING_PROVIDER=codex-cli
+export NOVEL_FORGE_CODEX_ACCOUNTING_MODE=ACCOUNT_ENTITLEMENT
+export NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND=minio
+```
+
+Bind the already authorized primary model through `NOVEL_FORGE_CODEX_ROUTER_MODELS`
+(`codex-router-models.v1`: model, reasoning, PRIMARY/REFERENCE role, authorized task names,
+context and output limits) and `NOVEL_FORGE_CODEX_ESCALATION_MODEL`. Set the base model and
+Planning model consistently. Model limits are actual per-request capacity; they are not
+all-book token budgets. The deployment must supply the absolute Codex executable, existing
+authenticated `NOVEL_FORGE_CODEX_HOME`, empty isolated `NOVEL_FORGE_CODEX_WORKSPACE`, durable
+`NOVEL_FORGE_CODEX_EXECUTION_ROOT`, observed CLI version and executable digest, configuration
+identity, membership authorization reference, runtime host, auth profile and token-accounting
+evidence. Existing transport admission checks remain active. Do not invent a budget contract,
+call ceiling, token ceiling or an API pricing record for membership. The account reference
+can be obtained without exposing tokens or calling the Provider:
+
+```bash
+python -c 'import os; from novel_forge.modules.production_execution.membership_identity import observe_membership_identity; print(observe_membership_identity(os.environ["NOVEL_FORGE_CODEX_HOME"])["account_ref"])'
+```
+
+Store that observed reference as `NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF`; account drift or
+API-key authentication fails closed. A member-service error retains the current checkpoint
+and service cooldown. It cannot authorize a paid API substitution.
+
+For already authorized DeepSeek usage, also configure its actual credential privately,
+`NOVEL_FORGE_DEEPSEEK_BILLING_ACCOUNT_REF` and
+`NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE`, and include `deepseek` in the allowed Router
+providers. The paid template is an object containing `account_ref`, `currency: "USD"`,
+positive decimal-string `maximum_amount`, and the existing `authorization_ref`. The native
+template command copies that approved configuration into this Book's immutable policy.
+Without the file or matching account, DeepSeek is unavailable and Codex remains usable.
+Modern mixed-channel composition also disables DeepSeek when the inherited template file
+or credential is absent, before constructing paid adapters. Its configured per-call
+ceiling defaults to the inherited maximum; rendered cost reservations still use the
+actual request bound. Disabled-channel reasons are frozen in routing resource evidence.
+The deployment account declaration is bound to the actual credential fingerprint in each
+frozen route; the runtime rejects a changed key before send. This is a trusted local
+configuration binding, not an independently queried proof of the remote account owner.
+A credential rotation requires an explicit unexecuted successor; it never resets costs.
+The cap is maximum allowed spending, never a spending target. Settlement, reservations and
+held unknown results for the same Book count together across every phase and policy version.
+If a reported paid charge exceeds its reservation, the held amount is the greater of
+reservation and reported actual charge; further paid work cannot exploit an understated
+reservation. The anomaly requires reconciliation and never becomes a successful settlement.
+Engineering model-reference/benchmark consumption has a separate reporting category in the
+rolling work estimate but still contributes to the same paid ceiling. Phase lanes do not
+provide independent hard allowances. Neither a new Task nor a policy successor raises or
+resets the Book's paid ceiling.
+
+Save the current author request as a JSON file. Its closed shape is:
+
+```json
+{
+  "version": "creation-request.v1",
+  "title": "Current author title",
+  "target_chapters": 180,
+  "language_contract": {"required_language": "zh-CN"},
+  "chapter_length": {"minimum": 1500, "maximum": 4000},
+  "brief": {
+    "creative_brief_contract_version": "creative-brief-v2",
+    "idea": "The current author's original premise and intended ending",
+    "genre": "The current author's genre and style",
+    "audience": "The current author's intended readers",
+    "constraints": ["The author's required structure and quality constraints"],
+    "source_boundaries": ["Original expression; references supply governed abstractions only"]
+  }
+}
+```
+
+Replace the illustrative values with the original work requirements; the CLI supplies no
+sample target or genre. Omitting chapter length retains the selected template's floor.
+Run from the repository with its installed Python environment and configured resources:
+
+```bash
+novel-forge authority-migrate
+novel-forge authority-creation start \
+  --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-id "$BOOK" \
+  --input-file "$WORK_REQUEST" --idempotency-key "$CREATION_KEY" \
+  --repository-root "$PWD" --maximum-ticks 100 --work-window-seconds 300
+novel-forge authority-creation continue \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
+  --repository-root "$PWD" --maximum-ticks 100 --work-window-seconds 300
+```
+
+The start result supplies the original Formation identity. Preserve it and the same
+creation key; repeat start with identical input or use continue. Existing workers may
+continue queued native jobs under the same deployment, and repeated CLI windows use the
+same durable jobs, effects, exports and accepted cursor. `COMPLETED` requires the native
+Book completion state; `YIELDED_CHECKPOINT` and dependency/reconciliation reasons do not
+claim completion. Independent review remains required when selected: an exhausted paid
+channel cannot be replaced with an ineligible self-review. A safe substitute uses an
+authorized independent model or saves the dependent step's checkpoint.
+
+Historical Formation v1-v3 continuation requires its original creation-input policy through
+`--creation-policy-file`; historical successful effects retain their frozen routing and
+Pack snapshots. Bind a native resource successor for *new work* through the existing
+policy owner before continuing an older finite-cap Opening:
+
+```bash
+novel-forge authority-execution-template \
+  --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-id "$BOOK" \
+  --policy-version "$RESOURCE_POLICY_VERSION" --idempotency-key "$RESOURCE_POLICY_KEY"
+novel-forge authority-opening-resource-successor \
+  --project-id "$PROJECT" --opening-run-id "$OPENING_RUN" \
+  --expected-version "$OPENING_VERSION" --idempotency-key "$OPENING_RESOURCE_KEY"
+```
+
+This appends `book-opening-resource-successor.v1` while preserving the original scope,
+policy hash, node receipts and completed content. Continue adopts it automatically when
+the configured runtime is modern and the exact native template permits it. Existing
+operations keep their former policy; only operations created after admission select the
+successor. Live leases and unresolved effects/reservations require native reconciliation
+before adoption. Failed Opening continuation uses the existing versioned assessment and
+recovery fence; failures remain in history. A zero-work capacity continuation also supports
+the versioned membership policy, retaining its original causal/fencing requirements.
+Pay-reservation races cancel only a proven never-sent intent without dispatch or reservation,
+record its denial, and create a distinct frozen route intent. Unknown sends cannot enter
+that path. No terminal history or accepted content is rewritten.
+
+The applicable engineering matrix is the focused routing, budget, Pack, owner/output-contract
+and quality tests; PostgreSQL channel accounting, native Pack admission, Opening succession,
+clean installation and previous-head migration; native CLI admission; and the controlled
+process `test_creative_validation_native_controlled_process_to_internal_acceptance` in
+`tests/integration/test_synthesis_formation_postgres.py`. Run integration modules serially
+in a disposable database because their cleanup shares Authority tables. The controlled
+process supplies synthetic auth and responses, exercising the real entry, renderer,
+process protocol, state owners and recovery; it proves no real membership entitlement,
+paid-account permission, literary quality or strict release qualification. Before deployment,
+run the separately governed full same-release matrix below and authorized real main-chain
+validation. Real-call evidence that was not collected remains `NOT_RUN`.
+
 ## Credentialed Provider qualification
 
 The cost-aware router replacement is not release-qualified. In `production`, model
@@ -2557,7 +2732,9 @@ Take a private backup and verify its restore before forward migration. Check obj
 and native references, run/Effect/reservation fingerprints, release/Schema/Pack/Provider
 identities, health and process rebuild under the brake. Preserve unknown costs/effects and
 isolate their exact scope; do not replay a timed-out external call merely to obtain a clean
-status. Resume only a scope with valid finite authorization and current task qualification.
+status. Resume strict or historical scopes only with their exact required authorization and
+qualification. A native creative template uses its scoped admission and authenticated
+resource contract; membership has no cumulative budget, and paid caps remain unchanged.
 Do not roll back accepted history; compatible code recovery or forward repair is required.
 After checking those native records, use `authority-runtime resume` with the same project
 and expected database plus its current `--expected-version`, a new `--idempotency-key`
@@ -2662,3 +2839,55 @@ runtime dispatch control, fresh/upgrade migration and the same-Book native verti
 Run actual Editor/API operations after relevant changes. Scripted outputs must stay outside
 real qualification and production statistics. Full P0/backend/PostgreSQL/Compose/UI/remote
 CI matrices are not implied by this targeted package evidence.
+
+Creation namespaces its command keys by project and Book. Default project-owned Pack
+identities use a deterministic project digest; configured explicit Pack IDs are retained.
+The same IDs are supplied to all native runtime compositions on start and continuation,
+so another project's private Pack cannot be borrowed accidentally.
+
+The native creation driver consumes a frozen Formation `formation-generation.v4`
+request. Its work title, chapter target, language contract and creation-input profiles
+come from the current request; it does not infer a short sample target. The driver
+advances existing Formation and Opening RuntimeJobs, then starts the resolved Book
+once and drives its existing coordination and Chapter workers. Continuation looks up
+the same Formation-derived Opening and Book identity before creating any genesis
+inputs. Bounded worker ticks save an existing checkpoint; the CLI renews its execution window
+and continues by default until completion or a real dependency/failure. Use
+`--yield-after-window` for an external scheduler that owns subsequent invocation. Three
+windows without durable Formation/Provider/accepted-cursor progress return
+`CREATION_NO_PROGRESS`. Windows are execution controls, never Book resource budgets.
+They never reduce the Book target or declare completion at a pilot cursor. Frozen profiles remain unchanged on
+resume. Historical v1-v3 Formation runs use their original explicit creation policy.
+
+Absent an explicit context policy, creation derives its context plan from the authorized
+PRIMARY Codex catalog windows, subtracting each output allowance. World execution uses
+`world-production-policy.v4` within its existing 512000 configurable ceiling. Explicit
+policies remain frozen. These estimates never override complete rendered-request admission.
+
+Native `blob.upload` export uses the Command Kernel's Authority-bound storage admission,
+not a model route or a model budget. The exact built-in MinIO adapter must match the frozen
+Effect and Blob reservation's project, operation, provider, key, size and hash. Admission
+is journaled separately from gateway evidence; dispatch, lease, fence, receipt verification
+and unknown reconciliation remain mandatory. Other adapters retain the controlled gateway
+requirement, including every model and external tool action.
+
+Native Chapter quality fanout continues ready independent groups while a sibling waits
+for retry, qualification or reconciliation. It cannot aggregate or accept without every
+required result. The driver returns the durable checkpoint and owning error code only
+when no remaining independent group can run; terminal and security failures retain their
+existing failure handling.
+
+Creation continuation may invoke the existing native Formation resume command for an
+AUTO-authorized creative run with the same operator and frozen inputs. It performs at
+most one recovery per invocation and counts durable failures for the same stage across
+all RuntimeJobs; three failures without stage progress require intervention. Unknown,
+in-flight, terminally failed Effects and live leases block automatic retry. Worker errors
+return the stored checkpoint with the original error code. Exact approval waits and
+semantic/contract failures retain their owning Authority recovery requirements.
+
+An unstarted failed historical Opening can receive a resource-policy successor through
+its existing `continue_unstarted_with_budget` Authority command. Version 2 binds the
+exact native creative template, new per-call resource policy and zero-work evidence.
+The historical Opening, budget snapshot and failure remain immutable. An Opening with
+any dispatched Effect, reservation, output or completed node requires its ordinary
+reconciliation/recovery path; the zero-work successor cannot discard that evidence.

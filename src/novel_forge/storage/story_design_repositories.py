@@ -433,14 +433,16 @@ class StoryDesignRepository:
                     )
             qualification = "QUALIFIED"
         elif transition == "SUBMIT_APPROVAL" and (qualification == "QUALIFIED" or
-                qualification == "SEMANTICALLY_VALID" and evidence.get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED"):
+                qualification == "SEMANTICALLY_VALID" and evidence.get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED" or
+                qualification == "STRUCTURALLY_VALID" and evidence.get("creative_validation", {}).get("mode") == "CREATIVE_VALIDATION"):
             approval = "PENDING"
         elif transition == "APPROVE" and approval == "PENDING":
             approval = "APPROVED"
         elif (
             transition == "ACTIVATE"
             and (qualification == "QUALIFIED" or qualification == "SEMANTICALLY_VALID"
-                 and evidence.get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED")
+                 and evidence.get("author_supervision", {}).get("mode") == "AUTHOR_SUPERVISED" or
+                 qualification == "STRUCTURALLY_VALID" and evidence.get("creative_validation", {}).get("mode") == "CREATIVE_VALIDATION")
             and approval == "APPROVED"
             and freshness == "CURRENT"
         ):

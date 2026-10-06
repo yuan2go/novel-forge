@@ -24,9 +24,9 @@ class BookOpeningTopologyBudget:
     arc_count: int
     calls_per_search: int
     reserved_search_count: int
-    provider_call_capacity: int
+    provider_call_capacity: int | None
     reserved_provider_calls: int
-    max_volume_count: int
+    max_volume_count: int | None
 
     @property
     def minimum_topology_provider_calls(self) -> int:
@@ -43,6 +43,8 @@ class BookOpeningTopologyBudget:
 
     def require_volume_count(self, volume_count: int) -> None:
         required = self.provider_calls_for(volume_count=volume_count)
+        if self.contract_version == "book-opening-topology-workload.v3":
+            return
         if volume_count > self.max_volume_count or (
             required + self.reserved_provider_calls > self.provider_call_capacity
         ):
@@ -86,6 +88,11 @@ class BookOpeningTopologyBudget:
             "reserved_provider_calls",
             "max_volume_count",
         )
+        resource = value.get("contract_version") == "book-opening-topology-workload.v3"
+        if resource:
+            if value["provider_call_capacity"] is not None or value["max_volume_count"] is not None:
+                raise ValueError("Membership workload cannot declare cumulative capacity")
+            integer_fields = tuple(field for field in integer_fields if field not in {"provider_call_capacity", "max_volume_count"})
         if any(
             not isinstance(value[field], int)
             or isinstance(value[field], bool)
@@ -100,12 +107,12 @@ class BookOpeningTopologyBudget:
             arc_count=int(value["arc_count"]),
             calls_per_search=int(value["calls_per_search"]),
             reserved_search_count=int(value["reserved_search_count"]),
-            provider_call_capacity=int(value["provider_call_capacity"]),
+            provider_call_capacity=None if resource else int(value["provider_call_capacity"]),
             reserved_provider_calls=int(value["reserved_provider_calls"]),
-            max_volume_count=int(value["max_volume_count"]),
+            max_volume_count=None if resource else int(value["max_volume_count"]),
         )
         if (
-            budget.contract_version != BOOK_OPENING_TOPOLOGY_BUDGET_CONTRACT_VERSION
+            budget.contract_version not in {BOOK_OPENING_TOPOLOGY_BUDGET_CONTRACT_VERSION, "book-opening-topology-workload.v3"}
             or budget.policy_contract_version
             != BOOK_OPENING_PROVIDER_BUDGET_POLICY_CONTRACT_VERSION
             or not _is_sha256_digest(budget.policy_hash)
@@ -115,6 +122,8 @@ class BookOpeningTopologyBudget:
             != budget.calls_per_search * budget.reserved_search_count
         ):
             raise ValueError("Opening topology budget contract is invalid")
+        if resource:
+            return budget
         budget.require_volume_count(budget.max_volume_count)
         if (
             budget.provider_calls_for(volume_count=budget.max_volume_count + 1)
@@ -160,6 +169,11 @@ def assess_book_opening_topology_budget(
             raise ValueError(f"Opening budget {field} must be a positive integer")
         return int(value)
 
+    if policy.get("resource_control_version") == "billing-channel-resources.v1":
+        return BookOpeningTopologyBudget.from_mapping({"contract_version": "book-opening-topology-workload.v3",
+            "policy_contract_version": policy_contract_version, "policy_hash": policy_hash, "arc_count": arc_count,
+            "calls_per_search": BOOK_OPENING_PROVIDER_CALLS_PER_SEARCH, "reserved_search_count": BOOK_OPENING_RESERVED_SEARCH_COUNT,
+            "provider_call_capacity": None, "reserved_provider_calls": BOOK_OPENING_PROVIDER_CALLS_PER_SEARCH, "max_volume_count": None})
     call_limit = positive_int("provider_call_limit")
     token_limit = positive_int("token_limit")
     per_call_token_limit = positive_int("per_call_token_limit")

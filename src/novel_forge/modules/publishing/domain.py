@@ -132,6 +132,14 @@ def prepare_internal_release(
             or approval_facts.get("decision") == "APPROVED"
         ),
     }
+    strict_checks = dict(checks)
+    validation = quality.get("internal_admission")
+    if validation is not None:
+        checks = {"quality_internal_admission": validation.get("version") == "creative-quality-admission.v1"
+                and validation.get("status") == "INTERNAL_ADMITTED" and not validation.get("blocked_dimensions")
+                and validation.get("target_asset_version_id") == revision_asset_version_id,
+            "latest_rereview_passed": strict_checks["latest_rereview_passed"],
+            "canon_consistent": strict_checks["canon_consistent"]}
     if not project_id or not all(checks.values()):
         failed = sorted(key for key, passed in checks.items() if not passed)
         return {
@@ -149,13 +157,16 @@ def prepare_internal_release(
                 "rollback_to_asset_version_id": ((revision.get("best_candidate_snapshot") or {}).get("rollback_asset_version_id") or revision.get("source_draft_version_id", "")),
                 "release_not_externally_published": True,
             },
-            "publish_gate_contract_version": "internal-publish-gate-v3",
+            "publish_gate_contract_version": "creative-internal-publish.v1" if validation is not None else "internal-publish-gate-v3",
         }
     return {
         "project_id": project_id,
         "chapter": revision["chapter"],
-        "gate": "PASSED",
-        "release_readiness": "INTERNAL_REVIEW_RELEASE",
+        "gate": "INTERNAL_ADMITTED" if validation is not None else "PASSED",
+        **({"internal_admission": validation, "strict_publish_checks": strict_checks,
+            "omitted_checks": {"publication_approval": {"status": "NOT_RUN", "reason": "internal creative validation"},
+                "literary_calibration": {"status": "NOT_RUN", "reason": "native template excludes literary calibration"}}} if validation is not None else {}),
+        "release_readiness": "INTERNAL_CREATIVE_VALIDATION" if validation is not None else "INTERNAL_REVIEW_RELEASE",
         "external_publish_permitted": False,
         "production_verified": False,
         "fixture_protocol_only": bool(quality.get("fixture"))
@@ -178,7 +189,7 @@ def prepare_internal_release(
             "rollback_to_asset_version_id": ((revision.get("best_candidate_snapshot") or {}).get("rollback_asset_version_id") or revision.get("source_draft_version_id", "")),
             "release_not_externally_published": True,
         },
-        "publish_gate_contract_version": "internal-publish-gate-v3",
+        "publish_gate_contract_version": "creative-internal-publish.v1" if validation is not None else "internal-publish-gate-v3",
     }
 
 
@@ -227,7 +238,12 @@ def build_export_blob_manifest(
     publish_gate: dict[str, Any],
     publish_gate_asset_version_id: str,
 ) -> dict[str, Any]:
-    if publish_gate.get("gate") != "PASSED":
+    validation = publish_gate.get("internal_admission")
+    internal = (publish_gate.get("gate") == "INTERNAL_ADMITTED" and validation is not None
+        and validation.get("status") == "INTERNAL_ADMITTED"
+        and validation.get("target_asset_version_id") == revision_asset_version_id
+        and publish_gate.get("publish_gate_contract_version") == "creative-internal-publish.v1")
+    if publish_gate.get("gate") != "PASSED" and not internal:
         failed = ", ".join(
             str(item) for item in publish_gate.get("failed_checks") or ()
         )
@@ -272,9 +288,14 @@ def finalize_blob_verified_release(
             "final release requires exactly one frozen content Blob binding",
         )
     blob = content_blobs[0]
+    validation = quality.get("internal_admission")
+    internal = (validation is not None and validation == publish_gate.get("internal_admission")
+        and validation.get("status") == "INTERNAL_ADMITTED"
+        and publish_gate.get("publish_gate_contract_version") == "creative-internal-publish.v1"
+        and publish_gate.get("gate") == "INTERNAL_ADMITTED")
     checks = {
-        "pre_release_gate_passed": publish_gate.get("gate") == "PASSED",
-        "quality_gate_passed": quality.get("gate")
+        "pre_release_gate_passed": publish_gate.get("gate") == "PASSED" or internal,
+        "quality_gate_passed": internal or quality.get("gate")
         in {
             "PASSED",
             "PASSED_WITH_UNCALIBRATED",
@@ -324,8 +345,10 @@ def finalize_blob_verified_release(
     return {
         "project_id": project_id,
         "chapter": export_package["chapter"],
-        "gate": "PASSED",
-        "release_status": "INTERNAL_RELEASE_FINALIZED",
+        "gate": "INTERNAL_ADMITTED" if internal else "PASSED",
+        "release_status": "INTERNAL_VALIDATION_FINALIZED" if internal else "INTERNAL_RELEASE_FINALIZED",
+        **({"internal_admission": validation, "final_gate_contract_version": "creative-internal-finalize.v1",
+            "strict_certification_eligible": False} if internal else {}),
         "release_readiness": "INTERNAL_REVIEW_RELEASE",
         "external_publish_permitted": False,
         "checks": checks,

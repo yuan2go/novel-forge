@@ -641,6 +641,29 @@ def get_creative_budget(database_url: str, project_id: str) -> dict[str, Any]:
 def assert_creative_budget_dispatch(
     cursor: Any, *, project_id: str, external_effect_id: str, reservation_id: str,
 ) -> None:
+    from types import SimpleNamespace
+    from novel_forge.modules.production_execution.execution_template import (
+        RESOURCE_VERSION, enforce_template_resources,
+    )
+
+    cursor.execute("""SELECT r.operation_id,r.evidence->>'work_id',
+        r.provider,r.evidence->>'model_id',r.currency,r.accounting_basis,r.evidence,r.estimated_amount,
+        r.stable_idempotency_key,r.status
+        FROM authority_budget_reservation r JOIN authority_external_effect e USING(external_effect_id)
+        WHERE r.project_id=%s AND r.external_effect_id=%s AND r.reservation_id=%s""",
+        [project_id, external_effect_id, reservation_id])
+    resource = cursor.fetchone()
+    if resource and (resource[6] or {}).get("resource_control_version") == RESOURCE_VERSION:
+        if resource[9] != "RESERVED":
+            raise KernelError("CREATIVE_BUDGET_RESERVATION_REQUIRED", "exact live reservation required")
+        request = SimpleNamespace(project_id=project_id, external_effect_id=external_effect_id,
+            operation_id=resource[0], work_id=resource[1], provider=resource[2], model_id=resource[3],
+            currency=resource[4], accounting_basis=resource[5],
+            cost_authorization_ref=(resource[6] or {}).get("cost_authorization_ref", ""),
+            stable_idempotency_key=resource[8])
+        if not enforce_template_resources(cursor, request, resource[7]):
+            raise KernelError("EXECUTION_TEMPLATE_PROVENANCE_INVALID", external_effect_id)
+        return
     selected = _policy_for(cursor, project_id)
     if selected is None or selected["policy"]["comparison_budget"]["contract_version"] not in _contract().PROVIDER_BUDGET_VERSIONS:
         return

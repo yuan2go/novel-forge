@@ -301,7 +301,7 @@ class PostgresNarrativeRealizationApplication:
                 principal=principal,
             )
         lifecycle = NarrativeRealizationLifecycle(str(current["lifecycle"]))
-        if lifecycle is NarrativeRealizationLifecycle.QUALIFIED:
+        if lifecycle in {NarrativeRealizationLifecycle.QUALIFIED, NarrativeRealizationLifecycle.ADMITTED}:
             current = self.execute(
                 NarrativeRealizationCommand(
                     definition_name="planning.realization.approve",
@@ -491,7 +491,20 @@ class PostgresNarrativeRealizationApplication:
             if work_requirements
             else None
         )
-        if author_admission is not None:
+        from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+        creative_admission = approved_validation_design(cursor, project_id=project_id, book_id=book_id, asset_version_id=chapter_group_plan_version_id)
+        if creative_admission is not None:
+            work_requirements = True
+        if creative_admission is not None:
+            if creative_admission["content_hash"] != str(row[8]) or creative_admission["lifecycle"] != "ACTIVE":
+                raise KernelError("REALIZATION_VALIDATION_STALE", "Validation group changed")
+            admission = dict(creative_admission)
+            admission["literary_qualification"] = "NOT_RUN"
+            proof_asset_version_id = admission["decision_asset_version_id"]
+            proof_hash = admission["decision_content_hash"]
+            proof_decisions = {field: False for field in _REALIZATION_PROOF_CRITERIA.values()}
+            proof_decisions["causal_alignment_proven"] = proof_decisions.pop("causal_escalation_proven")
+        elif author_admission is not None:
             if (
                 author_admission["content_hash"] != str(row[8])
                 or author_admission["lifecycle"] != "ACTIVE"
@@ -615,7 +628,7 @@ class PostgresNarrativeRealizationApplication:
             ],
             "events": list(events),
             "proof": {
-                "schema_version": "narrative-realization-proof.v2"
+                "schema_version": "narrative-realization-proof.v3" if creative_admission else "narrative-realization-proof.v2"
                 if work_requirements
                 else NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
                 **({"design_admission": admission} if work_requirements else {}),
@@ -634,7 +647,7 @@ class PostgresNarrativeRealizationApplication:
             "content_hash": str(row[8]),
             "proof_asset_version_id": proof_asset_version_id,
             "proof_hash": proof_hash,
-            "lifecycle": NarrativeRealizationLifecycle.QUALIFIED.value,
+            "lifecycle": NarrativeRealizationLifecycle.ADMITTED.value if creative_admission else NarrativeRealizationLifecycle.QUALIFIED.value,
         }
         return NarrativeRealizationContract.from_mapping(contract)
 

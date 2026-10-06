@@ -38,10 +38,19 @@ class ChapterOutcomeCommitHandler:
         release = inputs["release_package"].content
         canon = inputs["canon_patch"].content
         chapter_plan = inputs["chapter_plan"].content
+        validation = quality.get("internal_admission")
+        internal = (isinstance(validation, dict) and validation.get("status") == "INTERNAL_ADMITTED"
+            and validation.get("version") == "creative-quality-admission.v1"
+            and validation.get("book_id") == payload["book_id"]
+            and validation.get("target_asset_version_id") == inputs["best_draft_candidate"].asset_version_id
+            and validation == final_gate.get("internal_admission")
+            and final_gate.get("final_gate_contract_version") == "creative-internal-finalize.v1"
+            and final_gate.get("gate") == "INTERNAL_ADMITTED"
+            and final_gate.get("release_status") == "INTERNAL_VALIDATION_FINALIZED")
         if (
-            final_gate.get("gate") != "PASSED"
-            or final_gate.get("release_status") != "INTERNAL_RELEASE_FINALIZED"
-            or quality.get("gate") not in {"PASSED", "PASSED_WITH_UNCALIBRATED"}
+            not internal and (final_gate.get("gate") != "PASSED"
+                or final_gate.get("release_status") != "INTERNAL_RELEASE_FINALIZED"
+                or quality.get("gate") not in {"PASSED", "PASSED_WITH_UNCALIBRATED"})
             or rereview.get("decision") != "PASSED"
             or int(rereview.get("blocking_issue_count", 0)) != 0
             or release.get("release_status") != "READY_FOR_BLOB_VERIFICATION"

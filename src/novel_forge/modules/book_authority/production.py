@@ -1190,6 +1190,11 @@ class PostgresBookAuthority:
             project_id=request["project_id"],
             root_operation_id=request["chapter_root_operation_id"],
         )
+        selected_for_admission = select_chapter_acceptance_outputs(evidence)
+        internal = selected_for_admission["final_release_gate_report"]["content"].get("internal_admission")
+        if internal is not None:
+            from novel_forge.modules.chapter_quality_authority.creative_validation import verify_internal_quality
+            verify_internal_quality(self.database_url, internal, project_id=request["project_id"], book_id=book["book_id"])
         acceptance_inputs = _validate_chapter_acceptance_evidence(
             request=request,
             evidence=evidence,
@@ -3534,13 +3539,19 @@ def _validate_chapter_acceptance_evidence(
         if item.get("attempt_status") == "SUCCEEDED"
         and item.get("status") == "SUCCEEDED"
     }
+    internal = (final_gate.get("final_gate_contract_version") == "creative-internal-finalize.v1"
+        and final_gate.get("gate") == "INTERNAL_ADMITTED"
+        and final_gate.get("release_status") == "INTERNAL_VALIDATION_FINALIZED"
+        and final_gate.get("internal_admission") == quality.get("internal_admission")
+        and (quality.get("internal_admission") or {}).get("status") == "INTERNAL_ADMITTED"
+        and (quality.get("internal_admission") or {}).get("target_asset_version_id") == selected["best_draft_candidate"]["asset_version_id"])
     checks = {
-        "final_release": (
+        "final_release": internal and bool(final_gate.get("blob_receipt", {}).get("receipt_id")) or (
             final_gate.get("gate") == "PASSED"
             and final_gate.get("release_status") == "INTERNAL_RELEASE_FINALIZED"
             and bool(final_gate.get("blob_receipt", {}).get("receipt_id"))
         ),
-        "quality": quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
+        "quality": internal or quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
         "review": (
             rereview.get("decision") == "PASSED"
             and int(rereview.get("blocking_issue_count", 0)) == 0

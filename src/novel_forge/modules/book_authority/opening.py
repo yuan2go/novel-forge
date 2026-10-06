@@ -2085,7 +2085,9 @@ class PostgresBookOpeningApplication:
                 "BOOK_OPENING_TOPOLOGY_BUDGET_DRIFT",
                 "BOOK_PLAN node topology differs from the bound Budget Authority",
             )
-        return topology_budget
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            from .resource_succession import prospective_topology
+            return prospective_topology(uow, opening_run_id=opening_run_id, original=topology_budget)
 
     def _workflow_receipt_results(
         self, opening_run_id: str
@@ -2335,6 +2337,16 @@ class PostgresBookOpeningApplication:
         budget = dict(payload["provider_budget_contract"])
         policy = canonical_budget_policy(budget["policy_snapshot"])
         updated = policy["policy_snapshot"]
+        if updated.get("resource_control_version") == "billing-channel-resources.v1":
+            from novel_forge.modules.production_execution.execution_template import selected_book_template
+            admission = selected_book_template(uow.cursor, project_id=request.project_id, book_id=request.book_id)
+            if admission is None:
+                raise KernelError("EXECUTION_TEMPLATE_PROVENANCE_INVALID", request.book_id)
+            return {"contract_version": "book-opening-capacity-continuation.v2", "request": dict(decision),
+                "source_frozen_request_digest": source["frozen_request_digest"], "source_failure": source["failure"],
+                "source_policy_hash": old_hash, "successor_policy_hash": policy["policy_hash"],
+                "execution_template": admission,
+                "zero_work_evidence": dict(zip(("effects", "reservations", "node_receipts", "outputs", "live_leases"), counts, strict=True))}
         allowed = {"token_limit", "per_call_token_limit"}
         if ({key: value for key, value in old_policy.items() if key not in allowed}
             != {key: value for key, value in updated.items() if key not in allowed}
@@ -3767,7 +3779,8 @@ class PostgresBookOpeningApplication:
             )
             try:
                 skeleton, _ = self._book_volume_contract(dict(artifact["content"]))
-                topology_budget.require_volume_count(len(skeleton))
+                from .resource_succession import prospective_topology
+                prospective_topology(uow, opening_run_id=run["opening_run_id"], original=topology_budget).require_volume_count(len(skeleton))
             except (TypeError, ValueError) as exc:
                 raise KernelError(
                     "BOOK_OPENING_BOOK_PLAN_TOPOLOGY_INVALID",

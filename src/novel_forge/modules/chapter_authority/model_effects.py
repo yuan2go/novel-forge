@@ -415,6 +415,10 @@ class ExternalEffectChapterModelPort:
             )
             if item
         )
+        if getattr(self.adapter, "resource_control_version", "") == "billing-channel-resources.v1":
+            from novel_forge.modules.command_kernel.resource_route_recovery import next_resource_effect_key
+            stable_key = next_resource_effect_key(self.database_url, project_id=request.project_id,
+                operation_id=request.operation_id, stable_key=stable_key)
         existing_intent = read_external_effect_intent(
             self.database_url, context, effect_type="model.invoke", stable_idempotency_key=stable_key,
         )
@@ -799,38 +803,44 @@ class ExternalEffectChapterModelPort:
                 )
                 if callable(record_authorization):
                     record_authorization()
-        reservation = reserve_provider_budget(
-            self.database_url,
-            BudgetReservationRequest(
-                operation_id=request.operation_id,
-                external_effect_id=str(effect["external_effect_id"]),
-                project_id=request.project_id,
-                stable_idempotency_key=f"budget:{stable_key}",
-                provider=(routing_decision.get("selected") or {}).get("candidate", {}).get("provider") or self.adapter.provider,
-                model_id=str(selected_model or ""),
-                work_id=str(effect_request_payload["_production_execution"]["book_id"]) if routing_decision else "",
-                currency=(
-                    "UNKNOWN"
-                    if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                    else "USD"
+        try:
+            reservation = reserve_provider_budget(
+                self.database_url,
+                BudgetReservationRequest(
+                    operation_id=request.operation_id,
+                    external_effect_id=str(effect["external_effect_id"]),
+                    project_id=request.project_id,
+                    stable_idempotency_key=f"budget:{stable_key}",
+                    provider=(routing_decision.get("selected") or {}).get("candidate", {}).get("provider") or self.adapter.provider,
+                    model_id=str(selected_model or ""),
+                    work_id=str(effect_request_payload["_production_execution"]["book_id"]) if routing_decision else "",
+                    currency=(
+                        "UNKNOWN"
+                        if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                        else "USD"
+                    ),
+                    estimated_amount=bounded_reservation_amount,
+                    estimated_tokens=bounded_reservation_tokens,
+                    chapter=int(
+                        business_payload.get("chapter_number")
+                        or business_payload.get("chapter")
+                        or 0
+                    )
+                    or None,
+                    caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
+                    call_caps=self.provider_call_caps,
+                    token_caps=self.provider_token_caps,
+                    budget_scope_id=budget_scope_id,
+                    expected_budget_scope_revision=budget_scope_revision,
+                    accounting_basis=cost_accounting_basis,
+                    cost_authorization_ref=account_authorization_ref,
                 ),
-                estimated_amount=bounded_reservation_amount,
-                estimated_tokens=bounded_reservation_tokens,
-                chapter=int(
-                    business_payload.get("chapter_number")
-                    or business_payload.get("chapter")
-                    or 0
-                )
-                or None,
-                caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
-                call_caps=self.provider_call_caps,
-                token_caps=self.provider_token_caps,
-                budget_scope_id=budget_scope_id,
-                expected_budget_scope_revision=budget_scope_revision,
-                accounting_basis=cost_accounting_basis,
-                cost_authorization_ref=account_authorization_ref,
-            ),
-        )
+            )
+        except KernelError as error:
+            if error.code != "RESOURCE_ROUTE_RESELECT_REQUIRED":
+                raise
+            return self.invoke(request, stage=stage, payload=payload, reservation_amount=reservation_amount,
+                reservation_tokens=reservation_tokens, pre_send_assertion=pre_send_assertion)
         execution_binding = None
         frozen_work_order = None
         if stage in CONTEXT_MODEL_STAGES:

@@ -219,6 +219,7 @@ class CodexAccountEntitlementSnapshot:
     cli_version: str
     executable_sha256: str
     configuration_ref: str
+    billing_identity: dict[str, str] | None = None
 
     def __post_init__(self) -> None:
         if not all(
@@ -241,13 +242,14 @@ class CodexAccountEntitlementSnapshot:
     def snapshot_hash(self) -> str:
         return _sha256(self.to_dict())
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "authorization_ref": self.authorization_ref,
             "account_identity_ref": self.account_identity_ref,
             "cli_version": self.cli_version,
             "executable_sha256": self.executable_sha256,
             "configuration_ref": self.configuration_ref,
+            **({"billing_identity": dict(self.billing_identity)} if self.billing_identity else {}),
         }
 
 
@@ -1843,6 +1845,9 @@ class CodexCliExecutionBackend:
         )
         result_filename = "last-message.json"
         result_path = layout.result_path(result_filename)
+        if self.account_entitlement and self.account_entitlement.billing_identity:
+            from .membership_identity import require_membership_identity
+            require_membership_identity(self.codex_home, self.account_entitlement.billing_identity)
         command = (
             self.codex_executable,
             "exec",
@@ -1856,7 +1861,7 @@ class CodexCliExecutionBackend:
                 for arg in ("-c", override)
             ),
             *(
-                ("-c", 'forced_login_method="chatgpt"')
+                ("-c", 'forced_login_method="chatgpt"', *( () if self.retry_overrides else ("-c", 'model_provider="openai"')) )
                 if self.account_entitlement
                 else ()
             ),

@@ -124,7 +124,7 @@ def approved_design_receipt(cursor: Any, *, project_id: str, book_id: str,
         [project_id, asset_version_id, book_id],
     )
     rows = cursor.fetchall()
-    if not rows or rows[0][0] == "QUALIFIED":
+    if not rows or rows[0][0] == "QUALIFIED" or rows[0][8].get("creative_validation", {}).get("mode") == "CREATIVE_VALIDATION":
         return None
     row = rows[0]
     evidence = row[6].get("evidence", {})

@@ -658,8 +658,9 @@ class CapabilityPackAuthorityApplication:
             raise ValueError("deployment creation requires compilation_id")
         with AuthorityUnitOfWork(self.database_url) as uow:
             compilation = (
-                uow.repositories.capability_packs.require_approved_compilation(
-                    command.compilation_id, project_id=command.project_id
+                uow.repositories.capability_packs.require_admitted_compilation(
+                    command.compilation_id, project_id=command.project_id, environment=command.environment,
+                    book_id=str(command.payload.get("book_id") or "")
                 )
             )
             _verify_target_identity(command, compilation)
@@ -803,6 +804,9 @@ class CapabilityPackAuthorityApplication:
                 checkpoint=checkpoint,
             )
             checkpoint("after_compilation_registry")
+        elif action == "capability_pack.validation.admit":
+            from .validation_admission import record_validation_admission
+            result = record_validation_admission(repository, command, operation_id)
         elif action == "capability_pack.approval.decide":
             compilation = repository.require_compilation(
                 command.compilation_id, project_id=command.project_id
@@ -833,8 +837,9 @@ class CapabilityPackAuthorityApplication:
             )
             checkpoint("after_approval_decision")
         elif action == "capability_pack.deployment.create":
-            compilation = repository.require_approved_compilation(
-                command.compilation_id, project_id=command.project_id
+            compilation = repository.require_admitted_compilation(
+                command.compilation_id, project_id=command.project_id, environment=command.environment,
+                book_id=str(command.payload.get("book_id") or "")
             )
             _verify_target_identity(command, compilation)
             if (

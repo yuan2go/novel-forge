@@ -64,7 +64,7 @@ def _authority_parser() -> argparse.ArgumentParser:
     pack.add_argument(
         "action",
         choices=(
-            "register", "validate", "compile", "approve", "deploy",
+            "register", "validate", "compile", "approve", "validation-admit", "deploy",
             "activate", "disable", "rollout-start", "rollout-pause",
             "rollout-resume", "rollout-complete", "rollback", "deprecate",
             "retire", "revoke", "list", "detail", "deployments",
@@ -91,6 +91,10 @@ def _authority_parser() -> argparse.ArgumentParser:
     add_corpus_parser(subparsers)
     from novel_forge.cli.creative_budget import add_creative_budget_parser
     add_creative_budget_parser(subparsers)
+    from novel_forge.cli.creation import add_creation_parser
+    add_creation_parser(subparsers)
+    from novel_forge.cli.execution_template import add_execution_template_parser
+    add_execution_template_parser(subparsers)
     from novel_forge.cli.provider_routing import add_provider_routing_parser
     add_provider_routing_parser(subparsers)
     from novel_forge.cli.runtime_inspection import add_runtime_inspection_parser
@@ -129,6 +133,19 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
         if args.command == "authority-craft":
             from novel_forge.cli.craft import run_craft_command
             print(json.dumps(run_craft_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-opening-resource-successor":
+            from novel_forge.cli.creation import run_opening_resource_successor_command
+            result = run_opening_resource_successor_command(settings, args)
+            print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-creation":
+            from novel_forge.cli.creation import run_creation_command
+            print(json.dumps(run_creation_command(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-execution-template":
+            from novel_forge.cli.execution_template import run_execution_template_command
+            print(json.dumps(run_execution_template_command(settings, args), ensure_ascii=False, indent=2, default=str))
             return 0
         if args.command == "authority-provider-routing":
             from novel_forge.cli.provider_routing import run_provider_routing_command
@@ -280,6 +297,7 @@ def _run_capability_pack_command(
         "validate": "capability_pack.manifest.validate",
         "compile": "capability_pack.compile",
         "approve": "capability_pack.approval.decide",
+        "validation-admit": "capability_pack.validation.admit",
         "deploy": "capability_pack.deployment.create",
         "activate": "capability_pack.deployment.activate",
         "disable": "capability_pack.deployment.disable",

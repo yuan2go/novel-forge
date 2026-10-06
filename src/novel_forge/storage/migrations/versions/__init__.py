@@ -151,6 +151,13 @@ from . import (
     v20260927_0147_runtime_job_dispatch_pause,
     v20260928_0148_author_supervised_design,
     v20261005_0149_zero_increment_chapter_outcome,
+    v20261006_0150_creative_pack_admission,
+    v20261006_0151_creative_design_admission,
+    v20261006_0152_validation_realization_admission,
+    v20261006_0153_resource_opening_successor,
+    v20261006_0154_opening_resource_policy_succession,
+    v20261006_0155_unsent_resource_route_succession,
+    v20261006_0156_resource_journal_indexes,
 )
 
 VERSION_MODULES = [
@@ -304,6 +311,13 @@ VERSION_MODULES = [
     v20260927_0147_runtime_job_dispatch_pause,
     v20260928_0148_author_supervised_design,
     v20261005_0149_zero_increment_chapter_outcome,
+    v20261006_0150_creative_pack_admission,
+    v20261006_0151_creative_design_admission,
+    v20261006_0152_validation_realization_admission,
+    v20261006_0153_resource_opening_successor,
+    v20261006_0154_opening_resource_policy_succession,
+    v20261006_0155_unsent_resource_route_succession,
+    v20261006_0156_resource_journal_indexes,
 ]
 
 __all__ = ["VERSION_MODULES"]

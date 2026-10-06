@@ -1049,6 +1049,21 @@ def validate_chapter_provider_output_against_schema(
     return json.loads(json.dumps(value, ensure_ascii=False))
 
 
+def validate_native_world_schema_fragment(
+    stage: str, schema: Mapping[str, Any], value: object, *, output_schema_ref: str
+) -> dict[str, Any]:
+    from novel_forge.modules.command_kernel.routing_bootstrap import WORLD_SAMPLE_TASKS
+    if (stage not in WORLD_SAMPLE_TASKS or output_schema_ref != f"schema:{stage}:v1"
+            or "$schema" in schema or schema.get("type") != "object"
+            or schema.get("additionalProperties") is not False or not schema.get("required")):
+        raise KernelError("WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED", output_schema_ref)
+    try:
+        _validate(dict(schema), value, path="$")
+    except ValueError as exc:
+        raise KernelError("WORLD_PROVIDER_OUTPUT_SCHEMA_INVALID", f"{stage}: {exc}") from exc
+    return json.loads(json.dumps(value, ensure_ascii=False))
+
+
 def validate_chapter_provider_output_semantics(
     stage: str,
     value: Mapping[str, Any],
