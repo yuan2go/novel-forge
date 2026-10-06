@@ -34,6 +34,7 @@ STORY_FORMATION_OPERATIONS = frozenset(
         "story.formation.author_decision",
         "story.formation.resume",
         "story.formation.abort",
+        "story.formation.cancel_continuation",
     }
 )
 
@@ -201,6 +202,7 @@ class StoryFormationApplication:
                 "STORY_FORMATION_JOB_INVALID",
                 "Formation RuntimeJob has no frozen stage/version",
             )
+        self.require_continuation_live(formation_run_id)
         frozen = self._frozen_input(formation_run_id)
         if frozen.creative_brief_asset_version_id:
             self._require_generation_permissions(
@@ -211,6 +213,15 @@ class StoryFormationApplication:
                     dict(frozen.generation_policy or {}).get("approval_mode") or ""
                 ),
             )
+        if run["lifecycle"] not in {"ADMITTED", "RUNNING"}:
+            raise KernelError("STORY_FORMATION_NOT_RUNNABLE", "The owner must resume the original frozen Formation before generation")
+        if run["current_stage"] != expected_stage or run["version"] != expected_version:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT metadata->'transaction_result' FROM authority_operation WHERE project_id=%s AND definition_name='story.formation.advance' AND idempotency_key=%s AND status='SUCCEEDED'", [run["project_id"],f"{formation_run_id}:advance:{expected_stage}:{expected_version}"])
+                committed = uow.cursor.fetchone()
+            if committed:
+                return committed[0]
+            raise KernelError("STORY_FORMATION_JOB_STALE", "Stale stage/version cannot dispatch a new generation")
         generated_layer = None
         generated_design = None
         if frozen.creative_brief_asset_version_id:
@@ -258,6 +269,7 @@ class StoryFormationApplication:
         candidate_asset_version_ids: tuple[str, ...],
         runtime_attempt_id: str,
         principal: Principal,
+        generation_failures: tuple[dict[str, str], ...] = (),
     ) -> dict[str, Any]:
         run = self.require(formation_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))
@@ -278,6 +290,7 @@ class StoryFormationApplication:
                 "candidate_content_hash": candidate_content_hash,
                 "candidate_asset_version_ids": list(candidate_asset_version_ids),
                 "runtime_attempt_id": runtime_attempt_id,
+                **({"generation_failures": list(generation_failures)} if generation_failures else {}),
             },
             frozen_input=frozen,
             additional_input_assets=(
@@ -327,6 +340,12 @@ class StoryFormationApplication:
         run = self.require(formation_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))
         principal.require("book.authority.query", str(run["project_id"]))
+        if (self._frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT 1 FROM authority_operation WHERE idempotency_scope='book:story-formation' AND idempotency_key=%s AND command_payload->>'formation_run_id'=%s", [idempotency_key,formation_run_id])
+                compatible = uow.cursor.fetchone()
+            if not compatible:
+                idempotency_key = f"{formation_run_id}:author-decision:{idempotency_key}"
         if decision == "APPROVE":
             principal.require("story_planning.authority.approve" if run["current_stage"] != "BOOK_DESIGN"
                               else "book_design.authority.execute", str(run["project_id"]))
@@ -377,6 +396,7 @@ class StoryFormationApplication:
         expected_version: int,
         principal: Principal,
     ) -> dict[str, Any]:
+        self.require_continuation_live(formation_run_id)
         run = self.require(formation_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))
         frozen = self._frozen_input(formation_run_id)
@@ -462,6 +482,28 @@ class StoryFormationApplication:
             "replayed": executed["replayed"],
         }
 
+    def cancel_continuation(self, formation_run_id: str, *, principal: Principal, reason: str, idempotency_key: str) -> dict[str, Any]:
+        run = self.require(formation_run_id)
+        principal.require("book.authority.execute", run["project_id"])
+        if not reason.strip() or not idempotency_key.strip():
+            raise ValueError("Cancellation requires a reason and stable command identity")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT 1 FROM authority_operation WHERE idempotency_scope='book:story-formation' AND idempotency_key=%s AND command_payload->>'formation_run_id'=%s", [idempotency_key,formation_run_id])
+            compatible = uow.cursor.fetchone()
+        if not compatible:
+            idempotency_key = f"{formation_run_id}:cancel:{idempotency_key}"
+        self._control(run=run, principal=principal, definition_name="story.formation.cancel_continuation",
+            idempotency_key=idempotency_key, payload={"expected_digest": run["frozen_input_digest"],
+                "actor_id": principal.principal_id, "reason": reason}, frozen_input=self._frozen_input(formation_run_id))
+        self.runtime_jobs.cancel_pending_for_subject(job_kind="STORY_FORMATION_ADVANCE", runtime_group="story_formation",
+            subject_kind="STORY_FORMATION_RUN", subject_id=formation_run_id, project_id=run["project_id"], reason=reason)
+        return self.require(formation_run_id)
+
+    def require_continuation_live(self, formation_run_id: str) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            if StoryFormationRepository(uow.cursor).cancellation(formation_run_id):
+                raise KernelError("CREATION_CANCELLED", "Original creation has a durable cancellation intent")
+
     def abort(
         self,
         formation_run_id: str,
@@ -523,6 +565,7 @@ class StoryFormationApplication:
                        version, frozen_input_digest
                 FROM authority_story_formation_run AS run
                 WHERE lifecycle IN ('ADMITTED','RUNNING')
+                  AND NOT EXISTS (SELECT 1 FROM authority_story_creation_cancellation cancellation WHERE cancellation.formation_run_id=run.formation_run_id)
                   AND (%s='' OR project_id=%s)
                   AND (%s='' OR formation_run_id=%s)
                   AND NOT EXISTS (
@@ -530,7 +573,7 @@ class StoryFormationApplication:
                     WHERE job.runtime_group='story_formation'
                       AND job.job_kind='STORY_FORMATION_ADVANCE'
                       AND job.subject_id=run.formation_run_id
-                      AND job.status IN ('PENDING','LEASED','RUNNING','RETRY_WAIT')
+                      AND job.status IN ('READY','CLAIMED','RUNNING','CHECKPOINTED','RETRY_WAIT')
                   )
                 ORDER BY updated_at, formation_run_id
                 LIMIT %s
@@ -657,6 +700,7 @@ class StoryFormationApplication:
                     str(item) for item in payload["candidate_asset_version_ids"]
                 ),
                 runtime_attempt_id=str(payload["runtime_attempt_id"]),
+                generation_failures=tuple(payload.get("generation_failures", [])),
             )
         elif definition_name == "story.formation.author_decision":
             result = repository.record_author_decision(
@@ -666,6 +710,9 @@ class StoryFormationApplication:
                 decision=str(payload["decision"]), reason=str(payload["reason"]),
                 actor_id=str(payload["actor_id"]), operation_id=operation_id,
             )
+        elif definition_name == "story.formation.cancel_continuation":
+            result = repository.cancel_continuation(formation_run_id, operation_id=operation_id,
+                actor_id=str(payload["actor_id"]), reason=str(payload["reason"]), expected_digest=str(payload["expected_digest"]))
         elif definition_name == "story.formation.resume":
             result = repository.resume(
                 formation_run_id, int(payload["expected_version"])

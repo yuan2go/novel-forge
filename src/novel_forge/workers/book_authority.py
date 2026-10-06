@@ -7,10 +7,12 @@ import os
 import signal
 import time
 from dataclasses import asdict
+from typing import Callable, Any
 
 from novel_forge.api.authority_dependencies import (
     build_book_production_composition,
     build_chapter_authority_application,
+    build_content_authority_application,
     build_production_execution_composition,
     build_trusted_principal_resolver,
 )
@@ -44,6 +46,54 @@ from novel_forge.modules.runtime_job import (
 )
 from novel_forge.storage.database_runtime import close_all_database_runtimes
 from novel_forge.storage.worker_health import PostgresWorkerHealthObserver
+
+
+def execute_creation_worker_claim(settings: IndustrialSettings, claim: RuntimeJobClaim) -> dict[str, object]:
+    from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment, execute_creation_claim
+
+    values = creation_runtime_environment(claim.project_id)
+    resolver = build_trusted_principal_resolver(env=values)
+    operator = resolver.resolve_api_principal()
+    jobs = RuntimeJobAuthority(settings.database_url)
+    execution = None
+    try:
+        if operator.principal_id != claim.input_snapshot["operator_id"]:
+            raise KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "Configured operator differs from admitted creation")
+        operator.require("book.authority.execute", claim.project_id)
+        execution = build_production_execution_composition(settings, env=values)
+        chapter = build_chapter_authority_application(settings, execution=execution, env=values)
+        composition = build_book_production_composition(settings, principal=operator, execution=execution,
+            chapter_application=chapter, env=values)
+        content = build_content_authority_application(settings, env=values)
+        return execute_creation_claim(jobs, claim, composition=composition, content=content, chapter=chapter,
+            formation_worker=resolver.resolve_book_formation_worker_principal(claim.worker_id),
+            book_worker=resolver.resolve_worker_principal(claim.worker_id))
+    except Exception as error:
+        if jobs.get(claim.runtime_job_id)["status"] == "CLAIMED":
+            jobs.fail(claim, {"code": getattr(error, "code", type(error).__name__), "message": str(error)},
+                      retry_delay_seconds=30, cause=error)
+        raise
+    finally:
+        if execution is not None:
+            execution.close()
+
+
+def execute_book_phase_with_creation_scope(settings: IndustrialSettings, claim: RuntimeJobClaim,
+        legacy: BookProductionComposition, execute: Callable[[BookProductionComposition], dict[str, Any]]) -> dict[str, Any]:
+    from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
+
+    governed = legacy.query.uses_creation_scope(project_id=claim.project_id, subject_id=claim.subject_id)
+    if not governed:
+        return execute(legacy)
+    values = creation_runtime_environment(claim.project_id)
+    execution = build_production_execution_composition(settings, env=values)
+    try:
+        chapter = build_chapter_authority_application(settings, execution=execution, env=values)
+        scoped = build_book_production_composition(settings, principal=legacy.principal, execution=execution,
+            chapter_application=chapter, env=values)
+        return execute(scoped)
+    finally:
+        execution.close()
 
 
 def schedule_book_coordination_jobs(
@@ -248,6 +298,13 @@ def execute_story_formation_claim(
     ):
         raise RuntimeError("Book worker received an invalid Story Formation job")
     runtime_jobs.start(claim)
+    current = formation.require(claim.subject_id)
+    if current["lifecycle"] in {"FAILED", "WAITING_APPROVAL", "ABORTED"}:
+        result = {"formation_run_id": claim.subject_id, "lifecycle": current["lifecycle"],
+                  "current_stage": current["current_stage"], "version": current["version"],
+                  "next_action": "FOLLOW_PERSISTED_OWNER_DECISION"}
+        runtime_jobs.complete(claim, result)
+        return result
     runtime_jobs.checkpoint(
         claim,
         {
@@ -297,6 +354,7 @@ def execute_story_formation_claim(
                 candidate_asset_version_ids=approval.candidate_asset_version_ids,
                 runtime_attempt_id=claim.attempt_id,
                 principal=principal,
+                generation_failures=approval.generation_failures,
             )
         except Exception as exc:
             failure = {
@@ -646,6 +704,24 @@ def main() -> int:
         while not stopping:
             if pause_worker_dispatch(supervisor, poll_seconds):
                 continue
+            from novel_forge.modules.book_authority.creation_runtime import schedule_creation_jobs
+
+            schedule_creation_jobs(settings.database_url, limit=batch_size)
+            creation_claim = runtime_jobs.claim(runtime_group="book_creation", worker_id=worker_id,
+                lease_seconds=60, job_kinds=("BOOK_CREATION_ADVANCE",))
+            if creation_claim is not None:
+                supervisor.polled(idle=False)
+                try:
+                    failures = boundary.execute_batch((creation_claim,),
+                        identity=lambda item: (item.project_id, item.runtime_job_id),
+                        execute=lambda item: execute_creation_worker_claim(settings, item),
+                        on_task_start=supervisor.operation_started,
+                        on_task_finish=lambda operation_id, succeeded: supervisor.operation_finished(operation_id, succeeded=succeeded))
+                    supervisor.batch_completed(failures)
+                except WorkerProgrammingError as error:
+                    supervisor.fatal(error)
+                    return WorkerSupervisor.FATAL_EXIT_CODE
+                continue
             if composition.formation is not None:
                 composition.formation.schedule_candidates(limit=batch_size)
                 formation_claim = runtime_jobs.claim(
@@ -663,13 +739,9 @@ def main() -> int:
                                 item.project_id,
                                 item.runtime_job_id,
                             ),
-                            execute=lambda item: execute_story_formation_claim(
-                                runtime_jobs,
-                                composition.formation,
-                                formation_principal,
-                                item,
-                                lease_seconds=lease_seconds,
-                            ),
+                            execute=lambda item: execute_book_phase_with_creation_scope(settings, item, composition,
+                                lambda scoped: execute_story_formation_claim(runtime_jobs, scoped.formation,
+                                    formation_principal, item, lease_seconds=lease_seconds)),
                             on_task_start=supervisor.operation_started,
                             on_task_finish=lambda operation_id, succeeded: (
                                 supervisor.operation_finished(
@@ -697,13 +769,9 @@ def main() -> int:
                                 item.project_id,
                                 item.runtime_job_id,
                             ),
-                            execute=lambda item: execute_claimed_book_opening_execution(
-                                runtime_jobs,
-                                composition.opening,
-                                principal,
-                                item,
-                                lease_seconds=lease_seconds,
-                            ),
+                            execute=lambda item: execute_book_phase_with_creation_scope(settings, item, composition,
+                                lambda scoped: execute_claimed_book_opening_execution(runtime_jobs, scoped.opening,
+                                    principal, item, lease_seconds=lease_seconds)),
                             on_task_start=supervisor.operation_started,
                             on_task_finish=lambda operation_id, succeeded: (
                                 supervisor.operation_finished(
@@ -731,12 +799,9 @@ def main() -> int:
                             item.project_id,
                             item.runtime_job_id,
                         ),
-                        execute=lambda item: execute_book_projection_repair_claim(
-                            runtime_jobs,
-                            composition,
-                            item,
-                            lease_seconds=lease_seconds,
-                        ),
+                        execute=lambda item: execute_book_phase_with_creation_scope(settings, item, composition,
+                            lambda scoped: execute_book_projection_repair_claim(runtime_jobs, scoped,
+                                item, lease_seconds=lease_seconds)),
                         on_task_start=supervisor.operation_started,
                         on_task_finish=lambda operation_id, succeeded: (
                             supervisor.operation_finished(
@@ -772,12 +837,9 @@ def main() -> int:
                 failures = boundary.execute_batch(
                     batch,
                     identity=lambda item: (item.project_id, item.runtime_job_id),
-                    execute=lambda item: execute_book_coordination_claim(
-                        runtime_jobs,
-                        composition,
-                        item,
-                        lease_seconds=lease_seconds,
-                    ),
+                    execute=lambda item: execute_book_phase_with_creation_scope(settings, item, composition,
+                        lambda scoped: execute_book_coordination_claim(runtime_jobs, scoped,
+                            item, lease_seconds=lease_seconds)),
                     on_task_start=supervisor.operation_started,
                     on_task_finish=lambda operation_id, succeeded: (
                         supervisor.operation_finished(operation_id, succeeded=succeeded)

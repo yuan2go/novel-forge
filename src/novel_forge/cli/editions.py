@@ -18,6 +18,7 @@ def add_edition_parser(subparsers):
     parser.add_argument("--idempotency-key", default="")
     parser.add_argument("--output", default="")
     parser.add_argument("--format", choices=("json", "text"), default="json")
+    parser.add_argument("--export-kind", choices=("FORMAL", "CANDIDATE"), default="FORMAL")
 
 
 def run_edition_command(settings, args):
@@ -41,11 +42,12 @@ def run_edition_command(settings, args):
         finally:
             execution.close()
     if args.action in {"query", "export"}:
-        result = application.query(**scope, revision_id=args.revision_id, principal=principal)
         if args.action == "query":
-            return result
+            return application.query(**scope, revision_id=args.revision_id, principal=principal)
         if not args.revision_id or not args.output:
             raise ValueError("Export requires --revision-id and a new --output path")
+        result = application.export_manuscript(**scope, revision_id=args.revision_id, principal=principal,
+                                             export_kind=getattr(args, "export_kind", "FORMAL"))
         manifest = result["revision"]["manifest"]
         text = ("\n\n".join(unit["title"] + "\n" + unit["text"] for unit in manifest["units"]) if args.format == "text"
                 else json.dumps(result, ensure_ascii=False, indent=2, default=str))
@@ -53,7 +55,7 @@ def run_edition_command(settings, args):
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
             stream.write(text)
-        return {"revision_id": args.revision_id, "manifest_digest": manifest["manifest_digest"], "output": str(path), "publication_authorized": False}
+        return {**result["export"], "output": str(path)}
     if not args.payload_file or not args.idempotency_key:
         raise ValueError("Edition mutations require --payload-file and --idempotency-key")
     data = json.loads(Path(args.payload_file).read_text(encoding="utf-8"))

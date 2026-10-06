@@ -132,6 +132,13 @@ def test_edition_candidate_uses_native_acceptance_and_isolates_source_facts(requ
     with pytest.raises(KernelError, match="EDITION_NOT_ADMITTED"):
         app.execute(action="select", **scope, data={"revision_id": saved["revision_id"], "expected_head_version": 1, "reason": "未审稿禁止切换"}, idempotency_key=f"edition:{source_run}:premature-selection")
     queried = app.query(**scope, revision_id=saved["revision_id"])
+    with pytest.raises(KernelError, match="EDITION_FORMAL_EXPORT_REQUIRES_SELECTION"):
+        app.export_manuscript(**scope, revision_id=saved["revision_id"])
+    candidate_export = app.export_manuscript(**scope, revision_id=saved["revision_id"], export_kind="CANDIDATE")
+    assert candidate_export["export"]["kind"] == "CANDIDATE"
+    formal_export = app.export_manuscript(**scope, revision_id=original["revision_id"])
+    assert formal_export["revision"]["manifest"] == manifest
+    assert formal_export["export"]["manifest_digest"] == manifest["manifest_digest"]
     assert queried["head"]["selected_revision_id"] == original["revision_id"]
     assert queried["diff"]["changes"]
     assert app.query(**scope, revision_id=original["revision_id"])["revision"]["manifest"] == manifest

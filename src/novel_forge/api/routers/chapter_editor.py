@@ -170,13 +170,15 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             **request.model_dump(), principal=principal))
 
     @router.get("/editions/export")
-    def edition_export(project_id: str, workspace_id: str, book_run_id: str, revision_id: str):
+    def edition_export(project_id: str, workspace_id: str, book_run_id: str, revision_id: str,
+                       export_kind: Literal["FORMAL", "CANDIDATE"] = "FORMAL"):
         from fastapi.responses import PlainTextResponse
-        result = execute(lambda principal: editions().query(project_id=project_id, workspace_id=workspace_id,
-            book_run_id=book_run_id, revision_id=revision_id, principal=principal))
+        result = execute(lambda principal: editions().export_manuscript(project_id=project_id, workspace_id=workspace_id,
+            book_run_id=book_run_id, revision_id=revision_id, principal=principal, export_kind=export_kind))
         manifest = result["revision"]["manifest"]
         return PlainTextResponse("\n\n".join(unit["title"] + "\n" + unit["text"] for unit in manifest["units"]),
-                                 headers={"X-Manuscript-Digest": manifest["manifest_digest"]})
+                                 headers={"X-Manuscript-Digest": manifest["manifest_digest"],
+                                          "X-Edition-Revision": revision_id, "X-Manuscript-Kind": export_kind})
 
     @router.get("/drafts")
     def list_drafts(project_id: str = Query(min_length=1)):

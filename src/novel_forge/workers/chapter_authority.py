@@ -29,6 +29,22 @@ class _Shutdown:
     requested: bool = False
 
 
+def execute_chapter_with_creation_scope(settings, scheduler, worker, *, project_id, root_operation_id):
+    from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+    from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
+
+    query = PostgresBookProductionQuery(settings.database_url)
+    if not query.uses_creation_scope(project_id=project_id, subject_id=root_operation_id):
+        return scheduler.tick(project_id=project_id, root_operation_id=root_operation_id)
+    values = creation_runtime_environment(project_id)
+    execution = build_production_execution_composition(settings, env=values)
+    try:
+        scoped = build_chapter_authority_application(settings, execution=execution, env=values)
+        return scoped.scheduler(principal=worker).tick(project_id=project_id, root_operation_id=root_operation_id)
+    finally:
+        execution.close()
+
+
 def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
     if poll_seconds <= 0 or poll_seconds > 60 or batch_size <= 0:
         raise ValueError("worker poll and batch configuration is invalid")
@@ -91,8 +107,8 @@ def run_worker(*, poll_seconds: float = 1.0, batch_size: int = 10) -> int:
             failures = boundary.execute_batch(
                 batch,
                 identity=lambda item: (item[0], item[1]),
-                execute=lambda item: scheduler.tick(
-                    project_id=item[0], root_operation_id=item[1]
+                execute=lambda item: execute_chapter_with_creation_scope(
+                    settings, scheduler, worker, project_id=item[0], root_operation_id=item[1]
                 ),
                 on_task_start=supervisor.operation_started,
                 on_task_finish=lambda operation_id, succeeded: (

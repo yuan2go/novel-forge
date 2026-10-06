@@ -158,6 +158,7 @@ from . import (
     v20261006_0154_opening_resource_policy_succession,
     v20261006_0155_unsent_resource_route_succession,
     v20261006_0156_resource_journal_indexes,
+    v20261006_0157_creation_continuation_control,
 )
 
 VERSION_MODULES = [
@@ -318,6 +319,7 @@ VERSION_MODULES = [
     v20261006_0154_opening_resource_policy_succession,
     v20261006_0155_unsent_resource_route_succession,
     v20261006_0156_resource_journal_indexes,
+    v20261006_0157_creation_continuation_control,
 ]
 
 __all__ = ["VERSION_MODULES"]

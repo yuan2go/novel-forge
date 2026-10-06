@@ -105,6 +105,34 @@ class ContentAuthoritySchedulerRecoveryPostgresTests(unittest.TestCase):
         start_attempt(DATABASE_URL, worker)
         return worker
 
+    def test_unsent_capacity_checkpoint_resumes_same_attempt_after_reconciliation(self) -> None:
+        from novel_forge.modules.command_kernel.attempt_runtime import checkpoint_attempt_for_external_reconciliation
+        request = self.request("unsent-capacity")
+        admission = self.app.admit(request)
+        worker = self.start_worker(admission.operation_id, worker_id="unsent-capacity-worker", trace_id=request.trace_id, correlation_id=request.correlation_id)
+        checkpoint_attempt_for_external_reconciliation(DATABASE_URL, worker,
+            {"reason": "external_state_unknown", "error_code": "TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN"})
+        result = ContentAuthorityScheduler(DATABASE_URL, registry=self.app.registry, worker_id="recovery-worker").run_or_recover(operation_id=admission.operation_id, project_id=self.project_id)
+        self.assertEqual(result.attempt_id, worker.attempt_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT recovery_action FROM authority_recovery_command WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(uow.cursor.fetchone()[0], "PRE_SEND_CHECKPOINT_RECONCILED")
+            uow.cursor.execute("SELECT count(*) FROM authority_attempt WHERE operation_id=%s", [admission.operation_id])
+            self.assertEqual(uow.cursor.fetchone()[0], 1)
+
+    def test_unknown_receipt_cannot_resume_even_when_no_effect_is_found(self) -> None:
+        from novel_forge.modules.command_kernel.attempt_runtime import checkpoint_attempt_for_external_reconciliation
+        request = self.request("unknown-receipt")
+        admission = self.app.admit(request)
+        worker = self.start_worker(admission.operation_id, worker_id="unknown-receipt-worker", trace_id=request.trace_id, correlation_id=request.correlation_id)
+        checkpoint_attempt_for_external_reconciliation(DATABASE_URL, worker,
+            {"reason": "external_state_unknown", "error_code": "EFFECT_OUTCOME_UNKNOWN"})
+        with self.assertRaisesRegex(KernelError, "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED"):
+            ContentAuthorityScheduler(DATABASE_URL, registry=self.app.registry).run_or_recover(operation_id=admission.operation_id, project_id=self.project_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(admission.operation_id, self.project_id)
+            self.assertEqual(state["status"], "RECONCILIATION_REQUIRED")
+
     def test_crash_before_output_recovers_with_new_attempt(self) -> None:
         request = self.request("before-output")
         admission = self.app.admit(request)

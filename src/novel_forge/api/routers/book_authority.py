@@ -1048,6 +1048,35 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
+            if request.production_intent is not None:
+                from pathlib import Path
+                from types import SimpleNamespace
+                from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+                from novel_forge.modules.book_authority.creation_runtime import execute_creation_command
+                principal.require("book.authority.execute", request.project_id)
+                if request.layers or request.book_design_asset_version_id or request.generation_policy:
+                    raise ValueError("Continuous creation uses its exact saved author brief and production intent")
+                brief = AuthorityAssetQuery(ctx.app_settings.database_url).require(project_id=request.project_id,
+                    asset_version_id=request.creative_brief_asset_version_id)
+                if brief.content_hash != request.creative_brief_content_hash:
+                    raise KernelError("CREATION_BRIEF_SOURCE_DRIFT", "The saved author brief changed")
+                from novel_forge.modules.book_design_authority.query import BookDesignAuthorityQuery
+                current_book = BookDesignAuthorityQuery(ctx.app_settings.database_url).require_book(project_id=request.project_id, book_id=book_id)
+                existing = composition.formation.find_by_key(project_id=request.project_id, book_id=book_id,
+                    idempotency_key=f"creation:{request.project_id}:{book_id}:{request.idempotency_key}")
+                expected = existing["expected_book_version"] if existing else current_book["version"]
+                if current_book["workspace_id"] != request.workspace_id or expected != request.expected_book_version:
+                    raise KernelError("CREATION_BOOK_VERSION_CONFLICT", "The selected Book or saved creation version changed")
+                intent = request.production_intent.model_dump(exclude_none=True)
+                arguments = SimpleNamespace(action="start", project_id=request.project_id, workspace_id=request.workspace_id,
+                    book_id=book_id, input_file=None, formation_run_id="", idempotency_key=request.idempotency_key,
+                    creation_policy_file=None, execution_template_file=ctx.app_settings.root / "config/execution_templates/creative_validation.json",
+                    repository_root=Path(ctx.app_settings.root), maximum_ticks=100, work_window_seconds=300,
+                    yield_after_window=False, foreground=False, creative_selection="AUTHOR_COMPARISON", candidate_number=None,
+                    candidate_version="", candidate_hash="", reason="")
+                return execute_creation_command(ctx.app_settings, arguments,
+                    request_input={"version": "creation-request.v1", "brief": brief.content, **intent},
+                    brief_source=(brief.asset_version_id, brief.content_hash))
             frozen = StoryFormationInput(
                 layers=tuple(
                     FormationLayerInput.from_mapping(layer.model_dump())
@@ -1095,7 +1124,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                     "Story Formation is unavailable",
                 )
             principal = build_trusted_principal_resolver().resolve_api_principal()
-            return composition.formation.review_candidates(formation_run_id, principal=principal)
+            reviewed = composition.formation.review_candidates(formation_run_id, principal=principal)
+            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+                from novel_forge.modules.book_authority.creation_runtime import creation_status
+                reviewed["creation"] = creation_status(composition.authority.database_url, project_id=reviewed["project_id"],
+                    formation_run_id=formation_run_id, principal=principal)
+            return reviewed
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (KernelError, ValueError, RuntimeError) as exc:
@@ -1133,6 +1167,23 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
+            run = composition.formation.require(formation_run_id)
+            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+                from novel_forge.modules.book_authority.creation_runtime import schedule_creation_jobs, creation_status, creation_recovery_record
+                principal.require("book.authority.execute", run["project_id"])
+                composition.formation.require_continuation_live(formation_run_id)
+                if not request.reason.strip() or not request.idempotency_key.strip():
+                    raise ValueError("Continuous recovery requires a saved reason and request key")
+                recovered = creation_recovery_record(composition.authority.database_url, formation_run_id, request.reason, request.idempotency_key)
+                if not recovered and run["lifecycle"] in {"FAILED", "WAITING_APPROVAL"}:
+                    composition.formation.resume(formation_run_id, expected_version=request.expected_version, principal=principal)
+                elif request.expected_version > run["version"]:
+                    raise KernelError("CREATION_BOOK_VERSION_CONFLICT", "Recovery view is ahead of the original source")
+                schedule_creation_jobs(composition.authority.database_url, formation_run_id=formation_run_id,
+                    recovery_reason=request.reason, recovery_key=request.idempotency_key)
+                reviewed = composition.formation.review_candidates(formation_run_id, principal=principal)
+                reviewed["creation"] = creation_status(composition.authority.database_url, project_id=run["project_id"], formation_run_id=formation_run_id, principal=principal)
+                return reviewed
             return composition.formation.resume(
                 formation_run_id,
                 expected_version=request.expected_version,
@@ -1187,6 +1238,18 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
+            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+                from novel_forge.modules.book_authority.creation_runtime import reconcile_creation_cancellation, creation_status
+                run = composition.formation.require(formation_run_id)
+                if request.expected_version > run["version"]:
+                    raise KernelError("CREATION_BOOK_VERSION_CONFLICT", "Cancellation view changed; reload the original creation")
+                composition.formation.cancel_continuation(formation_run_id, principal=principal,
+                    reason=request.reason or "Author cancels continuous creation",
+                    idempotency_key=request.idempotency_key or f"{formation_run_id}:cancel-continuation:{request.expected_version}")
+                reconcile_creation_cancellation(composition, formation_run_id)
+                reviewed = composition.formation.review_candidates(formation_run_id, principal=principal)
+                reviewed["creation"] = creation_status(composition.authority.database_url, project_id=run["project_id"], formation_run_id=formation_run_id, principal=principal)
+                return reviewed
             return composition.formation.abort(
                 formation_run_id,
                 expected_version=request.expected_version,

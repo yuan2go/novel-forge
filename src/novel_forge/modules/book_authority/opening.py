@@ -6028,6 +6028,8 @@ class PostgresBookOpeningApplication:
               AND foundation_set_digest=%s
               AND book_design_asset_version_id=%s
               AND book_design_content_hash=%s
+              AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+                WHERE cancellation.formation_run_id=authority_story_formation_run.formation_run_id)
             ORDER BY updated_at DESC
             LIMIT 1
             FOR SHARE

@@ -503,8 +503,12 @@ The shipped files are `config/execution_templates/creative_validation.json` and
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
 state and quality floors. `creation-request.v1` supplies the current work's brief, title,
 target chapter count, required language and optional chapter-length bounds. These inputs
-are frozen together as `formation-generation.v4`; continue uses that snapshot even if the
-template file later changes. A yield at the CLI execution-window boundary is a saved
+are frozen together as `formation-generation.v5`; continue uses that snapshot even if the
+template file later changes. `creative_candidates` optionally selects two to four direction
+alternatives (default two); it does not multiply every lower planning layer or chapter.
+An optional `author_creative_foundation` binds the exact asset version/hash of an already
+approved original author direction. Native validation verifies its active receipt; no
+creative candidate generation occurs on that path. The existing author page offers both. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
 Configure the deployment once with the existing trusted local operator, exact release,
@@ -603,22 +607,73 @@ novel-forge authority-migrate
 novel-forge authority-creation start \
   --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-id "$BOOK" \
   --input-file "$WORK_REQUEST" --idempotency-key "$CREATION_KEY" \
-  --repository-root "$PWD" --maximum-ticks 100 --work-window-seconds 300
+  --repository-root "$PWD"
+python -m novel_forge.workers.book_authority
+```
+
+Run the worker in a second terminal with the same deployment environment.
+Read progress and choose after comparing the returned exact direction texts:
+
+```bash
+novel-forge authority-creation status \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN"
+novel-forge authority-creation choose \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
+  --candidate-number "$CANDIDATE_NUMBER" --reason "$COMPARISON_REASON" \
+  --idempotency-key "$DIRECTION_DECISION_KEY"
 novel-forge authority-creation continue \
   --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
   --repository-root "$PWD" --maximum-ticks 100 --work-window-seconds 300
 ```
 
 The start result supplies the original Formation identity. Preserve it and the same
-creation key; repeat start with identical input or use continue. Existing workers
-continue already queued Formation, Opening and Book jobs under the same deployment.
-The CLI currently owns the handoff between these stages; a returned technical wait
-requires another invocation. Repeated CLI windows use the
-same durable jobs, effects, exports and accepted cursor. `COMPLETED` requires the native
-Book completion state; `YIELDED_CHECKPOINT` and dependency/reconciliation reasons do not
-claim completion. Independent review remains required when selected: an exhausted paid
-channel cannot be replaced with an ineligible self-review. A safe substitute uses an
-authorized independent model or saves the dependent step's checkpoint.
+creation key. Start now returns after durable admission; the existing Book worker owns
+continuous phase handoffs. `continue` schedules the same work and `--foreground` optionally
+drives a bounded local window. Ordinary technical waits need no author continuation call.
+The existing author production page sends `production_intent` with its saved Brief to the
+same Formation endpoint and uses this same application coordinator. It displays the
+Formation decision, worker progress and cancellation; reader/editor/Edition interfaces
+continue to own exact text changes and export.
+
+`AUTHOR_DECISION` waits for a content-bound choice. Author comparison must explain current
+intent, motive, cause, conflict, differentiation, scope and later writability, including
+uncertainty. Failed directions remain diagnostics. Selecting the sole admitted alternative
+requires a specific decision and retained bounded failure evidence; the result cannot be
+called a best-of-two comparison. `TECHNICAL_WAIT` uses bounded exponential delay (5–300
+seconds). Twelve unchanged coordination windows stop at `CREATION_NO_PROGRESS`; native
+retryable Formation recovery is limited to three distinct failed source versions.
+`RECONCILIATION_REQUIRED` retains the original external identity; no fresh ID is dispatched.
+`OWNER_RECOVERY_REQUIRED` explains an unresolved configuration, terminal effect or
+unrecoverable stage failure. Inspect the native failure/effect before using recovery:
+
+```bash
+novel-forge authority-creation recover \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" --reason "$RESOLVED_BLOCKER" \
+  --idempotency-key "$RECOVERY_DECISION_KEY"
+novel-forge authority-creation cancel \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
+  --idempotency-key "$CANCELLATION_KEY" --reason "$CANCELLATION_REASON"
+```
+
+Recovery can wake the same source after an owner-resolved no-progress stop without
+changing business inputs. Preserve its reason and decision key on an uncertain response;
+replay returns the original recovery job, while a changed reason is rejected. A later
+independent recovery decision needs its own key. The UI retains this frozen request
+through reload, using the existing Formation resume endpoint.
+
+Cancellation binds the frozen digest, appends intent before forwarding to the active
+Formation/Opening/Book owner and prevents automatic revival. It does not rewrite completed
+history. `COMPLETED` means native internal Book acceptance completion. The author status
+labels this `INTERNAL_ACCEPTANCE_COMPLETE`: exact Edition selection and export remain
+separate, as do strict qualification and long-form literary proof. Membership execution
+has no cumulative money/token/call cap. Paid DeepSeek still uses the existing inherited
+Book ceiling, including retries, restarts and UNKNOWN occupancy. Independent review remains
+required when selected; resource shortage cannot replace it with ineligible self-review.
+
+Historical Formation v4 freezes first-admitted selection. Repeating an existing v4/v5
+start validates the original work request and consumes its saved profiles, without
+installing new Packs or changing its selection policy. `--creative-selection FIRST_ADMITTED`
+is available only to deliberately create a compatible v4 task; it is not literary selection.
 
 Historical Formation v1-v3 continuation requires its original creation-input policy through
 `--creation-policy-file`; historical successful effects retain their frozen routing and
@@ -2772,6 +2827,13 @@ Its validation proof comes from actual native acceptances; the original frozen r
 candidate remain unchanged. Selection remains a separate action.
 Selection needs the current `expected_head_version` and reason. Conflicts retain input;
 reconcile an uncertain response by querying/retrying the same idempotency key.
+Edition export defaults to `FORMAL` and requires immutable `VALIDATED` and `SELECTED`
+events for the requested exact revision. A previously selected revision can be exported
+as a historical formal version; export never silently substitutes the current head.
+Use CLI `--export-kind CANDIDATE` or API `export_kind=CANDIDATE` for an unadopted
+candidate. The Editor labels these downloads separately. Responses retain the exact
+revision, manifest digest and export kind; neither kind grants publication or literary qualification.
+Historical callers that exported arbitrary candidates must now specify that kind explicitly.
 Subsequent saves retain existing explicit removal mappings unless replacement mappings
 are supplied. Reject applies to an editing candidate; switching the current formal
 manuscript requires a separately validated selection. Neither action erases the old draft.

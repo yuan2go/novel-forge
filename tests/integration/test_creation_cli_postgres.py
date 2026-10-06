@@ -90,7 +90,8 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
     parser = _authority_parser()
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", book, "--input-file", str(input_file),
-        "--idempotency-key", "native-create", "--repository-root", str(root), "--maximum-ticks", "100"])
+        "--idempotency-key", "native-create", "--repository-root", str(root), "--maximum-ticks", "100",
+        "--creative-selection", "FIRST_ADMITTED", "--foreground"])
     if not full_creation:
         args.yield_after_window = True
         monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
@@ -168,3 +169,341 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
 def replace_args(args, **changes):
     from argparse import Namespace
     return Namespace(**{**vars(args), **changes})
+
+
+@pytest.mark.parametrize("mode", ["complete", "partial-alternative", "cancel", "no-progress"] )
+def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(tmp_path, monkeypatch, mode):
+    from novel_forge.modules.book_authority.creation_runtime import schedule_creation_jobs, creation_status
+    from novel_forge.modules.runtime_job import RuntimeJobAuthority
+    from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+    from novel_forge.workers.book_authority import execute_creation_worker_claim
+    from tests.integration.synthesis_production_support import SynthesisTransport
+
+    harness = CapabilityPackPostgresHarness("durable-creation")
+    project = harness.project_id + "-native"
+    root = Path(__file__).resolve().parents[2]
+    transport = SynthesisTransport()
+    planning = transport.planning
+    creative_calls = []
+    def bounded_planning(stage, inputs):
+        result = planning(stage, inputs)
+        if stage == "creative.candidates.generate":
+            creative_calls.append(stage)
+            result["serialization_potential"] = None
+            for declaration in result.get("applicability", []):
+                if declaration["field_path"] == "$.serialization_potential":
+                    declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
+        def visit(value):
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    if key == "serialization_function":
+                        value[key] = None
+                    else:
+                        visit(child)
+            elif isinstance(value, list):
+                for child in value:
+                    visit(child)
+        visit(result)
+        if mode == "partial-alternative" and stage == "creative.candidates.generate" and len(creative_calls) > 1:
+            result["applicability"][0]["field_path"] = "/serialization_potential"
+        return result
+    transport.planning = bounded_planning
+    env = controlled_member_environment(tmp_path, {
+        "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+        "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+        "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+        "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+        "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "durable-operator",
+        "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
+    }, monkeypatch, transport)
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    inputs = {"version": "creation-request.v1", "title": "Durable original work", "target_chapters": 2 if mode == "complete" else 1,
+        "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+        "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates conflicting flood accounts.",
+            "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve cause and knowledge boundaries."],
+            "source_boundaries": ["Original expression only."]}}
+    input_file = tmp_path / "request.json"
+    input_file.write_text(json.dumps(inputs))
+    parser = _authority_parser()
+    args = parser.parse_args(["authority-creation", "start", "--project-id", project,
+        "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
+        "--idempotency-key", "durable", "--repository-root", str(root)])
+    settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="validation")
+    first = run_creation_command(settings, args)
+    identity = first["formation_run_id"]
+    assert first["stop_reason"] == "WORKER_OWNS_CONTINUATION"
+    jobs = RuntimeJobAuthority(DATABASE_URL)
+
+    def claim():
+        return jobs.claim(runtime_group="book_creation", worker_id="durable-book", lease_seconds=60,
+            job_kinds=("BOOK_CREATION_ADVANCE",), subject_kind="STORY_FORMATION_RUN", subject_id=identity)
+
+    if mode == "no-progress":
+        monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
+            lambda **values:{"formation_run_id":identity,"stop_reason":"YIELDED_CHECKPOINT"})
+        for _ in range(12):
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status='READY'", [identity])
+                uow.commit()
+            current = claim()
+            assert current is not None
+            result = execute_creation_worker_claim(settings, current)
+        assert result["wait_class"] == "OWNER_RECOVERY_REQUIRED"
+        assert result["stop_reason"] == "CREATION_NO_PROGRESS"
+        assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+        assert claim() is None
+        assert len(transport.calls) == 0
+        recover = parser.parse_args(["authority-creation","recover","--project-id",project,"--formation-run-id",identity,
+            "--reason","Operator resolved the isolated scheduling configuration","--idempotency-key","recovery-window","--repository-root",str(root)])
+        restored = run_creation_command(settings,recover)
+        assert len(restored["scheduled"]) == 1
+        replay = run_creation_command(settings,recover)
+        assert replay["scheduled"][0]["runtime_job_id"] == restored["scheduled"][0]["runtime_job_id"]
+        assert replay["scheduled"][0]["deduplicated"]
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from types import SimpleNamespace
+        from novel_forge.api import authority_dependencies as dependencies
+        from novel_forge.api.models import product_model_map
+        from novel_forge.api.routers.book_authority import create_router
+        from novel_forge.api.routers.context import ProductRouterContext
+        author = build_trusted_principal_resolver().resolve_api_principal()
+        native_execution = dependencies.build_production_execution_composition(settings)
+        try:
+            native_chapter = dependencies.build_chapter_authority_application(settings, execution=native_execution)
+            native = dependencies.build_book_production_composition(settings, principal=author,
+                execution=native_execution, chapter_application=native_chapter)
+            app = FastAPI()
+            app.include_router(create_router(ProductRouterContext(app_settings=settings,models=product_model_map(),
+                services=SimpleNamespace(book_production=native))))
+            body = {"expected_version":creation_status(DATABASE_URL,project_id=project,formation_run_id=identity,principal=author)["version"],
+                    "reason":recover.reason,"idempotency_key":recover.idempotency_key}
+            with TestClient(app) as client:
+                endpoint = f"/product/production/book-authority/formation-runs/{identity}/resume"
+                for _ in range(2):
+                    response = client.post(endpoint,json=body)
+                    assert response.status_code == 202, response.text
+                    assert response.json()["creation"]["coordination"]["runtime_job_id"] == restored["scheduled"][0]["runtime_job_id"]
+                drift = client.post(endpoint,json={**body,"reason":"A different request cannot reuse this recovery key"})
+                assert drift.status_code == 409, drift.text
+        finally:
+            native_execution.close()
+        assert claim() is not None
+        assert len(transport.calls) == 0
+        return
+    current = claim()
+    result = execute_creation_worker_claim(settings, current)
+    assert result["wait_class"] == "AUTHOR_DECISION"
+    assert len(transport.calls) == 2
+    assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+    assert claim() is None
+    author = build_trusted_principal_resolver().resolve_api_principal()
+    status = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity, principal=author)
+    candidates = status["recovery_instruction"]["candidate_asset_version_ids"]
+    assert len(candidates) == (1 if mode == "partial-alternative" else 2)
+    if mode == "partial-alternative":
+        assert len(status["recovery_instruction"]["generation_failures"]) == 1
+    if mode == "cancel":
+        cancellation = parser.parse_args(["authority-creation", "cancel", "--project-id", project,
+            "--formation-run-id", identity, "--reason", "Author cancels isolated work", "--idempotency-key", "cancel-work", "--repository-root", str(root)])
+        cancelled = run_creation_command(settings, cancellation)
+        assert cancelled["stop_reason"] == "CANCELLED"
+        assert cancelled["cancellation"]["frozen_input_digest"]
+        assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+        assert claim() is None
+        assert run_creation_command(settings, args)["stop_reason"] == "CANCELLED"
+        assert len(transport.calls) == 2
+        return
+    if mode == "complete":
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from types import SimpleNamespace
+        from novel_forge.api import authority_dependencies as dependencies
+        from novel_forge.api.models import product_model_map
+        from novel_forge.api.routers.book_authority import create_router
+        from novel_forge.api.routers.context import ProductRouterContext
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT expected_book_version,frozen_stage_inputs FROM authority_story_formation_run WHERE formation_run_id=%s", [identity])
+            source_version, source = uow.cursor.fetchone()
+        native_execution = dependencies.build_production_execution_composition(settings)
+        try:
+            native_chapter = dependencies.build_chapter_authority_application(settings, execution=native_execution)
+            native = dependencies.build_book_production_composition(settings, principal=author,
+                execution=native_execution, chapter_application=native_chapter)
+            app = FastAPI()
+            app.include_router(create_router(ProductRouterContext(app_settings=settings,models=product_model_map(),
+                services=SimpleNamespace(book_production=native))))
+            body = {"project_id":project,"workspace_id":args.workspace_id,"expected_book_version":source_version,
+                "idempotency_key":"durable","creative_brief_asset_version_id":source["creative_brief_asset_version_id"],
+                "creative_brief_content_hash":source["creative_brief_content_hash"],
+                "production_intent":{key:inputs[key] for key in ("title","target_chapters","language_contract","chapter_length")}}
+            with TestClient(app) as client:
+                endpoint = f"/product/production/book-authority/books/{args.book_id}/formation-runs"
+                stale = client.post(endpoint,json={**body,"expected_book_version":source_version+1})
+                assert stale.status_code == 409, stale.text
+                response = client.post(endpoint,json=body)
+                assert response.status_code == 202, response.text
+                assert response.json()["formation_run_id"] == identity
+                malformed = client.post(endpoint,json={**body,"production_intent":{**body["production_intent"],"chapter_length":{"minimum":5,"maximum":1}}})
+                assert malformed.status_code == 422
+            assert len(transport.calls) == 2
+        finally:
+            native_execution.close()
+    selected = candidates[0] if mode == "partial-alternative" else candidates[1]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s", [selected])
+        chosen_hash = uow.cursor.fetchone()[0]
+    chosen = parser.parse_args(["authority-creation", "choose", "--project-id", project,
+        "--formation-run-id", identity, "--candidate-version", selected, "--candidate-hash", chosen_hash,
+        "--reason", "Controlled author comparison chooses the second exact branch; no literary preference proof.",
+        "--idempotency-key", "choose-second", "--repository-root", str(root)])
+    run_creation_command(settings, chosen)
+    run_creation_command(settings, chosen)
+    if mode == "complete":
+        from novel_forge.modules.book_authority import creation_runtime
+        advance = creation_runtime.execute_creation_claim
+        windows = []
+        def bounded_window(*args, **options):
+            if not windows:
+                options["maximum_ticks"] = 2
+            windows.append(True)
+            return advance(*args, **options)
+        monkeypatch.setattr(creation_runtime, "execute_creation_claim", bounded_window)
+        handoff = RuntimeJobAuthority.complete_and_schedule_continuation
+        lost = []
+        def response_lost(authority, *values, **options):
+            result = handoff(authority, *values, **options)
+            if not lost:
+                lost.append(True)
+                raise OSError("controlled committed handoff response loss")
+            return result
+        monkeypatch.setattr(RuntimeJobAuthority, "complete_and_schedule_continuation", response_lost)
+    result = execute_creation_worker_claim(settings, claim())
+    if mode == "complete":
+        assert result["stop_reason"] == "YIELDED_CHECKPOINT"
+        assert lost
+        from novel_forge.api import authority_dependencies as dependencies
+        from novel_forge.workers.book_authority import execute_book_phase_with_creation_scope, execute_story_formation_claim
+        legacy_execution = dependencies.build_production_execution_composition(settings)
+        try:
+            legacy_chapter = dependencies.build_chapter_authority_application(settings, execution=legacy_execution)
+            legacy = dependencies.build_book_production_composition(settings, principal=author,
+                execution=legacy_execution, chapter_application=legacy_chapter)
+            legacy.formation.schedule_candidates(limit=1, project_id=project, formation_run_id=identity)
+            phase = jobs.claim(runtime_group="story_formation", worker_id="durable-phase", lease_seconds=60,
+                job_kinds=("STORY_FORMATION_ADVANCE",), subject_kind="STORY_FORMATION_RUN", subject_id=identity)
+            assert phase is not None
+            worker = build_trusted_principal_resolver().resolve_book_formation_worker_principal(phase.worker_id)
+            native = execute_book_phase_with_creation_scope(settings, phase, legacy,
+                lambda scoped: execute_story_formation_claim(jobs, scoped.formation, worker, phase, lease_seconds=60))
+            assert native["current_stage"] == "ENDING_INTENT"
+        finally:
+            legacy_execution.close()
+    assert result["stop_reason"] in {"COMPLETED", "YIELDED_CHECKPOINT"}, result
+    for _ in range(6):
+        if result["stop_reason"] == "COMPLETED":
+            break
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status='READY'", [identity])
+            uow.commit()
+        next_claim = claim()
+        assert next_claim is not None, result
+        result = execute_creation_worker_claim(settings, next_claim)
+    assert result["stop_reason"] == "COMPLETED", result
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT checkpoint->'generated_layer'->>'asset_version_id' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage='CREATIVE_FOUNDATION'", [identity])
+        assert uow.cursor.fetchone()[0] == selected
+        uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE book_run_id=%s AND status='COMMITTED'", [result["book_run_id"]])
+        assert uow.cursor.fetchone()[0] == inputs["target_chapters"]
+    before = len(transport.calls), len(transport.chapter.calls)
+    assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+    assert claim() is None
+    run_creation_command(settings, args)
+    run_creation_command(settings, chosen)
+    assert (len(transport.calls), len(transport.chapter.calls)) == before
+    final = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity, principal=author)
+    assert final["author_state"] == "INTERNAL_ACCEPTANCE_COMPLETE"
+    assert final["production"]["accepted_chapters"] == inputs["target_chapters"]
+    assert final["delivery"]["required_action"] == "SELECT_EXACT_EDITION_AND_EXPORT"
+    cancelled = parser.parse_args(["authority-creation", "cancel", "--project-id", project,
+        "--formation-run-id", identity, "--reason", "Cannot cancel terminal production", "--idempotency-key", "late-cancel", "--repository-root", str(root)])
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with pytest.raises(KernelError, match="CREATION_ALREADY_COMPLETED"):
+        run_creation_command(settings, cancelled)
+    assert creation_status(DATABASE_URL, project_id=project, formation_run_id=identity, principal=author)["cancellation"] is None
+    if mode == "complete":
+        from copy import deepcopy
+        from time import monotonic
+        from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment, drive_book
+        from novel_forge.modules.book_authority.edition_application import BookEditionApplication
+        from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+        from novel_forge.workers.book_authority import schedule_book_coordination_jobs, execute_book_coordination_claim
+        from novel_forge.workers.chapter_authority import execute_chapter_with_creation_scope
+        values = creation_runtime_environment(project)
+        native_execution = dependencies.build_production_execution_composition(settings, env=values)
+        legacy_execution = dependencies.build_production_execution_composition(settings)
+        try:
+            native_chapter = dependencies.build_chapter_authority_application(settings, execution=native_execution, env=values)
+            native = dependencies.build_book_production_composition(settings, principal=author,
+                execution=native_execution, chapter_application=native_chapter, env=values)
+            legacy_chapter = dependencies.build_chapter_authority_application(settings, execution=legacy_execution)
+            legacy = dependencies.build_book_production_composition(settings, principal=author,
+                execution=legacy_execution, chapter_application=legacy_chapter)
+            editor = BookEditionApplication(DATABASE_URL,application_build_id=native.authority.application_build_id,
+                                           commit_sha=native.authority.commit_sha)
+            scope = dict(project_id=project,workspace_id=args.workspace_id,book_run_id=result["book_run_id"],principal=author)
+            manifest = editor.query(**scope)["source_manifest"]
+            original = editor.execute(action="create",**scope,data={"base_manifest_digest":manifest["manifest_digest"]},idempotency_key="original-manuscript")
+            candidate = editor.execute(action="create",**scope,data={"base_revision_id":original["revision_id"],"base_manifest_digest":manifest["manifest_digest"]},idempotency_key="author-expression")
+            units = deepcopy(manifest["units"])
+            units[1]["scene_artifacts"][0]["text"] += " 风停了一瞬。"
+            units[1]["text"] = serialize_realization(units[1]["scene_artifacts"],units[1].get("scene_separators"))
+            saved = editor.execute(action="save",**scope,data={"revision_id":candidate["revision_id"],"expected_version":candidate["version"],
+                "base_manifest_digest":manifest["manifest_digest"],"units":units,"reason":"Controlled author expression edit; no literary benefit claim","change_kind":"EXPRESSION"},idempotency_key="save-author-expression")
+            inspected = editor.query(**scope,revision_id=saved["revision_id"])
+            assert inspected["revision"]["manifest"]["units"][0] == manifest["units"][0]
+            assert len(inspected["diff"]["changes"]) == 1
+            with pytest.raises(KernelError,match="EDITION_FORMAL_EXPORT_REQUIRES_SELECTION"):
+                editor.export_manuscript(**scope,revision_id=saved["revision_id"])
+            assert editor.export_manuscript(**scope,revision_id=saved["revision_id"],export_kind="CANDIDATE")["export"]["kind"] == "CANDIDATE"
+            validation = editor.start_validation(authority=native.authority,**scope,revision_id=saved["revision_id"])
+            target = validation["validation_book_run_id"]
+            assert native.query.uses_creation_scope(project_id=project,subject_id=target)
+            assert native.authority.require(target)["accepted_through_chapter"] == 1
+            worker = build_trusted_principal_resolver().resolve_worker_principal("edition-worker")
+            for _ in range(20):
+                schedule_book_coordination_jobs(legacy.query,jobs,limit=1,book_run_id=target)
+                phase = jobs.claim(runtime_group="book",worker_id=worker.principal_id,lease_seconds=60,
+                    job_kinds=("BOOK_COORDINATION_TICK",),subject_kind="BOOK_RUN",subject_id=target)
+                assert phase is not None
+                dispatch = execute_book_phase_with_creation_scope(settings,phase,legacy,
+                    lambda scoped:execute_book_coordination_claim(jobs,scoped,phase))
+                if dispatch["action"] == "DISPATCH_CHAPTER":
+                    break
+            assert dispatch["action"] == "DISPATCH_CHAPTER", dispatch
+            active = dispatch["operation_id"]
+            assert native.query.uses_creation_scope(project_id=project,subject_id=active)
+            execute_chapter_with_creation_scope(settings,legacy_chapter.scheduler(principal=worker),worker,
+                project_id=project,root_operation_id=active)
+            stopped = drive_book(composition=native,chapter=native_chapter,book_run_id=target,worker=worker,
+                maximum_ticks=50,deadline=monotonic()+180)
+            assert stopped == "COMPLETED", stopped
+            reviewed = editor.query(**scope,revision_id=saved["revision_id"])["validation_result"]
+            if reviewed["diff"]["changes"]:
+                adopted = editor.execute(action="create",**scope,data={"source_validation_revision_id":saved["revision_id"],
+                    "validation_book_run_id":target,"expected_version":saved["version"],"base_manifest_digest":reviewed["manifest"]["manifest_digest"],
+                    "reason":"Explicitly retain submitted candidate and capture exact native reviewed text"},idempotency_key="capture-native-review")
+            else:
+                adopted = editor.execute(action="validate",**scope,data={"revision_id":saved["revision_id"],"expected_version":saved["version"],
+                    "validation_book_run_id":target},idempotency_key="validate-author-expression")
+            editor.execute(action="select",**scope,data={"revision_id":adopted["revision_id"],"expected_head_version":1,
+                "reason":"Adopt exact revalidated author version"},idempotency_key="select-author-expression")
+            exported = editor.export_manuscript(**scope,revision_id=adopted["revision_id"])
+            assert exported["export"]["currently_selected"]
+            assert exported["revision"]["manifest"] == reviewed["manifest"]
+            assert editor.query(**scope,revision_id=original["revision_id"])["revision"]["manifest"] == manifest
+        finally:
+            native_execution.close()
+            legacy_execution.close()

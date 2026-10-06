@@ -34,6 +34,7 @@ class FormationApprovalRequired(KernelError):
         candidate_asset_version_id: str,
         candidate_content_hash: str,
         candidate_asset_version_ids: tuple[str, ...],
+        generation_failures: tuple[dict[str, str], ...] = (),
     ) -> None:
         super().__init__(
             "STORY_FORMATION_APPROVAL_REQUIRED",
@@ -44,6 +45,7 @@ class FormationApprovalRequired(KernelError):
         self.candidate_asset_version_id = candidate_asset_version_id
         self.candidate_content_hash = candidate_content_hash
         self.candidate_asset_version_ids = candidate_asset_version_ids
+        self.generation_failures = generation_failures
 
 
 class FormationGeneration:
@@ -54,6 +56,11 @@ class FormationGeneration:
         self.planning = planning
         self.database_url = planning.database_url
         self.query = AuthorityAssetQuery(self.database_url)
+
+    def _require_creation_live(self, formation_run_id: str) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            if StoryFormationRepository(uow.cursor).cancellation(formation_run_id):
+                raise KernelError("CREATION_CANCELLED", "No new generation after creation cancellation")
 
     def prepare_layer(
         self, run: dict[str, Any], frozen: StoryFormationInput, *, principal: Principal
@@ -101,23 +108,68 @@ class FormationGeneration:
             else 1
         )
         candidates = []
+        candidate_keys = {}
+        generation_failures = []
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            saved_failures = StoryFormationRepository(uow.cursor).approval_wait(run["formation_run_id"], stage).get("generation_failures", [])
         for ordinal in range(count):
             key = f"{run['formation_run_id']}:{role.value}:{ordinal}"
-            result = self.planning.generate(
-                StoryPlanningGenerationCommand(
-                    project_id=run["project_id"],
-                    workspace_id=run["workspace_id"],
-                    book_id=run["book_id"],
-                    actor_id=principal.principal_id,
-                    generator_operation_name=generator,
-                    logical_key=key,
-                    input_versions=inputs,
-                    idempotency_key=f"{key}:generate",
-                    trace_id=f"trace:{run['formation_run_id']}",
-                    correlation_id=run["root_operation_id"],
-                ),
-                principal=principal,
-            )
+            retained_failure = None
+            for failure in saved_failures:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    if failure.get("asset_version_id"):
+                        uow.cursor.execute("SELECT content->>'logical_key' FROM authority_asset_version WHERE asset_version_id=%s AND content_hash=%s", [failure["asset_version_id"],failure["content_hash"]])
+                    else:
+                        uow.cursor.execute("""SELECT generation.logical_key FROM authority_external_effect effect
+                            JOIN authority_story_planning_generation generation ON generation.operation_id=effect.operation_id
+                            WHERE effect.external_effect_id=%s AND effect.request_hash=%s AND effect.status='FAILED_FINAL'""", [failure["external_effect_id"],failure["request_hash"]])
+                    failed_source = uow.cursor.fetchone()
+                if failed_source and failed_source[0] == key:
+                    retained_failure = failure
+                    break
+            if retained_failure:
+                generation_failures.append(retained_failure)
+                continue
+            try:
+                result = self.planning.generate(
+                    StoryPlanningGenerationCommand(
+                        project_id=run["project_id"],
+                        workspace_id=run["workspace_id"],
+                        book_id=run["book_id"],
+                        actor_id=principal.principal_id,
+                        generator_operation_name=generator,
+                        logical_key=key,
+                        input_versions=inputs,
+                        idempotency_key=f"{key}:generate",
+                        trace_id=f"trace:{run['formation_run_id']}",
+                        correlation_id=run["root_operation_id"],
+                    ),
+                    execution_probe=lambda: self._require_creation_live(run["formation_run_id"]),
+                    principal=principal,
+                )
+            except KernelError as error:
+                if (role is not FoundationRole.CREATIVE_FOUNDATION or policy.get("creative_selection") != "AUTHOR_COMPARISON"
+                        or error.code not in {"PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "PLANNING_REPAIR_BOUND_EXCEEDED", "MODEL_EFFECT_FINAL_PLANNING"}):
+                    raise
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("""SELECT version.asset_version_id,version.content_hash FROM authority_asset_version version
+                        JOIN authority_asset asset USING(asset_id) WHERE asset.project_id=%s
+                        AND asset.asset_type='planning_generation_result_failure' AND version.content->>'book_id'=%s
+                        AND version.content->>'logical_key'=%s ORDER BY version.created_at DESC LIMIT 1""", [run["project_id"],run["book_id"],key])
+                    retained = uow.cursor.fetchone()
+                if retained:
+                    generation_failures.append({"asset_version_id": retained[0], "content_hash": retained[1], "reason_code": error.code})
+                else:
+                    with AuthorityUnitOfWork(self.database_url) as uow:
+                        uow.cursor.execute("""SELECT effect.external_effect_id,effect.request_hash FROM authority_external_effect effect
+                            JOIN authority_story_planning_generation generation ON generation.operation_id=effect.operation_id
+                            WHERE generation.project_id=%s AND generation.book_id=%s AND generation.logical_key=%s
+                              AND effect.status='FAILED_FINAL' ORDER BY effect.created_at DESC LIMIT 1""", [run["project_id"],run["book_id"],key])
+                        terminal = uow.cursor.fetchone()
+                    if not terminal:
+                        raise
+                    generation_failures.append({"external_effect_id": terminal[0], "request_hash": terminal[1], "reason_code": error.code})
+                continue
             candidate_id = result.candidate_asset_version_id
             state = self.planning.story_design.require(
                 project_id=run["project_id"], asset_version_id=candidate_id
@@ -132,14 +184,29 @@ class FormationGeneration:
                     f"{role.value} candidate {candidate_id} remains {state['qualification']}; no Foundation activation",
                 )
             candidates.append(candidate_id)
+            candidate_keys[candidate_id] = key
         with AuthorityUnitOfWork(self.database_url) as uow:
             selection = StoryFormationRepository(uow.cursor).author_selection(
                 run["formation_run_id"], stage
             )
+        if not candidates:
+            raise KernelError("STORY_FORMATION_NO_ADMITTED_ALTERNATIVE", "All directions failed; original diagnostics remain retained")
+        if (role is FoundationRole.CREATIVE_FOUNDATION
+                and policy.get("creative_selection") == "AUTHOR_COMPARISON"
+                and selection.get("decision") != "APPROVE"):
+            proposed = self.query.require(project_id=run["project_id"], asset_version_id=candidates[0])
+            raise FormationApprovalRequired(
+                stage=stage, authority="STORY_PLANNING_AUTHORITY",
+                candidate_asset_version_id=proposed.asset_version_id,
+                candidate_content_hash=proposed.content_hash,
+                candidate_asset_version_ids=tuple(candidates),
+                generation_failures=tuple(generation_failures),
+            )
+        self._require_creation_live(run["formation_run_id"])
         selected = str(selection.get("candidate_asset_version_id") or candidates[0])
         if selected not in candidates or selection.get("decision") in {"REJECT", "REQUEST_CHANGES"}:
             raise KernelError("STORY_FORMATION_AUTHOR_SELECTION_DRIFT", "Frozen author selection cannot be consumed")
-        key = f"{run['formation_run_id']}:{role.value}:{candidates.index(selected)}"
+        key = candidate_keys[selected]
         state = self.planning.story_design.require(
             project_id=run["project_id"], asset_version_id=selected
         )
@@ -199,6 +266,7 @@ class FormationGeneration:
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             return StoryFormationRepository(uow.cursor).generated_layer(
+                formation_run_id=run["formation_run_id"],
                 project_id=run["project_id"],
                 book_id=run["book_id"],
                 candidate_id=selected,

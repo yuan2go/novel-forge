@@ -63,7 +63,27 @@ def test_substantive_blocker_free_revision_becomes_best() -> None:
     )
 
     assert comparison["selected_asset_version_id"] == "revision-v2"
-    assert comparison["stop_reason"] == CandidateStopReason.QUALITY_SATISFIED
+    assert comparison["stop_reason"] == CandidateStopReason.COMPARISON_SUPPORTED
+
+
+def test_unchanged_prose_cannot_claim_improvement_from_a_higher_score():
+    from dataclasses import replace
+
+    previous = _candidate("draft-v1", 70.0, ("CANON_CONFLICT",))
+    challenger = replace(_candidate("revision-v2", 95.0), content=dict(previous.content))
+    result = compare_candidates(project_id="p", chapter_root_operation_id="op", previous=previous,
+        challenger=challenger, minimum_net_improvement=1.0)
+    assert result["selected_asset_version_id"] == previous.asset_version_id
+    assert result["previous"]["blocker_codes"] == ["CANON_CONFLICT"]
+    assert not result["improved"]
+
+
+def test_resolved_blocker_does_not_imply_literary_quality_above_a_fixed_score():
+    result = compare_candidates(project_id="p", chapter_root_operation_id="op",
+        previous=_candidate("draft", 90.0, ("CANON_CONFLICT",)),
+        challenger=_candidate("revision", 75.0), minimum_net_improvement=1.0)
+    assert result["selected_asset_version_id"] == "revision"
+    assert result["stop_reason"] == "COMPARISON_SUPPORTED"
 
 
 def test_native_selection_preserves_prose_identity_across_three_workspaces() -> None:

@@ -136,6 +136,19 @@ class ContentAuthorityScheduler:
                 f"Content Operation is terminal: {state['operation_status']}",
             )
 
+        if state["operation_status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
+            from novel_forge.modules.command_kernel.recovery import RecoverOperationCommand, recover_operation
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                operation = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+            recovered = recover_operation(self.database_url, RecoverOperationCommand(operation_id=operation_id,
+                project_id=project_id, actor_id=self.worker_id, expected_version=int(operation["version"]),
+                idempotency_key=f"{operation_id}:content-reconcile:{operation['version']}",
+                reason="Reconcile original checkpoint before resuming frozen Content input",
+                trace_id=str(state["trace_id"]), correlation_id=str(state["correlation_id"])))
+            if recovered["action"] != "PRE_SEND_CHECKPOINT_RECONCILED":
+                raise KernelError("CONTENT_EXTERNAL_RECONCILIATION_REQUIRED", "Original external receipt must settle before Content resumes")
+            state = self._state(operation_id, project_id)
+
         recovery_mode = "fresh_attempt"
         if state["operation_status"] in {"READY", "FAILED_RETRYABLE"}:
             retrying = state["operation_status"] == "FAILED_RETRYABLE"

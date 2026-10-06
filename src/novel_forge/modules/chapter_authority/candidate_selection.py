@@ -15,6 +15,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 class CandidateStopReason(StrEnum):
     QUALITY_SATISFIED = "QUALITY_SATISFIED"
+    COMPARISON_SUPPORTED = "COMPARISON_SUPPORTED"
     MARGINAL_IMPROVEMENT = "MARGINAL_IMPROVEMENT"
     DETERMINISTIC_BLOCKER = "DETERMINISTIC_BLOCKER"
     MAX_CORRECTION_BUDGET = "MAX_CORRECTION_BUDGET"
@@ -117,7 +118,11 @@ def compare_candidates(
         for check in (*challenger.resolution_checks, *challenger.quality_resolution_checks))
     from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
 
-    if challenger.cross_chapter_review and (
+    if previous.content.get("text") == challenger.content.get("text"):
+        selected = previous
+        reason = CandidateStopReason.MARGINAL_IMPROVEMENT
+        improved = False
+    elif challenger.cross_chapter_review and (
         set(previous.blocker_codes) & set(challenger.blocker_codes)
         or any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
         or len(challenger.preservation_checks) != len(PRESERVATION_DIMENSIONS)
@@ -141,8 +146,8 @@ def compare_candidates(
         selected = challenger
         improved = True
         reason = (
-            CandidateStopReason.QUALITY_SATISFIED
-            if not challenger.blocker_codes and challenger.score >= 80
+            CandidateStopReason.COMPARISON_SUPPORTED
+            if not challenger.blocker_codes
             else CandidateStopReason.CONTINUE_CORRECTION
         )
     elif net_improvement + 1e-9 < minimum_net_improvement:
@@ -152,8 +157,8 @@ def compare_candidates(
     else:
         selected = challenger
         improved = True
-        if not challenger.blocker_codes and challenger.score >= 80:
-            reason = CandidateStopReason.QUALITY_SATISFIED
+        if not challenger.blocker_codes:
+            reason = CandidateStopReason.COMPARISON_SUPPORTED
         elif correction_generation >= maximum_correction_generations:
             reason = CandidateStopReason.MAX_CORRECTION_BUDGET
         else:
@@ -169,7 +174,7 @@ def compare_candidates(
     )
     comparison = {
         "type": "CandidateComparison",
-        "contract_version": "candidate-comparison-v1",
+        "contract_version": "candidate-comparison-v2",
         "comparison_id": "candidate-comparison:"
         + hashlib.sha256(identity.encode()).hexdigest(),
         "project_id": project_id,
@@ -180,6 +185,8 @@ def compare_candidates(
         "resolution_checks": list(challenger.resolution_checks),
         "minimum_net_improvement": minimum_net_improvement,
         "net_improvement": net_improvement,
+        "score_evidence_class": "MODEL_JUDGMENT",
+        "literary_quality_proven": False,
         "new_blocker_codes": new_blockers,
         "resolved_blocker_codes": resolved_blockers,
         "selected_asset_version_id": selected.asset_version_id,

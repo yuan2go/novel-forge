@@ -232,6 +232,8 @@ class WorkerFailureClassifier:
             return WorkerFailureClass.CANCELLATION
         if code in _DEAD_LETTER_CODES or "DEAD_LETTER" in code or "EXHAUST" in code:
             return WorkerFailureClass.DEAD_LETTER
+        if code in {"TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "TASK_CONTEXT_MODEL_CAPACITY_UNKNOWN"}:
+            return WorkerFailureClass.MANUAL_INTERVENTION
         if "UNKNOWN" in code or "RECONCILIATION" in code:
             return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
         if (

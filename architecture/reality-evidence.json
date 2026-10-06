@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261006_0156_resource_journal_indexes",
+  "migration_head": "20261006_0157_creation_continuation_control",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -6115,6 +6115,10 @@
         {
           "path": "src/novel_forge/cli/creation.py",
           "symbol": "run_creation_command"
+        },
+        {
+          "path": "src/novel_forge/workers/book_authority.py",
+          "symbol": "execute_creation_worker_claim"
         }
       ],
       "application": [
@@ -6129,6 +6133,10 @@
         {
           "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
           "symbol": "FormationGeneration"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+          "symbol": "execute_creation_command"
         }
       ],
       "domain_symbols": [
@@ -6163,7 +6171,8 @@
         "owned_state": [
           "book design candidates and activation",
           "qualified foundation set",
-          "story formation run and stages"
+          "story formation run and stages",
+          "immutable creation cancellation intent"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -6185,6 +6194,10 @@
         {
           "path": "src/novel_forge/modules/book_design_authority/formation.py",
           "symbol": "StoryFormationApplication.approve_book_design"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation.py",
+          "symbol": "StoryFormationApplication.cancel_continuation"
         }
       ],
       "persistence": [
@@ -6212,6 +6225,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260907_0120_foundation_generation.py",
           "locator": "MIGRATION_ID = \"20260907_0120_foundation_generation\"",
           "id": "20260907_0120_foundation_generation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0157_creation_continuation_control.py",
+          "locator": "MIGRATION_ID = \"20261006_0157_creation_continuation_control\"",
+          "id": "20261006_0157_creation_continuation_control"
         }
       ],
       "external_effects": {
@@ -6257,6 +6275,10 @@
         {
           "path": "tests/integration/test_creation_cli_postgres.py",
           "symbol": "test_native_start_freezes_current_work_and_reuses_original_formation"
+        },
+        {
+          "path": "tests/integration/test_creation_cli_postgres.py",
+          "symbol": "test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9305,7 +9327,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:c2dca2efa8c7dbfb60fc09890cbe8303190b04ba11c2bad3b0b7aa238ee2369e"
+    "implementation_tree_sha": "sha256:f1a6be133baf8ca159dd7b84ee6367036a95bb4d15febe41e8b3259fbd7eaf4c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

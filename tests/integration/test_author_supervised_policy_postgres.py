@@ -71,7 +71,8 @@ def test_native_author_policy_provenance_frozen_replay_and_nonrenewal(monkeypatc
     assert PostgresRoutingRegistry(DATABASE_URL).policy(project)["policy"]["policy_version"] == "strict-successor"
 
 
-def test_native_author_design_is_approved_without_independent_qualification():
+@pytest.mark.parametrize("continuous", [False, True])
+def test_native_author_design_is_approved_without_independent_qualification(continuous):
     from novel_forge.modules.content_authority import CONTENT_CODECS, ContentAuthorityApplication, ContentOperationRequest
     from novel_forge.modules.story_design_authority import DesignTransition, PlanningScope, PostgresStoryDesignAssetAuthority, StoryDesignTransitionCommand
     from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
@@ -183,13 +184,26 @@ def test_native_author_design_is_approved_without_independent_qualification():
     frozen = StoryFormationInput(creative_brief_asset_version_id=brief.asset_version_id, creative_brief_content_hash=brief.content_hash,
         generation_policy={"contract_version":"formation-generation.v3","approval_mode":"REVIEW_PLAN","creative_candidates":1,
             "target_chapters":1,"title":"Protocol test", "author_creative_foundation":{"asset_version_id":authored["asset_version_id"],"content_hash":authored["content_hash"]}})
+    if continuous:
+        import json
+        from pathlib import Path
+        from novel_forge.modules.book_design_authority.formation_domain import deterministic_story_formation_run_id
+        profiles = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
+        profiles["profiles"]["production_profile"]["content"]["language_contract"] = {"required_language":"zh-CN"}
+        source_id = deterministic_story_formation_run_id(project_id=project,book_id=book,stable_idempotency_key=project+":formation")
+        frozen = replace(frozen,generation_policy={**frozen.generation_policy,"contract_version":"formation-generation.v5",
+            "approval_mode":"AUTO","creative_selection":"AUTHOR_DIRECTION","creation_input_policy":profiles,
+            "auto_authorization":{"contract_version":"formation-auto-authorization.v1","policy_version":"formation-auto-policy.v1",
+                "authorization_ref":"explicit-author-continuation-test","authorized_by_principal_id":author.principal_id,
+                "project_id":project,"workspace_id":workspace,"book_id":book,"formation_run_id":source_id,
+                "allowed_actions":["book_design.candidate.activate","book_design.candidate.decide","story_planning.candidate.activate","story_planning.candidate.approve"]}})
     assert StoryFormationInput.from_mapping(frozen.to_dict()).digest == frozen.digest
     from novel_forge.modules.book_design_authority.formation import StoryFormationApplication, StartStoryFormationCommand
     from novel_forge.modules.book_design_authority.formation_generation import FormationGeneration
     from unittest.mock import Mock
     planning = SimpleNamespace(database_url=DATABASE_URL, generate=Mock(side_effect=AssertionError("Author direction must not generate creative candidates")))
     formation = StoryFormationApplication(DATABASE_URL, application_build_id="supervised-design-test", commit_sha="a"*40, generation=FormationGeneration(planning))
-    author = replace(author, permissions=author.permissions | {"story_planning.authority.execute", "story_planning.authority.activate"})
+    author = replace(author, permissions=author.permissions | {"story_planning.authority.execute", "story_planning.authority.activate", "story_planning.authority.approve"})
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT version FROM authority_book WHERE project_id=%s AND book_id=%s", [project,book])
         book_version = uow.cursor.fetchone()[0]

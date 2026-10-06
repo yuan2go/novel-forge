@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class PipelineRunRequest(BaseModel):
@@ -1064,7 +1064,41 @@ class StoryFormationLayerRequest(BaseModel):
     selection_reason: list[str] = Field(min_length=1)
 
 
+class StoryCreationLanguageRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    required_language: str = Field(min_length=1)
+
+
+class StoryCreationLengthRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    minimum: int = Field(ge=1, le=100000, strict=True)
+    maximum: int = Field(ge=1, le=100000, strict=True)
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        if self.minimum > self.maximum:
+            raise ValueError("Chapter length maximum must include minimum")
+        return self
+
+
+class StoryCreationDirectionRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    asset_version_id: str = Field(min_length=1)
+    content_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
+
+
+class StoryCreationIntentRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    title: str = Field(min_length=1)
+    target_chapters: int = Field(ge=1, le=10000, strict=True)
+    creative_candidates: int = Field(default=2, ge=2, le=4, strict=True)
+    language_contract: StoryCreationLanguageRequest
+    chapter_length: StoryCreationLengthRequest | None = None
+    author_creative_foundation: StoryCreationDirectionRequest | None = None
+
+
 class StoryFormationStartRequest(BaseModel):
+    production_intent: StoryCreationIntentRequest | None = None
     project_id: str = Field(min_length=1)
     workspace_id: str = Field(min_length=1)
     expected_book_version: int = Field(ge=0)
@@ -1083,6 +1117,8 @@ class StoryFormationStartRequest(BaseModel):
 
 
 class StoryFormationControlRequest(BaseModel):
+    reason: str = ""
+    idempotency_key: str = ""
     expected_version: int = Field(ge=0)
     actor_id: str = ""
 
