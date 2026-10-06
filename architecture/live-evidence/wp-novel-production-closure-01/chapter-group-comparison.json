@@ -1,0 +1,69 @@
+{
+  "decision_id": "narrative-search-decision:narrative-search:488c58b8ca10267d1b7c9248af3dc74b2d59c3cc40553784c7d1f1a03573de19",
+  "search_id": "narrative-search:488c58b8ca10267d1b7c9248af3dc74b2d59c3cc40553784c7d1f1a03573de19",
+  "selected_candidate_asset_version_id": "authority-output:31c1ad3f-95ce-41c6-adac-20826af5489d:story_planning.candidate:v1",
+  "candidate_set_hash": "sha256:90957c06ef641915c80031164460498122698b8a943a858a4b295ab932bf30c4",
+  "comparison": {
+    "policy_version": "narrative-search-comparison.v1",
+    "contract_version": "narrative-search.v1",
+    "ranked_candidates": [
+      {
+        "rank": 1,
+        "score": 0.820709,
+        "branch_key": "future-2",
+        "selection_summary": "第一章发现可核差异，第二章建立来源和权限，第三章分开旁证问题，第四章检查逐行比较的前提并转向形成用途；节奏由发现、放缓核对、分项整理到方法反转，保留后续调查空间。",
+        "qualification_hash": "sha256:dbe143c12690d9c9103db8f59bb5144a58ce7805839c35d5104e24788a34d730",
+        "strategy_fingerprint": "future-2:ch1-4:sourced-list-conflict:access-boundary:separate-clues:comparison-premise-reversal",
+        "generation_operation_id": "31c1ad3f-95ce-41c6-adac-20826af5489d",
+        "candidate_asset_version_id": "authority-output:31c1ad3f-95ce-41c6-adac-20826af5489d:story_planning.candidate:v1"
+      },
+      {
+        "rank": 2,
+        "score": 0.80847,
+        "branch_key": "future-1",
+        "selection_summary": "在第1至4章先建立可追溯的差异底稿，再让周澄以延迟简单结论为代价，署名开启按形成用途与岗位权限核对的调查；各条旁证的原因保持开放。",
+        "qualification_hash": "sha256:6d8876fa8768fffe7759ef33358e5189e69233727a059c33a5eed51d90093dc9",
+        "strategy_fingerprint": "cg1:source-ledger:bounded-request:costly-agency:open-causes",
+        "generation_operation_id": "9e82da8b-b7ca-4cc0-8a79-e791007f7302",
+        "candidate_asset_version_id": "authority-output:9e82da8b-b7ca-4cc0-8a79-e791007f7302:story_planning.candidate:v1"
+      },
+      {
+        "rank": 3,
+        "score": 0.802873,
+        "branch_key": "future-3",
+        "selection_summary": "以四章完成名册冲突的来源建档和初步用途检验；将档案权限的现实压力转化为周澄、沈芷、方峤与孟稚之间有边界的协作选择。",
+        "qualification_hash": "sha256:95a21dafc46be6703ae68f3d80fbc9ae52646290c49dd042d561e7fd7bfd4dd1",
+        "strategy_fingerprint": "cg1-4:source-register:access-pressure:bounded-collaboration",
+        "generation_operation_id": "4b68fee9-ba98-4841-bc07-d828c6f55a74",
+        "candidate_asset_version_id": "authority-output:4b68fee9-ba98-4841-bc07-d828c6f55a74:story_planning.candidate:v1"
+      }
+    ],
+    "selection_reasons": [
+      "highest qualified comparison score 0.820709",
+      "future_optionality=0.920",
+      "reader_promise=0.880",
+      "arc_momentum=0.860",
+      "preserves 3 explicit future options"
+    ],
+    "selected_candidate_asset_version_id": "authority-output:31c1ad3f-95ce-41c6-adac-20826af5489d:story_planning.candidate:v1",
+    "rejected_candidate_asset_version_ids": [
+      "authority-output:9e82da8b-b7ca-4cc0-8a79-e791007f7302:story_planning.candidate:v1",
+      "authority-output:4b68fee9-ba98-4841-bc07-d828c6f55a74:story_planning.candidate:v1"
+    ]
+  },
+  "comparison_hash": "sha256:d0bff996029a1506168cce7ff9455edd0f3cf196a3fb744a6916cba13a5d0d1a",
+  "selection_reason": [
+    "highest qualified comparison score 0.820709",
+    "future_optionality=0.920",
+    "reader_promise=0.880",
+    "arc_momentum=0.860",
+    "preserves 3 explicit future options"
+  ],
+  "created_at": "2026-10-06T16:15:58.906326+00:00",
+  "evidence_limits": {
+    "score_class": "MODEL_JUDGMENT",
+    "first_candidate_selected": false,
+    "literary_best": "NOT_PROVEN",
+    "alternatives": "similar evidence-driven archive investigations; ranking differences do not establish literary superiority"
+  }
+}

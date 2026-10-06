@@ -1,0 +1,59 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "baseline_sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+  "original_checkout_sha": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "original_user_changes_preserved": true,
+  "original_status_equals_start": true,
+  "implementation_branch": "codex/wp-novel-production-closure-01",
+  "docs_cleaned_before_code": true,
+  "docs_first_commit": "b170ea075499defb2d3ca1a04f0717f8bb6f2972",
+  "canonical_docs_changed": [
+    "docs/current-system.md",
+    "docs/runtime-operations.md"
+  ],
+  "canonical_docs_added": [],
+  "valid_unimplemented_requirements_deleted": false,
+  "published_migrations_modified": false,
+  "new_forward_only_migrations": [
+    "20261006_0157_creation_continuation_control",
+    "20261006_0158_planning_capacity_causation",
+    "20261007_0159_planning_dead_letter_result_recovery"
+  ],
+  "compatibility": [
+    "Formation v1-v4 retain frozen policies; new native v5 requires explicit comparison or already approved author direction",
+    "Historic failed World retry checkpoints retain original receipts and terminal history; native known-result recovery is bounded",
+    "FORMAL Edition export requires exact VALIDATED/SELECTED version; CANDIDATE export remains explicit"
+  ],
+  "initial_owner_hypotheses_and_acceptance": [
+    {
+      "item": 1,
+      "owner": "Book worker / RuntimeJob / creation_runtime",
+      "gap": "CLI returns technical waits without persistent cross-stage handoff",
+      "acceptance": "same frozen Formation through Opening and Book; restart takeover; cancellation; bounded no-progress; UNKNOWN reconciliation"
+    },
+    {
+      "item": 2,
+      "owner": "Formation / Narrative Search / author decisions",
+      "gap": "AUTO Foundation chooses first admitted branch; exact manual decision path already exists",
+      "acceptance": "bounded versioned candidates; author comparison boundary and reason; non-first selection; stale source rejection"
+    },
+    {
+      "item": 3,
+      "owner": "Review / CandidateComparison / Quality / Book acceptance",
+      "gap": "current diagnostics protect original; candidate stop uses hardcoded 80 model-score success marker",
+      "acceptance": "evidenced resolution and preservation; no score-only quality claim; blocked originals remain blocked"
+    },
+    {
+      "item": 4,
+      "owner": "Planning / Context / Writer Pack",
+      "gap": "current task-specific Prompt and source isolation already exist; complete request and recovered binding need verification",
+      "acceptance": "exact input and author version; clean accepted history; targeted edit boundaries"
+    },
+    {
+      "item": 5,
+      "owner": "author UI/CLI / Edition",
+      "gap": "creation CLI owns cross-stage continuation; UI exposes manual stage controls; existing Editor and Edition need verification",
+      "acceptance": "durable status/readability; preserve unsaved edits and idempotency; exact edition export"
+    }
+  ]
+}

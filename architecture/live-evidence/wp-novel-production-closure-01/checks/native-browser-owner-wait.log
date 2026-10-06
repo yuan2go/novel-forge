@@ -1,0 +1,1 @@
+{"status":"PASS","evidence_kind":"REAL_API_POSTGRESQL_READ_ONLY_AUTHOR_PROGRESS","progress":"创作进度：等待责任方解决停点。已接纳 0/12 章。 当前责任方：生产运行责任方。 下一动作：先解决已保存问题，再恢复原任务。","mutations":0,"provider_calls":0,"page_errors":[]}

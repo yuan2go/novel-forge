@@ -1,0 +1,181 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "recorded_at": "2026-10-06T17:58:13.670607+00:00",
+  "baseline_sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+  "implementation_sha": "184c8bea98d51078a5e9fb37344481d89a676783",
+  "frozen_native_release_sha": "b170ea075499defb2d3ca1a04f0717f8bb6f2972",
+  "project_id": "closure-original-20261006",
+  "formation_run_id": "story-formation:0b15b18326b245b7822ba64cc748c18bfc6a329523c2c449af79b1767040ac60",
+  "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+  "book_progress": {
+    "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "state": "CHAPTER_PLAN_REQUIRED",
+    "accepted_chapters": 0,
+    "target_chapters": 12,
+    "version": 1
+  },
+  "author_state": "OWNER_RECOVERY_REQUIRED",
+  "responsible_party": "RUNTIME_OWNER",
+  "failure": {
+    "code": "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED",
+    "message": "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained"
+  },
+  "recovery_instruction": "Inspect retained failed proposals and exact diagnostics. A new author decision or approved future input change must resolve the cause; repeating recovery cannot expand the repair allowance.",
+  "effects": {
+    "SUCCEEDED": 49
+  },
+  "dispatch_attempts": {
+    "FAILED_RETRYABLE": 1,
+    "SUCCEEDED": 49
+  },
+  "reservation_count": 50,
+  "usage_tokens_by_settlement_basis": {
+    "PROVIDER_USAGE_RECEIPT": 2103890,
+    "RESERVATION_CEILING": 55121
+  },
+  "reservation_count_by_settlement_basis": {
+    "PROVIDER_USAGE_RECEIPT": 49,
+    "RESERVATION_CEILING": 1
+  },
+  "requested_model": "codex-cli:gpt-6-sol:high",
+  "served_model_attestation": "UNKNOWN",
+  "monetary_consumption": "UNKNOWN",
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "deepseek_calls": 0,
+  "real_provider_proven": true,
+  "real_continuous_prose": "BLOCKED_BEFORE_CHAPTER_1",
+  "real_prose_revision_benefit": "NOT_RUN",
+  "real_author_text_edit_and_export": "NOT_RUN",
+  "long_form_literary_quality": "NOT_PROVEN",
+  "owner_recovery_decisions": 8,
+  "human_interventions_after_initial_request": 0,
+  "agent_operator_interventions_are_human_evidence": false,
+  "world_repair_lineage": [
+    {
+      "operation_id": "7d62fe4d-00d5-4f99-aa18-18204604d98d",
+      "status": "FAILED_FINAL",
+      "repair_number": 0,
+      "repair_of_operation_id": null,
+      "candidate_asset_version_id": null
+    },
+    {
+      "operation_id": "43fb3b1c-8ebb-4e7a-830b-66929ca4bb37",
+      "status": "DEAD_LETTER",
+      "repair_number": 1,
+      "repair_of_operation_id": "7d62fe4d-00d5-4f99-aa18-18204604d98d",
+      "candidate_asset_version_id": null
+    },
+    {
+      "operation_id": "7ef22c8b-bbcd-4723-8185-527a2e0bbbd2",
+      "status": "FAILED_FINAL",
+      "repair_number": 2,
+      "repair_of_operation_id": "43fb3b1c-8ebb-4e7a-830b-66929ca4bb37",
+      "candidate_asset_version_id": null
+    }
+  ],
+  "agent_recovery_command_records": 11,
+  "repair_chain_nonterminal_effects": 0,
+  "runtime_worker_15_sha": "8d748dc6d0b6fcb81a7d01d2ca3d0fe703e2b080",
+  "pending_runtime_jobs": 0,
+  "new_provider_calls_while_draining_owner_wait": 0,
+  "original_world_source_asset_version_id": "2f419a49-cbc2-4c4e-9fb0-6a833d2fd635",
+  "original_world_source_hash": "sha256:831d3863d2b99b23e9e156491952ff7ed03cd3ce1cb5125a5c3226a57f315792",
+  "observed_model_call_version_identities": [
+    {
+      "stage": "creative.candidates.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "topic-development@topic-development-qualification-v2",
+      "schema_version": null
+    },
+    {
+      "stage": "theme.candidates.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "narrative-beat-design@narrative-beat-design-qualification-v3",
+      "schema_version": null
+    },
+    {
+      "stage": "ending.intent.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "long-outline@long-outline-v3",
+      "schema_version": null
+    },
+    {
+      "stage": "reader.promise.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "topic-development@topic-development-qualification-v2",
+      "schema_version": null
+    },
+    {
+      "stage": "world.design.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "worldbuilding@worldbuilding-qualification-v2",
+      "schema_version": null
+    },
+    {
+      "stage": "book_plan.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "long-outline@long-outline-v3",
+      "schema_version": null
+    },
+    {
+      "stage": "character.cast.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "character-design@character-design-qualification-v2",
+      "schema_version": null
+    },
+    {
+      "stage": "volume_plan.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "long-outline@long-outline-v3",
+      "schema_version": null
+    },
+    {
+      "stage": "arc_plan.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "long-outline@long-outline-v3",
+      "schema_version": null
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "long-outline@long-outline-v3",
+      "schema_version": null
+    },
+    {
+      "stage": "world_candidates.generate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "chapter-outline@chapter-outline-qualification-v2",
+      "schema_version": null
+    },
+    {
+      "stage": "world_candidates.evaluate",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v8",
+      "skill_version": "chapter-outline@chapter-outline-qualification-v2",
+      "schema_version": null
+    }
+  ]
+}
