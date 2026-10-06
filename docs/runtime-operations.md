@@ -3084,7 +3084,7 @@ remain ineligible. Verify an expired child and an already recorded no-send timeo
 through the native length-scope integration before resuming such a checkpoint.
 For an unaccepted Canon extraction stopped before dispatch by rendered context
 capacity, creative v5 can replace an unexecuted legacy Canon step with the
-explicit `chapter-canon-capacity-repair.v1` successor, Canon 3.9.5 / Pack 2.19.
+explicit `chapter-canon-capacity-repair.v1` successor, Canon 3.9.6 / Pack 2.20.
 The predecessor must have only recorded capacity refusals and no ExternalEffect,
 domain output, dependent or live lease. Its Attempts and operation-bound Pack remain
 immutable; the successor binds the current Pack and receives full physical admission.
@@ -3103,10 +3103,19 @@ is checked for equivalence against the canonical contract, then receives the nor
 request admission and host validation. A standard JSON Schema check alone does not
 prove service compatibility.
 
-Creative v5 can renew the derived window of a Canon 3.9.5 membership retry after
+The historical compiler-v3 correction under creative v5 can renew the derived window of a Canon 3.9.5 membership retry after
 a recorded, settled process failure only when the current wire compiler proves an
 exact reversible correction against the retained provider Schema hash. The v5
 execution-window journal binds the source Attempt, billing authorization, original
 canonical Schema and both wire hashes. It retains the original retry count and
 author deadlines, rejects uncertain effects and priced channels, and cannot renew
 again for the same correction. Its service outcome remains unproven until dispatch.
+
+A terminal Canon 3.9.5 `PROVIDER_SCHEMA_REJECTED` can use the native
+`chapter-provider-schema-contract-repair.v1` successor under creative v5. It requires
+exact failed process/Schema evidence, settled membership accounting, unchanged input
+and domain contracts, and no candidate, dependent, live lease or uncertain effect.
+The predecessor remains terminal and its receipts remain failed; the new Canon 3.9.6
+step binds Pack 2.20 and compiler v4. Book acceptance recognizes only the verified
+non-producing predecessor once its current Saga successor succeeds. Strict mode
+cannot admit this creative recovery.

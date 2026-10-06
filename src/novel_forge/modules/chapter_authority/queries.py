@@ -199,7 +199,7 @@ class ChapterAuthorityQuery:
                        effect.request_payload #>>
                            '{_production_execution,attempt_id}' AS attempt_id,
                        attempt.status AS attempt_status,
-                       COALESCE(succ.contract_version='kernel-failed-step-successor.v1'
+                       COALESCE((succ.contract_version='kernel-failed-step-successor.v1'
                          AND ((succ.policy_evidence->>'contract_version'='chapter-candidate-contract-repair.v1' AND source.status='CANCELLED'
                              AND attempt.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION')
                            OR (succ.policy_evidence->>'contract_version'='chapter-review-output-repair.v1' AND source.status='FAILED_FINAL'
@@ -212,7 +212,15 @@ class ChapterAuthorityQuery:
                          AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
                          AND succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id
                          AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'settled_candidate_effects') binding
-                             WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash),FALSE),
+                             WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash ) OR (succ.contract_version='kernel-failed-step-successor.v1'
+                         AND succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
+                         AND source.status='FAILED_FINAL' AND source.definition_name='chapter.canon.extract' AND source.definition_version='3.9.5'
+                         AND replacement.definition_version='3.9.6' AND replacement.status='SUCCEEDED' AND active.operation_id IS NOT NULL
+                         AND effect.status IN ('FAILED_FINAL','FAILED_RETRYABLE') AND budget.status='SETTLED' AND budget.accounting_basis='ACCOUNT_ENTITLEMENT'
+                         AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'known_failed_effects') binding
+                             WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash
+                               AND binding->>2=effect.status AND binding->>3='SETTLED' AND binding->>4='ACCOUNT_ENTITLEMENT'
+                               AND binding->>5=budget.evidence->>'cost_authorization_ref'))),FALSE),
                        succ.successor_operation_id
                 FROM authority_external_effect AS effect
                 LEFT JOIN authority_attempt AS attempt
@@ -244,7 +252,8 @@ class ChapterAuthorityQuery:
                     "created_at": str(row[7]),
                     "attempt_id": row[8] or "",
                     "attempt_status": row[9] or "",
-                    "settled_candidate_superseded": bool(row[10]),
+                    "settled_candidate_superseded": bool(row[10]) and row[4] == "SUCCEEDED",
+                    "settled_nonproducing_superseded": bool(row[10]) and row[4] in {"FAILED_FINAL", "FAILED_RETRYABLE"},
                     "successor_operation_id": row[11] or "",
                 }
                 for row in cursor.fetchall()

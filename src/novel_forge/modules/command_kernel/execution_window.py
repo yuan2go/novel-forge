@@ -53,7 +53,8 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.revision.apply','CANCELLATION_REQUESTED','REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
-            ('chapter.canon.extract','CANCELLATION_REQUESTED','PROVIDER_ROUTING_BLOCKED'):('3.9.5','canon_schema_projection','canon-provider-shared-types.v1'),
+            ('chapter.canon.extract','FAILED_FINAL','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'):('3.9.6','canon_wire_projection','codex-structured-schema.v4'),
+            ('chapter.canon.extract','CANCELLATION_REQUESTED','PROVIDER_ROUTING_BLOCKED'):('3.9.6','canon_schema_projection','canon-provider-shared-types.v1'),
             ('chapter.canon.extract','FAILED_RETRYABLE','MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE'):('3.9.5','canon_schema_projection','canon-provider-shared-types.v1'),
             ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
@@ -87,11 +88,20 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                         'external_effect_id':observation[3],'cost_authorization_ref':observation[4]}
             if not wire_correction or not start_repair_phase:
                 raise KernelError('EXECUTION_PHASE_WIRE_CORRECTION_REQUIRED','Only an exact reversible wire correction of a known settled membership failure may continue')
+        protocol_succession = source[3]=='chapter.canon.extract' and source[1]=='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'
+        protocol_effect_ids=[]
+        if protocol_succession:
+            cursor.execute("""SELECT e.external_effect_id,e.status,r.status,r.accounting_basis FROM authority_external_effect e
+                LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s""",[predecessor_id])
+            effects=cursor.fetchall()
+            if not effects or any(r[1] not in {'FAILED_FINAL','FAILED_RETRYABLE'} or r[2:]!=('SETTLED','ACCOUNT_ENTITLEMENT') for r in effects):
+                raise KernelError('EXECUTION_WINDOW_PROTOCOL_UNSETTLED','Only exact settled membership failures can precede a protocol successor')
+            protocol_effect_ids=[r[0] for r in effects]
         cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id
             JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s
-            AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED') AND e.external_effect_id IS DISTINCT FROM %s),
+            AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED') AND e.external_effect_id IS DISTINCT FROM %s AND NOT (e.external_effect_id=ANY(%s::text[]))),
             EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) JOIN authority_operation o USING(operation_id)
-            WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())""", [root_id,wire_correction['external_effect_id'] if wire_correction else None,root_id])
+            WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())""", [root_id,wire_correction['external_effect_id'] if wire_correction else None,protocol_effect_ids,root_id])
         if any(cursor.fetchone()):
             raise KernelError('EXECUTION_WINDOW_UNSETTLED','Uncertain effects or live leases prevent continuation')
         key_parts = [root_id,predecessor_id,target_version,admission['policy_snapshot']['policy_hash']]

@@ -330,12 +330,12 @@ def recover_canon_capacity_frontier(authority, *, book_run_id, principal):
             trace_id=source['trace_id'],correlation_id=source['correlation_id']))
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
     continue_candidate_execution_window(authority.database_url, root_id=request['chapter_root_operation_id'],
-        predecessor_id=source['operation_id'],target_version='3.9.5',book_run_id=book_run_id,principal=principal)
+        predecessor_id=source['operation_id'],target_version='3.9.6',book_run_id=book_run_id,principal=principal)
     def guard(uow):
         uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
         if uow.cursor.fetchone() != (book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id']) != template:
             raise KernelError('CHAPTER_CANON_RECOVERY_CONFLICT', 'Reload the exact current Book frontier')
-    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.5',
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.6',
         context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
             authority.application_build_id,authority.commit_sha),policy_evidence=evidence,
         expected_failure_code='PROVIDER_ROUTING_BLOCKED',transaction_guard=guard)
@@ -372,4 +372,56 @@ def recover_canon_schema_retry_phase(authority, *, book_run_id, principal):
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
     continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
         predecessor_id=row[0],target_version='3.9.5',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
+    return True
+
+
+def recover_canon_protocol_frontier(authority, *, book_run_id, principal):
+    book=authority.require(book_run_id)
+    principal.require('book.authority.execute',book['project_id'])
+    principal.require('chapter.authority.execute',book['project_id'])
+    if not book.get('active_chapter_request_id'):
+        return False
+    request=authority.require_chapter_request(book['active_chapter_request_id'])
+    if request['chapter_number']!=book['accepted_through_chapter']+1:
+        return False
+    from novel_forge.modules.production_execution.execution_template import selected_template
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        template=selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id'])
+        policy=selected_template(template['policy_snapshot']['policy'],book['book_id']) if template else None
+        if not policy or policy.get('chapter_contract_recovery')!='KNOWN_SETTLED_CONTRACT_REPAIR':
+            return False
+        uow.cursor.execute("""SELECT to_jsonb(o),to_jsonb(a),v.asset_version_id,v.content_hash FROM authority_operation o
+            JOIN authority_saga_step s USING(operation_id)
+            JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
+            JOIN authority_operation_output_asset oa ON oa.operation_id=o.operation_id JOIN authority_asset x USING(asset_id) JOIN authority_asset_version v USING(asset_version_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.canon.extract'
+            AND o.definition_version='3.9.5' AND o.status='FAILED_FINAL'
+            AND a.result->>'error_code'='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED' AND x.asset_type='model_call_log'
+            AND v.content->>'attempt_id'=a.attempt_id AND v.content->>'failure_code'='PROVIDER_SCHEMA_REJECTED'
+            AND v.content->'real_model_call'='false'::jsonb""",[request['chapter_root_operation_id'],book['project_id']])
+        row=uow.cursor.fetchone()
+        if not row:
+            return False
+        source,attempt,asset_id,asset_hash=row
+        if source['actor_id']!=principal.principal_id:
+            raise KernelError('CHAPTER_CANON_PROTOCOL_ACTOR_INVALID','Only the original actor can adopt a Schema successor')
+        uow.cursor.execute("""SELECT e.external_effect_id,e.request_hash,e.status,r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref'
+            FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id)
+            WHERE e.operation_id=%s ORDER BY e.external_effect_id""",[source['operation_id']])
+        effects=uow.cursor.fetchall()
+    evidence={'contract_version':'chapter-provider-schema-contract-repair.v1','book_run_id':book_run_id,
+        'chapter_request_id':request['chapter_request_id'],'policy_admission':template,'input_snapshot':source['input_asset_snapshot'],
+        'source_failure':attempt,'protocol_rejection_asset':{'asset_version_id':asset_id,'content_hash':asset_hash},
+        'known_failed_effects':effects,'source_operation':source,'completion_checks':'UNCHANGED','accepted_cursor':book['accepted_through_chapter']}
+    from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
+    continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
+        predecessor_id=source['operation_id'],target_version='3.9.6',book_run_id=book_run_id,principal=principal)
+    def guard(uow):
+        uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE',[book_run_id,book['project_id']])
+        if uow.cursor.fetchone()!=(book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id'])!=template:
+            raise KernelError('CHAPTER_CANON_PROTOCOL_CONFLICT','Reload the exact Book frontier')
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.6',
+        context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
+            authority.application_build_id,authority.commit_sha),policy_evidence=evidence,
+        expected_failure_code='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED',transaction_guard=guard)
     return True

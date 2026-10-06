@@ -50,6 +50,8 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
         recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_capacity_frontier
         recover_canon_capacity_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_protocol_frontier
+        recover_canon_protocol_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_schema_retry_phase
         recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier

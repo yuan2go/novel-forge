@@ -729,7 +729,8 @@ def test_codex_wire_correction_requires_exact_retained_hashes():
     import hashlib
     from novel_forge.modules.production_execution.codex_configuration import codex_wire_correction_evidence
     canonical={'type':'object','properties':{'value':{'type':['object','null'],'properties':{'id':{'type':'string'}},'required':['id'],'additionalProperties':False}},'required':['value'],'additionalProperties':False}
-    digest=lambda v:'sha256:'+hashlib.sha256(json.dumps(v,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    def digest(value):
+        return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     evidence={'output_schema':canonical,'output_schema_version':'schema:chapter-provider-output:canon_extraction:v24',
         'provider_schema_contract':{'version':'codex-structured-schema.v3','canonical_hash':digest(canonical),'provider_hash':digest(canonical)}}
     proof=codex_wire_correction_evidence(evidence)
@@ -740,3 +741,27 @@ def test_codex_wire_correction_requires_exact_retained_hashes():
     evidence['provider_schema_contract']['provider_hash']=digest(canonical)
     evidence['output_schema_version']='schema:chapter-provider-output:canon_extraction:v23'
     assert codex_wire_correction_evidence(evidence) is None
+
+
+@pytest.mark.parametrize("field,valid,invalid", [
+    ({"type":["string","null"],"minLength":2}, [None,"ok"], ["x",1,[]]),
+    ({"type":["array","null"],"items":{"type":"integer"},"minItems":1}, [None,[1]], [[],["x"],False]),
+    ({"type":["number","null"],"minimum":2}, [None,2,3.5], [1,"2",False]),
+    ({"type":["boolean","null"]}, [None,True,False], [1,"true",[]]),
+    ({"type":["string","null"],"enum":[None],"minLength":1}, [None], ["x","",1,False]),
+    ({"type":["string","null"],"enum":["x"]}, ["x"], [None,"y",1]),
+    ({"type":["string","null"],"const":"x"}, ["x"], [None,"y",1]),
+])
+def test_nullable_wire_values_preserve_canonical_contract(field,valid,invalid):
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.command_kernel.errors import KernelError
+    schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":field},"required":["value"],"additionalProperties":False}
+    wire=codex_output_schema(schema)
+    for value in valid:
+        for contract in (schema,wire):
+            validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})
+    for value in invalid:
+        for contract in (schema,wire):
+            with pytest.raises(KernelError):
+                validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})

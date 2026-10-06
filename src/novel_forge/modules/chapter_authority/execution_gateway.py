@@ -939,7 +939,7 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
                 "Capability Pack does not authorize model.provider.invoke for this stage",
             )
-        if stage == "canon_extraction" and graph["definition_version"] == "3.9.5" and materialization.prompt_template.version != "v10":
+        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6"} and materialization.prompt_template.version != "v10":
             raise KernelError("CHAPTER_CANON_SCHEMA_PROJECTION_REQUIRED", "Canon 3.9.5 requires its exact shared-Schema Prompt binding")
         provider_schema, provider_schema_ref = self._provider_output_contract(
             stage=stage,
@@ -2093,7 +2093,7 @@ class PostgresChapterExecutionContractBinder:
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
-        compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) == "3.9.5")
+        compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6"})
         compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) == "3.9.4")
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(

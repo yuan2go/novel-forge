@@ -288,6 +288,22 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         )
         self.assertEqual(recovered, frozen)
 
+        successor_effect = {"operation_id":"operation:canon-successor", "external_effect_id":"effect:canon-successor",
+            "attempt_id":"attempt:canon-successor", "attempt_status":"SUCCEEDED", "status":"SUCCEEDED"}
+        predecessor_effect = {"operation_id":"operation:canon-rejected", "external_effect_id":"effect:canon-rejected",
+            "attempt_id":"attempt:canon-rejected", "attempt_status":"FAILED_FINAL", "status":"FAILED_FINAL",
+            "settled_nonproducing_superseded":True, "successor_operation_id":"operation:canon-successor"}
+        successor_request={"chapter_number":1,"project_id":"grounded-contract-fixture",
+            "chapter_plan_version":logical_plan,"chapter_plan_content_hash":"sha256:logical-plan",
+            "command_payload":{"execution_chapter_plan_asset_version_id":execution_plan,"execution_chapter_plan_content_hash":execution_hash}}
+        successor_evidence={"status":"SUCCEEDED","saga":{"status":"SUCCEEDED"},"outputs":outputs,
+            "model_effects":[predecessor_effect,successor_effect],"budgets":[{"status":"SETTLED"}]}
+        self.assertEqual(_validate_chapter_acceptance_evidence(request=successor_request,evidence=successor_evidence),frozen)
+        for invalid in ({"settled_nonproducing_superseded":False}, {"successor_operation_id":""}, {"status":"UNKNOWN"}):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(KernelError,"effects_terminal"):
+                _validate_chapter_acceptance_evidence(request=successor_request,
+                    evidence={**successor_evidence,"model_effects":[{**predecessor_effect,**invalid},successor_effect]})
+
         with self.assertRaisesRegex(KernelError, "effects_terminal"):
             _validate_chapter_acceptance_evidence(
                 request={

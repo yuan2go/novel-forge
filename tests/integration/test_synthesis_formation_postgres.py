@@ -1285,7 +1285,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                     frozen_scene_deadline = uow.cursor.fetchone()[0]
                 def expired_window(url, **kwargs):
                     source_deadline = frozen_scene_deadline
-                    if kwargs['target_version']=='3.9.5':
+                    if kwargs['target_version']=='3.9.6':
                         with AuthorityUnitOfWork(url) as uow:
                             uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s',[kwargs['root_id']])
                             source_deadline = uow.cursor.fetchone()[0]
@@ -1379,7 +1379,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                     uow.cursor.execute('SELECT count(*) FROM authority_external_effect WHERE operation_id=%s',[retained_canon[0]['operation_id']])
                     assert uow.cursor.fetchone()==(0,)
                     uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s",[retained_canon[0]['operation_id']])
-                    assert uow.cursor.fetchone()==('SUCCEEDED','3.9.5')
+                    assert uow.cursor.fetchone()==('SUCCEEDED','3.9.6')
             if scene_information_recovery:
                 assert creation_result['stop_reason'] == 'REALIZATION_EPISTEMIC_SCOPE_VIOLATION', creation_result
                 creation_result = continue_creation(composition=composition,content=content,chapter=chapter,

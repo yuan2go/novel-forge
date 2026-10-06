@@ -2119,13 +2119,13 @@ Book reconciliation records a mutation only when the referenced Chapter status o
 Book state changes. Its v2 key binds the expected Book version and observed child
 Operation/Saga versions; a recovery window or Saga tick cannot reuse a historical
 status-only key with a different request. Prior reconciliation receipts remain intact.
-Chapter Prompt v10 / Pack 2.19 uses `canon-provider-shared-types.v1` for the Canon
+Chapter Prompt v10 / Pack 2.20 uses `canon-provider-shared-types.v1` for the Canon
 output Schema. Exact repeated Schema fragments become local `$defs` references;
 expansion restores the original Schema without removing fields, bounds or gates.
 Canon Provider v24 retains v23 domain semantics. Historical Prompt v9/v23 remains
 unchanged. Complete rendered-request admission still owns the physical capacity check.
 
-Canon 3.9.5 declares that shared Schema projection. For an unaccepted legacy
+Canon 3.9.6 declares that shared Schema projection; historical 3.9.5 retains its original contract. For an unaccepted legacy
 Canon 3.9.0 step with only no-send capacity refusals, trusted creative v5 can
 admit a versioned native successor and bind the new Pack. Historical Attempts,
 materialization, route decisions and Pack snapshots stay intact. A dispatched,
@@ -2133,9 +2133,16 @@ unknown, accepted or unrelated failure cannot use this correction. Strict
 production retains its existing gates.
 
 The Codex Schema compiler retains canonical host contracts and hashes both canonical
-and provider wire forms. `codex-nullable-shared-types.v1` expresses a nullable shared
+and provider wire forms. Historical `codex-nullable-shared-types.v1` expresses a nullable shared
 object as `anyOf` with a closed object branch and a null branch. This is an equivalent
 wire representation under the existing structured Schema contract; it removes no
 constraint and does not certify service acceptance. Native retries retain the frozen
 canonical Schema and original Attempt limit. Explicit CLI `invalid_json_schema`
 evidence is a protocol rejection even when the JSON event omits an HTTP status.
+
+The Codex v4 wire compiler uses explicit `anyOf` for nullable types and expresses
+null-only enums as the exact null type. Canon 3.9.6 / Pack 2.20 adopts this compiler
+while retaining the canonical v24 contract. A trusted creative protocol successor
+can replace a failed Canon 3.9.5 step with only settled membership failures and no
+produced candidate. Terminal failures, provider hashes, account authorization and
+usage availability remain historical facts; this does not certify model quality.

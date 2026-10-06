@@ -106,12 +106,13 @@ def replace_failed_step(
         final_review_repair = bool(settled_candidate_effects and policy_evidence.get("contract_version") == "chapter-review-output-repair.v1"
             and source["definition_name"] == "chapter.review.evaluate" and source["definition_version"] == "3.9.0"
             and expected_failure_code in {"REVIEW_KNOWLEDGE_CHECK_INVALID", "REVIEW_KNOWLEDGE_CHECK_REQUIRED"})
+        canon_protocol_repair = policy_evidence.get("contract_version") == "chapter-provider-schema-contract-repair.v1"
         canon_capacity_repair = policy_evidence.get("contract_version") == "chapter-canon-capacity-repair.v1"
         if (
             not row
             or source["status"] != ("CANCELLATION_REQUESTED" if canon_capacity_repair or settled_candidate_effects and not final_review_repair else "FAILED_FINAL")
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "FORWARD_RECOVERY"} if canon_capacity_repair else {"RUNNING"})
+            or saga["status"] not in ({"RUNNING", "FORWARD_RECOVERY"} if canon_capacity_repair or canon_protocol_repair else {"RUNNING"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or source["definition_version"] == target_version
@@ -147,8 +148,18 @@ def replace_failed_step(
             [predecessor_id] * 4,
         )
         external, output, dependent, live_lease = cursor.fetchone()
-        if settled_candidate_effects or canon_capacity_repair:
+        if settled_candidate_effects or canon_capacity_repair or canon_protocol_repair:
             output = has_candidate_domain_outputs(cursor, predecessor_id)
+        if external and canon_protocol_repair:
+            cursor.execute("""SELECT e.external_effect_id,e.request_hash,e.status,r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref'
+                FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id)
+                WHERE e.operation_id=%s ORDER BY e.external_effect_id""",[predecessor_id])
+            effects=cursor.fetchall()
+            if not effects or effects != [tuple(r) for r in policy_evidence.get('known_failed_effects',[])]:
+                raise KernelError('STEP_SUCCESSOR_PROTOCOL_EVIDENCE_MISMATCH','Bind the exact recorded failed membership effects')
+            if any(r[2] not in {'FAILED_FINAL','FAILED_RETRYABLE'} or r[3:5]!=('SETTLED','ACCOUNT_ENTITLEMENT') or not r[5] for r in effects):
+                raise KernelError('STEP_SUCCESSOR_PROTOCOL_UNSETTLED','Unknown outcomes or priced accounts cannot use membership Schema succession')
+            external=False
         if external and settled_candidate_effects:
             cursor.execute("SELECT e.external_effect_id,e.request_hash,e.status,r.status,e.effect_type FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id", [predecessor_id])
             effects = cursor.fetchall()
@@ -191,7 +202,7 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
-        if canon_capacity_repair:
+        if canon_capacity_repair or canon_protocol_repair:
             from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
             cursor.execute("SELECT book_id,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE", [policy_evidence.get('book_run_id'),project])
             book = cursor.fetchone()
@@ -202,9 +213,33 @@ def replace_failed_step(
             cursor.execute('SELECT chapter_root_operation_id,chapter_number FROM authority_book_chapter_request WHERE chapter_request_id=%s', [book[1]])
             if book[1] != policy_evidence.get('chapter_request_id') or cursor.fetchone() != (source['root_operation_id'],book[2]+1):
                 raise KernelError('STEP_SUCCESSOR_FRONTIER_INVALID', 'Canon succession cannot change an accepted or superseded frontier')
+        if canon_protocol_repair:
+            if (source['definition_name']!='chapter.canon.extract' or source['definition_version']!='3.9.5' or target_version!='3.9.6'
+                or expected_failure_code!='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'
+                or target['policy'].get('canon_wire_projection')!='codex-structured-schema.v4'
+                or target['retry_policy']!=old_definition['retry_policy']):
+                raise KernelError('STEP_SUCCESSOR_CONTRACT_CHANGED','Only the explicit terminal Canon Schema contract can adopt compiler v4')
+            cursor.execute("""SELECT v.asset_version_id,v.content_hash,v.content FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id)
+                JOIN authority_asset_version v USING(asset_version_id) WHERE oa.operation_id=%s AND x.asset_type='model_call_log'
+                AND v.content->>'attempt_id'=%s AND v.content->>'failure_code'='PROVIDER_SCHEMA_REJECTED'
+                AND v.content->'real_model_call'='false'::jsonb""",[predecessor_id,attempts[-1]['attempt_id']])
+            rejection=cursor.fetchone()
+            if not rejection or policy_evidence.get('protocol_rejection_asset') != {'asset_version_id':rejection[0],'content_hash':rejection[1]}:
+                raise KernelError('STEP_SUCCESSOR_PROTOCOL_REJECTION_REQUIRED','The latest failure must retain its exact non-producing Schema rejection')
+            from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION, codex_output_schema
+            evidence=rejection[2]['provider_evidence']['production_execution']['process_evidence']
+            contract=evidence.get('provider_schema_contract') or {}
+            def digest_wire(value):
+                return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+            if (evidence.get('output_schema_version')!='schema:chapter-provider-output:canon_extraction:v24'
+                or contract.get('version')!='codex-structured-schema.v3' or CODEX_SCHEMA_PROJECTION_VERSION!='codex-structured-schema.v4'
+                or digest_wire(evidence['output_schema'])!=contract.get('canonical_hash')
+                or digest_wire(codex_output_schema(evidence['output_schema']))==contract.get('provider_hash')):
+                raise KernelError('STEP_SUCCESSOR_PROTOCOL_CORRECTION_REQUIRED','An unchanged or unrelated wire contract cannot replenish a failed step')
+        if canon_capacity_repair:
             if (source["definition_name"] != "chapter.canon.extract" or source["definition_version"] != "3.9.0"
                 or target["retry_policy"] != old_definition["retry_policy"]
-                or target_version != "3.9.5" or expected_failure_code != "PROVIDER_ROUTING_BLOCKED"
+                or target_version not in {"3.9.5","3.9.6"} or expected_failure_code != "PROVIDER_ROUTING_BLOCKED"
                 or target["policy"].get("canon_schema_projection") != "canon-provider-shared-types.v1"
                 or any(a["status"] != "FAILED_RETRYABLE" or a["result"].get("error_code") != expected_failure_code for a in attempts)):
                 raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Canon correction requires exact no-send legacy capacity failures")

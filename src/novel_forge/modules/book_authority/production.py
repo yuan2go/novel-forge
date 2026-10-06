@@ -3590,6 +3590,11 @@ def _validate_chapter_acceptance_evidence(
                     str(item["operation_id"]) for item in model_effects
                     if item.get("settled_candidate_superseded") is True
                     and item.get("successor_operation_id") and item.get("status") == "SUCCEEDED"
+                } | {
+                    str(item["operation_id"]) for item in model_effects
+                    if item.get("settled_nonproducing_superseded") is True
+                    and item.get("successor_operation_id")
+                    and item.get("status") in {"FAILED_FINAL", "FAILED_RETRYABLE"}
                 }
                 and all(
                     item.get("status") == "SUCCEEDED"
