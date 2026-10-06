@@ -113,3 +113,42 @@ def test_expanded_template_configuration_uses_successor_definition():
     assert definition["definition_version"] == "1.7.0"
     assert definition["command_schema_version"].endswith(".v7")
     _validate_json_schema(definition["command_schema"], {"project_id":"project", "owner":"PROVIDER_ROUTING", "policy":content})
+
+
+def test_native_input_scope_keeps_both_ordered_hashes_and_rejects_artifact_drift(monkeypatch):
+    from novel_forge.modules.production_execution.planning_repair_routing import native_planning_repair, LEGACY_REPAIR_VERSION
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    import novel_forge.modules.production_execution.execution_template as module
+    monkeypatch.setattr(module, "verify_template_provenance", lambda *args: {
+        "mode":"CREATIVE_VALIDATION", "require_literary_qualification":False})
+    parent_inputs = [{"role":role,"asset_version_id":role+":version", "content_hash":"sha256:"+letter*64,
+        "asset_type":"plan"} for role,letter in [("book","a"),("volume","b")]]
+    current_inputs = list(reversed(deepcopy(parent_inputs)))
+    command = {"repair_of_candidate_id":"candidate", "repair_number":2, "logical_key":"plan"}
+    parent = ("parent","SUCCEEDED",1,"result-hash","effect",{"selected":{"candidate":{"candidate_id":"member"}}},
+        canonical_hash(parent_inputs),parent_inputs)
+
+    class Cursor:
+        def execute(self, *args):
+            pass
+
+        def fetchone(self):
+            return command,canonical_hash(current_inputs),current_inputs
+
+        def fetchall(self):
+            return [parent]
+
+    args = dict(project_id="project", book_id="book", operation_id="operation", task_type="chapter_group_plan.generate",
+        lineage=("root","parent","operation"))
+    evidence = native_planning_repair(Cursor(), **args)
+    assert evidence["input_snapshot_hash"] != evidence["parent_input_snapshot_hash"]
+    assert evidence["input_scope_hash"] == canonical_hash({item["role"]:item for item in parent_inputs})
+    with pytest.raises(KernelError, match="NATIVE_PLANNING_REPAIR_SOURCE_INVALID"):
+        native_planning_repair(Cursor(), **args, evidence_version=LEGACY_REPAIR_VERSION)
+    current_inputs[0]["asset_version_id"] = "substituted"
+    with pytest.raises(KernelError, match="PLANNING_GENERATION_INPUT_SNAPSHOT_DRIFT"):
+        native_planning_repair(Cursor(), **args)
+    current_inputs[:] = deepcopy(parent_inputs)
+    legacy = native_planning_repair(Cursor(), **args, evidence_version=LEGACY_REPAIR_VERSION)
+    assert legacy["version"] == LEGACY_REPAIR_VERSION
+    assert "parent_input_snapshot_hash" not in legacy

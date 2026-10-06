@@ -268,7 +268,7 @@ def _planning_repair_routing_lineage(
             if payload.get("runtime_continuation_id"):
                 cursor.execute("""SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload'
                     FROM authority_story_planning_runtime_continuation r
-                    JOIN authority_operation source ON source.operation_id=r.source_operation_id AND source.status='CANCELLED'
+                    JOIN authority_operation source ON source.operation_id=r.source_operation_id AND source.status IN ('CANCELLED','FAILED_FINAL')
                     JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED'
                     WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s""",
                     [payload["runtime_continuation_id"],current_id,project_id,book_id])
@@ -2537,7 +2537,7 @@ def planning_provider_output_schema(
                             if exact_group_chapters
                             else {"type": "integer", "minimum": 1}
                         ),
-                        "causes": {"type": "array", "items": string},
+                        "causes": {"type": "array", "items": string, "description": "Only earlier event_id values in this exact narrative_event_chain. Every edge A -> B must appear both as A.next_event_ids containing B and B.causes containing A. No external, later or self event references."},
                         "actor_ref": string,
                         "motivation": string,
                         "preconditions": {
@@ -2596,7 +2596,7 @@ def planning_provider_output_schema(
                             "items": arc_ref,
                         },
                         "irreversible_change": string,
-                        "next_event_ids": {"type": "array", "items": string},
+                        "next_event_ids": {"type": "array", "items": string, "description": "Only later event_id values in this exact narrative_event_chain. Include every event that names this event in causes; each outgoing edge must be reciprocated in the target's causes. The final event has no later edge."},
                         "required": {"type": "boolean"},
                     }
                 ),

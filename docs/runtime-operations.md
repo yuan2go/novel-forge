@@ -663,6 +663,7 @@ process `test_creative_validation_native_controlled_process_to_internal_acceptan
 `tests/integration/test_synthesis_formation_postgres.py`. For v2 repair changes also run
 `test_native_bounded_semantic_repair_reaches_review_acceptance_and_replays_without_calls`
 and `test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance`
+and `test_native_failed_final_input_order_successor_preserves_terminal_history_and_counter`
 there, plus `tests/unit/test_native_planning_repair_routing.py`. Run integration modules serially
 in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
@@ -670,6 +671,13 @@ process protocol, state owners and recovery; it proves no real membership entitl
 paid-account permission, literary quality or strict release qualification. Before deployment,
 run the separately governed full same-release matrix below and authorized real main-chain
 validation. Real-call evidence that was not collected remains `NOT_RUN`.
+
+A failed-final native input-order preflight with zero dispatch retains that terminal
+Operation. Register its new-release runtime continuation directly; do not cancel or retry
+the terminal history. The owner requires identical complete input roles/artifacts, a
+settled rejected candidate parent, unchanged member identity and repair count. Apply
+migration 0159 after backup/restore verification. Dispatched or unknown results require
+their existing reconciliation path.
 
 ## Credentialed Provider qualification
 

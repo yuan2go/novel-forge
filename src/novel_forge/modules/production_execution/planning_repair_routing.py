@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
-REPAIR_VERSION = "native-planning-repair-evidence.v1"
+REPAIR_VERSION = "native-planning-repair-evidence.v2"
+LEGACY_REPAIR_VERSION = "native-planning-repair-evidence.v1"
 REPAIRABLE_FAILURES = {"SCHEMA_REJECTION", "MALFORMED_STRUCTURED_OUTPUT"}
 
 
-def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_type, lineage):
-    cursor.execute("""SELECT o.command_payload->'payload',g.input_snapshot_hash
+def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_type, lineage, evidence_version=REPAIR_VERSION):
+    if evidence_version not in {REPAIR_VERSION,LEGACY_REPAIR_VERSION}:
+        raise KernelError("NATIVE_PLANNING_REPAIR_VERSION_INVALID","Repair evidence requires an exact supported version")
+    cursor.execute("""SELECT o.command_payload->'payload',g.input_snapshot_hash,g.input_snapshot
         FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id)
         WHERE o.operation_id=%s AND o.project_id=%s AND g.book_id=%s
           AND g.generator_operation_name=%s AND o.definition_name='story_planning.generate'""",
@@ -15,7 +18,7 @@ def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_ty
     current = cursor.fetchone()
     if not current:
         return None
-    command, input_hash = current
+    command, input_hash, inputs = current
     candidate = command.get("repair_of_candidate_id")
     raw = command.get("repair_result_asset_version_id")
     number = command.get("repair_number",0)
@@ -25,7 +28,8 @@ def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_ty
         raise KernelError("NATIVE_PLANNING_REPAIR_INVALID", "Repair requires one bounded native result identity")
     result_id = candidate or raw
     cursor.execute("""SELECT o.operation_id,o.status,g.repair_number,v.content_hash,e.external_effect_id,
-            e.request_payload #> '{_production_execution,capability_runtime,routing_decision}'
+            e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
+            g.input_snapshot_hash,g.input_snapshot
         FROM authority_operation_output_asset output JOIN authority_asset_version v USING(asset_version_id)
         JOIN authority_operation o ON o.operation_id=output.operation_id
         JOIN authority_story_planning_generation g ON g.operation_id=o.operation_id
@@ -34,15 +38,21 @@ def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_ty
               v.content->>'external_effect_id')
         JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id AND r.status='SETTLED'
         WHERE output.asset_version_id=%s AND o.project_id=%s AND g.book_id=%s
-          AND g.generator_operation_name=%s AND g.logical_key=%s AND g.input_snapshot_hash=%s
+          AND g.generator_operation_name=%s AND g.logical_key=%s
           AND (%s AND g.candidate_asset_version_id=%s AND o.status='SUCCEEDED'
                OR NOT %s AND o.operation_id=%s AND g.candidate_asset_version_id IS NULL AND o.status='FAILED_FINAL')""",
-        [result_id,project_id,book_id,task_type,command['logical_key'],input_hash,
+        [result_id,project_id,book_id,task_type,command['logical_key'],
          bool(candidate),result_id,bool(candidate),command.get('repair_of_operation_id','')])
     parents = cursor.fetchall()
     if len(parents) != 1:
         raise KernelError("NATIVE_PLANNING_REPAIR_SOURCE_INVALID", "Repair must bind its exact settled native parent result and unchanged inputs")
     parent = parents[0]
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.modules.story_planning_runtime.application import _replay_generation_input_snapshot
+    frozen_inputs = _replay_generation_input_snapshot(inputs,parent[7],parent[6])
+    if (canonical_hash(inputs) != input_hash
+            or evidence_version == LEGACY_REPAIR_VERSION and input_hash != parent[6]):
+        raise KernelError("NATIVE_PLANNING_REPAIR_SOURCE_INVALID", "Repair input evidence differs from its native parent")
     if parent[0] not in lineage or lineage[-1] != operation_id or number != parent[2]+1:
         raise KernelError("NATIVE_PLANNING_REPAIR_LINEAGE_INVALID", "Repair counter and lineage differ from the native parent")
     from .execution_template import verify_template_provenance
@@ -50,16 +60,19 @@ def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_ty
     if not policy or policy['mode'] != 'CREATIVE_VALIDATION' or policy['require_literary_qualification']:
         return None
     selected = parent[5]['selected']['candidate']
-    return {'version':REPAIR_VERSION,'operation_id':operation_id,'parent_operation_id':parent[0],
+    return {'version':evidence_version,'operation_id':operation_id,'parent_operation_id':parent[0],
         'source_result_asset_version_id':result_id,'source_result_hash':parent[3],
         'settled_parent_effect_id':parent[4],'input_snapshot_hash':input_hash,'repair_number':number,
-        'parent_candidate_id':selected['candidate_id'],'lineage_operation_ids':list(lineage)}
+        'parent_candidate_id':selected['candidate_id'],'lineage_operation_ids':list(lineage),
+        **({'parent_input_snapshot_hash':parent[6],
+            'input_scope_hash':canonical_hash({item['role']:item for item in frozen_inputs})}
+            if evidence_version == REPAIR_VERSION else {})}
 
 
 def repair_route_admission(snapshot, row, template):
     policy = template.get('repair_routing')
     evidence = snapshot['task'].get('declared_requirements',{}).get('native_planning_repair')
-    if (not policy or not evidence or evidence.get('version') != REPAIR_VERSION
+    if (not policy or not evidence or evidence.get('version') not in {REPAIR_VERSION,LEGACY_REPAIR_VERSION}
             or evidence.get('operation_id') != snapshot['task']['operation_id']
             or evidence.get('lineage_operation_ids') != snapshot['task'].get('lineage_operation_ids')
             or type(evidence.get('repair_number')) is not int
@@ -86,6 +99,7 @@ def verify_native_repair(cursor, decision):
         return
     task = decision['task']
     current = native_planning_repair(cursor,project_id=task['project_id'],book_id=task['work_id'],
-        operation_id=task['operation_id'],task_type=task['task_type'],lineage=tuple(task['lineage_operation_ids']))
+        operation_id=task['operation_id'],task_type=task['task_type'],lineage=tuple(task['lineage_operation_ids']),
+        evidence_version=evidence['version'])
     if current != evidence:
         raise KernelError('NATIVE_PLANNING_REPAIR_EVIDENCE_DRIFT','Frozen repair admission must retain its native source and counter')

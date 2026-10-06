@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -282,17 +282,44 @@ def test_native_formation_generates_foundation_from_author_brief(
         transport.planning = consistent_fixture
     if semantic_repair:
         normal_group_planning = transport.planning
-        damaged_group = False
+        damaged_group = 0
 
         def invalid_cause_once(stage, inputs):
             nonlocal damaged_group
             result = normal_group_planning(stage, inputs)
-            if stage == "chapter_group_plan.generate" and not damaged_group:
-                damaged_group = True
+            if stage == "chapter_group_plan.generate" and damaged_group < (2 if input_order_continuation else 1):
+                damaged_group += 1
                 result["narrative_event_chain"][0]["causes"] = ["absent-causal-event"]
             return result
 
         transport.planning = invalid_cause_once
+    if input_order_continuation:
+        from novel_forge.modules.story_planning_runtime import application as planning_module
+        from novel_forge.modules.production_execution import planning_repair_routing as routing_module
+        original_record = planning_module.StoryPlanningGenerationApplication._record_generation
+        original_replay = planning_module._replay_generation_input_snapshot
+        original_evidence = routing_module.native_planning_repair
+        old_failure_injected = False
+
+        def historical_unordered_record(app, *, operation_id, command, inputs):
+            if command.repair_number == 2 and not command.runtime_continuation_id:
+                with monkeypatch.context() as old:
+                    old.setattr(planning_module, "_replay_generation_input_snapshot",
+                        lambda *args: list(reversed(original_replay(*args))))
+                    return original_record(app, operation_id=operation_id, command=command, inputs=inputs)
+            return original_record(app, operation_id=operation_id, command=command, inputs=inputs)
+
+        def historical_exact_order_guard(cursor, **kwargs):
+            nonlocal old_failure_injected
+            cursor.execute("SELECT repair_number,runtime_continuation_id FROM authority_story_planning_generation WHERE operation_id=%s", [kwargs["operation_id"]])
+            current = cursor.fetchone()
+            if current == (2, None) and not old_failure_injected:
+                old_failure_injected = True
+                kwargs["evidence_version"] = routing_module.LEGACY_REPAIR_VERSION
+            return original_evidence(cursor, **kwargs)
+
+        monkeypatch.setattr(planning_module.StoryPlanningGenerationApplication, "_record_generation", historical_unordered_record)
+        monkeypatch.setattr(routing_module, "native_planning_repair", historical_exact_order_guard)
     registry.register(transport)
     if creative_validation:
         from tests.integration.creative_validation_production_support import controlled_member_environment
@@ -776,9 +803,9 @@ def test_native_formation_generates_foundation_from_author_brief(
 
             worker = replace(principal, principal_type=PrincipalType.WORKER,
                 permissions=principal.permissions - {"book.authority.approve_replan"})
-            if route_continuation:
+            if route_continuation or input_order_continuation:
                 from novel_forge.modules.command_kernel.errors import KernelError
-                with pytest.raises(KernelError, match="PROVIDER_ROUTING_BLOCKED"):
+                with pytest.raises(KernelError, match="NATIVE_PLANNING_REPAIR_SOURCE_INVALID" if input_order_continuation else "PROVIDER_ROUTING_BLOCKED"):
                     continue_creation(composition=composition, content=content, chapter=chapter,
                         formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                         book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
@@ -786,7 +813,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
                     chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
                     env=env, registry=registry, transport=transport, admitted=admitted, monkeypatch=monkeypatch,
-                    routing=True)
+                    routing=True, input_order=input_order_continuation)
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
@@ -795,11 +822,14 @@ def test_native_formation_generates_foundation_from_author_brief(
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' ORDER BY o.created_at", [harness.project_id])
                     groups = uow.cursor.fetchall()
-                    assert [row[0] for row in groups] == ([0, 1, 1, 0, 0] if route_continuation else [0, 1, 0, 0])
-                    assert all(row[1] == "SUCCEEDED" and row[2] for row in groups if row[1] != "CANCELLED")
+                    expected = [0, 1, 2, 2, 0, 0] if input_order_continuation else [0, 1, 1, 0, 0] if route_continuation else [0, 1, 0, 0]
+                    assert [row[0] for row in groups] == expected
+                    assert all(row[1] == "SUCCEEDED" and row[2] for row in groups if row[1] not in {"CANCELLED","FAILED_FINAL"})
                     if route_continuation:
                         assert groups[1][1:] == ("CANCELLED", None)
-                    uow.cursor.execute("SELECT e.request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect e JOIN authority_story_planning_generation g USING(operation_id) WHERE e.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' AND g.repair_number=1", [harness.project_id])
+                    if input_order_continuation:
+                        assert groups[2][1:] == ("FAILED_FINAL", None)
+                    uow.cursor.execute("SELECT e.request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect e JOIN authority_story_planning_generation g USING(operation_id) WHERE e.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' AND g.repair_number=%s", [harness.project_id,2 if input_order_continuation else 1])
                     decision = uow.cursor.fetchone()[0]
                     assert decision["selected"]["native_repair_admission"]["status"] == "BOUNDED_REPAIR_ADMITTED"
                     assert decision["selected"]["native_repair_admission"]["retained_failed_outcomes"][0]["failure_class"] == "SCHEMA_REJECTION"
@@ -1229,22 +1259,25 @@ def test_native_retained_valid_result_admission_without_another_provider_call(tm
     )
 
 
-def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch, routing=False):
+def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch, routing=False, input_order=False):
     from concurrent.futures import ThreadPoolExecutor
     from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
     from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
     from tests.integration.creative_validation_production_support import install_planning
     from novel_forge.modules.story_planning_runtime.runtime_continuation import require_binding
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("SELECT o.operation_id,o.version,o.command_payload->'payload' FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.project_id=%s AND o.status='FAILED_RETRYABLE'", [harness.project_id])
+        uow.cursor.execute("SELECT o.operation_id,o.version,o.command_payload->'payload' FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.project_id=%s AND o.status=%s", [harness.project_id,"FAILED_FINAL" if input_order else "FAILED_RETRYABLE"])
         source, version, original = uow.cursor.fetchone()
         uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s", [source])
         assert uow.cursor.fetchone()[0] == 0
     before = len(transport.calls)
-    cancelled = request_cancellation(DATABASE_URL,CancelCommand(operation_id=source,project_id=harness.project_id,
-        actor_id=principal.principal_id,expected_version=version,reason="native capacity successor; zero dispatch",
-        idempotency_key=source+":capacity-cancel",trace_id=harness.project_id,correlation_id=harness.project_id),settle_undispatched=True)
-    assert cancelled["status"] == "CANCELLED"
+    if input_order:
+        cancelled = {"status":"FAILED_FINAL", "version":version}
+    else:
+        cancelled = request_cancellation(DATABASE_URL,CancelCommand(operation_id=source,project_id=harness.project_id,
+            actor_id=principal.principal_id,expected_version=version,reason="native capacity successor; zero dispatch",
+            idempotency_key=source+":capacity-cancel",trace_id=harness.project_id,correlation_id=harness.project_id),settle_undispatched=True)
+        assert cancelled["status"] == "CANCELLED"
     sha = "f"*40
     hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=sha)
     harness.release_sha=sha
@@ -1282,14 +1315,14 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     with monkeypatch.context() as strict:
         verified=preflight_continuation.verify_template_provenance
         strict.setattr(preflight_continuation,"verify_template_provenance",lambda *args: {**verified(*args),"mode":"STRICT_PRODUCTION"})
-        with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED" if routing else "PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED"):
+        with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED" if routing and not input_order else "PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED"):
             register()
     with ThreadPoolExecutor(max_workers=2) as pool:
         records=list(pool.map(lambda _:register(),range(2)))
     assert len({r["operation_id"] for r in records})==1 and len(transport.calls)==before
     binding=require_binding(DATABASE_URL,records[0]["continuation_id"])
     assert binding["source_command"]==original
-    assert binding["successor_command"]["repair_number"]==original["repair_number"]==1
+    assert binding["successor_command"]["repair_number"]==original["repair_number"]==(2 if input_order else 1)
     if not routing:
         failed=formation.require(admitted.formation_run_id)
         formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
@@ -1311,3 +1344,9 @@ def test_native_undispatched_route_repair_successor_preserves_candidate_counter_
     test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, False,
         False, False, False, False, False, 1, creative_validation=True, semantic_repair=True,
         route_continuation=True)
+
+
+def test_native_failed_final_input_order_successor_preserves_terminal_history_and_counter(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, False,
+        False, False, False, False, False, 1, creative_validation=True, semantic_repair=True,
+        input_order_continuation=True)

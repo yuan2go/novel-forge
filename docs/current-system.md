@@ -106,7 +106,12 @@ for at most two same-route Planning repairs through `provider.routing_policy.con
 The compatible configuration schema accepts v1 and v2 templates while retaining the frozen
 1.6.0 definition and policy history. Admission binds the persisted native repair,
 exact parent result and input scope, unchanged authorized route and successful settled
-parent call. A candidate rejected by the actual contract remains rejected until a new
+parent call. V2 repair evidence compares the complete role-to-artifact map while retaining
+both ordered snapshot hashes. A terminal, undispatched input-order preflight failure
+may receive an owner-registered runtime successor without changing its terminal history,
+parent candidate or repair number; migration 0159 requires exact native registration
+and zero Effects/reservations. Unknown or already dispatched outcomes cannot use this path.
+A candidate rejected by the actual contract remains rejected until a new
 repair passes that contract; schema/causality rejection does not permanently exclude its
 only authorized generator. UNKNOWN, permission, independence, capacity, rate-limit and
 no-progress/attempt bounds remain blocking. Strict and frozen v1 selection retain their

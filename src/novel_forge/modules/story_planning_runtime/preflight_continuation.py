@@ -7,12 +7,12 @@ from novel_forge.modules.production_execution.execution_template import verify_t
 from .domain import canonical_hash
 
 
-def require_capacity_source(uow, *, source_operation_id, project_id, frozen, version, routing_failure=False):
+def require_capacity_source(uow, *, source_operation_id, project_id, frozen, version, routing_failure=False, input_order_failure=False):
     from .application import _command_from_payload
     from .result_recovery import require_result_repair_source
 
     command = _command_from_payload(frozen)
-    if not routing_failure and (not command.repair_of_operation_id or not command.repair_result_asset_version_id):
+    if not routing_failure and not input_order_failure and (not command.repair_of_operation_id or not command.repair_result_asset_version_id):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Capacity recovery requires a frozen raw-result repair")
     uow.cursor.execute("""SELECT
         (SELECT count(*) FROM authority_external_effect WHERE operation_id=%s),
@@ -21,7 +21,9 @@ def require_capacity_source(uow, *, source_operation_id, project_id, frozen, ver
         [source_operation_id]*3)
     if any(uow.cursor.fetchone()):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE", "Capacity successor requires no Effect, reservation or live Attempt")
-    if routing_failure:
+    if input_order_failure:
+        retained, blocked_decision = require_input_order_source(uow,command=command,source_operation_id=source_operation_id)
+    elif routing_failure:
         retained, blocked_decision = require_route_source(uow,command=command,source_operation_id=source_operation_id)
     else:
         retained = require_result_repair_source(uow.database_url, command=command, operation_id=command.repair_of_operation_id,
@@ -85,8 +87,8 @@ def require_capacity_source(uow, *, source_operation_id, project_id, frozen, ver
         "source_auth_profile_ref":route[0]["auth_profile_ref"],
         "source_backend_id":route[0]["backend_id"],
         "source_reasoning_effort":route[0]["reasoning_effort"],
-        "preflight_failure":{"contract_version":"planning-repair-route-preflight.v1" if routing_failure else "planning-capacity-preflight.v1",
-            **({"blocked_decision":blocked_decision} if routing_failure else {}),"attempt_id":attempt[0],
+        "preflight_failure":{"contract_version":"planning-input-order-preflight.v1" if input_order_failure else "planning-repair-route-preflight.v1" if routing_failure else "planning-capacity-preflight.v1",
+            **({"blocked_decision":blocked_decision} if routing_failure or input_order_failure else {}),"attempt_id":attempt[0],
             "result":attempt[1],"error":attempt[2],"effect_count":0,"reservation_count":0,
             "repair_number":command.repair_number,"source_result_asset_version_id":retained["asset_version_id"],
             "source_result_hash":retained["content_hash"],"settled_original_effect_id":effect_id}}
@@ -95,7 +97,7 @@ def require_capacity_source(uow, *, source_operation_id, project_id, frozen, ver
 def require_capacity_target(source, target):
     old = json.loads(source["snapshot"]["context_policy_payload_json"])
     new = json.loads(target["pack_snapshot"]["context_policy_payload_json"])
-    if source["preflight_failure"]["contract_version"] == "planning-repair-route-preflight.v1":
+    if source["preflight_failure"]["contract_version"] in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"}:
         if old != new:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT","Routing recovery retains the exact Context policy")
         return {"context_policy":"UNCHANGED","recovery_kind":"NATIVE_BOUNDED_REPAIR_ROUTE","book_usage_budget":False}
@@ -144,6 +146,10 @@ def require_route_source(uow, *, command, source_operation_id):
         retained = require_result_repair_source(uow.database_url,command=command,
             operation_id=evidence['parent_operation_id'],source_asset_version_id=evidence['source_result_asset_version_id'])
         return {**retained,'operation_id':evidence['parent_operation_id']}, blocked
+    return retained_candidate_source(uow,evidence=evidence), blocked
+
+
+def retained_candidate_source(uow, *, evidence):
     uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s AND content_hash=%s",
         [evidence['source_result_asset_version_id'],evidence['source_result_hash']])
     content = uow.cursor.fetchone()[0]
@@ -155,4 +161,23 @@ def require_route_source(uow, *, command, source_operation_id):
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_INVALID","Original native repair Context is missing or changed")
     return {'operation_id':evidence['parent_operation_id'],'execution_evidence':execution,
         'context_content':context[0],'asset_version_id':evidence['source_result_asset_version_id'],
-        'content_hash':evidence['source_result_hash']}, blocked
+        'content_hash':evidence['source_result_hash']}
+
+
+def require_input_order_source(uow, *, command, source_operation_id):
+    from novel_forge.modules.production_execution.planning_repair_routing import native_planning_repair
+    from .execution import _planning_repair_routing_lineage
+    if not command.repair_of_candidate_id or command.repair_of_operation_id:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED","Input-order recovery requires an exact native candidate repair")
+    lineage = _planning_repair_routing_lineage(uow.database_url,project_id=command.project_id,book_id=command.book_id,
+        generator_operation_name=command.generator_operation_name,operation_id=source_operation_id,
+        repair_of_operation_id=command.repair_of_operation_id,repair_of_candidate_id=command.repair_of_candidate_id)
+    evidence = native_planning_repair(uow.cursor,project_id=command.project_id,book_id=command.book_id,
+        operation_id=source_operation_id,task_type=command.generator_operation_name,lineage=lineage)
+    if not evidence or evidence['input_snapshot_hash'] == evidence['parent_input_snapshot_hash']:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED","Only an identical role map with changed ordered input hash permits this successor")
+    uow.cursor.execute("SELECT report_hash FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s AND status='FAIL'",[command.repair_of_candidate_id])
+    if not any(command.repair_reason.endswith(row[0]) for row in uow.cursor.fetchall()):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_INVALID","Repair must retain its native rejected candidate report")
+    return retained_candidate_source(uow,evidence=evidence), {'native_repair_evidence':evidence,
+        'source_operation_id':source_operation_id,'failure_code':'NATIVE_PLANNING_REPAIR_SOURCE_INVALID'}

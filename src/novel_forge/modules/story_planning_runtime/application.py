@@ -1752,7 +1752,7 @@ class StoryPlanningGenerationApplication:
             key: value for key, value in frozen_payload.items()
             if key != "routing_bootstrap_authorization"
         }
-        if row[2] == "CANCELLED" and not row[4]:
+        if row[2] in {"CANCELLED","FAILED_FINAL"} and not row[4]:
             from .runtime_continuation import follow
             current_payload = _command_payload(command)
             if {key: value for key, value in public_frozen_payload.items() if key != "execution_contract_version"} == {key: value for key, value in current_payload.items() if key != "execution_contract_version"}:
@@ -2964,6 +2964,13 @@ class StoryPlanningGenerationApplication:
         if command.runtime_continuation_id:
             from .runtime_continuation import require_binding
             source_operation_id = require_binding(self.database_url, command.runtime_continuation_id)["source_operation_id"]
+        elif command.repair_of_candidate_id:
+            from .execution import require_candidate_repair_operation
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                source_operation_id = require_candidate_repair_operation(uow.cursor,
+                    candidate_asset_version_id=command.repair_of_candidate_id, project_id=command.project_id,
+                    book_id=command.book_id, generator_operation_name=command.generator_operation_name,
+                    logical_key=command.logical_key)
         with AuthorityUnitOfWork(self.database_url) as uow:
             if source_operation_id:
                 uow.cursor.execute(

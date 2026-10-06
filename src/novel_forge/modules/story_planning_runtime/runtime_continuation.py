@@ -97,7 +97,7 @@ def require_source(
         [source_operation_id, project_id],
     )
     row = uow.cursor.fetchone()
-    if row is None or row[0] != "CANCELLED" or row[5]:
+    if row is None or row[0] not in {"CANCELLED","FAILED_FINAL"} or row[5]:
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
             "source must be this project's cancelled generation with no Candidate",
@@ -124,17 +124,20 @@ def require_source(
             dict(attempt[1] or {}).get("error_code")
             or dict(attempt[2] or {}).get("error_code")
         )
-        not in {"EXECUTION_CONTRACT_FROZEN_CONFLICT", "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_ROUTING_BLOCKED"}
+        not in {"EXECUTION_CONTRACT_FROZEN_CONFLICT", "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_ROUTING_BLOCKED", "NATIVE_PLANNING_REPAIR_SOURCE_INVALID"}
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED",
             "only a retained execution-contract or undispatched result-repair Context failure permits runtime continuation",
         )
     preflight_code = dict(attempt[1] or {}).get("error_code") or dict(attempt[2] or {}).get("error_code")
-    if preflight_code in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED","PROVIDER_ROUTING_BLOCKED"}:
+    if (row[0] == "FAILED_FINAL") != (preflight_code == "NATIVE_PLANNING_REPAIR_SOURCE_INVALID"):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID","Terminal history only permits the proven undispatched input-order recovery")
+    if preflight_code in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED","PROVIDER_ROUTING_BLOCKED","NATIVE_PLANNING_REPAIR_SOURCE_INVALID"}:
         from .preflight_continuation import require_capacity_source
         return require_capacity_source(uow, source_operation_id=source_operation_id, project_id=project_id,
-            frozen=frozen, version=int(row[1]),routing_failure=preflight_code == "PROVIDER_ROUTING_BLOCKED")
+            frozen=frozen, version=int(row[1]),routing_failure=preflight_code == "PROVIDER_ROUTING_BLOCKED",
+            input_order_failure=preflight_code == "NATIVE_PLANNING_REPAIR_SOURCE_INVALID")
     uow.cursor.execute(
         "SELECT external_effect_id, status, provider, model_id, request_payload FROM authority_external_effect WHERE operation_id=%s AND project_id=%s ORDER BY external_effect_id FOR UPDATE",
         [source_operation_id, project_id],
@@ -326,7 +329,7 @@ def require_route_evidence(
                 or source["source_reasoning_effort"] != target["reasoning_effort"]
                 or target["cost_accounting_basis"] != "ACCOUNT_ENTITLEMENT" or not target["account"]):
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT", "Capacity successors must retain the original authenticated membership binding and reasoning")
-        if source["preflight_failure"].get("contract_version") == "planning-repair-route-preflight.v1":
+        if source["preflight_failure"].get("contract_version") in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"}:
             from novel_forge.modules.production_execution.execution_template import selected_book_template, decision_template
             admission = selected_book_template(uow.cursor,project_id=source["command"]["project_id"],book_id=source["command"]["book_id"])
             template = decision_template({"task":{"work_id":source["command"]["book_id"],
