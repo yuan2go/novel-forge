@@ -73,6 +73,12 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
         "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
     }, monkeypatch, transport)
+    if full_creation:
+        catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+        for model in catalog["models"]:
+            model["reasoning"] = "medium"
+        env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+        env["NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT"] = "medium"
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)

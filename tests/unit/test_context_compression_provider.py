@@ -70,6 +70,21 @@ def test_new_task_reasoning_rejects_router_downgrade_and_keeps_legacy_effort() -
         require_task_reasoning(route, task_scoped=True)
 
 
+
+def test_native_validation_reasoning_authorization_is_exact_and_keeps_no_downgrade() -> None:
+    route = SimpleNamespace(model_profile=SimpleNamespace(reasoning_effort="medium"),
+        route_policy=SimpleNamespace(reasoning_downgrade_policy="PROHIBITED"),
+        task_reasoning_authorization=("medium", "sha256:" + "a" * 64))
+    require_task_reasoning(route, task_scoped=True)
+    route.model_profile.reasoning_effort = "low"
+    with pytest.raises(KernelError, match="REASONING_REQUIRED"):
+        require_task_reasoning(route, task_scoped=True)
+    route.model_profile.reasoning_effort = "medium"
+    route.route_policy.reasoning_downgrade_policy = "ALLOWED"
+    with pytest.raises(KernelError, match="DOWNGRADE_FORBIDDEN"):
+        require_task_reasoning(route, task_scoped=True)
+
+
 def test_pack_requires_explicit_context_node_and_substage_tool_authorization() -> None:
     import json
     policy = json.loads((Path(__file__).resolve().parents[2] / "config/capability_packs/chapter_generation_pack.json").read_text())["tool_permissions"]

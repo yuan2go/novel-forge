@@ -693,6 +693,7 @@ class PlanningExecutionRoute:
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
     token_framing_overhead: int = 16
+    task_reasoning_authorization: tuple[str, str] | None = None
 
     def __post_init__(self) -> None:
         if (

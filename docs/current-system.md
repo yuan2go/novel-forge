@@ -622,7 +622,10 @@ Compression and fidelity calls use existing Chapter Provider Runtime, Pack/PEP,
 Kernel ExternalEffect, cost reservation, Lease/Fence and durable result reconciliation.
 They create no new Authority or acceptance path. Task source eligibility gates run
 before either model sees input. Internal quality facts stay in host evidence only.
-New model requests require a supported `high` or higher reasoning setting; fallback
+Strict and legacy task-context requests require supported `high` or higher reasoning.
+Creative validation uses the exact reasoning effort authorized by its native versioned
+execution template and authenticated model catalog; the selected route retains that policy
+hash. Model, task and reasoning identities are checked again at dispatch. Fallback
 cannot silently lower it. Final SDK/CLI arguments and complete rendered Prompt,
 Skill, Schema, protocol, output reserve and safety margin pass Provider admission.
 The new accounting contract caps the window at the minimum of 512,000, the confirmed

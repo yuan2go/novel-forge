@@ -231,7 +231,9 @@ an old Book, Pack, preparation report or sent request. Old frozen contracts reco
 with their original hashes and semantics.
 
 Configure each actual route with its confirmed model Context and output limits,
-accounting method/evidence, and supported high reasoning. The system supports a
+accounting method/evidence, and supported high reasoning for strict/legacy execution.
+Creative validation instead retains the exact effort authorized by the native template;
+its checked route carries the policy hash and cannot downgrade that effort. The system supports a
 maximum of 512,000 tokens; the effective complete-request window is the minimum
 of that maximum, the selected model window and the existing authorized execution
 limit. Output reservation is independent of the task Context target. API stages
