@@ -584,7 +584,9 @@ class ExternalEffectChapterModelPort:
                             or item.content.get("contract_version")
                             or f"{item.asset_type}.v1"
                         ),
-                        "source_eligibility": "PRODUCTION_ELIGIBLE",
+                        "source_eligibility": ("NOT_SOURCE_DERIVED"
+                            if stage in {"model_reference_evaluate", "model_reference_adjudicate"}
+                            else "PRODUCTION_ELIGIBLE"),
                     }
                     for item in request.inputs
                 ],
