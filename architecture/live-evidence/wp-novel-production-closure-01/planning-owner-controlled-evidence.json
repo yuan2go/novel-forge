@@ -1,0 +1,29 @@
+{
+  "tick": {
+    "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "previous_state": "PLAN_APPROVAL_PENDING",
+    "state": "READY",
+    "action": "NO_ACTION",
+    "operation_id": "eb6117f4-b4de-46f6-999a-d0596ed17ea2",
+    "evidence_ref": ""
+  },
+  "book_state": "READY",
+  "effects_before": 52,
+  "effects_after": 52,
+  "validation_reports": [
+    [
+      "FAIL",
+      null,
+      "PLANNING_OPERATIONAL_COMMITMENT_OPEN"
+    ],
+    [
+      "PASS",
+      "planning-executable-results.v1",
+      null
+    ]
+  ],
+  "provider_dispatches": 0,
+  "evidence_kind": "NATIVE_CLONED_POSTGRES_RETAINED_CANDIDATE_REVALIDATION",
+  "real_continuous_production": "NOT_RUN",
+  "literary_quality": "NOT_PROVEN"
+}

@@ -134,8 +134,17 @@ Quality, export and Book acceptance owners. Book Authority's existing worker own
 reference-only `BOOK_CREATION_ADVANCE` RuntimeJob across stage handoffs. Its atomic
 completion/continuation, native leases, bounded backoff and progress snapshots survive
 worker restart. Technical waits use the original frozen work; author and owner decisions
-stop polling until relevant persisted state changes. UNKNOWN requires native reconciliation;
-a capacity configuration checkpoint can resume only when its exact historical error and
+stop polling until relevant persisted state changes. UNKNOWN requires native reconciliation.
+
+Current work-requirements plans separate executable Chapter results from design
+commitments: open expression and unresolved story questions do not waive required
+events, typed state transitions, scene causality or knowledge boundaries. The historical
+blanket operational open-commitment ban is a compatibility policy. A structurally rejected
+plan is an owner failure, never an author approval request. A corrected pure validation
+can append a new result for the exact retained candidate without another Provider send;
+its original failed report, command and receipt remain unchanged.
+
+A capacity configuration checkpoint can resume only when its exact historical error and
 absence of every external Effect prove that no send occurred. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the

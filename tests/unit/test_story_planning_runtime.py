@@ -1099,6 +1099,21 @@ def test_operational_plan_fails_closed_on_open_design_space_and_load_overrun() -
         )
 
 
+def test_work_requirements_preserve_open_story_questions_and_required_results() -> None:
+    content = planning_fixture_response("chapter_plan.generate", {"planning_command": {
+        "logical_key": "chapter:2", "parent_version_id": "chapter-group:v1",
+        "input_versions": {"arc_plans": "arc:v1"}}})
+    content["constraint_envelope"]["creative_requirements_contract"] = "work-requirements.v2"
+    content["commitment_contract"][1]["level"] = "OPEN_DESIGN_SPACE"
+    content["commitment_contract"][1]["statement"] = "The disputed record's cause remains unknown; prose realization stays with Writer"
+    values = dict(project_id="project-1", book_id="book-1", contract_type=PlanContractType.CHAPTER,
+        asset_version_id="chapter:v2", parent_version_id="chapter-group:v1", execution_scope=PlanExecutionScope.PLANNED)
+    validate_planning_contract(**values, content=content)
+    content["required_state_transitions"][0]["to_state"] = content["required_state_transitions"][0]["from_state"]
+    with pytest.raises(KernelError, match="CHAPTER_STATE_TRANSITION_NOOP"):
+        validate_planning_contract(**values, content=content)
+
+
 def test_operational_plan_consumes_accepted_narrative_debt_projection() -> None:
     content = planning_fixture_response(
         "chapter_plan.generate",

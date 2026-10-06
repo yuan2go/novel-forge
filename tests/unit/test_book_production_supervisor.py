@@ -124,6 +124,14 @@ def test_supervisor_derives_two_exact_four_chapter_horizons() -> None:
     ) == (5, 8)
 
 
+@pytest.mark.parametrize("status", [PlanningGenerationStatus.REJECTED, PlanningGenerationStatus.REPAIR_REQUIRED,
+                                   PlanningGenerationStatus.EVALUATION_PENDING])
+def test_rejected_or_unfinished_plan_does_not_become_author_approval(status):
+    with pytest.raises(KernelError, match="BOOK_PLANNING_OWNER_RECOVERY_REQUIRED"):
+        PostgresBookProductionSupervisor._require_approval_or_active(SimpleNamespace(
+            status=status, generation_operation_id="generation:retained"))
+
+
 @pytest.mark.parametrize(
     ("target", "preferred", "expected"),
     (

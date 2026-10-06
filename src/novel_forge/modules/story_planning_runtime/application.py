@@ -2400,6 +2400,9 @@ class StoryPlanningGenerationApplication:
                 )
             evidence = {
                 **validation.to_evidence(),
+                **({"validation_policy_version": "planning-executable-results.v1"}
+                   if command.generator_operation_name == "chapter_plan.generate"
+                   and content.get("constraint_envelope", {}).get("creative_requirements_contract") == "work-requirements.v2" else {}),
                 **({"planning_contract": {
                     "contract_type": contract.contract_type.value,
                     "logical_key": contract.logical_key,

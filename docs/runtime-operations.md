@@ -3030,6 +3030,16 @@ required result. The driver returns the durable checkpoint and owning error code
 when no remaining independent group can run; terminal and security failures retain their
 existing failure handling.
 
+For operational commitment recovery, run the focused Story Planning, Book supervisor and
+World initial-agency tests. On a cloned PostgreSQL checkpoint, tick the original Book
+supervisor once and verify its retained candidate receives an appended validation PASS
+under `planning-executable-results.v1`, its original FAIL remains, the Book becomes READY
+and no new ExternalEffect appears. This only corrects the pure host commitment policy;
+it does not edit frozen content or reset generation/repair/usage history. Missing results,
+invalid causality, unqualified input, rejected authorship or another failed validator still
+block. `PLAN_APPROVAL_PENDING` is reserved for an actual admitted approval decision;
+rejected and unfinished generations expose owner recovery instead.
+
 Creation continuation may invoke the existing native Formation resume command for an
 AUTO-authorized creative run with the same operator and frozen inputs. It performs at
 most one recovery per invocation and counts durable failures for the same stage across

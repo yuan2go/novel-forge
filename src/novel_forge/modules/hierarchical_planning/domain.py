@@ -680,6 +680,8 @@ def _validate_progressive_planning_contract(
     contract_type: PlanContractType,
     content: dict[str, Any],
 ) -> None:
+    from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
+
     expected_horizon = PLAN_HORIZON[contract_type]
     try:
         selected_realization = RealizationLevel(
@@ -728,6 +730,7 @@ def _validate_progressive_planning_contract(
         if (
             expected_horizon is PlanningHorizon.OPERATIONAL
             and level is CommitmentLevel.OPEN_DESIGN_SPACE
+            and not uses_work_requirements(content)
         ):
             raise KernelError(
                 "PLANNING_OPERATIONAL_COMMITMENT_OPEN",
