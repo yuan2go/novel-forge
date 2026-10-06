@@ -40,10 +40,24 @@ def test_field_schema_constrains_reader_and_character_identity_without_changing_
 
 def test_new_canon_provider_view_retains_actual_rejected_output_and_diagnostic():
     from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
-    feedback={'contract_version':'chapter-canon-output-repair.v1','rejected_output':{'disclosure_events':[{'claim_kind':'KNOWLEDGE_ACQUISITION'}]},'diagnostic':{'code':'CANON_GROUNDING_INVALID'}}
+    feedback={'contract_version':'chapter-canon-output-repair.v1','rejected_output':{'disclosure_events':[{'claim_kind':'KNOWLEDGE_ACQUISITION'}]},'diagnostic':{'code':'CANON_GROUNDING_INVALID','reason':"claim kind 'KNOWLEDGE_ACQUISITION' cannot authorize disclosure_events"}}
     inputs={'revision':{'chapter':1,'text':'原文'},'execution_expectations':{},'canon_field_kind_contract':'canon-field-kinds.v1','canon_output_repair':feedback}
     view=build_provider_task_view('canon_extraction',inputs)
-    assert view['contract_version']=='provider-task-view-v2'
-    assert view['canon_output_repair']==feedback
+    assert view['contract_version']=='provider-task-view-v3'
+    assert view['canon_output_repair']['rejected_output']==feedback['rejected_output']
+    assert view['canon_output_repair']['feedback_selection']['selected_fields']==['disclosure_events']
     legacy=build_provider_task_view('canon_extraction',{k:v for k,v in inputs.items() if k!='canon_field_kind_contract'})
     assert 'canon_output_repair' not in legacy
+
+
+def test_canon_repair_projection_omits_only_feedback_and_preserves_raw_type_failure():
+    from novel_forge.modules.chapter_authority.canon_repair_projection import project_canon_repair
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    raw={'disclosure_events':[{'claim_kind':'KNOWLEDGE_ACQUISITION'}],'canon_facts':[{'fact':'retained'}]}
+    feedback={'contract_version':'chapter-canon-output-repair.v1','rejected_output':raw,'diagnostic':{'code':'CANON_GROUNDING_INVALID','reason':"claim kind 'KNOWLEDGE_ACQUISITION' cannot authorize disclosure_events"},'quote_localization':{'mappings':[]}}
+    original=deepcopy(feedback)
+    view=project_canon_repair(feedback)
+    assert feedback==original and view['rejected_output']=={'disclosure_events':raw['disclosure_events']}
+    assert view['feedback_selection']['omitted_fields']==['canon_facts']
+    assert view['feedback_selection']['full_result_hash']==snapshot_hash(raw)
+    assert view['quote_localization']['semantic_support']=='NOT_RUN'

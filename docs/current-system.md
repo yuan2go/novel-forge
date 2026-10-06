@@ -2268,3 +2268,14 @@ candidate, verifies the trusted template and authorization, and leaves failed re
 unchanged. Unknown outcomes, unsettled reservations, exhausted attempts, cancellation
 and strict production do not enter this waiting policy. Waiting is execution control,
 not a Book budget extension or a different billing channel.
+
+Canon repair task projection v3 retains the complete rejected result in the durable
+receipt and frozen command. For a native field-kind diagnostic, the Provider receives
+that exact rejected field, the full-result hash, the diagnostic and concise quote
+localization examples; other fields are explicitly reported as omitted from feedback.
+The full candidate, governed context and complete output Schema remain inputs. The new
+call must regenerate and validate a complete extraction, followed by independent support.
+This projection does not patch claim kinds or promote retained claims into accepted facts.
+A new Pack deployment and Attempt materialization freeze its version and actual request
+hash. A known no-send capacity refusal may use the existing retry bounds with this
+projection; it does not reset the Attempt count or expand the model window.

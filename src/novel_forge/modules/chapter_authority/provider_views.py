@@ -1015,7 +1015,9 @@ def build_provider_task_view(
             task["contract_version"] = "provider-task-view-v2"
             task["canon_field_kind_contract"] = inputs["canon_field_kind_contract"]
             if inputs.get("canon_output_repair"):
-                task["canon_output_repair"] = deepcopy(inputs["canon_output_repair"])
+                from .canon_repair_projection import project_canon_repair
+                task["contract_version"] = "provider-task-view-v3"
+                task["canon_output_repair"] = project_canon_repair(inputs["canon_output_repair"])
         return task
     if stage.startswith("quality_"):
         return _task(
