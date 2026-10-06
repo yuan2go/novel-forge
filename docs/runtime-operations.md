@@ -3079,3 +3079,11 @@ no new Effect and exact successor Pack before enabling the original workers. Nat
 `authority-creation recover --project-id "$PROJECT_ID" --formation-run-id "$FORMATION_ID"
 --idempotency-key "$RECOVERY_KEY" --reason "$REASON"` wakes the existing creation owner;
 it neither creates another Book nor clears an UNKNOWN outcome.
+
+Scene core contract recovery applies only to a live Book frontier and a failed native
+Draft without Effects, outputs, dependents, compensation or a held lease. The Kernel
+records an immutable predecessor/step snapshot and replaces the Saga's execution
+reference with a new Definition version. It preserves successful siblings and freezes
+exact input hashes. Creation cancellation and any changed Book frontier block recovery.
+Verify the forward migration on a fresh database and a restored original checkpoint,
+then demonstrate same-Saga recovery without resending Memo or Context.

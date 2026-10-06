@@ -12,6 +12,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
 CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.9.0"
+CHAPTER_DRAFT_DEFINITION_VERSION = "3.9.1"
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS = frozenset({"3.4.1", "3.5.0", "3.6.0", "3.7.0", "3.8.0"})
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION = "3.4.1"
 CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.9.0-author-input.v2"
@@ -180,6 +181,8 @@ def chapter_operation_definitions(
         return definitions
     from copy import deepcopy
     author = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
+    author["policy"].pop("scene_core_projection", None)
+    author["policy"].pop("scene_information_flow", None)
     author["definition_version"] = CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
     author["external_capabilities"] = []
     completion = author["completion_contract"]
@@ -465,7 +468,7 @@ def _definition(
     }
     return {
         "name": node.definition_name,
-        "definition_version": chapter_definition_version(model_effects_required),
+        "definition_version": CHAPTER_DRAFT_DEFINITION_VERSION if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
         "command_schema": command_schema,
@@ -508,6 +511,7 @@ def _definition(
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",
+            **({"scene_core_projection": "scene-core-slots.v1", "scene_information_flow": "scene-information-flow.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.1" else {}),
         },
         "completion_contract": completion,
     }

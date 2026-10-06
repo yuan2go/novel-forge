@@ -136,6 +136,7 @@ def install_chapter_validation_pack(
     pack_path: str | Path = "config/capability_packs/chapter_generation_pack.json",
     pack_id_override: str = "",
     pack_version_override: str = "",
+    expected_activation_version: int = 0,
     provider_sampling: bool = False,
     reference_sampling: bool = False,
     reference_samples: bool = False,
@@ -206,7 +207,7 @@ def install_chapter_validation_pack(
         agent_domain="chapter",
         agent_scope_type="BOOK" if model_reference_creation else "CHAPTER",
         agent_generation=1,
-        expected_activation_version=0,
+        expected_activation_version=expected_activation_version,
         runtime_environment=runtime_environment,
     )
 

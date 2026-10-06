@@ -42,8 +42,21 @@ class RealizationSlot:
 
 
 def compile_realization_contract(
-    plan: Mapping[str, Any], style: Mapping[str, Any]
+    plan: Mapping[str, Any],
+    style: Mapping[str, Any],
+    *,
+    core_policy: str = "EXPLICIT_SKELETON_V1",
+    information_policy: str = "ENTRY_ONLY_V1",
 ) -> dict[str, Any]:
+    if core_policy not in {"EXPLICIT_SKELETON_V1", "scene-core-slots.v1"}:
+        raise KernelError(
+            "REALIZATION_CORE_POLICY_INVALID", "Unknown frozen core slot interpretation"
+        )
+    if information_policy not in {"ENTRY_ONLY_V1", "scene-information-flow.v1"}:
+        raise KernelError(
+            "REALIZATION_INFORMATION_POLICY_INVALID",
+            "Unknown frozen information interpretation",
+        )
     scenes = plan.get("scene_plan") or []
     slots = []
     legacy_beats = False
@@ -75,12 +88,16 @@ def compile_realization_contract(
             or not capabilities
             or len(set(capabilities)) != len(capabilities)
             or not set(capabilities).issubset(set(RealizationCapability))
-            or "SKELETON" not in capabilities
+            or (
+                core_policy == "EXPLICIT_SKELETON_V1" and "SKELETON" not in capabilities
+            )
         ):
             raise KernelError(
                 "REALIZATION_CAPABILITY_INVALID",
                 "Scene capability selection must be unique, typed and include its narrative skeleton",
             )
+        if core_policy == "scene-core-slots.v1":
+            capabilities = ["SKELETON", *(c for c in capabilities if c != "SKELETON")]
         known = {
             item["character_id"]: set(item.get("known_fact_ids", []))
             for item in plan.get("character_participation", [])
@@ -102,8 +119,37 @@ def compile_realization_contract(
                 )
             for actor in actors:
                 accessible = set(scene.get("accessible_knowledge", []))
+                if information_policy == "scene-information-flow.v1":
+                    accessible |= set(scene.get("information_gain", []))
+                    chapter = int(plan["chapter"])
+                    withheld = {
+                        d["fact_id"]
+                        for d in plan.get("disclosures", [])
+                        if d["mode"] == "WITHHOLD"
+                        and d["audience"] in {actor or "READER", "ALL"}
+                    }
+                    accessible -= withheld
+                    if actor:
+                        granted = set(known.get(actor, set()))
+                        granted |= {
+                            b["fact_id"]
+                            for b in plan.get("knowledge_boundaries", [])
+                            if b["layer"] == "CHARACTER_KNOWLEDGE"
+                            and b["subject_id"] == actor
+                            and b["status"] == "KNOWN"
+                            and b["available_from_chapter"] <= chapter
+                        }
+                        granted |= {
+                            d["fact_id"]
+                            for d in plan.get("disclosures", [])
+                            if d["audience"] == actor
+                            and d["mode"] == "CONFIRM"
+                            and d["earliest_chapter"] <= chapter
+                        }
+                        accessible &= granted
                 if actor:
-                    accessible &= known.get(actor, set())
+                    if information_policy == "ENTRY_ONLY_V1":
+                        accessible &= known.get(actor, set())
                 slot = RealizationSlot(
                     slot_id=f"{scene['scene_id']}:{capability.lower()}"
                     + (f":{actor}" if actor else ""),
@@ -166,36 +212,87 @@ def compile_realization_contract(
         "integration_policy": "ordered-slot-concatenation.v1",
         "authority": "CANDIDATE_REALIZATION_ONLY",
     }
-    policies = [fact["value"] for policy in style.get("policies", []) for fact in policy.get("structured_facts", []) if isinstance(fact, dict) and fact.get("key") == "realization_policy"]
+    if core_policy == "scene-core-slots.v1":
+        body["core_projection"] = {
+            "contract_version": core_policy,
+            "source_capabilities": {
+                s["scene_id"]: s.get("realization_capabilities", ["SKELETON"])
+                for s in scenes
+            },
+            "intrinsic_capability": "SKELETON",
+            "authority": "EXECUTION_PROJECTION_ONLY",
+        }
+    if information_policy == "scene-information-flow.v1":
+        body["information_flow"] = {
+            "contract_version": information_policy,
+            "scene_scope": "ENTRY_PLUS_DECLARED_SCENE_GAIN",
+            "character_scope": "EXPLICIT_KNOWN_OR_CONFIRMED",
+            "presentation_requirement": "Present the planned observation or disclosure before using newly gained information. Future Scene gains remain unavailable.",
+            "authority": "EXECUTION_PROJECTION_ONLY",
+        }
+    policies = [
+        fact["value"]
+        for policy in style.get("policies", [])
+        for fact in policy.get("structured_facts", [])
+        if isinstance(fact, dict) and fact.get("key") == "realization_policy"
+    ]
     if policies:
         if len(policies) != 1 or policies[0] not in [
-            {"contract_version": version, "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS"}
+            {
+                "contract_version": version,
+                "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+            }
             for version in ("scene-craft-tasks.v1", "scene-craft-tasks.v2")
         ]:
-            raise KernelError("REALIZATION_CRAFT_POLICY_INVALID", "Creative realization requires one supported frozen policy")
+            raise KernelError(
+                "REALIZATION_CRAFT_POLICY_INVALID",
+                "Creative realization requires one supported frozen policy",
+            )
         body["contract_version"] = "scene-realization-composition.v2"
-        body["craft_tasks"] = _scene_craft_tasks(scenes, slots, voices, version=policies[0]["contract_version"], plan=plan)
-        body["composition_method"] = "Write and edit the chapter as one narrative; slots serialize the final prose and are not a proof of integration."
+        body["craft_tasks"] = _scene_craft_tasks(
+            scenes, slots, voices, version=policies[0]["contract_version"], plan=plan
+        )
+        body["composition_method"] = (
+            "Write and edit the chapter as one narrative; slots serialize the final prose and are not a proof of integration."
+        )
     if "craft_strategy" in plan:
         from .craft_execution import bind_craft_realization
-        body = bind_craft_realization(body, plan["craft_strategy"], scenes=scenes, plan=plan)
+
+        body = bind_craft_realization(
+            body, plan["craft_strategy"], scenes=scenes, plan=plan
+        )
     return {**body, "contract_digest": narrative_hash(body)}
 
 
-def realization_separators(artifacts: list[dict[str, Any]], separators: Any = None) -> list[str]:
+def realization_separators(
+    artifacts: list[dict[str, Any]], separators: Any = None
+) -> list[str]:
     count = max(0, len(artifacts) - 1)
     if separators is None:
         return ["\n\n"] * count
-    if (not isinstance(separators, list) or len(separators) != count
-        or any(not isinstance(value, str) or (value != "" and not value.isspace()) for value in separators)):
-        raise KernelError("REALIZATION_SEPARATOR_INVALID", "explicit Scene separators must be whitespace in frozen slot order")
+    if (
+        not isinstance(separators, list)
+        or len(separators) != count
+        or any(
+            not isinstance(value, str) or (value != "" and not value.isspace())
+            for value in separators
+        )
+    ):
+        raise KernelError(
+            "REALIZATION_SEPARATOR_INVALID",
+            "explicit Scene separators must be whitespace in frozen slot order",
+        )
     return list(separators)
 
 
-def serialize_realization(artifacts: list[dict[str, Any]], separators: Any = None) -> str:
+def serialize_realization(
+    artifacts: list[dict[str, Any]], separators: Any = None
+) -> str:
     joins = realization_separators(artifacts, separators)
-    return "".join((joins[index - 1] if index else "") + item["text"]
-                   for index, item in enumerate(artifacts))
+    return "".join(
+        (joins[index - 1] if index else "") + item["text"]
+        for index, item in enumerate(artifacts)
+    )
 
 
 def prose_from_output(result: Mapping[str, Any], *, separators: Any = None) -> str:
@@ -213,11 +310,15 @@ def prose_from_output(result: Mapping[str, Any], *, separators: Any = None) -> s
 
 
 def derive_targeted_revision_slots(
-    source: Mapping[str, Any], edits: list[dict[str, Any]],
+    source: Mapping[str, Any],
+    edits: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     artifacts = source.get("scene_artifacts")
     if not isinstance(artifacts, list) or not artifacts:
-        raise KernelError("REVISION_TARGETED_SLOT_REQUIRED", "targeted repair needs frozen Scene slots")
+        raise KernelError(
+            "REVISION_TARGETED_SLOT_REQUIRED",
+            "targeted repair needs frozen Scene slots",
+        )
     joins = realization_separators(artifacts, source.get("scene_separators"))
     ranges: list[tuple[int, int]] = []
     offset = 0
@@ -231,10 +332,15 @@ def derive_targeted_revision_slots(
     by_slot: dict[int, list[dict[str, Any]]] = {}
     for edit in edits:
         start, end = edit["start"], edit["end"]
-        index = next((i for i, (low, high) in enumerate(ranges)
-                      if low <= start < end <= high), None)
+        index = next(
+            (i for i, (low, high) in enumerate(ranges) if low <= start < end <= high),
+            None,
+        )
         if index is None:
-            raise KernelError("REVISION_TARGETED_SLOT_BOUNDARY", "targeted edit crosses a frozen Slot or separator")
+            raise KernelError(
+                "REVISION_TARGETED_SLOT_BOUNDARY",
+                "targeted edit crosses a frozen Slot or separator",
+            )
         by_slot.setdefault(index, []).append(edit)
     for index, slot_edits in by_slot.items():
         low, _ = ranges[index]
@@ -354,10 +460,17 @@ def integrate_realization(
     return {
         "realization_contract": dict(contract),
         "scene_artifacts": artifacts,
-        **({"scene_separators": realization_separators(artifacts, separators)} if separators is not None else {}),
+        **(
+            {"scene_separators": realization_separators(artifacts, separators)}
+            if separators is not None
+            else {}
+        ),
         "composition_digest": narrative_hash(
-            {"contract": contract["contract_digest"], "artifacts": artifacts,
-             **({"scene_separators": separators} if separators is not None else {})}
+            {
+                "contract": contract["contract_digest"],
+                "artifacts": artifacts,
+                **({"scene_separators": separators} if separators is not None else {}),
+            }
         ),
         "voice_evidence": voice_evidence,
     }
@@ -393,13 +506,62 @@ def reconcile_revision_composition(
 
 
 _CRAFT_OBJECTIVES = {
-    "SKELETON": ("Render the scene's consequential choice", ["motive before choice", "specific cost and changed options", "cause before consequence"]),
-    "DIALOGUE": ("Dramatize one actor's attempt to influence another", ["what the actor wants from the exchange", "what the actor avoids saying", "only this actor's available knowledge and established voice"]),
-    "ACTION": ("Make action and resistance spatially legible", ["starting positions and available resources", "action, opposing response, resulting cost", "no unexplained movement or capability"]),
-    "INTERIOR": ("Show the viewpoint's competing interpretations", ["perception versus belief", "choice between values under pressure", "thought changes an action rather than repeating narration"]),
-    "DESCRIPTION": ("Select details that affect this scene's choices", ["viewpoint-directed sensory detail", "relevant obstacle or affordance", "avoid unneeded exposition"]),
-    "TRANSITION": ("Carry the previous consequence into the next scene", ["consistent elapsed time and location", "preserve emotional residue", "do not restage completed events"]),
-    "INTEGRATION": ("Edit scene junctions as a continuous chapter", ["remove duplicated explanation", "preserve voice and information boundaries", "track the emotional and causal progression"]),
+    "SKELETON": (
+        "Render the scene's consequential choice",
+        [
+            "motive before choice",
+            "specific cost and changed options",
+            "cause before consequence",
+        ],
+    ),
+    "DIALOGUE": (
+        "Dramatize one actor's attempt to influence another",
+        [
+            "what the actor wants from the exchange",
+            "what the actor avoids saying",
+            "only this actor's available knowledge and established voice",
+        ],
+    ),
+    "ACTION": (
+        "Make action and resistance spatially legible",
+        [
+            "starting positions and available resources",
+            "action, opposing response, resulting cost",
+            "no unexplained movement or capability",
+        ],
+    ),
+    "INTERIOR": (
+        "Show the viewpoint's competing interpretations",
+        [
+            "perception versus belief",
+            "choice between values under pressure",
+            "thought changes an action rather than repeating narration",
+        ],
+    ),
+    "DESCRIPTION": (
+        "Select details that affect this scene's choices",
+        [
+            "viewpoint-directed sensory detail",
+            "relevant obstacle or affordance",
+            "avoid unneeded exposition",
+        ],
+    ),
+    "TRANSITION": (
+        "Carry the previous consequence into the next scene",
+        [
+            "consistent elapsed time and location",
+            "preserve emotional residue",
+            "do not restage completed events",
+        ],
+    ),
+    "INTEGRATION": (
+        "Edit scene junctions as a continuous chapter",
+        [
+            "remove duplicated explanation",
+            "preserve voice and information boundaries",
+            "track the emotional and causal progression",
+        ],
+    ),
 }
 
 
@@ -409,43 +571,125 @@ def _legacy_scene_craft_tasks(scenes, slots, voices):
     for slot in slots:
         goal, checks = _CRAFT_OBJECTIVES[slot["capability"]]
         scene = by_scene[slot["scene_id"]]
-        tasks.append({
-            "slot_id": slot["slot_id"], "specialism": slot["capability"],
-            "objective": goal, "scene_goal": scene.get("goal", ""),
-            "beat_ids": slot["beat_ids"], "actor_ids": slot["character_ids"],
-            "available_fact_ids": slot["accessible_knowledge"], "craft_checks": checks,
-            "voice_sources": [{key: voice[key] for key in ("asset_version_id", "voice_id", "layer", "character_id", "guidance") if key in voice} for voice in voices if not voice.get("character_id") or voice["character_id"] in slot["character_ids"]],
-            "output_use": "A passage within the continuous final chapter, subject to grounded review; no state mutation",
-        })
-    return {"contract_version": "scene-craft-tasks.v1", "tasks": tasks,
-            "chapter_edit": ["Assess scene junctions together", "Retain causal and epistemic sequence", "Remove redundant recaps", "Preserve unresolved uncertainty"],
-            "semantic_proof": "NOT_CLAIMED_BY_SLOT_COVERAGE_OR_DECLARED_FACT_IDS"}
+        tasks.append(
+            {
+                "slot_id": slot["slot_id"],
+                "specialism": slot["capability"],
+                "objective": goal,
+                "scene_goal": scene.get("goal", ""),
+                "beat_ids": slot["beat_ids"],
+                "actor_ids": slot["character_ids"],
+                "available_fact_ids": slot["accessible_knowledge"],
+                "craft_checks": checks,
+                "voice_sources": [
+                    {
+                        key: voice[key]
+                        for key in (
+                            "asset_version_id",
+                            "voice_id",
+                            "layer",
+                            "character_id",
+                            "guidance",
+                        )
+                        if key in voice
+                    }
+                    for voice in voices
+                    if not voice.get("character_id")
+                    or voice["character_id"] in slot["character_ids"]
+                ],
+                "output_use": "A passage within the continuous final chapter, subject to grounded review; no state mutation",
+            }
+        )
+    return {
+        "contract_version": "scene-craft-tasks.v1",
+        "tasks": tasks,
+        "chapter_edit": [
+            "Assess scene junctions together",
+            "Retain causal and epistemic sequence",
+            "Remove redundant recaps",
+            "Preserve unresolved uncertainty",
+        ],
+        "semantic_proof": "NOT_CLAIMED_BY_SLOT_COVERAGE_OR_DECLARED_FACT_IDS",
+    }
 
 
 _APPLICABLE_CRAFT_OBJECTIVES = {
-    "SKELETON": ("Render the frozen scene's events in causal order", ["follow the scene's function", "show motive and consequences when a planned choice calls for them", "cause before consequence"]),
-    "DIALOGUE": ("Let each speaker participate in the actual exchange", ["follow the speaker's purpose and established voice", "use persuasion or subtext only when the exchange calls for it", "only this actor's available knowledge"]),
-    "ACTION": ("Make the planned action spatially legible", ["starting positions and available resources", "show resistance and cost when supported by the frozen scene", "no unexplained movement or capability"]),
-    "INTERIOR": ("Render the viewpoint's relevant perception and thought", ["distinguish perception from belief", "use pressured value choices only when relevant", "avoid repeating narration without a reader purpose"]),
-    "DESCRIPTION": ("Select details that serve the scene's function", ["viewpoint-directed sensory detail", "relevant setting, obstacle or affordance", "avoid unneeded exposition"]),
-    "TRANSITION": ("Carry the actual scene state into the next scene", ["consistent elapsed time and location", "retain relevant emotional residue", "do not restage completed events"]),
+    "SKELETON": (
+        "Render the frozen scene's events in causal order",
+        [
+            "follow the scene's function",
+            "show motive and consequences when a planned choice calls for them",
+            "cause before consequence",
+        ],
+    ),
+    "DIALOGUE": (
+        "Let each speaker participate in the actual exchange",
+        [
+            "follow the speaker's purpose and established voice",
+            "use persuasion or subtext only when the exchange calls for it",
+            "only this actor's available knowledge",
+        ],
+    ),
+    "ACTION": (
+        "Make the planned action spatially legible",
+        [
+            "starting positions and available resources",
+            "show resistance and cost when supported by the frozen scene",
+            "no unexplained movement or capability",
+        ],
+    ),
+    "INTERIOR": (
+        "Render the viewpoint's relevant perception and thought",
+        [
+            "distinguish perception from belief",
+            "use pressured value choices only when relevant",
+            "avoid repeating narration without a reader purpose",
+        ],
+    ),
+    "DESCRIPTION": (
+        "Select details that serve the scene's function",
+        [
+            "viewpoint-directed sensory detail",
+            "relevant setting, obstacle or affordance",
+            "avoid unneeded exposition",
+        ],
+    ),
+    "TRANSITION": (
+        "Carry the actual scene state into the next scene",
+        [
+            "consistent elapsed time and location",
+            "retain relevant emotional residue",
+            "do not restage completed events",
+        ],
+    ),
     "INTEGRATION": _CRAFT_OBJECTIVES["INTEGRATION"],
 }
 
 
-def _scene_craft_tasks(scenes, slots, voices, *, version="scene-craft-tasks.v2", plan=None):
+def _scene_craft_tasks(
+    scenes, slots, voices, *, version="scene-craft-tasks.v2", plan=None
+):
     if version == "scene-craft-tasks.v1":
         return _legacy_scene_craft_tasks(scenes, slots, voices)
     if version != "scene-craft-tasks.v2":
-        raise KernelError("REALIZATION_CRAFT_POLICY_INVALID", "Unknown frozen Scene Craft method")
+        raise KernelError(
+            "REALIZATION_CRAFT_POLICY_INVALID", "Unknown frozen Scene Craft method"
+        )
     result = _legacy_scene_craft_tasks(scenes, slots, voices)
     result["contract_version"] = version
     plan = plan or {}
     result["applicability"] = {
         "classification": "CONFIGURABLE_POLICY",
-        "sources": {key: plan[key] for key in (
-            "objective", "chapter_intent", "reader_experience", "required_arc_contributions",
-        ) if key in plan},
+        "sources": {
+            key: plan[key]
+            for key in (
+                "objective",
+                "chapter_intent",
+                "reader_experience",
+                "required_arc_contributions",
+            )
+            if key in plan
+        },
         "instruction": (
             "Apply cost, pressured choice, growth, reversal, reward and hook only when the frozen chapter function, "
             "Scene, actor, author intent, Arc or due accepted obligation calls for them. Use the delivered accepted "

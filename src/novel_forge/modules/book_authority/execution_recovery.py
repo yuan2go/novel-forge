@@ -159,6 +159,8 @@ def recover_timeout(authority, *, book_run_id, principal):
         return False
     old = authority.require_chapter_request(book["active_chapter_request_id"])
     if old["command_payload"].get(COMMAND):
+        if old["chapter_root_operation_id"]:
+            return False
         resume_successor(
             authority, chapter_request_id=old["chapter_request_id"], principal=principal
         )

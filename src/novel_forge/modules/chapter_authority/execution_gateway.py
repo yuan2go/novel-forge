@@ -2064,6 +2064,7 @@ class PostgresChapterExecutionContractBinder:
         )
 
         from .definitions import (
+            CHAPTER_DRAFT_DEFINITION_VERSION,
             CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
             CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
             CHAPTER_SLICE_DEFINITION_VERSION,
@@ -2076,6 +2077,10 @@ class PostgresChapterExecutionContractBinder:
             *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
             CHAPTER_SLICE_DEFINITION_VERSION,
         }
+        compatible = compatible or (
+            str(row[0]) == ChapterNode.DRAFT.definition_name
+            and str(row[1]) == CHAPTER_DRAFT_DEFINITION_VERSION
+        )
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
                 "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",

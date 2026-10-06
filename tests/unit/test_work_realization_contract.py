@@ -230,3 +230,44 @@ def test_native_realization_compiler_preserves_author_supervision_without_strict
     monkeypatch.setattr(author_supervision, "approved_design_receipt", lambda *args, **kwargs: None)
     with pytest.raises(KernelError, match="REALIZATION_PROOF_INCOMPLETE"):
         compile_contract()
+
+
+def test_intrinsic_scene_core_is_versioned_without_mutating_selected_specialisms():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
+    from novel_forge.modules.command_kernel.errors import KernelError
+    import pytest
+    plan = {"scene_plan": [{"scene_id": "scene", "beats": [{"beat_id": "beat"}],
+                           "realization_capabilities": ["ACTION"]}]}
+    before = deepcopy(plan)
+    with pytest.raises(KernelError, match="narrative skeleton"):
+        compile_realization_contract(plan, {})
+    result = compile_realization_contract(plan, {}, core_policy="scene-core-slots.v1")
+    assert [s["capability"] for s in result["slots"]] == ["SKELETON", "ACTION"]
+    assert result["core_projection"]["source_capabilities"] == {"scene": ["ACTION"]}
+    assert plan == before
+    plan["scene_plan"][0]["realization_capabilities"] = ["ACTION", "ACTION"]
+    with pytest.raises(KernelError):
+        compile_realization_contract(plan, {}, core_policy="scene-core-slots.v1")
+
+
+def test_scene_information_flow_keeps_future_actor_and_withheld_scopes():
+    from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
+    plan = {'chapter':1,'scene_plan':[
+        {'scene_id':'first','beats':[{'beat_id':'first:beat'}],'realization_capabilities':['SKELETON','INTERIOR'],
+         'pov_character_id':'actor','participants':['actor'],'accessible_knowledge':[],'information_gain':['observed','withheld']},
+        {'scene_id':'later','beats':[{'beat_id':'later:beat'}],'realization_capabilities':['SKELETON'],
+         'pov_character_id':'actor','participants':['actor'],'accessible_knowledge':['observed'],'information_gain':['future']}],
+        'character_participation':[{'character_id':'actor','known_fact_ids':[]}],
+        'knowledge_boundaries':[{'layer':'CHARACTER_KNOWLEDGE','subject_id':'actor','fact_id':'observed','status':'KNOWN','available_from_chapter':1}],
+        'disclosures':[{'audience':'ALL','mode':'WITHHOLD','fact_id':'withheld','earliest_chapter':1}]}
+    old = compile_realization_contract(plan,{})
+    assert all(not s['accessible_knowledge'] for s in old['slots'][:2])
+    current = compile_realization_contract(plan,{},information_policy='scene-information-flow.v1')
+    assert current['slots'][0]['accessible_knowledge'] == ['observed']
+    assert current['slots'][1]['accessible_knowledge'] == ['observed']
+    assert 'future' not in current['slots'][0]['accessible_knowledge']
+    assert current['information_flow']['authority'] == 'EXECUTION_PROJECTION_ONLY'
+    plan['knowledge_boundaries'][0]['available_from_chapter'] = 2
+    current = compile_realization_contract(plan,{},information_policy='scene-information-flow.v1')
+    assert current['slots'][1]['accessible_knowledge'] == []

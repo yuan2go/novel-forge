@@ -1,0 +1,40 @@
+{
+  "evidence_kind": "NATIVE_SAME_SAGA_FAILED_DRAFT_CONTRACT_SUCCESSOR",
+  "database": "novel_forge_closure_scene_successor_test_20261007",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "predecessor_draft": "174772f7-9de6-45a5-83ee-a071ab4b20dc",
+  "successor_draft": "a67e4e80-06f6-4222-99fa-2a3a8a936a58",
+  "definition_version": "3.9.1",
+  "source_saga_status": "MANUAL_INTERVENTION",
+  "failure_status": "FAILED_FINAL_PRESERVED",
+  "successful_siblings": [
+    [
+      "chapter.context.build",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ]
+  ],
+  "effects_before": 55,
+  "effects_after": 55,
+  "provider_dispatches": 0,
+  "exact_inputs_preserved": true,
+  "idempotent_recovery": true,
+  "book_noop_reconciliation": true,
+  "pack_version": "2.14.0",
+  "migration_fresh_and_restore": "PASS",
+  "real_writer": "NOT_RUN",
+  "baseline_fixture_regression": {
+    "baseline_sha": "043bc088a96bdbe522037865c36dd28ecb7ec0e8",
+    "status": "FAIL_REPRODUCED",
+    "code": "PROTECTED_CONTEXT_BUDGET_EXCEEDED",
+    "fixture_context_budget": 6000,
+    "production_context_policy_changed": false
+  }
+}

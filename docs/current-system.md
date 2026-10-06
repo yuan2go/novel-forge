@@ -1659,13 +1659,29 @@ Qualified Foundation planning projections retain mandatory constraints once with
 auditable exact references, defer prose examples to prose stages, and replace an
 integrity-checked DENY_ALL empty retrieval query with its frozen need receipt.
 
-Scene capability selection produces ordered Skeleton, Dialogue, Action, Interior,
-Description, Transition and Integration slots as needed. Dialogue and Interior slots
+Scene capability selection produces ordered prose slots for the selected specialisms.
+The published explicit-core contract requires a selected Skeleton. The corrected Draft
+3.9.1 contract projects one intrinsic Skeleton from each typed Scene without changing
+its frozen plan or adding narrative facts; selected Dialogue, Action, Interior,
+Description, Transition and Integration remain Writer implementation capabilities.
+An unexecuted 3.9 Draft that failed only this contract can receive a versioned Kernel
+step successor, retaining the original failure, Saga and successful Memo/Context inputs.
+If coordination already recorded MANUAL_INTERVENTION, succession captures that exact
+Saga version and advances a new RUNNING version only when every other admitted step
+succeeded, with no compensation or other blocker. The failed Operation and Attempt,
+prior Saga event and immutable successor snapshot remain unchanged. Book reconciliation
+avoids mutations when its business state is unchanged; actual changes bind the exact
+child Operation/Saga versions. Chapter discovery leaves held leases to their owner,
+preventing competing workers from repeatedly polling the same active execution.
+The same versioned projection carries declared Scene gains to the owning actor only,
+within the current Scene and chapter, after observation/presentation and subject to
+WITHHOLD. Future Scene gains stay unavailable and the projection cannot accept Canon.
+Completion, actor isolation and prose admission checks remain identical. Dialogue and Interior slots
 carry actor-local knowledge. Draft requires complete slot coverage; targeted Revision
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.11.0 binds System v3, Prompt Template v9 and
+reconciliation chain. Chapter Pack 2.14.0 binds System v3, Prompt Template v9 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot
