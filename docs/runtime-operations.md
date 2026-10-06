@@ -2573,13 +2573,22 @@ An exhausted Planning repair allowance is a durable owner wait, not a transport
 retry. Creation completes only its coordination window with
 `OWNER_RECOVERY_REQUIRED`, retaining the precise error and recovery instruction;
 the Book remains incomplete. Automatic scheduling does not rearm that unchanged
-checkpoint. Repeating owner recovery cannot grant another content repair. Resolve
-the cause through a new author decision or an approved future input change first.
-The initial Story State genesis is empty. World character actions still require
-their own supplied knowledge or belief predicates; a Character Cast or Foundation
-cause does not supply acquired knowledge. A Provider may explicitly propose
-`NO_OP` or `DEFER` when support is absent. The runtime never converts a rejected
-proposal into either disposition or inserts facts to pass the gate.
+checkpoint. Repeating owner recovery cannot grant another content repair. A genuine
+author-intent change uses the existing approved future input path. An implementation
+or execution-contract defect requires an accounted native contract successor; it is
+not an author decision and cannot be fixed by increasing the old repair allowance.
+
+The initial creation Story State is empty and is not chapter-zero acceptance. Current
+World validation requires a knowledge/belief predicate for every approved character
+actor, including ordinary actions and first perception. This is an
+`UNRESOLVED_DESIGN_CONSTRAINT`: the original isolated Book is blocked before Chapter 1
+because the requirement cannot distinguish information-dependent decisions from
+initial actions. Missing structured knowledge is not evidence of an ignorant character.
+Foundation approval alone does not supply an acquired fact. `NO_OP` and `DEFER` remain
+actual narrative dispositions; they are not an initialization workaround. The retained
+failed proposals, receipts and original two-repair bound must remain immutable while
+this contract is repaired. No author approval is required to correct this engineering
+classification within the already authorized original work.
 
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native

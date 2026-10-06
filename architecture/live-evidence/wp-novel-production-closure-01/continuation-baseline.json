@@ -1,0 +1,59 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "original_worktree_sha": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "user_untracked_files": "preserved; original approved-start evidence only",
+  "pr_132": "merged at baseline; no later origin/main commits after fresh fetch",
+  "prior_interpretation_superseded": "Missing structured initial knowledge is an endogenous contract/startup defect, not a required new author grant. Original failure evidence remains unchanged.",
+  "migration_compatibility": {
+    "main_head": "20261007_0159_planning_dead_letter_result_recovery",
+    "unmerged_recovery_branch": "codex/production-evidence-publication-20261007",
+    "conflict": "alternative 0157-0165 lineage; no blind cherry-pick; published bodies immutable",
+    "resolution": "reuse only required semantic capabilities with forward main lineage"
+  },
+  "five_items": [
+    {
+      "item": 1,
+      "current": "durable creation owner wired; original stopped at exhausted World result",
+      "root": "blanket action knowledge rule and no changed-contract successor for that exact failure",
+      "verify": "native PG successor, cancellation/UNKNOWN/idempotency; original 12 chapters and crash recovery"
+    },
+    {
+      "item": 2,
+      "current": "author choice and nonfirst ChapterGroup comparison exist",
+      "root": "v5 opening comparison globally requires manual choice",
+      "verify": "preauthorized work-sensitive bounded automatic comparison, limited/tie uncertainty"
+    },
+    {
+      "item": 3,
+      "current": "review/revision/comparison protection exists; real prose not reached",
+      "verify": "read actual prose; justified repair, exact before/after and retained baseline hard blockers"
+    },
+    {
+      "item": 4,
+      "current": "Foundation/World raw requests retained; Writer not reached",
+      "verify": "final dispatched Writer schema/context/retry/history and actual narrative text"
+    },
+    {
+      "item": 5,
+      "current": "native author creation/editor/Edition wired; only status read on real Book",
+      "verify": "ordinary author local edit, conflict protections, review, exact selected formal export"
+    }
+  ],
+  "risk_matrix": [
+    "first action/perception and ordered same-chapter own knowledge",
+    "borrowed/reader/future/cyclic/stale knowledge negative cases",
+    "known-result contract succession and cumulative ledger; unresolved outcomes fail closed",
+    "affected PG acceptance/cancel/resume/idempotency",
+    "authorized automatic/author selection and unchanged-prose original protection",
+    "native author edit and exact Edition export"
+  ],
+  "target": {
+    "project": "closure-original-20261006",
+    "book": "closure-original-book",
+    "book_run": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "chapter_count": 12,
+    "scope_source": "original native production profile; not global system rule"
+  },
+  "status": "IN_PROGRESS"
+}
