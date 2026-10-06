@@ -153,6 +153,8 @@ class ChapterAuthorityScheduler:
             correlation_id=root["correlation_id"],
         )
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
+        if any(c["status"] == "ADMITTED" for c in children.values()):
+            root, saga, children = self._graph_state(project_id, root_operation_id)
         chapter_complete = all(
             children.get(node, {}).get("status") == "SUCCEEDED" for node in ChapterNode
         )
@@ -1560,14 +1562,17 @@ class ChapterAuthorityScheduler:
                              AND attempt.status='FAILED_RETRYABLE')
                 FROM authority_operation
                 WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
-                  AND idempotency_key=ANY(%s)
+                  AND operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s)
+                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s))
                 ORDER BY created_at, operation_id
                 """,
                 [
                     root_operation_id,
                     root_operation_id,
                     project_id,
+                    saga_row[0],
                     initial_child_keys,
+                    saga_row[0],
                 ],
             )
             rows = uow.cursor.fetchall()

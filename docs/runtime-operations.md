@@ -3007,3 +3007,11 @@ and stage-repair regressions, and focused Chapter definition, historical codec, 
 Pack and execution-recovery boundary tests. The fixture preserves stopped-process evidence
 and old accounting while proving native cancellation, successor linking, full acceptance
 and component reconstruction. It remains controlled engineering evidence.
+
+Install migration 0163 and the Chapter Pack with Draft step 3.9.1, then continue the
+same Formation for the known pre-dispatch realization-contract failure. The native
+owner validates the failed Attempt, immutable inputs and current Book frontier before
+Kernel admits a successor. Memo and Context remain the original successful siblings;
+no old model call is sent again. Expired or terminal Roots, live leases, effects, outputs,
+foreign identities and already-started dependent steps remain ineligible. The recovery
+record preserves the old Saga binding and exact failure alongside the new binding.

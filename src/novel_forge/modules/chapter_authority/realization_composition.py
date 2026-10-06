@@ -42,8 +42,10 @@ class RealizationSlot:
 
 
 def compile_realization_contract(
-    plan: Mapping[str, Any], style: Mapping[str, Any]
+    plan: Mapping[str, Any], style: Mapping[str, Any], *, core_policy: str = "EXPLICIT_SKELETON_V1"
 ) -> dict[str, Any]:
+    if core_policy not in {"EXPLICIT_SKELETON_V1", "scene-core-slots.v1"}:
+        raise KernelError("REALIZATION_CORE_POLICY_INVALID", "Unknown frozen core slot interpretation")
     scenes = plan.get("scene_plan") or []
     slots = []
     legacy_beats = False
@@ -75,12 +77,14 @@ def compile_realization_contract(
             or not capabilities
             or len(set(capabilities)) != len(capabilities)
             or not set(capabilities).issubset(set(RealizationCapability))
-            or "SKELETON" not in capabilities
+            or (core_policy == "EXPLICIT_SKELETON_V1" and "SKELETON" not in capabilities)
         ):
             raise KernelError(
                 "REALIZATION_CAPABILITY_INVALID",
                 "Scene capability selection must be unique, typed and include its narrative skeleton",
             )
+        if core_policy == "scene-core-slots.v1":
+            capabilities = ["SKELETON", *(c for c in capabilities if c != "SKELETON")]
         known = {
             item["character_id"]: set(item.get("known_fact_ids", []))
             for item in plan.get("character_participation", [])
@@ -166,6 +170,10 @@ def compile_realization_contract(
         "integration_policy": "ordered-slot-concatenation.v1",
         "authority": "CANDIDATE_REALIZATION_ONLY",
     }
+    if core_policy == "scene-core-slots.v1":
+        body["core_projection"] = {"contract_version": core_policy,
+            "source_capabilities": {s["scene_id"]: s.get("realization_capabilities", ["SKELETON"]) for s in scenes},
+            "intrinsic_capability": "SKELETON", "authority": "EXECUTION_PROJECTION_ONLY"}
     policies = [fact["value"] for policy in style.get("policies", []) for fact in policy.get("structured_facts", []) if isinstance(fact, dict) and fact.get("key") == "realization_policy"]
     if policies:
         if len(policies) != 1 or policies[0] not in [

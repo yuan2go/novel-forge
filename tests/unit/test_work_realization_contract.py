@@ -230,3 +230,22 @@ def test_native_realization_compiler_preserves_author_supervision_without_strict
     monkeypatch.setattr(author_supervision, "approved_design_receipt", lambda *args, **kwargs: None)
     with pytest.raises(KernelError, match="REALIZATION_PROOF_INCOMPLETE"):
         compile_contract()
+
+
+def test_intrinsic_scene_core_is_versioned_without_mutating_selected_specialisms():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
+    from novel_forge.modules.command_kernel.errors import KernelError
+    import pytest
+    plan = {"scene_plan": [{"scene_id": "scene", "beats": [{"beat_id": "beat"}],
+                           "realization_capabilities": ["ACTION"]}]}
+    before = deepcopy(plan)
+    with pytest.raises(KernelError, match="narrative skeleton"):
+        compile_realization_contract(plan, {})
+    result = compile_realization_contract(plan, {}, core_policy="scene-core-slots.v1")
+    assert [s["capability"] for s in result["slots"]] == ["SKELETON", "ACTION"]
+    assert result["core_projection"]["source_capabilities"] == {"scene": ["ACTION"]}
+    assert plan == before
+    plan["scene_plan"][0]["realization_capabilities"] = ["ACTION", "ACTION"]
+    with pytest.raises(KernelError):
+        compile_realization_contract(plan, {}, core_policy="scene-core-slots.v1")

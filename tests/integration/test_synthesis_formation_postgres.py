@@ -60,8 +60,26 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, scene_core_recovery=False,
 ):
+    if scene_core_recovery:
+        from novel_forge.modules.chapter_authority import definitions as scene_definitions
+        saved_draft_version = scene_definitions.CHAPTER_DRAFT_DEFINITION_VERSION
+        monkeypatch.setattr(scene_definitions, 'CHAPTER_DRAFT_DEFINITION_VERSION', '3.9.0')
+        normal_scene_read = Path.read_text
+        def legacy_scene_manifest(path, *args, **kwargs):
+            value = normal_scene_read(path, *args, **kwargs)
+            if path.name != 'chapter_generation_pack.json':
+                return value
+            from novel_forge.storage.authority_repositories import definition_hash
+            value = json.loads(value)
+            value['identity']['version'] = '2.13.0'
+            definitions = {d['name']: d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-scene-fixture', commit_sha='0'*40, model_effects_required=True)}
+            for node in value['workflow_template']['nodes']:
+                node['operation_definition_ref'] = node['operation_name'] + '@' + definitions[node['operation_name']]['definition_version']
+                node['operation_definition_hash'] = definition_hash(definitions[node['operation_name']])
+            return json.dumps(value)
+        monkeypatch.setattr(Path, 'read_text', legacy_scene_manifest)
     if memo_timeout_recovery:
         from novel_forge.modules.chapter_authority import execution_gateway as memo_gateway
         from novel_forge.modules.capability_packs import operation_catalog as memo_catalog
@@ -473,6 +491,15 @@ def test_native_formation_generates_foundation_from_author_brief(
                 value['character_participation'][0]['known_fact_ids']=['unknown:fact']
             return value
         transport.planning=invalid_knowledge_once
+    if scene_core_recovery:
+        original_scene_planning = transport.planning
+        def selected_specialisms_only(stage, inputs):
+            value = original_scene_planning(stage, inputs)
+            if stage == 'chapter_plan.generate':
+                for scene in value['scene_plan']:
+                    scene['realization_capabilities'] = ['ACTION']
+            return value
+        transport.planning = selected_specialisms_only
     registry.register(transport)
     if creative_validation:
         from tests.integration.creative_validation_production_support import controlled_member_environment
@@ -1055,6 +1082,46 @@ def test_native_formation_generates_foundation_from_author_brief(
                     assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
                     uow.cursor.execute("SELECT status,checkpoint->>'error_code' FROM authority_attempt WHERE operation_id=%s", [checkpoint_operation])
                     assert uow.cursor.fetchall() == [("CHECKPOINTED", "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN")]
+            if scene_core_recovery:
+                stopped = continue_creation(composition=composition, content=content, chapter=chapter,
+                    formation_run_id=admitted.formation_run_id, formation_worker=formation_worker, book_worker=worker,
+                    maximum_ticks=80, deadline=time.monotonic()+240, creation_policy=policy)
+                assert stopped['stop_reason'] == 'REALIZATION_CAPABILITY_INVALID', stopped
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.project_id=%s AND o.definition_name='chapter.draft.generate' AND o.status='FAILED_FINAL'", [harness.project_id])
+                    failed_scene_step = uow.cursor.fetchone()
+                    uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.project_id=%s ORDER BY e.external_effect_id", [harness.project_id])
+                    completed_scene_calls = uow.cursor.fetchall()
+                monkeypatch.setattr(scene_definitions, 'CHAPTER_DRAFT_DEFINITION_VERSION', saved_draft_version)
+                monkeypatch.setattr(Path, 'read_text', normal_scene_read)
+                execution.close()
+                from tests.integration.creative_validation_production_support import install_planning
+                from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+                harness.release_sha = 'e'*40
+                hashes = register_validation_runtime_definitions(DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
+                harness.pack_id += '.scene-core-successor'
+                chapter_pack.pack_id += '.scene-core-successor'
+                install_chapter_validation_pack(DATABASE_URL, repository_root=Path(__file__).resolve().parents[2], project_id=harness.project_id,
+                    workspace_id=harness.workspace_id, book_id=harness.book_ids[0], application_build_id=harness.application_build_id,
+                    commit_sha=harness.release_sha, compiler=template_actor, approver=template_actor, agent_admin=template_actor, pack_id_override=chapter_pack.pack_id)
+                install_planning(harness, build_story_planning_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=hashes['planning'], pack_id=harness.pack_id), template_actor)
+                env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha, NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id, NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                execution = build_production_execution_composition(settings, env=env, provider_registry=registry, planning_fixture_factory=transport.planning, chapter_fixture_factory=transport.chapter)
+                chapter = build_chapter_authority_application(settings, execution=execution, env=env)
+                composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, env=env)
+                from novel_forge.modules.command_kernel.step_successor import replace_failed_step
+                from novel_forge.modules.command_kernel.service import AdmissionContext
+                from novel_forge.modules.command_kernel.errors import KernelError
+                recovery_context = AdmissionContext(principal.principal_id, principal.permissions,
+                    chapter.registry.available_handler_keys, harness.application_build_id, harness.release_sha)
+                for invalid_context, error_code in (
+                    (replace(recovery_context, actor_id='foreign:actor'), 'STEP_SUCCESSOR_SOURCE_INVALID'),
+                    (replace(recovery_context, permissions=frozenset()), 'PERMISSION_DENIED'),
+                ):
+                    with pytest.raises(KernelError, match=error_code):
+                        replace_failed_step(DATABASE_URL, predecessor_id=failed_scene_step[0]['operation_id'],
+                            target_version='3.9.1', context=invalid_context, policy_evidence={},
+                            expected_failure_code='REALIZATION_CAPABILITY_INVALID')
             if memo_timeout_recovery:
                 first=continue_creation(composition=composition,content=content,chapter=chapter,
                     formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
@@ -1105,6 +1172,15 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            if scene_core_recovery:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.operation_id=%s", [failed_scene_step[0]['operation_id']])
+                    assert uow.cursor.fetchone() == failed_scene_step
+                    for effect, reservation in completed_scene_calls:
+                        uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.external_effect_id=%s", [effect['external_effect_id']])
+                        assert uow.cursor.fetchone() == (effect, reservation)
+                    uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s", [failed_scene_step[0]['operation_id']])
+                    assert uow.cursor.fetchone() == ('SUCCEEDED','3.9.1')
             if memo_timeout_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])
@@ -1767,3 +1843,10 @@ def test_native_known_preprose_memo_timeout_successor_preserves_history_and_acce
     test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,
         author_guided=False,result_repair=False,runtime_recovery=False,evaluation_recovery=False,manual_review=False,advice_only=False,target_chapters=1,
         complete_after_result_repair=True,creative_validation=True,world_disabled=True,memo_timeout_recovery=True)
+
+
+def test_native_scene_core_successor_reuses_memo_and_preserves_failed_step(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        author_guided=False, result_repair=False, runtime_recovery=False, evaluation_recovery=False,
+        manual_review=False, advice_only=False, target_chapters=1,
+        complete_after_result_repair=True, creative_validation=True, world_disabled=True, scene_core_recovery=True)

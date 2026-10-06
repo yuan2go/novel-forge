@@ -2054,3 +2054,16 @@ Chapter 3.9 uses optional sample successors 2.4 (ordinary) and 2.5 (reference),
 with explicit source contracts and the new Memo bound. Existing 2.2/2.3 definitions,
 frozen samples and source versions remain recoverable with their original contracts.
 Sampling is not a prerequisite for the creative template.
+
+Draft step contract 3.9.1 projects mandatory SKELETON slots from the frozen Scene/Beat
+structure through `scene-core-slots.v1`; selected specialisms remain unchanged. Old
+Draft contracts retain their explicit-SKELETON interpretation. This projection changes
+no Scene, Beat, character, knowledge or accepted plan. It records the source selection
+and intrinsic core separately. Realization validation still requires all frozen slots.
+
+Kernel owns failed-step succession. Only a terminal child with no external intent,
+output, live lease or admitted dependent can receive a new step under the same live
+Root/Saga. The current Saga binding changes atomically with append-only predecessor
+evidence; terminal Operations, Attempts and successful siblings remain unchanged.
+Creative Chapter recovery binds the original inputs, current trusted template and the
+new exact Draft definition. It cannot resume unknown sends or grant strict certification.

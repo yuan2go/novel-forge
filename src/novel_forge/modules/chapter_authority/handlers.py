@@ -1501,7 +1501,8 @@ class _DraftHandler:
         plan_view = build_draft_plan_view(
             plan.content, work_requirements=request.work_requirements_enabled
         )
-        realization_contract = compile_realization_contract(plan.content, style)
+        core_policy = "scene-core-slots.v1" if request.definition_version == "3.9.1" else "EXPLICIT_SKELETON_V1"
+        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         generated = self.provider.invoke(
@@ -1523,6 +1524,7 @@ class _DraftHandler:
             result=generated.output,
             provider_evidence=_provider_evidence(generated),
             work_requirements=request.work_requirements_enabled,
+            core_policy=core_policy,
         )
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,

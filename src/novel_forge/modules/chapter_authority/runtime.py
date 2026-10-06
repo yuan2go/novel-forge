@@ -44,6 +44,7 @@ def _handler_definition_version(
     expected = (
         CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
         if author_input and node is ChapterNode.DRAFT
+        else "3.9.1" if registry.model_effects_required and node is ChapterNode.DRAFT
         else chapter_definition_version(registry.model_effects_required)
     )
     if registry.model_effects_required:
@@ -57,7 +58,7 @@ def _handler_definition_version(
         recoverable = (
             {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2", "3.8.0-author-input.v2"}
             if author_input and node is ChapterNode.DRAFT
-            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
+            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.9.0"}
         )
         if row is not None and str(row[0]) in recoverable:
             return str(row[0])

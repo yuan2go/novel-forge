@@ -684,6 +684,9 @@ def _command(
     definition_version: str = CHAPTER_SLICE_DEFINITION_VERSION,
     input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if definition_name == ChapterNode.DRAFT.definition_name and definition_version == "3.9.0" and not (request.preparation_report or {}).get("author_draft_adoption"):
+        from .definitions import CHAPTER_DRAFT_DEFINITION_VERSION
+        definition_version = CHAPTER_DRAFT_DEFINITION_VERSION
     if definition_name == ChapterNode.DRAFT.definition_name and (request.preparation_report or {}).get("author_draft_adoption"):
         from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
         definition_version = (definition_version + "-author-input.v2" if definition_version in {"3.6.0", "3.7.0", "3.8.0"} else CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
