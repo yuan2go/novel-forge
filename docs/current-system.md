@@ -2199,3 +2199,12 @@ continuity review. QualityContext v7 exposes the deferred identity observations 
 governed plan constraints to that independent review. Planned world uses and power
 changes remain distinct from accepted historical facts. Unaffected completed groups are reused. Accepted Canon, prose,
 plans, spend and cursors cannot be rewritten by this recovery.
+
+Creative internal Quality disposition distinguishes located semantic failures from
+missing assessment evidence. The versioned internal disposition may produce bounded
+revision tasks from real Provider findings without claiming literary calibration.
+Strict Quality reports and certification gates retain their original results. A missing
+World baseline requires a source-bound assessment against the frozen Book Design's
+qualified Foundation World Bible, not a prose change or invented accepted history.
+Revalidation applies only to the unaccepted frontier and appends successor records;
+completed content, previous assessments and usage remain immutable.

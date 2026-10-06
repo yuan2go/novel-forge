@@ -949,7 +949,7 @@ class PostgresChapterExecutionContractBinder:
         )
         if stage == "canon_support" and graph["definition_version"]=="3.9.8" and provider_schema_ref!="schema:chapter-provider-output:canon_support:v2":
             raise KernelError("CHAPTER_CANON_SUPPORT_CONTRACT_REQUIRED", "Support requires its exact finite taxonomy Schema binding")
-        if stage.startswith("quality_") and graph["definition_version"]=="3.9.9" and provider_schema_ref!=f"schema:chapter-provider-output:{stage}:v5":
+        if stage.startswith("quality_") and graph["definition_version"] in {"3.9.9", "3.9.12"} and provider_schema_ref!=f"schema:chapter-provider-output:{stage}:v5":
             raise KernelError("CHAPTER_QUALITY_APPLICABILITY_CONTRACT_REQUIRED", "Quality requires its exact frozen applicability Schema")
         schema_hash = canonical_hash(provider_schema)
         embedding_output_contract = (
@@ -2105,7 +2105,7 @@ class PostgresChapterExecutionContractBinder:
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
-        compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1])=="3.9.9")
+        compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1]) in {"3.9.9", "3.9.12"})
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_PROPOSAL.definition_name and str(row[1])=="3.9.8")
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7"})
         compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) == "3.9.4")

@@ -172,7 +172,7 @@ def build_quality_group_evidence(
             )
         )
         if (
-            quality_context.get("contract_version") not in {"stage-quality-context-v6", "stage-quality-context-v7"}
+            quality_context.get("contract_version") not in {"stage-quality-context-v6", "stage-quality-context-v7", "stage-quality-context-v8"}
             or quality_context.get("target_revision_asset_version_id")
             != revision_asset_version_id
             or quality_context.get("creative_baseline")

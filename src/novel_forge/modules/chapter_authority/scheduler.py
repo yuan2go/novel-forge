@@ -162,6 +162,17 @@ class ChapterAuthorityScheduler:
                 return ChapterSchedulerTick(root_operation_id=root_operation_id,saga_id=saga['saga_id'],saga_status=saga['status'],
                     operation_id=canon['operation_id'],node=ChapterNode.CANON.value,
                     operation_status=self._operation_status(canon['operation_id'],project_id),recovery_mode='derived_canon_'+recovery)
+        for derived_node in (ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY):
+            operation = children.get(derived_node)
+            if operation and operation['status'] in {'READY','FAILED_RETRYABLE'}:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_revalidation j JOIN authority_operation o ON o.operation_id=j.successor_operation_id WHERE j.successor_operation_id=%s AND o.definition_version IN ('3.9.11','3.9.12') AND j.policy_evidence #>> '{quality_revalidation,contract_version}'='chapter-internal-quality-revalidation.v1')",[operation['operation_id']])
+                    owned = uow.cursor.fetchone()[0]
+                if owned:
+                    recovery = self._execute_node(self._request_from_root(root),derived_node,operation)
+                    return ChapterSchedulerTick(root_operation_id=root_operation_id,saga_id=saga['saga_id'],saga_status=saga['status'],
+                        operation_id=operation['operation_id'],node=derived_node.value,
+                        operation_status=self._operation_status(operation['operation_id'],project_id),recovery_mode='derived_quality_'+recovery)
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
         if any(c["status"] == "ADMITTED" for c in children.values()):
             root, saga, children = self._graph_state(project_id, root_operation_id)
@@ -711,6 +722,12 @@ class ChapterAuthorityScheduler:
             )
         if explicit_inputs is not None:
             inputs = list(explicit_inputs)
+        if node is ChapterNode.QUALITY_LONGFORM and self.registry.model_effects_required:
+            from novel_forge.modules.chapter_quality_authority.foundation_context import world_input_bindings
+            inputs.extend(world_input_bindings(self.database_url, project_id=request.project_id, root_operation_id=root['operation_id']))
+        if node is ChapterNode.QUALITY_LONGFORM and self.registry.model_effects_required:
+            from novel_forge.modules.chapter_quality_authority.foundation_context import world_input_bindings
+            inputs.extend(world_input_bindings(self.database_url, project_id=request.project_id, root_operation_id=root['operation_id']))
         inputs = list(
             {str(item["asset_version_id"]): dict(item) for item in inputs}.values()
         )

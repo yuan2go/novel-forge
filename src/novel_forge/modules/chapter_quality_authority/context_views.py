@@ -276,6 +276,7 @@ def build_quality_context_view(
     token_budget: int = 6000,
     token_estimator: TokenEstimator | None = None,
     work_requirements: bool = False,
+    governed_world_projection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if token_budget <= 0:
         raise KernelError(
@@ -437,7 +438,7 @@ def build_quality_context_view(
             ),
             "previous_state_snapshots": previous_states,
             "current_state_candidates": current_states,
-            "governed_world_rules": _segments_of_type(segments, "world_bible"),
+            "governed_world_rules": [governed_world_projection] if governed_world_projection else _segments_of_type(segments, "world_bible"),
             "volume_arc": _segments_of_type(segments, "volume_arc"),
             "arc_progress": _segments_of_type(segments, "arc_progress_report"),
             "previous_recap": _segments_of_type(segments, "longform_recap_report"),
@@ -477,7 +478,7 @@ def build_quality_context_view(
     )
     body["coverage_report"] = coverage
     body["contract_version"] = (
-        "stage-quality-context-v7" if work_requirements and group == "longform" and canon.get("deterministic_validation",{}).get("validation_contract")=="grounded-canon-validation.v2" else "stage-quality-context-v6" if work_requirements else "stage-quality-context-v4"
+        "stage-quality-context-v8" if governed_world_projection else "stage-quality-context-v7" if work_requirements and group == "longform" and canon.get("deterministic_validation",{}).get("validation_contract")=="grounded-canon-validation.v2" else "stage-quality-context-v6" if work_requirements else "stage-quality-context-v4"
     )
     if work_requirements:
         body["evaluation_semantics_version"] = "work-quality.v2"

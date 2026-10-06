@@ -2069,6 +2069,10 @@ class _QualityGroupHandler:
         if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
             raise KernelError("QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED",
                               "Frozen work-quality.v1 cannot safely continue under v2; retain receipts and admit an explicit replacement")
+        world_projection = None
+        if self.group == 'longform' and request.definition_version == '3.9.12' and request.database_url:
+            from novel_forge.modules.chapter_quality_authority.foundation_context import request_world_projection
+            world_projection = request_world_projection(request)
         quality_context = build_quality_context_view(
             group=self.group,
             revision=revision.content,
@@ -2083,6 +2087,7 @@ class _QualityGroupHandler:
                 request.command, f"quality_{self.group}"
             ),
             work_requirements=request.work_requirements_enabled,
+            governed_world_projection=world_projection,
         )
         if bool(
             getattr(self.provider, "external_effect_backed", False)
@@ -2094,7 +2099,7 @@ class _QualityGroupHandler:
                 payload={
                     "revision": revision.content,
                     "quality_context": quality_context,
-                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.definition_version=="3.9.9" else {}),
+                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.definition_version in {"3.9.9", "3.9.12"} else {}),
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
@@ -2353,7 +2358,7 @@ class _QualityHandler:
             evidence_reports=group_reports,
         )
         from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
-        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id)
+        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.definition_version=="3.9.11" else 1)
         if admission is not None:
             content["internal_admission"] = admission
         primary = _output(
@@ -2382,6 +2387,11 @@ class _QualityHandler:
         )
         from novel_forge.modules.revision.domain import freeze_quality_edit_scope
 
+        actions = content.get("required_actions", [])
+        if admission and request.definition_version == '3.9.11':
+            from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
+            actions = internal_required_actions(admission=admission, evidence_reports=content['evidence_reports'], target=revision.asset_version_id)
+            content['internal_required_actions'] = actions
         action_outputs = (
             tuple(
                 ChapterAuxiliaryOutput(
@@ -2439,7 +2449,7 @@ class _QualityHandler:
                     },
                 )
                 for ordinal, action in enumerate(
-                    content.get("required_actions", []), start=1
+                    actions, start=1
                 )
             )
             if not any(item.asset_type == "revision_task" for item in request.inputs)

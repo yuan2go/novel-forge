@@ -50,7 +50,18 @@ def _settled_graph(cursor, root_id):
                   AND b->>3='SETTLED' AND b->>4='ACCOUNT_ENTITLEMENT' AND b->>5=%s))""",
             [effect[0], effect[5]],
         )
-        if not cursor.fetchone()[0]:
+        authorized_schema_failure = cursor.fetchone()[0]
+        cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_external_effect failed
+            JOIN authority_attempt a ON a.operation_id=failed.operation_id AND a.attempt_id=failed.request_payload #>> '{_production_execution,attempt_id}'
+            JOIN authority_operation o ON o.operation_id=failed.operation_id
+            JOIN authority_attempt later ON later.operation_id=o.operation_id AND later.attempt_number>a.attempt_number
+            JOIN authority_external_effect success ON success.operation_id=later.operation_id AND success.request_payload #>> '{_production_execution,attempt_id}'=later.attempt_id
+            JOIN authority_budget_reservation r ON r.external_effect_id=success.external_effect_id
+            WHERE failed.external_effect_id=%s AND o.status='SUCCEEDED' AND later.status='SUCCEEDED'
+              AND failed.status='FAILED_RETRYABLE' AND a.status='FAILED_RETRYABLE'
+              AND success.status='SUCCEEDED' AND r.status='SETTLED'
+              AND r.accounting_basis='ACCOUNT_ENTITLEMENT' AND r.evidence->>'cost_authorization_ref'=%s)''', [effect[0],effect[5]])
+        if not authorized_schema_failure and not cursor.fetchone()[0]:
             raise KernelError(
                 "DERIVED_STEP_UNRESOLVED_FAILURE",
                 "Preserve unrelated failure recovery ownership",
@@ -153,8 +164,15 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
             WHERE d.depends_on_operation_id=%s""",
             [predecessor_id],
         )
+        dependent_names = [r[0] for r in c.fetchall()]
+        quality_correction = policy_evidence.get('quality_revalidation')
+        if quality_correction:
+            from novel_forge.modules.chapter_quality_authority.revalidation import quality_revalidation_evidence
+            if quality_revalidation_evidence(c,source) != quality_correction:
+                raise KernelError('DERIVED_STEP_QUALITY_PROOF_INVALID', 'Reproduce the exact frozen assessment correction')
+        allowed_dependents = {'chapter.quality.evaluate','chapter.publishing.prepare_release','chapter.export.render'} if quality_correction else set()
         if any(
-            r[0]
+            r
             not in {
                 "chapter.quality.structural.evaluate",
                 "chapter.quality.commercial.evaluate",
@@ -162,8 +180,8 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
                 "chapter.quality.longform.evaluate",
                 "chapter.quality.platform.evaluate",
             }
-            for r in c.fetchall()
-        ):
+            for r in dependent_names
+        ) and any(r not in allowed_dependents for r in dependent_names):
             raise KernelError(
                 "DERIVED_STEP_DEPENDENT_COMMIT",
                 "Committed downstream work cannot be rebound",
@@ -184,7 +202,12 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
         old = source["definition_snapshot"]
         inputs = source["input_asset_snapshot"]
         canonical_replacement = None
-        if source["definition_name"] == "chapter.canon.update":
+        replacements = []
+        if quality_correction:
+            inputs = quality_correction['input_snapshot']
+            replacements = quality_correction['input_replacements']
+            target_version = quality_correction['target_version']
+        elif source["definition_name"] == "chapter.canon.update":
             if (
                 source["status"] != "SUCCEEDED"
                 or source["definition_version"] != "3.9.0"
@@ -330,7 +353,10 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
                 "DERIVED_STEP_CONTRACT_CHANGED",
                 "Retain completion, permissions, execution and retry bounds",
             )
-        expected_policy = (
+        quality_policy = {'3.9.11':('internal_quality_disposition','creative-quality-disposition.v2'),
+            '3.9.12':('quality_foundation_contract','quality-frozen-world-foundation.v1'),
+            '3.9.13':('internal_quality_input_contract','creative-quality-admission.v2')}
+        expected_policy = quality_policy.get(target_version) or (
             ("canon_validation_contract", "grounded-canon-validation.v2")
             if target_version == "3.9.10"
             else ("quality_applicability_contract", "quality-host-applicability.v1")
@@ -394,13 +420,13 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
             "SELECT depends_on_operation_id,dependency_condition FROM authority_operation_dependency WHERE operation_id=%s",
             [predecessor_id],
         )
+        if canonical_replacement:
+            replacements.append(canonical_replacement)
         for dependency, condition in c.fetchall():
+            mapped_dependency = next((r['successor_operation_id'] for r in replacements if dependency == r['predecessor_operation_id']), dependency)
             repo.add_dependency(
                 successor,
-                canonical_replacement["successor_operation_id"]
-                if canonical_replacement
-                and dependency == canonical_replacement["predecessor_operation_id"]
-                else dependency,
+                mapped_dependency,
                 condition,
             )
         c.execute(
@@ -428,6 +454,14 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
                 Jsonb(policy_evidence),
             ],
         )
+        if target_version == '3.9.13' and source['status'] in {'ADMITTED','READY','FAILED_RETRYABLE'}:
+            from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
+            for before,after in ((source['status'],'CANCELLATION_REQUESTED'),('CANCELLATION_REQUESTED','CANCELLED')):
+                c.execute('SELECT version FROM authority_operation WHERE operation_id=%s',[predecessor_id])
+                transition_operation_in_uow(uow,OperationTransitionCommand(operation_id=predecessor_id,project_id=project,
+                    expected_version=c.fetchone()[0],expected_status=before,target_status=after,actor_id=context.actor_id,
+                    reason='Exact unexecuted publication input successor; retain failed admission evidence',
+                    trace_id=source['trace_id'],correlation_id=source['correlation_id'],causation_id=predecessor_id))
         c.execute(
             "UPDATE authority_saga_step SET operation_id=%s WHERE saga_id=%s AND operation_id=%s",
             [successor, saga["saga_id"], predecessor_id],
@@ -448,7 +482,7 @@ def replace_derived_step(database_url, *, predecessor_id, context, policy_eviden
             raise KernelError(
                 "DERIVED_STEP_FENCE_CHANGED", "Reload the current Root fence"
             )
-        if target_version == "3.9.10":
+        if target_version in {"3.9.10", "3.9.11", "3.9.12"}:
             c.execute(
                 "SELECT count(*) FROM authority_operation_dependency d JOIN authority_operation o ON o.operation_id=d.depends_on_operation_id WHERE d.operation_id=%s AND (d.dependency_condition<>'ON_SUCCESS' OR o.status<>'SUCCEEDED')",
                 [successor],

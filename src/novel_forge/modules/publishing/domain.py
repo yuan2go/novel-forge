@@ -135,7 +135,7 @@ def prepare_internal_release(
     strict_checks = dict(checks)
     validation = quality.get("internal_admission")
     if validation is not None:
-        checks = {"quality_internal_admission": validation.get("version") == "creative-quality-admission.v1"
+        checks = {"quality_internal_admission": validation.get("version") in {"creative-quality-admission.v1", "creative-quality-admission.v2"}
                 and validation.get("status") == "INTERNAL_ADMITTED" and not validation.get("blocked_dimensions")
                 and validation.get("target_asset_version_id") == revision_asset_version_id,
             "latest_rereview_passed": strict_checks["latest_rereview_passed"],

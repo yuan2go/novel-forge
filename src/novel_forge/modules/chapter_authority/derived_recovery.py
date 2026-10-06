@@ -29,6 +29,26 @@ def recover_derived_frontier(authority, *, book_run_id, principal):
         )
         if not admission or admission["book_run_id"] != book_run_id:
             return False
+        from novel_forge.modules.chapter_quality_authority.revalidation import quality_revalidation_evidence
+        c.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
+            WHERE o.root_operation_id=%s AND ((o.definition_name='chapter.quality.longform.evaluate' AND o.definition_version='3.9.9' AND o.status='SUCCEEDED')
+              OR (o.definition_name='chapter.quality.evaluate' AND o.definition_version='3.9.0' AND o.status='SUCCEEDED')
+              OR (o.definition_name='chapter.publishing.prepare_release' AND o.definition_version='3.9.0'))
+            ORDER BY CASE o.definition_name WHEN 'chapter.quality.longform.evaluate' THEN 1 WHEN 'chapter.quality.evaluate' THEN 2 ELSE 3 END""", [root_id])
+        quality_source = None
+        for (candidate,) in c.fetchall():
+            try:
+                correction = quality_revalidation_evidence(c,candidate)
+            except KernelError as error:
+                if error.code in {'QUALITY_REVALIDATION_NOT_APPLICABLE','QUALITY_REVALIDATION_NOT_READY'}:
+                    continue
+                raise
+            quality_source = candidate
+            quality_evidence = {'admission':admission,'quality_revalidation':correction}
+            break
+        if quality_source:
+            source = quality_source
+            evidence = quality_evidence
         c.execute(
             """SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.update' """,
@@ -38,9 +58,9 @@ def recover_derived_frontier(authority, *, book_run_id, principal):
         if not row:
             return False
         canon = row[0]
-        source = None
-        evidence = None
-        if canon["definition_version"] == "3.9.0" and canon["status"] == "SUCCEEDED":
+        source = quality_source
+        evidence = quality_evidence if quality_source else None
+        if not source and canon["definition_version"] == "3.9.0" and canon["status"] == "SUCCEEDED":
             try:
                 diagnostic = canon_revalidation_evidence(c, canon)
             except KernelError as error:
@@ -49,7 +69,7 @@ def recover_derived_frontier(authority, *, book_run_id, principal):
                 raise
             source = canon
             evidence = {"admission": admission, "diagnostic": diagnostic}
-        elif canon["definition_version"] == "3.9.10" and canon["status"] == "SUCCEEDED":
+        elif not source and canon["definition_version"] == "3.9.10" and canon["status"] == "SUCCEEDED":
             c.execute(
                 "SELECT predecessor_operation_id,policy_evidence FROM authority_saga_step_revalidation WHERE successor_operation_id=%s AND contract_version=%s",
                 [canon["operation_id"], CONTRACT],

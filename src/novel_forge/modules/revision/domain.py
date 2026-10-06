@@ -246,7 +246,7 @@ def freeze_quality_edit_scope(*, revision: dict[str, Any], revision_asset_versio
     locations = []
     for report in quality.get("evidence_reports", []):
         if (report.get("dimension") != observation or report.get("target_asset_version_id") != revision_asset_version_id
-            or report.get("gate_status") != "FAILED"):
+            or (report.get("gate_status") != "FAILED" and not (action.get("disposition_contract") == "creative-quality-disposition.v2" and report.get("semantic_verdict") == "FAILED"))):
             continue
         for location in report.get("evidence_locations", []):
             start, end = location.get("start"), location.get("end")

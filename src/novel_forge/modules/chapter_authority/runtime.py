@@ -44,6 +44,11 @@ def _handler_definition_version(
     expected = (
         CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
         if author_input and node is ChapterNode.DRAFT
+        else "3.9.14" if registry.model_effects_required and node is ChapterNode.EXPORT
+        else "3.9.15" if registry.model_effects_required and node is ChapterNode.FINAL_RELEASE_GATE
+        else "3.9.11" if registry.model_effects_required and node is ChapterNode.QUALITY
+        else "3.9.12" if registry.model_effects_required and node is ChapterNode.QUALITY_LONGFORM
+        else "3.9.13" if registry.model_effects_required and node is ChapterNode.PUBLISH_GATE
         else "3.9.10" if registry.model_effects_required and node is ChapterNode.CANON
         else "3.9.9" if registry.model_effects_required and node in {ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM}
         else "3.9.8" if registry.model_effects_required and node is ChapterNode.CANON_PROPOSAL
@@ -64,7 +69,7 @@ def _handler_definition_version(
         recoverable = (
             {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2", "3.8.0-author-input.v2"}
             if author_input and node is ChapterNode.DRAFT
-            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10"}
+            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15"}
         )
         if row is not None and str(row[0]) in recoverable:
             return str(row[0])

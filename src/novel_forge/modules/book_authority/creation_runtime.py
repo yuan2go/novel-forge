@@ -108,7 +108,7 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                         continue
                     return error.code
                 events({"kind": "CHAPTER_TICK", "result": asdict(result)})
-                if result.recovery_mode.startswith('derived_canon_') and result.operation_status=='SUCCEEDED':
+                if result.recovery_mode.startswith(('derived_canon_','derived_quality_')) and result.operation_status=='SUCCEEDED':
                     while recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
                         events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
                 if result.saga_status == "SUCCEEDED":

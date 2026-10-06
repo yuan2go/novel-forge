@@ -430,6 +430,9 @@ def run_single_chapter_slice(
                     ].asset_version_id,
                 )
             )
+        if node is ChapterNode.QUALITY_LONGFORM and definition_version == '3.9.0':
+            from novel_forge.modules.chapter_quality_authority.foundation_context import world_input_bindings
+            input_assets.extend(world_input_bindings(database_url, project_id=request.project_id, root_operation_id=root))
         input_assets = list(
             {
                 str(item["asset_version_id"]): dict(item) for item in input_assets
@@ -699,6 +702,12 @@ def _command(
     if definition_name in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and definition_version == "3.9.0":
         from .definitions import CHAPTER_QUALITY_DEFINITION_VERSION
         definition_version = CHAPTER_QUALITY_DEFINITION_VERSION
+    if definition_name in {ChapterNode.QUALITY.definition_name, ChapterNode.QUALITY_LONGFORM.definition_name, ChapterNode.PUBLISH_GATE.definition_name} and definition_version in {'3.9.0','3.9.9'}:
+        from .definitions import CHAPTER_INTERNAL_QUALITY_DEFINITION_VERSION, CHAPTER_LONGFORM_QUALITY_DEFINITION_VERSION, CHAPTER_INTERNAL_PUBLISH_DEFINITION_VERSION
+        definition_version = {ChapterNode.QUALITY.definition_name: CHAPTER_INTERNAL_QUALITY_DEFINITION_VERSION, ChapterNode.QUALITY_LONGFORM.definition_name: CHAPTER_LONGFORM_QUALITY_DEFINITION_VERSION, ChapterNode.PUBLISH_GATE.definition_name: CHAPTER_INTERNAL_PUBLISH_DEFINITION_VERSION}[definition_name]
+    if definition_name in {ChapterNode.EXPORT.definition_name,ChapterNode.FINAL_RELEASE_GATE.definition_name} and definition_version == '3.9.0':
+        from .definitions import CHAPTER_INTERNAL_EXPORT_DEFINITION_VERSION,CHAPTER_INTERNAL_FINALIZE_DEFINITION_VERSION
+        definition_version = CHAPTER_INTERNAL_EXPORT_DEFINITION_VERSION if definition_name==ChapterNode.EXPORT.definition_name else CHAPTER_INTERNAL_FINALIZE_DEFINITION_VERSION
     if definition_name == ChapterNode.CANON_EXTRACTION.definition_name and definition_version == "3.9.0":
         from .definitions import CHAPTER_CANON_DEFINITION_VERSION
         definition_version = CHAPTER_CANON_DEFINITION_VERSION

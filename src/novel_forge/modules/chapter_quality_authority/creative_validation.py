@@ -43,7 +43,7 @@ def model_quality_receipt(request: Any, result: Any, *, target: str) -> dict[str
             effect_id=native["external_effect_id"], target=target)
 
 
-def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str) -> dict[str, Any] | None:
+def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str, disposition_version: int = 1) -> dict[str, Any] | None:
     receipts = [group.get("validation_receipt") for group in groups]
     if not any(receipts):
         return None
@@ -71,19 +71,21 @@ def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str) -> 
             measured = row.get("threshold_evaluation")
             floor = threshold is None or measured == "PASSED" or row.get("calibration_status") == "DETERMINISTIC" and passing
             valid = passing and located and floor and (row.get("provider_verified") is True or row.get("calibration_status") == "DETERMINISTIC")
+            if disposition_version == 2 and (row.get("fixture") or row.get("calibration_status") == "FIXTURE_UNCALIBRATED"):
+                valid = False
             if not valid:
                 blocked.append(dimension)
             observations.append({"dimension": dimension, "status": "OBSERVED" if valid else "BLOCKED",
                 "semantic_verdict": verdict, "threshold_evaluation": measured,
                 "literary_qualification": "NOT_RUN"})
-    return {"version": "creative-quality-admission.v1", "mode": MODE, "target_asset_version_id": target,
+    return {"version": f"creative-quality-admission.v{disposition_version}", "mode": MODE, "target_asset_version_id": target,
             "book_id": receipts[0]["book_id"], "status": "INTERNAL_ADMITTED" if not blocked else "BLOCKED",
             "blocked_dimensions": blocked, "observations": observations, "receipts": receipts,
             "literary_qualification": "NOT_RUN", "strict_certification_eligible": False}
 
 
 def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, project_id: str, book_id: str | None = None) -> None:
-    if (admission.get("version") != "creative-quality-admission.v1" or admission.get("mode") != MODE
+    if (admission.get("version") not in {"creative-quality-admission.v1", "creative-quality-admission.v2"} or admission.get("mode") != MODE
             or admission.get("status") != "INTERNAL_ADMITTED" or not admission.get("receipts")
             or admission.get("blocked_dimensions") or admission.get("strict_certification_eligible") is not False
             or book_id is not None and admission.get("book_id") != book_id):
@@ -102,6 +104,27 @@ def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, 
             if len(rows) != 1:
                 raise KernelError("VALIDATION_QUALITY_GROUP_REQUIRED", receipt["external_effect_id"])
             groups.append(rows[0][0])
-        expected = assess_internal_quality(groups=groups, target=admission["target_asset_version_id"])
+        expected = assess_internal_quality(groups=groups, target=admission["target_asset_version_id"], disposition_version=2 if admission["version"].endswith("v2") else 1)
         if expected != dict(admission):
             raise KernelError("VALIDATION_QUALITY_ADMISSION_TAMPERED", admission["target_asset_version_id"])
+
+
+def internal_required_actions(*, admission, evidence_reports, target):
+    actions = []
+    for report in evidence_reports:
+        dimension = report['dimension']
+        if dimension not in admission['blocked_dimensions']:
+            continue
+        located_failure = (report.get('semantic_verdict') == 'FAILED'
+            and report.get('provider_verified') is True and not report.get('fixture')
+            and report.get('target_asset_version_id') == target
+            and any(location.get('quote') for location in report.get('evidence_locations', [])))
+        action = 'LOCAL_REPAIR' if located_failure else 'EVIDENCE_REASSESSMENT'
+        actions.append({'observation': dimension, 'evidence_asset_version_ids': [],
+            'issue': {'code': f'QUALITY_{dimension.upper()}_FAILED', 'severity': 'BLOCKING', 'status': 'OPEN'},
+            'required_action': action, 'permitted_change_scope': 'CHAPTER' if located_failure else 'EVIDENCE_ONLY',
+            'required_authority': 'CHAPTER_AUTHORITY' if located_failure else 'QUALITY_AUTHORITY',
+            'preserved_invariants': ['accepted_canon', 'executed_chapter_history', 'active_parent_plan_identity'],
+            'reevaluation_gate': report.get('gate_type', ''), 'disposition_contract': 'creative-quality-disposition.v2',
+            'strict_certification_eligible': False})
+    return actions

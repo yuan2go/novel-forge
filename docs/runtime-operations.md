@@ -3150,3 +3150,11 @@ The native recovery appends derived output and reviewed successor records; it
 retains every earlier output and Provider receipt. Ambiguous pronoun inference is
 recorded as NOT_RUN with a reason and reviewed in continuity, never as passed.
 Strict production remains on its original frozen validation contract.
+
+Internal Quality recovery preserves the existing Formation, Book and chapter cursor.
+Install the versioned Quality disposition and frozen World assessment contracts before
+continuing. Resolve the World Bible and its Story Design receipt through the frozen
+Book Design Foundation binding and admit their exact hashes as assessment inputs.
+Missing evidence remains blocking for its dependent acceptance; located semantic
+failures use the ordinary bounded Quality revision and independent re-review chain.
+Never relabel a previous assessment, reset retries or regenerate accepted chapters.
