@@ -101,7 +101,7 @@ def replace_failed_step(
         row = cursor.fetchone()
         if (
             not row
-            or source["status"] != "FAILED_FINAL"
+            or source["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}
             or root["status"] != "WAITING_CHILDREN"
             or saga["status"] not in {"RUNNING", "MANUAL_INTERVENTION"}
             or source["actor_id"] != context.actor_id

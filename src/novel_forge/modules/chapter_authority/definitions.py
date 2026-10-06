@@ -469,7 +469,7 @@ def _definition(
     }
     return {
         "name": node.definition_name,
-        "definition_version": "3.9.1" if model_effects_required and node in {ChapterNode.REVIEW, ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_DRAFT_DEFINITION_VERSION if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else chapter_definition_version(model_effects_required),
+        "definition_version": "3.9.2" if model_effects_required and node is ChapterNode.REREVIEW and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else "3.9.1" if model_effects_required and node is ChapterNode.REVIEW and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_DRAFT_DEFINITION_VERSION if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
         "command_schema": command_schema,

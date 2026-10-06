@@ -35,11 +35,10 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
         if not template or _cancelled(uow.cursor, book):
             return False
         uow.cursor.execute(
-            """SELECT o.operation_id,o.command_payload,o.input_asset_snapshot FROM authority_operation o
+            """SELECT o.operation_id,o.command_payload,o.input_asset_snapshot,o.definition_name FROM authority_operation o
             JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
-            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.draft.generate'
-              AND o.definition_version='3.9.0' AND o.status='FAILED_FINAL'
-              AND a.result->>'error_code'='REALIZATION_CAPABILITY_INVALID'""",
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name IN ('chapter.draft.generate','chapter.revision.review')
+              AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='REALIZATION_CAPABILITY_INVALID') OR (o.definition_name='chapter.revision.review' AND o.definition_version='3.9.1' AND o.status='DEAD_LETTER' AND a.result->>'error_code'='CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT'))""",
             [request["chapter_root_operation_id"], book["project_id"]],
         )
         source = uow.cursor.fetchone()
@@ -52,14 +51,17 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
         )
         for a in source[2]
     ]
-    plan = next(a.content for a in inputs if a.asset_type == "chapter_plan")
-    context = next(a.content for a in inputs if a.asset_type == "context_bundle")
-    compiled = compile_realization_contract(
-        plan,
-        build_draft_style_view(context, work_requirements=True),
-        core_policy="scene-core-slots.v1",
-        information_policy="scene-information-flow.v1",
-    )
+    if source[3] == "chapter.draft.generate":
+        plan = next(a.content for a in inputs if a.asset_type == "chapter_plan")
+        context = next(a.content for a in inputs if a.asset_type == "context_bundle")
+        compiled = compile_realization_contract(
+            plan,
+            build_draft_style_view(context, work_requirements=True),
+            core_policy="scene-core-slots.v1",
+            information_policy="scene-information-flow.v1",
+        )
+    else:
+        compiled = {"core_projection": None, "information_flow": None}
     evidence = {
         "contract_version": "chapter-core-contract-recovery.v1",
         "book_run_id": book_run_id,
@@ -101,7 +103,7 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
     replace_failed_step(
         authority.database_url,
         predecessor_id=source[0],
-        target_version="3.9.1",
+        target_version="3.9.2",
         context=AdmissionContext(
             principal.principal_id,
             principal.permissions,
@@ -110,7 +112,9 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
             authority.commit_sha,
         ),
         policy_evidence=evidence,
-        expected_failure_code="REALIZATION_CAPABILITY_INVALID",
+        expected_failure_code="REALIZATION_CAPABILITY_INVALID"
+        if source[3] == "chapter.draft.generate"
+        else "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
         transaction_guard=guard,
     )
     return True

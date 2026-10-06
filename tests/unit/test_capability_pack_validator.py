@@ -55,7 +55,7 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
         self.assertTrue(report.ok, report.errors)
         self.assertEqual(report.pack_id, "chapter_generation_pack")
-        self.assertEqual(report.version, "2.16.0")
+        self.assertEqual(report.version, "2.17.0")
         node_ids = {node.node_id for node in manifest.workflow_template.nodes}
         self.assertEqual(len(node_ids), 22)
         self.assertTrue(
@@ -678,3 +678,14 @@ class CapabilityPackValidatorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_default_chapter_pack_binds_every_current_node_contract():
+    from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+    from novel_forge.storage.authority_repositories import definition_hash
+    pack=json.loads(PACK_PATH.read_text())
+    definitions={d["name"]:d for d in chapter_operation_definitions(application_build_id="novel-forge",commit_sha="0"*40,model_effects_required=True)}
+    for node in pack["workflow_template"]["nodes"]:
+        name,version=node["operation_definition_ref"].split("@")
+        assert definitions[name]["definition_version"]==version
+        assert definition_hash(definitions[name])==node["operation_definition_hash"]

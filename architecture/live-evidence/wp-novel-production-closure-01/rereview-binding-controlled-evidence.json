@@ -1,0 +1,34 @@
+{
+  "evidence_kind": "NATIVE_PRE_DISPATCH_REREVIEW_CONTRACT_SUCCESSOR",
+  "database": "novel_forge_closure_rereview_binding_20261007_test",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "definition_version": "3.9.2",
+  "source_saga_status": "MANUAL_INTERVENTION",
+  "failure_status": "DEAD_LETTER_PRESERVED",
+  "successful_siblings": [
+    [
+      "chapter.context.build",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ]
+  ],
+  "effects_before": 58,
+  "effects_after": 58,
+  "provider_dispatches": 0,
+  "exact_inputs_preserved": true,
+  "idempotent_recovery": true,
+  "book_noop_reconciliation": true,
+  "pack_version": "2.17.0",
+  "migration_fresh_and_restore": "PASS",
+  "real_writer": "NOT_RUN",
+  "predecessor_operation_id": "9703420e-4c2f-433d-a216-8e31ace3361c",
+  "successor_operation_id": "4974cf9b-3414-4a33-aac9-67f9be7ba971",
+  "real_rereview": "NOT_RUN"
+}

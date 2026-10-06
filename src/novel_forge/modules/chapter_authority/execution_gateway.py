@@ -2085,7 +2085,7 @@ class PostgresChapterExecutionContractBinder:
             CHAPTER_SLICE_DEFINITION_VERSION,
         }
         compatible = compatible or (
-            str(row[0]) in {ChapterNode.REVIEW.definition_name,ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.1"
+            str(row[0]) in {ChapterNode.REVIEW.definition_name,ChapterNode.REREVIEW.definition_name} and str(row[1]) in {"3.9.1", "3.9.2"}
         )
         compatible = compatible or (
             str(row[0]) == ChapterNode.DRAFT.definition_name
