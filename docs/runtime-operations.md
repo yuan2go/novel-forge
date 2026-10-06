@@ -3039,6 +3039,11 @@ it does not edit frozen content or reset generation/repair/usage history. Missin
 invalid causality, unqualified input, rejected authorship or another failed validator still
 block. `PLAN_APPROVAL_PENDING` is reserved for an actual admitted approval decision;
 rejected and unfinished generations expose owner recovery instead.
+Verify that the same result is reachable through a claimed `BOOK_CREATION_ADVANCE`
+job and its native `BOOK_COORDINATION_TICK`, rather than only a direct supervisor call.
+Book discovery wakes the exact retained commitment conflict or a newly activated plan;
+ordinary author waits remain dormant. Dependency snapshots include the native Book root
+correlation as well as its run identity, so an Authority decision can wake coordination.
 
 Creation continuation may invoke the existing native Formation resume command for an
 AUTO-authorized creative run with the same operator and frozen inputs. It performs at

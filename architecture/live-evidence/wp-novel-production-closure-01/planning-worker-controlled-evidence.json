@@ -1,0 +1,25 @@
+{
+  "evidence_kind": "NATIVE_CREATION_JOB_BOOK_JOB_RETAINED_REVALIDATION",
+  "runtime_job_id": "runtime-job:4e3a58d6dffe77e37679966650253366eee7eac8986522ca51b638059bd0ad7b",
+  "stop_reason": "YIELDED_CHECKPOINT",
+  "book_state": "READY",
+  "book_version": 3,
+  "accepted_chapters": 0,
+  "effects_before": 52,
+  "effects_after": 52,
+  "validation_reports": [
+    [
+      "FAIL",
+      null,
+      "PLANNING_OPERATIONAL_COMMITMENT_OPEN"
+    ],
+    [
+      "PASS",
+      "planning-executable-results.v1",
+      null
+    ]
+  ],
+  "provider_dispatches": 0,
+  "real_continuous_production": "NOT_RUN",
+  "literary_quality": "NOT_PROVEN"
+}

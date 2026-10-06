@@ -279,12 +279,34 @@ class PostgresBookProductionQuery:
                     SELECT COALESCE(jsonb_agg(jsonb_build_object('operation_id',op.operation_id,
                         'status',op.status,'version',op.version) ORDER BY op.operation_id),'[]'::jsonb) AS snapshot
                     FROM authority_operation op WHERE op.project_id=book.project_id
-                      AND (op.correlation_id=book.book_run_id OR op.operation_id=(
+                      AND (op.correlation_id IN (book.book_run_id,book.root_operation_id) OR op.operation_id=(
                         SELECT request.chapter_root_operation_id FROM authority_book_chapter_request request
                         WHERE request.chapter_request_id=book.active_chapter_request_id))
                 ) dependencies
                 WHERE (
                       book.state = ANY(%s)
+                      OR (
+                          book.state='PLAN_APPROVAL_PENDING'
+                          AND EXISTS (
+                              SELECT 1 FROM authority_story_planning_generation generation
+                              JOIN authority_story_design_version_state state
+                                ON state.asset_version_id=generation.candidate_asset_version_id
+                              JOIN authority_asset_version version ON version.asset_version_id=state.asset_version_id
+                              WHERE generation.project_id=book.project_id AND generation.book_id=book.book_id
+                                AND (generation.logical_key='chapter:'||(book.accepted_through_chapter+1)::text
+                                  OR generation.logical_key='chapter-group:containing:'||(book.accepted_through_chapter+1)::text)
+                                AND state.freshness='CURRENT'
+                                AND (
+                                    state.lifecycle='ACTIVE' AND generation.updated_at>book.updated_at
+                                    OR generation.status='REJECTED' AND state.lifecycle='MATERIALIZED'
+                                      AND state.qualification='PENDING' AND state.approval='NOT_REQUESTED'
+                                      AND version.content #>> '{constraint_envelope,creative_requirements_contract}' IN ('work-requirements.v1','work-requirements.v2')
+                                      AND (SELECT report->>'error_code' FROM authority_story_planning_validation_report report
+                                           WHERE report.candidate_asset_version_id=state.asset_version_id
+                                           ORDER BY report.created_at DESC LIMIT 1)='PLANNING_OPERATIONAL_COMMITMENT_OPEN'
+                                )
+                          )
+                      )
                       OR (
                           book.state='CHECKPOINT_PENDING'
                           AND EXISTS (
