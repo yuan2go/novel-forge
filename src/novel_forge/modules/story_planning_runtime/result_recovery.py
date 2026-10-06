@@ -141,7 +141,7 @@ def require_result_repair_source(
         row = uow.cursor.fetchone()
         if (
             row is None
-            or row[0] != "FAILED_FINAL"
+            or row[0] not in {"FAILED_FINAL", "DEAD_LETTER"}
             or row[5]
             or tuple(map(str, row[1:4]))
             != (command.project_id, command.workspace_id, command.book_id)
@@ -149,6 +149,16 @@ def require_result_repair_source(
             raise KernelError(
                 "PLANNING_RESULT_REPAIR_SOURCE_INVALID",
                 "result repair requires this Book's failed terminal Operation with no Candidate",
+            )
+        uow.cursor.execute(
+            """SELECT 1 FROM authority_external_effect WHERE operation_id=%s
+            AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') LIMIT 1""",
+            [operation_id],
+        )
+        if uow.cursor.fetchone():
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_RECONCILIATION_REQUIRED",
+                "Any unresolved original external outcome must reconcile before a result repair",
             )
         frozen = dict(row[4])
         from .application import _command_payload

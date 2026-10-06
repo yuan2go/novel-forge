@@ -800,7 +800,7 @@ class PlanningWorldPreparation:
                 return action
             with AuthorityUnitOfWork(query.database_url) as uow:
                 uow.cursor.execute(
-                    "SELECT command_payload->'payload'->>'repair_of_operation_id' FROM authority_operation WHERE operation_id=%s AND project_id=%s AND command_payload->'payload'->>'book_id'=%s AND status='FAILED_FINAL'",
+                    "SELECT command_payload->'payload'->>'repair_of_operation_id' FROM authority_operation WHERE operation_id=%s AND project_id=%s AND command_payload->'payload'->>'book_id'=%s AND status IN ('FAILED_FINAL','DEAD_LETTER')",
                     [source_id, command.project_id, command.book_id],
                 )
                 row = uow.cursor.fetchone()

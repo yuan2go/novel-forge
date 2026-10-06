@@ -1809,7 +1809,7 @@ class StoryPlanningGenerationApplication:
                     correlation_id=command.correlation_id,
                 )
                 return follow(self, str(row[0]), command, principal=principal)
-            if row[2] == "FAILED_FINAL":
+            if row[2] in {"FAILED_FINAL", "DEAD_LETTER"}:
                 return self._repair_unmaterialized_result(
                     command, operation_id=str(row[0]), principal=principal
                 )

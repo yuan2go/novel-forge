@@ -185,6 +185,7 @@ def replace_args(args, **changes):
         "world-primary-result-repair",
         "world-causal-result-repair",
         "world-causal-legacy-replay",
+        "world-causal-dead-letter-replay",
     ],
 )
 def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(
@@ -256,7 +257,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         monkeypatch.setattr(planning_application, "admit_command", retain_repair_cause)
 
-    if mode == "world-causal-legacy-replay":
+    if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
         from novel_forge.modules.story_planning_runtime.world_preparation import (
             PlanningWorldPreparation,
         )
@@ -270,7 +271,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             except KernelError as error:
                 if (
                     error.code == "WORLD_PREPARATION_RESULT_INVALID"
-                    and not legacy_block
+                    and (not legacy_block or (mode == "world-causal-dead-letter-replay" and values["command"].repair_number == 0))
                 ):
                     legacy_block.append(True)
                     raise KernelError(
@@ -314,7 +315,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                     ],
                 }
             if (
-                mode in {"world-causal-result-repair", "world-causal-legacy-replay"}
+                mode in {"world-causal-result-repair", "world-causal-legacy-replay", "world-causal-dead-letter-replay"}
                 and len(world_calls) <= 2
             ):
                 identity = inputs["world_preparation"]["approved_entity_ids"][0]
@@ -576,13 +577,21 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                 "world-result-repair",
                 "world-causal-result-repair",
                 "world-causal-legacy-replay",
+                "world-causal-dead-letter-replay",
             } or error.code not in {
                 "WORLD_PROVIDER_TRANSITION_INVALID",
                 "WORLD_PREPARATION_RESULT_INVALID",
                 "WORLD_PREPARATION_BLOCKED",
             }:
                 raise
-            assert jobs.get(current.runtime_job_id)["status"] == "RETRY_WAIT"
+            status = jobs.get(current.runtime_job_id)["status"]
+            if status == "DEAD_LETTER" and mode == "world-causal-dead-letter-replay":
+                recover = parser.parse_args(["authority-creation", "recover", "--project-id", project,
+                    "--formation-run-id", identity, "--reason", "Controlled owner resolved historical World retry classification; retain original inputs and receipts.",
+                    "--idempotency-key", "legacy-dead-letter-window", "--repository-root", str(root)])
+                run_creation_command(settings, recover)
+            else:
+                assert status == "RETRY_WAIT"
             return {"stop_reason": "YIELDED_CHECKPOINT", "error_code": error.code}
 
     result = execute_window(claim())
@@ -613,7 +622,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         finally:
             legacy_execution.close()
     assert result["stop_reason"] in {"COMPLETED", "YIELDED_CHECKPOINT"}, result
-    for _ in range(6):
+    for _ in range(10 if mode == "world-causal-dead-letter-replay" else 6):
         if result["stop_reason"] == "COMPLETED":
             break
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -628,6 +637,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         "world-primary-result-repair",
         "world-causal-result-repair",
         "world-causal-legacy-replay",
+        "world-causal-dead-letter-replay",
     }:
         assert len(world_calls) == (1 if mode == "world-primary-result-repair" else 3)
         assert len(primary_calls) == (3 if mode == "world-primary-result-repair" else 1)
@@ -640,7 +650,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             )
             == 1
         )
-        if mode in {"world-result-repair", "world-causal-result-repair", "world-causal-legacy-replay"}:
+        if mode in {"world-result-repair", "world-causal-result-repair", "world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
             assert "Controlled Schema-valid but domain-invalid result." not in json.dumps(primary_calls[0])
             assert all(
                 item["world_preparation"]["result_repair"]["diagnostic"][
@@ -656,14 +666,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             )
             lineage = uow.cursor.fetchall()
         assert [row[0] for row in lineage] == [
-            "FAILED_FINAL",
+            "DEAD_LETTER" if mode == "world-causal-dead-letter-replay" else "FAILED_FINAL",
             "FAILED_FINAL",
             "SUCCEEDED",
         ]
         assert [row[2]["repair_number"] for row in lineage] == [0, 1, 2]
         assert lineage[1][1] == lineage[1][2]["repair_of_operation_id"]
         assert lineage[2][1] == lineage[2][2]["repair_of_operation_id"]
-        if mode in {"world-causal-result-repair", "world-causal-legacy-replay"}:
+        if mode in {"world-causal-result-repair", "world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
             assert all(
                 row[2]["repair_result_diagnostic"]["validation_kind"]
                 == "WORLD_CAUSAL_GATE"
