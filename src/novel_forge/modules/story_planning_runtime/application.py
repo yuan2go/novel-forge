@@ -255,7 +255,7 @@ class _PlanningGenerationHandler:
                 validate_author_decisions(candidate.candidate_payload, author_projection)
             except KernelError as error:
                 from .result_recovery import PlanningResultValidationError
-                raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
+                raise PlanningResultValidationError(error, raw_result=candidate.raw_provider_result or candidate.candidate_payload, execution_evidence=evidence) from error
             if selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 try:
                     validate_knowledge_translations(candidate.candidate_payload, selection)
@@ -1766,6 +1766,17 @@ class StoryPlanningGenerationApplication:
             return follow(self, str(row[0]), command, principal=principal)
         if row[2] == "FAILED_FINAL" and not row[4]:
             return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
+        if row[2] == "FAILED_FINAL" and row[4]:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_planning_result_admission r
+                    JOIN authority_operation o ON o.operation_id=r.recovery_operation_id
+                    WHERE r.source_operation_id=%s AND r.candidate_asset_version_id=%s AND o.status='SUCCEEDED')""", [row[0], row[4]])
+                recovered = uow.cursor.fetchone()[0]
+            if recovered:
+                asset = self._require_asset(project_id=command.project_id, asset_version_id=str(row[4]))
+                return self._advance_candidate(operation_id=str(row[0]), candidate_asset_version_id=str(row[4]),
+                    candidate_content_hash=asset["content_hash"], command=command, principal=principal, replayed=True,
+                    definition=GENERATOR_CATALOG[command.generator_operation_name])
         if not row[4] or (
             row[2] != "SUCCEEDED"
             and not (row[2] == "WAITING_GATE" and row[3] in {"REPAIR_REQUIRED", "REJECTED"})
@@ -1875,6 +1886,12 @@ class StoryPlanningGenerationApplication:
 
     def frozen_generation_command(self, operation_id: str) -> dict[str, Any]:
         return self._frozen_generation_payload(operation_id)
+
+    def register_result_admission_recovery(self, source_operation_id: str, *, project_id: str,
+        source_asset_version_id: str, reason: str, principal: Principal) -> dict[str, Any]:
+        from .result_admission import recover
+        return recover(self, source_operation_id=source_operation_id, project_id=project_id,
+            source_asset_version_id=source_asset_version_id, reason=reason, principal=principal)
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

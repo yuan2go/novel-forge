@@ -2478,6 +2478,12 @@ Author adoption location failures follow this contract-repair path and revalidat
 exact frozen author projection before dispatch. Historical model-call logs remain
 usable with their original successful receipt and Operation-bound Context; missing or
 substituted Context evidence requires reconciliation rather than a new model call.
+For a retained Foundation result in creative validation that becomes valid after a compatible parser repair, use
+`StoryPlanningGenerationApplication.register_result_admission_recovery` with the exact
+source Operation, result AssetVersion and trusted operator reason, then continue the
+original Formation. This creates a bounded, versioned result-processing successor; it
+does not reset structural repair counts or rewrite the failed Operation. Unknown results,
+unsettled usage, changed frozen inputs, live successors and invalid content fail closed.
 
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native

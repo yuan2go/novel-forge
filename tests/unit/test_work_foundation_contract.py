@@ -63,6 +63,21 @@ def test_optional_feature_requires_consistent_exact_applicability():
         )
 
 
+def test_applicability_accepts_exact_json_pointer_without_rewriting_evidence():
+    payload = ending_payload()
+    payload["applicability"][0]["field_path"] = "/protagonist_cost"
+    original = deepcopy(payload)
+    validate_foundation_payload("ending.intent.generate", {"candidate_payload": payload})
+    assert payload == original
+
+
+def test_applicability_aliases_cannot_duplicate_the_same_optional_field():
+    payload = ending_payload()
+    payload["applicability"].append({**payload["applicability"][0], "field_path": "/protagonist_cost"})
+    with pytest.raises(KernelError, match="FOUNDATION_APPLICABILITY_INVALID"):
+        validate_foundation_payload("ending.intent.generate", {"candidate_payload": payload})
+
+
 def test_old_ending_contract_remains_cost_required():
     payload = ending_payload()
     payload.pop("applicability")

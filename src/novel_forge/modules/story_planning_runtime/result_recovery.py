@@ -132,6 +132,7 @@ def require_result_repair_source(
     command: StoryPlanningGenerationCommand,
     operation_id: str,
     source_asset_version_id: str = "",
+    require_valid_result: bool = False,
 ) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
@@ -288,15 +289,19 @@ def require_result_repair_source(
             validate_concrete_selection(raw, selection)
             build_craft_strategy(raw, selection)
     except KernelError as error:
+        if require_valid_result:
+            raise KernelError("PLANNING_RESULT_ADMISSION_INVALID", error.message) from error
         diagnostic = PlanningResultValidationError(
             error, raw_result=raw, execution_evidence=evidence
         ).diagnostic
     else:
-        raise KernelError(
-            "PLANNING_RESULT_REPAIR_NOT_REQUIRED",
-            "retained Provider result is valid; recover the original persistence failure without regenerating",
-        )
-    if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"] != diagnostic:
+        if not require_valid_result:
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_NOT_REQUIRED",
+                "retained Provider result is valid; recover the original persistence failure without regenerating",
+            )
+        diagnostic = dict(source.content.get("diagnostic") or {})
+    if not require_valid_result and source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"] != diagnostic:
         raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "A replayed failure must match the recorded diagnosis exactly")
     return {
         "asset_version_id": source.asset_version_id,
@@ -306,4 +311,7 @@ def require_result_repair_source(
         "diagnostic": diagnostic,
         "execution_evidence": evidence,
         "schema_version": "planning-result-repair-context.v1",
+        "context_asset_version_id": str(context_id),
+        "context_hash": context_hash,
+        "context_content": context_content,
     }

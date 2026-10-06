@@ -947,6 +947,7 @@ class PlanningGenerationCandidate:
     candidate_payload: Mapping[str, Any]
     frozen_inputs: tuple[FrozenPlanningInput, ...]
     evidence: PlanningExecutionEvidence
+    raw_provider_result: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         scope = PlanningScope(self.planning_scope)

@@ -1271,6 +1271,11 @@ preserve the source semantic version and require a compatible operation-bound Pa
 Invalid author adoption locations use the same bounded raw-result repair path. Repair
 revalidates the original Operation's frozen author projection, including retained legacy
 model-call results; it cannot treat a missing or substituted Context as a content defect.
+Foundation applicability locations identify exact optional leaves using either RFC 6901
+JSON Pointer or legacy JSONPath notation. Aliases cannot duplicate declarations. A valid
+retained Foundation result rejected by an older parser in creative validation requires an explicit result-admission recovery:
+retain the terminal failure, original Provider identity and settled usage, revalidate the
+entire frozen task, and append a linked processing Operation without another model call.
 An admitted runtime-continuation successor retains its frozen Pack while domain
 approval remains pending; only its first admission resolves the approved active target.
 New future tasks separately require the current Pack. Frontier alias normalization

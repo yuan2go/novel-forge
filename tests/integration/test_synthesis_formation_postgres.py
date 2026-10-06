@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -213,6 +213,19 @@ def test_native_formation_generates_foundation_from_author_brief(
     )
     registry = ProviderAdapterRegistry()
     transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
+    if valid_result_admission:
+        from novel_forge.modules.story_planning_runtime import result_recovery
+        from novel_forge.modules.command_kernel.errors import KernelError
+        normal_validation = result_recovery.validate_raw_result
+        old_parser_rejected = False
+        def reject_valid_result_once(generator, raw, **kwargs):
+            nonlocal old_parser_rejected
+            if generator == "world.design.generate" and not old_parser_rejected:
+                old_parser_rejected = True
+                raise KernelError("FOUNDATION_APPLICABILITY_INVALID", "old parser rejected an exact optional field path")
+            return normal_validation(generator, raw, **kwargs)
+        monkeypatch.setattr(result_recovery, "validate_raw_result", reject_valid_result_once)
+        monkeypatch.setattr(result_recovery, "MAXIMUM_RESULT_REPAIRS", 0)
     if author_result_repair:
         normal_planning = transport.planning
         damaged_author_decision = False
@@ -411,6 +424,38 @@ def test_native_formation_generates_foundation_from_author_brief(
                 )
             except Exception as exc:
                 from novel_forge.modules.command_kernel.errors import KernelError
+                if valid_result_admission and isinstance(exc, KernelError) and exc.code == "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED":
+                    from concurrent.futures import ThreadPoolExecutor
+                    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+                    planning = formation.generation.planning
+                    failures = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id, asset_type="planning_generation_result_failure")
+                    assert len(failures) == 1
+                    failure = failures[0]
+                    source = failure.content["operation_id"]
+                    before = len(transport.calls)
+                    def register(actor=principal):
+                        return planning.register_result_admission_recovery(source,project_id=harness.project_id,
+                            source_asset_version_id=failure.asset_version_id,reason="compatible parser repair; retain original result",principal=actor)
+                    with pytest.raises(PermissionError):
+                        register(formation_worker)
+                    from novel_forge.modules.story_planning_runtime import result_admission
+                    with monkeypatch.context() as strict:
+                        verified = result_admission.verify_template_provenance
+                        strict.setattr(result_admission,"verify_template_provenance",lambda *args: {**verified(*args),"mode":"STRICT_PRODUCTION"})
+                        with pytest.raises(KernelError,match="PLANNING_RESULT_ADMISSION_POLICY_REQUIRED"):
+                            register()
+                    with ThreadPoolExecutor(max_workers=2) as pool:
+                        recoveries = list(pool.map(lambda _:register(), range(2)))
+                    assert len({r["asset_version_id"] for r in recoveries}) == 1
+                    assert register()["replayed"] and len(transport.calls) == before
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s",[source])
+                        assert uow.cursor.fetchone()[0] == "FAILED_FINAL"
+                        uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s",[recoveries[0]["operation_id"]])
+                        assert uow.cursor.fetchone()[0] == 0
+                    failed = formation.require(admitted.formation_run_id)
+                    formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
+                    continue
                 if evaluation_recovery and isinstance(exc, KernelError) and exc.code == "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID":
                     failed = formation.require(admitted.formation_run_id)
                     assert failed["lifecycle"] == "FAILED"
@@ -1119,4 +1164,11 @@ def test_native_author_adoption_result_repair_and_legacy_receipt_replay(tmp_path
     test_native_formation_generates_foundation_from_author_brief(
         tmp_path, monkeypatch, True, False, False, False, False, False, 1,
         author_result_repair=True,
+    )
+
+
+def test_native_retained_valid_result_admission_without_another_provider_call(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(
+        tmp_path, monkeypatch, False, False, False, False, False, False, 1,
+        creative_validation=True, valid_result_admission=True,
     )

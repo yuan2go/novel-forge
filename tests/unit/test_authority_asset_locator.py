@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 
 from novel_forge.modules.command_kernel.asset_commands import (
     AuthorityAssetWriteCommand,
@@ -41,6 +42,12 @@ class AuthorityAssetLocatorTests(unittest.TestCase):
 
         self.assertEqual(command.logical_ref, "chapter_plans/chapter-1.json")
         self.assertEqual(command.reference_asset_ids, ())
+        candidate = replace(command, asset_type="planning_generation_candidate", lifecycle="CANDIDATE", eligibility="INELIGIBLE")
+        self.assertEqual(candidate.lifecycle, "CANDIDATE")
+        with self.assertRaises(ValueError):
+            replace(candidate, eligibility="ELIGIBLE")
+        with self.assertRaises(ValueError):
+            replace(command, lifecycle="CANDIDATE", eligibility="INELIGIBLE")
 
         with self.assertRaises(ValueError):
             AuthorityAssetWriteCommand(

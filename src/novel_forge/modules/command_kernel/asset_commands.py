@@ -61,7 +61,8 @@ class AuthorityAssetWriteCommand:
             raise ValueError("authority asset content must be an object")
         if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*\.v[0-9]+", self.schema_version):
             raise ValueError("authority asset schema_version is invalid")
-        if self.lifecycle != "ACTIVE":
+        candidate = self.asset_type == "planning_generation_candidate" and self.lifecycle == "CANDIDATE" and self.eligibility == "INELIGIBLE"
+        if self.lifecycle != "ACTIVE" and not candidate:
             raise ValueError("materialized authority output must be ACTIVE")
         if self.eligibility not in {"ELIGIBLE", "INELIGIBLE", "REVOKED", "PENDING_EVALUATION"}:
             raise ValueError("unsupported authority asset eligibility")

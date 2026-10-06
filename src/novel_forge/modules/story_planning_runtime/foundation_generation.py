@@ -82,7 +82,7 @@ def _apply_work_schema(properties: dict[str, Any], role: FoundationRole) -> None
         "maxItems": 256,
         "items": _object(
             {
-                "field_path": _text(),
+                "field_path": {**_text(), "description": "Exact optional string leaf: RFC 6901 JSON Pointer (for example /rules/0/exception) or legacy $.rules[0].exception. Declare each leaf once, regardless of notation."},
                 "status": {
                     "type": "string",
                     "enum": [
@@ -102,22 +102,26 @@ def validate_foundation_applicability(
     payload: Mapping[str, Any], schema: Mapping[str, Any]
 ) -> None:
     nullable: dict[str, Any] = {}
+    paths: dict[str, str] = {}
 
-    def visit(value: Any, contract: Mapping[str, Any], path: str) -> None:
+    def visit(value: Any, contract: Mapping[str, Any], path: str, pointer: str) -> None:
         if isinstance(contract.get("type"), list) and "null" in contract["type"]:
-            nullable[path] = value
+            nullable[pointer] = value
+            paths[path] = pointer
+            paths[pointer] = pointer
         if isinstance(value, Mapping):
             for field, child in contract.get("properties", {}).items():
                 if field in value:
-                    visit(value[field], child, f"{path}.{field}")
+                    token = field.replace("~", "~0").replace("/", "~1")
+                    visit(value[field], child, f"{path}.{field}", f"{pointer}/{token}")
         elif isinstance(value, list):
             for index, child in enumerate(value):
-                visit(child, contract.get("items", {}), f"{path}[{index}]")
+                visit(child, contract.get("items", {}), f"{path}[{index}]", f"{pointer}/{index}")
 
-    visit(payload, schema, "$")
+    visit(payload, schema, "$", "")
     declarations: dict[str, Mapping[str, Any]] = {}
     for item in payload.get("applicability", []):
-        path = item["field_path"]
+        path = paths.get(item["field_path"])
         if path not in nullable or path in declarations:
             raise KernelError(
                 "FOUNDATION_APPLICABILITY_INVALID",

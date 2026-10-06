@@ -450,6 +450,7 @@ class CapabilityPackBackedPlanningExecutionBinder:
             planning_scope=command.planning_scope,
             logical_key=command.logical_key,
             candidate_payload=dict(execution.raw_output),
+            raw_provider_result=dict(execution.raw_output),
             frozen_inputs=inputs,
             evidence=PlanningExecutionEvidence(
                 operation_id=evidence.operation_id,
