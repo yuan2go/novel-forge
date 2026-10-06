@@ -836,13 +836,19 @@ class CostAwareRouter:
             return (
                 item.get("operation_id") in repair_sources
                 and item.get("operation_id") != task.operation_id
-                and item.get("failure_class")
-                in {
-                    "QUALITY_FAILURE",
-                    "CANON_CONFLICT",
-                    "SCHEMA_REJECTION",
-                    "MALFORMED_STRUCTURED_OUTPUT",
-                }
+                and (
+                    (
+                        item.get("status") == "SUCCEEDED"
+                        and not item.get("failure_class")
+                    )
+                    or item.get("failure_class")
+                    in {
+                        "QUALITY_FAILURE",
+                        "CANON_CONFLICT",
+                        "SCHEMA_REJECTION",
+                        "MALFORMED_STRUCTURED_OUTPUT",
+                    }
+                )
             )
 
         blocking_history = tuple(

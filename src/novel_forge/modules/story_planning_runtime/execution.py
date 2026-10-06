@@ -333,19 +333,21 @@ def planning_repair_route_receipt(
     from .result_recovery import require_result_repair_source
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-    if task_type not in GENERATOR_CATALOG:
+    world_stage = task_type == "world_candidates.generate"
+    owner_generator = "chapter_plan.generate" if world_stage else task_type
+    if owner_generator not in GENERATOR_CATALOG:
         return None
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
             "SELECT op.command_payload->'payload',g.repair_number,g.input_snapshot_hash FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.operation_id=%s AND op.project_id=%s AND g.book_id=%s AND g.generator_operation_name=%s",
-            [operation_id, project_id, book_id, task_type],
+            [operation_id, project_id, book_id, owner_generator],
         )
         row = uow.cursor.fetchone()
         if row is None or not row[1]:
             return None
         payload = row[0]
         command = _command_from_payload(payload)
-        definition = GENERATOR_CATALOG[task_type]
+        definition = GENERATOR_CATALOG[owner_generator]
         maximum = max(
             definition.maximum_semantic_repairs,
             definition.maximum_structural_regenerations,
@@ -358,13 +360,16 @@ def planning_repair_route_receipt(
                 "PLANNING_ROUTING_REPAIR_BOUND_EXCEEDED",
                 "Routing cannot extend the owning Planning repair allowance",
             )
+        if world_stage and not command.repair_of_operation_id:
+            return None
+        result = None
         if command.repair_of_candidate_id:
             source = require_candidate_repair_operation(
                 uow.cursor,
                 candidate_asset_version_id=command.repair_of_candidate_id,
                 project_id=project_id,
                 book_id=book_id,
-                generator_operation_name=task_type,
+                generator_operation_name=owner_generator,
                 logical_key=command.logical_key,
             )
             _, _, report_hash = command.repair_reason.partition(":")
@@ -388,13 +393,15 @@ def planning_repair_route_receipt(
                 operation_id=source,
                 source_asset_version_id=command.repair_result_asset_version_id,
             )
+            if result["diagnostic"].get("provider_stage", owner_generator) != task_type:
+                return None
             evidence_id = result["asset_version_id"]
             diagnosis_hash = canonical_hash(result["diagnostic"])
         else:
             return None
         uow.cursor.execute(
-            "SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect WHERE operation_id=%s AND project_id=%s AND status='SUCCEEDED' ORDER BY created_at DESC LIMIT 1",
-            [source, project_id],
+            "SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect WHERE operation_id=%s AND project_id=%s AND status='SUCCEEDED' AND request_payload->>'stage'=%s ORDER BY created_at DESC LIMIT 1",
+            [source, project_id, task_type],
         )
         source_input = uow.cursor.fetchone()
         if (
@@ -411,7 +418,7 @@ def planning_repair_route_receipt(
         database_url,
         project_id=project_id,
         book_id=book_id,
-        generator_operation_name=task_type,
+        generator_operation_name=owner_generator,
         operation_id=operation_id,
         repair_of_operation_id=command.repair_of_operation_id,
         repair_of_candidate_id=command.repair_of_candidate_id,
@@ -5337,17 +5344,40 @@ class PostgresPlanningExecutionPreparer:
         result_repair_source = None
         if command.repair_of_operation_id:
             from .result_recovery import require_result_repair_source
-            source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+
+            source = require_result_repair_source(
+                self.database_url,
+                command=command,
+                operation_id=command.repair_of_operation_id,
+                source_asset_version_id=command.repair_result_asset_version_id,
+            )
             if source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
-                raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "result repair context must use its frozen failure diagnosis")
+                raise KernelError(
+                    "PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT",
+                    "result repair context must use its frozen failure diagnosis",
+                )
             result_repair_source = source
-            documents.append(self.query.require(project_id=command.project_id, asset_version_id=source["asset_version_id"]))
-            repair_context = {
-                "contract_version": "planning-result-repair-context.v1",
-                "source_result": {"asset_version_id": source["asset_version_id"], "content_hash": source["content_hash"], "content": source["raw_result"], "operation_id": command.repair_of_operation_id},
-                "validation_failure": source["diagnostic"],
-                "instruction": "Repair this invalid raw Provider result against the frozen task and complete current Schema. It was never a Candidate or Canon. Preserve correct content, return the entire valid result; do not invent scope or omit fields.",
-            }
+            if (
+                source["diagnostic"].get("provider_stage")
+                != "world_candidates.generate"
+            ):
+                documents.append(
+                    self.query.require(
+                        project_id=command.project_id,
+                        asset_version_id=source["asset_version_id"],
+                    )
+                )
+                repair_context = {
+                    "contract_version": "planning-result-repair-context.v1",
+                    "source_result": {
+                        "asset_version_id": source["asset_version_id"],
+                        "content_hash": source["content_hash"],
+                        "content": source["raw_result"],
+                        "operation_id": command.repair_of_operation_id,
+                    },
+                    "validation_failure": source["diagnostic"],
+                    "instruction": "Repair this invalid raw Provider result against the frozen task and complete current Schema. It was never a Candidate or Canon. Preserve correct content, return the entire valid result; do not invent scope or omit fields.",
+                }
         if command.repair_of_candidate_id:
             repair_document = self.query.require(
                 project_id=command.project_id,
@@ -5489,7 +5519,7 @@ class PostgresPlanningExecutionPreparer:
                 project_id=command.project_id, book_id=command.book_id,
                 arc_plan_version_ids=scope_context["arc_plan_version_ids"])
             need = replace(need, craft_context={**need.craft_context, "usage_scope_context": scope_context})
-        if result_repair_source and need.craft_policy.get("schema_version") == "narrative-craft-budget.v4":
+        if result_repair_source and result_repair_source["diagnostic"].get("provider_stage") != "world_candidates.generate" and need.craft_policy.get("schema_version") == "narrative-craft-budget.v4":
             from novel_forge.modules.mkaos_authority.craft_reselection import next_reselection_context
             context_version = result_repair_source["execution_evidence"].get("context_bundle_asset_version_id")
             original = self.query.require(project_id=command.project_id,
@@ -5505,13 +5535,42 @@ class PostgresPlanningExecutionPreparer:
             if reselection:
                 need = replace(need, craft_context={**need.craft_context, "reselection": reselection})
                 repair_context["instruction"] = "Create a new concrete translation for the newly selected exact Cards. Preserve scene identities and prior correct planning content. Respect every scoped rejection; do not invent replacements. Recompute roles, order, dependency placements, combined effect, interference and abstention reasons. Earlier requests and results remain immutable."
-        narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
+        if (
+            result_repair_source
+            and result_repair_source["diagnostic"].get("provider_stage")
+            == "world_candidates.generate"
+        ):
+            from .world_preparation import PlanningWorldPreparation
+
+            generation = self.query.require(
+                project_id=command.project_id,
+                asset_version_id=result_repair_source["asset_version_id"],
+            ).content["contract"]
+            source_operation = PlanningWorldPreparation._source_operation(
+                self.database_url,
+                command.project_id,
+                generation["source"]["asset_version_id"],
+            )
+            frozen_context = self.query.require(
+                project_id=command.project_id,
+                logical_ref=f"planning/context_bundles/{source_operation}.json",
+            )
+            narrative_intelligence = frozen_context.content["narrative_intelligence"]
+            if generation.get(
+                "knowledge_selection_digest", ""
+            ) != narrative_intelligence.get("selection_digest", ""):
+                raise KernelError(
+                    "WORLD_REPAIR_KNOWLEDGE_DRIFT",
+                    "World repair must retain its original exact knowledge selection",
+                )
+        else:
+            narrative_intelligence = self.mkaos.resolve_narrative_intelligence(
             project_id=command.project_id,
             book_id=command.book_id,
             need=need,
             limit=_narrative_intelligence_limit(command.generator_operation_name),
             knowledge_access_policy=knowledge_access_policy,
-        )
+            )
         self._append_narrative_intelligence_documents(
             command=command,
             selection=narrative_intelligence,

@@ -181,6 +181,8 @@ def replace_args(args, **changes):
         "capacity-recovery",
         "capacity-repair",
         "capacity-retained-repair-cause",
+        "world-result-repair",
+        "world-primary-result-repair",
     ],
 )
 def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(
@@ -191,6 +193,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     from novel_forge.workers.book_authority import execute_creation_worker_claim
     from tests.integration.synthesis_production_support import SynthesisTransport
+
+    from novel_forge.modules.command_kernel.errors import KernelError
 
     harness = CapabilityPackPostgresHarness("durable-creation")
     project = harness.project_id + "-native"
@@ -223,6 +227,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     planning = transport.planning
     creative_calls = []
     group_calls = []
+    world_calls = []
+    primary_calls = []
     if mode == "capacity-retained-repair-cause":
         from novel_forge.modules.story_planning_runtime import (
             application as planning_application,
@@ -250,6 +256,35 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
     def bounded_planning(stage, inputs):
         result = planning(stage, inputs)
+        if stage == "world_candidates.generate":
+            world_calls.append(inputs)
+            if mode == "world-result-repair" and len(world_calls) <= 2:
+                result = {
+                    **result,
+                    "disposition": "CANDIDATES",
+                    "reason": "Controlled malformed typed transition only.",
+                    "candidates": [
+                        {
+                            "transition": {
+                                "payload_json": json.dumps({"story_time": "chapter:1"})
+                            },
+                            "affected_entities": [],
+                            "world_consequences": [],
+                            "arc_refs": [],
+                            "obligation_refs": [],
+                            "risks": [],
+                            "soft_assumptions": [],
+                            "narrative_preferences": [],
+                            "rationale": "Controlled Schema-valid but domain-invalid result.",
+                            "preparation_paths": [],
+                            "information_scope": {"disclosures": []},
+                        }
+                    ],
+                }
+        if stage == "chapter_plan.generate":
+            primary_calls.append(inputs)
+            if mode == "world-primary-result-repair" and len(primary_calls) <= 2:
+                result["objective"] = " "
         if stage == "chapter_group_plan.generate":
             group_calls.append(stage)
             if (
@@ -317,7 +352,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             lambda **values:{"formation_run_id":identity,"stop_reason":"YIELDED_CHECKPOINT"})
         for _ in range(12):
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status='READY'", [identity])
+                uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status IN ('READY','RETRY_WAIT')", [identity])
                 uow.commit()
             current = claim()
             assert current is not None
@@ -452,7 +487,20 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                 raise OSError("controlled committed handoff response loss")
             return result
         monkeypatch.setattr(RuntimeJobAuthority, "complete_and_schedule_continuation", response_lost)
-    result = execute_creation_worker_claim(settings, claim())
+
+    def execute_window(current):
+        try:
+            return execute_creation_worker_claim(settings, current)
+        except KernelError as error:
+            if (
+                mode != "world-result-repair"
+                or error.code != "WORLD_PROVIDER_TRANSITION_INVALID"
+            ):
+                raise
+            assert jobs.get(current.runtime_job_id)["status"] == "RETRY_WAIT"
+            return {"stop_reason": "YIELDED_CHECKPOINT", "error_code": error.code}
+
+    result = execute_window(claim())
     if mode == "complete":
         assert result["stop_reason"] == "YIELDED_CHECKPOINT"
         assert lost
@@ -484,12 +532,47 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         if result["stop_reason"] == "COMPLETED":
             break
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status='READY'", [identity])
+            uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE project_id=%s AND job_kind IN ('BOOK_CREATION_ADVANCE','BOOK_COORDINATION_TICK') AND status IN ('READY','RETRY_WAIT')", [project])
             uow.commit()
         next_claim = claim()
         assert next_claim is not None, result
-        result = execute_creation_worker_claim(settings, next_claim)
+        result = execute_window(next_claim)
     assert result["stop_reason"] == "COMPLETED", result
+    if mode in {"world-result-repair", "world-primary-result-repair"}:
+        assert len(world_calls) == (3 if mode == "world-result-repair" else 1)
+        assert len(primary_calls) == (1 if mode == "world-result-repair" else 3)
+        assert (
+            len(
+                {
+                    json.dumps(item["world_preparation"]["source_ref"], sort_keys=True)
+                    for item in world_calls
+                }
+            )
+            == 1
+        )
+        if mode == "world-result-repair":
+            assert "Controlled Schema-valid but domain-invalid result." not in json.dumps(primary_calls[0])
+            assert all(
+                item["world_preparation"]["result_repair"]["diagnostic"][
+                    "provider_stage"
+                ]
+                == "world_candidates.generate"
+                for item in world_calls[1:]
+            )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT op.status,op.causation_operation_id,op.command_payload->'payload' FROM authority_operation op JOIN authority_story_planning_generation gen USING(operation_id) WHERE op.project_id=%s AND gen.generator_operation_name='chapter_plan.generate' ORDER BY op.created_at",
+                [project],
+            )
+            lineage = uow.cursor.fetchall()
+        assert [row[0] for row in lineage] == [
+            "FAILED_FINAL",
+            "FAILED_FINAL",
+            "SUCCEEDED",
+        ]
+        assert [row[2]["repair_number"] for row in lineage] == [0, 1, 2]
+        assert lineage[1][1] == lineage[1][2]["repair_of_operation_id"]
+        assert lineage[2][1] == lineage[2][2]["repair_of_operation_id"]
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT checkpoint->'generated_layer'->>'asset_version_id' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage='CREATIVE_FOUNDATION'", [identity])
         assert uow.cursor.fetchone()[0] == selected

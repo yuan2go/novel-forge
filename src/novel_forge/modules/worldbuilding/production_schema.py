@@ -26,11 +26,126 @@ def _strings() -> dict[str, Any]:
     }
 
 
+def world_transition_schema() -> dict[str, Any]:
+    from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
+    from .dynamics import RequirementOperator
+
+    text = {"type": "string", "minLength": 1}
+    predicate = _object(
+        {
+            "requirement_id": text,
+            "state_kind": {
+                "type": "string",
+                "enum": [item.value for item in NarrativeStateKind],
+            },
+            "entity_key": text,
+            "field": text,
+            "operator": {
+                "type": "string",
+                "enum": [item.value for item in RequirementOperator],
+            },
+            "value": {
+                "anyOf": [
+                    {"type": kind} for kind in ("string", "number", "boolean", "null")
+                ]
+            },
+        }
+    )
+    predicate["description"] = (
+        "Copy exact causal state identity and field. EXISTS may use null value; numeric comparison requires a numeric value. Epistemic bases must use character_knowledge or character_belief."
+    )
+    result = _object(
+        {
+            "transition_id": text,
+            "actor_id": text,
+            "camera": {
+                "type": "string",
+                "enum": ["ON_CAMERA", "OFF_CAMERA", "UNDERCURRENT"],
+            },
+            "story_time": _object(
+                {
+                    "timeline_id": text,
+                    "start_ordinal": {"type": "integer", "minimum": 1},
+                    "end_ordinal": {"type": "integer", "minimum": 1},
+                    "precision": {
+                        "type": "string",
+                        "enum": ["EXACT", "ORDERED", "RANGE"],
+                    },
+                    "label": {"type": "string"},
+                }
+            ),
+            "action": text,
+            "state_kind": {
+                "type": "string",
+                "enum": [item.value for item in NarrativeStateKind],
+            },
+            "entity_key": text,
+            "changes": {"type": "object", "minProperties": 1},
+            "requirements": {
+                "type": "array",
+                "items": {
+                    **deepcopy(predicate),
+                    "properties": {
+                        **predicate["properties"],
+                        "state_kind": {
+                            "type": "string",
+                            "enum": [
+                                item.value
+                                for item in NarrativeStateKind
+                                if item
+                                not in {
+                                    NarrativeStateKind.READER_KNOWLEDGE,
+                                    NarrativeStateKind.DISCLOSURE_EVENT,
+                                    NarrativeStateKind.READER_PROMISE,
+                                    NarrativeStateKind.NARRATIVE_OBLIGATION,
+                                }
+                            ],
+                        },
+                    },
+                },
+            },
+            "cause_refs": {
+                "type": "array",
+                "items": text,
+                "minItems": 1,
+                "uniqueItems": True,
+            },
+            "epistemic_basis": {
+                "type": "array",
+                "items": {
+                    **deepcopy(predicate),
+                    "properties": {
+                        **predicate["properties"],
+                        "state_kind": {
+                            "type": "string",
+                            "enum": ["character_knowledge", "character_belief"],
+                        },
+                    },
+                },
+            },
+        }
+    )
+    result["description"] = (
+        "Serialized WorldTransition, not prose. Copy approved actor/entity identities and exact frozen foundation or accepted causal references. story_time is an ordered object, never a chapter label string; end_ordinal must be at least start_ordinal. No invented prerequisites or inferred accepted facts."
+    )
+    return result
+
+
 def world_generation_schema(
     policy: WorldProductionPolicy, *, audience_scoped: bool = False
 ) -> dict[str, Any]:
     transition = _object(
-        {"payload_json": {"type": "string", "minLength": 2, "maxLength": 16384}}
+        {
+            "payload_json": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 16384,
+                "description": "JSON serialization of this typed contract: "
+                + json.dumps(
+                    world_transition_schema(), ensure_ascii=False, sort_keys=True
+                ),
+            }
+        }
     )
     path = _object(
         {
@@ -177,19 +292,22 @@ def world_evaluation_schema(generated: Mapping[str, Any]) -> dict[str, Any]:
 
 def decode_world_generation(raw: Mapping[str, Any]) -> dict[str, Any]:
     result = deepcopy(dict(raw))
+    location = "$.candidates"
     try:
-        for candidate in result["candidates"]:
+        for index, candidate in enumerate(result["candidates"]):
+            location = f"$.candidates[{index}].transition.payload_json"
             candidate["transition"] = json.loads(
                 candidate["transition"]["payload_json"]
             )
             WorldTransition.from_mapping(candidate["transition"])
-            for path in candidate["preparation_paths"]:
-                for step in path["steps"]:
+            for path_index, path in enumerate(candidate["preparation_paths"]):
+                for step_index, step in enumerate(path["steps"]):
+                    location = f"$.candidates[{index}].preparation_paths[{path_index}].steps[{step_index}].transition.payload_json"
                     step["transition"] = json.loads(step["transition"]["payload_json"])
                     WorldTransition.from_mapping(step["transition"])
     except (KeyError, TypeError, ValueError) as exc:
         raise KernelError(
             "WORLD_PROVIDER_TRANSITION_INVALID",
-            "generated world transitions must decode to the declared typed contract",
+            f"{location}: generated world transitions must decode to the declared typed contract; {exc}",
         ) from exc
     return result

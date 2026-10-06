@@ -967,3 +967,56 @@ def test_governed_repair_does_not_relax_identical_unknown_or_unrelated_failure(
         declared_requirements={"governed_repair": receipt},
     )
     assert route(context, [candidate()], {"flash": samples()})["status"] == "BLOCKED"
+
+
+@pytest.mark.parametrize(
+    "receipt_change,status,failure,expected",
+    [
+        ({}, "SUCCEEDED", "", "SELECTED"),
+        (
+            {"authorized_history_operation_ids": ["unrelated"]},
+            "SUCCEEDED",
+            "",
+            "BLOCKED",
+        ),
+        ({"source_input_hash": "changed-input"}, "SUCCEEDED", "", "BLOCKED"),
+        ({"repair_number": 3}, "SUCCEEDED", "", "BLOCKED"),
+        ({"operation_id": "other"}, "SUCCEEDED", "", "BLOCKED"),
+        ({}, "UNKNOWN", "UNKNOWN_EXTERNAL_OUTCOME", "BLOCKED"),
+        ({}, "DISPATCHING", "", "BLOCKED"),
+        ({}, "SUCCEEDED", "PROVIDER_UNAVAILABLE", "BLOCKED"),
+    ],
+)
+def test_second_diagnosed_raw_result_repair_retains_history_and_native_bound(
+    receipt_change, status, failure, expected
+):
+    history = tuple(
+        {
+            "operation_id": source,
+            "candidate_id": "flash",
+            "status": status,
+            "failure_class": failure,
+        }
+        for source in ("first", "second")
+    )
+    receipt = {
+        "contract_version": "planning-route-repair.v1",
+        "operation_id": "operation",
+        "input_hash": "changed-input",
+        "source_input_hash": "original-input",
+        "repair_number": 2,
+        "maximum_repairs": 2,
+        "authorized_history_operation_ids": ["first", "second"],
+        **receipt_change,
+    }
+    result = route(
+        task(
+            input_hash="changed-input",
+            history=history,
+            declared_requirements={"governed_repair": receipt},
+        ),
+        [candidate()],
+        {"flash": samples()},
+    )
+    assert result["status"] == expected
+    assert list(result["task"]["history"]) == list(history)

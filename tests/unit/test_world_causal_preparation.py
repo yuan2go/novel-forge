@@ -13,6 +13,45 @@ def generated_paths():
     return json.loads(json.dumps(_generated_paths()))
 
 
+def test_serialized_world_contract_exposes_native_time_and_causal_predicates():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import (
+        validate_native_world_schema_fragment,
+    )
+    from novel_forge.modules.worldbuilding.production_schema import (
+        decode_world_generation,
+        world_transition_schema,
+    )
+
+    schema = world_transition_schema()
+
+    def validate(value):
+        return validate_native_world_schema_fragment(
+            "world_candidates.generate",
+            schema,
+            value,
+            output_schema_ref="schema:world_candidates.generate:v1",
+        )
+
+    raw = generated_paths()
+    for candidate in raw["candidates"]:
+        validate(candidate["transition"])
+        candidate["transition"] = {"payload_json": json.dumps(candidate["transition"])}
+        for path in candidate["preparation_paths"]:
+            for step in path["steps"]:
+                validate(step["transition"])
+                step["transition"] = {"payload_json": json.dumps(step["transition"])}
+    assert decode_world_generation(raw) == generated_paths()
+    invalid = generated_paths()["candidates"][0]["transition"]
+    invalid["story_time"] = "chapter:1"
+    with pytest.raises(KernelError, match="WORLD_PROVIDER_OUTPUT_SCHEMA_INVALID"):
+        validate(invalid)
+    raw["candidates"][0]["transition"]["payload_json"] = json.dumps(invalid)
+    with pytest.raises(
+        KernelError, match=r"\$\.candidates\[0\]\.transition.payload_json"
+    ):
+        decode_world_generation(raw)
+
+
 def _generated_paths():
     target = replace(transition(), actor_id="faction:caravan", epistemic_basis=())
     preparation = replace(

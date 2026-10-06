@@ -18,6 +18,7 @@ from novel_forge.modules.worldbuilding.production_schema import (
     decode_world_generation,
     world_evaluation_schema,
     world_generation_schema,
+    world_transition_schema,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.world_preparation_repositories import (
@@ -91,10 +92,18 @@ def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
                 "directed repair cannot replace the selected world batch",
             )
         return action
-    return query.require(
-        project_id=command.project_id,
-        logical_ref=f"world_preparation/{operation_id}/action",
-    )
+    try:
+        return query.require(
+            project_id=command.project_id,
+            logical_ref=f"world_preparation/{operation_id}/action",
+        )
+    except KernelError as error:
+        if (
+            error.code != "AUTHORITY_ASSET_NOT_FOUND"
+            or not command.repair_of_operation_id
+        ):
+            raise
+        return PlanningWorldPreparation.retained_action(query, command)
 
 
 class PlanningWorldPreparation:
@@ -140,7 +149,39 @@ class PlanningWorldPreparation:
             )
             uow.commit()
         prefix = f"world_preparation/{operation_id}"
-        source_document = self._read(command.project_id, f"{prefix}/source")
+        repair_source = None
+        source_prefix = prefix
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+
+            repair_source = require_result_repair_source(
+                self.preparer.database_url,
+                command=command,
+                operation_id=command.repair_of_operation_id,
+                source_asset_version_id=command.repair_result_asset_version_id,
+            )
+            if (
+                repair_source["diagnostic"].get("provider_stage")
+                != "world_candidates.generate"
+            ):
+                return self.retained_action(self.preparer.query, command)
+            retained = self.preparer.query.require(
+                project_id=command.project_id,
+                asset_version_id=repair_source["asset_version_id"],
+            ).content["contract"]
+            source_ref = retained["source"]
+            source_document = self.preparer.query.require(
+                project_id=command.project_id,
+                asset_version_id=source_ref["asset_version_id"],
+            )
+            if source_document.content_hash != source_ref["content_hash"]:
+                raise KernelError(
+                    "WORLD_REPAIR_SOURCE_DRIFT",
+                    "World result repair must retain its exact source hash",
+                )
+            source_prefix = f"world_preparation/{self._source_operation(self.preparer.database_url, command.project_id, source_document.asset_version_id)}"
+        else:
+            source_document = self._read(command.project_id, f"{prefix}/source")
         if source_document is None:
             with AuthorityUnitOfWork(self.preparer.database_url) as uow:
                 source = WorldPreparationRepository(uow.cursor).require_source(
@@ -182,7 +223,7 @@ class PlanningWorldPreparation:
             actor_policy = validate_actor_policy(source["actor_experiment"], character_ids=source["reality"]["approved_character_ids"], policy=policy)
             tasks = [actor_task(source, source_ref, actor_id) for actor_id in actor_policy["actor_ids"]]
             for index, task in enumerate(tasks):
-                logical_ref = f"{prefix}/actor/{index}"
+                logical_ref = f"{source_prefix}/actor/{index}"
                 document = self._read(command.project_id, logical_ref)
                 if document is None:
                     generated = execute_stage(PlanningProviderStage(ACTOR_STAGES[index], task, actor_output_schema(task)))
@@ -217,11 +258,40 @@ class PlanningWorldPreparation:
         from .knowledge_translation import validate_knowledge_translations
 
         if generation_document is None:
-            generated = execute_stage(
-                self.generation_stage(source, source_ref, knowledge_selection, actor_proposals=actor_proposals)
+            stage = self.generation_stage(
+                source, source_ref, knowledge_selection, actor_proposals=actor_proposals
             )
-            if knowledge_selection.get("policy_version") == "knowledge-grounded-selection-v2":
-                validate_knowledge_translations(generated.raw_output, knowledge_selection)
+            if repair_source:
+                retained = self.preparer.query.require(
+                    project_id=command.project_id,
+                    asset_version_id=repair_source["asset_version_id"],
+                ).content["contract"]
+                if retained.get(
+                    "knowledge_selection_digest", ""
+                ) != knowledge_selection.get("selection_digest", ""):
+                    raise KernelError(
+                        "WORLD_REPAIR_KNOWLEDGE_DRIFT",
+                        "World repair must retain its frozen knowledge selection",
+                    )
+                stage = PlanningProviderStage(
+                    stage.name,
+                    {
+                        **stage.task,
+                        "result_repair": {
+                            "source_result": {
+                                "asset_version_id": repair_source["asset_version_id"],
+                                "content_hash": repair_source["content_hash"],
+                                "raw_result": repair_source["raw_result"],
+                            },
+                            "diagnostic": repair_source["diagnostic"],
+                            "instruction": "Repair only this rejected World proposal using the exact source, typed transition contract and approved identities. It is not accepted fact. Preserve correct intentions; do not invent prerequisites or enlarge scope.",
+                        },
+                    },
+                    stage.output_schema,
+                )
+            generated = execute_stage(
+                stage
+            )
             generation_document = self._store(
                 command,
                 operation_id,
@@ -240,6 +310,11 @@ class PlanningWorldPreparation:
                 "WORLD_PREPARATION_RECEIPT_DRIFT",
                 "generation belongs to another frozen source",
             )
+        if (
+            knowledge_selection.get("policy_version")
+            == "knowledge-grounded-selection-v2"
+        ):
+            validate_knowledge_translations(generation["output"], knowledge_selection)
         if actor_proposals:
             from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
             require_actor_judgments(generation["output"], actor_proposals)
@@ -448,6 +523,7 @@ class PlanningWorldPreparation:
             ),
             "transition_contract": {
                 "fields": list(WorldTransition.__dataclass_fields__),
+                "schema": world_transition_schema(),
                 "state_kinds": [kind.value for kind in NarrativeStateKind],
                 "requirement_operators": [
                     operator.value for operator in RequirementOperator
@@ -458,6 +534,141 @@ class PlanningWorldPreparation:
             },
             "fact_mutation_allowed": False,
         }
+
+    @staticmethod
+    def _source_operation(database_url: str, project_id: str, asset_version_id: str) -> str:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute(
+                "SELECT output.operation_id FROM authority_operation_output_asset output JOIN authority_operation op USING(operation_id) WHERE output.asset_version_id=%s AND op.project_id=%s",
+                [asset_version_id, project_id],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError(
+                "WORLD_REPAIR_SOURCE_AMBIGUOUS",
+                "World source must retain one exact native owner",
+            )
+        return str(rows[0][0])
+
+    @staticmethod
+    def validate_retained_generation(
+        database_url: str, *, command: Any, generation: Any
+    ) -> None:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from .knowledge_translation import validate_knowledge_translations
+
+        query = AuthorityAssetQuery(database_url)
+        retained = generation.content["contract"]
+        source_document = query.require(
+            project_id=command.project_id,
+            asset_version_id=retained["source"]["asset_version_id"],
+        )
+        source = source_document.content["contract"]
+        if source_document.content_hash != retained["source"]["content_hash"] or source[
+            "request"
+        ] != dict(command.world_preparation_request or {}):
+            raise KernelError(
+                "WORLD_REPAIR_SOURCE_DRIFT",
+                "retained World result must bind its exact frozen Book frontier",
+            )
+        with AuthorityUnitOfWork(database_url) as uow:
+            WorldPreparationRepository(uow.cursor).assert_source_current(
+                project_id=command.project_id, book_id=command.book_id, frozen=source
+            )
+        source_operation = PlanningWorldPreparation._source_operation(
+            database_url, command.project_id, source_document.asset_version_id
+        )
+        context = query.require(
+            project_id=command.project_id,
+            logical_ref=f"planning/context_bundles/{source_operation}.json",
+        )
+        selection = context.content.get("narrative_intelligence") or {}
+        if retained.get("knowledge_selection_digest", "") != selection.get(
+            "selection_digest", ""
+        ):
+            raise KernelError(
+                "WORLD_REPAIR_KNOWLEDGE_DRIFT",
+                "retained World result differs from its exact frozen knowledge selection",
+            )
+        if selection.get("policy_version") == "knowledge-grounded-selection-v2":
+            validate_knowledge_translations(retained["output"], selection)
+        if source.get("actor_experiment"):
+            from novel_forge.modules.worldbuilding.actor_isolation import (
+                require_actor_judgments,
+                validate_actor_policy,
+            )
+
+            actor_policy = validate_actor_policy(
+                source["actor_experiment"],
+                character_ids=source["reality"]["approved_character_ids"],
+                policy=WorldProductionPolicy(**source["policy"]),
+            )
+            proposals = [
+                query.require(
+                    project_id=command.project_id,
+                    logical_ref=f"world_preparation/{source_operation}/actor/{index}",
+                ).content["contract"]["output"]
+                for index in range(len(actor_policy["actor_ids"]))
+            ]
+            require_actor_judgments(retained["output"], proposals)
+        decoded = decode_world_generation(
+            {
+                key: value
+                for key, value in retained["output"].items()
+                if key not in {"knowledge_translations", "actor_adjudications"}
+            }
+        )
+        candidates = validate_generated_candidates(
+            decoded, WorldProductionPolicy(**source["policy"])
+        )
+        PlanningWorldPreparation._validate_references(source, candidates, command)
+
+    @staticmethod
+    def retained_action(query: Any, command: Any) -> Any:
+        source_id = command.repair_of_operation_id
+        seen = set()
+        while source_id and source_id not in seen and len(seen) < 3:
+            seen.add(source_id)
+            try:
+                action = query.require(
+                    project_id=command.project_id,
+                    logical_ref=f"world_preparation/{source_id}/action",
+                )
+            except KernelError as error:
+                if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+                    raise
+                action = None
+            if action:
+                source_ref = action.content["contract"]["source"]
+                source = query.require(
+                    project_id=command.project_id,
+                    asset_version_id=source_ref["asset_version_id"],
+                )
+                if source.content_hash != source_ref["content_hash"] or source.content[
+                    "contract"
+                ]["request"] != dict(command.world_preparation_request):
+                    raise KernelError(
+                        "WORLD_REPAIR_SOURCE_DRIFT",
+                        "Planning result repair must retain its original selected World action",
+                    )
+                with AuthorityUnitOfWork(query.database_url) as uow:
+                    WorldPreparationRepository(uow.cursor).assert_source_current(
+                        project_id=command.project_id,
+                        book_id=command.book_id,
+                        frozen=source.content["contract"],
+                    )
+                return action
+            with AuthorityUnitOfWork(query.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT command_payload->'payload'->>'repair_of_operation_id' FROM authority_operation WHERE operation_id=%s AND project_id=%s AND command_payload->'payload'->>'book_id'=%s AND status='FAILED_FINAL'",
+                    [source_id, command.project_id, command.book_id],
+                )
+                row = uow.cursor.fetchone()
+            source_id = str(row[0] or "") if row else ""
+        raise KernelError(
+            "WORLD_REPAIR_SOURCE_MISSING",
+            "Planning result repair requires its retained selected World action; no World request was repeated",
+        )
 
     @staticmethod
     def _validate_references(
