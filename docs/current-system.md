@@ -2289,3 +2289,23 @@ with the exact no-send Canon capacity failure, original settled result and missi
 completion assets reproduced. It cancels only the undispatched nonterminal child through
 Kernel transitions, retains the false completion declaration and all old Attempts, and
 references completed work. A genuinely complete or accepted Root cannot use this policy.
+
+Canon support v3 binds review claim identifiers to the exact frozen extraction and
+requires the exact review count in its Provider Schema. Semantic classification remains
+independent; an allowed differing kind, unsupported assessment or uncertainty still
+blocks acceptance. A creative retained-coverage successor may preserve uniquely keyed,
+positive independent assessments from a settled result whose coverage failed solely
+because identifiers were missing, duplicated or foreign. It does not correct an
+unknown identifier or assign that assessment to a guessed claim. Only the unresolved
+exact claims receive new review; native full-set validation combines both receipts.
+The old result, unknown identifiers and failed terminal Root remain immutable. Strict
+production, changed inputs, unresolved effects and real semantic disagreements cannot
+use this partial-result recovery. Completed prose and Canon extraction stay referenced.
+
+When the retained support also contains an exact-ID semantic disagreement, coverage
+recovery is ineligible. The creative semantic-reextraction successor binds the unchanged
+selected prose, successful extraction receipt and failed independent review, then asks
+the extractor to correct the located claim fields. It does not reuse the rejected
+classification as accepted Canon, or suppress the review. A new full-set independent
+support call is mandatory for the changed extraction. The previous extraction and
+review receipts stay immutable; unknown IDs remain unassigned.

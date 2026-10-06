@@ -3197,3 +3197,19 @@ initial steps separately from correction extensions; all extensions must also su
 Accepted chapters, uncertain effects and unrelated successful Roots are ineligible.
 The focused regression includes `test_retained_correction_references_cannot_replace_missing_initial_completion_steps`
 and a restored PostgreSQL native continuation through complete-request admission.
+
+For a settled creative Canon support coverage refusal, install the versioned support
+contract and Pack before continuing the same Formation. The native graph successor
+retains the completed extraction, uniquely identified independent assessments and
+original failed receipt. The new review covers only unresolved exact extraction IDs;
+unknown IDs are recorded as unassigned, never repaired by similarity. Full-set host
+validation and ordinary Canon/Quality/internal acceptance still execute. Any retained
+known assessment that is unsupported, uncertain or disagrees on epistemic kind requires
+its semantic repair owner instead of this coverage recovery.
+
+An exact-ID semantic disagreement discovered within a coverage refusal uses the
+semantic-reextraction arm, not partial positive-coverage recovery. Pack 2.31 registers
+Canon 3.9.24 and support 3.9.23. Continue the same Formation with the explicit creative
+policy: the new graph references completed prose/review/candidate work and retains the
+old extraction as repair evidence. It executes targeted Canon repair followed by full
+independent support with exact claim IDs, before ordinary Canon and Quality admission.

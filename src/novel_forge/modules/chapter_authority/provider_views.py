@@ -996,12 +996,20 @@ def build_provider_task_view(
     if stage == "canon_support":
         task = _task(stage, final_candidate=_prose(inputs.get("revision")),
                      grounding=deepcopy(inputs.get("grounding")), claims=deepcopy(inputs.get("claims")))
+        if inputs.get("support_coverage_contract") == "canon-support-coverage.v1":
+            task["contract_version"] = "provider-task-view-v3"
+            task["support_coverage_contract"] = {
+                "version": "canon-support-coverage.v1",
+                "expected_claim_ids": [item["claim"]["grounded_claim_id"] for item in inputs["claims"]],
+                "instructions": "Independently assess each supplied claim exactly once using its exact identifier. Coverage describes this supplied set. Do not infer agreement or claim certification. Other claims, if retained by the host, are not part of this call.",
+            }
         comparisons = [item["claim"]["actor_step_execution"] for item in inputs.get("claims") or []
                        if isinstance(item, Mapping) and isinstance(item.get("claim"), Mapping) and "actor_step_execution" in item["claim"]]
         if comparisons:
             if any(not isinstance(item, Mapping) or item.get("contract_version") != "actor-step-execution-comparison.v1" for item in comparisons):
                 raise KernelError("WORLD_ACTOR_EXECUTION_CONTRACT_INVALID", "Canon support requires an explicit current-step comparison contract")
-            task["contract_version"] = "provider-task-view-v2"
+            if task["contract_version"] != "provider-task-view-v3":
+                task["contract_version"] = "provider-task-view-v2"
             task["actor_step_support_contract"] = "actor-step-execution-comparison.v1"
         return task
     if stage == "canon_extraction":
@@ -1018,6 +1026,9 @@ def build_provider_task_view(
                 from .canon_repair_projection import project_canon_repair
                 task["contract_version"] = "provider-task-view-v3"
                 task["canon_output_repair"] = project_canon_repair(inputs["canon_output_repair"])
+            if inputs.get("canon_support_reextraction"):
+                task["contract_version"] = "provider-task-view-v4"
+                task["canon_support_reextraction"] = deepcopy(inputs["canon_support_reextraction"])
         return task
     if stage.startswith("quality_"):
         return _task(

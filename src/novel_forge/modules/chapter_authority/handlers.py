@@ -1982,10 +1982,14 @@ class _CanonExtractionHandler:
         generated: ModelProviderResult | None = None
         localization = None
         repair = None
-        current_contract = request.definition_version in {"3.9.21", "3.9.22"}
+        semantic_repair = None
+        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24"}
         if current_contract and request.database_url:
             from .canon_output_recovery import repair_feedback
             repair = repair_feedback(request)
+            if request.definition_version == "3.9.24":
+                from .canon_support_coverage import reextraction_feedback
+                semantic_repair = reextraction_feedback(request)
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -1996,6 +2000,7 @@ class _CanonExtractionHandler:
                     "revision": revision.content,
                     **({"canon_field_kind_contract": "canon-field-kinds.v1"} if current_contract else {}),
                     **({"canon_output_repair": repair} if repair else {}),
+                    **({"canon_support_reextraction": semantic_repair} if semantic_repair else {}),
                     "execution_expectations": dict(
                         context.content.get("chapter_execution_expectations") or {}
                     ),
@@ -2023,7 +2028,7 @@ class _CanonExtractionHandler:
         )
         if localization:
             content["quote_localization"] = localization
-        if repair:
+        if repair or semantic_repair:
             proof = request.command["preparation_report"]["retained_graph_continuation"]["retained_result"]
             content["retained_result_repair"] = {k: proof[k] for k in ("contract_version", "source_operation_id", "source_effect_id", "source_dispatch_id", "source_output_hash", "source_request_hash", "provider_invoked", "strict_certification_eligible")}
         if generated is None:
@@ -2051,19 +2056,31 @@ class _CanonProposalHandler:
         if extraction.content.get("grounding"):
             from novel_forge.modules.canon_graph.grounding import grounded_claims, validate_support_review
             revision = request.require_input("best_draft_candidate")
+            coverage = (request.source_definition_version or request.definition_version) == "3.9.23"
+            retained = None
+            if coverage and request.database_url:
+                from .canon_support_coverage import retained_review
+                retained = retained_review(request)
+            claims = retained[0]["unresolved_claims"] if retained else grounded_claims(extraction.content)
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
-                "claims": grounded_claims(extraction.content),
-                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.definition_version)=="3.9.8" else {}),
+                "claims": claims,
+                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.definition_version) in {"3.9.8", "3.9.23"} else {}),
+                **({"support_coverage_contract": "canon-support-coverage.v1"} if coverage else {}),
             })
             if request.command.get("chapter_sampling"):
                 from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result
                 validate_sample_result(extraction.content, revision.content, revision.asset_version_id, generated.output)
                 return replace(_model_output(ChapterNode.CANON_PROPOSAL, dict(generated.output),
                     request=request, generated=generated), asset_type="canon_support_review")
+            support = generated.output
+            if retained:
+                from .canon_support_coverage import combine_review
+                support = combine_review(extraction.content, retained[1], generated.output)
+                proposal["retained_result_repair"] = retained[0]
             proposal["grounding"] = validate_support_review(
                 extraction=extraction.content, revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id, result=generated.output,
+                revision_asset_version_id=revision.asset_version_id, result=support,
             )
         generation = int(request.command.get("canon_reextraction_generation") or 1)
         proposal["generation"] = generation

@@ -74,6 +74,8 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
     source = failed[0]
     canon_recovery = source["definition_name"] == "chapter.canon.extract"
     review_recovery = source["definition_name"] == "chapter.revision.review"
+    support_recovery = source["definition_name"] == "chapter.canon.propose_changes"
+    support_semantic_recovery = False
     if review_recovery:
         from novel_forge.modules.chapter_authority.quality_review_recovery import retained_quality_review
         if (len(extension) != 2 or extension[0]["definition_name"] != "chapter.revision.apply"
@@ -83,6 +85,24 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 or source["idempotency_key"] != root["idempotency_key"] + ":rereview:quality-correction:1"):
             raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Only the completed retained revision and its exact failed independent rereview may continue")
         proof, _ = retained_quality_review(cursor, source)
+    elif support_recovery:
+        from novel_forge.modules.chapter_authority.canon_support_coverage import retained_support_output
+        prefix = extension[:-1]
+        if (len(prefix) != 4 or extension[-1] != source
+                or [(o["definition_name"], o["definition_version"], o["status"]) for o in prefix] != [
+                    ("chapter.revision.apply", "3.9.17", "SUCCEEDED"),
+                    ("chapter.revision.review", "3.9.20", "SUCCEEDED"),
+                    ("chapter.candidate.select_best", "3.9.18", "SUCCEEDED"),
+                    ("chapter.canon.extract", "3.9.22", "SUCCEEDED")]
+                or source["idempotency_key"] != root["idempotency_key"]+":canon_proposal:quality-correction:1"):
+            raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Retain the exact completed extraction and correction prefix")
+        try:
+            proof, _ = retained_support_output(cursor, source)
+        except KernelError as error:
+            if error.code != "CANON_SUPPORT_SEMANTIC_REPAIR_REQUIRED":
+                raise
+            proof, _ = retained_support_output(cursor, source, semantic_reextraction=True)
+            support_semantic_recovery = True
     elif canon_recovery:
         from novel_forge.modules.chapter_authority.canon_output_recovery import retained_canon_output
         prefix = extension[:-1]
@@ -113,10 +133,10 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
         JOIN authority_operation o USING(operation_id) WHERE ref.saga_id=%s ORDER BY ref.ordinal FOR SHARE OF ref,o""", [saga["saga_id"]])
     inherited_rows = cursor.fetchall()
     retained_keys = {row[0]["step_key"] for row in inherited_rows}
-    completed_prefix = extension[:-1] if canon_recovery else extension[:1] if review_recovery else []
+    completed_prefix = extension[:-2] if support_semantic_recovery else extension[:-1] if canon_recovery or support_recovery else extension[:1] if review_recovery else []
     correction_keys = set()
     for index, operation in enumerate(completed_prefix):
-        key = "quality-correction:1:" + ["revision", "rereview", "best_candidate"][index]
+        key = "quality-correction:1:" + ["revision", "rereview", "best_candidate", "canon_extraction"][index]
         correction_keys.add(key)
         if key in retained_keys:
             continue
@@ -251,7 +271,7 @@ def continue_graph_in_uow(uow, *, source, request, context):
         or template.get("chapter_graph_recovery")
         not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
         or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") not in {"RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
-        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
+        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
         or admission != binding.get("admission")
         or template["member_authorization_ref"]
         != source["retained_result"]["cost_authorization_ref"]
@@ -415,13 +435,13 @@ def acknowledge_retained_result(cursor, effects, root_id):
         """SELECT o.operation_id,v.content FROM authority_operation o JOIN authority_operation_output_asset output USING(operation_id)
         JOIN authority_asset_version v USING(asset_version_id) WHERE (o.root_operation_id=%s OR o.operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=(SELECT successor_saga_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s))) AND o.definition_version=%s
         AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
-        [root_id, root_id, "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
+        [root_id, root_id, "3.9.24" if proof["contract_version"] == "chapter-canon-support-reextraction.v1" else "3.9.23" if proof["contract_version"] == "chapter-canon-support-coverage-repair.v1" else "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
     )
     successors = cursor.fetchall()
     if len(successors) != 1:
         return
     successor, content = successors[0]
-    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2"}
+    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1"}
     derived = content.get("retained_result_repair" if fresh_repair else "retained_result_derivation") or {}
     if (
         any(
