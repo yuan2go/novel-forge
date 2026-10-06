@@ -173,6 +173,8 @@ class StoryFormationRepository:
         row = self.cursor.fetchone()
         if row is None:
             raise KernelError("STORY_FORMATION_NOT_FOUND", "Formation run is missing")
+        if self.cancellation(formation_run_id):
+            raise KernelError("CREATION_CANCELLED", "The original creation continuation was cancelled")
         if str(row[2]) in {"READY", "ABORTED"}:
             return self.require(formation_run_id)
         if str(row[2]) not in {"ADMITTED", "RUNNING"}:
@@ -419,6 +421,7 @@ class StoryFormationRepository:
         candidate_content_hash: str,
         candidate_asset_version_ids: tuple[str, ...],
         runtime_attempt_id: str,
+        generation_failures: tuple[dict[str, str], ...] = (),
     ) -> dict[str, Any]:
         try:
             stage = StoryFormationStage(expected_stage)
@@ -453,6 +456,23 @@ class StoryFormationRepository:
         row = self.cursor.fetchone()
         if row is None:
             raise KernelError("STORY_FORMATION_NOT_FOUND", "Formation run is missing")
+        for failure in generation_failures:
+            if "asset_version_id" in failure:
+                self.cursor.execute("""SELECT 1 FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+                    WHERE asset.project_id=%s AND asset.asset_type='planning_generation_result_failure'
+                      AND version.asset_version_id=%s AND version.content_hash=%s AND version.content->>'book_id'=
+                        (SELECT book_id FROM authority_story_formation_run WHERE formation_run_id=%s)
+                      AND version.content->>'logical_key' LIKE %s""", [row[0],failure["asset_version_id"],failure["content_hash"],formation_run_id,formation_run_id + ":CREATIVE_FOUNDATION:%"])
+            else:
+                self.cursor.execute("""SELECT 1 FROM authority_external_effect effect
+                    JOIN authority_story_planning_generation generation ON generation.operation_id=effect.operation_id
+                    JOIN authority_story_formation_run run ON run.formation_run_id=%s
+                    WHERE generation.project_id=run.project_id AND generation.book_id=run.book_id
+                      AND generation.logical_key LIKE %s AND effect.external_effect_id=%s
+                      AND effect.request_hash=%s AND effect.status='FAILED_FINAL'""",
+                    [formation_run_id,formation_run_id + ":CREATIVE_FOUNDATION:%",failure["external_effect_id"],failure["request_hash"]])
+            if not self.cursor.fetchone():
+                raise KernelError("STORY_FORMATION_ALTERNATIVE_FAILURE_DRIFT", "Unavailable direction must retain its exact original failure evidence")
         approval = {
             "action": "APPROVE_EXACT_CANDIDATE_AND_RESUME",
             "formation_run_id": formation_run_id,
@@ -463,6 +483,7 @@ class StoryFormationRepository:
             "candidate_asset_version_ids": list(candidate_asset_version_ids),
             "wait_operation_id": operation_id,
             "runtime_attempt_id": runtime_attempt_id,
+            **({"generation_failures": list(generation_failures)} if generation_failures else {}),
         }
         if str(row[1]) == "WAITING_APPROVAL":
             existing = dict(row[4] or {})
@@ -733,6 +754,25 @@ class StoryFormationRepository:
             )
         return self.require(formation_run_id)
 
+    def cancellation(self, formation_run_id: str) -> dict[str, str] | None:
+        self.cursor.execute("SELECT operation_id,actor_id,frozen_input_digest,reason FROM authority_story_creation_cancellation WHERE formation_run_id=%s", [formation_run_id])
+        row = self.cursor.fetchone()
+        return dict(zip(("operation_id", "actor_id", "frozen_input_digest", "reason"), row, strict=True)) if row else None
+
+    def cancel_continuation(self, formation_run_id: str, *, operation_id: str, actor_id: str, reason: str, expected_digest: str) -> dict[str, Any]:
+        self.cursor.execute("SELECT project_id,frozen_input_digest FROM authority_story_formation_run WHERE formation_run_id=%s FOR UPDATE", [formation_run_id])
+        row = self.cursor.fetchone()
+        if not row or row[1] != expected_digest:
+            raise KernelError("CREATION_CANCELLATION_INPUT_CONFLICT", "Cancellation must bind the original frozen work")
+        self.cursor.execute("SELECT state FROM authority_book_production WHERE project_id=%s AND stable_idempotency_key=%s", [row[0], formation_run_id + ":production"])
+        production = self.cursor.fetchone()
+        if production and production[0] == "COMPLETED":
+            raise KernelError("CREATION_ALREADY_COMPLETED", "Completed accepted production cannot be cancelled retroactively")
+        self.cursor.execute("""INSERT INTO authority_story_creation_cancellation(formation_run_id,operation_id,project_id,actor_id,frozen_input_digest,reason,contract_version)
+            VALUES(%s,%s,%s,%s,%s,%s,'creation-cancellation.v1') ON CONFLICT(formation_run_id) DO NOTHING""",
+            [formation_run_id,operation_id,row[0],actor_id,expected_digest,reason])
+        return self.require(formation_run_id)
+
     def require(self, formation_run_id: str) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -814,7 +854,7 @@ class StoryFormationRepository:
         if self.stage_input(formation_run_id, layer.role) != layer:
             raise KernelError("STORY_FORMATION_STAGE_INPUT_DRIFT", "A retry cannot replace the committed generated layer")
 
-    def generated_layer(self, *, project_id: str, book_id: str, candidate_id: str, candidates: tuple[str, ...], reasons: tuple[str, ...]) -> FormationLayerInput:
+    def generated_layer(self, *, formation_run_id: str, project_id: str, book_id: str, candidate_id: str, candidates: tuple[str, ...], reasons: tuple[str, ...]) -> FormationLayerInput:
         self.cursor.execute(
             """
             SELECT generation.generator_operation_name, version.content_hash, version.schema_version,
@@ -866,10 +906,28 @@ class StoryFormationRepository:
             content_hash=row[1], schema_version=row[2], generation_operation_id=row[3],
             qualification_evidence_asset_version_id=row[4], qualification_hash=row[5],
             activation_operation_id=row[6], candidate_asset_version_ids=candidates, selection_reason=reasons,
-            selection_basis="TEMPLATE_VALIDATION" if creative else "AUTHOR_COMPARISON" if supervised else "INDEPENDENT_COMPARISON",
+            selection_basis="AUTHOR_AVAILABLE_ALTERNATIVE" if creative and len(candidates)==1 and row[0]=='creative.candidates.generate' else "TEMPLATE_VALIDATION" if creative else "AUTHOR_COMPARISON" if supervised else "INDEPENDENT_COMPARISON",
         )
+        if layer.selection_basis == "AUTHOR_AVAILABLE_ALTERNATIVE":
+            self._require_available_alternative(formation_run_id, layer)
         self._require_qualification(project_id, layer)
         return layer
+
+    def _require_available_alternative(self, formation_run_id: str, selected: FormationLayerInput) -> None:
+        run = self.require(formation_run_id)
+        recovery = self.approval_wait(formation_run_id, "CREATIVE_SEARCH")
+        decision = self.author_selection(formation_run_id, "CREATIVE_SEARCH")
+        if (run["frozen_input"]["generation_policy"].get("contract_version") != "formation-generation.v5"
+                or not recovery.get("generation_failures") or len(selected.candidate_asset_version_ids) != 1
+                or decision.get("decision") != "APPROVE" or not decision.get("reason", "").strip()
+                or decision.get("candidate_asset_version_id") != selected.asset_version_id
+                or decision.get("candidate_content_hash") != selected.content_hash):
+            raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "A sole available direction requires retained bounded failures and an exact author decision")
+
+    def approval_wait(self, formation_run_id: str, stage: str) -> dict[str, Any]:
+        self.cursor.execute("SELECT checkpoint->'approval_wait' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage=%s ORDER BY attempt_ordinal DESC LIMIT 1", [formation_run_id, stage])
+        row = self.cursor.fetchone()
+        return dict(row[0] or {}) if row else {}
 
     def authored_creative_layer(self, *, project_id: str, book_id: str, asset_version_id: str, content_hash: str) -> FormationLayerInput:
         from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
@@ -911,7 +969,9 @@ class StoryFormationRepository:
             [list(requested)],
         )
         rows = {str(row[0]): row for row in self.cursor.fetchall()}
-        if selected.selection_basis == "TEMPLATE_VALIDATION":
+        if selected.selection_basis in {"TEMPLATE_VALIDATION", "AUTHOR_AVAILABLE_ALTERNATIVE"}:
+            if selected.selection_basis == "AUTHOR_AVAILABLE_ALTERNATIVE":
+                self._require_available_alternative(formation_run_id, selected)
             from novel_forge.modules.story_design_authority.creative_validation import candidate_validation, approved_validation_design
             self.cursor.execute("SELECT project_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s", [formation_run_id])
             project_id, book_id = self.cursor.fetchone()
@@ -1004,7 +1064,7 @@ class StoryFormationRepository:
                         "selection_reason": list(selected.selection_reason),
                     }
                 ),
-                Jsonb({"comparison": "FROZEN", **({"selection_basis": selected.selection_basis, "literary_qualification": "NOT_PROVEN"} if selected.selection_basis != "INDEPENDENT_COMPARISON" else {})}),
+                Jsonb({"comparison": "LIMITED_BY_FAILED_ALTERNATIVES" if selected.selection_basis == "AUTHOR_AVAILABLE_ALTERNATIVE" else "FROZEN", **({"selection_basis": selected.selection_basis, "literary_qualification": "NOT_PROVEN"} if selected.selection_basis != "INDEPENDENT_COMPARISON" else {})}),
             ],
         )
 

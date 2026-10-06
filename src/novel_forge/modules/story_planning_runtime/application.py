@@ -643,7 +643,15 @@ class StoryPlanningGenerationApplication:
                     [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
                 )
                 retained = uow.cursor.fetchone()
-            causation_operation_id = retained[0] if retained else source_operation_id
+            causation_operation_id = (
+                retained[0]
+                if retained
+                else (
+                    continuation["source_operation_id"]
+                    if continuation
+                    else source_operation_id
+                )
+            )
         input_assets = self._replay_ordered_input_assets(
             command=command,
             resolved_input_assets=_canonical_admission_assets(input_assets),
@@ -767,7 +775,16 @@ class StoryPlanningGenerationApplication:
                 worker_id=self.worker_id,
             ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
         except KernelError as error:
-            if error.code != "PLANNING_GENERATION_RESULT_INVALID":
+            if error.code in {
+                "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+                "CONTENT_RECOVERY_RETRY_EXHAUSTED",
+            }:
+                continued = self._terminal_generation_replay(
+                    command, principal=principal
+                )
+                if continued is not None:
+                    return continued
+            if error.code not in {"PLANNING_GENERATION_RESULT_INVALID", "WORLD_PREPARATION_RESULT_INVALID"}:
                 raise
             return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
         self._probe(execution_probe)
@@ -1760,8 +1777,42 @@ class StoryPlanningGenerationApplication:
         if row[2] == "CANCELLED" and not row[4]:
             from .runtime_continuation import follow
             return follow(self, str(row[0]), command, principal=principal)
-        if row[2] == "FAILED_FINAL" and not row[4]:
-            return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
+        if row[2] in {"FAILED_FINAL", "DEAD_LETTER"} and not row[4]:
+            from .runtime_continuation import follow, register
+
+            continued = follow(self, str(row[0]), command, principal=principal)
+            if continued is not None:
+                return continued
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                    [row[0]],
+                )
+                failure = uow.cursor.fetchone()
+                uow.cursor.execute(
+                    "SELECT version FROM authority_operation WHERE operation_id=%s",
+                    [row[0]],
+                )
+                source_version = int(uow.cursor.fetchone()[0])
+            if failure and failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+                register(
+                    self,
+                    str(row[0]),
+                    project_id=command.project_id,
+                    principal=principal,
+                    expected_source_version=source_version,
+                    decision_evidence={
+                        "authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
+                        "reason": "Pre-send capacity allocation after exact frozen failure; no external intent exists",
+                    },
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                )
+                return follow(self, str(row[0]), command, principal=principal)
+            if row[2] in {"FAILED_FINAL", "DEAD_LETTER"}:
+                return self._repair_unmaterialized_result(
+                    command, operation_id=str(row[0]), principal=principal
+                )
         if not row[4] or (
             row[2] != "SUCCEEDED"
             and not (row[2] == "WAITING_GATE" and row[3] in {"REPAIR_REQUIRED", "REJECTED"})

@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261006_0156_resource_journal_indexes",
+  "head": "20261007_0159_planning_dead_letter_result_recovery",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -159,6 +159,9 @@
     "20261006_0153_resource_opening_successor",
     "20261006_0154_opening_resource_policy_succession",
     "20261006_0155_unsent_resource_route_succession",
-    "20261006_0156_resource_journal_indexes"
+    "20261006_0156_resource_journal_indexes",
+    "20261006_0157_creation_continuation_control",
+    "20261006_0158_planning_capacity_causation",
+    "20261007_0159_planning_dead_letter_result_recovery"
   ]
 }

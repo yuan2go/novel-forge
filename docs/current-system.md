@@ -29,16 +29,26 @@ structurally validated candidates under a native template receipt with literary 
 recorded `NOT_RUN`; Book Design and context preparation verify that receipt and the exact
 six-layer lineage.
 `AUTO` is explicit policy authorization, while `REVIEW_PLAN` exposes the frozen
-candidate comparison through the author production page. Author choices, rejection and
+candidate comparison through the author production page. Progress reports the accepted
+chapter count, original responsible executor and next action separately from Formation
+completion. Candidate provenance and runtime internals remain available in diagnostics.
+Author choices, rejection and
 change requests retain exact candidate hashes, reasons and authenticated identities in
 Formation Operations and stage checkpoints. Approval calls the existing Planning or
 Book Design Authority; resume consumes the persisted choice, including a non-first
 candidate, without changing the frozen brief or candidate set. Generated assets remain
 proposals until their owning Authority activates them. Foundation activation is never
-chapter acceptance or narrative history. The AUTO creative-search baseline selects the
-first branch admitted by the selected policy and retains alternatives; it does not
-claim a literary ranking. Strict selection requires independent qualification, whereas
-creative validation records `FIRST_TEMPLATE_VALIDATED_BRANCH`. Only the selected branch is activated; alternatives retain their
+chapter acceptance or narrative history. Native continuous creation freezes
+`formation-generation.v5`: two to four Creative Foundation alternatives are retained
+for an explicit exact-hash author decision. An already approved original author direction
+may instead bind `AUTHOR_DIRECTION` and reuse its exact native receipt without regenerating
+Creative Foundation. Lower Foundation layers reuse their existing
+single-candidate policy. A failed alternative remains raw failure or terminal Effect
+evidence; it is never a selectable design. When only one alternative is admitted, an
+explicit decision may choose `AUTHOR_AVAILABLE_ALTERNATIVE`, with comparison recorded
+`LIMITED_BY_FAILED_ALTERNATIVES`. This does not claim a literary winner. Historical
+v1-v4 AUTO inputs keep their frozen first-admitted policy and evidence.
+Only the selected branch is activated; alternatives retain their
 qualification and author decision evidence. World depth follows
 the current story need and includes deferred dimensions; generated voice anchors are
 part of character/creative inputs. Scripted Formation execution proves wiring only.
@@ -104,8 +114,29 @@ only when the remaining work has no authorized executable path.
 The following sections describe existing strict and historical campaign contracts;
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes
-`formation-generation.v4` inputs and uses the existing Formation, Opening, Chapter Saga,
-Quality, export and Book acceptance owners. The controlled process/PostgreSQL regression
+`formation-generation.v5` inputs and uses the existing Formation, Opening, Chapter Saga,
+Quality, export and Book acceptance owners. Book Authority's existing worker owns the
+reference-only `BOOK_CREATION_ADVANCE` RuntimeJob across stage handoffs. Its atomic
+completion/continuation, native leases, bounded backoff and progress snapshots survive
+worker restart. Technical waits use the original frozen work; author and owner decisions
+stop polling until relevant persisted state changes. UNKNOWN requires native reconciliation;
+a capacity configuration checkpoint can resume only when its exact historical error and
+absence of every external Effect prove that no send occurred. Cancellation is an immutable
+Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
+Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
+same project Pack scope and original admitted author identity when taking over continuous creation;
+the worker identity owns only its execution lease. Coordination coalesces live ticks, backs off
+failures and retains a dead-letter stop for unchanged Book and dependency snapshots. A native
+dependency change or explicit owner recovery can wake the same work. A deterministic Planning
+capacity failure terminates its frozen attempt rather than consuming identical retries. Only
+continuous v5 membership creation with no external intent, reservation or frozen Context may
+append a capacity successor through the existing Planning runtime-continuation Authority.
+It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
+reserves the configured model output and framing margin, and permits at most two successors.
+The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
+continuations retain their separate release/account evidence requirements. A latest source version,
+Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
+no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression
 exercises internal acceptance and component reconstruction without repeated calls or
 accepted chapters. Its ceiling is `EXECUTABLE`; real Provider operation, long-form
 literary quality and strict production certification remain unproven. See the executable
@@ -121,6 +152,12 @@ benchmark observations, quality constraints, retry-chain and budget snapshots as
 immutable `routing_decision` assets. Command Kernel remains the reservation,
 settlement and unknown-outcome Authority. Policy floors and confidence penalties are
 `CONFIGURABLE_POLICY`, not proven literary quality invariants.
+The fixed weights in `narrative-search-comparison.v1` rank admitted future projections
+under that historical policy. They are soft model judgments, not factual constraints or
+proof of an optimal literary direction. Search retains the current work's frozen inputs,
+stage transformation, assumptions, risks and rejected branches; exact-score ties use its
+deterministic asset identity rule. A tie does not establish superiority. New v5 Formation
+uses an explicit reasoned author direction decision for the important opening choice.
 Embedding execution retains its typed index/model/dimension compatibility contract;
 generative routing cannot substitute another vector space.
 
@@ -688,6 +725,11 @@ criteria. Craft repair uses ordered edits confined to diagnosed spans and recons
 all other prose unchanged. ReReview checks Canon, voice, knowledge, POV, causality, active
 plan and previously satisfied Craft; unresolved or regressed preservation cannot be erased
 by a higher score. Quality, Canon and Book acceptance still make their own decisions.
+CandidateComparison treats scores as model judgment. An unchanged text with a higher score
+is not an improvement and cannot erase baseline blockers. Located issue resolution,
+preservation, absence of new regressions and the configured marginal benefit govern the
+comparison; no fixed literary score alone produces an objective quality verdict. A retained
+blocked baseline remains blocked at the existing acceptance owner.
 
 New planning selections read `list_accepted_craft_usage`, which joins committed Book
 Acceptance to the exact accepted draft, final review and located Craft check. The query
@@ -989,6 +1031,10 @@ separate from display order. Splits, merges, scene changes and reordering retain
 source coverage; missing/overlapping mappings fail closed. Unknown impacts require
 revalidation from the earliest affected position. New editing does not alter accepted
 source assets, sign old reviews, or grant publication rights.
+Formal export reads an exact revision with native validation and selection evidence;
+historical selected versions retain their exact text. Unadopted versions require explicit
+candidate export and are labeled accordingly. Export identifies revision and manifest digest
+without upgrading strict qualification, publication permission or literary quality.
 
 An unchanged prefix can be inherited only through an immutable exact Book-owned source
 proof. The new run references original acceptances and their Canon/State/projection lineage;
@@ -1903,9 +1949,10 @@ stale when implementation or instruction identity changes. Neither route establi
 admin UI execution, human editorial evidence, longitudinal narrative stability or
 production operation. No current capability is `PRODUCTION_PROVEN`.
 
-### Bounded Chinese creation pilot
+### Historical bounded Chinese creation pilot
 
-The native creation runner prepares isolated Project/Book records through existing
+The frozen pilot scripts are `HISTORICAL_COMPATIBILITY`; their chapter lengths and
+finite campaign caps do not constrain native membership creation. The historical runner prepares isolated Project/Book records through existing
 Commands, freezes the pilot policy in Book runtime policy, and locates Formation and
 Opening by their original idempotency keys on resume. Confirmed outputs remain owned
 by the existing runtime. A project lifetime Provider cap spans Formation, Opening,

@@ -1,0 +1,824 @@
+NOVEL_FORGE_DATABASE_URL="${NOVEL_FORGE_DATABASE_URL}" \
+	NOVEL_FORGE_QUALIFICATION_DATABASE_NAME="${NOVEL_FORGE_QUALIFICATION_DATABASE_NAME}" \
+	PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/run_authority_postgres_tests.py \
+		--junit-xml "${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR}/postgresql-pytest.xml" \
+		--collection-report "${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR}/postgresql-pytest-collection.json"
+.................................F......F.........E....... [  5%]
+..................................................... [ 10%]
+....................................F............... [ 15%]
+...............................................................
+==================================== ERRORS ====================================
+_ ERROR at setup of test_author_review_grant_recovers_new_attempt_without_rewriting_frozen_block _
+
+    @pytest.fixture(scope="module")
+    def original_author_draft():
+        scope = dict(project_id=identifier("source-project"), workspace_id=identifier("source-workspace"),
+                     book_id=identifier("source-book"), chapter=1)
+        seed_authority_project_book(**{key: scope[key] for key in ("project_id", "workspace_id", "book_id")})
+        root = identifier("source-plan-root")
+        evidence = list(chapter_slice_support.PostgreSQLOnlyChapterSliceTests.release_evidence(scope["project_id"]))
+        plan_content = {**evidence[0]["content"], "text": "", "scene_artifacts": [{"slot_id": "s1:skeleton", "text": "", "used_fact_ids": []}]}
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            definition = identifier("source-plan-fixture")
+            insert_definition(uow.cursor, definition)
+            insert_operation(uow.cursor, operation_id=root, definition_name=definition,
+                             project_id=scope["project_id"], workspace_id=scope["workspace_id"],
+                             status="EXECUTING", command_payload={"chapter": 1, "book_id": scope["book_id"]})
+            plan = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
+                operation_id=root, project_id=scope["project_id"], asset_id=identifier("source-plan"),
+                asset_type="chapter_plan", schema_version="fixture-plan.v1", logical_ref=identifier("plans"),
+                category="plans", output_key="chapter.plan", role="primary", content=plan_content,
+                qualification_policy="fixture-only", trace_id=identifier("trace"), correlation_id=identifier("correlation")))
+            uow.commit()
+        evidence[0] = {**evidence[0], "asset_version_id": plan.asset_version_id, "content_hash": plan.content_hash, "content": plan_content}
+        principal = Principal("source-author-test", PrincipalType.LOCAL_OPERATOR,
+                              frozenset({"chapter.authority.execute", "chapter.authority.query"}),
+                              frozenset({scope["project_id"]}), "test")
+        app = ChapterAuthorEditingApplication(DATABASE_URL, application_build_id="source-test", commit_sha="e" * 40)
+        payload = {**scope, "base_asset_version_id": plan.asset_version_id, "base_asset_hash": plan.content_hash,
+                   "base_text_hash": text_hash(""), "expected_version": 0,
+                   "text": "剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。",
+                   "rights_basis": "ORIGINAL_AUTHOR_INPUT"}
+        saved = app.execute(action="save", payload=payload, idempotency_key=identifier("author-save"), principal=principal)
+        accepted = app.execute(action="accept", payload={**payload, "expected_version": saved["version"],
+            "candidate_asset_version_id": saved["candidate_asset_version_id"], "rationale": "采用作者原创正文"},
+            idempotency_key=identifier("author-adopt"), principal=principal)
+        adoption = freeze_author_adoption(DATABASE_URL, **scope,
+            candidate_asset_version_id=saved["candidate_asset_version_id"],
+            decision_asset_version_id=accepted["decision_asset_version_id"], principal=principal)
+    
+        class NoDraftTransport(DeterministicFixtureChapterProvider):
+            def invoke(self, request, *, stage, payload, **kwargs):
+                assert stage != "draft", "Author input must not acquire a synthetic generator Effect"
+                return super().invoke(request, stage=stage, payload=payload, **kwargs)
+    
+        request = SingleChapterRequest(**scope, actor_id=principal.principal_id, title="关山旧约",
+            premise="守住同伴的退路需要付出归山的代价。", trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+            application_build_id="source-test", commit_sha="e" * 40, context_candidates=tuple(evidence),
+            preparation_report={"author_draft_adoption": adoption})
+>       result = run_single_chapter_slice(DATABASE_URL, request=request,
+            registry=build_chapter_handler_registry(NoDraftTransport()), object_store_adapter=FakeDeterministicProvider("success"))
+
+tests/integration/test_cross_model_source_postgres.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/orchestrator.py:485: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:558: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:219: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:135: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1321: in execute
+    bundle = build_context_bundle(
+src/novel_forge/modules/chapter_authority/domain_handlers.py:415: in build_context_bundle
+    governed = build_authority_context_bundle(
+src/novel_forge/modules/context_builder/domain.py:1089: in build_authority_context_bundle
+    selection = select_context_candidates(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+project_id = 'source-project-91369ea9-2d67-41a3-a5a9-797f33c134b2'
+book_id = 'source-book-987fc89e-fe81-44d9-a4fd-72b1f848c825'
+profile = ContextProfile(name='draft', allowed_asset_types=frozenset({'chapter_plan_version', 'draft_chapter', 'relationship_tim...equired_first', 'stage_fit', 'narrative_function', 'relevance', 'lower_risk'), compression_policy='rank_then_compress')
+candidates = (ContextCandidate(asset_version_id='authority-output:b83d4136-9771-4394-b64b-cc68e54b18be:chapter.plan:v1', asset_type...tus='ACTIVE', read_generation_id='', active_read_generation_id='', truncation_strategy='', truncation_version=''), ...)
+token_budget = 6000
+effective_policy = EffectiveContextPolicy(allowed_logical_kinds=('approval_decision', 'arc_actual_state', 'arc_plan', 'canon_snapshot', '...only'), source_risk_threshold=1, maximum_raw_source_ratio=0.0, compiler_version='effective-context-policy-compiler-v1')
+authority_state_boundary = {'accepted_through_chapter': 0, 'canon_snapshot_version': '', 'story_state_snapshot_version': ''}
+
+    def select_context_candidates(
+        *,
+        project_id: str,
+        book_id: str = "",
+        profile: ContextProfile,
+        candidates: Iterable[ContextCandidate],
+        token_budget: int,
+        effective_policy: EffectiveContextPolicy | None = None,
+        authority_state_boundary: dict[str, Any] | None = None,
+    ) -> ContextSelection:
+        if not project_id.strip():
+            raise ValueError("project_id is required")
+        if token_budget <= 0 or token_budget > profile.maximum_token_budget:
+            raise ValueError("token_budget exceeds context profile maximum")
+        compilation = (
+            None
+            if effective_policy is not None
+            else _compile_profile_policy(profile, token_budget=token_budget)
+        )
+        policy = effective_policy or compilation.effective_policy
+        if token_budget > policy.limits.total:
+            raise ValueError("token_budget exceeds effective Context policy")
+        accepted: list[ContextCandidate] = []
+        rejected: list[dict[str, str]] = []
+        decisions: list[dict[str, Any]] = []
+        for candidate in candidates:
+            _validate_context_class_invariants(candidate)
+            reason = _eligibility_reason(
+                project_id,
+                book_id,
+                profile,
+                policy,
+                candidate,
+                authority_state_boundary=authority_state_boundary or {},
+            )
+            if reason:
+                if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    raise ValueError(
+                        f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
+                    )
+                rejected.append(
+                    {"asset_version_id": candidate.asset_version_id, "reason": reason}
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": reason,
+                    }
+                )
+            else:
+                accepted.append(candidate)
+        required_kinds = set(policy.required_logical_kinds)
+        accepted, deduplications = deduplicate_context_candidates(accepted, required_logical_kinds=policy.required_logical_kinds)
+        decisions.extend(deduplications)
+        rejected.extend({"asset_version_id": receipt["asset_version_id"], "reason": receipt["reason"]} for receipt in deduplications)
+        selected: list[ContextCandidate] = []
+        usage: dict[str, dict[str, int]] = {
+            "sections": {},
+            "buckets": {},
+            "classes": {},
+        }
+        used = 0
+        truncations: list[dict[str, Any]] = []
+        for candidate in accepted:
+            if candidate.estimated_tokens <= 0:
+                if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    raise ValueError(
+                        "PROTECTED_CONTEXT_TOKEN_ESTIMATE_INVALID: protected context "
+                        "cannot be omitted because its token estimate is invalid"
+                    )
+                rejected.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "reason": "INVALID_TOKEN_ESTIMATE",
+                    }
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": "INVALID_TOKEN_ESTIMATE",
+                    }
+                )
+                continue
+            required = (
+                candidate.required or candidate.logical_context_kind in required_kinds
+            )
+            available, budget_reason = _available_budget(
+                candidate,
+                policy=policy,
+                total_limit=token_budget,
+                used=used,
+                usage=usage,
+            )
+            if not required:
+                required_used = sum(
+                    item.estimated_tokens
+                    for item in selected
+                    if item.required or item.logical_context_kind in required_kinds
+                )
+                reserved_remaining = max(
+                    0, policy.limits.required_reservation - required_used
+                )
+                reservation_available = max(0, token_budget - used - reserved_remaining)
+                if reservation_available < available:
+                    available, budget_reason = (
+                        reservation_available,
+                        "REQUIRED_RESERVATION",
+                    )
+            selected_candidate = candidate
+            decision = "SELECTED"
+            if candidate.estimated_tokens > available:
+                if required or context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    code = (
+                        "PROTECTED_CONTEXT_BUDGET_EXCEEDED"
+                        if context_candidate_class(candidate) is ContextClass.PROTECTED
+                        else "CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE"
+                    )
+>                   raise ValueError(
+                        f"{code}: {candidate.asset_version_id} exceeds {budget_reason}; "
+                        f"requires={candidate.estimated_tokens}, available={available}, used={used}, total={token_budget}"
+                    )
+E                   ValueError: PROTECTED_CONTEXT_BUDGET_EXCEEDED: authority-output:2c7cfc88-6441-46be-a88d-620cf98e3d96:chapter.retrieval:v1 exceeds TOTAL_CONTEXT_LIMIT; requires=4736, available=1757, used=4243, total=6000
+
+src/novel_forge/modules/context_builder/domain.py:794: ValueError
+=================================== FAILURES ===================================
+_ AuthorEditorPostgresTests.test_authored_draft_flows_through_native_review_revision_canon_and_export _
+
+self = <tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests testMethod=test_authored_draft_flows_through_native_review_revision_canon_and_export>
+
+    def test_authored_draft_flows_through_native_review_revision_canon_and_export(self):
+        from novel_forge.modules.chapter_authority.handlers import DeterministicFixtureChapterProvider, build_chapter_handler_registry
+        from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest, run_single_chapter_slice
+        from novel_forge.modules.chapter_authority.contracts import ChapterNode
+        from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+        from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
+    
+        class ReviewOnlyFixture(DeterministicFixtureChapterProvider):
+            stages = []
+    
+            def invoke(self, request, *, stage, payload, **kwargs):
+                self.stages.append(stage)
+                if stage == 'draft':
+                    raise AssertionError('Human draft must not call a model')
+                return super().invoke(request, stage=stage, payload=payload, **kwargs)
+    
+        text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
+        saved = self.app.execute(action='save', payload={**self.payload, 'text': text,
+                                 'scene_artifacts': [{'slot_id': 's1:skeleton', 'text': text, 'used_fact_ids': []}]},
+                                 idempotency_key=identifier('save'), principal=self.principal)
+        accepted = self.app.execute(action='accept', payload={**self.scope, 'expected_version': saved['version'],
+                                   'candidate_asset_version_id': saved['candidate_asset_version_id'], 'rationale': '采用原创动作描写'},
+                                   idempotency_key=identifier('accept'), principal=self.principal)
+        frozen = freeze_author_adoption(DATABASE_URL, **{key: self.scope[key] for key in ('project_id','workspace_id','book_id','chapter')},
+                                        candidate_asset_version_id=saved['candidate_asset_version_id'],
+                                        decision_asset_version_id=accepted['decision_asset_version_id'], principal=self.principal)
+        provider = ReviewOnlyFixture()
+        request = SingleChapterRequest(**{key: self.scope[key] for key in ('project_id','workspace_id','book_id','chapter')},
+                                       actor_id=self.principal.principal_id, title='关山旧约', premise='守住同伴的退路需要付出归山的代价。',
+                                       trace_id=identifier('trace'), correlation_id=identifier('correlation'),
+                                       application_build_id='author-native-fixture', commit_sha='e' * 40,
+                                       context_candidates=PostgreSQLOnlyChapterSliceTests.release_evidence(self.scope['project_id']),
+                                       preparation_report={'author_draft_adoption': frozen})
+>       result = run_single_chapter_slice(DATABASE_URL, request=request, registry=build_chapter_handler_registry(provider),
+                                          object_store_adapter=FakeDeterministicProvider('success'))
+
+tests/integration/test_author_editor_postgres.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/orchestrator.py:485: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:558: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:219: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:135: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1321: in execute
+    bundle = build_context_bundle(
+src/novel_forge/modules/chapter_authority/domain_handlers.py:415: in build_context_bundle
+    governed = build_authority_context_bundle(
+src/novel_forge/modules/context_builder/domain.py:1089: in build_authority_context_bundle
+    selection = select_context_candidates(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+project_id = 'author-project-c423da6d-2f37-40b5-ba4e-7075fcd3f3d5'
+book_id = 'author-book-71778679-8208-4148-8c8b-a30897bf3090'
+profile = ContextProfile(name='draft', allowed_asset_types=frozenset({'chapter_plan_version', 'draft_chapter', 'relationship_tim...equired_first', 'stage_fit', 'narrative_function', 'relevance', 'lower_risk'), compression_policy='rank_then_compress')
+candidates = (ContextCandidate(asset_version_id='authority-output:77f1c377-8097-4908-bc47-b5c35d435dd3:chapter.plan:v1', asset_type...tus='ACTIVE', read_generation_id='', active_read_generation_id='', truncation_strategy='', truncation_version=''), ...)
+token_budget = 6000
+effective_policy = EffectiveContextPolicy(allowed_logical_kinds=('approval_decision', 'arc_actual_state', 'arc_plan', 'canon_snapshot', '...only'), source_risk_threshold=1, maximum_raw_source_ratio=0.0, compiler_version='effective-context-policy-compiler-v1')
+authority_state_boundary = {'accepted_through_chapter': 0, 'canon_snapshot_version': '', 'story_state_snapshot_version': ''}
+
+    def select_context_candidates(
+        *,
+        project_id: str,
+        book_id: str = "",
+        profile: ContextProfile,
+        candidates: Iterable[ContextCandidate],
+        token_budget: int,
+        effective_policy: EffectiveContextPolicy | None = None,
+        authority_state_boundary: dict[str, Any] | None = None,
+    ) -> ContextSelection:
+        if not project_id.strip():
+            raise ValueError("project_id is required")
+        if token_budget <= 0 or token_budget > profile.maximum_token_budget:
+            raise ValueError("token_budget exceeds context profile maximum")
+        compilation = (
+            None
+            if effective_policy is not None
+            else _compile_profile_policy(profile, token_budget=token_budget)
+        )
+        policy = effective_policy or compilation.effective_policy
+        if token_budget > policy.limits.total:
+            raise ValueError("token_budget exceeds effective Context policy")
+        accepted: list[ContextCandidate] = []
+        rejected: list[dict[str, str]] = []
+        decisions: list[dict[str, Any]] = []
+        for candidate in candidates:
+            _validate_context_class_invariants(candidate)
+            reason = _eligibility_reason(
+                project_id,
+                book_id,
+                profile,
+                policy,
+                candidate,
+                authority_state_boundary=authority_state_boundary or {},
+            )
+            if reason:
+                if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    raise ValueError(
+                        f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
+                    )
+                rejected.append(
+                    {"asset_version_id": candidate.asset_version_id, "reason": reason}
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": reason,
+                    }
+                )
+            else:
+                accepted.append(candidate)
+        required_kinds = set(policy.required_logical_kinds)
+        accepted, deduplications = deduplicate_context_candidates(accepted, required_logical_kinds=policy.required_logical_kinds)
+        decisions.extend(deduplications)
+        rejected.extend({"asset_version_id": receipt["asset_version_id"], "reason": receipt["reason"]} for receipt in deduplications)
+        selected: list[ContextCandidate] = []
+        usage: dict[str, dict[str, int]] = {
+            "sections": {},
+            "buckets": {},
+            "classes": {},
+        }
+        used = 0
+        truncations: list[dict[str, Any]] = []
+        for candidate in accepted:
+            if candidate.estimated_tokens <= 0:
+                if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    raise ValueError(
+                        "PROTECTED_CONTEXT_TOKEN_ESTIMATE_INVALID: protected context "
+                        "cannot be omitted because its token estimate is invalid"
+                    )
+                rejected.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "reason": "INVALID_TOKEN_ESTIMATE",
+                    }
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": "INVALID_TOKEN_ESTIMATE",
+                    }
+                )
+                continue
+            required = (
+                candidate.required or candidate.logical_context_kind in required_kinds
+            )
+            available, budget_reason = _available_budget(
+                candidate,
+                policy=policy,
+                total_limit=token_budget,
+                used=used,
+                usage=usage,
+            )
+            if not required:
+                required_used = sum(
+                    item.estimated_tokens
+                    for item in selected
+                    if item.required or item.logical_context_kind in required_kinds
+                )
+                reserved_remaining = max(
+                    0, policy.limits.required_reservation - required_used
+                )
+                reservation_available = max(0, token_budget - used - reserved_remaining)
+                if reservation_available < available:
+                    available, budget_reason = (
+                        reservation_available,
+                        "REQUIRED_RESERVATION",
+                    )
+            selected_candidate = candidate
+            decision = "SELECTED"
+            if candidate.estimated_tokens > available:
+                if required or context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    code = (
+                        "PROTECTED_CONTEXT_BUDGET_EXCEEDED"
+                        if context_candidate_class(candidate) is ContextClass.PROTECTED
+                        else "CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE"
+                    )
+>                   raise ValueError(
+                        f"{code}: {candidate.asset_version_id} exceeds {budget_reason}; "
+                        f"requires={candidate.estimated_tokens}, available={available}, used={used}, total={token_budget}"
+                    )
+E                   ValueError: PROTECTED_CONTEXT_BUDGET_EXCEEDED: authority-output:88646c0e-44e9-4561-8346-fa854b040372:chapter.retrieval:v1 exceeds TOTAL_CONTEXT_LIMIT; requires=4736, available=2111, used=3889, total=6000
+
+src/novel_forge/modules/context_builder/domain.py:794: ValueError
+_ test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history _
+
+request = <FixtureRequest for <Function test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history>>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ac69610>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-862/test_native_twelve_chapter_rea0')
+
+    def test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history(request, monkeypatch, tmp_path):
+        from tests.integration import operator_plan_change_support as fixture
+        from tests.integration import test_core_functional_loops_postgres as core
+        ensure_migrated()
+        original = fixture.execute_operator_plan_change_vertical
+        decisions = {}
+        records = []
+    
+        def review_checkpoint(composition, book_run_id, boundary, *, exercise_issues=False):
+            principal = replace(composition.principal, principal_type=PrincipalType.LOCAL_OPERATOR,
+                                permissions=composition.principal.permissions | {"content.authority.execute", "content.operation:chapter.operator_checklist.author"})
+            operator = replace(composition, principal=principal)
+            manifest = load_accepted_reading(composition=operator, book_run_id=book_run_id, require_closed_groups=True)
+            assert manifest["accepted_through_chapter"] == boundary
+            review = reading_review_template(manifest)
+            review.update(status="REVIEWED", reviewer_id="scripted-fixture-editor", summary="Synthetic reading evidence tests native protocol; no independent human review")
+            for assessment in review["chapter_assessments"]:
+                chapter = manifest["chapters"][assessment["chapter_number"] - 1]
+                assessment.update(assessment="The fixture checks this exact accepted passage and retains its stated consequence.",
+                                  locations=[{"start": 0, "end": min(20, len(chapter["text"])), "text": chapter["text"][:20]}])
+            content = ContentAuthorityApplication(DATABASE_URL, application_build_id="operator-plan-fixture", commit_sha="e" * 40, integration_proven=CONTENT_CODECS)
+            key = f"{book_run_id}:author-reading:{boundary}:{manifest['book_version']}"
+            if exercise_issues:
+                review["issues"] = [{"issue_id": "fixture-reading-preservation", "chapter_number": 6, "status": "OPEN",
+                                     "severity": "major", "repair_target": "Reassess this exact accepted consequence without modifying history",
+                                     "location": {"start": 0, "end": 20, "text": manifest["chapters"][5]["text"][:20]},
+                                     "diagnosis": "Fixture diagnosis remains unresolved", "preservation_requirements": ["Retain exact accepted history"],
+                                     "acceptance_criteria": ["Record a grounded reassessment before proceeding"]}]
+                blocked = register_reading_review(composition=operator, content_application=content, book_run_id=book_run_id,
+                                                 review=review, idempotency_key=key + ":open")
+                with pytest.raises(ValueError, match="Unresolved"):
+                    decide_reading_review(composition=operator, book_run_id=book_run_id,
+                                          review_asset_version_id=blocked["review_asset_version_id"], decision="APPROVE",
+                                          reason="Cannot approve unresolved evidence", idempotency_key=key + ":denied")
+                missing = {**review, "issues": []}
+                with pytest.raises(ValueError, match="cannot disappear"):
+                    register_reading_review(composition=operator, content_application=content, book_run_id=book_run_id,
+                                            review=missing, idempotency_key=key + ":omitted")
+                review["issues"][0].update(status="RESOLVED", resolution_evidence=[{
+                    "evidence_class": "SCRIPTED_FIXTURE_REASSESSMENT", "text_hash": manifest["chapters"][5]["text_hash"],
+                    "chapter_number": 6, "candidate_asset_version_id": manifest["chapters"][5]["candidate_asset_version_id"],
+                    "location": review["issues"][0]["location"], "preservation_check": "The quoted accepted history remains exact",
+                    "reason": "Explicit fixture reassessment; it proves persistence only",
+                }])
+            registered = register_reading_review(composition=operator, content_application=content, book_run_id=book_run_id,
+                                                review=review, idempotency_key=key + ":reviewed")
+            replay = register_reading_review(composition=operator, content_application=content, book_run_id=book_run_id,
+                                            review=deepcopy(review), idempotency_key=key + ":reviewed")
+            assert replay["review_asset_version_id"] == registered["review_asset_version_id"]
+            command = dict(composition=operator, book_run_id=book_run_id, review_asset_version_id=registered["review_asset_version_id"],
+                           decision="APPROVE", reason="Fixture AI_OPERATOR_AUTOMATION decision; independent human NOT_REVIEWED",
+                           idempotency_key=key + ":decision")
+            decision = decide_reading_review(**command)
+            assert decide_reading_review(**command)["replayed"] is True
+            decisions[boundary] = decision["result"]["decision_version_id"] if "result" in decision else decision["decision_version_id"]
+            verified = require_reading_decision(composition=operator, book_run_id=book_run_id, boundary=boundary,
+                                               decision_version_id=decisions[boundary])
+            assert verified["independent_human_review"] == "NOT_REVIEWED"
+            assert verified["reading_manifest_hash"] == manifest["manifest_hash"]
+    
+        def exercise(**arguments):
+            result = original(**arguments, checkpoint_observer=review_checkpoint)
+            composition, chapter = arguments["composition"], arguments["chapter"]
+            book_run_id = result["book_run_id"]
+            assert result["accepted_chapters"] == 6 and result["checkpoint_chapter"] == 3
+            with transaction() as connection:
+                accepted_before = connection.execute("SELECT chapter_number,chapter_outcome_asset_version_id,story_state_asset_version_id,canon_snapshot_asset_version_id FROM authority_book_chapter_acceptance WHERE book_run_id=%s ORDER BY chapter_number", [book_run_id]).fetchall()
+            worker = replace(composition.principal, principal_id="author-checkpoint-fixture-worker", principal_type=PrincipalType.WORKER)
+            def run(boundary):
+                return drive(composition=composition, chapter=chapter, book_run_id=book_run_id, worker=worker,
+                             events=records.append, maximum_ticks=240, deadline=time.monotonic() + 480,
+                             pilot_stop_after_chapter=12, checkpoints=(3, 6, 9, 12), resume_after_checkpoint=boundary,
+                             checkpoint_review_decision_id=decisions.get(boundary, ""))
+            assert run(6) == "AUTHOR_READING_REVIEW_REQUIRED"
+            with transaction() as connection:
+                assert connection.execute("SELECT COUNT(*) FROM authority_book_chapter_request WHERE book_run_id=%s AND chapter_number>6", [book_run_id]).fetchone() == (0,)
+            review_checkpoint(composition, book_run_id, 6, exercise_issues=True)
+            checkpoint = composition.authority.require(book_run_id)
+            composition.authority.resume(book_run_id, principal=composition.principal, expected_version=checkpoint["version"],
+                                         reason="Fixture explicit approved continuation before operator interrupts")
+            composition.authority.pause(book_run_id, principal=composition.principal, reason="Operator STOP after earlier approved continuation")
+            assert run(6) == "AUTHOR_READING_PAUSE_VERSION_CHANGED"
+            with transaction() as connection:
+                assert connection.execute("SELECT COUNT(*) FROM authority_book_chapter_request WHERE book_run_id=%s AND chapter_number>6", [book_run_id]).fetchone() == (0,)
+            review_checkpoint(composition, book_run_id, 6, exercise_issues=True)
+            assert run(6) == "AUTHOR_READING_CHECKPOINT_REQUIRED", records[-5:]
+            assert composition.authority.require(book_run_id)["accepted_through_chapter"] == 9
+            review_checkpoint(composition, book_run_id, 9)
+            assert run(9) == "PILOT_ACCEPTED_CURSOR_REACHED", records[-5:]
+            book = composition.authority.require(book_run_id)
+            assert book["accepted_through_chapter"] == 12 and book["state"] == "PAUSED"
+            assert book["target_chapter_count"] == 180
+            assert run(9) == "PILOT_ACCEPTED_CURSOR_REACHED"
+            with transaction() as connection:
+                assert connection.execute("SELECT chapter_number,chapter_outcome_asset_version_id,story_state_asset_version_id,canon_snapshot_asset_version_id FROM authority_book_chapter_acceptance WHERE book_run_id=%s AND chapter_number<=6 ORDER BY chapter_number", [book_run_id]).fetchall() == accepted_before
+                assert connection.execute("SELECT COUNT(*) FROM authority_book_chapter_request WHERE book_run_id=%s AND chapter_number>12", [book_run_id]).fetchone() == (0,)
+            from scripts.creation_checkpoint_review import main as checkpoint_cli
+            monkeypatch.setenv("NOVEL_FORGE_APPLICATION_BUILD_ID", "operator-plan-fixture")
+            monkeypatch.setenv("NOVEL_FORGE_COMMIT_SHA", "e" * 40)
+            assert checkpoint_cli(["preview", "--project-id", book["project_id"], "--book-run-id", book_run_id,
+                                   "--output", str(tmp_path / "checkpoint-12")]) == 0
+            template = json.loads((tmp_path / "checkpoint-12" / "review-template.json").read_text())
+            assert template["status"] == "NOT_REVIEWED"
+            assert [row["chapter_number"] for row in template["chapter_assessments"]] == [10, 11, 12]
+            export(composition=composition, book_run_id=book_run_id, destination=tmp_path, include_artifacts=False)
+            manifest = json.loads((tmp_path / "accepted-manuscript.json").read_text())
+            assert len(manifest["chapters"]) == 12
+            assert len({row["group_run_id"] for row in manifest["chapters"]}) == 4
+            assert all(row["group_state"] == "COMPLETED" for row in manifest["chapters"])
+            assert len(list((tmp_path / "reading").glob("chapter-*.md"))) == 12
+            assert manifest["independent_human_review"] == "NOT_REVIEWED"
+            (tmp_path / "reading-checkpoints.json").write_text(json.dumps({"events": records, "decisions": decisions, "proof_ceiling": "SCRIPTED_PROVIDER_ENGINEERING_ONLY"}, default=str, indent=2))
+            return {**result, "accepted_chapters": 12, "pilot_stop_after_chapter": 12, "reading_decisions": decisions}
+    
+        monkeypatch.setattr(fixture, "execute_operator_plan_change_vertical", exercise)
+>       core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request, "long_novel_pilot")
+
+tests/integration/test_author_reading_checkpoints_postgres.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_core_functional_loops_postgres.py:1930: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_operator_plan_change_vertical(
+tests/integration/test_author_reading_checkpoints_postgres.py:78: in exercise
+    result = original(**arguments, checkpoint_observer=review_checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/operator_plan_change_support.py:67: in execute_operator_plan_change_vertical
+    checkpoint = drive(composition=composition, chapter=chapter, book_run_id=book_run_id, worker=worker,
+scripts/run_world_production_smoke.py:274: in drive
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:116: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:69: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:130: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:343: in _tick
+    result = self._generate_plan(
+src/novel_forge/modules/book_authority/supervisor.py:916: in _generate_plan
+    search = self.narrative_search.explore(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.story_planning_runtime.search_application.PostgresNarrativeSearchApplication object at 0x10b026960>
+request = NarrativeSearchRequest(generation=StoryPlanningGenerationCommand(project_id='project-4a53a0c9fb9143509a6567748394e38b'...g recent patterns'), expected_active_asset_version_id='', replacement_approved=False, replacement_decision_evidence={})
+principal = Principal(principal_id='planning-operator:project-4a53a0c9fb9143509a6567748394e38b', principal_type=<PrincipalType.LOC...cope=frozenset({'project-4a53a0c9fb9143509a6567748394e38b'}), authentication_source='postgres-functional-loop-fixture')
+activate_selected = True, execution_probe = None
+qualified_branch_committer = None
+
+    def explore(
+        self,
+        request: NarrativeSearchRequest,
+        *,
+        principal: Principal,
+        activate_selected: bool = False,
+        execution_probe: Callable[[], object] | None = None,
+        qualified_branch_committer: NarrativeSearchQualifiedBranchCommitter
+        | None = None,
+    ) -> NarrativeSearchResult:
+        command = request.generation
+        principal.require("story_planning.authority.execute", command.project_id)
+        self._probe(execution_probe)
+        search_key, search_id, input_hash, parent_hash = self._search_identity(request)
+        replayed = self._open_search(
+            search_id=search_id,
+            request=request,
+            input_hash=input_hash,
+            parent_hash=parent_hash,
+            stable_key=search_key,
+        )
+        generations: dict[str, PlanningGenerationResult] = {}
+        reconciled_branch_seen = False
+        for ordinal, directive in enumerate(request.strategy_directives, start=1):
+            self._probe(execution_probe)
+            branch_key = f"future-{ordinal}"
+            existing = self._candidate_for_branch(search_id, branch_key)
+            if existing:
+                generation = self.planning.require_generation(
+                    str(existing["generation_operation_id"])
+                )
+                result = PlanningGenerationResult(
+                    generation_operation_id=str(generation["operation_id"]),
+                    candidate_asset_version_id=str(
+                        generation["candidate_asset_version_id"]
+                    ),
+                    status=PlanningGenerationStatus(str(generation["status"])),
+                    story_design_state=self.planning.story_design.require(
+                        project_id=command.project_id,
+                        asset_version_id=str(generation["candidate_asset_version_id"]),
+                    ),
+                    replayed=True,
+                )
+            else:
+                branch_command = replace(
+                    command,
+                    idempotency_key=f"{search_key}:{branch_key}",
+                    narrative_search_id=search_id,
+                    narrative_search_branch_key=branch_key,
+                    narrative_search_parent_state_asset_version_id=(
+                        request.parent_state_asset_version_id
+                    ),
+                    narrative_search_accepted_through_chapter=(
+                        request.accepted_through_chapter
+                    ),
+                    narrative_search_strategy_directive=directive,
+                    narrative_search_planning_horizon=(request.planning_horizon),
+                    narrative_search_desired_transformation=(
+                        request.desired_transformation
+                    ),
+                    narrative_search_hard_constraints=(request.hard_constraints),
+                    # INVARIANT: Keep the exact outer Authority fence explicit at the
+                    # branch boundary.  ``replace`` currently preserves it,
+                    # but naming it here makes every future-N command's
+                    # persisted lineage independent of dataclass defaults.
+                    opening_execution_binding=command.opening_execution_binding,
+                    auto_approve_low_risk=False,
+                )
+                frozen_command = self.planning.find_frozen_generation_command(
+                    project_id=command.project_id,
+                    idempotency_key=branch_command.idempotency_key,
+                )
+                if frozen_command is not None:
+                    expected_frozen_semantics = replace(
+                        branch_command,
+                        opening_execution_binding=(
+                            frozen_command.opening_execution_binding
+                        ),
+                    )
+                    if frozen_command != expected_frozen_semantics:
+                        raise KernelError(
+                            "NARRATIVE_SEARCH_BRANCH_FROZEN_COMMAND_DRIFT",
+                            "persisted future branch differs from the current Search semantics",
+                        )
+                    branch_command = frozen_command
+                result = self.planning.generate(
+                    branch_command,
+                    principal=principal,
+                    execution_probe=execution_probe,
+                )
+                self._probe(execution_probe)
+                if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:
+>                   raise KernelError(
+                        "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED",
+                        "search branch did not reach qualified approval-pending state",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED: search branch did not reach qualified approval-pending state
+
+src/novel_forge/modules/story_planning_runtime/search_application.py:341: KernelError
+___ test_edition_candidate_uses_native_acceptance_and_isolates_source_facts ____
+
+request = <FixtureRequest for <Function test_edition_candidate_uses_native_acceptance_and_isolates_source_facts>>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b837170>
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-862/test_edition_candidate_uses_na0')
+
+    def test_edition_candidate_uses_native_acceptance_and_isolates_source_facts(request, monkeypatch, tmp_path):
+>       captured = persistent_actor_book(request, monkeypatch, tmp_path, joint_story=os.environ.get("NOVEL_FORGE_EDITION_JOINT_STORY") == "1")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_book_editions_postgres.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_editions_postgres.py:48: in persistent_actor_book
+    actors.run_actor_receipt_recovery(request, monkeypatch, persistent_intents=True, **options)
+tests/integration/test_world_actor_isolation_postgres.py:328: in run_actor_receipt_recovery
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
+tests/integration/test_core_functional_loops_postgres.py:1947: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    native_evidence = execute_autonomous_world_vertical(
+tests/integration/test_book_editions_postgres.py:38: in capture
+    result = execute(**kwargs)
+             ^^^^^^^^^^^^^^^^^
+tests/integration/world_causal_production_support.py:1013: in execute_autonomous_world_vertical
+    result = execute_book_coordination_claim(jobs, composition, claim)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:116: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:69: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:130: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:343: in _tick
+    result = self._generate_plan(
+src/novel_forge/modules/book_authority/supervisor.py:916: in _generate_plan
+    search = self.narrative_search.explore(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.story_planning_runtime.search_application.PostgresNarrativeSearchApplication object at 0x10b8a1460>
+request = NarrativeSearchRequest(generation=StoryPlanningGenerationCommand(project_id='project-020b575458dc49788d64817d8cb177be'...g recent patterns'), expected_active_asset_version_id='', replacement_approved=False, replacement_decision_evidence={})
+principal = Principal(principal_id='planning-operator:project-020b575458dc49788d64817d8cb177be', principal_type=<PrincipalType.LOC...cope=frozenset({'project-020b575458dc49788d64817d8cb177be'}), authentication_source='postgres-functional-loop-fixture')
+activate_selected = True, execution_probe = None
+qualified_branch_committer = None
+
+    def explore(
+        self,
+        request: NarrativeSearchRequest,
+        *,
+        principal: Principal,
+        activate_selected: bool = False,
+        execution_probe: Callable[[], object] | None = None,
+        qualified_branch_committer: NarrativeSearchQualifiedBranchCommitter
+        | None = None,
+    ) -> NarrativeSearchResult:
+        command = request.generation
+        principal.require("story_planning.authority.execute", command.project_id)
+        self._probe(execution_probe)
+        search_key, search_id, input_hash, parent_hash = self._search_identity(request)
+        replayed = self._open_search(
+            search_id=search_id,
+            request=request,
+            input_hash=input_hash,
+            parent_hash=parent_hash,
+            stable_key=search_key,
+        )
+        generations: dict[str, PlanningGenerationResult] = {}
+        reconciled_branch_seen = False
+        for ordinal, directive in enumerate(request.strategy_directives, start=1):
+            self._probe(execution_probe)
+            branch_key = f"future-{ordinal}"
+            existing = self._candidate_for_branch(search_id, branch_key)
+            if existing:
+                generation = self.planning.require_generation(
+                    str(existing["generation_operation_id"])
+                )
+                result = PlanningGenerationResult(
+                    generation_operation_id=str(generation["operation_id"]),
+                    candidate_asset_version_id=str(
+                        generation["candidate_asset_version_id"]
+                    ),
+                    status=PlanningGenerationStatus(str(generation["status"])),
+                    story_design_state=self.planning.story_design.require(
+                        project_id=command.project_id,
+                        asset_version_id=str(generation["candidate_asset_version_id"]),
+                    ),
+                    replayed=True,
+                )
+            else:
+                branch_command = replace(
+                    command,
+                    idempotency_key=f"{search_key}:{branch_key}",
+                    narrative_search_id=search_id,
+                    narrative_search_branch_key=branch_key,
+                    narrative_search_parent_state_asset_version_id=(
+                        request.parent_state_asset_version_id
+                    ),
+                    narrative_search_accepted_through_chapter=(
+                        request.accepted_through_chapter
+                    ),
+                    narrative_search_strategy_directive=directive,
+                    narrative_search_planning_horizon=(request.planning_horizon),
+                    narrative_search_desired_transformation=(
+                        request.desired_transformation
+                    ),
+                    narrative_search_hard_constraints=(request.hard_constraints),
+                    # INVARIANT: Keep the exact outer Authority fence explicit at the
+                    # branch boundary.  ``replace`` currently preserves it,
+                    # but naming it here makes every future-N command's
+                    # persisted lineage independent of dataclass defaults.
+                    opening_execution_binding=command.opening_execution_binding,
+                    auto_approve_low_risk=False,
+                )
+                frozen_command = self.planning.find_frozen_generation_command(
+                    project_id=command.project_id,
+                    idempotency_key=branch_command.idempotency_key,
+                )
+                if frozen_command is not None:
+                    expected_frozen_semantics = replace(
+                        branch_command,
+                        opening_execution_binding=(
+                            frozen_command.opening_execution_binding
+                        ),
+                    )
+                    if frozen_command != expected_frozen_semantics:
+                        raise KernelError(
+                            "NARRATIVE_SEARCH_BRANCH_FROZEN_COMMAND_DRIFT",
+                            "persisted future branch differs from the current Search semantics",
+                        )
+                    branch_command = frozen_command
+                result = self.planning.generate(
+                    branch_command,
+                    principal=principal,
+                    execution_probe=execution_probe,
+                )
+                self._probe(execution_probe)
+                if result.status is not PlanningGenerationStatus.APPROVAL_PENDING:
+>                   raise KernelError(
+                        "NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED",
+                        "search branch did not reach qualified approval-pending state",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED: search branch did not reach qualified approval-pending state
+
+src/novel_forge/modules/story_planning_runtime/search_application.py:341: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_editor_postgres.py::AuthorEditorPostgresTests::test_authored_draft_flows_through_native_review_revision_canon_and_export
+FAILED tests/integration/test_author_reading_checkpoints_postgres.py::test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history
+FAILED tests/integration/test_book_editions_postgres.py::test_edition_candidate_uses_native_acceptance_and_isolates_source_facts
+ERROR tests/integration/test_author_supervision_workspace_postgres.py::test_author_review_grant_recovers_new_attempt_without_rewriting_frozen_block
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+3 failed, 222 passed, 1 error, 53 subtests passed in 481.76s (0:08:01)
+JUnit reports fewer cases than pytest collected nodes
+make: *** [postgres-authority-test] Error 1

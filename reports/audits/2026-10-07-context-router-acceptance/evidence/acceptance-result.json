@@ -1,0 +1,288 @@
+{
+  "schema_version": "scoped-context-router-acceptance.v1",
+  "generated_at": "2026-10-06T12:48:01.905854+00:00",
+  "baseline": {
+    "repository": "yuan2go/novel-forge",
+    "branch": "main",
+    "sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+    "remote_verified_at_start": true
+  },
+  "repair": {
+    "sha": "a736a44334951156ee853f0188d681e78a6f7cec",
+    "branch": "codex/context-router-acceptance-2cb74ed",
+    "worktree": "/Users/yuan/.codex/worktrees/context-router-acceptance-2cb74ed/novel-forge",
+    "working_tree_clean": true,
+    "implementation_tree_sha": "sha256:a3f2fac19165f41c1bb63b079558d7cae75f0ea80cc47f29ff85ec514f26df8a",
+    "diff": {
+      "path": "/tmp/nf-context-router-2cb74ed-evidence/repair.patch",
+      "sha256": "49a3119eb3be4fc71b6a2c83ac8f0705b8094419e3800b4d9c4150de8d0ac224"
+    },
+    "changed_files": [
+      "architecture/reality-evidence.json",
+      "docs/runtime-operations.md",
+      "src/novel_forge/modules/authority_handler_runtime/context_feedback.py",
+      "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py",
+      "src/novel_forge/modules/production_execution/cost_routing.py",
+      "tests/integration/test_context_feedback_postgres.py",
+      "tests/unit/test_context_compression_provider.py",
+      "tests/unit/test_context_compression_routing.py",
+      "tests/unit/test_quality_calibration_v2.py"
+    ],
+    "published": false
+  },
+  "scope": {
+    "context_tasks": [
+      "context_compress",
+      "context_fidelity"
+    ],
+    "risk": "HIGH",
+    "quality_metric": "DOMAIN_GATE_ACCEPTANCE",
+    "minimum_samples": 20,
+    "policy_version": "quality-constrained-routing.v13",
+    "real_provider_calls": 0,
+    "provider_evidence_class": [
+      "SYNTHETIC",
+      "MOCK_E2E"
+    ],
+    "new_authority": false,
+    "new_admission_entry": false,
+    "new_quality_metric": false,
+    "old_divergent_repair_cherry_picked": false,
+    "production_database_touched": false
+  },
+  "baseline_runs": [
+    {
+      "status": "PASS",
+      "passed": 119,
+      "sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+      "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m pytest -q tests/unit/test_cost_aware_routing.py tests/unit/test_context_compression_routing.py tests/unit/test_context_compression_provider.py tests/unit/test_task_context_admission.py --junitxml=/tmp/nf-context-router-2cb74ed-evidence/unit.xml",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/unit.xml",
+        "sha256": "eef035ac276c57474318d57033ef41dda8342375c67fd3bd00006c3509cb7e17"
+      }
+    },
+    {
+      "status": "BLOCKED",
+      "reason": "PostgreSQL image lacks vector extension; 11 setup errors, no test body executed",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/postgres-baseline.xml",
+        "sha256": "1211f2f1c87e59a8b08a9623dd5f4d5bb63ee140e97c520a95068097e84e1cae"
+      }
+    },
+    {
+      "status": "PASS",
+      "passed": 11,
+      "sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+      "command": "NOVEL_FORGE_DATABASE_URL=postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:54150/nf_context_router_2cb74ed_20261006_test PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m pytest -q tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume tests/integration/test_context_feedback_postgres.py tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay --junitxml=/tmp/nf-context-router-2cb74ed-evidence/postgres-baseline-vector.xml",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/postgres-baseline-vector.xml",
+        "sha256": "89b940ba7c091f29a6747fcc30a087bf0f77975528d4e0d0e7647aefa36cf1a7"
+      }
+    },
+    {
+      "status": "FAIL",
+      "passed": 7,
+      "failed": 4,
+      "sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+      "reason": [
+        "retried Context negatives removed from Router domain denominator (2 cases)",
+        "latest UNKNOWN generation reused older positive receipt",
+        "dispatch hash drift reused positive receipt"
+      ],
+      "command": "NOVEL_FORGE_DATABASE_URL=postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:54150/nf_context_router_2cb74ed_20261006_test PYTHONPATH=src:. /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m pytest -q /tmp/nf-context-router-2cb74ed-evidence/test_native_chain_probe.py --junitxml=/tmp/nf-context-router-2cb74ed-evidence/baseline-counterexamples-final.xml",
+      "cwd": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge-context-router-baseline-2cb74ed",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/baseline-counterexamples-final.xml",
+        "sha256": "756ade4b401d208c3a949c985080f55bb917ce4a3eff0ae319b1b224ef501b85"
+      }
+    },
+    {
+      "status": "FAIL",
+      "failed": 19,
+      "sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+      "reason": "All 19 full-offline failures independently reproduced on untouched baseline",
+      "command": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /tmp/nf-context-router-2cb74ed-evidence/reprove_failures.py",
+      "node_ids": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/baseline-failure-nodeids.json",
+        "sha256": "4a14a08f7f075c1efb90f3f47a057bc76c0588e8af74853cf2420f3e2900b8c4"
+      },
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/baseline-full-failures.xml",
+        "sha256": "65e92856ec5878dd58ac9e028868d28db3c1adb18868b31102c877a5e995525a"
+      }
+    },
+    {
+      "status": "FAIL",
+      "sha": "2cb74ed135c7a48e1ca72b4d456113dfd3f78dc3",
+      "reason": "same four stale proposal lifecycles",
+      "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.proposal_lifecycle --repo-root .",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/baseline-proposal-lifecycle.log",
+        "sha256": "5b16d92ac4876e75c5bc5adf7905edfe691ce2e87cf374952a7d0ea648fdd542"
+      }
+    }
+  ],
+  "repair_runs": [
+    {
+      "status": "PASS",
+      "passed": 169,
+      "sha": "a736a44334951156ee853f0188d681e78a6f7cec",
+      "command": "NOVEL_FORGE_DATABASE_URL=postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:54150/nf_context_router_2cb74ed_20261006_test PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m pytest -q tests/unit/test_cost_aware_routing.py tests/unit/test_context_compression_routing.py tests/unit/test_context_compression_provider.py tests/unit/test_task_context_admission.py tests/unit/test_quality_calibration_v2.py tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume tests/integration/test_context_feedback_postgres.py tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay --junitxml=/tmp/nf-context-router-2cb74ed-evidence/final-commit-focused.xml",
+      "cwd": "/Users/yuan/.codex/worktrees/context-router-acceptance-2cb74ed/novel-forge",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/final-commit-focused.xml",
+        "sha256": "398d0ca6ac88754684c521c8e94c89386863e0486000880f75705342c0f49d0c"
+      },
+      "components": {
+        "four_unit_files": 131,
+        "frozen_reference_policy_compatibility": 17,
+        "routed_overflow": 1,
+        "native_feedback_chain": 19,
+        "frozen_effect_replay": 1
+      },
+      "junit_counts_by_class": {
+        "tests.unit.test_cost_aware_routing": 79,
+        "tests.unit.test_context_compression_routing": 5,
+        "tests.unit.test_context_compression_provider": 39,
+        "tests.unit.test_task_context_admission": 8,
+        "tests.unit.test_quality_calibration_v2": 17,
+        "tests.integration.test_quality_context_formal_e2e_postgres": 1,
+        "tests.integration.test_context_feedback_postgres": 19,
+        "tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests": 1
+      }
+    },
+    {
+      "status": "PASS",
+      "command": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff check src/novel_forge/modules/authority_handler_runtime/context_feedback.py src/novel_forge/modules/chapter_quality_authority/reference_sampling.py src/novel_forge/modules/production_execution/cost_routing.py tests/integration/test_context_feedback_postgres.py tests/unit/test_context_compression_provider.py tests/unit/test_context_compression_routing.py tests/unit/test_quality_calibration_v2.py",
+      "note": "Changed Python files were checked; docs/projection excluded from Ruff. git diff --check PASS."
+    },
+    {
+      "status": "FAIL",
+      "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m pytest -q tests/architecture tests/unit tests/acceptance --junitxml=/tmp/nf-context-router-2cb74ed-evidence/full-offline.xml",
+      "passed": 4070,
+      "failed": 19,
+      "subtests_passed": 1499,
+      "source_binding": "DEVELOPMENT_TREE_NOT_EXACT_FINAL_SHA; completion preceded frozen-reference compatibility addition; no same-SHA qualification claim",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/full-offline.xml",
+        "sha256": "0a63823aa3d7639de4846bafc9e85ea6b9344a5afedc8049d6b3e08c7a2fc66b"
+      },
+      "baseline_reproduction_count": 19
+    },
+    {
+      "status": "BLOCKED",
+      "command": "NOVEL_FORGE_DATABASE_URL=postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:54150/nf_p0_31d1b9f8e4c14c43a935f60895c5b4db_test NOVEL_FORGE_QUALIFICATION_DATABASE_NAME=nf_p0_31d1b9f8e4c14c43a935f60895c5b4db_test NOVEL_FORGE_POSTGRES_EVIDENCE_DIR=/tmp/nf-context-router-2cb74ed-evidence/full-postgres PYTHONPATH=src make PYTHON=/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python postgres-authority-test",
+      "collected": 1022,
+      "partial_passed": 222,
+      "partial_failed": 3,
+      "partial_errors": 1,
+      "subtests_passed": 53,
+      "reason": "INTERRUPTED after canonical P0 dependency failure; incomplete diagnostic collection cannot qualify. Observed failures preserved and not attributed to baseline.",
+      "source_binding": "DEVELOPMENT_TREE_NOT_EXACT_FINAL_SHA; do not merge with final directed results",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/full-postgres/postgresql-pytest.xml",
+        "sha256": "2ffbd8df462f74216d0ced73e44e2a3ceecbaa2a9a3acdabcfc5d8f7b946a471"
+      },
+      "collection": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/full-postgres/postgresql-pytest-collection.json",
+        "sha256": "e1d18f426278dfe4f9d0237a4ea3616cff6e47b1d70b830ea1d2fc568feb6f52"
+      }
+    },
+    {
+      "status": "FAIL",
+      "acceptance": "BLOCKED",
+      "sha": "a736a44334951156ee853f0188d681e78a6f7cec",
+      "command": "P0_PROFILE=local P0_EVIDENCE_DIR=/tmp/nf-context-router-2cb74ed-evidence/p0-final PYTHONPATH=src make PYTHON=/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python RUFF=/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff p0-backend-qualification",
+      "artifact": {
+        "path": "/tmp/nf-context-router-2cb74ed-evidence/p0-final/p0-backend-qualification-a736a44334951156ee853f0188d681e78a6f7cec.json",
+        "sha256": "80d98a8a292a2294c6aa74a6d5d74904d1ec2f4a7860557738a8bf27e0e01c51"
+      },
+      "gates": [
+        {
+          "gate": "source-preflight",
+          "status": "PASS"
+        },
+        {
+          "gate": "documentation-reality",
+          "status": "PASS"
+        },
+        {
+          "gate": "static-and-manifests",
+          "status": "FAIL"
+        },
+        {
+          "gate": "pytest-backend",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "postgresql-start",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "migration-fresh",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "migration-compatibility",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "pytest-postgresql-integration",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "migration-head",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "query-plan-release",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "compose-runtime",
+          "status": "NOT_RUN"
+        },
+        {
+          "gate": "resource-cleanup",
+          "status": "PASS"
+        },
+        {
+          "gate": "evidence-finalization",
+          "status": "NOT_RUN"
+        }
+      ],
+      "reason": "static-and-manifests fails at same four baseline proposal lifecycle entries; subsequent dependency stages NOT_RUN"
+    }
+  ],
+  "native_chain_checks": [
+    "failed fidelity then restoration",
+    "verified retry failure survives successful generation",
+    "mock output excluded from native qualification",
+    "latest UNKNOWN excludes old positives",
+    "append verified reconciliation without rewriting UNKNOWN dispatch",
+    "receipt/dispatch hash mismatch",
+    "project/operation/effect drift",
+    "source version/hash and selected-unit drift",
+    "producer and model revision drift",
+    "UNKNOWN native history blocks qualified Router samples",
+    "frozen v12 reference policy remains admissible without blob mutation",
+    "full rendered request rejects overflow, unknown meter, incomplete coverage, route and serialization drift before transport"
+  ],
+  "evidence_ceiling": "EXECUTABLE; MOCK_E2E/POSTGRESQL_INTEGRATION_ONLY; NOT QUALIFIED; NOT PRODUCTION_PROVEN",
+  "complete_matrix_acceptance": "BLOCKED",
+  "real_provider": "NOT_RUN",
+  "literary_fidelity_calibration": "NOT_RUN",
+  "cleanup": {
+    "status": "PASS",
+    "owned_container_id": "64bccd2a1b5fb965216b629fd044db5970e59ec18cb3d4905ae06c1531d30730",
+    "image_digest": "sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b",
+    "port": 54150,
+    "databases": [
+      "nf_context_router_2cb74ed_20261006_test",
+      "nf_p0_31d1b9f8e4c14c43a935f60895c5b4db_test"
+    ],
+    "remaining_owned_containers": [],
+    "caller_owned_tmpfs_databases_disposed": true,
+    "baseline_worktree_removed": true
+  }
+}

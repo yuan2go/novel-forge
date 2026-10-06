@@ -141,7 +141,7 @@ def require_result_repair_source(
         row = uow.cursor.fetchone()
         if (
             row is None
-            or row[0] != "FAILED_FINAL"
+            or row[0] not in {"FAILED_FINAL", "DEAD_LETTER"}
             or row[5]
             or tuple(map(str, row[1:4]))
             != (command.project_id, command.workspace_id, command.book_id)
@@ -149,6 +149,16 @@ def require_result_repair_source(
             raise KernelError(
                 "PLANNING_RESULT_REPAIR_SOURCE_INVALID",
                 "result repair requires this Book's failed terminal Operation with no Candidate",
+            )
+        uow.cursor.execute(
+            """SELECT 1 FROM authority_external_effect WHERE operation_id=%s
+            AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') LIMIT 1""",
+            [operation_id],
+        )
+        if uow.cursor.fetchone():
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_RECONCILIATION_REQUIRED",
+                "Any unresolved original external outcome must reconcile before a result repair",
             )
         frozen = dict(row[4])
         from .application import _command_payload
@@ -180,7 +190,7 @@ def require_result_repair_source(
                 "result repair must retain the failed Operation's entire frozen task",
             )
         uow.cursor.execute(
-            "SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) JOIN authority_asset_version version USING(asset_version_id) WHERE output.operation_id=%s AND ((asset.asset_type=%s) OR (asset.asset_type='model_call_log' AND version.content->>'stage'=%s)) ORDER BY CASE WHEN asset.asset_type=%s THEN 0 ELSE 1 END, version.created_at DESC, output.asset_version_id",
+            "SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) JOIN authority_asset_version version USING(asset_version_id) WHERE output.operation_id=%s AND ((asset.asset_type=%s) OR asset.asset_type='world_preparation_generation' OR (asset.asset_type='model_call_log' AND version.content->>'stage'=%s)) ORDER BY CASE WHEN asset.asset_type=%s THEN 0 WHEN asset.asset_type='model_call_log' THEN 1 ELSE 2 END, version.created_at DESC, output.asset_version_id",
             [
                 operation_id,
                 RESULT_FAILURE_TYPE,
@@ -203,7 +213,13 @@ def require_result_repair_source(
         project_id=command.project_id,
         asset_version_id=source_asset_version_id or sources[0],
     )
-    if source.asset_type == RESULT_FAILURE_TYPE:
+    world_generation = source.asset_type == "world_preparation_generation"
+    if world_generation:
+        contract = source.content["contract"]
+        raw = contract["output"]
+        evidence = dict(contract["evidence"])
+        effect_id = str(evidence.get("external_receipt_ref") or "")
+    elif source.asset_type == RESULT_FAILURE_TYPE:
         raw = source.content["raw_result"]
         evidence = dict(source.content["execution_evidence"])
         effect_id = str(evidence.get("external_receipt_ref") or "")
@@ -250,18 +266,34 @@ def require_result_repair_source(
             "settle the known original Provider usage before admitting a repair request",
         )
     try:
-        validate_raw_result(
-            command.generator_operation_name,
-            raw,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-            aligned_methods=command.execution_contract_version == "1.18.0",
-            compiled_scope="BOOK"
-            if command.generator_operation_name == "world.design.generate"
-            else None,
-        )
-        if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"]["error_code"].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
-            from novel_forge.modules.mkaos_authority.craft_reselection import validate_concrete_selection
-            from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
+        if world_generation:
+            from .world_preparation import PlanningWorldPreparation
+
+            PlanningWorldPreparation.validate_retained_generation(
+                database_url,
+                command=command,
+                generation=source,
+            )
+        else:
+            validate_raw_result(
+                command.generator_operation_name,
+                raw,
+                work_requirements=command.execution_contract_version
+                in {"1.17.0", "1.18.0"},
+                aligned_methods=command.execution_contract_version == "1.18.0",
+                compiled_scope="BOOK"
+                if command.generator_operation_name == "world.design.generate"
+                else None,
+            )
+        if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"][
+            "error_code"
+        ].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
+            from novel_forge.modules.mkaos_authority.craft_reselection import (
+                validate_concrete_selection,
+            )
+            from novel_forge.modules.mkaos_authority.craft_selection import (
+                build_craft_strategy,
+            )
 
             from .knowledge_translation import validate_knowledge_translations
             context = AuthorityAssetQuery(database_url).require(project_id=command.project_id, asset_version_id=evidence["context_bundle_asset_version_id"])
@@ -272,9 +304,22 @@ def require_result_repair_source(
             validate_concrete_selection(raw, selection)
             build_craft_strategy(raw, selection)
     except KernelError as error:
+        if world_generation and error.code.startswith(
+            (
+                "WORLD_REPAIR_",
+                "WORLD_PREPARATION_",
+                "AUTHORITY_",
+                "WORLD_ACTOR_PROPOSAL_DRIFT",
+            )
+        ):
+            raise
         diagnostic = PlanningResultValidationError(
             error, raw_result=raw, execution_evidence=evidence
         ).diagnostic
+        if world_generation:
+            diagnostic["provider_stage"] = "world_candidates.generate"
+            if error.code == "WORLD_GENERATION_CAUSAL_REJECTED":
+                diagnostic["validation_kind"] = "WORLD_CAUSAL_GATE"
     else:
         raise KernelError(
             "PLANNING_RESULT_REPAIR_NOT_REQUIRED",

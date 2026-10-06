@@ -1,0 +1,110 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "evidence_directory": "external protected evidence/wp-novel-production-closure-01",
+  "overlapping_test_runs_not_summed": true,
+  "full_repository_tests": "NOT_RUN",
+  "unrelated_failures_not_repaired": true,
+  "checks": [
+    {
+      "file": "creation-current-matrix-61.log",
+      "status": "PASS",
+      "scope": "current complete applicable native creation matrix, exact same TEST database; never LIVE",
+      "sha256": "af2f1dac08972bf4e86a2d05f95e13cca9d052f1ba113f0ef5ba5f8faa558528",
+      "tests": 15,
+      "duration_seconds": 1047.52,
+      "implementation_sha": "8d748dc6d0b6fcb81a7d01d2ca3d0fe703e2b080"
+    },
+    {
+      "file": "exhausted-owner-unit-60.log",
+      "status": "PASS",
+      "scope": "70 tests and 24 subtests, owner stop, worker classification, World causal contracts",
+      "sha256": "525dbac10c9e0ff880cb7ed1acc3150806be5219b15487b12be28ce027f16f91"
+    },
+    {
+      "file": "exhausted-owner-native-59.log",
+      "status": "PASS",
+      "scope": "1 PostgreSQL owner wait, no automatic rearm, no Provider dispatch",
+      "sha256": "5d01d2a08ec6a3593995c3bede99cd9d0c735a8e10006e81428e12c419992af2"
+    },
+    {
+      "file": "world-dead-letter-native-55.log",
+      "status": "PASS",
+      "scope": "1 native PostgreSQL historical retry exhaustion followed by bounded same-input result repair",
+      "sha256": "9dc698ee5bb2a9d375f8a6372bbcddf271da9f0a0dcae6ea66a38fbe5bb9fbb4"
+    },
+    {
+      "file": "dead-letter-kernel-negative-56.log",
+      "status": "PASS",
+      "scope": "4 PostgreSQL tests and 2 subtests, UNKNOWN reconciliation, lease takeover, cancellation",
+      "sha256": "577b6bb933bf13483e91d2601a20e71d9e94409c07b6064071a80c68c2fd057b"
+    },
+    {
+      "file": "world-causal-unit-52.log",
+      "status": "PASS",
+      "scope": "338 tests, 1 baseline-reproduced unrelated exclusion",
+      "sha256": "4b1e9b9e1401ada266ceb01f46285750418ce0615f85074a21e6a630611d3b9b"
+    },
+    {
+      "file": "world-causal-native-51.log",
+      "status": "PASS",
+      "scope": "2 native PostgreSQL causal result repair and legacy replay with dependent Director provenance",
+      "sha256": "5fba722151974bfa09e6e3ab04a9f0467c08752b94ffbb1ddef5b3b738cdfa0a"
+    },
+    {
+      "file": "repair-routing-focused-25.log",
+      "status": "PASS",
+      "scope": "213 routing/capacity tests and 24 subtests at 9fd33ed9",
+      "sha256": "2cdef33424d4bbc9db1007383aa6384c6342749e8326122af05914ea11182624"
+    },
+    {
+      "file": "author-browser-62.log",
+      "status": "PASS",
+      "scope": "6 browser scenarios with API doubles; no real backend or prose quality evidence",
+      "sha256": "2260ab019a2e0ea0920491ff4bc1dbce9a080a4cf679a08e7839277329cae3b8"
+    },
+    {
+      "file": "ui-types-62.log",
+      "status": "PASS",
+      "scope": "TypeScript noEmit",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "real/native-browser-owner-wait.log",
+      "status": "PASS",
+      "scope": "real API/PostgreSQL author read-only progress, no mutations or Provider calls",
+      "sha256": "edd50ccd302291fd377dead8f93dd6173e64de0f4fa0d4183041f3e442ef8207"
+    },
+    {
+      "file": "manifests-63.log",
+      "status": "PASS",
+      "scope": "module/migration/worker/required test/console manifests",
+      "sha256": "81c114c50b6636682eb02284bb28a745c458df8cadbd974537d8475b43157b06"
+    },
+    {
+      "file": "documentation-reality-63.json",
+      "status": "PASS",
+      "scope": "canonical documentation and checked ownership projection",
+      "sha256": "e9489627a1bb9573d49f62ed787d03c1337621d2d64160cdd8ea488878df4fee"
+    },
+    {
+      "file": "baseline-author-edition-14.log",
+      "status": "FAIL",
+      "scope": "2 legacy failures independently reproduced at exact baseline",
+      "sha256": "0b18d10a56b6b8a37336997806170ac6f64a74e5c25885972daa9a825527fee2"
+    },
+    {
+      "file": "baseline-legacy-runtime-recovery-28.log",
+      "status": "FAIL",
+      "scope": "1 legacy style projection gate independently reproduced at exact baseline",
+      "sha256": "590fb18f5258c52e6d1c2be74599e1dfb1bcba68bd4078dcb8202892d9591df2"
+    },
+    {
+      "file": "baseline-unit-topology-35.log",
+      "status": "FAIL",
+      "scope": "1 legacy topology error-code mismatch independently reproduced at exact baseline",
+      "sha256": "d92dbb4363a52117e32862dcd0c058e62da6c23ba966627186cbea4580f45184"
+    }
+  ],
+  "recorded_at": "2026-10-06T18:15:13.948917+00:00",
+  "checked_source_commit": "184c8bea98d51078a5e9fb37344481d89a676783"
+}

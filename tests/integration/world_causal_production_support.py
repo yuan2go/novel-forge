@@ -695,6 +695,9 @@ class AutonomousWorldTransport:
                         "evidence_start": start,
                         "evidence_end": start + len(prose),
                         "confidence": 1.0,
+                        "impact_type": "reader_disclosure",
+                        "effective_from_chapter": inputs["revision"]["chapter"],
+                        "supersedes_event_id": None,
                     }
                 )
         if stage == "canon_extraction" and self.scenario == "intra_chapter_missing":

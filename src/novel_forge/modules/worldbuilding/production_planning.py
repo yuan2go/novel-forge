@@ -78,7 +78,7 @@ def validate_generated_candidates(
             "only a candidate portfolio may contain proposed events",
         )
     identities: set[str] = set()
-    for candidate in candidates:
+    for index, candidate in enumerate(candidates):
         require_contract_fields(
             candidate,
             required={
@@ -130,6 +130,16 @@ def validate_generated_candidates(
                     "WORLD_INFORMATION_SCOPE_INVALID",
                     "each audience presentation requires a distinct stable disclosure identity",
                 )
+        for field in ("affected_entities", "world_consequences"):
+            evidence = candidate[field]
+            if (
+                not isinstance(evidence, list)
+                or not evidence
+                or any(
+                    not isinstance(item, str) or not item.strip() for item in evidence
+                )
+            ):
+                raise KernelError("WORLD_GENERATION_CANDIDATE_EVIDENCE_INVALID", f"$.candidates[{index}].{field}: expected nonempty consequence evidence array, actual {type(evidence).__name__}")
         transition = WorldTransition.from_mapping(candidate["transition"])
         if transition.transition_id in identities:
             raise KernelError(

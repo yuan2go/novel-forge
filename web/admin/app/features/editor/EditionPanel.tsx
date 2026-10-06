@@ -176,7 +176,7 @@ export function EditionPanel({ state, preferredBookRun = "" }: { state: DraftEdi
           expected_head_version: edition?.head.version, reason })}>切换正式版本</button>
         <button disabled={busy || unsavedInputs || !!pending || !reason.trim() || edition?.head.selected_revision_id === revision.revision_id} onClick={() => command("reject", { revision_id: revision.revision_id,
           expected_version: revision.edition.version, reason })}>拒绝候选</button>
-        <a href={`${API_BASE}/product/editor/editions/export?${new URLSearchParams({ ...scope, revision_id: revision.revision_id })}`} target="_blank" rel="noreferrer">导出此版正文</a>
+        <a href={`${API_BASE}/product/editor/editions/export?${new URLSearchParams({ ...scope, revision_id: revision.revision_id, export_kind: (edition.events || []).some(event => event.event_kind === "SELECTED") ? "FORMAL" : "CANDIDATE" })}`} target="_blank" rel="noreferrer">{(edition.events || []).some(event => event.event_kind === "SELECTED") ? "导出此正式版本" : "导出候选（未正式采用）"}</a>
       </div>
       {revision.manifest.impact ? <p>从第 {revision.manifest.impact.earliest_affected_position} 个位置开始重新核验；相关审读、签署和发布候选已失效。</p> : null}
       {edition?.validation_result ? <div>

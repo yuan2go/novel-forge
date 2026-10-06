@@ -36,6 +36,7 @@ class BookCoordinationCandidate:
     version: int
     updated_at: datetime
     next_tick_sequence: int
+    dependency_snapshot: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +92,65 @@ class PostgresBookProductionQuery:
             raise ValueError("Book production query requires PostgreSQL")
         self.database_url = database_url
 
+    def uses_creation_scope(self, *, project_id: str, subject_id: str) -> bool:
+        return (
+            self.creation_executor_binding(project_id=project_id, subject_id=subject_id)
+            is not None
+        )
+
+    def creation_executor_binding(
+        self, *, project_id: str, subject_id: str
+    ) -> dict[str, str] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """WITH RECURSIVE subjects(subject_id,depth,path) AS (
+                (SELECT %s::text,0,ARRAY[%s::text]
+                 UNION ALL SELECT request.book_run_id,0,ARRAY[request.book_run_id]
+                 FROM authority_book_chapter_request request WHERE request.project_id=%s AND request.chapter_root_operation_id=%s)
+                UNION ALL
+                SELECT edition.source_book_run_id,subjects.depth+1,subjects.path || edition.source_book_run_id
+                FROM subjects JOIN authority_book_edition_run binding ON binding.book_run_id=subjects.subject_id AND binding.role='VALIDATION'
+                JOIN authority_book_edition_revision revision USING(revision_id)
+                JOIN authority_book_edition edition USING(edition_id)
+                WHERE edition.project_id=%s AND subjects.depth<64
+                  AND NOT edition.source_book_run_id=ANY(subjects.path)
+            ) SELECT run.formation_run_id,run.frozen_input_digest,
+                run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}'
+                FROM authority_story_formation_run run
+                WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}'='formation-generation.v5'
+                  AND (run.formation_run_id IN (SELECT subject_id FROM subjects) OR EXISTS(SELECT 1 FROM authority_book_opening_run opening
+                        WHERE opening.opening_run_id IN (SELECT subject_id FROM subjects) AND opening.project_id=run.project_id
+                          AND opening.stable_idempotency_key=run.formation_run_id || ':opening')
+                    OR EXISTS(SELECT 1 FROM authority_book_production production
+                        WHERE production.book_run_id IN (SELECT subject_id FROM subjects) AND production.project_id=run.project_id
+                          AND production.stable_idempotency_key=run.formation_run_id || ':production'))""",
+                [
+                    subject_id,
+                    subject_id,
+                    project_id,
+                    subject_id,
+                    project_id,
+                    project_id,
+                ],
+            )
+            rows = uow.cursor.fetchall()
+        if len(rows) > 1:
+            raise KernelError(
+                "CREATION_EXECUTOR_BINDING_CONFLICT",
+                "A phase cannot choose between different original creation actors",
+            )
+        return (
+            dict(
+                zip(
+                    ("formation_run_id", "frozen_input_digest", "operator_id"),
+                    rows[0],
+                    strict=True,
+                )
+            )
+            if rows
+            else None
+        )
+
     def author_workspace(self, *, project_id: str, book_id: str = "") -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             cur = uow.cursor
@@ -104,6 +164,9 @@ class PostgresBookProductionQuery:
                 raise KernelError("BOOK_NOT_FOUND", "Book does not belong to this project")
             if not book_id:
                 return {"books": books, "runs": [], "profiles": [], "snapshots": [], "budget_scopes": []}
+            cur.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s ORDER BY updated_at DESC LIMIT 1", [project_id,book_id])
+            source = cur.fetchone()
+            formation_run_id = source[0] if source else ""
             cur.execute("""SELECT to_jsonb(b),p.content,p.content_hash,s.snapshot_hash,r.command_payload
                 FROM authority_book_production b
                 LEFT JOIN authority_asset_version p ON p.asset_version_id=b.production_profile_version
@@ -156,7 +219,7 @@ class PostgresBookProductionQuery:
             bindings = {row[0]: {"subject_id": row[0], "policy": row[1], "content_hash": row[2]} for row in cur.fetchall()}
             for run in runs:
                 run["frozen_editorial_control"] = bindings.get(f"{run['book_run_id']}:chapter:{int(run['accepted_through_chapter']) + 1}")
-        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control}
+        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control, "formation_run_id": formation_run_id}
 
     def narrative_reality(self, *, book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -210,8 +273,16 @@ class PostgresBookProductionQuery:
                              AND job.job_kind='BOOK_COORDINATION_TICK'
                              AND job.subject_kind='BOOK_RUN'
                              AND job.subject_id=book.book_run_id
-                       ), 0) AS previous_tick_count
+                       ), 0) AS previous_tick_count, dependencies.snapshot
                 FROM authority_book_production AS book
+                CROSS JOIN LATERAL (
+                    SELECT COALESCE(jsonb_agg(jsonb_build_object('operation_id',op.operation_id,
+                        'status',op.status,'version',op.version) ORDER BY op.operation_id),'[]'::jsonb) AS snapshot
+                    FROM authority_operation op WHERE op.project_id=book.project_id
+                      AND (op.correlation_id=book.book_run_id OR op.operation_id=(
+                        SELECT request.chapter_root_operation_id FROM authority_book_chapter_request request
+                        WHERE request.chapter_request_id=book.active_chapter_request_id))
+                ) dependencies
                 WHERE (
                       book.state = ANY(%s)
                       OR (
@@ -235,6 +306,18 @@ class PostgresBookProductionQuery:
                   )
                   AND (%s='' OR book.book_run_id=%s)
                   AND NOT EXISTS (
+                      SELECT 1 FROM authority_runtime_job job WHERE job.job_kind='BOOK_COORDINATION_TICK'
+                        AND job.runtime_group='book' AND job.subject_id=book.book_run_id AND job.project_id=book.project_id
+                        AND job.status IN ('READY','RETRY_WAIT','CLAIMED','RUNNING','CHECKPOINTED')
+                  )
+                  AND (%s<>'' OR NOT EXISTS (
+                      SELECT 1 FROM authority_runtime_job job WHERE job.job_kind='BOOK_COORDINATION_TICK'
+                        AND job.runtime_group='book' AND job.subject_id=book.book_run_id AND job.project_id=book.project_id
+                        AND job.status='DEAD_LETTER' AND job.input_snapshot->>'observed_version'=book.version::text
+                        AND job.input_snapshot->>'observed_state'=book.state
+                        AND (NOT job.input_snapshot ? 'coordination_dependencies' OR job.input_snapshot->'coordination_dependencies'=dependencies.snapshot)
+                  ))
+                  AND NOT EXISTS (
                       SELECT 1
                       FROM authority_book_projection_repair AS repair
                       WHERE repair.book_run_id=book.book_run_id
@@ -252,6 +335,7 @@ class PostgresBookProductionQuery:
                     list(actionable_book_production_states()),
                     book_run_id,
                     book_run_id,
+                    book_run_id,
                     limit,
                 ],
             )
@@ -264,6 +348,7 @@ class PostgresBookProductionQuery:
                 version=int(row[3]),
                 updated_at=row[4],
                 next_tick_sequence=int(row[5]) + 1,
+                dependency_snapshot=tuple(row[6]),
             )
             for row in rows
         )

@@ -192,7 +192,7 @@ boundaries, not a product or narrative development sequence.
 
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
-with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v12`
+with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v13`
 classifies `context_compress` and `context_fidelity` as HIGH-risk tasks using independent
 `DOMAIN_GATE_ACCEPTANCE` qualification (20 effective samples and the existing conservative
 quality floor). A cold or failed cohort blocks before dispatch; no direct Provider path
@@ -207,6 +207,12 @@ failed fidelity or mandatory overflow fails closed. Positive feedback requires a
 Context output and matching native verified receipts. Every fidelity assessment and failed
 Context terminal outcome remains in the feedback denominator. Dispatch generation and receipt
 integrity determine which native result is used; retry failure history cannot be washed away.
+Context qualification retains negative domain outcomes from retried independent samples;
+retried successes cannot add positive qualification. A positive native assessment requires
+both Effects to be successful at their latest dispatch generation and matching dispatch
+and verified receipt hashes. Pending or UNKNOWN generations require reconciliation before
+their older receipts can supply positive feedback. Frozen routing decisions retain their
+original policy snapshots and accounting rules.
 Restoration reconstructs original attributed units for the normal Draft/Review Context.
 Replay uses the durable Effect result and exact Pack, Prompt, Skill, Schema and baseline;
 changed sources, cross-Book frontier or stale binding cannot silently replace them.
@@ -503,8 +509,12 @@ The shipped files are `config/execution_templates/creative_validation.json` and
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
 state and quality floors. `creation-request.v1` supplies the current work's brief, title,
 target chapter count, required language and optional chapter-length bounds. These inputs
-are frozen together as `formation-generation.v4`; continue uses that snapshot even if the
-template file later changes. A yield at the CLI execution-window boundary is a saved
+are frozen together as `formation-generation.v5`; continue uses that snapshot even if the
+template file later changes. `creative_candidates` optionally selects two to four direction
+alternatives (default two); it does not multiply every lower planning layer or chapter.
+An optional `author_creative_foundation` binds the exact asset version/hash of an already
+approved original author direction. Native validation verifies its active receipt; no
+creative candidate generation occurs on that path. The existing author page offers both. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
 Configure the deployment once with the existing trusted local operator, exact release,
@@ -603,20 +613,73 @@ novel-forge authority-migrate
 novel-forge authority-creation start \
   --project-id "$PROJECT" --workspace-id "$WORKSPACE" --book-id "$BOOK" \
   --input-file "$WORK_REQUEST" --idempotency-key "$CREATION_KEY" \
-  --repository-root "$PWD" --maximum-ticks 100 --work-window-seconds 300
+  --repository-root "$PWD"
+python -m novel_forge.workers.book_authority
+```
+
+Run the worker in a second terminal with the same deployment environment.
+Read progress and choose after comparing the returned exact direction texts:
+
+```bash
+novel-forge authority-creation status \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN"
+novel-forge authority-creation choose \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
+  --candidate-number "$CANDIDATE_NUMBER" --reason "$COMPARISON_REASON" \
+  --idempotency-key "$DIRECTION_DECISION_KEY"
 novel-forge authority-creation continue \
   --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
   --repository-root "$PWD" --maximum-ticks 100 --work-window-seconds 300
 ```
 
 The start result supplies the original Formation identity. Preserve it and the same
-creation key; repeat start with identical input or use continue. Existing workers may
-continue queued native jobs under the same deployment, and repeated CLI windows use the
-same durable jobs, effects, exports and accepted cursor. `COMPLETED` requires the native
-Book completion state; `YIELDED_CHECKPOINT` and dependency/reconciliation reasons do not
-claim completion. Independent review remains required when selected: an exhausted paid
-channel cannot be replaced with an ineligible self-review. A safe substitute uses an
-authorized independent model or saves the dependent step's checkpoint.
+creation key. Start now returns after durable admission; the existing Book worker owns
+continuous phase handoffs. `continue` schedules the same work and `--foreground` optionally
+drives a bounded local window. Ordinary technical waits need no author continuation call.
+The existing author production page sends `production_intent` with its saved Brief to the
+same Formation endpoint and uses this same application coordinator. It displays the
+Formation decision, worker progress and cancellation; reader/editor/Edition interfaces
+continue to own exact text changes and export.
+
+`AUTHOR_DECISION` waits for a content-bound choice. Author comparison must explain current
+intent, motive, cause, conflict, differentiation, scope and later writability, including
+uncertainty. Failed directions remain diagnostics. Selecting the sole admitted alternative
+requires a specific decision and retained bounded failure evidence; the result cannot be
+called a best-of-two comparison. `TECHNICAL_WAIT` uses bounded exponential delay (5–300
+seconds). Twelve unchanged coordination windows stop at `CREATION_NO_PROGRESS`; native
+retryable Formation recovery is limited to three distinct failed source versions.
+`RECONCILIATION_REQUIRED` retains the original external identity; no fresh ID is dispatched.
+`OWNER_RECOVERY_REQUIRED` explains an unresolved configuration, terminal effect or
+unrecoverable stage failure. Inspect the native failure/effect before using recovery:
+
+```bash
+novel-forge authority-creation recover \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" --reason "$RESOLVED_BLOCKER" \
+  --idempotency-key "$RECOVERY_DECISION_KEY"
+novel-forge authority-creation cancel \
+  --project-id "$PROJECT" --formation-run-id "$FORMATION_RUN" \
+  --idempotency-key "$CANCELLATION_KEY" --reason "$CANCELLATION_REASON"
+```
+
+Recovery can wake the same source after an owner-resolved no-progress stop without
+changing business inputs. Preserve its reason and decision key on an uncertain response;
+replay returns the original recovery job, while a changed reason is rejected. A later
+independent recovery decision needs its own key. The UI retains this frozen request
+through reload, using the existing Formation resume endpoint.
+
+Cancellation binds the frozen digest, appends intent before forwarding to the active
+Formation/Opening/Book owner and prevents automatic revival. It does not rewrite completed
+history. `COMPLETED` means native internal Book acceptance completion. The author status
+labels this `INTERNAL_ACCEPTANCE_COMPLETE`: exact Edition selection and export remain
+separate, as do strict qualification and long-form literary proof. Membership execution
+has no cumulative money/token/call cap. Paid DeepSeek still uses the existing inherited
+Book ceiling, including retries, restarts and UNKNOWN occupancy. Independent review remains
+required when selected; resource shortage cannot replace it with ineligible self-review.
+
+Historical Formation v4 freezes first-admitted selection. Repeating an existing v4/v5
+start validates the original work request and consumes its saved profiles, without
+installing new Packs or changing its selection policy. `--creative-selection FIRST_ADMITTED`
+is available only to deliberately create a compatible v4 task; it is not literary selection.
 
 Historical Formation v1-v3 continuation requires its original creation-input policy through
 `--creation-policy-file`; historical successful effects retain their frozen routing and
@@ -1540,6 +1603,16 @@ existing resume/approval commands before the driver continues; a live lease is n
 stolen. Confirmed generation/evaluation receipts are reused, including evaluation whose
 candidate has subsequently been approved. New generation under a changed source uses a
 new run; old terminal tasks and accepted history are not reopened.
+For native v5 membership creation, a terminal `PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED`
+with no external intent, reservation or frozen Context uses the existing Planning continuation
+Authority automatically. The retained source remains terminal; a linked successor keeps its exact
+story inputs and Pack while increasing only the single-task allocation within the configured
+model capacity. Preflight must succeed before registration; no more than two successors are
+allowed. An external intent of any status, including UNKNOWN, excludes this capacity path. Migration 0158 permits reconciliation of a previously admitted capacity successor with its verified candidate-repair cause; it requires the exact registered command and terminal zero-intent source. New successors use the failed capacity Operation as their causal source. Neither path rewrites terminal Operations or candidate provenance.
+Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
+unchanged Book/dependency evidence. Owner recovery uses the original creation `recover` command
+after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
+
 For `EXECUTION_CONTRACT_FROZEN_CONFLICT` before the first Provider dispatch, inspect the
 retained Effect and release its reservation only after the native ledger proves the
 result is known not to have been dispatched. Request native cancellation and resolve it
@@ -2468,10 +2541,45 @@ generation command through `StoryPlanningGenerationApplication.generate`. The ru
 requires retained raw result evidence, a verified successful Provider receipt and
 settled original usage. Only an explicit result-contract failure can create a linked
 repair Operation, with at most two repairs and the complete original task retained.
-The failed Operation remains terminal. Missing or unknown receipts require
+The failed Operation remains terminal. Migration 0159 extends this contract to a
+terminal DEAD_LETTER with retained known result evidence, an exact frozen native
+lineage and no unresolved external effect. It preserves that terminal status and
+its attempts; it cannot reopen a cancelled or unknown task. Missing or unknown receipts require
 reconciliation; valid raw output with a persistence failure is not regenerated by this
 contract-repair path. World diagnostics identify the field path, expected type and
-actual type, including fields inside `world_foundation_json`.
+actual type, including fields inside `world_foundation_json`. The World transition
+request includes the complete inner typed contract, including ordered story time,
+causal predicates and epistemic bases. A retained failed World proposal is repaired
+within the same Chapter Planning allowance, against its exact source, Actor proposals,
+knowledge selection and accepted frontier. It does not enter Chapter constraints as
+accepted fact. A raw Chapter Plan repair reuses its already selected World action;
+it does not repeat successful World preparation. A structurally valid proposal with a
+blocked causal plan can use the same bounded repair chain only after the runtime
+reproduces the exact hard gate from the frozen Reality and verifies the retained
+Director receipt and settled usage. It does not convert a blocked action to NO_OP,
+add accepted support or relax a causal predicate. The owning Planning result becomes
+terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
+older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
+the original receipt before this classification, without another Provider request.
+A new World proposal can obtain its necessary Director evaluation within that same
+allowance only with the current generation's verified settled receipt, exact source
+and frozen knowledge selection. This dependent evaluation receipt cannot authorize
+another stage or repeat an unchanged request. Changed-input repair routing excludes
+verified rejected results from transport retry counting while retaining all receipts
+and the native two-repair bound. UNKNOWN, in-flight effects, service failures and
+unchanged requests keep their existing blocks.
+
+An exhausted Planning repair allowance is a durable owner wait, not a transport
+retry. Creation completes only its coordination window with
+`OWNER_RECOVERY_REQUIRED`, retaining the precise error and recovery instruction;
+the Book remains incomplete. Automatic scheduling does not rearm that unchanged
+checkpoint. Repeating owner recovery cannot grant another content repair. Resolve
+the cause through a new author decision or an approved future input change first.
+The initial Story State genesis is empty. World character actions still require
+their own supplied knowledge or belief predicates; a Character Cast or Foundation
+cause does not supply acquired knowledge. A Provider may explicitly propose
+`NO_OP` or `DEFER` when support is absent. The runtime never converts a rejected
+proposal into either disposition or inserts facts to pass the gate.
 
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native
@@ -2770,6 +2878,13 @@ Its validation proof comes from actual native acceptances; the original frozen r
 candidate remain unchanged. Selection remains a separate action.
 Selection needs the current `expected_head_version` and reason. Conflicts retain input;
 reconcile an uncertain response by querying/retrying the same idempotency key.
+Edition export defaults to `FORMAL` and requires immutable `VALIDATED` and `SELECTED`
+events for the requested exact revision. A previously selected revision can be exported
+as a historical formal version; export never silently substitutes the current head.
+Use CLI `--export-kind CANDIDATE` or API `export_kind=CANDIDATE` for an unadopted
+candidate. The Editor labels these downloads separately. Responses retain the exact
+revision, manifest digest and export kind; neither kind grants publication or literary qualification.
+Historical callers that exported arbitrary candidates must now specify that kind explicitly.
 Subsequent saves retain existing explicit removal mappings unless replacement mappings
 are supplied. Reject applies to an editing candidate; switching the current formal
 manuscript requires a separately validated selection. Neither action erases the old draft.
@@ -2845,14 +2960,15 @@ identities use a deterministic project digest; configured explicit Pack IDs are 
 The same IDs are supplied to all native runtime compositions on start and continuation,
 so another project's private Pack cannot be borrowed accidentally.
 
-The native creation driver consumes a frozen Formation `formation-generation.v4`
+Historical compatibility: the foreground v4 creation driver consumes a frozen Formation `formation-generation.v4`
 request. Its work title, chapter target, language contract and creation-input profiles
 come from the current request; it does not infer a short sample target. The driver
 advances existing Formation and Opening RuntimeJobs, then starts the resolved Book
 once and drives its existing coordination and Chapter workers. Continuation looks up
 the same Formation-derived Opening and Book identity before creating any genesis
 inputs. Bounded worker ticks save an existing checkpoint; the CLI renews its execution window
-and continues by default until completion or a real dependency/failure. Use
+and continues by default until completion or a dependency/failure. Technical waits
+also return to the caller; this is not durable end-to-end execution ownership. Use
 `--yield-after-window` for an external scheduler that owns subsequent invocation. Three
 windows without durable Formation/Provider/accepted-cursor progress return
 `CREATION_NO_PROGRESS`. Windows are execution controls, never Book resource budgets.

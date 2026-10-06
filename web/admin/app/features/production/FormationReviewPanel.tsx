@@ -7,6 +7,7 @@ import { loadFormation, submitFormationDecision, type Formation, type FormationC
 type Decision = "SELECT" | "APPROVE" | "REJECT" | "REQUEST_CHANGES";
 type Pending = {candidate_asset_version_id: string; candidate_content_hash: string; expected_version: number; idempotency_key: string; reason: string; decision: Decision};
 const labels: Record<string, string> = {core_conflict: "核心冲突", reader_promise: "阅读承诺", narrative_engine: "叙事承载力", differentiation: "差异化", emotional_contract: "情绪承诺", thematic_question: "主题问题", ending_direction: "结局方向", protagonist_cost: "人物代价", constraints: "约束", characters: "人物驱动", character_cast: "人物驱动"};
+const diagnosticFields = new Set(["type","schema_version","parent_bindings","frozen_inputs","execution_evidence","project_id","workspace_id","book_id","logical_key","planning_scope","parent_version_id","generator_operation_name","context_profile_ref","budget_policy_ref"]);
 export function describe(value: unknown): string {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.map(describe).join("；");
@@ -51,19 +52,20 @@ export function FormationReviewPanel({formation, onChange}: {formation: Formatio
   if (!formation.candidates?.length && !formation.author_review_history?.length) return null;
   return <section aria-label="设计候选确认">
     <h3>比较候选并确认设计</h3>
-    <p>根据实际内容记录选择理由、保留优点或修改意见。拒绝与修改意见会保留为作者决定；批准仍须通过原生资格与权限检查，之后使用恢复入口推进。</p>
+    <p>围绕本作品的作者意图、人物动机、因果、冲突潜力、差异化、篇幅适配和后续可写性比较。记录选择理由、优势、代价和难以区分之处；批准是本次方向决定，不能证明文学最佳。持久创作任务会在批准后继续推进；历史任务仍使用原恢复入口。</p>
     <label>选择理由 / 修改意见<textarea aria-label="选择理由 / 修改意见" value={note} disabled={busy || !!pending} onChange={e => retain(e.target.value, pending)} /></label>
     {formation.candidates?.map((candidate, index) => {
       const payload = candidate.content.candidate_payload || candidate.content;
       const selected = formation.recovery_instruction?.candidate_asset_version_id === candidate.asset_version_id;
       return <article className="panel" key={candidate.asset_version_id}>
         <h4>候选 {index + 1}{selected ? " · 当前选择" : ""}</h4>
-        <dl>{Object.entries(payload as Record<string, unknown>).filter(([key]) => !["schema_version", "parent_bindings"].includes(key)).map(([key, value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{describe(value)}</dd></div>)}</dl>
+        <dl>{Object.entries(payload as Record<string, unknown>).filter(([key]) => !diagnosticFields.has(key)).map(([key, value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{describe(value)}</dd></div>)}</dl>
         <p>资格：{describe(candidate.state.qualification) || "由设计审批检查"} · 审批：{describe(candidate.state.approval) || "待决定"}</p>
-        <small>{candidate.content_hash}</small>
+        <details><summary>候选来源与诊断</summary><small>{candidate.asset_version_id} · {candidate.content_hash}</small><pre>{JSON.stringify(Object.fromEntries(Object.entries(payload as Record<string,unknown>).filter(([key])=>diagnosticFields.has(key))),null,2)}</pre></details>
         <div className="actions">{([["SELECT", "选择此候选"], ["APPROVE", "批准此候选"], ["REJECT", "拒绝此候选"], ["REQUEST_CHANGES", "提交修改意见"]] as const).map(([decision, label]) => <button key={decision} disabled={busy || !!pending || !note.trim() || formation.lifecycle !== "WAITING_APPROVAL"} onClick={() => decide(candidate, decision)}>{label}</button>)}</div>
       </article>;
     })}
+    {!!formation.recovery_instruction?.generation_failures?.length && <p role="status">部分方向生成未通过结构校验，原始失败已保留。请结合可用候选和不确定性决定；采用可用方向不表示它优于未完成的方向。</p>}
     {formation.recovery_instruction?.author_selection && <p>已保存决定：{formation.recovery_instruction.author_selection.decision} · {formation.recovery_instruction.author_selection.reason}</p>}
     {!!formation.author_review_history?.length && <details><summary>已保存的作者决定</summary>{formation.author_review_history.map(item => <div key={item.stage}><h4>{item.stage}</h4>{item.decisions.map((entry, index) => <p key={index}>{entry.decision} · {entry.reason} · 决定主体：{entry.actor_id}</p>)}</div>)}</details>}
     {pending && <button disabled={busy} onClick={() => send(pending)}>恢复候选决定（原幂等键）</button>}

@@ -1,0 +1,21 @@
+[
+  "tests/architecture/test_capability_pack_authority_boundaries.py::test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed",
+  "tests/architecture/test_repository_execution_boundaries.py::RepositoryExecutionBoundaryTests::test_controlled_external_effect_blocks_legacy_before_database",
+  "tests/unit/test_capability_pack_artifact_materialization.py::test_revision_renderer_projects_one_output_method[False]",
+  "tests/unit/test_capability_pack_artifact_materialization.py::test_revision_renderer_projects_one_output_method[True]",
+  "tests/unit/test_capability_pack_validator.py::CapabilityPackValidatorTests::test_valid_chapter_generation_pack_passes",
+  "tests/unit/test_chapter_agent_binding_boundary.py::test_legacy_binding_surface_tracks_model_capability_stages",
+  "tests/unit/test_creation_runner_settings.py::test_native_creation_runners_preserve_isolated_object_store_configuration[run_creation_synthesis]",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_returns_durable_evidence",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_replays_exact_evidence",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_conflicting_membership",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[10-narrative-search-branch-evidence.v2]",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[11-sha256:9999999999999999999999999999999999999999999999999999999999999999]",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_requires_reconciliation_for_legacy_row",
+  "tests/unit/test_narrative_search_branch_registration.py::test_reconcile_legacy_branch_in_uow_appends_exact_sidecar_evidence",
+  "tests/unit/test_narrative_search_branch_registration.py::test_reconcile_legacy_branch_in_uow_is_exactly_idempotent",
+  "tests/unit/test_narrative_search_branch_registration.py::test_reconcile_legacy_branch_rejects_outer_execution_drift",
+  "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_other_unique_conflict",
+  "tests/unit/test_prose_reviewer_sampling.py::test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output",
+  "tests/unit/test_story_planning_runtime.py::test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation"
+]

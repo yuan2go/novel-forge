@@ -158,6 +158,9 @@ from . import (
     v20261006_0154_opening_resource_policy_succession,
     v20261006_0155_unsent_resource_route_succession,
     v20261006_0156_resource_journal_indexes,
+    v20261006_0157_creation_continuation_control,
+    v20261006_0158_planning_capacity_causation,
+    v20261007_0159_planning_dead_letter_result_recovery,
 )
 
 VERSION_MODULES = [
@@ -318,6 +321,9 @@ VERSION_MODULES = [
     v20261006_0154_opening_resource_policy_succession,
     v20261006_0155_unsent_resource_route_succession,
     v20261006_0156_resource_journal_indexes,
+    v20261006_0157_creation_continuation_control,
+    v20261006_0158_planning_capacity_causation,
+    v20261007_0159_planning_dead_letter_result_recovery,
 ]
 
 __all__ = ["VERSION_MODULES"]

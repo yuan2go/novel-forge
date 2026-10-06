@@ -8,6 +8,30 @@
   ],
   "classification_rules": [
     {
+      "id": "creation-durable-coordination",
+      "patterns": [
+        "tests/unit/test_creation_coordination.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "continuous-creation-coordination",
+      "production_target": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-native-controlled-process",
+      "patterns": [
+        "tests/integration/test_creation_cli_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "continuous-creation-native-owner-chain",
+      "production_target": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
       "id": "quality-context-formal-mock-e2e",
       "patterns": [
         "tests/integration/test_quality_context_formal_e2e_postgres.py"

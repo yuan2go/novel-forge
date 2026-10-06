@@ -1,0 +1,7 @@
+NOVEL_FORGE_DATABASE_URL="${NOVEL_FORGE_DATABASE_URL}" \
+	NOVEL_FORGE_QUALIFICATION_DATABASE_NAME="${NOVEL_FORGE_QUALIFICATION_DATABASE_NAME}" \
+	PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/run_authority_postgres_tests.py \
+		--junit-xml "${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR}/postgresql-pytest.xml" \
+		--collection-report "${NOVEL_FORGE_POSTGRES_EVIDENCE_DIR}/postgresql-pytest-collection.json"
+expected database is not a run-owned database identity
+make: *** [postgres-authority-test] Error 2

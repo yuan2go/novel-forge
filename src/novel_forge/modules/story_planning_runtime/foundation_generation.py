@@ -51,7 +51,7 @@ def _records(fields: str, *, minimum: int = 1, maximum: int = 16) -> dict[str, A
     }
 
 
-def _apply_work_schema(properties: dict[str, Any], role: FoundationRole) -> None:
+def _apply_work_schema(properties: dict[str, Any], role: FoundationRole, *, provider_path_constraints: bool) -> None:
     optional = {
         FoundationRole.CREATIVE_FOUNDATION: "subgenre core_desire core_fear core_conflict serialization_potential",
         FoundationRole.ENDING_INTENT: "protagonist_cost",
@@ -82,7 +82,7 @@ def _apply_work_schema(properties: dict[str, Any], role: FoundationRole) -> None
         "maxItems": 256,
         "items": _object(
             {
-                "field_path": _text(),
+                "field_path": {"type": "string", "pattern": r"^\$(?:\.[A-Za-z_][A-Za-z0-9_]*|\[[0-9]+\])+$", "description": "Exact JSONPath of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."} if provider_path_constraints else _text(),
                 "status": {
                     "type": "string",
                     "enum": [
@@ -139,7 +139,7 @@ def validate_foundation_applicability(
 
 
 def foundation_output_schema(
-    generator: str, *, work_requirements: bool = False
+    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     properties: dict[str, Any] = {
@@ -238,7 +238,7 @@ def foundation_output_schema(
             minimum=0,
         )
     if work_requirements:
-        _apply_work_schema(properties, role)
+        _apply_work_schema(properties, role, provider_path_constraints=provider_path_constraints)
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         **_object(properties),
@@ -354,7 +354,7 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
             world, ensure_ascii=False, separators=(",", ":")
         )
     work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3"}
-    schema = foundation_output_schema(generator, work_requirements=work_requirements)
+    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False)
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
         projection = frozen_author_projection({"constraint_envelope": envelope}, generator=generator, logical_key=str(content.get("logical_key") or ""))

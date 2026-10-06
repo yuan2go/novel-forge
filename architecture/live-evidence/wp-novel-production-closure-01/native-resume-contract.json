@@ -1,0 +1,50 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "entry_point": "existing novel-forge CLI and author UI",
+  "required_environment": "same authorized original deployment environment, PostgreSQL/Object Store and frozen Pack/release; do not reconstruct credentials from evidence",
+  "repository": "isolated branch codex/wp-novel-production-closure-01",
+  "python_source": "PYTHONPATH=src",
+  "status_args": [
+    "authority-creation",
+    "status",
+    "--project-id",
+    "closure-original-20261006",
+    "--formation-run-id",
+    "story-formation:0b15b18326b245b7822ba64cc748c18bfc6a329523c2c449af79b1767040ac60"
+  ],
+  "current_block": "retained World proposals reached the original two-repair bound; no known character knowledge/belief state in frozen initial genesis",
+  "resume_precondition": "A supplied author decision and its native approved future input change must resolve the exact rejected requirement. Preserve old frozen tasks and terminal results. No blind new repair or increased bound.",
+  "change_owner": "existing Story Design / Hierarchical Planning / Plan Change, then Book native resume_after_plan_change",
+  "recover_args_after_resolution": [
+    "authority-creation",
+    "recover",
+    "--project-id",
+    "closure-original-20261006",
+    "--formation-run-id",
+    "story-formation:0b15b18326b245b7822ba64cc748c18bfc6a329523c2c449af79b1767040ac60",
+    "--reason",
+    "<exact resolved cause and approved input evidence>",
+    "--idempotency-key",
+    "<new decision key; retain on uncertain response>"
+  ],
+  "worker_module": "novel_forge.workers.book_authority",
+  "export_precondition": "exact native Edition revision VALIDATED and SELECTED; source Book acceptance alone is insufficient",
+  "export_args": [
+    "authority-edition",
+    "export",
+    "--project-id",
+    "closure-original-20261006",
+    "--workspace-id",
+    "closure-original-workspace",
+    "--book-run-id",
+    "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "--revision-id",
+    "<exact selected revision>",
+    "--export-kind",
+    "FORMAL",
+    "--format",
+    "text",
+    "--output",
+    "<new output path>"
+  ]
+}

@@ -652,6 +652,14 @@ class PostgresBookAuthority:
                     "BOOK_OPENING_WORKFLOW_COMPLETION_REQUIRED",
                     "BookRun cannot start while an Opening workflow is active",
                 )
+            uow.cursor.execute("""SELECT formation_run_id FROM authority_story_formation_run
+                WHERE project_id=%s AND book_id=%s AND formation_run_id || ':production'=%s FOR SHARE""",
+                [command.project_id, command.book_id, command.stable_idempotency_key])
+            source = uow.cursor.fetchone()
+            if source:
+                uow.cursor.execute("SELECT 1 FROM authority_story_creation_cancellation WHERE formation_run_id=%s", [source[0]])
+                if uow.cursor.fetchone():
+                    raise KernelError("CREATION_CANCELLED", "Cancelled native creation cannot start Book production")
             self._require_snapshot_plan_portfolio_current_in_uow(
                 uow,
                 command,

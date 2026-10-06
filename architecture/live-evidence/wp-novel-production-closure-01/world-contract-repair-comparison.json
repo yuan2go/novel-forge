@@ -1,0 +1,206 @@
+{
+  "evidence_kind": "REAL_PROVIDER_WORLD_CONTRACT_REPAIR_NOT_PROSE_REVISION",
+  "source_preserved": true,
+  "maximum_repairs": 2,
+  "results": [
+    {
+      "version": "original",
+      "source_file": "world-generation-response.json",
+      "asset_version_id": "eb0d6f03-19ab-421b-9e32-d727e2467fed",
+      "fields": [
+        {
+          "role": "target",
+          "transition_id": "local:zhou_records_difference",
+          "actor_id": "character:zhou_cheng",
+          "story_time": "chapter:1",
+          "cause_refs": [
+            "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1"
+          ],
+          "epistemic_basis": "周澄仅凭获准实际查阅的纸面栏位和自身比对笔记确认差异；她尚不知两册的形成关系或救援经过。"
+        },
+        {
+          "role": "preparation",
+          "transition_id": "local:archive_access",
+          "actor_id": "character:shen_zhi",
+          "story_time": "chapter:1",
+          "cause_refs": [
+            "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1"
+          ],
+          "epistemic_basis": "沈芷仅依据自己保管岗位可核对的馆藏与手续行动；名册形成用途仍待调查。"
+        }
+      ],
+      "operation_id": "7d62fe4d-00d5-4f99-aa18-18204604d98d",
+      "content_hash": "sha256:1b1c48aee759d831725e36f995f9880eba06384ae86f4480952a2dc5b2ed1a33",
+      "source": {
+        "content_hash": "sha256:831d3863d2b99b23e9e156491952ff7ed03cd3ce1cb5125a5c3226a57f315792",
+        "asset_version_id": "2f419a49-cbc2-4c4e-9fb0-6a833d2fd635"
+      },
+      "execution_evidence": {
+        "model_id": "gpt-6-sol",
+        "attempt_id": "cab152ca-96a4-4224-839e-b5bb46958829",
+        "backend_id": "codex-cli",
+        "capability": "planning.story_chapter.generate",
+        "provider_id": "codex-cli",
+        "execution_id": "planning-execution:d154b5ea-9f85-403e-835d-2475f32ac868:cab152ca-96a4-4224-839e-b5bb46958829",
+        "operation_id": "7d62fe4d-00d5-4f99-aa18-18204604d98d",
+        "fencing_token": 1,
+        "real_model_call": true,
+        "cost_receipt_ref": "authority-asset-version:d183b8f5-a7d1-4801-907c-518c01ba6cd1",
+        "route_snapshot_id": "production_execution/routes/0a498ccd8619d525bc7c",
+        "usage_receipt_ref": "authority-asset-version:122812d4-2a7d-447e-bbe9-f4af081359cd",
+        "input_manifest_ref": "production_execution/inputs/0a498ccd8619d525bc7c",
+        "output_manifest_ref": "authority-asset-version:e1ee8448-8026-4b73-9355-ad125c5cd50e",
+        "production_verified": false,
+        "provider_request_id": "",
+        "external_receipt_ref": "d154b5ea-9f85-403e-835d-2475f32ac868",
+        "fixture_protocol_only": false,
+        "validation_manifest_ref": "authority-asset-version:790f10f3-1eb1-4eb5-be28-a45c7112cb83"
+      }
+    },
+    {
+      "version": "repair_1",
+      "source_file": "world-repair-1-world_preparation_generation.json",
+      "asset_version_id": "19b56368-ff5a-4863-bcff-68a1d7ed911c",
+      "fields": [
+        {
+          "role": "target",
+          "transition_id": "local:zhou_records_difference",
+          "actor_id": "character:zhou_cheng",
+          "story_time": {
+            "timeline_id": "timeline:chapter_1",
+            "start_ordinal": 2,
+            "end_ordinal": 2,
+            "precision": "ORDERED",
+            "label": "第一章，名册比对"
+          },
+          "cause_refs": [
+            "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1",
+            "local:archive_access"
+          ],
+          "epistemic_basis": []
+        },
+        {
+          "role": "preparation",
+          "transition_id": "local:archive_access",
+          "actor_id": "character:shen_zhi",
+          "story_time": {
+            "timeline_id": "timeline:chapter_1",
+            "start_ordinal": 1,
+            "end_ordinal": 1,
+            "precision": "ORDERED",
+            "label": "第一章，查阅安排"
+          },
+          "cause_refs": [
+            "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1"
+          ],
+          "epistemic_basis": []
+        }
+      ],
+      "operation_id": "43fb3b1c-8ebb-4e7a-830b-66929ca4bb37",
+      "content_hash": "sha256:c60eb69c31f5cb546b303e400e4a7899edaf15f8c6d2db9112fb8eb9514e47a3",
+      "source": {
+        "content_hash": "sha256:831d3863d2b99b23e9e156491952ff7ed03cd3ce1cb5125a5c3226a57f315792",
+        "asset_version_id": "2f419a49-cbc2-4c4e-9fb0-6a833d2fd635"
+      },
+      "execution_evidence": {
+        "model_id": "gpt-6-sol",
+        "attempt_id": "79d8347a-a725-44ac-b2ea-8bd66e23c837",
+        "backend_id": "codex-cli",
+        "capability": "planning.story_chapter.generate",
+        "provider_id": "codex-cli",
+        "execution_id": "planning-execution:8131103d-5556-41a6-b047-8999c89d73da:79d8347a-a725-44ac-b2ea-8bd66e23c837",
+        "operation_id": "43fb3b1c-8ebb-4e7a-830b-66929ca4bb37",
+        "fencing_token": 1,
+        "real_model_call": true,
+        "cost_receipt_ref": "authority-asset-version:715cdf8f-c309-498c-adee-7388988d4f2f",
+        "route_snapshot_id": "production_execution/routes/e1d56adc0ded59220bab",
+        "usage_receipt_ref": "authority-asset-version:bd1c3a94-f1f1-4807-a5cc-41a8ca19f45f",
+        "input_manifest_ref": "production_execution/inputs/e1d56adc0ded59220bab",
+        "output_manifest_ref": "authority-asset-version:1f1d867b-dcb4-44f6-b8f8-eea90c6843a0",
+        "production_verified": false,
+        "provider_request_id": "",
+        "external_receipt_ref": "8131103d-5556-41a6-b047-8999c89d73da",
+        "fixture_protocol_only": false,
+        "validation_manifest_ref": "authority-asset-version:18f74f5c-a624-477a-8454-4ad1bbc317a5"
+      }
+    },
+    {
+      "version": "repair_2",
+      "source_file": "world-repair-2-production_execution_contract_world_preparation_generation_c409ea8802180c91bfcc.json",
+      "asset_version_id": "b01bddf3-d338-4ce8-8335-4afa110ec048",
+      "fields": [
+        {
+          "role": "target",
+          "transition_id": "zhou_records_difference",
+          "actor_id": "character:zhou_cheng",
+          "story_time": {
+            "timeline_id": "timeline:chapter_1",
+            "start_ordinal": 2,
+            "end_ordinal": 2,
+            "precision": "ORDERED",
+            "label": "第一章，名册比对"
+          },
+          "cause_refs": [
+            "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1",
+            "local:archive_access"
+          ],
+          "epistemic_basis": []
+        },
+        {
+          "role": "preparation",
+          "transition_id": "archive_access",
+          "actor_id": "character:shen_zhi",
+          "story_time": {
+            "timeline_id": "timeline:chapter_1",
+            "start_ordinal": 1,
+            "end_ordinal": 1,
+            "precision": "ORDERED",
+            "label": "第一章，查阅安排"
+          },
+          "cause_refs": [
+            "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1"
+          ],
+          "epistemic_basis": []
+        }
+      ],
+      "operation_id": "7ef22c8b-bbcd-4723-8185-527a2e0bbbd2",
+      "content_hash": "sha256:9c16fa29d2cbd7178323c310e22b1c151587ebcfa0288397538787cb5a907c4d",
+      "source": {
+        "content_hash": "sha256:831d3863d2b99b23e9e156491952ff7ed03cd3ce1cb5125a5c3226a57f315792",
+        "asset_version_id": "2f419a49-cbc2-4c4e-9fb0-6a833d2fd635"
+      },
+      "execution_evidence": {
+        "model_id": "gpt-6-sol",
+        "attempt_id": "fe51ebd7-dac1-4736-87fb-aecbb4e10bb3",
+        "backend_id": "codex-cli",
+        "capability": "planning.story_chapter.generate",
+        "provider_id": "codex-cli",
+        "execution_id": "planning-execution:23bce760-f616-4d7d-adac-a70bfe53770b:fe51ebd7-dac1-4736-87fb-aecbb4e10bb3",
+        "operation_id": "7ef22c8b-bbcd-4723-8185-527a2e0bbbd2",
+        "fencing_token": 1,
+        "real_model_call": true,
+        "cost_receipt_ref": "authority-asset-version:308fe466-03b1-43c5-ae7d-4063aa466637",
+        "route_snapshot_id": "production_execution/routes/390ab6528df9e2099be6",
+        "usage_receipt_ref": "authority-asset-version:b0bfc079-d931-4a47-867d-90bbb19c3e3f",
+        "input_manifest_ref": "production_execution/inputs/390ab6528df9e2099be6",
+        "output_manifest_ref": "authority-asset-version:1000e813-b0b2-4a71-baec-d9fa9019db38",
+        "production_verified": false,
+        "provider_request_id": "",
+        "external_receipt_ref": "23bce760-f616-4d7d-adac-a70bfe53770b",
+        "fixture_protocol_only": false,
+        "validation_manifest_ref": "authority-asset-version:3d2dc48f-eaa1-4840-ab5f-82f5d82920e3"
+      }
+    }
+  ],
+  "engineering_improvement": "inner schema types corrected, then batch-local transition names corrected",
+  "remaining_hard_block": "WORLD_CHARACTER_DECISION_BASIS_REQUIRED; known character actions have empty own knowledge/belief basis",
+  "accepted_world_action": false,
+  "prose_revision_benefit": "NOT_RUN",
+  "originals_overwritten": false,
+  "project_id": "closure-original-20261006",
+  "workspace_id": "closure-original-workspace",
+  "book_id": "closure-original-book",
+  "schema_version": "world-contract-repair-comparison-evidence.v1",
+  "validation_status": "ALL_THREE_REJECTED_BEFORE_CHAPTER",
+  "fact_mutation_allowed": false
+}

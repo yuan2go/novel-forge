@@ -103,8 +103,19 @@ def recover_operation(
                 raise KernelError("RECOVERY_LEASE_ACTIVE", "active Attempt lease cannot be taken over")
             action = "LEASE_TAKEOVER_VISIBLE"
         elif status in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
-            action = "RECONCILIATION_DISPATCHED"
-            if status == "WAITING_EXTERNAL_RESULT":
+            uow.cursor.execute("""SELECT checkpoint->>'error_code' FROM authority_attempt
+                WHERE operation_id=%s AND status='CHECKPOINTED' ORDER BY attempt_number DESC LIMIT 1""", [command.operation_id])
+            checkpoint = uow.cursor.fetchone()
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s", [command.operation_id])
+            no_effect = int(uow.cursor.fetchone()[0]) == 0
+            if checkpoint and checkpoint[0] in {"TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "TASK_CONTEXT_MODEL_CAPACITY_UNKNOWN"} and no_effect:
+                action = "PRE_SEND_CHECKPOINT_RECONCILED"
+                _cas_operation(uow, operation_id=command.operation_id, project_id=command.project_id,
+                    expected_status=status, expected_version=command.expected_version, target_status="EXECUTING",
+                    actor_id=command.actor_id, reason=command.reason, trace_id=command.trace_id, correlation_id=command.correlation_id)
+            else:
+                action = "RECONCILIATION_DISPATCHED"
+            if status == "WAITING_EXTERNAL_RESULT" and action == "RECONCILIATION_DISPATCHED":
                 _cas_operation(
                     uow,
                     operation_id=command.operation_id,

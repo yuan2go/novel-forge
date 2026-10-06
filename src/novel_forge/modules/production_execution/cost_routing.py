@@ -77,6 +77,7 @@ class TaskPolicy:
     max_attempts: int = 4
     max_escalations: int = 1
     quality_metric: str = "CALIBRATED_SCORE"
+    retain_failed_domain_samples: bool = False
 
     def __post_init__(self) -> None:
         if self.risk not in {"LOW", "MEDIUM", "HIGH"}:
@@ -185,7 +186,7 @@ TASK_TAXONOMY = {
 REFERENCE_TASKS = frozenset({"canon_support", "review", "rereview", "quality_structural", "quality_commercial",
     "quality_source_originality", "quality_longform", "quality_platform", "world_candidates.evaluate", "narrative_semantic_evaluation"})
 GENERATOR_TASKS = frozenset({name for name in TASK_TAXONOMY if name.endswith(".generate")} | {"memo", "draft", "revision", "canon_extraction", "screenplay_generate", "screenplay_revision", *{f"world_candidates.actor_{index}" for index in range(3)}})
-POLICY_VERSION = "quality-constrained-routing.v12"
+POLICY_VERSION = "quality-constrained-routing.v13"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -208,6 +209,7 @@ def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> Tas
         if task_type.endswith(".generate")
         or task_type == "source.deconstruction.observe"
         else "CALIBRATED_SCORE",
+        retain_failed_domain_samples=task_type in {"context_compress", "context_fidelity"},
     )
 
 
@@ -509,7 +511,11 @@ def benchmark_snapshot(
         else [row.generator_quality_score for row in generator_rows] if policy.quality_metric == "GENERATOR_SCORE"
         else [row.quality_score for row in scored_samples if row.quality_score is not None])
     domain_outcomes = [
-        row.domain_gate_accepted for row in scored_samples if row.domain_gate_accepted is not None
+        row.domain_gate_accepted for row in samples
+        if row.domain_gate_accepted is not None and (
+            row.retried is not True
+            or (policy.retain_failed_domain_samples and row.domain_gate_accepted is False)
+        )
     ]
     reference_rows = [row for row in scored_samples if row.reference_agreed is not None
         and row.reference_risk == policy.risk
@@ -814,7 +820,47 @@ class CostAwareRouter:
         policy = task_policy(task.task_type, task.risk, task.quality_floor)
         if len({item.candidate_id for item in candidates}) != len(candidates):
             raise ValueError("ROUTING_DUPLICATE_CANDIDATE")
-        failures = [str(item.get("failure_class") or "") for item in task.history]
+        repair = task.declared_requirements.get("governed_repair", {})
+        repair_sources = (
+            set(repair.get("authorized_history_operation_ids", ()))
+            if (
+                repair.get("contract_version") == "planning-route-repair.v1"
+                and repair.get("operation_id") == task.operation_id
+                and repair.get("input_hash") == task.input_hash
+                and repair.get("source_input_hash")
+                and repair.get("source_input_hash") != task.input_hash
+                and type(repair.get("repair_number")) is int
+                and type(repair.get("maximum_repairs")) is int
+                and 0
+                < repair.get("repair_number", 0)
+                <= repair.get("maximum_repairs", 0)
+            )
+            else set()
+        )
+
+        def superseded_failure(item):
+            return (
+                item.get("operation_id") in repair_sources
+                and item.get("operation_id") != task.operation_id
+                and (
+                    (
+                        item.get("status") == "SUCCEEDED"
+                        and not item.get("failure_class")
+                    )
+                    or item.get("failure_class")
+                    in {
+                        "QUALITY_FAILURE",
+                        "CANON_CONFLICT",
+                        "SCHEMA_REJECTION",
+                        "MALFORMED_STRUCTURED_OUTPUT",
+                    }
+                )
+            )
+
+        blocking_history = tuple(
+            item for item in task.history if not superseded_failure(item)
+        )
+        failures = [str(item.get("failure_class") or "") for item in blocking_history]
         semantic_failures = sum(
             item
             in {
@@ -884,7 +930,7 @@ class CostAwareRouter:
                 reasons.append("SEMANTIC_ARBITRATION_REQUIRED")
             previous = [
                 item
-                for item in task.history
+                for item in blocking_history
                 if item.get("candidate_id") == candidate.candidate_id
             ]
             if any(

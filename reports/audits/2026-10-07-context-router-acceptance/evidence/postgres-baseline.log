@@ -1,0 +1,532 @@
+EEEEEEEEEEE                                                              [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_native_overflow_compression_fidelity_draft_review_and_frozen_resume _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e98a150>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_first] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_last] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-retried] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_first] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_last] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-retried] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_first] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_last] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-retried] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10e989e50>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+_ ERROR at setup of ChapterModelEffectsPostgresTests.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:82: in run_migrations
+    cursor.execute(statement)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10eac2750>
+query = 'CREATE EXTENSION IF NOT EXISTS vector', params = None, prepare = None
+binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.FeatureNotSupported: extension "vector" is not available
+E           DETAIL:  Could not open extension control file "/usr/local/share/postgresql/extension/vector.control": No such file or directory.
+E           HINT:  The extension must first be installed on the system where PostgreSQL is running.
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: FeatureNotSupported
+=========================== short test summary info ============================
+ERROR tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_first]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_last]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-retried]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_first]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_last]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-retried]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_first]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_last]
+ERROR tests/integration/test_context_feedback_postgres.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-retried]
+ERROR tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+11 errors in 6.25s

@@ -1,0 +1,187 @@
+{
+  "asset_version_id": "8a300899-6d27-4d8b-aad6-e57aa075c45c",
+  "content": {
+    "contract": {
+      "source": {
+        "content_hash": "sha256:831d3863d2b99b23e9e156491952ff7ed03cd3ce1cb5125a5c3226a57f315792",
+        "asset_version_id": "2f419a49-cbc2-4c4e-9fb0-6a833d2fd635"
+      },
+      "book_id": "closure-original-book",
+      "actor_id": "closure-author",
+      "authority": "PLANNING_PROPOSAL",
+      "evaluation": {
+        "content_hash": "sha256:24c0b71bf648108bb86ab4767d2464f9dc7109e59f16f868bfb862191e014765",
+        "asset_version_id": "f6a62cab-9867-4379-bdee-725f1d5dfdf8"
+      },
+      "generation": {
+        "content_hash": "sha256:9c16fa29d2cbd7178323c310e22b1c151587ebcfa0288397538787cb5a907c4d",
+        "asset_version_id": "b01bddf3-d338-4ce8-8335-4afa110ec048"
+      },
+      "project_id": "closure-original-20261006",
+      "world_plan": {
+        "policy": {
+          "version": "world-production-policy.v4",
+          "max_candidates": 4,
+          "max_provider_stages": 2,
+          "context_token_budget": 239232,
+          "max_preparation_steps": 4,
+          "max_world_time_advance": 1000,
+          "max_paths_per_candidate": 3,
+          "planning_window_chapters": 4
+        },
+        "reason": "No candidate has a legal modeled preparation path; revise the future goal or provide new accepted support.",
+        "authority": "PLANNING_PROPOSAL",
+        "baseline_id": "foundation:sha256:dcfb571de44bb7e589bfe1dcbf8dbb880a79fb1fcf37a5949d389b5510fcf07c",
+        "disposition": "BLOCKED",
+        "plan_digest": "sha256:4fcd883e4a1f8ea24eb515dd5bcaa2975471d19f355e49ad02ff156c9bcb004b",
+        "causal_debts": [],
+        "chapter_number": 1,
+        "rejected_paths": [
+          {
+            "steps": [
+              {
+                "transition": {
+                  "action": "沈芷在档案室依保管手续安排周澄查阅两份名册，并记录本次翻检；她不说明尚未核实的形成用途。",
+                  "camera": "ON_CAMERA",
+                  "changes": {
+                    "access_status": "依保管手续供周澄查阅",
+                    "provenance_status": "待继续核对"
+                  },
+                  "actor_id": "character:shen_zhi",
+                  "cause_refs": [
+                    "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1"
+                  ],
+                  "entity_key": "resource:rosters",
+                  "state_kind": "resource_state",
+                  "story_time": {
+                    "label": "第一章，查阅安排",
+                    "precision": "ORDERED",
+                    "end_ordinal": 1,
+                    "timeline_id": "timeline:chapter_1",
+                    "start_ordinal": 1
+                  },
+                  "requirements": [],
+                  "transition_id": "archive_access",
+                  "epistemic_basis": []
+                },
+                "chapter_offset": 0
+              }
+            ],
+            "path_id": "local:supervised_access_path",
+            "rationale": "周澄须先依档案室保管安排实际接触两份名册，才能观察并记录差异。",
+            "rejection": {
+              "code": "WORLD_CHARACTER_DECISION_BASIS_REQUIRED",
+              "message": "WORLD_CHARACTER_DECISION_BASIS_REQUIRED: a known character's action requires its own accepted knowledge or belief basis"
+            },
+            "target_transition_id": "zhou_records_difference"
+          }
+        ],
+        "contract_version": "world-production-plan.v1",
+        "selected_path_id": "",
+        "alternative_paths": [],
+        "candidate_futures": [
+          {
+            "eligible": false,
+            "rejection": {
+              "code": "WORLD_CAUSAL_SOURCE_UNKNOWN",
+              "message": "WORLD_CAUSAL_SOURCE_UNKNOWN: causal support must resolve to events in the accepted Reality"
+            },
+            "dimensions": {
+              "theme": 0.9,
+              "pacing": 0.87,
+              "payoff": 0.8,
+              "emotion": 0.58,
+              "novelty": 0.66,
+              "conflict": 0.76,
+              "curiosity": 0.91,
+              "arc_progression": 0.82,
+              "causal_plausibility": 0.88,
+              "obligation_pressure": 0.57,
+              "character_consistency": 0.94
+            },
+            "hypotheses": [
+              "拟在两份可查名册中设置一处可定位的对应姓名栏位差异；具体姓名及形成原因尚未确定。",
+              "拟由沈芷在其岗位权限内安排第一章的查阅；此安排尚非已完成事实。"
+            ],
+            "transition_id": "zhou_records_difference",
+            "information_scope": {
+              "disclosures": [
+                {
+                  "mode": "PARTIAL",
+                  "fields": [
+                    "action"
+                  ],
+                  "audience": "READER",
+                  "event_id": "local:zhou_records_difference",
+                  "claim_kind": "HISTORICAL_OCCURRENCE",
+                  "disclosure_id": "local:reader_roster_difference",
+                  "presentation_channel": "周澄近距离视角中的原件比对与笔记"
+                },
+                {
+                  "mode": "CONFIRM",
+                  "fields": [
+                    "action"
+                  ],
+                  "audience": "character:zhou_cheng",
+                  "event_id": "local:zhou_records_difference",
+                  "claim_kind": "CURRENT_ASSERTION",
+                  "disclosure_id": "local:zhou_roster_difference",
+                  "presentation_channel": "周澄亲自查阅两份名册"
+                }
+              ]
+            },
+            "preparation_paths": [
+              {
+                "steps": [
+                  {
+                    "transition": {
+                      "action": "沈芷在档案室依保管手续安排周澄查阅两份名册，并记录本次翻检；她不说明尚未核实的形成用途。",
+                      "camera": "ON_CAMERA",
+                      "changes": {
+                        "access_status": "依保管手续供周澄查阅",
+                        "provenance_status": "待继续核对"
+                      },
+                      "actor_id": "character:shen_zhi",
+                      "cause_refs": [
+                        "foundation:authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1"
+                      ],
+                      "entity_key": "resource:rosters",
+                      "state_kind": "resource_state",
+                      "story_time": {
+                        "label": "第一章，查阅安排",
+                        "precision": "ORDERED",
+                        "end_ordinal": 1,
+                        "timeline_id": "timeline:chapter_1",
+                        "start_ordinal": 1
+                      },
+                      "requirements": [],
+                      "transition_id": "archive_access",
+                      "epistemic_basis": []
+                    },
+                    "chapter_offset": 0
+                  }
+                ],
+                "path_id": "local:supervised_access_path",
+                "rationale": "周澄须先依档案室保管安排实际接触两份名册，才能观察并记录差异。"
+              }
+            ],
+            "narrative_preferences": [
+              "让具体栏位差异引出来源核对；暂不解释两份名册各自的形成用途。",
+              "周澄只在独立笔记中标记差异，不改动原件，也不把差异写成过失判断。"
+            ]
+          }
+        ],
+        "intent_version_id": "authority-output:5d3b4efe-eb71-472a-83b3-1e7f94809c1a:story_planning.candidate:v1",
+        "preparation_schedule": [],
+        "fact_mutation_allowed": false,
+        "selected_candidate_id": "",
+        "continuation_decisions": [],
+        "accepted_through_chapter": 0
+      },
+      "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+      "contract_version": "world-production-action.v2",
+      "fact_mutation_allowed": false,
+      "preserve_accepted_history": true
+    }
+  }
+}

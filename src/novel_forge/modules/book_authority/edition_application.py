@@ -129,6 +129,20 @@ class BookEditionApplication:
                 result["diff"] = edition_diff(base["manifest"], revision["manifest"])
             return result
 
+    def export_manuscript(self, *, project_id: str, workspace_id: str, book_run_id: str,
+                          revision_id: str, principal: Principal, export_kind: str = "FORMAL") -> dict[str, Any]:
+        if not revision_id or export_kind not in {"FORMAL", "CANDIDATE"}:
+            raise ValueError("Choose an exact revision and FORMAL or CANDIDATE export")
+        result = self.query(project_id=project_id, workspace_id=workspace_id, book_run_id=book_run_id,
+                            revision_id=revision_id, principal=principal)
+        events = {event["event_kind"] for event in result["events"]}
+        if export_kind == "FORMAL" and not {"VALIDATED", "SELECTED"}.issubset(events):
+            raise KernelError("EDITION_FORMAL_EXPORT_REQUIRES_SELECTION", "This exact revision has not been validated and selected; export it explicitly as a candidate or adopt it first")
+        return {**result, "export": {"kind": export_kind, "revision_id": revision_id,
+            "manifest_digest": result["revision"]["manifest"]["manifest_digest"],
+            "currently_selected": result["head"]["selected_revision_id"] == revision_id,
+            "publication_authorized": False, "literary_quality": "NOT_PROVEN"}}
+
     def execute(self, *, action: str, project_id: str, workspace_id: str, book_run_id: str,
                 data: dict[str, Any], idempotency_key: str, principal: Principal) -> dict[str, Any]:
         principal.require("book.authority.execute", project_id)

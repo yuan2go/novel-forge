@@ -40,10 +40,12 @@ _DEAD_LETTER_CODES = frozenset(
         "CONTENT_RECOVERY_TERMINAL",
     }
 )
-_MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
+_MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED",
+    "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "PLANNING_REPAIR_BOUND_EXCEEDED"})
 _FINAL_FAILURE_CODES = frozenset(
     {
         "CHAPTER_QUALITY_GATE_FAILED",
+        "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
         "SOURCE_PROVIDER_SCHEMA_REJECTED",
         "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
         # WHY: Once a semantic Provider attempt has reached the final send gate,
@@ -232,6 +234,8 @@ class WorkerFailureClassifier:
             return WorkerFailureClass.CANCELLATION
         if code in _DEAD_LETTER_CODES or "DEAD_LETTER" in code or "EXHAUST" in code:
             return WorkerFailureClass.DEAD_LETTER
+        if code in {"TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "TASK_CONTEXT_MODEL_CAPACITY_UNKNOWN"}:
+            return WorkerFailureClass.MANUAL_INTERVENTION
         if "UNKNOWN" in code or "RECONCILIATION" in code:
             return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
         if (

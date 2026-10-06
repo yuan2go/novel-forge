@@ -233,12 +233,17 @@ def test_realization_rejects_dangling_or_backward_causality() -> None:
     values = contract.to_dict()
     values["events"][1]["causes"] = ["missing-event"]
 
-    with pytest.raises(KernelError, match="REALIZATION_CAUSALITY_INVALID"):
+    with pytest.raises(KernelError, match="event=event-pressure, cause=missing-event"):
         NarrativeRealizationContract.from_mapping(values)
 
     values = contract.to_dict()
     values["events"][0]["causes"] = ["event-choice"]
-    with pytest.raises(KernelError, match="REALIZATION_CAUSALITY_INVALID"):
+    with pytest.raises(KernelError, match="event=event-discover, cause=event-choice"):
+        NarrativeRealizationContract.from_mapping(values)
+
+    values = contract.to_dict()
+    values["events"][0]["next_event_ids"] = []
+    with pytest.raises(KernelError, match="event=event-pressure lists cause=event-discover"):
         NarrativeRealizationContract.from_mapping(values)
 
 

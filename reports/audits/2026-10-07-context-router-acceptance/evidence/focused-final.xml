@@ -1,0 +1,2041 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="12" skipped="0" tests="152" time="39.877" timestamp="2026-10-06T20:33:26.144536+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.unit.test_cost_aware_routing" name="test_quality_floor_precedes_price_and_equal_quality_uses_effective_cost" time="0.004" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_qualified_cheaper_provider_cannot_escape_authorized_task_scope" time="0.005" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_failed_outputs_cannot_hide_behind_surviving_high_quality_scores" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_cache_cost_uses_observed_tokens_without_discounting_the_prefix_twice" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_absent_stale_and_fixture_benchmarks_fail_closed" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_routing_task_requires_a_root_to_current_operation_lineage" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_high_risk_uncertainty_and_budget_never_lower_floor" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_cache_changes_rank_but_reservation_assumes_miss" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_soft_limit_is_visible_and_does_not_remove_qualified_routes" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_failed_route_is_excluded[QUALITY_FAILURE]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_failed_route_is_excluded[SCHEMA_REJECTION]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_failed_route_is_excluded[CONTEXT_OVERFLOW]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_failed_route_is_excluded[AMBIGUOUS_JUDGE]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_unavailable_capability_and_capacity_fail_closed" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_codex_requires_threshold_authorization_quota_and_no_loop" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_unknown_outcome_requires_reconciliation_and_decision_is_immutable" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_domain_acceptance_is_a_distinct_measured_metric_not_a_literary_score" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_benchmark_challengers_qualify_without_becoming_production_acceptance" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_work_and_chapter_policy_cannot_weaken_quality_or_select_a_model" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_cache_history_from_another_prefix_does_not_discount_route" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_authoritative_inflight_effect_blocks_overlapping_chain[READY]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_authoritative_inflight_effect_blocks_overlapping_chain[DISPATCHING]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_authoritative_inflight_effect_blocks_overlapping_chain[DISPATCHED]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_missing_latency_is_uncertain_under_sla" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[none]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[attempt_id]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[book_id]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[input]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[admission]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[decision]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[protocol]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[reasoning_effort]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[pricing_policy_json]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[lineage]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[strict]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[strict_policy]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[strict_schema]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[strict_materialization]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[strict_binding]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[source_codex]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[source_codex_reasoning]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[provider_scope_added]" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[provider_scope_removed]" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[provider_scope_changed]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_frozen_route_requires_original_scope_input_and_admission[provider_scope_denied_selection]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_repeated_inputs_cannot_supply_independent_qualification_samples" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_unpublished_experiment_partitions_cannot_change_routing[DEVELOPMENT]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_unpublished_experiment_partitions_cannot_change_routing[HOLDOUT]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_repair_cannot_replace_failed_first_attempt_for_calibration" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_window_censoring_does_not_promote_repaired_samples" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[prompt]" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[schema]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[pack_schema]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[context_policy]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[provider_view]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[language]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_producer_identity_separates_contract_changes_from_new_independent_data[source_isolation]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_planning_schema_identity_preserves_independent_bindings_and_contract_shape" time="0.021" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_chapter_evidence_compatibility_projects_only_unreachable_context_types" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_reference_agreement_requires_both_label_strata_and_preserves_failed_first_attempts" time="0.048" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_admission_uses_independent_scores_without_promoting_samples" time="0.006" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_feedback_isolated_from_retries_scope_and_business_success[change0]" time="0.004" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_feedback_isolated_from_retries_scope_and_business_success[change1]" time="0.004" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_feedback_isolated_from_retries_scope_and_business_success[change2]" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_feedback_isolated_from_retries_scope_and_business_success[change3]" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_feedback_isolated_from_retries_scope_and_business_success[change4]" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_feedback_isolated_from_retries_scope_and_business_success[change5]" time="0.005" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_unknown_protocol_and_partition_cannot_gain_current_qualification" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_attribution_is_conservative_and_keeps_negative_evaluation" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_independent_global_reviewer_qualification_is_separate_from_generation_and_coverage" time="0.010" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_campaign_renaming_cannot_reclassify_held_out_generator_content[0]" time="0.003" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_campaign_renaming_cannot_reclassify_held_out_generator_content[31]" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_unadjudicated_or_uninformative_generator_outcomes_cannot_hide_behind_positive_subset" time="0.002" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_judge_requires_independent_concrete_model_identity[distinct]" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_judge_requires_independent_concrete_model_identity[same_model_other_transport]" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_judge_requires_independent_concrete_model_identity[same_revision]" time="0.001" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_judge_requires_independent_concrete_model_identity[same_served_model]" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_judge_requires_independent_concrete_model_identity[unknown_alias]" time="0.000" /><testcase classname="tests.unit.test_cost_aware_routing" name="test_generator_judge_requires_independent_concrete_model_identity[missing_revision]" time="0.000" /><testcase classname="tests.unit.test_context_compression_routing" name="test_context_tasks_use_the_formal_taxonomy_with_engineering_gate_qualification[context_compress]" time="0.009" /><testcase classname="tests.unit.test_context_compression_routing" name="test_context_tasks_use_the_formal_taxonomy_with_engineering_gate_qualification[context_fidelity]" time="0.010" /><testcase classname="tests.unit.test_context_compression_routing" name="test_overflow_invokes_both_formal_task_routes_then_reconstructs_the_original_source" time="0.015" /><testcase classname="tests.unit.test_context_compression_routing" name="test_context_retried_failures_remain_in_the_qualification_denominator[context_compress]" time="0.007" /><testcase classname="tests.unit.test_context_compression_routing" name="test_context_retried_failures_remain_in_the_qualification_denominator[context_fidelity]" time="0.007" /><testcase classname="tests.unit.test_context_compression_provider" name="test_compression_view_keeps_conditional_and_epistemic_text_without_host_envelope" time="0.002" /><testcase classname="tests.unit.test_context_compression_provider" name="test_independent_checker_requires_exact_selection_and_preserves_uncertain_verdict" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_new_task_reasoning_rejects_router_downgrade_and_keeps_legacy_effort" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_pack_requires_explicit_context_node_and_substage_tool_authorization" time="0.001" /><testcase classname="tests.unit.test_context_compression_provider" name="test_new_planning_policy_separates_task_target_from_system_support_and_retains_old_contract" time="0.001" /><testcase classname="tests.unit.test_context_compression_provider" name="test_token_reservation_uses_actual_input_and_independent_output_without_expanding_scope" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_output_reserve_is_independent_from_512k_system_support[draft-16384]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_output_reserve_is_independent_from_512k_system_support[revision-16384]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_output_reserve_is_independent_from_512k_system_support[context_compress-4096]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_output_reserve_is_independent_from_512k_system_support[context_fidelity-2048]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_openai_sdk_request_carries_high_and_admitted_output_reserve" time="0.002" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[overflow-context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[overflow-context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[unknown_meter-context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[unknown_meter-context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[route_drift-context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[route_drift-context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[incomplete_coverage-context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[incomplete_coverage-context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[serialization_drift-context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_context_complete_request_rejects_before_transport[serialization_drift-context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_deepseek_request_carries_high_thinking_and_exact_effect_identity" time="0.008" /><testcase classname="tests.unit.test_context_compression_provider" name="test_semantic_task_reuses_author_and_world_private_source_isolation" time="0.004" /><testcase classname="tests.unit.test_context_compression_provider" name="test_codex_backend_reserves_the_known_full_output_capacity[draft]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_codex_backend_reserves_the_known_full_output_capacity[context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_codex_backend_reserves_the_known_full_output_capacity[context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_codex_backend_reserves_the_known_full_output_capacity[book_plan.generate]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_output_reserve_uses_the_backend_contract_instead_of_the_provider_label" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_new_model_effect_output_is_independent_of_its_context_target[codex-cli-32768-32768]" time="0.001" /><testcase classname="tests.unit.test_context_compression_provider" name="test_new_model_effect_output_is_independent_of_its_context_target[remote-provider-openai-32768-16384]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[draft]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[context_compress]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[context_fidelity]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_codex_route_capacity_growth_cannot_outgrow_its_frozen_reservation[book_plan.generate]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_final_api_output_reserve_keeps_the_sent_token_bound" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_authorization_cannot_shrink_the_new_output_requirement[codex-cli]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_authorization_cannot_shrink_the_new_output_requirement[remote-provider-openai]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission[model]" time="0.000" /><testcase classname="tests.unit.test_context_compression_provider" name="test_codex_full_output_and_reasoning_reserve_is_included_once_at_admission[authorization]" time="0.000" /><testcase classname="tests.unit.test_task_context_admission" name="test_task_dependency_admission_is_wired_only_for_the_frozen_v4_profile" time="0.000" /><testcase classname="tests.unit.test_task_context_admission" name="test_obligation_lineage_requires_exact_frozen_state_canon_and_rejects_unknown_sources" time="0.000" /><testcase classname="tests.unit.test_task_context_admission" name="test_obligation_boundary_discovery_blocks_instead_of_truncating_excess_events" time="0.000" /><testcase classname="tests.unit.test_task_context_admission" name="test_initial_obligation_discovery_validates_original_state_without_accepted_planting[0-]" time="0.002" /><testcase classname="tests.unit.test_task_context_admission" name="test_initial_obligation_discovery_validates_original_state_without_accepted_planting[0-original-initial-alias]" time="0.001" /><testcase classname="tests.unit.test_task_context_admission" name="test_initial_obligation_discovery_validates_original_state_without_accepted_planting[1-]" time="0.001" /><testcase classname="tests.unit.test_task_context_admission" name="test_initial_obligation_discovery_validates_original_state_without_accepted_planting[1-original-initial-alias]" time="0.001" /><testcase classname="tests.unit.test_task_context_admission" name="test_reference_observation_compiles_real_source_without_production_canon" time="0.005" /><testcase classname="tests.integration.test_quality_context_formal_e2e_postgres" name="test_native_overflow_compression_fidelity_draft_review_and_frozen_resume" time="17.898" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_first]" time="0.515"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-f1c96f39-f3cc-4535-83c3-046b17df0e31', 'router-operation-84ee19a8-0737-42f0-828b-b4b3f91ed81b')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    @pytest.mark.parametrize("log_order", ["failure_first", "failure_last", "retried"])
+    @pytest.mark.parametrize("terminal,real_flag", [("SUCCEEDED", True), ("FAILED_FINAL", True), ("SUCCEEDED", False)])
+    def test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator(scope, terminal, real_flag, log_order):
+&gt;       _assert_native_feedback_chain(scope, terminal, real_flag, log_order)
+
+tests/integration/test_context_feedback_postgres.py:198: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-f1c96f39-f3cc-4535-83c3-046b17df0e31', 'router-operation-84ee19a8-0737-42f0-828b-b4b3f91ed81b')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_last]" time="0.207"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-0bc3a100-a792-4962-af3e-6c3db23647e9', 'router-operation-81066c88-a741-4c85-8de0-12e380d06f04')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_last'
+
+    @pytest.mark.parametrize("log_order", ["failure_first", "failure_last", "retried"])
+    @pytest.mark.parametrize("terminal,real_flag", [("SUCCEEDED", True), ("FAILED_FINAL", True), ("SUCCEEDED", False)])
+    def test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator(scope, terminal, real_flag, log_order):
+&gt;       _assert_native_feedback_chain(scope, terminal, real_flag, log_order)
+
+tests/integration/test_context_feedback_postgres.py:198: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-0bc3a100-a792-4962-af3e-6c3db23647e9', 'router-operation-81066c88-a741-4c85-8de0-12e380d06f04')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_last'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-retried]" time="0.215" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_first]" time="0.184" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_last]" time="0.182" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-retried]" time="0.210" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_first]" time="0.187" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_last]" time="0.310" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-retried]" time="0.243" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_unknown_generation_cannot_reuse_old_positive_gate[SUCCEEDED]" time="0.194"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-967bde36-bea3-4eb8-a2c7-5c7a977432af', 'router-operation-9af336a0-8085-4f44-b192-8770d00927ff')
+effect_status = 'SUCCEEDED'
+
+    @pytest.mark.parametrize("effect_status", ["SUCCEEDED", "UNKNOWN"])
+    def test_unknown_generation_cannot_reuse_old_positive_gate(scope, effect_status):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:203: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-967bde36-bea3-4eb8-a2c7-5c7a977432af', 'router-operation-9af336a0-8085-4f44-b192-8770d00927ff')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_unknown_generation_cannot_reuse_old_positive_gate[UNKNOWN]" time="0.198"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-30832218-3281-475f-b347-eb85d3f66c66', 'router-operation-539e78bd-7ba8-4ef8-b53d-447cc621ef6c')
+effect_status = 'UNKNOWN'
+
+    @pytest.mark.parametrize("effect_status", ["SUCCEEDED", "UNKNOWN"])
+    def test_unknown_generation_cannot_reuse_old_positive_gate(scope, effect_status):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:203: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-30832218-3281-475f-b347-eb85d3f66c66', 'router-operation-539e78bd-7ba8-4ef8-b53d-447cc621ef6c')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[dispatch_hash]" time="0.236"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-fe29b301-6bbc-4e7d-a1ba-00bdac5db56b', 'router-operation-61034498-1272-4b72-9b1b-65323699f4d1')
+drift = 'dispatch_hash'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-fe29b301-6bbc-4e7d-a1ba-00bdac5db56b', 'router-operation-61034498-1272-4b72-9b1b-65323699f4d1')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[receipt_hash]" time="0.212"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-66aea80e-5d6b-40ed-a804-8b38ef8f38d4', 'router-operation-92cb349c-5538-431b-bd37-0ec846d8e22b')
+drift = 'receipt_hash'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-66aea80e-5d6b-40ed-a804-8b38ef8f38d4', 'router-operation-92cb349c-5538-431b-bd37-0ec846d8e22b')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[project]" time="0.221"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-9c10c731-0dde-4ab2-9ad1-f6e191c704d3', 'router-operation-f7d39ac2-9b89-4d49-a738-8f9e92bd909f')
+drift = 'project'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-9c10c731-0dde-4ab2-9ad1-f6e191c704d3', 'router-operation-f7d39ac2-9b89-4d49-a738-8f9e92bd909f')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[operation]" time="0.191"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-1a3f7e67-4db5-4af7-8ca7-8e2b01657250', 'router-operation-467d27cc-d553-4598-a363-fa575657762d')
+drift = 'operation'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-1a3f7e67-4db5-4af7-8ca7-8e2b01657250', 'router-operation-467d27cc-d553-4598-a363-fa575657762d')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[effect]" time="0.179"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-b7821f73-9506-4bb3-94c2-79306adcebf8', 'router-operation-31949440-7a2e-4a2f-8cf1-48a9316d3bea')
+drift = 'effect'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-b7821f73-9506-4bb3-94c2-79306adcebf8', 'router-operation-31949440-7a2e-4a2f-8cf1-48a9316d3bea')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[source_version]" time="0.165"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-7590620d-8cec-4917-a11f-74bc9a0dd393', 'router-operation-0cd61eeb-f9bf-4f3b-9ae4-27f8f7962e88')
+drift = 'source_version'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-7590620d-8cec-4917-a11f-74bc9a0dd393', 'router-operation-0cd61eeb-f9bf-4f3b-9ae4-27f8f7962e88')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[source_hash]" time="0.250"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-71218674-1e89-473b-9d69-3ede7afef825', 'router-operation-b601c3ad-c549-4a0b-8635-0ea49285d047')
+drift = 'source_hash'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-71218674-1e89-473b-9d69-3ede7afef825', 'router-operation-b601c3ad-c549-4a0b-8635-0ea49285d047')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[selected_units]" time="0.208"><failure message="AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}&#10;assert 1 == 2">scope = ('router-project-193967f3-7242-4c7e-b00c-d627c66ac7e5', 'router-operation-16bb1e6b-bb82-4784-8d1b-5404bfeda65f')
+drift = 'selected_units'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+&gt;       ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_context_feedback_postgres.py:228: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scope = ('router-project-193967f3-7242-4c7e-b00c-d627c66ac7e5', 'router-operation-16bb1e6b-bb82-4784-8d1b-5404bfeda65f')
+terminal = 'SUCCEEDED', real_flag = True, log_order = 'failure_first'
+
+    def _assert_native_feedback_chain(
+        scope, terminal, real_flag, log_order
+    ):
+        # WHY: synthetic real-call flags exercise native projection; no Provider is invoked.
+        model = candidate()
+        task = {
+            "source_binding": {
+                "asset_version_id": "source:v1",
+                "content_hash": "sha256:source",
+            },
+            "units": [{"unit_id": "u0"}, {"unit_id": "u1"}],
+            "required_unit_ids": [],
+        }
+    
+        def receipt(stage, frozen_task, output):
+            identity = feedback_effect(
+                scope, {"stage": stage, "input": {"context_compression_task": frozen_task},
+                    "_production_execution": {"capability_runtime": {"routing_decision": {
+                        "status": "SELECTED", "selected": {"candidate": asdict(model)},
+                        "task": {"producer_contract_hash": "sha256:context-native-producer", "input_hash": _hash(frozen_task), "chain_id": "context-feedback-chain"},
+                        "policy": {"risk": "HIGH"},
+                    }}}}
+            )
+            execution = {
+                "execution_request": {
+                    "operation_id": scope[1],
+                    "project_id": scope[0],
+                    "external_effect_id": identity,
+                }
+            }
+            execution.update({"execution_result": {"outcome": "SUCCEEDED"},
+                "route_snapshot": {"reasoning_effort": model.reasoning},
+                "process_evidence": {"served_model_identity_hash": "sha256:synthetic-cohort"}})
+            evidence = {"provider_id": model.provider, "model_id": model.model,
+                "real_model_call": real_flag,
+                "result": output,
+                "production_execution": execution,
+            }
+            stale = {**evidence, "result": {"failed": True}}
+    
+            def stale_log():
+                write_asset(
+                    scope,
+                    "model_call_log",
+                    {"operation_id": scope[1], "stage": stage, "provider_evidence": stale},
+                )
+    
+            if log_order == "failure_first":
+                stale_log()
+            write_asset(
+                scope,
+                "model_call_log",
+                {"operation_id": scope[1], "stage": stage, "provider_evidence": evidence},
+            )
+            with transaction() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO authority_external_effect_dispatch
+                    (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                    VALUES(%s,%s,2,'SUCCEEDED',%s,%s)""",
+                    [identity, identity, _hash(evidence), Jsonb(evidence)],
+                )
+                cursor.execute(
+                    """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                    VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                    [identity, identity, _hash(evidence), Jsonb({"evidence": evidence})],
+                )
+            if log_order in {"failure_last", "retried"}:
+                stale_log()
+            if log_order == "retried":
+                failed_id = identity + ":failed"
+                with transaction() as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """INSERT INTO authority_external_effect_dispatch
+                        (dispatch_id,external_effect_id,generation,status,payload_hash,evidence)
+                        VALUES(%s,%s,1,'FAILED_RETRYABLE',%s,%s)""",
+                        [failed_id, identity, _hash(stale), Jsonb(stale)],
+                    )
+                    cursor.execute(
+                        """INSERT INTO authority_external_receipt(provider,receipt_id,dispatch_id,payload_hash,payload,status)
+                        VALUES('OFFLINE',%s,%s,%s,%s,'VERIFIED')""",
+                        [failed_id, failed_id, _hash(stale), Jsonb({"evidence": stale})],
+                    )
+            return identity, execution
+    
+        comp, c_execution = receipt("context_compress", task, {"selected_unit_ids": ["u0"]})
+        fidelity = []
+        assessments = []
+        for selected in [["u0"], ["u0", "u1"]]:
+            passed = terminal == "SUCCEEDED" and "u1" in selected
+            verdict = {
+                "supported": True,
+                "coverage_complete": passed,
+                "missing_unit_ids": [] if passed else ["u1"],
+                "distorted_unit_ids": [],
+            }
+            fid, f_execution = receipt(
+                "context_fidelity", {**task, "selected_unit_ids": selected}, verdict
+            )
+            fidelity.append(fid)
+            assessments.append(
+                {
+                    "task": task,
+                    "selected_unit_ids": ["u0"],
+                    "fidelity_selected_unit_ids": selected,
+                    "fidelity": verdict,
+                    "compressor_evidence": c_execution,
+                    "fidelity_evidence": f_execution,
+                }
+            )
+        if terminal == "SUCCEEDED":
+            write_asset(
+                scope,
+                "context_bundle",
+                {
+                    "task_context_receipt": {
+                        "compression_trace": [
+                            {
+                                "source_asset_version_id": "source:v1",
+                                "source_content_hash": "sha256:source",
+                                "routing_assessments": assessments,
+                            }
+                        ]
+                    }
+                },
+            )
+        ids = [comp, *fidelity]
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE authority_operation SET status=%s WHERE operation_id=%s",
+                [terminal, scope[1]],
+            )
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=ids)
+        if not real_flag:
+            assert outcomes == {}
+            return
+        assert set(outcomes) == set(ids)
+        assert outcomes[comp]["accepted"] is False
+        assert outcomes[ids[1]]["accepted"] is False
+        assert outcomes[ids[2]]["accepted"] == (
+            terminal == "SUCCEEDED" and log_order != "retried"
+        )
+        assert all(
+            len(row["native_dispatch_history"]) == (2 if log_order == "retried" else 1)
+            for row in outcomes.values()
+        )
+        registry = PostgresRoutingRegistry(DATABASE_URL,
+            outcome_projection=context_gate_outcomes)
+        for stage, count in (("context_compress", 1), ("context_fidelity", 2)):
+            observations = registry.observations(project_id=scope[0], task_type=stage,
+                candidate=model, producer_contract_hash="sha256:context-native-producer")
+            assert len(observations) == count
+            snapshot = benchmark_snapshot(observations, now=datetime.now(timezone.utc), policy=task_policy(stage))
+&gt;           assert snapshot["domain_gate_sample_count"] == count, snapshot
+E           AssertionError: {'sample_count': 2, 'independent_sample_count': 2, 'repeated_sample_attempt_count': 0, 'excluded_experiment_partition_count': 0, ...}
+E           assert 1 == 2
+
+tests/integration/test_context_feedback_postgres.py:184: AssertionError</failure></testcase><testcase classname="tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests" name="test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay" time="16.223" /></testsuite></testsuites>
