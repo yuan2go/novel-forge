@@ -1217,3 +1217,21 @@ def test_literal_null_branch_retains_nullable_const_and_rejects_other_types():
         _validate(schema, {"value":1}, path="$")
     with pytest.raises(ValueError):
         _validate({"type":["string","null"],"const":"frozen"}, None, path="$")
+
+
+@pytest.mark.parametrize('stage', ['review','rereview'])
+def test_delivered_knowledge_schema_rejects_catalog_only_judgments(stage):
+    from novel_forge.modules.chapter_authority.provider_output_contracts import bind_delivered_knowledge_scope
+    base = chapter_provider_output_schema(stage)
+    check = {'knowledge_card_asset_version_id':'catalog-only', 'status':'NOT_USED','reason':'inspiration',
+        'evidence':None, 'conditions_checked':[], 'exceptions_checked':[], 'issue_codes':[]}
+    value = {'score':80, 'issues':[], 'resolution_checks':[], 'knowledge_checks':[check]}
+    empty = bind_delivered_knowledge_scope(base, [])
+    with pytest.raises(KernelError,match='SCHEMA_INVALID'):
+        validate_chapter_provider_output_against_schema(stage, empty, value)
+    validate_chapter_provider_output_against_schema(stage, empty, {**value,'knowledge_checks':[]})
+    scoped = bind_delivered_knowledge_scope(base,[{'knowledge_card_asset_version_id':'delivered:v1'}])
+    with pytest.raises(KernelError,match='SCHEMA_INVALID'):
+        validate_chapter_provider_output_against_schema(stage, scoped, value)
+    validate_chapter_provider_output_against_schema(stage, scoped, {**value,'knowledge_checks':[{**check,'knowledge_card_asset_version_id':'delivered:v1'}]})
+    assert base['properties']['knowledge_checks'].get('maxItems') is None

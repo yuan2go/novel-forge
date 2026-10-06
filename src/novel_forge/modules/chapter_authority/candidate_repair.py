@@ -70,7 +70,7 @@ def recover_information_frontier(authority, *, book_run_id, principal):
 
 
 def candidate_repair_payload(request):
-    if request.definition_version != '3.9.2' or not request.database_url:
+    if request.definition_version not in {'3.9.2','3.9.3'} or not request.database_url:
         return {}
     with AuthorityUnitOfWork(request.database_url) as uow:
         uow.cursor.execute('''SELECT e.external_effect_id,a.attempt_id,a.result,r.payload->'evidence'
@@ -95,7 +95,7 @@ def candidate_repair_payload(request):
         uow.cursor.execute("""SELECT policy_evidence FROM authority_saga_step_successor
             WHERE project_id=%s AND successor_operation_id=%s""", [request.project_id,request.operation_id])
         row = uow.cursor.fetchone()
-        if not row or row[0].get('contract_version') != 'chapter-candidate-contract-repair.v1':
+        if not row or row[0].get('contract_version') not in {'chapter-candidate-contract-repair.v1','chapter-review-output-repair.v1'}:
             return {}
         binding = row[0]
         effect_id = binding['settled_candidate_effects'][-1][0]
@@ -109,7 +109,56 @@ def candidate_repair_payload(request):
             raise KernelError('CHAPTER_CANDIDATE_REPAIR_EVIDENCE_MISSING', 'Retained candidate requires its exact succeeded receipt')
     from .model_effects import ModelProviderResult
     result = ModelProviderResult.from_evidence(row[0])
-    return {'candidate_repair': {'contract_version':'chapter-candidate-contract-repair.v1',
+    return {'candidate_repair': {'contract_version':binding['contract_version'],
         'source_effect_id':effect_id,'source_attempt_id':binding['source_failure']['attempt_id'],
         'diagnostic':binding['source_failure']['result'], 'rejected_candidate':result.output,
-        'instruction':'Repair the actual candidate using the new exact slot scopes. Meet the original work length without repetition or padding. Do not invent fact ids, future knowledge, approval or acceptance.'}}
+        'instruction':('Repair the actual review against the exact delivered knowledge_review_targets; an empty target list requires knowledge_checks=[]. Retain valid evidenced prose diagnoses; do not fabricate verification, approval or resolution.' if binding['contract_version']=='chapter-review-output-repair.v1' else 'Repair the actual candidate using the new exact slot scopes. Meet the original work length without repetition or padding. Do not invent fact ids, future knowledge, approval or acceptance.')}}
+
+
+def recover_review_frontier(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    principal.require('book.authority.execute', book['project_id'])
+    principal.require('chapter.authority.execute', book['project_id'])
+    if not book.get('active_chapter_request_id'):
+        return False
+    request = authority.require_chapter_request(book['active_chapter_request_id'])
+    if request['chapter_number'] != book['accepted_through_chapter'] + 1:
+        return False
+    from novel_forge.modules.production_execution.execution_template import selected_template
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        template = selected_book_template(uow.cursor, project_id=book['project_id'], book_id=book['book_id'])
+        policy = selected_template(template['policy_snapshot']['policy'], book['book_id']) if template else None
+        if not policy or policy.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
+            return False
+        uow.cursor.execute("""SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o
+            JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.review.evaluate'
+            AND o.definition_version='3.9.0' AND o.status='FAILED_FINAL'
+            AND a.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED')
+            ORDER BY a.attempt_number DESC LIMIT 1""", [request['chapter_root_operation_id'], book['project_id']])
+        row = uow.cursor.fetchone()
+        if not row:
+            return False
+        source, attempt = row
+        if source['actor_id'] != principal.principal_id:
+            raise KernelError('CHAPTER_REVIEW_RECOVERY_ACTOR_INVALID', 'Recovery requires the original review actor')
+        uow.cursor.execute("""SELECT e.external_effect_id,e.request_hash,e.status,r.status FROM authority_external_effect e
+            LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id""", [source['operation_id']])
+        effects = uow.cursor.fetchall()
+        if not effects or any(r[2:] != ('SUCCEEDED','SETTLED') for r in effects):
+            raise KernelError('CHAPTER_REVIEW_RECOVERY_UNSETTLED', 'Reconcile original review effects before recovery')
+    evidence = {'contract_version':'chapter-review-output-repair.v1', 'book_run_id':book_run_id,
+        'chapter_request_id':request['chapter_request_id'], 'policy_admission':template,
+        'input_snapshot':source['input_asset_snapshot'], 'source_failure':attempt,
+        'source_operation':source, 'settled_candidate_effects':effects,
+        'completion_checks':'UNCHANGED', 'accepted_cursor':book['accepted_through_chapter']}
+    def guard(uow):
+        uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
+        if uow.cursor.fetchone() != (book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id']) != template:
+            raise KernelError('CHAPTER_REVIEW_RECOVERY_CONFLICT', 'Reload the exact current Book frontier')
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.3',
+        context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
+            authority.application_build_id,authority.commit_sha), policy_evidence=evidence,
+        expected_failure_code=attempt['result']['error_code'],
+        settled_candidate_effects=tuple((r[0],r[1]) for r in effects),transaction_guard=guard)
+    return True

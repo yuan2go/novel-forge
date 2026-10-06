@@ -2091,3 +2091,9 @@ terminal Attempts, effects, settlement and accepted history do not change. Autho
 specified deadlines, cancellation, unknown effects, live leases, foreign actors and
 strict production cannot use this continuation. Replaying the same binding never
 extends the new window again.
+Review output successors bind knowledge checks to the exact delivered Card versions through
+`delivered-card-scope.v1`; an empty target list permits only an empty check list. Pack catalog
+availability does not establish Context delivery. A known, settled review rejected by this
+contract may receive one native versioned successor under creative template v5. The failed
+Operation, Attempt, receipt and settlement remain unchanged; the successor repairs the actual
+returned review and must pass the same knowledge, prose-location and downstream gates.

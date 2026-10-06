@@ -103,9 +103,12 @@ def replace_failed_step(
             [predecessor_id, saga["saga_id"]],
         )
         row = cursor.fetchone()
+        final_review_repair = bool(settled_candidate_effects and policy_evidence.get("contract_version") == "chapter-review-output-repair.v1"
+            and source["definition_name"] == "chapter.review.evaluate" and source["definition_version"] == "3.9.0"
+            and expected_failure_code in {"REVIEW_KNOWLEDGE_CHECK_INVALID", "REVIEW_KNOWLEDGE_CHECK_REQUIRED"})
         if (
             not row
-            or source["status"] != ("CANCELLATION_REQUESTED" if settled_candidate_effects else "FAILED_FINAL")
+            or source["status"] != ("CANCELLATION_REQUESTED" if settled_candidate_effects and not final_review_repair else "FAILED_FINAL")
             or root["status"] != "WAITING_CHILDREN"
             or saga["status"] != "RUNNING"
             or source["actor_id"] != context.actor_id
@@ -187,7 +190,9 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
-        if settled_candidate_effects:
+        if final_review_repair and target["policy"].get("review_knowledge_scope") != "delivered-card-scope.v1":
+            raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Review recovery requires its versioned delivered scope")
+        if settled_candidate_effects and not final_review_repair:
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
             transition_operation_in_uow(uow, OperationTransitionCommand(operation_id=predecessor_id,
                 project_id=project, expected_version=source['version'], expected_status='CANCELLATION_REQUESTED',

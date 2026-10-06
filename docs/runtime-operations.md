@@ -3039,3 +3039,14 @@ replay, latest rejected-candidate repair, cancellation, original usage, internal
 and reconstruction. Restore the previous-head database and verify retained effects,
 receipts, reservations and acceptance records before migration 0164. Routing policy
 configuration v1.10 is the explicit v5 successor; v1.7/v1.8/v1.9 keep their frozen schemas.
+For a retained `chapter.review.evaluate@3.9.0` knowledge-check failure with known succeeded,
+settled model receipts and no domain output or dependent work, install Review/ReReview
+3.9.3 and Chapter Pack 2.16.0, then continue the same Formation under creative template v5.
+The native successor preserves terminal history and successful Draft/Memo/Context inputs.
+Unknown effects, accepted work, missing permissions and strict templates remain ineligible.
+The successor performs a new accounted model call using the rejected review and diagnostic;
+it cannot turn an invented knowledge check into a passed check. Run
+`test_native_review_scope_successor_retains_rejected_review_and_accepts` and
+`test_native_information_flow_repairs_settled_candidate_and_preserves_usage` in
+`tests/integration/test_synthesis_formation_postgres.py`, plus the focused Chapter
+Provider output, definition, Pack and template unit contracts.

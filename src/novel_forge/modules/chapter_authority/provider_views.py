@@ -716,6 +716,8 @@ def build_provider_task_view(
             knowledge_review_targets=deepcopy(
                 inputs.get("knowledge_review_targets") or []
             ),
+            **({"review_knowledge_scope_contract": inputs["review_knowledge_scope_contract"]} if inputs.get("review_knowledge_scope_contract") else {}),
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
             author_design_review_targets=deepcopy(
                 inputs.get("author_design_review_targets") or {}
             ),
@@ -979,6 +981,8 @@ def build_provider_task_view(
             knowledge_review_targets=deepcopy(
                 inputs.get("knowledge_review_targets") or []
             ),
+            **({"review_knowledge_scope_contract": inputs["review_knowledge_scope_contract"]} if inputs.get("review_knowledge_scope_contract") else {}),
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
             author_design_review_targets=deepcopy(
                 inputs.get("author_design_review_targets") or {}
             ),

@@ -1304,6 +1304,10 @@ class PostgresChapterExecutionContractBinder:
                 phase_transitions = any(target.get("usage", {}).get("type_policy", {}).get("transition_policy") for target in craft_review_targets(candidate))
                 schema = extend_craft_provider_schema(schema, stage, phase_transitions=phase_transitions, legacy_contract=legacy_contract)
                 schema_ref += (":narrative-craft-v2" if phase_transitions else ":narrative-craft-v1") if legacy_contract else (":narrative-craft-v3" if phase_transitions else ":narrative-craft-v2")
+        if stage in {"review", "rereview"} and inputs.get("review_knowledge_scope_contract") == "delivered-card-scope.v1":
+            from .provider_output_contracts import bind_delivered_knowledge_scope
+            schema = bind_delivered_knowledge_scope(schema, inputs.get("knowledge_review_targets") or [])
+            schema_ref += ":delivered-card-scope-v1"
         return schema, schema_ref
 
     def bind(
@@ -2082,6 +2086,7 @@ class PostgresChapterExecutionContractBinder:
             str(row[0]) == ChapterNode.DRAFT.definition_name
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
+        compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
                 "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",

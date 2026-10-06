@@ -200,11 +200,14 @@ class ChapterAuthorityQuery:
                            '{_production_execution,attempt_id}' AS attempt_id,
                        attempt.status AS attempt_status,
                        COALESCE(succ.contract_version='kernel-failed-step-successor.v1'
-                         AND succ.policy_evidence->>'contract_version'='chapter-candidate-contract-repair.v1'
-                         AND source.status='CANCELLED' AND replacement.status='SUCCEEDED'
+                         AND ((succ.policy_evidence->>'contract_version'='chapter-candidate-contract-repair.v1' AND source.status='CANCELLED'
+                             AND attempt.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION')
+                           OR (succ.policy_evidence->>'contract_version'='chapter-review-output-repair.v1' AND source.status='FAILED_FINAL'
+                             AND source.definition_name='chapter.review.evaluate' AND replacement.definition_version='3.9.3'
+                             AND attempt.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED')))
+                         AND replacement.status='SUCCEEDED'
                          AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
                          AND succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id
-                         AND attempt.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION'
                          AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'settled_candidate_effects') binding
                              WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash),FALSE),
                        succ.successor_operation_id

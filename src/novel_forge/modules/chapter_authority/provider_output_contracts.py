@@ -1446,3 +1446,16 @@ def _without_null_object_properties(value: Any) -> Any:
     if isinstance(value, list):
         return [_without_null_object_properties(item) for item in value]
     return value
+
+
+def bind_delivered_knowledge_scope(schema: dict[str, Any], targets: list[dict[str, Any]]) -> dict[str, Any]:
+    from copy import deepcopy
+    result = deepcopy(schema)
+    identities = [target['knowledge_card_asset_version_id'] for target in targets]
+    if any(not isinstance(identity, str) or not identity for identity in identities) or len(set(identities)) != len(identities):
+        raise KernelError('REVIEW_KNOWLEDGE_TARGET_INVALID', 'Scope requires unique exact delivered Card versions')
+    checks = result['properties']['knowledge_checks']
+    checks.update(minItems=len(identities), maxItems=len(identities))
+    if identities:
+        checks['items']['properties']['knowledge_card_asset_version_id'] = {'type':'string','enum':sorted(identities)}
+    return result

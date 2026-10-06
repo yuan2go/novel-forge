@@ -305,7 +305,7 @@ class ChapterHandlerRequest:
 
     @property
     def semantic_definition_version(self) -> str:
-        return self.source_definition_version if self.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0"} else "3.9.0" if self.definition_version in {"3.9.1", "3.9.2"} else self.definition_version
+        return self.source_definition_version if self.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0"} else "3.9.0" if self.definition_version in {"3.9.1", "3.9.2", "3.9.3"} else self.definition_version
 
     @property
     def work_requirements_enabled(self) -> bool:
