@@ -178,6 +178,7 @@ def replace_args(args, **changes):
         "partial-alternative",
         "cancel",
         "no-progress",
+        "repair-exhausted",
         "capacity-recovery",
         "capacity-repair",
         "capacity-retained-repair-cause",
@@ -427,6 +428,27 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     def claim():
         return jobs.claim(runtime_group="book_creation", worker_id="durable-book", lease_seconds=60,
             job_kinds=("BOOK_CREATION_ADVANCE",), subject_kind="STORY_FORMATION_RUN", subject_id=identity)
+
+    if mode == "repair-exhausted":
+        def exhausted(**_values):
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "Exact raw proposals exhausted their frozen allowance")
+        monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation", exhausted)
+        current = claim()
+        result = execute_creation_worker_claim(settings, current)
+        assert result["wait_class"] == "OWNER_RECOVERY_REQUIRED"
+        assert result["failure"]["code"] == "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED"
+        assert jobs.get(current.runtime_job_id)["status"] == "SUCCEEDED"
+        assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+        assert claim() is None
+        status = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity,
+            principal=build_trusted_principal_resolver().resolve_api_principal())
+        assert status["author_state"] == "OWNER_RECOVERY_REQUIRED"
+        assert status["failure"] == result["failure"]
+        assert status["recovery_instruction"] == result["recovery_instruction"]
+        assert status["responsible_party"] == "RUNTIME_OWNER"
+        assert len(transport.calls) == 0
+        return
 
     if mode == "no-progress":
         monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",

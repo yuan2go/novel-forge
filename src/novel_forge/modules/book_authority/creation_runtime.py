@@ -433,9 +433,16 @@ def execute_creation_claim(jobs: RuntimeJobAuthority, claim: Any, *, composition
         composition.principal.require("book.authority.execute", claim.project_id)
         with LeaseHeartbeatGuard(lambda: jobs.heartbeat(claim, lease_seconds=60), lease_seconds=60,
                                  label=f"creation:{claim.attempt_id}"):
-            result = continue_creation(composition=composition, content=content, chapter=chapter,
-                formation_run_id=claim.subject_id, formation_worker=formation_worker, book_worker=book_worker,
-                maximum_ticks=maximum_ticks, deadline=monotonic() + work_window_seconds, execution_probe=lambda: jobs.assert_live(claim))
+            try:
+                result = continue_creation(composition=composition, content=content, chapter=chapter,
+                    formation_run_id=claim.subject_id, formation_worker=formation_worker, book_worker=book_worker,
+                    maximum_ticks=maximum_ticks, deadline=monotonic() + work_window_seconds, execution_probe=lambda: jobs.assert_live(claim))
+            except KernelError as error:
+                if error.code not in {"PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "PLANNING_REPAIR_BOUND_EXCEEDED"}:
+                    raise
+                result = {"formation_run_id": claim.subject_id, "stop_reason": error.code,
+                    "failure": {"code": error.code, "message": str(error)},
+                    "recovery_instruction": "Inspect retained failed proposals and exact diagnostics. A new author decision or approved future input change must resolve the cause; repeating recovery cannot expand the repair allowance."}
         progress = list(creation_progress(jobs.database_url, project_id=claim.project_id, formation_run_id=claim.subject_id))
         stagnant = int(claim.input_snapshot.get("stagnant_windows", 0)) + 1 if progress == claim.input_snapshot.get("progress") else 0
         reason = result["stop_reason"]
@@ -505,6 +512,10 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
     state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "CANCELLATION_REQUESTED" if cancellation else "AUTHOR_DECISION" if run["lifecycle"] == "WAITING_APPROVAL" else "PRODUCING"
     if latest and latest[1] == "DEAD_LETTER" and state == "PRODUCING":
         state = "OWNER_RECOVERY_REQUIRED"
+    if latest and latest[1] == "SUCCEEDED" and state == "PRODUCING":
+        state = str((latest[4] or {}).get("wait_class") or state)
+        if state == "COMPLETED":
+            state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "OWNER_RECOVERY_REQUIRED"
     return {
         "formation_run_id": formation_run_id,
         "production": production,
@@ -529,8 +540,8 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
         "version": run["version"],
         "cancellation": cancellation,
         "candidates": candidates,
-        "failure": run["failure"],
-        "recovery_instruction": run["recovery_instruction"],
+        "failure": run["failure"] or ((latest[4] or {}).get("failure", {}) if latest else {}),
+        "recovery_instruction": run["recovery_instruction"] or ((latest[4] or {}).get("recovery_instruction", {}) if latest else {}),
         "coordination": dict(
             zip(
                 ("runtime_job_id", "status", "next_attempt_at", "error", "result"),

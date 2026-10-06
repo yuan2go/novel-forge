@@ -2563,6 +2563,18 @@ verified rejected results from transport retry counting while retaining all rece
 and the native two-repair bound. UNKNOWN, in-flight effects, service failures and
 unchanged requests keep their existing blocks.
 
+An exhausted Planning repair allowance is a durable owner wait, not a transport
+retry. Creation completes only its coordination window with
+`OWNER_RECOVERY_REQUIRED`, retaining the precise error and recovery instruction;
+the Book remains incomplete. Automatic scheduling does not rearm that unchanged
+checkpoint. Repeating owner recovery cannot grant another content repair. Resolve
+the cause through a new author decision or an approved future input change first.
+The initial Story State genesis is empty. World character actions still require
+their own supplied knowledge or belief predicates; a Character Cast or Foundation
+cause does not supply acquired knowledge. A Provider may explicitly propose
+`NO_OP` or `DEFER` when support is absent. The runtime never converts a rejected
+proposal into either disposition or inserts facts to pass the gate.
+
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native
 ChapterGroups. `python -m scripts.creation_checkpoint_review preview` exports accepted

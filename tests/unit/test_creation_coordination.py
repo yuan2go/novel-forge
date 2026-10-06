@@ -59,6 +59,14 @@ def test_unknown_capacity_is_an_operator_configuration_wait_not_an_unknown_effec
     assert WorkerFailureClassifier.classify(KernelError("EFFECT_OUTCOME_UNKNOWN", "lost receipt")) is WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
 
 
+@pytest.mark.parametrize("code", ["PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "PLANNING_REPAIR_BOUND_EXCEEDED"])
+def test_exhausted_content_repairs_require_a_new_decision_not_a_technical_retry(code):
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass
+    assert creation_wait_class(code) == "OWNER_RECOVERY_REQUIRED"
+    assert WorkerFailureClassifier.classify(KernelError(code, "retained invalid proposal")) is WorkerFailureClass.MANUAL_INTERVENTION
+
+
 def test_author_fixed_direction_reuses_one_exact_approved_input_with_continuous_profiles():
     original = _input()
     policy = {**original.generation_policy, "contract_version": "formation-generation.v5",

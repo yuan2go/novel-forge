@@ -112,6 +112,7 @@ def world_transition_schema() -> dict[str, Any]:
             },
             "epistemic_basis": {
                 "type": "array",
+                "description": "Every approved character action requires a nonempty basis referring to that actor's supplied character_knowledge or character_belief state and satisfying its exact predicate. An approved character definition or foundation cause is not acquired knowledge. Do not invent a basis when the accepted initial state is empty; return NO_OP or DEFER with the missing support explained instead of an executable character action.",
                 "items": {
                     **deepcopy(predicate),
                     "properties": {
