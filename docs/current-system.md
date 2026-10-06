@@ -1265,17 +1265,18 @@ curve, protagonist charm, antagonist pressure or escalating conflict. Frozen pro
 1.0.0 and Mission/Scene v2 preserve their historical semantics; existing projections
 are reused by immutable source identity.
 
-New Chapter 3.8.0 and Pack 2.12.0/template v9 retain `work-requirements.v1` inputs
+Chapter 3.8.0 introduced these contracts through Pack 2.12.0/template v9; current
+Chapter 3.9.0/Pack 2.13.0 retains `work-requirements.v1` inputs
 and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,
 ExecutionIntent and every candidate/review/Quality baseline; statuses alone are not
-a sufficient Writer contract. Fresh 3.8 admission rejects legacy polluted projections
-with CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED. New sampler definitions 2.2/2.3
+a sufficient Writer contract. Current admission rejects legacy polluted projections
+with CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED. Sample definitions from 2.2/2.3
 bind the exact source Operation semantics separately from their own execution version;
 2.0/2.1 remain readable with frozen published source policies. Selected Book requirements and Chapter choices
 must agree: neither a generic threshold nor a Chapter NOT_APPLICABLE can override an
 effective requirement. Foundation style compile 2.1.4/v4 binds applicability to the
 selected Book Foundation and its approved source versions; frozen 2.1.1 emits v3.
-New 3.8 ExecutionIntent admission requires that v4 source-bound applicability projection,
+Current ExecutionIntent admission requires that v4 source-bound applicability projection,
 including when preparation explicitly selects an older asset. Legacy v2/v3 styles fail
 with STYLE_PROJECTION_MIGRATION_REQUIRED. A migration must use a new explicit owning
 command; it cannot replace an old task's frozen style or baseline during recovery.
@@ -2048,3 +2049,8 @@ mappings carry volume scope and original chapter numbers separately from reading
 Older parser versions retain their frozen semantics. v5 reprocessing appends to the same
 Edition/acquisition; prior number/title conflicts close only when identical source units
 and content are distinguished by verified volume scopes. Other issues remain carried.
+
+Chapter 3.9 uses optional sample successors 2.4 (ordinary) and 2.5 (reference),
+with explicit source contracts and the new Memo bound. Existing 2.2/2.3 definitions,
+frozen samples and source versions remain recoverable with their original contracts.
+Sampling is not a prerequisite for the creative template.

@@ -84,7 +84,7 @@ class _ChapterHandlerAdapter:
                                                        operation_id=request.operation_id, check_expiry=False)
             if snapshot is None:
                 raise KernelError("CHAPTER_SAMPLE_AUTHORIZATION_REQUIRED", "sample materialization requires its frozen authorization")
-            if request.definition_version in {"2.2.0", "2.3.0"}:
+            if request.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0"}:
                 from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
                 payload = request.command["payload"]
                 with AuthorityUnitOfWork(self.database_url) as uow:
