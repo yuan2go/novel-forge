@@ -50,7 +50,7 @@ from .process_supervisor import (
 )
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
-    CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION,
+    CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
     codex_output_schema, codex_retry_overrides, require_codex_home,
 )
 
@@ -1469,7 +1469,7 @@ def codex_protocol_failure(stdout: str) -> str | None:
                 continue
             message = event.get("message") if event.get("type") == "error" else None
             detail = json.loads(message) if isinstance(message, str) else {}
-            if (isinstance(detail, dict) and detail.get("status") == 400
+            if (isinstance(detail, dict) and detail.get("status", 400) == 400
                 and isinstance(detail.get("error"), dict)
                 and detail["error"].get("code") == "invalid_json_schema"):
                 return "PROVIDER_SCHEMA_REJECTED"
@@ -1689,6 +1689,7 @@ class CodexCliExecutionBackend:
             "output_schema": dict(payload.output_schema or {}),
             "provider_schema_contract": {
                 "version": CODEX_SCHEMA_PROJECTION_VERSION,
+                "equivalent_projection": CODEX_NULLABLE_SHARED_TYPES_VERSION,
                 "canonical_hash": _sha256(dict(payload.output_schema or {})),
                 "provider_hash": _sha256(codex_output_schema(dict(payload.output_schema or {}))),
                 "local_constraints_retained": ["uniqueItems"],

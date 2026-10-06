@@ -31,6 +31,7 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 
 
 CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v3"
+CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v1"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
 
@@ -115,6 +116,8 @@ def codex_output_schema(schema: dict) -> dict:
     for key in ("allOf", "anyOf", "oneOf", "prefixItems"):
         if isinstance(result.get(key), list):
             result[key] = [codex_output_schema(v) for v in result[key]]
+    if isinstance(result.get("type"), list) and set(result["type"]) == {"object", "null"}:
+        result = {"anyOf": [{**result, "type": "object"}, {"type": "null"}]}
     return result
 
 
@@ -205,3 +208,29 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
         "model_calls": 0,
         "fallback": "FORBIDDEN",
     }
+
+
+def codex_wire_correction_evidence(process_evidence: Mapping) -> dict | None:
+    contract = process_evidence.get('provider_schema_contract') or {}
+    canonical = process_evidence.get('output_schema')
+    if (not isinstance(canonical, dict) or process_evidence.get('output_schema_version') != 'schema:chapter-provider-output:canon_extraction:v24'
+        or contract.get('version') != CODEX_SCHEMA_PROJECTION_VERSION):
+        return None
+    def digest(value):
+        return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    def reverse(value):
+        if isinstance(value, dict):
+            branches = value.get('anyOf')
+            if (set(value)=={'anyOf'} and isinstance(branches,list) and len(branches)==2
+                and branches[1]=={'type':'null'} and branches[0].get('type')=='object'):
+                return reverse({**branches[0],'type':['object','null']})
+            return {key:reverse(item) for key,item in value.items()}
+        if isinstance(value,list):
+            return [reverse(item) for item in value]
+        return value
+    wire = codex_output_schema(canonical)
+    if (digest(canonical) != contract.get('canonical_hash') or digest(reverse(wire)) != contract.get('provider_hash')
+        or digest(wire)==contract.get('provider_hash')):
+        return None
+    return {'contract_version':CODEX_NULLABLE_SHARED_TYPES_VERSION,'canonical_hash':digest(canonical),
+        'previous_wire_hash':contract['provider_hash'],'corrected_wire_hash':digest(wire),'reversible_equivalence':'EXACT'}

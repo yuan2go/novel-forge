@@ -2131,3 +2131,11 @@ admit a versioned native successor and bind the new Pack. Historical Attempts,
 materialization, route decisions and Pack snapshots stay intact. A dispatched,
 unknown, accepted or unrelated failure cannot use this correction. Strict
 production retains its existing gates.
+
+The Codex Schema compiler retains canonical host contracts and hashes both canonical
+and provider wire forms. `codex-nullable-shared-types.v1` expresses a nullable shared
+object as `anyOf` with a closed object branch and a null branch. This is an equivalent
+wire representation under the existing structured Schema contract; it removes no
+constraint and does not certify service acceptance. Native retries retain the frozen
+canonical Schema and original Attempt limit. Explicit CLI `invalid_json_schema`
+evidence is a protocol rejection even when the JSON event omits an HTTP status.

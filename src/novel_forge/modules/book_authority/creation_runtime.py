@@ -50,6 +50,8 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
         recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_capacity_frontier
         recover_canon_capacity_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_schema_retry_phase
+        recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier
         recover_realization_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from .execution_recovery import recover_timeout
@@ -77,6 +79,10 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                 except KernelError as error:
                     events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
                     if error.code == "PROVIDER_ROUTING_BLOCKED" and recover_canon_capacity_frontier(
+                        composition.authority, book_run_id=book_run_id, principal=composition.principal
+                    ):
+                        continue
+                    if error.code == "MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE" and recover_canon_schema_retry_phase(
                         composition.authority, book_run_id=book_run_id, principal=composition.principal
                     ):
                         continue

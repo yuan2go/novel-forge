@@ -54,6 +54,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.revision.apply','FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.canon.extract','CANCELLATION_REQUESTED','PROVIDER_ROUTING_BLOCKED'):('3.9.5','canon_schema_projection','canon-provider-shared-types.v1'),
+            ('chapter.canon.extract','FAILED_RETRYABLE','MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE'):('3.9.5','canon_schema_projection','canon-provider-shared-types.v1'),
             ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
         correction = corrections.get((source[3],source[0],source[1])) if source else None
@@ -64,7 +65,33 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         target = uow.repositories.definitions.get(source[3],target_version)
         if not target or (correction[1] and target['policy'].get(correction[1]) != correction[2]):
             raise KernelError('EXECUTION_WINDOW_TARGET_INVALID','The unexecuted successor requires the declared correction')
-        cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED')), EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())", [root_id,root_id])
+        canon_schema_retry = source[3]=='chapter.canon.extract' and source[1]=='MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE'
+        wire_correction = None
+        if canon_schema_retry:
+            from novel_forge.modules.production_execution.codex_configuration import codex_wire_correction_evidence
+            cursor.execute("""SELECT v.asset_version_id,v.content_hash,v.content,e.external_effect_id,r.evidence->>'cost_authorization_ref'
+                FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id) JOIN authority_asset_version v USING(asset_version_id)
+                JOIN authority_external_effect e ON e.external_effect_id=v.content->>'external_effect_id'
+                JOIN authority_budget_reservation r USING(external_effect_id)
+                JOIN authority_attempt a ON a.attempt_id=v.content->>'attempt_id' AND a.operation_id=e.operation_id
+                WHERE oa.operation_id=%s AND x.asset_type='model_call_log' AND oa.role='model_failure_evidence'
+                AND e.operation_id=%s AND e.status='FAILED_RETRYABLE' AND r.status='SETTLED'
+                AND r.accounting_basis='ACCOUNT_ENTITLEMENT' AND COALESCE(r.evidence->>'cost_authorization_ref','')<>''
+                AND a.attempt_number=(SELECT max(attempt_number) FROM authority_attempt WHERE operation_id=e.operation_id)
+                AND v.content->>'failure_code'='PROCESS_EXIT_FAILURE' AND v.content->'real_model_call'='false'::jsonb""", [predecessor_id]*2)
+            observation=cursor.fetchone()
+            if observation:
+                proof=codex_wire_correction_evidence(observation[2]['provider_evidence']['production_execution']['process_evidence'])
+                if proof:
+                    wire_correction={**proof,'source_asset_version_id':observation[0],'source_content_hash':observation[1],
+                        'external_effect_id':observation[3],'cost_authorization_ref':observation[4]}
+            if not wire_correction or not start_repair_phase:
+                raise KernelError('EXECUTION_PHASE_WIRE_CORRECTION_REQUIRED','Only an exact reversible wire correction of a known settled membership failure may continue')
+        cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id
+            JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s
+            AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED') AND e.external_effect_id IS DISTINCT FROM %s),
+            EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) JOIN authority_operation o USING(operation_id)
+            WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())""", [root_id,wire_correction['external_effect_id'] if wire_correction else None,root_id])
         if any(cursor.fetchone()):
             raise KernelError('EXECUTION_WINDOW_UNSETTLED','Uncertain effects or live leases prevent continuation')
         key_parts = [root_id,predecessor_id,target_version,admission['policy_snapshot']['policy_hash']]
@@ -85,11 +112,11 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         if canon_capacity and source[0] != 'CANCELLATION_REQUESTED' and not start_repair_phase:
             raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Canon capacity recovery requires its explicit bounded phase')
         if start_repair_phase:
-            if source[0] != 'FAILED_RETRYABLE' or (not canon_capacity and source[1] not in {'CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT'}):
+            if source[0] != 'FAILED_RETRYABLE' or (not canon_capacity and not canon_schema_retry and source[1] not in {'CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT'}):
                 raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Only a known settled bounded length retry may start a new phase')
             cursor.execute('SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s FOR UPDATE',[predecessor_id])
             child,child_deadline = cursor.fetchone()
-            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.4') or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
+            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.5' if canon_schema_retry else '3.9.4') or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
                 raise KernelError('EXECUTION_PHASE_CHILD_INVALID','Only the exact derived length retry window can continue')
             cursor.execute("SELECT a.attempt_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int FROM authority_attempt a JOIN authority_operation o USING(operation_id) WHERE o.operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1",[predecessor_id])
             failed_attempt,number,maximum = cursor.fetchone()
@@ -113,7 +140,9 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                 control_recovery_limit = maximum+1
             elif number>=maximum:
                 raise KernelError('EXECUTION_PHASE_RETRY_EXHAUSTED','A new execution phase cannot reset retry exhaustion')
-            key_parts.extend(['chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3',failed_attempt])
+            key_parts.extend(['chapter-execution-window-renewal.v5' if canon_schema_retry else 'chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3',failed_attempt])
+            if wire_correction:
+                key_parts.append(wire_correction)
         key = hashlib.sha256(json.dumps(key_parts,sort_keys=True).encode()).hexdigest()
         cursor.execute('SELECT payload FROM audit_log WHERE operation_id=%s AND action=%s AND payload->>\'continuation_key\'=%s', [root_id,EVENT,key])
         previous = cursor.fetchone()
@@ -137,9 +166,9 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         if cursor.rowcount != 1:
             raise KernelError('EXECUTION_WINDOW_VERSION_CONFLICT','Reload the current Root fence')
         _record(uow.repositories.operation_graph,GraphCommandContext(root['project_id'],principal.principal_id,root['trace_id'],root['correlation_id'],predecessor_id), root_id,EVENT,
-                {'contract_version':('chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3') if start_repair_phase else 'chapter-execution-window-renewal.v1','continuation_key':key,'source_root':root,
+                {'contract_version':('chapter-execution-window-renewal.v5' if canon_schema_retry else 'chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3') if start_repair_phase else 'chapter-execution-window-renewal.v1','continuation_key':key,'source_root':root,
                  'predecessor_operation_id':predecessor_id,'target_definition_version':target_version,
-                 'policy_admission':admission,'original_deadline':deadline.isoformat(),'new_deadline':renewed.isoformat(),
+                 'policy_admission':admission,**({'wire_correction':wire_correction} if wire_correction else {}),'original_deadline':deadline.isoformat(),'new_deadline':renewed.isoformat(),
                  **({'source_child':child,'continued_child':child_after[0],'failed_attempt_id':failed_attempt,
                      'original_attempt_limit':maximum,'control_recovery_attempt_limit':control_recovery_limit} if child is not None else {}),
                  'preserved':'TERMINAL_ATTEMPTS_EFFECT_DEADLINES_RECEIPTS_USAGE_ACCEPTANCE'})

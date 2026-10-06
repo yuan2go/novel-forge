@@ -677,6 +677,8 @@ def test_codex_protocol_schema_rejection_is_distinct_from_transient_failure():
     rejected = {"type": "error", "message": json.dumps({"status": 400,
         "error": {"code": "invalid_json_schema", "message": "uniqueItems is not permitted"}})}
     assert codex_protocol_failure(json.dumps(rejected)) == "PROVIDER_SCHEMA_REJECTED"
+    rejected["message"] = json.dumps({"error":{"code":"invalid_json_schema","type":"invalid_request_error","param":"text.format.schema"}})
+    assert codex_protocol_failure(json.dumps(rejected)) == "PROVIDER_SCHEMA_REJECTED"
     for value in ("[]", "not json", json.dumps({"type": "error", "message": "timeout"}),
         json.dumps({"type": "error", "message": json.dumps({"status": 429, "error": {"code": "rate_limit"}})})):
         assert codex_protocol_failure(value) is None
@@ -703,3 +705,38 @@ def test_codex_source_schema_projects_partial_alternatives_as_closed_objects():
     value['findings'][0]['evidence_span_ids']=[]
     with pytest.raises(KernelError, match="SCHEMA"):
         validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)
+
+
+def test_codex_nullable_shared_object_preserves_closed_value_contract():
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.command_kernel.errors import KernelError
+    original = {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":{"$ref":"#/$defs/nullable"}},"required":["value"],"additionalProperties":False,
+        "$defs":{"nullable":{"type":["object","null"],"properties":{"id":{"type":"string","minLength":1}},"required":["id"],"additionalProperties":False}}}
+    projected = codex_output_schema(original)
+    assert projected['$defs']['nullable']['anyOf'][0]['type']=='object'
+    assert projected['$defs']['nullable']['anyOf'][1]=={'type':'null'}
+    for value in ({'value':None},{'value':{'id':'known'}}):
+        for schema in (original,projected):
+            validate_chapter_provider_output_against_schema('canon_extraction',schema,value)
+    for value in ({'value':{}},{'value':{'id':''}},{'value':{'id':'known','extra':True}},{'value':3}):
+        for schema in (original,projected):
+            with pytest.raises(KernelError):
+                validate_chapter_provider_output_against_schema('canon_extraction',schema,value)
+
+
+def test_codex_wire_correction_requires_exact_retained_hashes():
+    import hashlib
+    from novel_forge.modules.production_execution.codex_configuration import codex_wire_correction_evidence
+    canonical={'type':'object','properties':{'value':{'type':['object','null'],'properties':{'id':{'type':'string'}},'required':['id'],'additionalProperties':False}},'required':['value'],'additionalProperties':False}
+    digest=lambda v:'sha256:'+hashlib.sha256(json.dumps(v,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    evidence={'output_schema':canonical,'output_schema_version':'schema:chapter-provider-output:canon_extraction:v24',
+        'provider_schema_contract':{'version':'codex-structured-schema.v3','canonical_hash':digest(canonical),'provider_hash':digest(canonical)}}
+    proof=codex_wire_correction_evidence(evidence)
+    assert proof and proof['reversible_equivalence']=='EXACT'
+    assert proof['previous_wire_hash']!=proof['corrected_wire_hash']
+    evidence['provider_schema_contract']['provider_hash']='sha256:'+'0'*64
+    assert codex_wire_correction_evidence(evidence) is None
+    evidence['provider_schema_contract']['provider_hash']=digest(canonical)
+    evidence['output_schema_version']='schema:chapter-provider-output:canon_extraction:v23'
+    assert codex_wire_correction_evidence(evidence) is None

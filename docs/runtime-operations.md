@@ -3094,3 +3094,19 @@ and does not refresh an operation-bound Pack. Native `RUNNING` and
 `FORWARD_RECOVERY` Sagas may replace this exact failed step; terminal Sagas cannot.
 Schema factoring restores the exact original constraints and
 does not authorize a larger model window or additional Provider retry capacity.
+
+A Codex Schema protocol rejection requires a corrected, reviewed compiler release
+before retrying its remaining accounted Attempt. Preserve the original stdout,
+process receipt, failed Effect and settlement; do not replay the same rejected wire
+form or replenish an exhausted retry limit. Nullable shared-object wire projection
+is checked for equivalence against the canonical contract, then receives the normal
+request admission and host validation. A standard JSON Schema check alone does not
+prove service compatibility.
+
+Creative v5 can renew the derived window of a Canon 3.9.5 membership retry after
+a recorded, settled process failure only when the current wire compiler proves an
+exact reversible correction against the retained provider Schema hash. The v5
+execution-window journal binds the source Attempt, billing authorization, original
+canonical Schema and both wire hashes. It retains the original retry count and
+author deadlines, rejects uncertain effects and priced channels, and cannot renew
+again for the same correction. Its service outcome remains unproven until dispatch.

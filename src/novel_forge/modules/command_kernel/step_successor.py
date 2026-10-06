@@ -31,7 +31,7 @@ def has_candidate_domain_outputs(cursor, operation_id):
     allowed |= {('execution_evidence',r) for r in ('cost-receipt','normalized-output','output-manifest','process-receipt',
         'raw-output','usage-receipt','validation-manifest')}
     allowed |= {('cost_ledger','cost_evidence'),('execution_recovery_session','execution_recovery_projection'),
-        ('model_call_log','model_evidence'),('routing_decision','routing_evidence')}
+        ('model_call_log','model_evidence'),('model_call_log','model_failure_evidence'),('routing_decision','routing_evidence')}
     return any(tuple(row) not in allowed for row in cursor.fetchall())
 
 
