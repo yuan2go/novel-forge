@@ -1,0 +1,138 @@
+{
+  "schema_version": "model-reference-routing-progress.v1",
+  "source_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+  "branch": "codex/work-intent-context-e2e-20261005",
+  "evidence_classes": [
+    "STATIC",
+    "OFFLINE"
+  ],
+  "not_a_completion_report": true,
+  "catalog_state": "WIRED",
+  "native_model_reference_contract": "NOT_IMPLEMENTED",
+  "blind_calls": 0,
+  "adjudication_calls": 0,
+  "real_inference_calls": 0,
+  "accepted_chapters": "0/40",
+  "statuses": {
+    "QUALITY_SEMANTICS_CLOSED": "PASS",
+    "CONTEXT_COMPRESSION_PRODUCTION_READY": "BLOCKED",
+    "AUTHOR_INTENT_PROPAGATION": "NOT_VERIFIED",
+    "FORMAL_PRODUCTION_E2E": "BLOCKED",
+    "ACCEPTANCE_AND_NEXT_UNIT": "NOT_VERIFIED",
+    "RECOVERY_PATH": "NOT_VERIFIED",
+    "LEGACY_ASSET_SAFETY": "PASS",
+    "REAL_PROVIDER_VALIDATED": "NOT_VERIFIED",
+    "CREATIVE_QUALITY_PROVEN": "NOT_VERIFIED",
+    "PRODUCTION_READY": "FAIL"
+  },
+  "pass_scope": {
+    "QUALITY_SEMANTICS_CLOSED": "prior a57b8db engineering STATIC/OFFLINE/MOCK_E2E only; not upgraded here",
+    "LEGACY_ASSET_SAFETY": "focused exact-version and legacy escalation compatibility only"
+  },
+  "blocks": [
+    "distinct trusted Pack approver and approved deployment missing",
+    "native model reference creation/record/adjudication/reference-consumption contract not implemented",
+    "REFERENCE phase currently zero and needs explicit versioned allocation within unchanged aggregate budget",
+    "existing Book remains source22 frozen; no silent catalog/model/baseline replacement permitted"
+  ],
+  "checks": {
+    "unit_tests": 429,
+    "unit_subtests": 8,
+    "postgres_tests": 88,
+    "postgres_subtests": 13,
+    "full_backend_release_matrix": "NOT_VERIFIED",
+    "real_provider_longform": "NOT_VERIFIED"
+  },
+  "protected_original": {
+    "branch": "codex/wp02-author-approved-run",
+    "head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+    "status": "?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-configure-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/budget-query.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-approval-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/direction-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/live-supervision-after-budget.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/logs/\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/mode-receipt.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/shared-evidence-secret-scan.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/status.json\n?? architecture/live-evidence/narrative-capability-admission-closure-02/20260928-author-production/approved-start/user-authorization.json\n",
+    "matches_original": true
+  },
+  "artifacts": [
+    {
+      "path": "checks/nf-model-catalog-initial.xml",
+      "source_sha256": "6d3e883d4a38d749dbfff07dab673b43d7f4e8fb03f082591f08207b8d20715e",
+      "published_sha256": "6d3e883d4a38d749dbfff07dab673b43d7f4e8fb03f082591f08207b8d20715e",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-new.xml",
+      "source_sha256": "f51f34462652f1e38e914fd6c256d378b9106948915482de6d71dc9f4f0cfddd",
+      "published_sha256": "f51f34462652f1e38e914fd6c256d378b9106948915482de6d71dc9f4f0cfddd",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-composition.xml",
+      "source_sha256": "3b11cfaa2915cc343972169869c875233741d5eb5de841e9c787377f4edf225f",
+      "published_sha256": "3b11cfaa2915cc343972169869c875233741d5eb5de841e9c787377f4edf225f",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-pg.xml",
+      "source_sha256": "d72620ed7ca382b7345d2f25867c105cc459617291e4df3d6c59433751fc3611",
+      "published_sha256": "d72620ed7ca382b7345d2f25867c105cc459617291e4df3d6c59433751fc3611",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-pg-repair.xml",
+      "source_sha256": "a9296becff2a3fc7a46cb1f1c7d779d43e6878438fd90f5aee68ae2503c17e65",
+      "published_sha256": "a9296becff2a3fc7a46cb1f1c7d779d43e6878438fd90f5aee68ae2503c17e65",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-pg-concurrency.xml",
+      "source_sha256": "f8f66de637b2243f0d39daa763dda2a7a2c8e5fb1b87cf621cb95d821332df8c",
+      "published_sha256": "f8f66de637b2243f0d39daa763dda2a7a2c8e5fb1b87cf621cb95d821332df8c",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-final-unit.xml",
+      "source_sha256": "88b0124a57f6924213cf818ddf78af57525a261f521179f7619bf1216064f32a",
+      "published_sha256": "88b0124a57f6924213cf818ddf78af57525a261f521179f7619bf1216064f32a",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-final-unit-repair.xml",
+      "source_sha256": "7e9e5cf67b2a8b5fed16dd49cde7c69ad84e1343ed149d36009d93dbfee51c74",
+      "published_sha256": "7e9e5cf67b2a8b5fed16dd49cde7c69ad84e1343ed149d36009d93dbfee51c74",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-pg-routing.xml",
+      "source_sha256": "c75d591e9680c726d2f67fbd89edacd6b537ade35a427e6badb4ce75ad25cfeb",
+      "published_sha256": "c75d591e9680c726d2f67fbd89edacd6b537ade35a427e6badb4ce75ad25cfeb",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-6510-unit.xml",
+      "source_sha256": "c93a0f92d693112ee55354e09c16e4eb9c29142e8fcf038e88b185b62be3639d",
+      "published_sha256": "c93a0f92d693112ee55354e09c16e4eb9c29142e8fcf038e88b185b62be3639d",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-6510-pg.xml",
+      "source_sha256": "50549e3185dd2e9a666b316873e47c03c7ff1211f0f9b9be52e0b7a55355bd5d",
+      "published_sha256": "50549e3185dd2e9a666b316873e47c03c7ff1211f0f9b9be52e0b7a55355bd5d",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-documentation-reality.json",
+      "source_sha256": "cd1140a6bb606f79ef26154e91ef97ef260308f46e28e1b99a4026cb5b036afd",
+      "published_sha256": "cd1140a6bb606f79ef26154e91ef97ef260308f46e28e1b99a4026cb5b036afd",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-documentation-reality-final.json",
+      "source_sha256": "21c15efbc8a104de364cb15615118792680676ed6b5689274c519d3252f6a16b",
+      "published_sha256": "21c15efbc8a104de364cb15615118792680676ed6b5689274c519d3252f6a16b",
+      "credential_redaction": false
+    },
+    {
+      "path": "checks/nf-model-catalog-documentation-reality-committed.json",
+      "source_sha256": "01858018fdc3993f674d1ba66c983d09fa951c7cbb58904b3d134a6309528d18",
+      "published_sha256": "01858018fdc3993f674d1ba66c983d09fa951c7cbb58904b3d134a6309528d18",
+      "credential_redaction": false
+    }
+  ]
+}

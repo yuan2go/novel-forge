@@ -618,7 +618,9 @@ class NarrativeSemanticEvaluationHandler:
         )
         reference_asset_version_ids = (
             candidate.asset_version_id,
-            *((payload["reference_evaluation"]["asset_version_id"],) if reference_result else ()),
+            *((payload["reference_evaluation"]["asset_version_id"],) if reference_result and payload["reference_evaluation"].get("basis") != "MODEL_CONSENSUS" else ()),
+            *(tuple(item["asset_version_id"] for item in payload["reference_evaluation"].get("adjudications", ()))
+                if reference_result and payload["reference_evaluation"].get("basis") == "MODEL_CONSENSUS" else ()),
             *(tuple(item["asset_version_id"] for item in payload["reference_evaluation"].get("adjudicated_reference", {}).get("adjudications", ()))
                 if reference_result else ()),
             *(

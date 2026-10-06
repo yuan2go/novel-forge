@@ -1,0 +1,6 @@
+[
+  {"case_id":"bridge-key","hero":"沈禾","witness":"陆苇","object":"铜桥钥","location":"第三格暗匣","deadline":"日落前","secret":"守门人的姓是唐","prerequisite":false,"prerequisite_text":"桥税尚未缴清","fact_id":"fact:bridge-key","secret_id":"fact:keeper","obligation_id":"obligation:return-bridge-key"},
+  {"case_id":"medicine-box","hero":"余笙","witness":"周岚","object":"青瓷药盒","location":"东壁第二块松砖后","deadline":"午钟响起前","secret":"药师曾用过假名","prerequisite":true,"prerequisite_text":"通行押金已由见证人缴清，accepted event:deposit-paid","fact_id":"fact:medicine-box","secret_id":"fact:healer-alias","obligation_id":"obligation:return-medicine-box"},
+  {"case_id":"archive-seal","hero":"温翎","witness":"陈泊","object":"旧档印章","location":"木桌右侧的夹层","deadline":"换岗前","secret":"档案管理员是证人的姐姐","prerequisite":false,"prerequisite_text":"旧契约尚未正式解除","fact_id":"fact:archive-seal","secret_id":"fact:kinship","obligation_id":"obligation:return-archive-seal"},
+  {"case_id":"harbor-token","hero":"江澈","witness":"许灯","object":"白漆船牌","location":"北窗下的第七只陶罐","deadline":"退潮前","secret":"港长藏有第二份账册","prerequisite":true,"prerequisite_text":"船坞担保已获批准，accepted event:guarantee-approved","fact_id":"fact:harbor-token","secret_id":"fact:second-ledger","obligation_id":"obligation:return-harbor-token"}
+]

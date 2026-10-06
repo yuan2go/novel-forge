@@ -1,0 +1,9 @@
+{
+  "evidence_class": "STATIC",
+  "starting_remote_main": "4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52",
+  "closing_remote_main": "9bd1d34f24ebe302533ffc26c72bda97336c4152",
+  "runtime_source": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "remote_additional_hotfix": "ef572087",
+  "runtime_semantics_replaced": false,
+  "changes": "M\tarchitecture/reality-evidence.json\nM\tdocs/runtime-operations.md\nM\tscripts/creation_comparison.py\nM\tscripts/run_creation_synthesis.py\nM\tscripts/run_world_production_smoke.py\nM\tsrc/novel_forge/api/authority_dependencies.py\nM\tsrc/novel_forge/modules/canon_graph/grounding.py\nM\tsrc/novel_forge/modules/production_execution/provider_admission.py\nM\tsrc/novel_forge/modules/story_planning_runtime/world_sampling.py\n"
+}

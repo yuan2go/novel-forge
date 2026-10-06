@@ -226,7 +226,6 @@ def main(argv=None):
             values, args.authorized_total_usd, args.authorization_ref
         )
         report.update(authorization)
-        validate_configuration(values)
         database_url = values.get("NOVEL_FORGE_DATABASE_URL", "")
         import psycopg
 
@@ -248,6 +247,9 @@ def main(argv=None):
             authorization = freeze_campaign_accounting(authorization, native_budget, values)
             report.update(authorization)
             report["cost_accounting"] = authorization
+        validate_configuration(values, campaign_accounting=(
+            authorization if authorization["accounting_basis"] == "MIXED" else None
+        ))
         settings = IndustrialSettings.from_env(values, root=args.root)
         resolver = build_trusted_principal_resolver(env=values)
         principal = resolver.resolve_api_principal()
@@ -288,6 +290,7 @@ def main(argv=None):
                 if key
                 in {
                     "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL",
+                    "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP",
                     "NOVEL_FORGE_OPERATION_PROVIDER_CAP",
                     "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP",
                     "NOVEL_FORGE_DAILY_PROVIDER_CAP",
@@ -302,6 +305,7 @@ def main(argv=None):
                     "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_TOKEN_LIMIT",
                     "NOVEL_FORGE_BOOK_OPENING_PROVIDER_PER_CALL_COST_LIMIT",
                     "NOVEL_FORGE_BOOK_OPENING_PROVIDER_WINDOW_SECONDS",
+                    "NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY",
                     "NOVEL_FORGE_CODEX_ACCOUNTING_MODE",
                     "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF",
                     "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF",
@@ -310,7 +314,13 @@ def main(argv=None):
                     "NOVEL_FORGE_CODEX_CONFIGURATION_REF",
                     "NOVEL_FORGE_CODEX_RETRY_POLICY",
                     "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT",
+                    "NOVEL_FORGE_CODEX_ROUTER_MODELS",
                     "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE",
+                    "NOVEL_FORGE_PROVIDER_DAILY_CAP",
+                    "NOVEL_FORGE_GLOBAL_PROVIDER_CAP",
+                    "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP",
+                    "NOVEL_FORGE_WORK_PROVIDER_CAP",
+                    "NOVEL_FORGE_MODEL_PROJECT_CAP",
                     "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
                     "NOVEL_FORGE_OPERATION_PROVIDER_CALL_LIMIT",
                     "NOVEL_FORGE_PROVIDER_PROJECT_CALL_LIMIT",

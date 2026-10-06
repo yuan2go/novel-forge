@@ -1,0 +1,9 @@
+{
+  "evidence_class": "OFFLINE",
+  "storage_roundtrip": "PASS",
+  "object_ref": "minio://nf-sol40-20261005t112522z-artifacts/operator-preflight/storage-roundtrip.json#content_hash=sha256:0ad887c254fd71202e77d60d24cf20587718c127ba0f719badf5ca119c9dc1e9",
+  "content_hash": "sha256:0ad887c254fd71202e77d60d24cf20587718c127ba0f719badf5ca119c9dc1e9",
+  "provider_calls": 0,
+  "existing_stores_modified": false,
+  "credentials_printed": false
+}

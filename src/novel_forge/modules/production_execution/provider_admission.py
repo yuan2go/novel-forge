@@ -7,6 +7,17 @@ from typing import Any, Mapping
 
 
 PROVIDER_ADMISSION_CONTRACT_VERSION = "provider-token-admission-v1"
+SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT = (
+    ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
+    ("project_total", "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP"),
+    ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
+    ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
+    ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
+    ("global_total", "NOVEL_FORGE_GLOBAL_PROVIDER_CAP"),
+    ("global_monthly", "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP"),
+    ("work_total", "NOVEL_FORGE_WORK_PROVIDER_CAP"),
+    ("model_project_total", "NOVEL_FORGE_MODEL_PROJECT_CAP"),
+)
 _SUPPORTED_METHODS = {
     "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1": ("deepseek", "PROVEN_UPPER_BOUND"),
     "OPENAI_UTF8_BYTES_UPPER_BOUND_V1": ("openai", "PROVEN_UPPER_BOUND"),

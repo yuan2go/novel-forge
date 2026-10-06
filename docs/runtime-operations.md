@@ -638,6 +638,20 @@ calls, tokens and entitlement lanes remain frozen. The same configure command va
 this lineage, and campaign queries include earlier grants, reservations and settlements.
 Old requests retain their original limits. An increased ceiling is never reported as usage.
 
+To move allowance between phases without increasing the approved ceiling, select
+`creative-provider-campaign-budget.v6` through the same native configure command
+(`creative.experiment_budget.configure@1.7.0`). Retain campaign, manifest, Book, expiry,
+aggregate caps, entitlement lanes and business permissions. Bind `previous_policy` to the
+exact selected v4 or v6 policy; `reallocation` contains timezone-aware `authorized_at`
+and `carry_forward` from the native ledger, with accounted reservation IDs, totals, phases
+and entitlement usage. Every authorized phase cap must equal its new allocation. Selection
+rejects stale usage and allocations below consumed or unresolved reservations. A production
+renewal cannot use this contract to acquire diagnostic allowance. Dispatch checks the current
+shared ceiling and the request's frozen authorization against consumption in its own policy
+lineage; successor reservations cannot retroactively consume an earlier phase cap. Old
+request identities, expiry and unresolved outcomes remain frozen. This contract grants
+neither model qualification nor spending beyond the existing ceiling.
+
 For a new, explicitly approved finite production window, use
 `creative-provider-campaign-budget.v5` through the same configure command. Preserve the
 campaign, manifest, project and Book and bind `previous_policy` to the selected native
@@ -821,6 +835,34 @@ the adjudicator is separate from the blind evaluators. These records require act
 independent human input. A coding agent's labels cannot be submitted as human evaluations.
 The software checks provenance and declared independence; it cannot certify a person's
 judgment or turn subjective labels into universal truth.
+
+Model-only references are a separate requested contract, not HumanEvaluation or human
+calibration. The current native reference path requires human annotations. An explicit
+`codex-router-models.v1` catalog can configure task-scoped Codex models, but it does not
+create model reference evidence. A frozen model panel requires two isolated
+blind executions and a third adjudication, all binding the exact subject, author baseline,
+policy, Producer, actual ModelCallLog and Kernel receipt. Same-model executions remain
+correlated model consensus; selection alone cannot qualify a model. Do not replace an old
+human reference, frozen route or budget when enabling a model panel. Model reference
+creation, native record/adjudication and reference feedback
+must be implemented and verified before dispatch or production admission can use that basis.
+
+The model-only contract uses separate `model_reference_evaluation` and
+`model_reference_adjudication` assets. Each evaluation binds the exact subject, author
+baseline, policy, Producer contract, and a successful native ModelCallLog/ExternalEffect
+receipt. Two blind evaluations require distinct native Operations, Attempts, Effects and
+model sessions; a third independent execution adjudicates their frozen outputs. A panel
+using one model family declares its correlation and remains `MODEL_CONSENSUS`, never
+HumanEvaluation or reader preference. Reference consumers validate the native source
+chain again and keep model-consensus qualification separate from human calibration.
+
+Planning bootstrap and reference provenance must read the exact admitted execution
+version, rather than assuming the historical `1.16.0` contract. The current supported
+candidate-only versions are `1.16.0`, `1.17.0` and `1.18.0`; each retains its frozen
+schema, requirements and semantic profile. Future or adjacent version strings are not
+compatible by inference. Registry, World sample origin and reference subject checks
+must agree on that bounded version set. This compatibility repair does not reinterpret
+older assets under the current profile or waive a profile hash mismatch.
 
 Reference coverage must include every dimension of the selected Quality group; review
 and rereview use respectively `review_decision` and `rereview_decision`. Freeze an explicit
@@ -1030,17 +1072,21 @@ creation freeze; changed scope cannot replay an old decision. Absence preserves 
 unrestricted routing and is insufficient evidence of role separation. This restriction
 does not replace legitimate qualification samples, independent blind evaluations,
 adjudication or Capability Pack approval by a principal distinct from its compiler.
-The current Codex Router candidate is an escalation lane even when Codex is the only
-configured Provider. It requires two semantic failures, or HIGH risk with an explicit
-escalation reason. Strict qualification and a generation-only Provider scope do not
-make it eligible as the first MEDIUM-risk Draft generator. A deployment requiring Codex
-as its primary generator needs an explicitly versioned primary lane across Router,
-entitlement reservation, Book Opening and benchmark authorization; that lane is currently
-unimplemented. Do not fabricate semantic failures or escalation reasons to start it.
+Without an explicit model catalog, the Codex Router candidate retains its historical
+escalation semantics: two semantic failures, or HIGH risk with an explicit escalation
+reason. `NOVEL_FORGE_CODEX_ROUTER_MODELS` accepts the exact `codex-router-models.v1`
+contract with model, reasoning, role, tasks and context/output limits. Its `PRIMARY`
+and `REFERENCE` roles require a matching finite account entitlement and ordinary
+qualification. Model task scope is checked during selection, route materialization and
+Kernel reservation. Models sharing an account authorization consume the same call
+allowance; adding a model does not multiply quota. Catalog entries bind model revision
+and the creation freeze. An unqualified primary still fails closed. This support alone
+does not establish a model panel, literary qualification or a real first-chapter run.
 Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`
 with its Codex model, authorization reference/version and finite call/token quota. The
 deployment supplies it through `NOVEL_FORGE_BOOK_OPENING_ACCOUNT_ENTITLEMENT_POLICY` as
-JSON; composition requires an exact match with the configured Codex escalation identity.
+JSON; composition requires an exact match with the configured Codex escalation or explicit
+primary identity.
 A priced envelope without that lane still rejects entitlement execution. Both lanes consume
 the parent call/token budget; progress reports retain unknown entitlement monetary cost
 separately from priced USD expenditure.
@@ -1050,6 +1096,13 @@ separates priced USD allowance from account entitlement. The creation entry's fr
 accounting and resume adapter retains that distinction and validates the exact native
 campaign grant, entitlement identity and business scope. A zero priced allowance permits
 only entitled execution; it does not mean the entitlement has zero monetary cost.
+The real creation entry validates the frozen campaign against the native budget before
+checking mixed configuration caps. Codex retains its exact entitlement reference and
+unknown monetary cost. A native positive priced allowance requires explicit positive
+priced caps, each no larger than that allowance; it does not price the Codex lane.
+Standalone entitlement smoke runs without a validated mixed campaign still reject
+monetary caps. These configuration checks never replace Kernel reservations or native
+phase and cumulative budget enforcement.
 The adapter rejects a campaign presented as a legacy single-account budget before
 initializing a Book. Historical single-account freezes retain their original semantics.
 

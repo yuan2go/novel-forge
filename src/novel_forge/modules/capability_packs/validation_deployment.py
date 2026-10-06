@@ -96,6 +96,7 @@ def register_validation_runtime_definitions(
         )
     )
     from novel_forge.modules.story_planning_runtime.world_sampling import world_sample_definitions
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import model_reference_creation_definitions
 
     with AuthorityUnitOfWork(database_url) as uow:
         for item in (planning, reader, prose_review, prose_sample, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
@@ -106,6 +107,8 @@ def register_validation_runtime_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *world_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,
+        ), *model_reference_creation_definitions(
+            application_build_id=application_build_id, commit_sha=commit_sha,
         )):
             uow.repositories.definitions.register(item)
         uow.commit()
@@ -136,6 +139,7 @@ def install_chapter_validation_pack(
     provider_sampling: bool = False,
     reference_sampling: bool = False,
     reference_samples: bool = False,
+    model_reference_creation: bool = False,
     runtime_environment: str = "validation",
 ) -> dict[str, Any]:
     root = Path(repository_root).resolve()
@@ -153,7 +157,14 @@ def install_chapter_validation_pack(
         raise ValueError("Chapter reference evaluation requires provider sampling")
     if reference_samples and not reference_sampling:
         raise ValueError("Chapter sample targets require reference sampling")
-    if provider_sampling:
+    if model_reference_creation and (provider_sampling or reference_sampling or reference_samples):
+        raise ValueError("model reference creation has its own diagnostic workflow")
+    if model_reference_creation:
+        if runtime_environment != "validation":
+            raise ValueError("model reference creation packs require validation runtime")
+        manifest = model_reference_creation_manifest(manifest,
+            application_build_id=application_build_id, commit_sha=commit_sha)
+    elif provider_sampling:
         if runtime_environment != "validation":
             raise ValueError("Chapter sampling packs are restricted to validation")
         manifest = chapter_provider_sampling_manifest(
@@ -165,12 +176,14 @@ def install_chapter_validation_pack(
         "schema_version": "novelos.capability_pack.artifact_catalog.v1",
         "artifacts": [item.to_dict() for item in resolver.artifacts()],
     }
-    if provider_sampling:
+    if provider_sampling or model_reference_creation:
         from .artifacts import artifact_content_hash
 
         for artifact in catalog["artifacts"]:
             if artifact["ref"] == manifest["context_sources"]["policy_id"]:
                 artifact["content"]["allowed_asset_types"] = manifest["context_sources"]["allowed_asset_types"]
+                if model_reference_creation:
+                    artifact["content"]["required_version_refs"] = manifest["context_sources"]["required_version_refs"]
                 artifact["content_hash"] = artifact_content_hash(artifact["content"])
             elif artifact["ref"] == manifest["tool_permissions"]["policy_id"]:
                 artifact["content"]["explicit_tool_refs"] = ["model.provider.invoke"]
@@ -191,7 +204,7 @@ def install_chapter_validation_pack(
         agent_admin=agent_admin,
         agent_skill_ref=None,
         agent_domain="chapter",
-        agent_scope_type="CHAPTER",
+        agent_scope_type="BOOK" if model_reference_creation else "CHAPTER",
         agent_generation=1,
         expected_activation_version=0,
         runtime_environment=runtime_environment,
@@ -264,6 +277,83 @@ def chapter_provider_sampling_manifest(
         "blocking": True, "threshold": 1, "required_evidence": ["chapter_provider_sample"],
     }]
     manifest["evaluation"]["metrics"] = []
+    return manifest
+
+
+def model_reference_creation_manifest(source: Mapping[str, Any], *,
+                                      application_build_id: str,
+                                      commit_sha: str) -> dict[str, Any]:
+    """INVARIANT: a diagnostic derivative retains the root Pack's governed dependencies."""
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import (
+        MODEL_REFERENCE_STAGE, MODEL_REFERENCE_OUTPUT, model_reference_creation_definitions,
+    )
+    from .artifacts import artifact_content_hash
+
+    manifest = deepcopy(dict(source))
+    manifest.setdefault("ext", {}).setdefault("experiments", {})["model_reference_source_pack"] = {
+        "pack_id": str(source["identity"]["pack_id"]),
+        "version": str(source["identity"]["version"]),
+        "manifest_hash": canonical_hash(dict(source)),
+    }
+    identity = manifest["identity"]
+    identity.update({"pack_id": str(identity["pack_id"]) + ".model_reference_creation",
+        "version": "3.0.0", "name": "Model Reference Creation Diagnostic Pack",
+        "description": "Two blind independent evaluations and an adjudication of frozen native candidates.",
+        "domain": "chapter_quality"})
+    definitions = {item["name"]: item for item in model_reference_creation_definitions(
+        application_build_id=application_build_id, commit_sha=commit_sha)}
+    prototype = next(node for node in manifest["workflow_template"]["nodes"]
+        if node["capability_id"] == "quality.intrinsic.judge")
+    nodes = []
+    for name, stage in MODEL_REFERENCE_STAGE.items():
+        definition = definitions[name]
+        node = deepcopy(prototype)
+        node.update({"node_id": stage, "operation_name": name,
+            "operation_definition_ref": name + "@1.0.0",
+            "operation_definition_hash": definition_hash(definition),
+            "handler_key": definition["handler_key"], "stage": stage,
+            "agent_definition_ref": ("model-reference-evaluator@1" if stage == "model_reference_evaluate"
+                else "model-reference-adjudicator@1"),
+            "input_asset_types": ["chapter_provider_sample", "world_provider_sample",
+                "planning_generation_candidate", "creative_brief", "model_reference_evaluation"],
+            "output_asset_types": [MODEL_REFERENCE_OUTPUT], "depends_on": [],
+            "retry_policy": {**definition["retry_policy"], "retryable_errors": []}})
+        nodes.append(node)
+    workflow = manifest["workflow_template"]
+    workflow.update({"workflow_id": "model_reference_creation",
+        "workflow_version": "1.0.0", "execution_mode": "SAGA",
+        "idempotency_scope": "book:model-reference-creation", "nodes": nodes,
+        "completion": {"required_terminal_nodes": [item["node_id"] for item in nodes],
+            "required_evidence": ["trace", "audit"],
+            "required_output_asset_types": [MODEL_REFERENCE_OUTPUT]}})
+    manifest["context_sources"].update({"allowed_asset_types": sorted({*manifest["context_sources"]["allowed_asset_types"],
+            "chapter_provider_sample", "world_provider_sample", "planning_generation_candidate",
+            "creative_brief", "model_reference_evaluation", "context_bundle"}),
+        "required_version_refs": ["model_reference.subject.asset_version_id",
+            "model_reference.author_baseline.asset_version_id"]})
+    manifest["assets"]["knowledge"]["required_packs"] = []
+    model_tool = next(item for item in manifest["tool_permissions"]["tools"]
+        if item["tool_ref"] == "model.provider.invoke")
+    model_tool["allowed_operations"] = list(MODEL_REFERENCE_STAGE.values())
+    manifest["tool_permissions"]["tools"] = [model_tool]
+    manifest["evaluation"].update({"evaluation_id": "model-reference-creation-diagnostic.v1",
+        "required_gates": [{"gate_id": "model_reference_source_isolation",
+            "judge_capability_id": "quality.originality.judge", "blocking": True,
+            "threshold": 1, "required_evidence": [MODEL_REFERENCE_OUTPUT]}], "metrics": []})
+    for key, ref, version, filename in (
+        ("system_instruction", "prompt-system:model-reference-creation", "v1",
+         "config/capability_packs/artifacts/model_reference_system_instruction_v1.md"),
+        ("template", "prompt-template:model-reference-creation", "v1",
+         "config/capability_packs/artifacts/model_reference_template_v1.md")):
+        from pathlib import Path
+        content = {"text": (Path(__file__).resolve().parents[4] / filename).read_text(encoding="utf-8")}
+        binding = manifest["prompt_binding"]
+        binding[key + "_ref"] = ref
+        binding[key + "_version"] = version
+        binding[key + "_hash"] = artifact_content_hash(content)
+    manifest["prompt_binding"].update({"compiler_version": "model-reference-prompt-compiler:v1",
+        "input_schema_ref": "schema:model-reference-creation-input:v1",
+        "output_schema_ref": "schema:model-reference-creation-output:v1"})
     return manifest
 
 
@@ -564,8 +654,11 @@ def _register_agents(
     runtime_environment: str,
 ) -> None:
     artifacts = list(compiled["resolved_artifacts"])
+    expected_system_ref = ("prompt-system:model-reference-creation"
+        if str(compiled.get("pack_id") or "").endswith(".model_reference_creation") else "")
     prompt = next(
         item for item in artifacts if item["kind"] == "PROMPT_SYSTEM_INSTRUCTION"
+        and (not expected_system_ref or item["ref"] == expected_system_ref)
     )
     prompt_ref = f"{prompt['ref']}@{prompt['version']}"
     tool = dict(compiled["tool_permission_snapshot"])
@@ -746,6 +839,7 @@ def _scope_identity(
 __all__ = [
     "VALIDATION_PACK_PERMISSIONS",
     "install_chapter_validation_pack",
+    "model_reference_creation_manifest",
     "install_longform_validation_pack",
     "register_validation_runtime_definitions",
 ]

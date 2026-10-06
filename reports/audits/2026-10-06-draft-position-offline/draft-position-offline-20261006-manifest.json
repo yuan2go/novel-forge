@@ -1,0 +1,10 @@
+{
+  "archive_path": "/Users/yuan/.codex/worktrees/draft-position-offline-20261006/draft-position-offline-20261006.zip",
+  "sha256": "sha256:662bf1c77da6daa7805ae5bfd4dd3952170abfe0e2803dc7902153c7fa990289",
+  "bytes": 852880,
+  "file_count": 88,
+  "contains_current_frozen_version": "frozen-v2",
+  "secret_pattern_hits": 0,
+  "model_calls": 0,
+  "status": "OFFLINE_PACKAGE_READY_MODEL_BEHAVIOR_NOT_RUN"
+}

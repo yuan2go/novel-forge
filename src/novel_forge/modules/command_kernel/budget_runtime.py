@@ -3359,19 +3359,23 @@ def _enforce_routing_chain_budget(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
             "routed effect has invalid frozen limits",
         )
+    from novel_forge.modules.production_execution.cost_routing import authorized_codex_entitlement
     if candidate.get("provider") == "codex-cli" and (
-        not candidate.get("escalation_only")
+        not authorized_codex_entitlement(candidate)
         or request.accounting_basis != "ACCOUNT_ENTITLEMENT"
+        or request.cost_authorization_ref != candidate.get("authorization_ref")
     ):
         raise KernelError(
             "ROUTING_ESCALATION_AUTHORIZATION_CONFLICT",
-            "Codex routing requires authorized entitlement escalation",
+            "Codex routing requires a frozen authorized entitlement role",
         )
     if candidate.get("provider") == "deepseek" and request.accounting_basis != "PRICED":
         raise KernelError(
             "ROUTING_BUDGET_ACCOUNTING_CONFLICT",
             "DeepSeek routing requires priced accounting",
         )
+    if candidate.get("authorized_tasks") is not None and task.get("task_type") not in candidate["authorized_tasks"]:
+        raise KernelError("MODEL_TASK_NOT_AUTHORIZED", "reservation exceeds the frozen model task scope")
     if check_attempts and amount is not None:
         try:
             output_tokens = int(row[1])
@@ -3466,6 +3470,7 @@ def _enforce_routing_chain_budget(
                 "ROUTING_ESCALATION_LIMIT_REACHED",
                 "execution chain escalation attempts exhausted",
             )
+    if check_attempts and candidate.get("provider") == "codex-cli":
         cursor.execute(
             f"""SELECT count(*) FROM authority_budget_reservation
                 WHERE provider=%s AND evidence->>'cost_authorization_ref'=%s

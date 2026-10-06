@@ -176,6 +176,7 @@ def test_native_source_stop_cap_does_not_change_full_creative_opportunity(tmp_pa
     (lambda r: r["runtime_settings"].update(NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF="unbound-grant"), "runtime authorization"),
     (lambda r: r["runtime_settings"].update(NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF="another-account"), "runtime policy"),
     (lambda r: r["runtime_settings"].update(NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT="medium"), "runtime policy"),
+    (lambda r: r["runtime_settings"].update(NOVEL_FORGE_CODEX_ROUTER_MODELS='{"contract_version":"codex-router-models.v1","models":[]}'), "runtime policy"),
     (lambda r: r["runtime_settings"].update(NOVEL_FORGE_HIDDEN_CONTEXT_POLICY="same-new-unknown-policy"), "unclassified"),
     (lambda r: r["models"]["draft"].update(template_hash="sha256:" + "9" * 64), "identical frozen model"),
     (lambda r: r["models"]["draft"]["model_profile"].update(model_id="another-model"), "identical frozen model"),

@@ -1,0 +1,54 @@
+[
+  {
+    "pack_id": "chapter_generation_pack",
+    "pack_version": "2.12.0",
+    "compilation_id": "0771f10e-dbbb-4d14-bf91-25eb57b81c99",
+    "manifest_hash": "sha256:152c10085b78582589efd5caacd0c5e24d3b9dc2b3a0b2ac9155fe6580c66f3b",
+    "compilation_hash": "sha256:b495737883ecbaeed1c0a00ca486e9e191abf68ba00bd81b326e88d01afa5d4d",
+    "source_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+    "compiler_principal": "operator:sol40-20261005T112522Z",
+    "compilation_status": "TRUSTED",
+    "approved": false,
+    "activated": false,
+    "deployed": false
+  },
+  {
+    "pack_id": "story_planning_pack",
+    "pack_version": "2.10.0",
+    "compilation_id": "112043ea-4a20-4cac-bc17-345902da2da2",
+    "manifest_hash": "sha256:0d5a1696458356451bfe3ef80fe8012886bb385ffd2b43f80818d97c850a76eb",
+    "compilation_hash": "sha256:75fc6bf010f2e7128fe85e1db982193bf502a5b79b9419f85080474815d3ae7d",
+    "source_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+    "compiler_principal": "operator:sol40-20261005T112522Z",
+    "compilation_status": "TRUSTED",
+    "approved": false,
+    "activated": false,
+    "deployed": false
+  },
+  {
+    "pack_id": "narrative_semantic_evaluation_pack",
+    "pack_version": "2.12.0",
+    "compilation_id": "61e26744-c5a0-4c3c-a74f-ddf1a0fc5d0e",
+    "manifest_hash": "sha256:f8193d353fb7609d2e2ee000f0344238334fbb38c6e1c52d4cd3830e3e7f9c17",
+    "compilation_hash": "sha256:6d6263d16ada70eb2b3e672a266e5baa91ed51739dd883a8f1fd64149fd7db2b",
+    "source_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+    "compiler_principal": "operator:sol40-20261005T112522Z",
+    "compilation_status": "TRUSTED",
+    "approved": false,
+    "activated": false,
+    "deployed": false
+  },
+  {
+    "pack_id": "reader_outcome_pack",
+    "pack_version": "1.2.0",
+    "compilation_id": "d7a7e33b-4342-4f84-9b8c-c7cfb9e6ea6a",
+    "manifest_hash": "sha256:551432064215e59bb576d6bdceba2f9abb39bd1b4badd6ef8be1f781becba373",
+    "compilation_hash": "sha256:1846241fc1b181e52d7c51ec2cdf9b595c07fedbb591354ec91f37098cd0e78d",
+    "source_sha": "6510ee74099a002f0d84f2c97f36e14ec7a523a0",
+    "compiler_principal": "operator:sol40-20261005T112522Z",
+    "compilation_status": "TRUSTED",
+    "approved": false,
+    "activated": false,
+    "deployed": false
+  }
+]

@@ -166,3 +166,23 @@ def test_chapter_sampling_pack_uses_separate_native_definitions_and_approval_sco
     assert {node["node_id"] for node in nodes} == {"memo", "draft", "revision", "canon_extraction"}
     assert all(node["definition_name"].startswith("chapter.provider.sample.") for node in nodes)
     assert all(node["authoritative_completion_contract"]["required_asset_selectors"][0]["eligibility"] == "INELIGIBLE" for node in nodes)
+
+
+def test_model_reference_creation_pack_compiles_and_deploys_only_in_offline_validation() -> None:
+    harness = CapabilityPackPostgresHarness("model-reference-creation-deployment")
+    register_validation_runtime_definitions(DATABASE_URL,
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
+    result = install_chapter_validation_pack(DATABASE_URL, repository_root=ROOT,
+        project_id=harness.project_id, workspace_id=harness.workspace_id,
+        book_id=harness.book_ids[0], application_build_id=harness.application_build_id,
+        commit_sha=harness.release_sha, compiler=harness.compiler,
+        approver=harness.approver, agent_admin=harness.agent_admin,
+        pack_id_override=harness.pack_id, model_reference_creation=True)
+    assert result["pack_id"] == harness.pack_id + ".model_reference_creation"
+    nodes = result["compilation"]["compiled"]["workflow_nodes"]
+    assert {node["node_id"] for node in nodes} == {
+        "model_reference_evaluate", "model_reference_adjudicate"}
+    assert {node["definition_name"] for node in nodes} == {
+        "quality.model_reference.evaluate", "quality.model_reference.adjudicate"}
+    assert all(node["authoritative_completion_contract"]["required_asset_selectors"][0]
+        ["eligibility"] == "INELIGIBLE" for node in nodes)

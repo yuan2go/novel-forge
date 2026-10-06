@@ -105,7 +105,8 @@ def _lineage_plans(cursor: Any, plan: dict[str, Any], project_id: str) -> dict[s
         result[digest] = current
         monetary_amendment = current["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION and "previous_policy" in current
         renewal = current["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION
-        if current["contract_version"] != _contract().PRODUCTION_BOOK_VERSION and not monetary_amendment and not renewal:
+        phase_reallocation = current["contract_version"] == _contract().PROVIDER_REALLOCATION_VERSION
+        if current["contract_version"] != _contract().PRODUCTION_BOOK_VERSION and not monetary_amendment and not renewal and not phase_reallocation:
             return result
         reference = current["previous_policy"]
         cursor.execute("""SELECT content,content_hash FROM authority_runtime_policy_version
@@ -114,7 +115,10 @@ def _lineage_plans(cursor: Any, plan: dict[str, Any], project_id: str) -> dict[s
         if row is None or row[1] != reference["policy_hash"] or policy_hash(row[0]) != row[1]:
             raise KernelError("CREATIVE_BUDGET_PREDECESSOR_MISMATCH", "budget predecessor native policy is missing or altered")
         _contract().validate_policy(row[0])
-        if renewal:
+        if phase_reallocation:
+            from .creative_budget_reallocation import validate_predecessor
+            validate_predecessor(current, row[0], project_id=project_id)
+        elif renewal:
             from .creative_budget_renewal import validate_predecessor
             validate_predecessor(current, row[0], project_id=project_id)
         elif monetary_amendment:
@@ -159,6 +163,15 @@ def validate_selection_in_uow(uow: AuthorityUnitOfWork, *, project_id: str, cont
     own = next((row for row in selections if row["project_id"] == project_id), None)
     monetary_amendment = plan["contract_version"] == _contract().PROVIDER_CAMPAIGN_VERSION and "previous_policy" in plan
     renewal = plan["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION
+    phase_reallocation = plan["contract_version"] == _contract().PROVIDER_REALLOCATION_VERSION
+    if phase_reallocation and (own is None or own["policy"]["comparison_budget"] != plan):
+        if own is None:
+            raise KernelError("CREATIVE_BUDGET_REALLOCATION_INVALID", "Reallocation requires an existing selected native campaign")
+        from .creative_budget_reallocation import validate_predecessor, validate_selection
+        validate_predecessor(plan, own["policy"], project_id=project_id)
+        validate_selection(plan, own["policy"], content, _usage(uow.cursor, own["policy"]["comparison_budget"], project_id))
+    if phase_reallocation and own is not None and own["policy"]["comparison_budget"] == plan and content["authorization"] != own["policy"]["authorization"]:
+        raise KernelError("CREATIVE_BUDGET_REALLOCATION_INVALID", "Changed allocation authorization requires a new exact predecessor")
     if renewal and own is not None and own["policy"]["comparison_budget"] == plan and content["authorization"] != own["policy"]["authorization"]:
         raise KernelError("CREATIVE_BUDGET_RENEWAL_INVALID", "A changed renewal authorization requires a new exact predecessor")
     if renewal and (own is None or own["policy"]["comparison_budget"] != plan):
@@ -186,7 +199,7 @@ def validate_selection_in_uow(uow: AuthorityUnitOfWork, *, project_id: str, cont
         prior = selected["policy"]["comparison_budget"]
         overlap = projects & {a["project_id"] for a in prior["arms"]}
         if (overlap or prior["experiment_id"] == plan["experiment_id"]) and prior != plan:
-            if selected is not own or not (plan["contract_version"] == _contract().PRODUCTION_BOOK_VERSION or monetary_amendment or renewal):
+            if selected is not own or not (plan["contract_version"] == _contract().PRODUCTION_BOOK_VERSION or monetary_amendment or renewal or phase_reallocation):
                 raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "participants and allocations require an exact native reallocation predecessor")
     usage = _usage(uow.cursor, plan, project_id)
     _check_limits(content, usage, phase=None, tokens=0, calls=0)
@@ -211,6 +224,9 @@ def _effect_identity(cursor: Any, effect_id: str, project_id: str) -> dict[str, 
 def _business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str, generation: int = 1,
                     plan: dict[str, Any] | None = None) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.creative_budget_scope import classify_business_scope
+    if identity["operation_name"] in {"quality.model_reference.evaluate", "quality.model_reference.adjudicate"}:
+        return _model_reference_business_scope(cursor, identity, project_id=project_id,
+            generation=generation, plan=plan)
     if identity["operation_name"] == "longform.prose_review":
         from novel_forge.modules.book_followup_authority.prose_budget import frozen_prose_budget_scope
 
@@ -303,18 +319,72 @@ def _campaign_scope(cursor: Any, identity: dict[str, Any], *, plan: dict[str, An
         campaign = grant.get("campaign")
         if not campaign or campaign["campaign_id"] != plan["experiment_id"] or campaign["manifest_hash"] != plan["manifest_hash"]:
             raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "sampling grant differs from the frozen campaign")
-        scope["phase"] = "REFERENCE" if grant["purpose"] == "REFERENCE_EVALUATION" else {
+        scope["phase"] = "REFERENCE" if grant["purpose"] in {"REFERENCE_EVALUATION", "MODEL_REFERENCE_CREATION"} else {
             "DEVELOPMENT": "SCREENING", "CALIBRATION": "CALIBRATION", "HOLDOUT": "HOLDOUT",
         }[campaign["partition"]]
         scope["campaign_sample"] = dict(campaign)
     return scope
 
 
+def _model_reference_business_scope(cursor: Any, identity: dict[str, Any], *, project_id: str,
+                                    generation: int, plan: dict[str, Any] | None) -> dict[str, Any]:
+    from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
+    from .routing_bootstrap import validate_model_reference_creation_binding
+
+    request = identity["request_payload"]
+    command = identity["command_payload"].get("payload", identity["command_payload"])
+    metadata = request.get("_production_execution") or {}
+    binding = command.get("model_reference")
+    tasks = {"quality.model_reference.evaluate": ("model_reference_evaluate", "BLIND_EVALUATION"),
+             "quality.model_reference.adjudicate": ("model_reference_adjudicate", "ADJUDICATION")}
+    task, role = tasks[identity["operation_name"]]
+    if (plan is None or request.get("stage") != task or identity["capability"] != "model." + task
+        or not isinstance(binding, dict) or binding.get("role") != role
+        or request.get("input", {}).get("model_reference") != binding
+        or metadata.get("model_reference") != binding or metadata.get("execution_binding_domain") != "model_reference"
+        or metadata.get("book_id") != command.get("book_id")
+        or command.get("book_id") != _arm(plan, project_id)["book_id"]):
+        raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "Model reference Effect differs from its exact native command and Book")
+    try:
+        validate_model_reference_creation_binding(binding)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "Model reference budget requires its exact frozen role and source contract") from exc
+    subject = require_reference_subject(cursor, project_id=project_id, binding=binding["subject"],
+        allowed_types=frozenset({"chapter_provider_sample", "world_provider_sample", "planning_generation_candidate"}))
+    cursor.execute("""SELECT command_payload FROM authority_operation WHERE project_id=%s AND operation_id=%s""",
+        [project_id, subject["generation_operation_id"]])
+    origin = cursor.fetchone()
+    if origin is None:
+        raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "Model reference subject lost its owning generation")
+    origin_command = origin[0].get("payload", origin[0])
+    if origin_command.get("book_id") != command["book_id"]:
+        raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "Model reference subject belongs to another Book")
+    cursor.execute("""SELECT external_effect_id FROM authority_external_effect
+        WHERE project_id=%s AND operation_id=%s AND status='SUCCEEDED'
+          AND request_payload->>'stage'=%s""",
+        [project_id, subject["generation_operation_id"], subject["content"].get("stage", subject["content"].get("generator_operation_name"))])
+    effects = cursor.fetchall()
+    if len(effects) != 1:
+        raise KernelError("CREATIVE_BUDGET_BUSINESS_SCOPE_UNKNOWN", "Model reference subject requires one successful exact generator Effect")
+    origin_identity = _effect_identity(cursor, effects[0][0], project_id)
+    scope = _campaign_scope(cursor, origin_identity, plan=plan, project_id=project_id, generation=1)
+    declared = binding["scope"]
+    if (declared["scope_type"] == "CHAPTER" and declared["chapter_start"] != scope["chapter_number"]
+        or declared["scope_type"] == "BOOK" and declared["book_id"] != command["book_id"]):
+        raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "Model reference scope differs from its exact native generator")
+    return {**scope, "phase": "REFERENCE", "operation_name": identity["operation_name"],
+        "capability": identity["capability"], "stage": task, "dispatch_generation": generation,
+        "provider_request_hash": str(identity.get("request_hash") or ""),
+        "scope_sources": [*scope["scope_sources"], {"path": "native_model_reference_subject",
+            "value": {**binding["subject"], "generation_operation_id": subject["generation_operation_id"]}}]}
+
+
 def _empty_usage() -> dict[str, int]:
     return {key: 0 for key in ("calls_used_or_reserved", "conservative_tokens", "recorded_actual_tokens", "unmeasured_reserved_tokens")}
 
 
-def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reservation: str = "") -> dict[str, Any]:
+def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reservation: str = "",
+           lineage_only: bool = False) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.budget_runtime import provider_usage_accounted_sql
     projects = [a["project_id"] for a in plan["arms"]]
     mixed = plan["contract_version"] in _contract().PROVIDER_BUDGET_VERSIONS
@@ -345,6 +415,8 @@ def _usage(cursor: Any, plan: dict[str, Any], project_id: str, *, exclude_reserv
         seen.add(dispatch_subject)
         if proof:
             if proof["contract_hash"] not in lineage:
+                if lineage_only:
+                    continue
                 raise KernelError("CREATIVE_BUDGET_PLAN_IMMUTABLE", "historical ledger uses another allocation plan")
             phase = proof["phase"]
             if mixed or plan["contract_version"] in _contract().SINGLE_BOOK_VERSIONS:
@@ -613,7 +685,9 @@ def assert_creative_budget_dispatch(
         if evidence.get("accounting_basis") == "ACCOUNT_ENTITLEMENT" else None)
     if frozen[0]["comparison_budget"].get("renewal") and frozen[0]["comparison_budget"] != plan:
         raise KernelError("CREATIVE_BUDGET_SCOPE_MISMATCH", "An earlier renewal reservation requires reconciliation after replacement")
-    _check_limits(frozen[0], usage, phase=proof["phase"], tokens=int(row[4]), calls=1, amount=row[5],
+    frozen_usage = _usage(cursor, frozen[0]["comparison_budget"], project_id,
+        exclude_reservation=reservation_id, lineage_only=True)
+    _check_limits(frozen[0], frozen_usage, phase=proof["phase"], tokens=int(row[4]), calls=1, amount=row[5],
         entitlement=(row[3], evidence["cost_authorization_ref"])
         if evidence.get("accounting_basis") == "ACCOUNT_ENTITLEMENT" else None)
 

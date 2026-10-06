@@ -1,3 +1,5 @@
+> 当前真实验证补充：严格40章启动已发现 Codex 主生成路由与资格冷启动未闭合，并在 ACTIVE Pack 部署门阻断。此前工程/MOCK结论保留其原范围，不能作为当前真实生产就绪证明；见 [严格启动证据](strict-real-start-v2/REPORT.md)。
+
 > 历史启动准入快照：下文的旧题材、pending预算和high问题是当时状态。作者v2已改为玄幻轻喜剧；最新预算、路由和剩余准入见 [预算与路由记录](budget-authorized-v1/REPORT.md)。原始记录保留，不作为当前运行Authority。
 
 # 40章真实 Provider 与连续稿验证：启动准入记录

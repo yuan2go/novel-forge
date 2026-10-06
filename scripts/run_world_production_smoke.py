@@ -21,6 +21,7 @@ from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.book_authority import StartBookProductionCommand
 from novel_forge.modules.runtime_job import RuntimeJobAuthority
 from novel_forge.modules.production_execution.security import redact_secret_text
+from novel_forge.modules.production_execution.provider_admission import SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 from novel_forge.tools.implementation_tree_identity import (
     build_implementation_tree_identity,
@@ -53,27 +54,41 @@ ACCOUNT_ENTITLEMENT_LIMITS = (
     "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
     "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
 )
+MONETARY_CAPS = tuple(dict.fromkeys((
+    *CAPS, *(key for _, key in SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT),
+    "NOVEL_FORGE_CHAPTER_PROVIDER_CAP",
+)))
 
 
-def validate_configuration(values: dict[str, str]) -> None:
+def validate_configuration(values: dict[str, str], *, campaign_accounting: dict | None = None) -> None:
     accounting_basis = (
         str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
     )
     if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        priced_allowance = Decimal("0")
+        if campaign_accounting is not None:
+            if (campaign_accounting.get("accounting_basis") != "MIXED"
+                or campaign_accounting.get("monetary_cost_status") != "PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN"
+                or not campaign_accounting.get("authorization_ref")):
+                raise ValueError("validated native mixed campaign accounting required")
+            priced_allowance = Decimal(str(campaign_accounting.get("authorized_total_usd")))
+            if not priced_allowance.is_finite() or priced_allowance < 0:
+                raise ValueError("native priced allowance must be finite and nonnegative")
         configured_monetary_caps = [
             key
-            for key in (
-                *CAPS,
-                "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP",
-                "NOVEL_FORGE_CHAPTER_PROVIDER_CAP",
-            )
+            for key in MONETARY_CAPS
             if str(values.get(key) or "").strip()
         ]
-        if configured_monetary_caps:
+        if configured_monetary_caps and priced_allowance == 0:
             raise ValueError(
                 "account entitlement cannot use monetary Provider caps: "
                 + ", ".join(configured_monetary_caps)
             )
+        if priced_allowance > 0:
+            for key in {*CAPS, "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP", *configured_monetary_caps}:
+                amount = Decimal(values.get(key) or "0")
+                if not amount.is_finite() or not 0 < amount <= priced_allowance:
+                    raise ValueError(f"priced cap must be positive and within native campaign allowance: {key}")
         missing_identity = [
             key
             for key in ACCOUNT_ENTITLEMENT_IDENTITY

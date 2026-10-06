@@ -4,7 +4,7 @@ from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.routing_bootstrap import (
-    CHAPTER_GENERATOR_TASKS, authorization_hash, load_bootstrap_authorization,
+    CHAPTER_GENERATOR_TASKS, PLANNING_BOOTSTRAP_SOURCE_VERSIONS, authorization_hash, load_bootstrap_authorization,
 )
 
 
@@ -75,8 +75,8 @@ def require_planning_reference_subject(cursor: Any, *, project_id: str, binding:
           AND generation.project_id=asset.project_id AND generation.candidate_asset_version_id=version.asset_version_id
         WHERE asset.project_id=%s AND version.asset_version_id=%s AND asset.asset_type='planning_generation_candidate'
           AND version.lifecycle='CANDIDATE' AND version.eligibility='INELIGIBLE' AND version.governance='CLEAR'
-          AND operation.definition_name='story_planning.generate' AND operation.definition_version='1.16.0'
-          AND operation.status IN ('WAITING_GATE','SUCCEEDED')""", [project_id, binding["asset_version_id"]])
+          AND operation.definition_name='story_planning.generate' AND operation.definition_version=ANY(%s)
+          AND operation.status IN ('WAITING_GATE','SUCCEEDED')""", [project_id, binding["asset_version_id"], sorted(PLANNING_BOOTSTRAP_SOURCE_VERSIONS)])
     rows = cursor.fetchall()
     if len(rows) != 1:
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "Planning annotation requires its native frozen benchmark candidate")

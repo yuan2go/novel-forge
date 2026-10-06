@@ -369,6 +369,15 @@ def _load_request(
                     {"world_provider_sample"} if world_sample else {"chapter_provider_sample"}))
             if planning_sample:
                 evaluation_candidate_id, reference_sample_id = reference_sample_id, ""
+        if policy.get("model_reference_annotation_input_allowed") is True:
+            from novel_forge.modules.chapter_quality_authority.model_reference import (
+                MODEL_REFERENCE_VERSION, require_model_reference_annotation,
+            )
+            if operation["definition_version"] != MODEL_REFERENCE_VERSION:
+                raise KernelError("MODEL_REFERENCE_PROVENANCE_INVALID", "model reference requires its own versioned definition")
+            reference_sample_id = require_model_reference_annotation(uow.cursor,
+                project_id=operation["project_id"], definition_name=operation["definition_name"],
+                payload=payload, actor_id=operation["actor_id"], input_assets=operation["input_asset_snapshot"])
         if policy.get("evaluation_candidate_asset_input_allowed") is True:
             evaluation_candidate_id = str(
                 payload.get("candidate_asset_version_id") or ""

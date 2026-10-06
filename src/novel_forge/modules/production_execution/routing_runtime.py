@@ -267,6 +267,9 @@ class PostgresRoutingRegistry:
             same_effect_provider_retry,
             repeated_experiment_input,
         ) in rows:
+            if ((decision or {}).get("bootstrap_authorization", {}).get("authorization", {})
+                .get("purpose") == "MODEL_REFERENCE_CREATION"):
+                continue
             evidence = content.get("provider_evidence", content)
             if evidence.get("fixture_protocol_only") or content.get(
                 "fixture_protocol_only"
@@ -1079,7 +1082,7 @@ class ProductionProviderRouter:
                     "remaining_calls": None,
                     "scopes": {},
                 }
-                if candidate.escalation_only:
+                if candidate.pricing.accounting_basis == "ACCOUNT_ENTITLEMENT":
                     uow.cursor.execute(
                         f"""SELECT count(*) FROM authority_budget_reservation
                             WHERE provider=%s AND evidence->>'cost_authorization_ref'=%s
@@ -1174,6 +1177,8 @@ class ProductionProviderRouter:
         candidate = snapshot["selected"]["candidate"]
         if frozen_scope is not None and snapshot["task"]["task_type"] not in frozen_scope.get(candidate["provider"], ()):
             raise KernelError("PROVIDER_TASK_NOT_AUTHORIZED", "Selected Provider is outside its frozen task scope")
+        if candidate.get("authorized_tasks") is not None and snapshot["task"]["task_type"] not in candidate["authorized_tasks"]:
+            raise KernelError("MODEL_TASK_NOT_AUTHORIZED", "Selected model is outside its frozen task scope")
         cross_review = snapshot["task"].get("declared_requirements", {}).get("cross_model_review")
         if cross_review:
             from .cross_model_review import reviewer_rejection
@@ -1407,6 +1412,8 @@ def validate_routed_reservation(
     provider_scope = task.get("declared_requirements", {}).get("provider_task_scope")
     if provider_scope is not None and task["task_type"] not in provider_scope.get(candidate["provider"], ()):
         raise KernelError("PROVIDER_TASK_NOT_AUTHORIZED", "Reservation Provider is outside its frozen task scope")
+    if candidate.get("authorized_tasks") is not None and task["task_type"] not in candidate["authorized_tasks"]:
+        raise KernelError("MODEL_TASK_NOT_AUTHORIZED", "Reservation model is outside its frozen task scope")
     budget = task.get("budget_snapshot", {}).get("candidates", {}).get(candidate["candidate_id"], {})
     token_limits = [int(task["remaining_tokens"])]
     if "remaining_tokens" in budget:

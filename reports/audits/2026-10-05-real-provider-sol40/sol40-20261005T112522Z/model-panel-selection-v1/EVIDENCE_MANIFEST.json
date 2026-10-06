@@ -1,0 +1,32 @@
+{
+  "source_sha": "427433aac3d78bbc7d48fdaa782d5d2a50209110",
+  "files": [
+    {
+      "path": "REPORT.md",
+      "sha256": "sha256:1513a5d79ce16362e711b1a54e715bff4c66952d7dff0d9c4635a9452f2a6fe6"
+    },
+    {
+      "path": "formal-route-preflight.json",
+      "sha256": "sha256:c099349535eff8b8b22d7f8ea7b992a4e96149c454f4c283a9d4684dcf736518"
+    },
+    {
+      "path": "local-model-catalog.json",
+      "sha256": "sha256:bb6832d987eeca806f1cf7d2d2c5fe5b6a44dc9335e69a0dd71dad9774986d96"
+    },
+    {
+      "path": "preflight.json",
+      "sha256": "sha256:5aaac4e3433660eaf66799a51c955526bc8e749063948528f842a9b0ee18eb88"
+    },
+    {
+      "path": "selection-hash.json",
+      "sha256": "sha256:61007d3ae68ba4d75b3f4dd86c8eea361f76a775e0c23a83b705e159ed58c66b"
+    },
+    {
+      "path": "selection.json",
+      "sha256": "sha256:aa49a6f857275019a7f20cecb41df80cf194fee0e356274506810efb5c64de29"
+    }
+  ],
+  "secret_scan": "PASS",
+  "native_mutations": 0,
+  "real_model_calls": 0
+}

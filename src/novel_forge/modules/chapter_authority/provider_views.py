@@ -361,6 +361,19 @@ def build_provider_task_view(
     instruction_cleanup: bool = False,
     work_requirements: bool = False,
 ) -> dict[str, Any]:
+    if stage in {"model_reference_evaluate", "model_reference_adjudicate"}:
+        from novel_forge.modules.command_kernel.routing_bootstrap import validate_model_reference_creation_binding
+
+        frozen = inputs.get("model_reference")
+        validate_model_reference_creation_binding(frozen)
+        expected = "BLIND_EVALUATION" if stage == "model_reference_evaluate" else "ADJUDICATION"
+        if frozen["role"] != expected:
+            raise KernelError("MODEL_REFERENCE_ROLE_INVALID", "Provider task role differs from its formal stage")
+        return _task(stage, model_reference=deepcopy(frozen),
+                     subject=deepcopy(inputs.get("subject")),
+                     author_baseline=deepcopy(inputs.get("author_baseline")),
+                     **({"source_evaluations": deepcopy(inputs.get("source_evaluations"))}
+                        if expected == "ADJUDICATION" else {}))
     if work_requirements and stage in {"review", "revision", "rereview"}:
         from .chapter_plan_views import validate_creative_baseline
 
@@ -1270,6 +1283,19 @@ def build_provider_context_view(
     task_view: Mapping[str, Any],
     *, clean_writer_context: bool = False, writer_projection_version: str = "",
 ) -> dict[str, Any]:
+
+    if stage in {"model_reference_evaluate", "model_reference_adjudicate"}:
+        from novel_forge.modules.command_kernel.routing_bootstrap import validate_model_reference_creation_binding
+
+        frozen = task_view.get("model_reference")
+        validate_model_reference_creation_binding(frozen)
+        if (context_bundle.get("model_reference") != frozen
+            or context_bundle.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY"):
+            raise KernelError("MODEL_REFERENCE_CONTEXT_DRIFT", "Provider Context differs from frozen reference task")
+        view = context_bundle.get("provider_context_view")
+        if not isinstance(view, Mapping) or view.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY":
+            raise KernelError("MODEL_REFERENCE_CONTEXT_DRIFT", "Provider Context projection is missing")
+        return deepcopy(dict(view))
 
     if stage in {"context_compress", "context_fidelity"}:
         from .context_compression_provider import compression_boundary_identity

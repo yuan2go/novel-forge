@@ -1,0 +1,77 @@
+{
+  "evidence_class": "OFFLINE",
+  "captured_at": "2026-10-05T13:56:38.787658+00:00",
+  "project_id": "nf-sol40-20261005T112522Z",
+  "book_id": "nf-sol40-20261005T112522Z-book",
+  "source_sha": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "counts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0,
+    "authority_budget_reservation": 0,
+    "authority_book": 1,
+    "authority_book_chapter_acceptance": 0,
+    "authority_narrative_design_qualification": 0,
+    "authority_quality_qualification_campaign": 0,
+    "authority_quality_qualification_decision": 0,
+    "authority_quality_qualification_evidence": 0,
+    "authority_quality_qualification_subject": 0,
+    "authority_capability_pack_compilation": 12,
+    "authority_capability_pack_approval": 0,
+    "authority_capability_pack_activation": 0,
+    "authority_capability_pack_deployment": 0,
+    "authority_asset_qualification": 5
+  },
+  "human_label_operations": [],
+  "operations_by_definition_and_status": [
+    [
+      "book.create",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "capability_pack.compile",
+      "SUCCEEDED",
+      12
+    ],
+    [
+      "capability_pack.manifest.register",
+      "SUCCEEDED",
+      12
+    ],
+    [
+      "chapter_group.execution_policy.configure",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "creative.brief.create",
+      "SUCCEEDED",
+      2
+    ],
+    [
+      "creative.experiment_budget.configure",
+      "SUCCEEDED",
+      2
+    ],
+    [
+      "project_lifecycle.create",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "story.formation.admit",
+      "SUCCEEDED",
+      1
+    ],
+    [
+      "story_planning.generate",
+      "FAILED_RETRYABLE",
+      1
+    ]
+  ],
+  "book_initialized": true,
+  "inference_calls": 0,
+  "accepted_chapters": 0,
+  "pack_asset_qualifications_are_not_model_qualifications": true
+}

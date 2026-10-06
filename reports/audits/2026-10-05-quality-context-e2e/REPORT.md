@@ -1,3 +1,5 @@
+> 当前真实验证补充：严格40章启动已发现 Codex 主生成路由与资格冷启动未闭合，并在 ACTIVE Pack 部署门阻断。此前工程/MOCK结论保留其原范围，不能作为当前真实生产就绪证明；见 [严格启动证据](../2026-10-05-real-provider-sol40/sol40-20261005T112522Z/strict-real-start-v2/REPORT.md)。
+
 # Work Intent Quality Semantics + Context Compression Routing + Production E2E Closure
 
 本报告是本次工程证据，**不是运行时 Authority、完整 backend qualification 或文学质量证明**。

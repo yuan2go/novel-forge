@@ -49,6 +49,7 @@ def require_chapter_reference(
     generation_sample: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     validate_reference_evaluation_binding(binding)
+    model_reference = binding.get("basis") == "MODEL_CONSENSUS"
     if "adjudications" not in binding:
         raise KernelError("QUALITY_REFERENCE_REQUIRED", "reviewer samples require adjudicated independent labels")
     if generation_sample is not None:
@@ -58,7 +59,10 @@ def require_chapter_reference(
         subject = require_reference_subject(cursor, project_id=project_id, binding=target)
         if (target not in input_versions or subject["content"]["stage"] != {"review": "draft", "rereview": "revision"}.get(stage)):
             raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference labels require the exact compatible generator sample")
-        return require_adjudicated_reference(cursor, project_id=project_id, binding=binding,
+        return require_model_consensus_reference(cursor, project_id=project_id, binding=binding,
+            target_id=subject["asset_version_id"], target_hash=subject["content_hash"],
+            chapter=chapter, expected_dimensions=reference_dimensions(stage),
+            allowed_statuses={"PASSED", "FAILED"}) if model_reference else require_adjudicated_reference(cursor, project_id=project_id, binding=binding,
             target_id=subject["asset_version_id"], target_hash=subject["content_hash"],
             generators=[subject["generation_actor_id"]], evaluator_actor_id=evaluator_actor_id, chapter=chapter,
             expected_dimensions=reference_dimensions(stage), allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"})
@@ -81,6 +85,11 @@ def require_chapter_reference(
     target_id, target_hash, generators = targets[0]
     if not any(item["asset_version_id"] == target_id and item["content_hash"] == target_hash for item in input_versions):
         raise KernelError("QUALITY_REFERENCE_TARGET_INVALID", "reference target differs from frozen task inputs")
+    if model_reference:
+        return require_model_consensus_reference(cursor, project_id=project_id, binding=binding,
+            target_id=target_id, target_hash=target_hash, chapter=chapter,
+            expected_dimensions=reference_dimensions(stage),
+            allowed_statuses={"PASSED", "FAILED"})
     return require_adjudicated_reference(
         cursor, project_id=project_id, binding=binding, target_id=target_id, target_hash=target_hash,
         generators=generators, evaluator_actor_id=evaluator_actor_id, chapter=chapter,
@@ -88,6 +97,47 @@ def require_chapter_reference(
         allowed_statuses={"PASSED", "NEEDS_REVISION", "BLOCKED"} if stage in {"review", "rereview"} else {
             "PASSED", "PASSED_WITH_WARNINGS", "FAILED", "INSUFFICIENT_EVIDENCE"},
     )
+
+
+def require_model_consensus_reference(cursor: Any, *, project_id: str, binding: Mapping[str, Any],
+                                      target_id: str, target_hash: str, chapter: int,
+                                      expected_dimensions: tuple[str, ...],
+                                      allowed_statuses: set[str],
+                                      expected_producer_contract_hash: str | None = None) -> dict[str, Any]:
+    from .model_reference import MODEL_REFERENCE_PROTOCOL, require_model_panel_reference
+
+    if (binding.get("basis") != "MODEL_CONSENSUS" or binding.get("protocol_version") != MODEL_REFERENCE_PROTOCOL
+        or not isinstance(binding.get("adjudications"), list)
+        or len(binding["adjudications"]) != len(expected_dimensions)):
+        raise KernelError("MODEL_REFERENCE_COVERAGE_INCOMPLETE", "model panel must cover each native reviewer dimension")
+    labels = []
+    correlated = False
+    versions = set()
+    evidence_refs = []
+    for item in binding["adjudications"]:
+        panel = require_model_panel_reference(cursor, project_id=project_id,
+            binding={"protocol_version": MODEL_REFERENCE_PROTOCOL, "adjudications": [item]})
+        if (panel["target_asset_version_id"] != target_id or panel["target_content_hash"] != target_hash
+            or panel["scope"] != {"scope_type": "CHAPTER", "chapter_start": chapter, "chapter_end": chapter}
+            or (expected_producer_contract_hash is not None and
+                panel["producer_contract_hash"] != expected_producer_contract_hash)):
+            raise KernelError("MODEL_REFERENCE_TARGET_INVALID", "model panel subject differs from frozen reviewer target")
+        label = panel["labels"][0]
+        if (label["status"] not in allowed_statuses or not isinstance(label["score_range"], list)
+            or len(label["score_range"]) != 2 or any(type(score) is not int or not 0 <= score <= 100
+                for score in label["score_range"]) or label["score_range"][0] > label["score_range"][1]):
+            raise KernelError("MODEL_REFERENCE_RESULT_INVALID", "model panel judgment is outside native quality schema")
+        labels.append(label)
+        versions.add(label["evaluation_version"])
+        correlated |= panel["same_model_correlated"]
+        evidence_refs.extend(panel["evidence_refs"])
+    if {item["dimension"] for item in labels} != set(expected_dimensions) or len(versions) != 1:
+        raise KernelError("MODEL_REFERENCE_COVERAGE_INCOMPLETE", "model panel dimensions or version differ")
+    return {"binding": dict(binding), "target_asset_version_id": target_id,
+        "target_content_hash": target_hash, "labels": labels, "reference_basis": "MODEL_CONSENSUS",
+        "same_model_correlated": correlated, "human_verified": False,
+        "human_preference_evidence": False, "production_qualification_eligible": False,
+        "evidence_refs": sorted(set(evidence_refs))}
 
 
 def require_adjudicated_reference(
@@ -200,6 +250,8 @@ def reference_label_classes(cursor: Any, *, project_id: str, reference: Mapping[
         if status is None or (stage not in {"review", "rereview", "canon_support"} and label["score_range"][1] - label["score_range"][0] > 20):
             return ()
         classes.add(status)
+        if reference.get("reference_basis") == "MODEL_CONSENSUS":
+            continue
         adjudication, _, _ = _native_label(cursor, project_id=project_id,
             asset_version_id=label["adjudication_asset_version_id"], asset_type="adjudicated_evaluation",
             operation_name="quality.adjudication.record", actor_field="adjudicator_id")
@@ -271,17 +323,22 @@ def chapter_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list
         agreed = all(item["status_agrees"] and (stage in {"review", "rereview", "canon_support"} or item["score_in_range"] is True)
             for item in agreement["comparisons"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "reference_basis": reference["reference_basis"],
+            "same_model_correlated": reference.get("same_model_correlated", False),
             "generator_assessment": {"target_asset_version_id": reference["target_asset_version_id"],
                 "target_content_hash": reference["target_content_hash"], "labels": reference["labels"],
                 "protocol_version": reference["binding"]["protocol_version"]},
             "reference_label_classes": classes,
             "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
                 "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),
-                "dimensions": ["canon_support_claim", "canon_no_change"] if stage == "canon_support" else sorted(item["dimension"] for item in reference["labels"]), "agreement_contract": "REFERENCE_AGREEMENT.v1"}),
+                "dimensions": ["canon_support_claim", "canon_no_change"] if stage == "canon_support" else sorted(item["dimension"] for item in reference["labels"]),
+                **({"reference_basis": "MODEL_CONSENSUS"} if reference["reference_basis"] == "MODEL_CONSENSUS" else {}),
+                "agreement_contract": "REFERENCE_AGREEMENT.v1"}),
             "reference_sample_identity": reference["canon_reference_sample_identity"] if stage == "canon_support" else authorization_hash({"task_type": stage, "text": " ".join(prose.split())}),
             "failure_class": "" if agreed else "QUALITY_FAILURE",
             "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
-                *("asset-version:" + item["adjudication_asset_version_id"] for item in agreement["comparisons"])]}
+                *("asset-version:" + item["adjudication_asset_version_id"] for item in agreement["comparisons"]),
+                *reference.get("evidence_refs", [])]}
     return outcomes
 
 

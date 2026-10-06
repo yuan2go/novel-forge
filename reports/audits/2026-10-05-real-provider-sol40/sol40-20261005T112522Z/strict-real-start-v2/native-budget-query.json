@@ -1,0 +1,238 @@
+{
+  "comparison_budget": {
+    "arms": [
+      {
+        "arm": "SINGLE",
+        "book_id": "nf-sol40-20261005T112522Z-book",
+        "project_id": "nf-sol40-20261005T112522Z",
+        "project_total": {
+          "calls": 1600,
+          "tokens": 80000000,
+          "priced_usd": "20"
+        },
+        "chapter_ranges": {
+          "PRODUCTION": [
+            1,
+            40
+          ]
+        },
+        "design_allocation": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "4"
+        },
+        "repair_allocation": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "3"
+        },
+        "source_allocation": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "holdout_allocation": {
+          "calls": 20,
+          "tokens": 1000000,
+          "priced_usd": "0"
+        },
+        "reference_allocation": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "screening_allocation": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        },
+        "production_allocation": {
+          "calls": 1180,
+          "tokens": 59000000,
+          "priced_usd": "12"
+        },
+        "calibration_allocation": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "1"
+        }
+      }
+    ],
+    "expires_at": "2026-10-12T00:00:00+00:00",
+    "entitlements": [
+      {
+        "calls": 1600,
+        "tokens": 80000000,
+        "provider": "codex-cli",
+        "authorization_ref": "sol40-20261005T112522Z:user-normal-budget:codex-v1"
+      }
+    ],
+    "shared_total": {
+      "calls": 1600,
+      "tokens": 80000000,
+      "priced_usd": "20"
+    },
+    "experiment_id": "sol40-20261005T112522Z",
+    "manifest_hash": "sha256:d49c16e69ce3f8e79a11ba9fd54cf59efdf203eafb76a85a378b4c93ac8508bc",
+    "previous_policy": {
+      "policy_hash": "518a3fbde18eb9d91f85db221061ad0eb240ba88b71a3106e362bd58664ca514",
+      "contract_hash": "sha256:53c94b2cc1e5b68e63ca1d0892ddf690abc8fc28320b097eadfabbfce57b7c59",
+      "policy_version": "sol40-20261005T112522Z:normal-budget-v1"
+    },
+    "accounting_basis": "MIXED",
+    "contract_version": "creative-provider-campaign-budget.v4"
+  },
+  "budget_binding": {
+    "owner": "CREATIVE_EXPERIMENT_BUDGET",
+    "policy_version": "sol40-20261005T112522Z:normal-budget-deepseek20-v2",
+    "policy_hash": "a333d68d18cae7d0aefa6457a03b81912fb0f3ece81c71e3cd774d49f2cb3c93",
+    "contract_hash": "sha256:b51b5b74eb651785e2c091dfc9ef575bc528f1072ac47757f39590946ce476a5",
+    "subject_id": "project:nf-sol40-20261005T112522Z",
+    "authorization": {
+      "book_id": "nf-sol40-20261005T112522Z-book",
+      "project_id": "nf-sol40-20261005T112522Z",
+      "evidence_hash": "sha256:a0410ae71c96755744d382178ca810b5f43e148749b0ff0df09f753491b8b4c1",
+      "business_scope": {
+        "design_allowed": true,
+        "source_allowed": false,
+        "max_chapter_number": 40
+      },
+      "authorization_ref": "sol40-20261005T112522Z:approved-deepseek-review20-v2",
+      "authorized_cumulative_caps": {
+        "DESIGN": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "4"
+        },
+        "REPAIR": {
+          "calls": 160,
+          "tokens": 8000000,
+          "priced_usd": "3"
+        },
+        "SOURCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "HOLDOUT": {
+          "calls": 20,
+          "tokens": 1000000,
+          "priced_usd": "0"
+        },
+        "REFERENCE": {
+          "calls": 0,
+          "tokens": 0,
+          "priced_usd": "0"
+        },
+        "SCREENING": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "0"
+        },
+        "PRODUCTION": {
+          "calls": 1180,
+          "tokens": 59000000,
+          "priced_usd": "12"
+        },
+        "CALIBRATION": {
+          "calls": 40,
+          "tokens": 2000000,
+          "priced_usd": "1"
+        }
+      }
+    }
+  },
+  "budget_usage": {
+    "contract_hash": "sha256:b51b5b74eb651785e2c091dfc9ef575bc528f1072ac47757f39590946ce476a5",
+    "project_id": "nf-sol40-20261005T112522Z",
+    "book_id": "nf-sol40-20261005T112522Z-book",
+    "phases": {
+      "REFERENCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "SCREENING": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "CALIBRATION": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "HOLDOUT": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "SOURCE": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "DESIGN": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "PRODUCTION": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      },
+      "REPAIR": {
+        "calls_used_or_reserved": 0,
+        "conservative_tokens": 0,
+        "recorded_actual_tokens": 0,
+        "unmeasured_reserved_tokens": 0,
+        "priced_usd": "0",
+        "unpriced_calls": 0
+      }
+    },
+    "project_total": {
+      "calls_used_or_reserved": 0,
+      "conservative_tokens": 0,
+      "recorded_actual_tokens": 0,
+      "unmeasured_reserved_tokens": 0,
+      "priced_usd": "0",
+      "unpriced_calls": 0
+    },
+    "shared_total": {
+      "calls_used_or_reserved": 0,
+      "conservative_tokens": 0,
+      "recorded_actual_tokens": 0,
+      "unmeasured_reserved_tokens": 0,
+      "priced_usd": "0",
+      "unpriced_calls": 0
+    },
+    "reservation_ids": [],
+    "evidence_class": "POSTGRESQL_BUDGET_LEDGER",
+    "creation_opportunity": null,
+    "entitlements": [],
+    "entitlement_usd": null,
+    "invoice_status": "NOT_VERIFIED"
+  }
+}

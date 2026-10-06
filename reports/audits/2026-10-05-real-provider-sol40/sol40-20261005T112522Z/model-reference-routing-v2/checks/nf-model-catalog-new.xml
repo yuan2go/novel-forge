@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="14" time="0.215" timestamp="2026-10-05T23:07:17.450498+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.unit.test_codex_model_catalog" name="test_primary_draft_requires_qualification_but_no_fabricated_escalation" time="0.006"><failure message="AttributeError: 'RoutingDecision' object has no attribute 'status'">def test_primary_draft_requires_qualification_but_no_fabricated_escalation():
+        writer, judge = candidates()
+        context = task(task_type="draft")
+        evidence = {row.candidate_id: generator_samples() for row in (writer, judge)}
+        decision = CostAwareRouter().explain(context, [writer, judge], evidence, now=NOW).to_dict()
+        assert decision["status"] == "SELECTED"
+        assert decision["selected"]["candidate"]["model"] == "gpt-6-sol"
+        assert decision["task"]["history"] == []
+        assert decision["task"]["escalation_reason"] == ""
+        assert "MODEL_TASK_NOT_AUTHORIZED" in decision["candidates"][1]["rejected_reasons"]
+        blocked = CostAwareRouter().explain(context, [writer], {}, now=NOW).to_dict()
+        assert blocked["status"] == "BLOCKED"
+        assert "BENCHMARK_INSUFFICIENT" in blocked["candidates"][0]["rejected_reasons"]
+        legacy = replace(writer, escalation_only=True, entitlement_role="")
+&gt;       assert CostAwareRouter().explain(context, [legacy], evidence, now=NOW).status == "BLOCKED"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'RoutingDecision' object has no attribute 'status'
+
+tests/unit/test_codex_model_catalog.py:45: AttributeError</failure></testcase><testcase classname="tests.unit.test_codex_model_catalog" name="test_reference_model_routes_only_on_qualified_reviewer_evidence" time="0.003" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_model_task_scope_is_rechecked_at_reservation_boundary" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_entitlement_role_requires_exact_account_and_frozen_catalog_identity" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change0]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change1]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change2]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change3]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change4]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change5]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change6]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change7]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_invalid_catalog_fails_closed[change8]" time="0.000" /><testcase classname="tests.unit.test_codex_model_catalog" name="test_duplicate_model_effort_and_null_catalog_fail_closed" time="0.000" /></testsuite></testsuites>

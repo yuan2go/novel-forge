@@ -1,0 +1,41 @@
+{
+  "evidence_class": "OFFLINE",
+  "source_sha": "427433aac3d78bbc7d48fdaa782d5d2a50209110",
+  "assembly": "build_production_execution_composition",
+  "current_runtime_declared_release": "22b44980f050fc6ffd13b8ca2ea52f2257e99ac7",
+  "candidates": [
+    {
+      "candidate_id": "deepseek:deepseek-flash:low",
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "reasoning_effort": "low",
+      "escalation_only": false
+    },
+    {
+      "candidate_id": "deepseek:deepseek-v4-pro:high",
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "reasoning_effort": "high",
+      "escalation_only": false
+    },
+    {
+      "candidate_id": "deepseek:deepseek-v4-pro:max",
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
+      "reasoning_effort": "max",
+      "escalation_only": false
+    },
+    {
+      "candidate_id": "codex-cli:gpt-6-sol:medium",
+      "provider": "codex-cli",
+      "model": "gpt-6-sol",
+      "reasoning_effort": "medium",
+      "escalation_only": true
+    }
+  ],
+  "requested_candidate_present": false,
+  "runtime_changed": false,
+  "current_entitlement_scope_replaced": false,
+  "provider_calls": 0,
+  "source_note": "Current runtime config intentionally remains frozen; model selection is not production configuration."
+}

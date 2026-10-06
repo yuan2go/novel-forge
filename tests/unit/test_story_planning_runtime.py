@@ -58,6 +58,19 @@ from novel_forge.modules.story_planning_runtime import (
 HASH = "sha256:" + "a" * 64
 
 
+@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0"])
+def test_planning_handler_retains_exact_frozen_supported_version(version):
+    registry = planning_application.StoryPlanningGenerationHandlerRegistry(SimpleNamespace(), "postgresql://unused")
+    assert registry.registration("story_planning.generate", version).definition_version == version
+
+
+@pytest.mark.parametrize("version", ["1.19.0", "1.170.0", "1.17.0-extra"])
+def test_planning_handler_rejects_adjacent_unregistered_versions(version):
+    registry = planning_application.StoryPlanningGenerationHandlerRegistry(SimpleNamespace(), "postgresql://unused")
+    with pytest.raises(KeyError):
+        registry.registration("story_planning.generate", version)
+
+
 def test_result_repair_preserves_parent_snapshot_order_and_shared_asset_roles():
     frozen = [
         {"role": role, "asset_version_id": "shared-group-plan:v1",
@@ -3186,6 +3199,7 @@ def test_routed_planning_model_uses_the_selected_candidates_own_capacities(monke
     assert route.model_profile.model_id == base.model_profile.model_id
     router = object.__new__(ProductionProviderRouter)
     router.provider_auth_profiles = {}
+    router.provider_task_scope = None
     candidate = {"provider": "codex-cli", "model": "model:routed", "reasoning": "high", "context_limit": 256_000,
         "output_limit": 65_536, "capability_version": "capacity:routed-model"}
     selected = router._selected_route(route, {"status": "SELECTED", "task": {"declared_requirements": {}}, "selected": {"candidate": candidate}})

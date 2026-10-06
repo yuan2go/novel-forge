@@ -436,6 +436,17 @@ def narrative_evaluation_workflow_binding_catalog() -> WorkflowBindingCatalog:
     )
 
 
+def model_reference_creation_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import (
+        MODEL_REFERENCE_STAGE, MODEL_REFERENCE_HANDLER, MODEL_REFERENCE_OUTPUT,
+    )
+    return WorkflowBindingCatalog("model_reference_creation", "1.0.0", (
+        WorkflowBinding(node_id=stage, operation_name=name, stage=stage,
+            handler_key=MODEL_REFERENCE_HANDLER, capability_id="quality.intrinsic.judge",
+            depends_on=(), primary_output_asset_type=MODEL_REFERENCE_OUTPUT)
+        for name, stage in MODEL_REFERENCE_STAGE.items()))
+
+
 def agent_session_workflow_binding_catalog() -> WorkflowBindingCatalog:
     return WorkflowBindingCatalog(
         AGENT_SESSION_WORKFLOW_DEFINITION_ID,
@@ -474,6 +485,7 @@ def governed_workflow_binding_catalog(
         longform_prose_review_workflow_binding_catalog(provider_sampling=True),
         *(screenplay_workflow_binding_catalog(stage, provider_sampling=sample) for stage in ("screenplay_generate", "screenplay_review", "screenplay_revision") for sample in (False, True)),
         narrative_evaluation_workflow_binding_catalog(),
+        model_reference_creation_workflow_binding_catalog(),
         agent_session_workflow_binding_catalog(),
     )
     for catalog in catalogs:
@@ -490,6 +502,8 @@ def governed_workflow_binding_catalog(
 def chapter_operation_definition_catalog(
     *, release_sha: str, application_build_id: str = "novel-forge-capability-compiler"
 ) -> InMemoryOperationDefinitionCatalog:
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import model_reference_creation_definitions
+
     return InMemoryOperationDefinitionCatalog(
         (*chapter_operation_definitions(
             application_build_id=application_build_id,
@@ -499,6 +513,8 @@ def chapter_operation_definition_catalog(
             application_build_id=application_build_id, commit_sha=release_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=release_sha, reference_samples=True,
+        ), *model_reference_creation_definitions(
+            application_build_id=application_build_id, commit_sha=release_sha,
         ))
     )
 
@@ -516,6 +532,7 @@ __all__ = [
     "chapter_workflow_binding_catalog",
     "governed_workflow_binding_catalog",
     "narrative_evaluation_workflow_binding_catalog",
+    "model_reference_creation_workflow_binding_catalog",
     "reader_outcome_workflow_binding_catalog",
     "story_planning_workflow_binding_catalog",
 ]

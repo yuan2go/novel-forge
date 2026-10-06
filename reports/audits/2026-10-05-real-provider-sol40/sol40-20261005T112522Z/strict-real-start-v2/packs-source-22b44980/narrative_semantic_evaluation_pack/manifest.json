@@ -1,0 +1,359 @@
+{
+  "schema_version": "novelos.capability_pack.v1",
+  "identity": {
+    "pack_id": "narrative_semantic_evaluation_pack",
+    "name": "Narrative Semantic Evaluation Pack",
+    "domain": "story_design",
+    "capability_type": "production_workflow",
+    "version": "2.12.0",
+    "owner": "novel-os-core",
+    "status": "CANDIDATE",
+    "lifecycle": "VALIDATION",
+    "description": "Independent governed semantic evaluation for immutable design candidates."
+  },
+  "compatibility": {
+    "novel_forge_min_version": "6.0.0",
+    "novel_forge_max_version": null,
+    "protocol_min_version": "novelos.capability_pack.v1",
+    "protocol_max_version": null,
+    "required_capabilities": [
+      "quality.intrinsic.judge",
+      "quality.originality.judge"
+    ],
+    "required_schema_versions": [
+      "chapter-plan-authority.v1",
+      "operation-saga-attempt-state.v1"
+    ],
+    "incompatible_packs": [],
+    "compatible_runtime_profiles": [
+      "development",
+      "test",
+      "validation",
+      "production"
+    ]
+  },
+  "role": {
+    "role_type": "WORKER",
+    "role_name": "chapter_authority_worker",
+    "responsibilities": [
+      "execute admitted Chapter Authority operations",
+      "preserve attempt lease and fencing contracts",
+      "materialize schema-backed chapter assets"
+    ],
+    "boundaries": [
+      "does not replace Chapter Authority",
+      "does not activate unreviewed business state",
+      "does not select unbound skills"
+    ],
+    "forbidden_actions": [
+      "bypass source isolation",
+      "bypass attempt fence",
+      "read cross-project context"
+    ],
+    "upstream_packs": [],
+    "downstream_packs": [],
+    "authority_level": "DOMAIN_AUTHORITY_BOUND"
+  },
+  "skill_binding": {
+    "mode": "STATIC",
+    "selection_policy_ref": null,
+    "skills": [
+      {
+        "skill_ref": "quality-review",
+        "version": "quality-review-v3",
+        "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
+        "required": true,
+        "input_contract_ref": "schema:narrative-semantic-evaluation-pack-input:v1",
+        "output_contract_ref": "schema:narrative-semantic-evaluation-pack-output:v1",
+        "preconditions": [
+          "frozen_authority_inputs"
+        ],
+        "postconditions": [
+          "schema_backed_candidate"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      }
+    ],
+    "anti_drift": {
+      "duplicate_skill_refs_forbidden": true,
+      "unbound_skill_forbidden": true,
+      "dynamic_selection_requires_policy": true
+    }
+  },
+  "prompt_binding": {
+    "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+    "system_instruction_ref": "prompt-system:narrative-semantic-evaluation-pack",
+    "system_instruction_version": "v3",
+    "system_instruction_hash": "sha256:889b3035419c44316b502d0f45339b3b43acec5b12f0745bcf6c83839d9e1c8e",
+    "template_ref": "prompt-template:narrative-semantic-evaluation-pack",
+    "template_version": "v1",
+    "template_hash": "sha256:92841e45a0b7b22b3b91d8003c016ae6fd82cf54631e4927d2829ed43892839d",
+    "compiler_version": "chapter-prompt-compiler:v9",
+    "input_schema_ref": "schema:narrative-semantic-evaluation-pack-input:v1",
+    "output_schema_ref": "schema:narrative-semantic-evaluation-pack-output:v1"
+  },
+  "workflow_template": {
+    "workflow_id": "story_design_semantic_evaluation",
+    "workflow_version": "1.0.0",
+    "execution_mode": "SAGA",
+    "idempotency_scope": "project:chapter-slice",
+    "nodes": [
+      {
+        "node_id": "narrative_semantic_evaluation",
+        "operation_name": "story_design.semantic_evaluate",
+        "operation_definition_ref": "story_design.semantic_evaluate@1.0.0",
+        "operation_definition_hash": "sha256:09f4776523abe02b2116749ffd579e1215dc21a0b6bd82b525dc2895fa718858",
+        "handler_key": "novel_forge.story_design.semantic_evaluate",
+        "stage": "narrative_semantic_evaluation",
+        "capability_id": "quality.intrinsic.judge",
+        "input_asset_types": [
+          "book_design",
+          "planning_generation_candidate",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "narrative_design_evaluation"
+        ],
+        "depends_on": [],
+        "retry_policy": {
+          "max_attempts": 3,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        },
+        "commit_authority": "STORY_DESIGN_AUTHORITY"
+      }
+    ],
+    "completion": {
+      "required_terminal_nodes": [
+        "narrative_semantic_evaluation"
+      ],
+      "required_evidence": [
+        "trace",
+        "audit",
+        "model_call_log"
+      ],
+      "required_output_asset_types": [
+        "narrative_design_evaluation"
+      ]
+    }
+  },
+  "context_sources": {
+    "policy_id": "context-policy:chapter-generation-pack:v2",
+    "max_tokens": 512000,
+    "source_isolation": "ABSTRACT_ASSETS_ONLY",
+    "allowed_asset_types": [
+      "book_design",
+      "planning_generation_candidate",
+      "context_bundle"
+    ],
+    "forbidden_asset_types": [
+      "raw_source_document",
+      "raw_source_chunk"
+    ],
+    "required_version_refs": [
+      "chapter_plan_asset_version_id",
+      "canon_snapshot_version_id"
+    ],
+    "priority": [
+      "chapter_plan",
+      "canon_snapshot",
+      "story_state",
+      "knowledge_pack"
+    ],
+    "freshness": {
+      "reject_stale": true,
+      "reject_cross_project": true,
+      "reject_unqualified": true
+    },
+    "longform_bindings": {
+      "book": "required",
+      "volume": "optional",
+      "arc": "optional",
+      "chapter_group": "required",
+      "chapter": "required",
+      "canon": "required",
+      "story_bible": "required",
+      "reader_feedback": "optional"
+    }
+  },
+  "tool_permissions": {
+    "policy_id": "tools:chapter-generation-pack:v2",
+    "default": "DENY",
+    "tools": [
+      {
+        "tool_ref": "model.provider.invoke",
+        "permission": "EXECUTE",
+        "allowed_operations": [
+          "narrative_semantic_evaluation"
+        ],
+        "risk_class": "HIGH",
+        "approval_required": false,
+        "audit_required": true,
+        "budget_policy_ref": "budget:chapter-generation-pack:v1"
+      }
+    ],
+    "database": {
+      "read_allowed": false,
+      "write_allowed": false,
+      "allowed_tables": [],
+      "forbidden_tables": [
+        "legacy_assets"
+      ]
+    },
+    "files": {
+      "read_allowed": false,
+      "write_allowed": false,
+      "allowed_roots": []
+    },
+    "external_models": {
+      "allowed": true,
+      "route_policy_ref": "chapter.stage.route.policy:v1",
+      "context_substages": [
+        "context_compress",
+        "context_fidelity"
+      ]
+    },
+    "retrieval": {
+      "allowed": true,
+      "source_policy_ref": "source:chapter-generation-pack:v1"
+    }
+  },
+  "assets": {
+    "knowledge": {
+      "required_packs": [
+        "knowledge:chapter-causal-cost:v2"
+      ],
+      "allowed_usage_roles": [
+        "PRINCIPLE",
+        "CONSTRAINT",
+        "CHECK",
+        "REFERENCE"
+      ],
+      "project_knowledge_pack": {
+        "default_requirement": "OPTIONAL",
+        "required_stages": [],
+        "required_capability_ids": []
+      }
+    },
+    "rules": [
+      {
+        "rule_ref": "source-isolation-no-raw-expression",
+        "version": "v1",
+        "severity": "BLOCKING",
+        "hard_constraint": true
+      }
+    ],
+    "templates": [],
+    "source_policy": {
+      "allowed_eligibility": [
+        "PRODUCTION_ELIGIBLE",
+        "NOT_SOURCE_DERIVED"
+      ],
+      "raw_source_expression_allowed": false,
+      "requires_lineage": true
+    }
+  },
+  "evaluation": {
+    "evaluation_id": "chapter-generation-evaluation-v1",
+    "required_gates": [
+      {
+        "gate_id": "narrative_evaluation_source_isolation",
+        "judge_capability_id": "quality.originality.judge",
+        "blocking": true,
+        "threshold": 1,
+        "required_evidence": [
+          "narrative_design_evaluation"
+        ]
+      }
+    ],
+    "metrics": [],
+    "failure_policy": {
+      "acceptable_failures": [],
+      "retryable_failures": [
+        "PROVIDER_TIMEOUT",
+        "OBJECT_STORE_UNAVAILABLE"
+      ],
+      "terminal_failures": [
+        "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
+        "SOURCE_LEAKAGE_DETECTED"
+      ]
+    }
+  },
+  "runtime_contract": {
+    "input_protocol_ref": "chapter-generation-input.v1",
+    "output_protocol_ref": "chapter-generation-output.v1",
+    "error_protocol_ref": "authority-error.v1",
+    "state_protocol_ref": "operation-saga-attempt-state.v1",
+    "event_protocol_ref": "authority-event.v1",
+    "audit_protocol_ref": "authority-audit.v1",
+    "rollback_protocol_ref": "append-only-supersede.v1",
+    "commit_policy_ref": "commit:chapter-generation-pack:v1",
+    "validation_policy_ref": "validation:chapter-generation-pack:v1",
+    "execution": {
+      "binds_authority_operation": true,
+      "binds_attempt_fence": true,
+      "external_effects_allowed": true,
+      "synchronous_fixture_allowed": false
+    }
+  },
+  "governance": {
+    "release_channel": "VALIDATION",
+    "approval_policy_ref": "domain-decision-record:v1",
+    "versioning": {
+      "compatibility": "BACKWARD_COMPATIBLE",
+      "migration_required": false,
+      "migration_policy_ref": null
+    },
+    "rollout": {
+      "mode": "OFF",
+      "canary_percent": 0
+    },
+    "rollback": {
+      "allowed": true,
+      "policy_ref": "append-only-supersede:v1"
+    },
+    "cost_tracking": {
+      "required": true,
+      "budget_policy_ref": "budget:chapter-generation-pack:v1"
+    },
+    "quality_tracking": {
+      "required": true,
+      "report_refs": [
+        "quality_score_report"
+      ]
+    },
+    "deprecation": {
+      "replacement_pack_id": null,
+      "retirement_deadline": null
+    }
+  },
+  "audit": {
+    "audit_level": "FULL",
+    "record_operation_snapshot": true,
+    "record_pack_manifest_hash": true,
+    "record_input_manifest": true,
+    "record_route_snapshot": true,
+    "record_tool_calls": true,
+    "record_cost_receipts": true,
+    "record_evaluation_results": true
+  },
+  "ext": {
+    "ui": {
+      "display_group": "chapter-production"
+    },
+    "enterprise": {},
+    "experiments": {},
+    "vendor": {}
+  }
+}

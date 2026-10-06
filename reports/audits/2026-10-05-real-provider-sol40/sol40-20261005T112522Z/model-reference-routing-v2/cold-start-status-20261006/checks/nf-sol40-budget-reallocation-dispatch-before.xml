@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.578" timestamp="2026-10-06T07:32:36.243529+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_creative_budget_reallocation_postgres" name="test_carried_reserved_dispatch_uses_old_lineage_and_current_shared_ceiling" time="2.030"><failure message="novel_forge.modules.command_kernel.errors.KernelError: CREATIVE_BUDGET_EXHAUSTED: cumulative DESIGN allocation/authorization does not admit this Provider usage">def test_carried_reserved_dispatch_uses_old_lineage_and_current_shared_ceiling():
+        fixture = support.provider_campaign_fixture()
+        project = fixture.projects["A"]
+        previous = deepcopy(fixture.policies["A"])
+        old_effects = [fixture.native_effect(planning_identity()) for _ in range(2)]
+        old_reservations = [reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture,
+            effect, tokens=100, amount="0.1")) for effect in old_effects]
+        fixture.configure(reallocated_policy(previous, fixture.usage(), target="DESIGN"))
+        new_effect = fixture.native_effect(planning_identity())
+        reserve_provider_budget(DATABASE_URL, support.campaign_reservation(fixture, new_effect, tokens=100, amount="0.1"))
+        for effect, reservation in zip(old_effects, old_reservations, strict=True):
+&gt;           assert_provider_execution_authorized(DATABASE_URL, operation_id=effect[0].operation_id,
+                external_effect_id=effect[1], project_id=project, budget_reservation_id=reservation["reservation_id"])
+
+tests/integration/test_creative_budget_reallocation_postgres.py:108: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/command_kernel/budget_runtime.py:1360: in assert_provider_execution_authorized
+    assert_creative_budget_dispatch(uow.cursor, project_id=project_id,
+src/novel_forge/modules/command_kernel/creative_budget_runtime.py:629: in assert_creative_budget_dispatch
+    _check_limits(frozen[0], usage, phase=proof["phase"], tokens=int(row[4]), calls=1, amount=row[5],
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+policy = {'authorization': {'book_id': 'book:single-book-budget-767c2ffe-46a5-4038-9122-3f528366405a', 'project_id': 'single-bo...orization_ref': 'fixture-codex-entitlement'}], 'shared_total': {'calls': 16, 'tokens': 16000, 'priced_usd': '8'}, ...}}
+usage = {'contract_hash': 'sha256:97ab22db281bbfa18966a5bea8d27fcd42a8baee588450fda1b7d660a7edd0c4', 'project_id': 'single-boo..._reserved': 0, 'conservative_tokens': 0, 'recorded_actual_tokens': 0, 'unmeasured_reserved_tokens': 0, ...}, ...}, ...}
+phase = 'DESIGN', tokens = 100, calls = 1, amount = Decimal('0.10000000')
+entitlement = None, renewal_addition = True
+
+    def _check_limits(policy: dict[str, Any], usage: dict[str, Any], *, phase: str | None, tokens: int, calls: int,
+                      amount: Decimal | None = None, entitlement: tuple[str, str] | None = None, renewal_addition: bool = True) -&gt; None:
+        plan = policy["comparison_budget"]
+        arm = _arm(plan, usage["project_id"])
+        if plan["contract_version"] == _contract().PROVIDER_RENEWAL_VERSION:
+            from .creative_budget_renewal import check_window
+            if renewal_addition and calls and phase not in {"DESIGN", "PRODUCTION", "REPAIR"}:
+                raise KernelError("CREATIVE_BUDGET_RENEWAL_SCOPE_DENIED", "Production renewal cannot dispatch diagnostics or Source work")
+            check_window(plan, usage, calls=calls if renewal_addition else 0, tokens=tokens if renewal_addition else 0,
+                         amount=amount if renewal_addition else None)
+        pairs = [("project_total", usage["project_total"], arm["project_total"], calls, tokens),
+                 ("shared_total", usage["shared_total"], plan["shared_total"], calls, tokens)]
+        for candidate in _contract().budget_phases(plan):
+            addition = (calls, tokens) if candidate == phase else (0, 0)
+            pairs.append((candidate, usage["phases"][candidate], policy["authorization"]["authorized_cumulative_caps"][candidate], *addition))
+        for name, used, cap, extra_calls, extra_tokens in pairs:
+            if used["calls_used_or_reserved"] + extra_calls &gt; cap["calls"] or used["conservative_tokens"] + extra_tokens &gt; cap["tokens"]:
+&gt;               raise KernelError("CREATIVE_BUDGET_EXHAUSTED", f"cumulative {name} allocation/authorization does not admit this Provider usage")
+E               novel_forge.modules.command_kernel.errors.KernelError: CREATIVE_BUDGET_EXHAUSTED: cumulative DESIGN allocation/authorization does not admit this Provider usage
+
+src/novel_forge/modules/command_kernel/creative_budget_runtime.py:443: KernelError</failure></testcase></testsuite></testsuites>

@@ -157,6 +157,8 @@ TASK_TAXONOMY = {
             "context_compress",
             "context_fidelity",
             "narrative_semantic_evaluation",
+            "model_reference_evaluate",
+            "model_reference_adjudicate",
             "canon_support",
             "canon_high_impact_conflict",
             "creative_foundation.generate",
@@ -279,6 +281,8 @@ class ModelCandidate:
     authorization_ref: str = ""
     model_revision: str = ""
     estimated_price_multiplier: str = "1"
+    entitlement_role: str = ""
+    authorized_tasks: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         if not all(
@@ -297,6 +301,38 @@ class ModelCandidate:
         multiplier = Decimal(self.estimated_price_multiplier)
         if not multiplier.is_finite() or not 0 < multiplier <= 1:
             raise ValueError("ROUTING_PRICE_MULTIPLIER_INVALID")
+        if self.entitlement_role not in {"", "PRIMARY", "REFERENCE"}:
+            raise ValueError("ROUTING_ENTITLEMENT_ROLE_INVALID")
+        if self.authorized_tasks is not None and (
+            len(set(self.authorized_tasks)) != len(self.authorized_tasks)
+            or any(task not in TASK_TAXONOMY for task in self.authorized_tasks)
+        ):
+            raise ValueError("ROUTING_MODEL_TASK_SCOPE_INVALID")
+        if self.entitlement_role and (
+            self.provider != "codex-cli" or self.escalation_only
+            or self.pricing.accounting_basis != "ACCOUNT_ENTITLEMENT"
+            or self.pricing.currency != "UNKNOWN" or not self.authorization_ref
+            or self.quota_remaining <= 0 or not self.authorized_tasks
+            or self.pricing.source != self.authorization_ref
+            or self.pricing.version != self.capability_version
+            or not self.model_revision
+        ):
+            raise ValueError("ROUTING_ENTITLEMENT_ROLE_BINDING_INVALID")
+
+
+def authorized_codex_entitlement(candidate: Mapping[str, Any]) -> bool:
+    price = candidate.get("pricing") or {}
+    legacy = candidate.get("escalation_only") is True
+    role = candidate.get("entitlement_role")
+    scoped = role in {"PRIMARY", "REFERENCE"} and bool(candidate.get("authorized_tasks")) and not legacy
+    base = bool(candidate.get("provider") == "codex-cli"
+        and price.get("accounting_basis") == "ACCOUNT_ENTITLEMENT"
+        and price.get("currency") == "UNKNOWN" and candidate.get("authorization_ref"))
+    if legacy:
+        return base
+    return bool(base and scoped and price.get("source") == candidate.get("authorization_ref")
+        and price.get("version") == candidate.get("capability_version")
+        and candidate.get("model_revision") and int(candidate.get("quota_remaining") or 0) > 0)
 
 
 @dataclass(frozen=True)
@@ -800,6 +836,8 @@ class CostAwareRouter:
             provider_scope = task.declared_requirements.get("provider_task_scope")
             if provider_scope is not None and task.task_type not in provider_scope.get(candidate.provider, ()):
                 reasons.append("PROVIDER_TASK_NOT_AUTHORIZED")
+            if candidate.authorized_tasks is not None and task.task_type not in candidate.authorized_tasks:
+                reasons.append("MODEL_TASK_NOT_AUTHORIZED")
             cross_review = task.declared_requirements.get("cross_model_review")
             if cross_review:
                 from .cross_model_review import reviewer_rejection

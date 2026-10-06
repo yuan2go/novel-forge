@@ -18,7 +18,8 @@ PAIRED_SAMPLES_VERSION = "creative-paired-samples-budget.v5"
 PAIRED_SAMPLES_PHASES = (*PHASES, "QUALIFICATION")
 PROVIDER_CAMPAIGN_VERSION = "creative-provider-campaign-budget.v4"
 PROVIDER_RENEWAL_VERSION = "creative-provider-campaign-budget.v5"
-PROVIDER_BUDGET_VERSIONS = {PROVIDER_CAMPAIGN_VERSION, PROVIDER_RENEWAL_VERSION}
+PROVIDER_REALLOCATION_VERSION = "creative-provider-campaign-budget.v6"
+PROVIDER_BUDGET_VERSIONS = {PROVIDER_CAMPAIGN_VERSION, PROVIDER_RENEWAL_VERSION, PROVIDER_REALLOCATION_VERSION}
 PROVIDER_CAMPAIGN_PHASES = ("REFERENCE", "SCREENING", "CALIBRATION", "HOLDOUT", "SOURCE", "DESIGN", "PRODUCTION", "REPAIR")
 SINGLE_BOOK_VERSIONS = {SINGLE_BOOK_VERSION, PRODUCTION_BOOK_VERSION}
 SINGLE_BOOK_PHASES = ("SOURCE", "DESIGN", "CREATION_EARLY", "CREATION_LATE", "REPAIR")
@@ -163,6 +164,15 @@ _RENEWAL_PLAN_SCHEMA["properties"]["renewal"] = _object_schema({
 _RENEWAL_PLAN_SCHEMA["required"].append("renewal")
 _RENEWAL_PLAN_SCHEMA["properties"]["entitlements"]["items"]["properties"]["tokens"]["minimum"] = 0
 _RENEWAL_PLAN_SCHEMA["properties"]["renewal"]["properties"]["carry_forward"]["properties"]["entitlements"]["items"]["properties"]["tokens"]["minimum"] = 0
+
+PROVIDER_REALLOCATION_POLICY_SCHEMA = deepcopy(V4_MONETARY_AMENDMENT_SCHEMA)
+_REALLOCATION_PLAN_SCHEMA = PROVIDER_REALLOCATION_POLICY_SCHEMA["properties"]["comparison_budget"]
+_REALLOCATION_PLAN_SCHEMA["properties"]["contract_version"] = {"const": PROVIDER_REALLOCATION_VERSION}
+_REALLOCATION_PLAN_SCHEMA["properties"]["reallocation"] = _object_schema({
+    "authorized_at": {"type": "string", "format": "date-time"},
+    "carry_forward": deepcopy(_RENEWAL_PLAN_SCHEMA["properties"]["renewal"]["properties"]["carry_forward"]),
+})
+_REALLOCATION_PLAN_SCHEMA["required"].append("reallocation")
 
 
 def _invalid(message: str) -> KernelError:
@@ -422,6 +432,7 @@ def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: boo
         "contract_version", "experiment_id", "manifest_hash", "expires_at", "accounting_basis",
         "shared_total", "arms", "entitlements", *({"previous_policy"} if "previous_policy" in value else set()),
         *({"renewal"} if value["contract_version"] == PROVIDER_RENEWAL_VERSION else set()),
+        *({"reallocation"} if value["contract_version"] == PROVIDER_REALLOCATION_VERSION else set()),
     })
     if "previous_policy" in plan:
         previous = _object(plan["previous_policy"], "previous_policy", {"policy_version", "policy_hash", "contract_hash"})
@@ -479,6 +490,9 @@ def _validate_provider_campaign(value: dict[str, Any], *, require_both_arms: boo
     if plan["contract_version"] == PROVIDER_RENEWAL_VERSION:
         from .creative_budget_renewal import validate_renewal_contract
         validate_renewal_contract(plan)
+    if plan["contract_version"] == PROVIDER_REALLOCATION_VERSION:
+        from .creative_budget_reallocation import validate_reallocation_contract
+        validate_reallocation_contract(plan)
     return deepcopy(plan)
 
 

@@ -213,6 +213,8 @@ _PACK_SKILL_FOR_STAGE = {
     "screenplay_review": "quality-review",
     "screenplay_revision": "prose-generation",
     "narrative_semantic_evaluation": "quality-review",
+    "model_reference_evaluate": "quality-review",
+    "model_reference_adjudicate": "quality-review",
     "agent_session": "agent-loop-governance",
     "retrieval": "context-builder-source-isolation",
     "retrieval_query_expansion": "context-builder-source-isolation",
@@ -389,6 +391,12 @@ def build_production_execution_composition(
         if not router_enabled or not isinstance(provider_task_scope, dict):
             raise ValueError("ROUTING_PROVIDER_TASK_SCOPE_INVALID")
     codex_router_reasoning = "high"
+    codex_catalog = ()
+    if "NOVEL_FORGE_CODEX_ROUTER_MODELS" in values:
+        from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
+        if not codex_router_enabled:
+            raise ValueError("Codex model catalog requires the formal Codex Router")
+        codex_catalog = parse_codex_model_catalog(values["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
     if codex_router_enabled:
         codex_router_reasoning = str(values.get(
             "NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT", "high"
@@ -418,12 +426,13 @@ def build_production_execution_composition(
             accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
         for stage_name in ("MODEL", "MEMO", "DRAFT", "REVIEW", "REVISION", "REREVIEW",
                            "CANON_EXTRACTION", "CANON_SUPPORT", "QUALITY", "READER_OUTCOME",
-                           "NARRATIVE_EVALUATOR", "AGENT", "PLANNING"):
+                           "NARRATIVE_EVALUATOR", "MODEL_REFERENCE", "AGENT", "PLANNING"):
             templates[f"NOVEL_FORGE_{stage_name}_PROVIDER"] = provider
             templates[f"NOVEL_FORGE_{stage_name}_MODEL"] = model
         templates["NOVEL_FORGE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_AGENT_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = reasoning
+        templates["NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(context_limit)
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = accounting_method
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = accounting_evidence
@@ -523,6 +532,15 @@ def build_production_execution_composition(
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
         ),
     ]
+    model_reference_provider = str(values.get("NOVEL_FORGE_MODEL_REFERENCE_PROVIDER") or "").strip()
+    model_reference_model = str(values.get("NOVEL_FORGE_MODEL_REFERENCE_MODEL") or "").strip()
+    if bool(model_reference_provider) != bool(model_reference_model):
+        raise RuntimeError("model reference route requires both explicit Provider and model")
+    if model_reference_provider:
+        stage_routes.extend((
+            ("model_reference_evaluate", "NOVEL_FORGE_MODEL_REFERENCE_PROVIDER", "NOVEL_FORGE_MODEL_REFERENCE_MODEL"),
+            ("model_reference_adjudicate", "NOVEL_FORGE_MODEL_REFERENCE_PROVIDER", "NOVEL_FORGE_MODEL_REFERENCE_MODEL"),
+        ))
     stage_routes.extend([
         ("context_compress", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("context_fidelity", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
@@ -594,6 +612,7 @@ def build_production_execution_composition(
             stage
             in {
                 "narrative_semantic_evaluation",
+                "model_reference_evaluate", "model_reference_adjudicate",
                 "agent_session",
                 "retrieval_query_expansion",
             }
@@ -607,12 +626,14 @@ def build_production_execution_composition(
                     (
                         "NOVEL_FORGE_AGENT_REASONING_EFFORT"
                         if stage in {"agent_session", "retrieval_query_expansion"}
+                        else "NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"
+                        if stage in {"model_reference_evaluate", "model_reference_adjudicate"}
                         else "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"
                     ),
                 )
             ):
                 raise RuntimeError(
-                    "controlled Narrative Evaluator requires an explicit Provider, model, and reasoning effort"
+                    "controlled evaluator requires an explicit Provider, model, and reasoning effort"
                 )
         provider = str(
             values.get(provider_key)
@@ -623,7 +644,7 @@ def build_production_execution_composition(
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
                 if stage.startswith("quality_")
-                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation"}
+                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation", "model_reference_evaluate", "model_reference_adjudicate"}
                 else ""
             )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
@@ -643,7 +664,7 @@ def build_production_execution_composition(
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")
                 if stage.startswith("quality_")
-                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation"}
+                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation", "model_reference_evaluate", "model_reference_adjudicate"}
                 else ""
             )
             or ""
@@ -661,6 +682,8 @@ def build_production_execution_composition(
             qualification_ref = "capability-probe:codex-cli:real-runtime-v1"
             reasoning_effort = str(
                 values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
+                or (values.get("NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT")
+                    if stage in {"model_reference_evaluate", "model_reference_adjudicate"} else "")
                 or values.get("NOVEL_FORGE_REASONING_EFFORT")
                 or "high"
             )
@@ -909,14 +932,17 @@ def build_production_execution_composition(
             )
             for stage, route in routes.items()
         }
-    codex_escalation_enabled = codex_router_enabled
+    codex_escalation_enabled = codex_router_enabled and not codex_catalog
     if codex_router_enabled:
         escalation_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
         if not escalation_model or int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT") or 0) <= 0:
             raise RuntimeError("Codex Router lane requires an explicit model and finite call allowance")
+        if codex_catalog and not any(entry["model"] == escalation_model and entry["role"] == "PRIMARY" for entry in codex_catalog):
+            raise RuntimeError("Codex model catalog must explicitly bind the configured primary model")
         codex_models.add(escalation_model)
+        codex_models.update(entry["model"] for entry in codex_catalog)
     if codex_models:
-        if len(codex_models) != 1:
+        if len(codex_models) != 1 and not codex_catalog:
             raise RuntimeError("this phase requires one explicit Codex model")
         if not router_enabled and any(
             route.model_profile.runtime_class
@@ -986,7 +1012,7 @@ def build_production_execution_composition(
     codex_execution_root: Path | None = None
     codex_pricing: CodexPricingSnapshot | None = None
     codex_entitlement: CodexAccountEntitlementSnapshot | None = None
-    codex_model = next(iter(codex_models), "")
+    codex_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "") if codex_catalog else next(iter(codex_models), "")
     if codex_models:
         from novel_forge.modules.production_execution.codex_configuration import (
             codex_local_binding_hash,
@@ -1016,6 +1042,8 @@ def build_production_execution_composition(
                 "workspace, and absolute persistent execution root"
             )
         if codex_accounting_basis == "PRICED":
+            if codex_catalog:
+                raise RuntimeError("Codex model catalog requires account entitlement")
             required_pricing = {
                 "pricing_ref": str(
                     values.get("NOVEL_FORGE_CODEX_PRICING_REF") or ""
@@ -1271,23 +1299,31 @@ def build_production_execution_composition(
             assert codex_entitlement is not None
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
             output_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
-            candidates.append(ModelCandidate(
-                candidate_id=f"codex-cli:{codex_model}:{codex_router_reasoning}", provider="codex-cli", model=codex_model,
-                reasoning=codex_router_reasoning, tier="escalation", capabilities=("structured_output", "text"),
-                context_limit=context_limit, output_limit=output_limit,
-                pricing=PricingSnapshot(
-                    version=codex_entitlement.configuration_ref,
-                    effective_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
-                    effective_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or ""),
-                    input_miss_per_million="0", input_hit_per_million="0", output_per_million="0",
-                    currency="UNKNOWN", source=codex_entitlement.authorization_ref,
-                    accounting_basis="ACCOUNT_ENTITLEMENT"),
-                capability_version=codex_entitlement.configuration_ref,
-                model_revision=codex_entitlement.configuration_ref,
-                escalation_only=codex_escalation_enabled,
-                quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
-                authorization_ref=codex_entitlement.authorization_ref,
-            ))
+            if codex_catalog:
+                from novel_forge.modules.production_execution.codex_model_catalog import codex_catalog_candidates
+                candidates.extend(codex_catalog_candidates(codex_catalog,
+                    entitlement=codex_entitlement.to_dict(),
+                    quota=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                    valid_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
+                    valid_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or "")))
+            else:
+                candidates.append(ModelCandidate(
+                    candidate_id=f"codex-cli:{codex_model}:{codex_router_reasoning}", provider="codex-cli", model=codex_model,
+                    reasoning=codex_router_reasoning, tier="escalation", capabilities=("structured_output", "text"),
+                    context_limit=context_limit, output_limit=output_limit,
+                    pricing=PricingSnapshot(
+                        version=codex_entitlement.configuration_ref,
+                        effective_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
+                        effective_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or ""),
+                        input_miss_per_million="0", input_hit_per_million="0", output_per_million="0",
+                        currency="UNKNOWN", source=codex_entitlement.authorization_ref,
+                        accounting_basis="ACCOUNT_ENTITLEMENT"),
+                    capability_version=codex_entitlement.configuration_ref,
+                    model_revision=codex_entitlement.configuration_ref,
+                    escalation_only=codex_escalation_enabled,
+                    quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                    authorization_ref=codex_entitlement.authorization_ref,
+                ))
         from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
         model_gateway.provider_router = ProductionProviderRouter(
             settings.database_url, candidates=candidates, execution_environment=environment,
@@ -1304,19 +1340,11 @@ def build_production_execution_composition(
                    if deepseek_enabled else {}),
             },
         )
+    from novel_forge.modules.production_execution.provider_admission import SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
+
     shared_budget_caps = {
         key: str(values[value])
-        for key, value in (
-            ("project_daily", "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP"),
-            ("project_total", "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP"),
-            ("operation_total", "NOVEL_FORGE_OPERATION_PROVIDER_CAP"),
-            ("provider_project_daily", "NOVEL_FORGE_PROVIDER_DAILY_CAP"),
-            ("global_daily", "NOVEL_FORGE_DAILY_PROVIDER_CAP"),
-            ("global_total", "NOVEL_FORGE_GLOBAL_PROVIDER_CAP"),
-            ("global_monthly", "NOVEL_FORGE_GLOBAL_MONTHLY_PROVIDER_CAP"),
-            ("work_total", "NOVEL_FORGE_WORK_PROVIDER_CAP"),
-            ("model_project_total", "NOVEL_FORGE_MODEL_PROJECT_CAP"),
-        )
+        for key, value in SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
         if str(values.get(value) or "").strip()
     }
     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and shared_budget_caps:
@@ -1927,7 +1955,7 @@ def _book_opening_provider_budget_policy(
             raise ValueError("Book Opening entitlement lane requires a priced parent and explicit policy")
         router = execution.gateway.provider_router
         matching = [candidate for candidate in (router.candidates if router else ())
-                    if candidate.provider == "codex-cli" and candidate.escalation_only
+                    if candidate.provider == "codex-cli" and (candidate.escalation_only or candidate.entitlement_role == "PRIMARY")
                     and candidate.model == lane.get("model_id")
                     and candidate.authorization_ref == lane.get("authorization_ref")
                     and candidate.capability_version == lane.get("authorization_version")
@@ -2251,6 +2279,60 @@ def build_narrative_semantic_evaluation_execution_port(
     )
 
 
+def build_model_reference_execution_port(
+    settings: IndustrialSettings, *, execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+):
+    """CONSTRAINT: model reference calls use the existing Gateway and validation Pack gate."""
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import (
+        ModelReferenceExecutionContractBinder, ModelReferenceExecutionPort,
+    )
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL is required for model reference execution")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment))
+    if runtime_environment is not execution.runtime_environment or runtime_environment.value != "validation":
+        raise RuntimeError("model reference creation requires the validation runtime")
+    if not {"model_reference_evaluate", "model_reference_adjudicate"}.issubset(execution.gateway.routes):
+        raise RuntimeError("model reference creation requires explicit evaluator Provider/model routes")
+    registered = execution.gateway.execution_binders.get("model_reference")
+    if registered is None:
+        binder = ModelReferenceExecutionContractBinder(settings.database_url,
+            execution.gateway.routes,
+            capability_pack_id=str(values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID") or "chapter_generation_pack") + ".model_reference_creation",
+            pack_environment="validation", pack_runtime_profile="validation",
+            pack_release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION").upper(),
+            pack_required=True)
+        execution.gateway.register_execution_binder("model_reference", binder)
+    elif isinstance(registered, ModelReferenceExecutionContractBinder):
+        binder = registered
+    else:
+        raise RuntimeError("model reference execution binder domain is already owned")
+    model_port = ExternalEffectChapterModelPort(settings.database_url,
+        adapter=execution.gateway, worker_id="model-reference-worker",
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(), capability_binder=binder,
+        execution_binding_domain="model_reference")
+    return ModelReferenceExecutionPort(settings.database_url, model_port=model_port)
+
+
+def build_model_reference_creation_application(
+    settings: IndustrialSettings, *, execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+):
+    """CONSTRAINT: creation remains diagnostic and inherits the governed execution composition."""
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import ModelReferenceCreationApplication
+
+    values = os.environ if env is None else env
+    build_id, commit_sha = authority_release_identity(env=values)
+    return ModelReferenceCreationApplication(settings.database_url,
+        application_build_id=build_id, commit_sha=commit_sha,
+        execution_port=build_model_reference_execution_port(settings,
+            execution=execution, env=values))
+
+
 def build_story_planning_generation_application(
     settings: IndustrialSettings,
     *,
@@ -2420,6 +2502,8 @@ __all__ = [
     "build_book_production_composition",
     "build_reader_outcome_model_port",
     "build_narrative_semantic_evaluation_execution_port",
+    "build_model_reference_execution_port",
+    "build_model_reference_creation_application",
     "build_story_planning_generation_application",
     "build_capability_pack_authority_application",
     "build_capability_pack_authority_query",

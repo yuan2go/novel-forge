@@ -123,7 +123,8 @@ _STAGES = frozenset(
     }
 )
 _OPTIONAL_DOMAIN_STAGES = frozenset(
-    {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES}
+    {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES,
+     "model_reference_evaluate", "model_reference_adjudicate"}
 )
 
 _PLANNING_STAGES = frozenset(
@@ -157,6 +158,8 @@ _STAGE_CAPABILITIES = {
     "screenplay_review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
     "screenplay_revision": CapabilityId.REVISION_CHAPTER_REVISE,
     "narrative_semantic_evaluation": CapabilityId.QUALITY_INTRINSIC_JUDGE,
+    "model_reference_evaluate": CapabilityId.QUALITY_INTRINSIC_JUDGE,
+    "model_reference_adjudicate": CapabilityId.QUALITY_INTRINSIC_JUDGE,
     "agent_session": CapabilityId.AGENT_WORKSPACE_EXECUTE,
     "retrieval": CapabilityId.RETRIEVAL_EMBED,
     "retrieval_query_expansion": CapabilityId.RETRIEVAL_QUERY_EXPAND,
@@ -430,6 +433,23 @@ def _provider_effective_context_policy(
             "historical_compatibility": "FROZEN_TYPED_PLANNING_V1",
         }
     typed_schema = str(content.get("schema_version") or "")
+    if typed_schema == "novelos.model_reference_context_bundle.v1" and not isinstance(manifest, Mapping):
+        provider_view = content.get("provider_context_view")
+        frozen = content.get("model_reference")
+        if (content.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY"
+            or not isinstance(provider_view, Mapping)
+            or provider_view.get("source_isolation") != "FROZEN_MODEL_REFERENCE_ONLY"
+            or provider_view.get("source_bindings") != content.get("source_bindings")
+            or provider_view.get("scope") != (frozen or {}).get("scope")):
+            raise KernelError("CONTEXT_POLICY_UNRESOLVED", "model reference Context source isolation differs")
+        return {"compiler_version": "frozen-model-reference-context-v1",
+            "context_contract_version": typed_schema,
+            "provider_view_hash": canonical_hash(provider_view),
+            "physical_allowed_types": sorted(physical_allowed),
+            "physical_denied_types": sorted(physical_denied),
+            "selected_physical_types": list(selected_physical),
+            "current_policy_compiler_invoked": False,
+            "diagnostic_context_contract": "VERSIONED_MODEL_REFERENCE_V1"}
     typed_stage = {
         "novelos.narrative_evaluation_context_bundle.v1": (
             "narrative_semantic_evaluation"
@@ -852,6 +872,7 @@ class PostgresChapterExecutionContractBinder:
             "prompt-template:reader-outcome-pack": {"v2"},
             "prompt-template:longform-prose-review-pack": {"v2"},
             "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
+            "prompt-template:model-reference-creation": {"v1"},
             "prompt-template:scene-screenplay-pack": {"v1"},
         }
         if materialization.prompt_template.version not in supported_templates.get(
@@ -3755,6 +3776,14 @@ def _stage_semantic_contract_v3(
     stage: str, *, required_language: str | None = None,
     embedding_output_contract: Mapping[str, Any] | None = None,
 ) -> str:
+    if stage in {"model_reference_evaluate", "model_reference_adjudicate"}:
+        return (
+            "Evaluate only the frozen subject against the author baseline and named dimension. "
+            "State uncertainty when evidence is insufficient. Return the exact declared JSON schema. "
+            "Do not claim human judgment, author approval, production eligibility, or literary proof. "
+            + ("Do not infer or access peer judgments. " if stage == "model_reference_evaluate" else
+               "Use only the two frozen blind reports supplied in source_evaluations; resolve their disagreements independently. ")
+        )
     if stage == "memo":
         return (
             "Suggest concrete creative guidance for the frozen Chapter mission and Scene roles. "
@@ -3845,6 +3874,8 @@ def _stage_semantic_contract(
     required_language: str | None = None,
     embedding_output_contract: Mapping[str, Any] | None = None,
 ) -> str:
+    if stage in {"model_reference_evaluate", "model_reference_adjudicate"}:
+        return _stage_semantic_contract_v3(stage, required_language=required_language)
     if stage == "retrieval":
         if embedding_output_contract is None:
             return (
@@ -4395,7 +4426,7 @@ def _materialize_production_codex_prompt(
         or not isinstance(knowledge, list)
         or (
             not knowledge
-            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES, *ACTOR_STAGES}
+            and stage not in {"agent_session", "retrieval", "retrieval_query_expansion", "model_reference_evaluate", "model_reference_adjudicate", *CONTEXT_MODEL_STAGES, *ACTOR_STAGES}
         )
         or not isinstance(tools, Mapping)
         or not isinstance(schema, Mapping)
@@ -4469,7 +4500,7 @@ def _materialize_production_codex_prompt(
         item for item in knowledge if isinstance(item, Mapping)
     )
     if not knowledge_view and stage not in {
-        "agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES, *ACTOR_STAGES,
+        "agent_session", "retrieval", "retrieval_query_expansion", "model_reference_evaluate", "model_reference_adjudicate", *CONTEXT_MODEL_STAGES, *ACTOR_STAGES,
     }:
         raise KernelError(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",

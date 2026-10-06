@@ -122,7 +122,16 @@ def generator_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: Seque
         if not task.get("producer_contract_hash") or task["producer_contract_hash"] != snapshot_hash(task.get("producer_contract")):
             continue
         contract = generator_reference_contract(task["task_type"], task["producer_contract_hash"])
-        if (assessment.get("protocol_version") != contract["protocol_version"] or any(
+        basis = evaluations[evaluator_id].get("reference_basis")
+        if basis == "MODEL_CONSENSUS":
+            from novel_forge.modules.chapter_quality_authority.model_reference import MODEL_REFERENCE_PROTOCOL
+
+            if (assessment.get("protocol_version") != MODEL_REFERENCE_PROTOCOL
+                or not assessment.get("labels")
+                or len({label.get("evaluation_version") for label in assessment["labels"]}) != 1
+                or evaluations[evaluator_id].get("human_verified") is True):
+                continue
+        elif (assessment.get("protocol_version") != contract["protocol_version"] or any(
             label["evaluation_version"] != contract["evaluation_version"] for label in assessment["labels"]
         )):
             continue
@@ -138,7 +147,8 @@ def generator_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: Seque
         grouped[effect_id].append({
             "generator_quality_score": score,
             "generator_protocol_hash": snapshot_hash({
-                "version": "native-generator-adjudication.v1", "task_type": task["task_type"],
+                "version": "native-generator-model-consensus.v1" if basis == "MODEL_CONSENSUS" else "native-generator-adjudication.v1",
+                "task_type": task["task_type"],
                 "reference_protocol_hash": evaluations[evaluator_id]["reference_protocol_hash"],
                 "evaluator_producer_contract_hash": evaluator.get("task", {}).get("producer_contract_hash"),
                 "score_basis": "MINIMUM_ADJUDICATED_LOWER_ENDPOINT",
@@ -146,21 +156,27 @@ def generator_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: Seque
             "generator_risk": decision["policy"]["risk"], "generator_context_tokens": task["input_tokens"],
             "generator_sample_identity": snapshot_hash({"task_type": task["task_type"], "output": output}),
             "evidence_refs": ["asset-version:" + target_id, *evaluations[evaluator_id]["evidence_refs"]],
+            "assessment_basis": "INDEPENDENT_MODEL_CONSENSUS" if basis == "MODEL_CONSENSUS" else "INDEPENDENT_HUMAN_ADJUDICATION",
         })
     result = direct_generator_outcomes(cursor, project_id=project_id, effect_ids=effect_ids)
     for identity, observations in grouped.items():
         if len({row["generator_protocol_hash"] for row in observations}) != 1:
             continue
-        result[identity] = {**min(observations, key=lambda row: row["generator_quality_score"]),
+        selected = min(observations, key=lambda row: row["generator_quality_score"])
+        result[identity] = {**selected,
             "metric": "INDEPENDENT_GENERATOR_ADJUDICATION.v1", "accepted": None,
             "evidence_refs": sorted({ref for row in observations for ref in row["evidence_refs"]}),
-            "assessment_basis": "INDEPENDENT_HUMAN_ADJUDICATION", "sample_promoted": False}
+            "assessment_basis": selected["assessment_basis"], "sample_promoted": False}
     return result
 
 
 
 def direct_generator_outcomes(cursor: Any, *, project_id: str, effect_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
-    from novel_forge.modules.chapter_quality_authority.reference_sampling import require_adjudicated_reference, reference_label_classes, reference_provider_result
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+        require_adjudicated_reference, require_model_consensus_reference, reference_label_classes,
+        reference_provider_result,
+    )
+    from novel_forge.modules.chapter_quality_authority.model_reference import MODEL_REFERENCE_PROTOCOL
     from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
 
     cursor.execute(
@@ -199,12 +215,31 @@ def direct_generator_outcomes(cursor: Any, *, project_id: str, effect_ids: Seque
                 [project_id, target_id, contract["protocol_version"], contract["evaluation_version"]],
             )
             labels = [{"asset_version_id": row[0], "content_hash": row[1]} for row in cursor.fetchall()]
-            reference = require_adjudicated_reference(cursor, project_id=project_id,
-                binding={"protocol_version": contract["protocol_version"], "adjudications": labels},
-                target_id=target_id, target_hash=digest, generators=[subject["generation_actor_id"]],
-                evaluator_actor_id=subject["generation_actor_id"], chapter=subject["content"]["sampled_output"]["chapter"],
-                expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
-                allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"})
+            chapter = subject["content"]["sampled_output"]["chapter"]
+            if labels:
+                reference = require_adjudicated_reference(cursor, project_id=project_id,
+                    binding={"protocol_version": contract["protocol_version"], "adjudications": labels},
+                    target_id=target_id, target_hash=digest, generators=[subject["generation_actor_id"]],
+                    evaluator_actor_id=subject["generation_actor_id"], chapter=chapter,
+                    expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
+                    allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"})
+            else:
+                cursor.execute("""SELECT version.asset_version_id,version.content_hash
+                    FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+                    WHERE asset.project_id=%s AND asset.asset_type='model_reference_adjudication'
+                      AND version.lifecycle='ACTIVE' AND version.governance='CLEAR'
+                      AND version.content->'subject'->>'asset_version_id'=%s
+                      AND version.content->>'protocol_version'=%s
+                      AND version.content->>'producer_contract_hash'=%s
+                    ORDER BY version.created_at,version.asset_version_id""",
+                    [project_id, target_id, MODEL_REFERENCE_PROTOCOL, producer])
+                labels = [{"asset_version_id": row[0], "content_hash": row[1]} for row in cursor.fetchall()]
+                reference = require_model_consensus_reference(cursor, project_id=project_id,
+                    binding={"basis": "MODEL_CONSENSUS", "protocol_version": MODEL_REFERENCE_PROTOCOL,
+                             "adjudications": labels}, target_id=target_id, target_hash=digest,
+                    chapter=chapter, expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
+                    allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"},
+                    expected_producer_contract_hash=producer)
             if not reference_label_classes(cursor, project_id=project_id, reference=reference, stage=stage):
                 continue
             provider = reference_provider_result(cursor, project_id=project_id, operation_id=operation_id,
@@ -218,10 +253,15 @@ def direct_generator_outcomes(cursor: Any, *, project_id: str, effect_ids: Seque
             continue
         result[effect_id] = {
             "metric": "INDEPENDENT_GENERATOR_ADJUDICATION.v1", "accepted": None,
-            "generator_quality_score": score, "generator_protocol_hash": snapshot_hash(contract),
+            "generator_quality_score": score, "generator_protocol_hash": snapshot_hash(contract if labels and reference["reference_basis"] != "MODEL_CONSENSUS" else {
+                "protocol_version": MODEL_REFERENCE_PROTOCOL, "task_type": stage,
+                "producer_contract_hash": producer, "dimensions": list(DIRECT_GENERATOR_DIMENSIONS[stage]),
+                "score_basis": "MINIMUM_MODEL_CONSENSUS_LOWER_ENDPOINT"}),
             "generator_risk": decision["policy"]["risk"], "generator_context_tokens": task["input_tokens"],
             "generator_sample_identity": snapshot_hash({"task_type": stage, "output": provider["result"]}),
-            "evidence_refs": ["asset-version:" + target_id, *("asset-version:" + row["asset_version_id"] for row in labels)],
-            "assessment_basis": "INDEPENDENT_HUMAN_ADJUDICATION", "sample_promoted": False,
+            "evidence_refs": ["asset-version:" + target_id, *("asset-version:" + row["asset_version_id"] for row in labels),
+                *reference.get("evidence_refs", [])],
+            "assessment_basis": "INDEPENDENT_MODEL_CONSENSUS" if reference["reference_basis"] == "MODEL_CONSENSUS" else "INDEPENDENT_HUMAN_ADJUDICATION",
+            "sample_promoted": False,
         }
     return result
