@@ -3248,3 +3248,18 @@ def test_changed_static_candidate_configuration_can_restore_original_active_plan
     assert receipt == before
     assert read == list(documents)
     assert recovered.model_context_limit == recovered.model_output_limit == 0
+
+
+def test_runtime_repair_route_lineage_keeps_same_structural_count(monkeypatch):
+    cancelled=_routing_lineage_row('root',1)
+    target=_routing_lineage_row('root',1,runtime_continuation_id='continuation:1')
+    target=(*target[:4],'cancelled-repair')
+    rows={'target':target,'cancelled-repair':cancelled,'root':_routing_lineage_row('',0),
+        'continuation:1':('cancelled-repair',target[3],cancelled[3],cancelled[3])}
+    monkeypatch.setattr(planning_execution,'get_database_runtime',lambda _: _routing_lineage_runtime(rows))
+    assert _planning_repair_routing_lineage('unused',project_id='project-1',book_id='book-1',generator_operation_name='world.design.generate',
+        operation_id='target',repair_of_operation_id='root')==('root','cancelled-repair','target')
+    rows.pop('continuation:1')
+    with pytest.raises(KernelError,match='PLANNING_ROUTING_LINEAGE_INVALID'):
+        _planning_repair_routing_lineage('unused',project_id='project-1',book_id='book-1',generator_operation_name='world.design.generate',
+            operation_id='target',repair_of_operation_id='root')

@@ -1278,6 +1278,13 @@ retain the terminal failure, original Provider identity and settled usage, reval
 entire frozen task, and append a linked processing Operation without another model call.
 An admitted runtime-continuation successor retains its frozen Pack while domain
 approval remains pending; only its first admission resolves the approved active target.
+Creative-validation Planning Packs may freeze a task Context target derived from the
+configured primary model's input window, within the Pack's system ceiling. This is
+per-request execution capacity, not a Book usage budget. An undispatched result-repair
+task blocked by its older Context target can use the existing operator-registered
+runtime continuation after native cancellation, retaining the original repair count,
+result, model, route and account. The successor changes only that Context target;
+dispatched or unknown effects and strict-production sources cannot use this path.
 New future tasks separately require the current Pack. Frontier alias normalization
 compares exact Canon/State identities and rejects missing or conflicting versions. Cached quality evidence requires matching policy and creative-baseline
 hashes before reuse. Semantic repair/replan appends explicit future-only lineage;

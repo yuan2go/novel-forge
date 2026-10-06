@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -227,12 +227,12 @@ def test_native_formation_generates_foundation_from_author_brief(
         monkeypatch.setattr(result_recovery, "validate_raw_result", reject_valid_result_once)
         monkeypatch.setattr(result_recovery, "MAXIMUM_RESULT_REPAIRS", 0)
     if author_result_repair:
-        normal_planning = transport.planning
+        original_author_planning = transport.planning
         damaged_author_decision = False
 
         def malformed_author_once(stage, inputs):
             nonlocal damaged_author_decision
-            result = normal_planning(stage, inputs)
+            result = original_author_planning(stage, inputs)
             if stage == "reader.promise.generate" and not damaged_author_decision:
                 damaged_author_decision = True
                 result["author_design_decisions"][0]["realization_excerpt"] = "不存在的作者采纳摘录"
@@ -392,6 +392,18 @@ def test_native_formation_generates_foundation_from_author_brief(
 
             monkeypatch.setattr(NarrativeSemanticEvaluationApplication, "_admit_candidate_once", admit_concurrently_once)
         runtime_recovered = False
+        capacity_failed = False
+        if capacity_continuation:
+            resolver = formation.generation.planning.execution_binder.resolver.execution_preparer
+            original_context = resolver._context_bundle
+            def fail_capacity_once(**kwargs):
+                nonlocal capacity_failed
+                if kwargs["command"].repair_of_operation_id and not capacity_failed:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    capacity_failed = True
+                    raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "retained zero-dispatch capacity failure")
+                return original_context(**kwargs)
+            resolver._context_bundle = fail_capacity_once
         if runtime_recovery:
             preparer = formation.generation.planning.execution_binder.resolver.execution_preparer
             def profile_collision(**_):
@@ -424,6 +436,13 @@ def test_native_formation_generates_foundation_from_author_brief(
                 )
             except Exception as exc:
                 from novel_forge.modules.command_kernel.errors import KernelError
+                if capacity_continuation and isinstance(exc, KernelError) and exc.code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+                    execution.close()
+                    formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
+                        chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings, env=env, registry=registry,
+                        transport=transport, admitted=admitted, monkeypatch=monkeypatch)
+                    formation.generation.book_design.fault_injector = fail_activation
+                    continue
                 if valid_result_admission and isinstance(exc, KernelError) and exc.code == "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED":
                     from concurrent.futures import ThreadPoolExecutor
                     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -697,7 +716,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 assert uow.cursor.fetchone()[0] == 2
             if not complete_after_result_repair:
                 return
-        if author_result_repair:
+        if author_result_repair and not capacity_continuation:
             from novel_forge.modules.story_planning_runtime.application import _command_from_payload
             from novel_forge.modules.story_planning_runtime.result_recovery import require_result_repair_source
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1172,3 +1191,64 @@ def test_native_retained_valid_result_admission_without_another_provider_call(tm
         tmp_path, monkeypatch, False, False, False, False, False, False, 1,
         creative_validation=True, valid_result_admission=True,
     )
+
+
+def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
+    from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+    from tests.integration.creative_validation_production_support import install_planning
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import require_binding
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT o.operation_id,o.version,o.command_payload->'payload' FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.project_id=%s AND o.status='FAILED_RETRYABLE'", [harness.project_id])
+        source, version, original = uow.cursor.fetchone()
+        uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s", [source])
+        assert uow.cursor.fetchone()[0] == 0
+    before = len(transport.calls)
+    cancelled = request_cancellation(DATABASE_URL,CancelCommand(operation_id=source,project_id=harness.project_id,
+        actor_id=principal.principal_id,expected_version=version,reason="native capacity successor; zero dispatch",
+        idempotency_key=source+":capacity-cancel",trace_id=harness.project_id,correlation_id=harness.project_id),settle_undispatched=True)
+    assert cancelled["status"] == "CANCELLED"
+    sha = "f"*40
+    hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=sha)
+    harness.release_sha=sha
+    harness.pack_id += ".capacity"
+    chapter_pack.pack_id += ".capacity"
+    install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+        workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,commit_sha=sha,
+        compiler=pack_actor,approver=pack_actor,agent_admin=pack_actor,pack_id_override=chapter_pack.pack_id)
+    profile=build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes["planning"],
+        pack_id=harness.pack_id,planning_task_token_budget=128000)
+    install_planning(harness,profile,pack_actor)
+    env.update(NOVEL_FORGE_COMMIT_SHA=sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+    execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+    chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+    composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+    formation=composition.formation
+    planning=formation.generation.planning
+    def register():
+        return planning.register_runtime_continuation(source,project_id=harness.project_id,principal=principal,
+            expected_source_version=cancelled["version"],decision_evidence={"authorization_ref":"member-grant",
+                "authorized_reasoning_effort":"high","reason":"same task and repair count; capacity only"},trace_id=harness.project_id,correlation_id=harness.project_id)
+    from novel_forge.modules.story_planning_runtime import preflight_continuation
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with monkeypatch.context() as strict:
+        verified=preflight_continuation.verify_template_provenance
+        strict.setattr(preflight_continuation,"verify_template_provenance",lambda *args: {**verified(*args),"mode":"STRICT_PRODUCTION"})
+        with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED"):
+            register()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        records=list(pool.map(lambda _:register(),range(2)))
+    assert len({r["operation_id"] for r in records})==1 and len(transport.calls)==before
+    binding=require_binding(DATABASE_URL,records[0]["continuation_id"])
+    assert binding["source_command"]==original
+    assert binding["successor_command"]["repair_number"]==original["repair_number"]==1
+    failed=formation.require(admitted.formation_run_id)
+    formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
+    return formation,execution,chapter,composition
+
+
+def test_native_undispatched_result_repair_capacity_successor_preserves_raw_task(tmp_path,monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,author_guided=True,
+        result_repair=False,runtime_recovery=False,evaluation_recovery=False,manual_review=False,advice_only=False,
+        target_chapters=1,creative_validation=True,author_result_repair=True,capacity_continuation=True)

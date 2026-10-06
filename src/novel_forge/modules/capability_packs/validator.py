@@ -939,6 +939,11 @@ def _validate_context(
             "$.context_sources.max_tokens",
             "max_tokens must be a positive integer",
         )
+    if context.planning_task_token_budget is not None and (
+        type(context.planning_task_token_budget) is not int or type(context.max_tokens) is not int
+        or not 0 < context.planning_task_token_budget <= min(512000,context.max_tokens)
+    ):
+        issues.error("CAPABILITY_PACK_CONTEXT_TARGET_INVALID", "$.context_sources.planning_task_token_budget", "Planning Context target must fit the system ceiling")
     allowed = {value for value in context.allowed_asset_types if isinstance(value, str)}
     forbidden = {
         value for value in context.forbidden_asset_types if isinstance(value, str)

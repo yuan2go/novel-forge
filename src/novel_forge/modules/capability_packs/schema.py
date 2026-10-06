@@ -339,6 +339,7 @@ class ContextSources:
     priority: tuple[str, ...]
     freshness: Mapping[str, Any]
     longform_bindings: Mapping[str, Any]
+    planning_task_token_budget: Any = None
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, Any]) -> "ContextSources":
@@ -352,6 +353,7 @@ class ContextSources:
             _strings(payload.get("priority")),
             _object(payload.get("freshness")),
             _object(payload.get("longform_bindings")),
+            payload.get("planning_task_token_budget"),
         )
 
 

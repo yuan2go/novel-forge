@@ -159,6 +159,7 @@ from . import (
     v20261006_0155_unsent_resource_route_succession,
     v20261006_0156_resource_journal_indexes,
     v20261006_0157_planning_result_admission,
+    v20261006_0158_planning_capacity_lineage,
 )
 
 VERSION_MODULES = [
@@ -320,6 +321,7 @@ VERSION_MODULES = [
     v20261006_0155_unsent_resource_route_succession,
     v20261006_0156_resource_journal_indexes,
     v20261006_0157_planning_result_admission,
+    v20261006_0158_planning_capacity_lineage,
 ]
 
 __all__ = ["VERSION_MODULES"]

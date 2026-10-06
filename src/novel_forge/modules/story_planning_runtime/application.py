@@ -2955,6 +2955,8 @@ class StoryPlanningGenerationApplication:
             ("repair_of_operation_id", "repair_result_asset_version_id")
             if command.repair_of_operation_id else ()
         )
+        if command.runtime_continuation_id:
+            repair_fields += ("runtime_continuation_id",)
         with AuthorityUnitOfWork(self.database_url) as uow:
             if command.repair_of_operation_id:
                 uow.cursor.execute(

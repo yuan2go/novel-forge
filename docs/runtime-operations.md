@@ -2484,6 +2484,14 @@ source Operation, result AssetVersion and trusted operator reason, then continue
 original Formation. This creates a bounded, versioned result-processing successor; it
 does not reset structural repair counts or rewrite the failed Operation. Unknown results,
 unsettled usage, changed frozen inputs, live successors and invalid content fail closed.
+The native creation entry freezes Planning Context capacity from the configured primary
+model input window when installing its creative-validation Pack. For an old result-repair
+task that failed Context admission before creating any Effect or reservation, cancel it
+through the Command Kernel, install the scoped successor Pack, and register the existing
+Planning runtime continuation. Registration checks the settled original result's native
+model/account evidence, retains the complete task and structural repair count, and permits
+only a larger bounded Context target. It cannot change model routing, spending authorization,
+other Context policy fields or strict-production policy; resume the original Formation.
 
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native

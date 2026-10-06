@@ -124,12 +124,16 @@ def require_source(
             dict(attempt[1] or {}).get("error_code")
             or dict(attempt[2] or {}).get("error_code")
         )
-        != "EXECUTION_CONTRACT_FROZEN_CONFLICT"
+        not in {"EXECUTION_CONTRACT_FROZEN_CONFLICT", "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"}
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED",
-            "only the retained frozen execution-contract failure permits runtime continuation",
+            "only a retained execution-contract or undispatched result-repair Context failure permits runtime continuation",
         )
+    if (dict(attempt[1] or {}).get("error_code") or dict(attempt[2] or {}).get("error_code")) == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+        from .preflight_continuation import require_capacity_source
+        return require_capacity_source(uow, source_operation_id=source_operation_id, project_id=project_id,
+            frozen=frozen, version=int(row[1]))
     uow.cursor.execute(
         "SELECT external_effect_id, status, provider, model_id, request_payload FROM authority_external_effect WHERE operation_id=%s AND project_id=%s ORDER BY external_effect_id FOR UPDATE",
         [source_operation_id, project_id],
@@ -315,6 +319,15 @@ def require_route_evidence(
         "reasoning_evidence_source": "CURRENT_USER_DECISION",
         "authorized_reasoning_effort": authorized_reasoning_effort,
     }
+    if source.get("preflight_failure"):
+        if (source["source_auth_profile_ref"] != target["auth_profile_ref"]
+                or source["source_backend_id"] != target["model_backend_id"]
+                or source["source_reasoning_effort"] != target["reasoning_effort"]
+                or target["cost_accounting_basis"] != "ACCOUNT_ENTITLEMENT" or not target["account"]):
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT", "Capacity successors must retain the original authenticated membership binding and reasoning")
+        return {**decision,"account_evidence_source":"ORIGINAL_SETTLED_NATIVE_RESULT_ROUTE",
+            "source_auth_profile_ref":source["source_auth_profile_ref"],"source_result_operation_id":source["route_evidence_operation_id"],
+            "account_runtime_hash":canonical_hash(target["account"])}
     if (
         source["provider"] == "scripted_provider_v2"
         and target["runtime_class"] == "SCRIPTED_FIXTURE"
@@ -436,7 +449,7 @@ def require_route_evidence(
         )
     uow.cursor.execute(
         "SELECT evidence->>'cost_authorization_ref' FROM authority_budget_reservation WHERE operation_id=%s AND project_id=%s ORDER BY created_at",
-        [source["source_operation_id"], command["project_id"]],
+        [source.get("route_evidence_operation_id", source["source_operation_id"]), command["project_id"]],
     )
     references = {str(row[0] or "") for row in uow.cursor.fetchall()}
     if len(references) != 1 or not next(iter(references)):
@@ -542,6 +555,10 @@ def register(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "runtime continuation cannot switch the frozen Provider model or routing policy",
         )
+    capacity_decision = None
+    if source.get("preflight_failure"):
+        from .preflight_continuation import require_capacity_target
+        capacity_decision = require_capacity_target(source, target)
     with AuthorityUnitOfWork(application.database_url) as uow:
         route_evidence = require_route_evidence(
             uow,
@@ -581,6 +598,8 @@ def register(
         "source_release_sha": source["snapshot"]["release_sha"],
         "target_release_sha": application.commit_sha,
         "chain_depth": source["depth"],
+        **({"source_preflight_failure": source["preflight_failure"], "capacity_decision": capacity_decision}
+           if source.get("preflight_failure") else {}),
         "control_evidence_only": True,
     }
 

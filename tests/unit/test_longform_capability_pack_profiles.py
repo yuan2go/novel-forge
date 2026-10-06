@@ -237,3 +237,41 @@ def test_creative_json_format_example_matches_native_schema_without_replacing_de
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
     assert profile.manifest["prompt_binding"]["template_ref"] == "prompt-template:story-planning-pack"
     assert profile.manifest["prompt_binding"]["template_version"] == "v1"
+
+
+def test_planning_context_target_is_frozen_in_manifest_and_resolved_policy():
+    import pytest
+    from novel_forge.modules.story_planning_runtime.preflight_continuation import require_capacity_target
+    import json
+    profile=build_story_planning_pack_profile(ROOT,operation_definition_hash="sha256:"+"a"*64,planning_task_token_budget=239232)
+    context=profile.manifest["context_sources"]
+    assert context["planning_task_token_budget"]==239232
+    artifact=next(a for a in profile.artifact_catalog["artifacts"] if a["ref"]==context["policy_id"])
+    assert artifact["content"]["planning_task_token_budget"]==239232
+    old=build_story_planning_pack_profile(ROOT,operation_definition_hash="sha256:"+"a"*64).manifest["context_sources"]
+    assert "planning_task_token_budget" not in old
+    source={"snapshot":{"context_policy_payload_json":json.dumps(old)},"original_context_target":64000}
+    target={"pack_snapshot":{"context_policy_payload_json":json.dumps(context)}}
+    assert require_capacity_target(source,target)["successor_target"]==239232
+    changed={**context,"source_isolation":"UNRESTRICTED"}
+    with pytest.raises(Exception,match="PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT"):
+        require_capacity_target(source,{"pack_snapshot":{"context_policy_payload_json":json.dumps(changed)}})
+    for invalid in (0,True,512001):
+        with pytest.raises(ValueError,match="ceiling"):
+            build_story_planning_pack_profile(ROOT,operation_definition_hash="sha256:"+"a"*64,planning_task_token_budget=invalid)
+
+
+def test_capacity_continuation_cannot_change_authentication_billing_or_reasoning():
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import require_route_evidence
+    source={"preflight_failure":{"effect_count":0},"source_auth_profile_ref":"auth:frozen",
+        "source_backend_id":"codex-cli","source_reasoning_effort":"medium","route_evidence_operation_id":"original:op"}
+    target={"auth_profile_ref":"auth:frozen","model_backend_id":"codex-cli","reasoning_effort":"medium",
+        "cost_accounting_basis":"ACCOUNT_ENTITLEMENT","account":{"observed_account":"native"}}
+    assert require_route_evidence(None,source=source,target=target,authorized_reasoning_effort="medium")["account_evidence_source"]=="ORIGINAL_SETTLED_NATIVE_RESULT_ROUTE"
+    for change in ({"auth_profile_ref":"auth:another"},{"model_backend_id":"api"},{"cost_accounting_basis":"PRICED"},{"account":{}}):
+        with pytest.raises(KernelError,match="ACCOUNT_DRIFT"):
+            require_route_evidence(None,source=source,target={**target,**change},authorized_reasoning_effort="medium")
+    with pytest.raises(KernelError,match="ACCOUNT_DRIFT"):
+        require_route_evidence(None,source=source,target={**target,"reasoning_effort":"high"},authorized_reasoning_effort="high")

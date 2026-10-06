@@ -170,7 +170,7 @@ def run_creation_command(settings: Any, args: Any) -> dict[str, Any]:
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
             pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"])
             profile = build_story_planning_pack_profile(repository_root, operation_definition_hash=hashes["planning"],
-            pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"])
+            pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"], planning_task_token_budget=min(512000,max(windows)))
             install_longform_validation_pack(settings.database_url, profile=profile, pack_version="1.1.0", agent_generation=1,
             expected_activation_version=0, project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,

@@ -92,12 +92,17 @@ def build_story_planning_pack_profile(
     operation_definition_hash: str,
     pack_id: str = "story_planning_pack",
     execution_contract_version: str | None = None,
+    planning_task_token_budget: int | None = None,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
     if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0"}:
         raise ValueError("Unsupported Planning execution contract")
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
+    if planning_task_token_budget is not None:
+        if type(planning_task_token_budget) is not int or not 0 < planning_task_token_budget <= min(512000, manifest["context_sources"]["max_tokens"]):
+            raise ValueError("Planning Context target must fit the system ceiling")
+        manifest["context_sources"]["planning_task_token_budget"] = planning_task_token_budget
     from novel_forge.modules.story_planning_runtime.foundation_generation import (
         FOUNDATION_CAPABILITIES,
     )
@@ -771,6 +776,8 @@ def _update_policy_artifacts(
 ) -> None:
     for artifact in artifacts:
         if artifact["ref"] == manifest["context_sources"]["policy_id"]:
+            if "planning_task_token_budget" in manifest["context_sources"]:
+                artifact["content"]["planning_task_token_budget"] = manifest["context_sources"]["planning_task_token_budget"]
             artifact["content"]["allowed_asset_types"] = list(
                 manifest["context_sources"]["allowed_asset_types"]
             )

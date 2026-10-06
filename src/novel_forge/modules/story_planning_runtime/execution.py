@@ -213,6 +213,7 @@ def _planning_repair_routing_lineage(
     current_id = operation_id
     expected_logical_key = ""
     expected_repair_number: int | None = None
+    expected_repair_step = 1
     with runtime.connection() as connection, connection.cursor() as cursor:
         while True:
             if current_id in seen:
@@ -263,6 +264,19 @@ def _planning_repair_routing_lineage(
                     project_id=project_id, book_id=book_id,
                     generator_operation_name=generator_operation_name, logical_key=logical_key,
                 )
+            runtime_predecessor = ""
+            if payload.get("runtime_continuation_id"):
+                cursor.execute("""SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload'
+                    FROM authority_story_planning_runtime_continuation r
+                    JOIN authority_operation source ON source.operation_id=r.source_operation_id AND source.status='CANCELLED'
+                    JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED'
+                    WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s""",
+                    [payload["runtime_continuation_id"],current_id,project_id,book_id])
+                continuation = cursor.fetchone()
+                if not continuation or continuation[1] != payload or continuation[2] != continuation[3]:
+                    raise KernelError("PLANNING_ROUTING_LINEAGE_INVALID", "Runtime repair lineage requires its exact registered native successor")
+                runtime_predecessor = str(continuation[0])
+                predecessor = runtime_predecessor
             allowed_causation = {predecessor}
             if candidate_predecessor:
                 allowed_causation.update({"", str(payload.get("parent_agent_session_operation_id") or "")})
@@ -278,7 +292,7 @@ def _planning_repair_routing_lineage(
                 or (expected_logical_key and logical_key != expected_logical_key)
                 or (
                     expected_repair_number is not None
-                    and repair_number != expected_repair_number - 1
+                    and repair_number != expected_repair_number - expected_repair_step
                 )
                 or (predecessor and str(row[4] or "") not in allowed_causation)
             ):
@@ -292,6 +306,7 @@ def _planning_repair_routing_lineage(
             if not predecessor:
                 break
             expected_repair_number = repair_number
+            expected_repair_step = 0 if runtime_predecessor else 1
             current_id = predecessor
     lineage.reverse()
     return tuple(lineage)
