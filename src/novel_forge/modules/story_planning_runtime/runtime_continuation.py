@@ -97,7 +97,11 @@ def require_source(
         [source_operation_id, project_id],
     )
     row = uow.cursor.fetchone()
-    if row is None or row[0] != "CANCELLED" or row[5]:
+    if (
+        row is None
+        or row[0] not in {"CANCELLED", "FAILED_FINAL", "DEAD_LETTER"}
+        or row[5]
+    ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
             "source must be this project's cancelled generation with no Candidate",
@@ -117,6 +121,30 @@ def require_source(
         [source_operation_id],
     )
     attempt = uow.cursor.fetchone()
+    failure_code = (
+        (
+            dict(attempt[1] or {}).get("error_code")
+            or dict(attempt[2] or {}).get("error_code")
+        )
+        if attempt
+        else ""
+    )
+    if (
+        row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
+        and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+    ):
+        return _pre_send_capacity_source(
+            uow,
+            source_operation_id=source_operation_id,
+            row=row,
+            frozen=frozen,
+            attempt=attempt,
+        )
+    if row[0] != "CANCELLED":
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
+            "Only the exact pre-send capacity failure permits a terminal source",
+        )
     if (
         attempt is None
         or attempt[0] not in {"FAILED_RETRYABLE", "FAILED_FINAL"}
@@ -232,6 +260,230 @@ def require_source(
         "model_id": str(effects[0][3]),
         "depth": depth + 1,
     }
+
+
+def _pre_send_capacity_source(
+    uow: Any,
+    *,
+    source_operation_id: str,
+    row: Any,
+    frozen: dict[str, Any],
+    attempt: Any,
+) -> dict[str, Any]:
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    uow.cursor.execute(
+        "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle')",
+        [source_operation_id] * 3,
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "Capacity continuation requires no external intent, reservation or frozen Context",
+        )
+    uow.cursor.execute(
+        "SELECT snapshot_payload,attempt_id,snapshot_id,snapshot_hash FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if snapshot is None:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING",
+            "Capacity failure must retain its native Pack snapshot",
+        )
+    uow.cursor.execute(
+        "SELECT input_snapshot FROM authority_story_planning_generation WHERE operation_id=%s",
+        [source_operation_id],
+    )
+    inputs = uow.cursor.fetchone()[0]
+    evidence_id = frozen.get("repair_of_candidate_id") or inputs[0]["asset_version_id"]
+    evidence = AuthorityAssetQuery(uow.database_url).require(
+        project_id=frozen["project_id"], asset_version_id=evidence_id
+    )
+    depth = 0
+    if frozen.get("runtime_continuation_id"):
+        uow.cursor.execute(
+            "SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE continuation_id=%s AND successor_operation_id=%s",
+            [frozen["runtime_continuation_id"], source_operation_id],
+        )
+        prior = uow.cursor.fetchone()
+        if prior is None:
+            raise KernelError(
+                "PLANNING_RUNTIME_CONTINUATION_LINEAGE_INVALID",
+                "Capacity source lost its prior continuation",
+            )
+        depth = int(prior[0])
+    if depth >= 2:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
+            "Capacity continuation exhausted two successors",
+        )
+    return {
+        "mode": "PRE_SEND_CAPACITY",
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": evidence_id,
+        "evidence_hash": evidence.content_hash,
+        "snapshot": snapshot[0],
+        "attempt_id": snapshot[1],
+        "snapshot_id": snapshot[2],
+        "snapshot_hash": snapshot[3],
+        "inputs": inputs,
+        "failure": dict(attempt[2] or attempt[1] or {}),
+        "depth": depth + 1,
+    }
+
+
+def _capacity_authorization(
+    uow: Any,
+    *,
+    source: dict[str, Any],
+    successor: StoryPlanningGenerationCommand,
+    principal: Principal,
+    target: dict[str, Any],
+) -> dict[str, Any]:
+    from novel_forge.modules.production_execution.execution_template import (
+        selected_book_template,
+        selected_template,
+    )
+    from novel_forge.storage.story_formation_repositories import (
+        StoryFormationRepository,
+    )
+
+    uow.cursor.execute(
+        "SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND frozen_stage_inputs #>> '{generation_policy,contract_version}'='formation-generation.v5'",
+        [successor.project_id, successor.book_id],
+    )
+    formations = uow.cursor.fetchall()
+    if len(formations) != 1:
+        raise KernelError(
+            "PLANNING_CAPACITY_CONTINUATION_AUTHORIZATION_REQUIRED",
+            "Capacity allocation requires one admitted continuous creation",
+        )
+    run = StoryFormationRepository(uow.cursor).require(formations[0][0])
+    auth = run["frozen_input"]["generation_policy"]["auto_authorization"]
+    template_binding = selected_book_template(
+        uow.cursor, project_id=successor.project_id, book_id=successor.book_id
+    )
+    template = (
+        selected_template(
+            template_binding["policy_snapshot"]["policy"], successor.book_id
+        )
+        if template_binding
+        else None
+    )
+    candidate = (
+        f"{target['model_provider']}:{target['model_id']}:{target['reasoning_effort']}"
+    )
+    if (
+        auth.get("authorized_by_principal_id") != principal.principal_id
+        or successor.actor_id != principal.principal_id
+        or run["workspace_id"] != successor.workspace_id
+        or StoryFormationRepository(uow.cursor).cancellation(run["formation_run_id"])
+        or not template
+        or candidate not in template["allowed_candidates"]
+        or target["cost_accounting_basis"] != "ACCOUNT_ENTITLEMENT"
+        or target["account"].get("entitlement", {}).get("authorization_ref")
+        != template["member_authorization_ref"]
+    ):
+        raise KernelError(
+            "PLANNING_CAPACITY_CONTINUATION_AUTHORIZATION_REQUIRED",
+            "Allocation must retain the original author, active membership authorization and allowed route",
+        )
+    if any(
+        source["snapshot"].get(key) != target["pack_snapshot"].get(key)
+        for key in (
+            "manifest_hash",
+            "route_policy_hash",
+            "context_policy_hash",
+            "prompt_bundle_hash",
+            "skill_bundle_hash",
+            "tool_policy_hash",
+        )
+    ):
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
+            "Capacity allocation cannot replace the frozen Pack, prompt or model route",
+        )
+    return {
+        "authorization_reference": auth["authorization_ref"],
+        "formation_run_id": run["formation_run_id"],
+        "account_evidence_source": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
+        "template_policy_hash": template_binding["policy_snapshot"]["policy_hash"],
+        "independent_human_review": "NOT_REVIEWED",
+        "capacity_only": True,
+    }
+
+
+def _capacity_target(
+    application: Any,
+    source: dict[str, Any],
+    successor: StoryPlanningGenerationCommand,
+    principal: Principal,
+    target: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    from .domain import FrozenPlanningInput
+
+    resolver = application.execution_binder.resolver
+    preparer = resolver.execution_preparer
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        authorization = _capacity_authorization(
+            uow, source=source, successor=successor, principal=principal, target=target
+        )
+    snapshot = preparer.pack_runtime.require_attempt_snapshot(
+        attempt_id=source["attempt_id"],
+        snapshot_id=source["snapshot_id"],
+        snapshot_hash=source["snapshot_hash"],
+    )
+    policy = preparer.pack_runtime.materialize_attempt_artifacts(
+        snapshot
+    ).context_policy.content
+    baseline = policy["planning_task_token_budget"]
+    if source["command"].get("runtime_continuation_id"):
+        prior = require_binding(
+            application.database_url, source["command"]["runtime_continuation_id"]
+        )
+        baseline = (
+            prior["target_runtime"]
+            .get("planning_capacity", {})
+            .get("allocated_task_tokens", baseline)
+        )
+    route = preparer.planning_route
+    ceiling = min(
+        512_000,
+        route.model_context_limit
+        - route.model_output_limit
+        - route.token_safety_margin
+        - route.token_framing_overhead,
+    )
+    allocated = min(baseline * 2, ceiling)
+    if allocated <= baseline:
+        raise KernelError(
+            "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
+            "No authorized single-request capacity remains",
+        )
+    context, _ = preparer._context_bundle(
+        operation_id=source["source_operation_id"],
+        attempt_id=source["attempt_id"],
+        command=successor,
+        inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
+        context_policy_ref=source["snapshot"]["context_policy_ref"],
+        planning_task_token_budget=allocated,
+        preflight_only=True,
+    )
+    allocation = {
+        "version": "planning-capacity-allocation.v1",
+        "prior_task_tokens": baseline,
+        "allocated_task_tokens": allocated,
+        "single_request_ceiling": ceiling,
+        "projection_hash": canonical_hash(
+            context["context_manifest"]["provider_context_view"]
+        ),
+        "source_failure": source["failure"],
+        "external_intents_at_source": 0,
+    }
+    return {**target, "planning_capacity": allocation}, authorization
 
 
 def resolve_target(
@@ -527,30 +779,39 @@ def register(
     )
     application._register_definitions(successor.execution_contract_version)
     target = resolve_target(application, successor)
-    if source["snapshot"]["release_sha"] == application.commit_sha:
+    capacity = source.get("mode") == "PRE_SEND_CAPACITY"
+    if not capacity and source["snapshot"]["release_sha"] == application.commit_sha:
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_RELEASE_UNCHANGED",
             "same-release failures use native Attempt recovery",
         )
-    if (source["provider"], source["model_id"]) != (
-        target["model_provider"],
-        target["model_id"],
-    ) or source["snapshot"]["route_policy_hash"] != target["pack_snapshot"][
-        "route_policy_hash"
-    ]:
+    if not capacity and (
+        (source["provider"], source["model_id"])
+        != (
+            target["model_provider"],
+            target["model_id"],
+        )
+        or source["snapshot"]["route_policy_hash"]
+        != target["pack_snapshot"]["route_policy_hash"]
+    ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "runtime continuation cannot switch the frozen Provider model or routing policy",
         )
-    with AuthorityUnitOfWork(application.database_url) as uow:
-        route_evidence = require_route_evidence(
-            uow,
-            source=source,
-            target=target,
-            authorized_reasoning_effort=str(
-                decision_evidence.get("authorized_reasoning_effort") or ""
-            ),
+    if capacity:
+        target, route_evidence = _capacity_target(
+            application, source, successor, principal, target
         )
+    else:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = require_route_evidence(
+                uow,
+                source=source,
+                target=target,
+                authorized_reasoning_effort=str(
+                    decision_evidence.get("authorized_reasoning_effort") or ""
+                ),
+            )
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
@@ -590,15 +851,29 @@ def register(
         )
         if (
             current != source
-            or require_route_evidence(
-                uow,
-                source=current,
-                target=target,
-                authorized_reasoning_effort=route_evidence[
-                    "authorized_reasoning_effort"
-                ],
+            or (
+                capacity
+                and _capacity_authorization(
+                    uow,
+                    source=current,
+                    successor=successor,
+                    principal=principal,
+                    target=target,
+                )
+                != route_evidence
             )
-            != route_evidence
+            or (
+                not capacity
+                and require_route_evidence(
+                    uow,
+                    source=current,
+                    target=target,
+                    authorized_reasoning_effort=route_evidence[
+                        "authorized_reasoning_effort"
+                    ],
+                )
+                != route_evidence
+            )
         ):
             raise KernelError(
                 "PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT",
@@ -751,7 +1026,16 @@ def require_successor(
             "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT",
             "successor must use the registered frozen task and actual approved release",
         )
-    if validate_runtime and not binding["successor_operation_id"] and resolve_target(application, command) != binding["target_runtime"]:
+    expected_runtime = {
+        key: value
+        for key, value in binding["target_runtime"].items()
+        if key != "planning_capacity"
+    }
+    if (
+        validate_runtime
+        and not binding["successor_operation_id"]
+        and resolve_target(application, command) != expected_runtime
+    ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_RUNTIME_DRIFT",
             "the exact registered Pack and model route changed",

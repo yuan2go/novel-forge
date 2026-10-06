@@ -171,8 +171,13 @@ def replace_args(args, **changes):
     return Namespace(**{**vars(args), **changes})
 
 
-@pytest.mark.parametrize("mode", ["complete", "partial-alternative", "cancel", "no-progress"] )
-def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(tmp_path, monkeypatch, mode):
+@pytest.mark.parametrize(
+    "mode",
+    ["complete", "partial-alternative", "cancel", "no-progress", "capacity-recovery"],
+)
+def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(
+    tmp_path, monkeypatch, mode
+):
     from novel_forge.modules.book_authority.creation_runtime import schedule_creation_jobs, creation_status
     from novel_forge.modules.runtime_job import RuntimeJobAuthority
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
@@ -183,6 +188,29 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
+    if mode == "capacity-recovery":
+        from novel_forge.modules.story_planning_runtime.execution import (
+            PostgresPlanningExecutionPreparer,
+        )
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        build_context = PostgresPlanningExecutionPreparer._context_bundle
+
+        def capacity_failure(preparer, **values):
+            command = values["command"]
+            if (
+                command.generator_operation_name == "chapter_group_plan.generate"
+                and not command.runtime_continuation_id
+            ):
+                raise KernelError(
+                    "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+                    "Controlled native pre-send capacity failure",
+                )
+            return build_context(preparer, **values)
+
+        monkeypatch.setattr(
+            PostgresPlanningExecutionPreparer, "_context_bundle", capacity_failure
+        )
     planning = transport.planning
     creative_calls = []
     def bounded_planning(stage, inputs):
@@ -389,8 +417,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         legacy_execution = dependencies.build_production_execution_composition(settings)
         try:
             legacy_chapter = dependencies.build_chapter_authority_application(settings, execution=legacy_execution)
-            legacy = dependencies.build_book_production_composition(settings, principal=author,
-                execution=legacy_execution, chapter_application=legacy_chapter)
+            legacy = dependencies.build_book_production_composition(
+                settings,
+                principal=build_trusted_principal_resolver().resolve_worker_principal(
+                    "durable-phase-worker"
+                ),
+                execution=legacy_execution,
+                chapter_application=legacy_chapter,
+            )
             legacy.formation.schedule_candidates(limit=1, project_id=project, formation_run_id=identity)
             phase = jobs.claim(runtime_group="story_formation", worker_id="durable-phase", lease_seconds=60,
                 job_kinds=("STORY_FORMATION_ADVANCE",), subject_kind="STORY_FORMATION_RUN", subject_id=identity)
@@ -417,6 +451,41 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert uow.cursor.fetchone()[0] == selected
         uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE book_run_id=%s AND status='COMMITTED'", [result["book_run_id"]])
         assert uow.cursor.fetchone()[0] == inputs["target_chapters"]
+    if mode == "capacity-recovery":
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT source_operation_id,successor_operation_id,source_command,successor_command,target_runtime FROM authority_story_planning_runtime_continuation WHERE project_id=%s",
+                [project],
+            )
+            registrations = uow.cursor.fetchall()
+            assert len(registrations) == 3
+            for (
+                source,
+                successor,
+                original_command,
+                next_command,
+                runtime,
+            ) in registrations:
+                assert {
+                    key: value
+                    for key, value in original_command.items()
+                    if key not in {"runtime_continuation_id", "idempotency_key"}
+                } == {
+                    key: value
+                    for key, value in next_command.items()
+                    if key not in {"runtime_continuation_id", "idempotency_key"}
+                }
+                assert runtime["planning_capacity"]["allocated_task_tokens"] == 128000
+                uow.cursor.execute(
+                    "SELECT status,(SELECT count(*) FROM authority_external_effect WHERE operation_id=%s) FROM authority_operation WHERE operation_id=%s",
+                    [source, source],
+                )
+                assert uow.cursor.fetchone() == ("FAILED_FINAL", 0)
+                uow.cursor.execute(
+                    "SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'",
+                    [successor],
+                )
+                assert uow.cursor.fetchone()[0] == 1
     before = len(transport.calls), len(transport.chapter.calls)
     assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
     assert claim() is None
@@ -449,8 +518,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             native = dependencies.build_book_production_composition(settings, principal=author,
                 execution=native_execution, chapter_application=native_chapter, env=values)
             legacy_chapter = dependencies.build_chapter_authority_application(settings, execution=legacy_execution)
-            legacy = dependencies.build_book_production_composition(settings, principal=author,
-                execution=legacy_execution, chapter_application=legacy_chapter)
+            legacy = dependencies.build_book_production_composition(
+                settings,
+                principal=build_trusted_principal_resolver().resolve_worker_principal(
+                    "durable-phase-worker"
+                ),
+                execution=legacy_execution,
+                chapter_application=legacy_chapter,
+            )
             editor = BookEditionApplication(DATABASE_URL,application_build_id=native.authority.application_build_id,
                                            commit_sha=native.authority.commit_sha)
             scope = dict(project_id=project,workspace_id=args.workspace_id,book_run_id=result["book_run_id"],principal=author)
@@ -473,6 +548,32 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             assert native.query.uses_creation_scope(project_id=project,subject_id=target)
             assert native.authority.require(target)["accepted_through_chapter"] == 1
             worker = build_trusted_principal_resolver().resolve_worker_principal("edition-worker")
+            scheduled = schedule_book_coordination_jobs(
+                legacy.query, jobs, limit=1, book_run_id=target
+            )
+            assert len(scheduled) == 1
+            assert not schedule_book_coordination_jobs(
+                legacy.query, jobs, limit=1, book_run_id=target
+            )
+            for _ in range(5):
+                stalled = jobs.claim(
+                    runtime_group="book",
+                    worker_id=worker.principal_id,
+                    lease_seconds=60,
+                    job_kinds=("BOOK_COORDINATION_TICK",),
+                    subject_kind="BOOK_RUN",
+                    subject_id=target,
+                )
+                assert stalled is not None
+                failed = jobs.fail(
+                    stalled, {"code": "CONTROLLED_OWNER_CONFIGURATION_FAILURE"}
+                )
+            assert failed["status"] == "DEAD_LETTER"
+            assert target not in {
+                item.book_run_id
+                for item in legacy.query.coordination_candidates(limit=50)
+            }
+            assert legacy.query.coordination_candidates(limit=1, book_run_id=target)
             for _ in range(20):
                 schedule_book_coordination_jobs(legacy.query,jobs,limit=1,book_run_id=target)
                 phase = jobs.claim(runtime_group="book",worker_id=worker.principal_id,lease_seconds=60,

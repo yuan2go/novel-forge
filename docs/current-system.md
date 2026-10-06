@@ -121,7 +121,17 @@ a capacity configuration checkpoint can resume only when its exact historical er
 absence of every external Effect prove that no send occurred. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
-same project Pack scope when taking over continuous creation. A latest source version,
+same project Pack scope and original admitted author identity when taking over continuous creation;
+the worker identity owns only its execution lease. Coordination coalesces live ticks, backs off
+failures and retains a dead-letter stop for unchanged Book and dependency snapshots. A native
+dependency change or explicit owner recovery can wake the same work. A deterministic Planning
+capacity failure terminates its frozen attempt rather than consuming identical retries. Only
+continuous v5 membership creation with no external intent, reservation or frozen Context may
+append a capacity successor through the existing Planning runtime-continuation Authority.
+It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
+reserves the configured model output and framing margin, and permits at most two successors.
+The final rendered-request admission remains authoritative. Historical cancelled runtime
+continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
 no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression
 exercises internal acceptance and component reconstruction without repeated calls or

@@ -82,15 +82,30 @@ def execute_book_phase_with_creation_scope(settings: IndustrialSettings, claim: 
         legacy: BookProductionComposition, execute: Callable[[BookProductionComposition], dict[str, Any]]) -> dict[str, Any]:
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
 
-    governed = legacy.query.uses_creation_scope(project_id=claim.project_id, subject_id=claim.subject_id)
-    if not governed:
+    binding = legacy.query.creation_executor_binding(
+        project_id=claim.project_id, subject_id=claim.subject_id
+    )
+    if not binding:
         return execute(legacy)
+    legacy.principal.require("book.authority.execute", claim.project_id)
     values = creation_runtime_environment(claim.project_id)
+    operator = build_trusted_principal_resolver(env=values).resolve_api_principal()
+    if operator.principal_id != binding["operator_id"]:
+        raise KernelError(
+            "CREATION_EXECUTOR_BINDING_CONFLICT",
+            "Configured operator differs from the original creation actor",
+        )
+    operator.require("book.authority.execute", claim.project_id)
     execution = build_production_execution_composition(settings, env=values)
     try:
         chapter = build_chapter_authority_application(settings, execution=execution, env=values)
-        scoped = build_book_production_composition(settings, principal=legacy.principal, execution=execution,
-            chapter_application=chapter, env=values)
+        scoped = build_book_production_composition(
+            settings,
+            principal=operator,
+            execution=execution,
+            chapter_application=chapter,
+            env=values,
+        )
         return execute(scoped)
     finally:
         execution.close()
@@ -127,6 +142,9 @@ def schedule_book_coordination_jobs(
                         "observed_version": candidate.version,
                         "observed_updated_at": candidate.updated_at.isoformat(),
                         "tick_sequence": candidate.next_tick_sequence,
+                        "coordination_dependencies": list(
+                            candidate.dependency_snapshot
+                        ),
                     },
                     max_attempts=5,
                 )
@@ -181,10 +199,11 @@ def execute_book_coordination_claim(
         runtime_jobs.fail(
             claim,
             {
-                "code": type(exc).__name__,
+                "code": getattr(exc, "code", type(exc).__name__),
                 "message": str(exc),
                 "book_run_id": claim.subject_id,
             },
+            retry_delay_seconds=30,
             cause=exc,
         )
         raise

@@ -429,3 +429,34 @@ def test_continuation_preserves_native_book_account_but_uses_current_reasoning_d
             evidence["authorization_reference_change"]
             == "NATIVE_BUDGET_SUCCESSOR_ALLOWED"
         )
+
+
+@pytest.mark.parametrize("status", ["FAILED_FINAL", "DEAD_LETTER"])
+def test_terminal_capacity_continuation_rejects_any_external_intent_or_frozen_context(
+    status,
+):
+    from unittest.mock import Mock
+
+    uow = SimpleNamespace(cursor=Mock())
+    frozen = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
+    uow.cursor.fetchone.side_effect = [
+        (status, 8, "workspace", frozen, "book", None),
+        (
+            "FAILED_FINAL",
+            {},
+            {"error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"},
+        ),
+        (True,),
+    ]
+    with pytest.raises(KernelError, match="DISPATCH_UNSAFE"):
+        require_source(uow, source_operation_id="source", project_id="project")
+    assert uow.cursor.execute.call_count == 3
+
+
+def test_terminal_noncapacity_failure_cannot_borrow_cancelled_runtime_continuation():
+    with pytest.raises(KernelError, match="SOURCE_INVALID"):
+        require_source(
+            source_uow(status="FAILED_FINAL"),
+            source_operation_id="source",
+            project_id="project",
+        )

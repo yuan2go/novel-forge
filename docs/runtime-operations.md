@@ -1597,6 +1597,16 @@ existing resume/approval commands before the driver continues; a live lease is n
 stolen. Confirmed generation/evaluation receipts are reused, including evaluation whose
 candidate has subsequently been approved. New generation under a changed source uses a
 new run; old terminal tasks and accepted history are not reopened.
+For native v5 membership creation, a terminal `PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED`
+with no external intent, reservation or frozen Context uses the existing Planning continuation
+Authority automatically. The retained source remains terminal; a linked successor keeps its exact
+story inputs and Pack while increasing only the single-task allocation within the configured
+model capacity. Preflight must succeed before registration; no more than two successors are
+allowed. An external intent of any status, including UNKNOWN, excludes this capacity path.
+Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
+unchanged Book/dependency evidence. Owner recovery uses the original creation `recover` command
+after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
+
 For `EXECUTION_CONTRACT_FROZEN_CONFLICT` before the first Provider dispatch, inspect the
 retained Effect and release its reservation only after the native ledger proves the
 result is known not to have been dispatched. Request native cancellation and resolve it
@@ -2909,7 +2919,7 @@ identities use a deterministic project digest; configured explicit Pack IDs are 
 The same IDs are supplied to all native runtime compositions on start and continuation,
 so another project's private Pack cannot be borrowed accidentally.
 
-The native creation driver consumes a frozen Formation `formation-generation.v4`
+Historical compatibility: the foreground v4 creation driver consumes a frozen Formation `formation-generation.v4`
 request. Its work title, chapter target, language contract and creation-input profiles
 come from the current request; it does not infer a short sample target. The driver
 advances existing Formation and Opening RuntimeJobs, then starts the resolved Book

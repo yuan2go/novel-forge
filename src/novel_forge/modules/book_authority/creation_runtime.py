@@ -503,12 +503,48 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
             candidates.append({"number": ordinal, "asset_version_id": identity, "content_hash": asset.content_hash,
                 "schema_version": schema_version, "content": asset.content})
     state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "CANCELLATION_REQUESTED" if cancellation else "AUTHOR_DECISION" if run["lifecycle"] == "WAITING_APPROVAL" else "PRODUCING"
-    return {"formation_run_id": formation_run_id, "production": production, "author_state": state,
-            "delivery": {"required_action": "SELECT_EXACT_EDITION_AND_EXPORT", "export_status": "QUERY_EDITION_AUTHORITY", "literary_quality": "NOT_PROVEN"},
-            "formation_lifecycle": run["lifecycle"], "stage": run["current_stage"],
-            "version": run["version"], "cancellation": cancellation, "candidates": candidates, "failure": run["failure"], "recovery_instruction": run["recovery_instruction"],
-            "coordination": dict(zip(("runtime_job_id", "status", "next_attempt_at", "error", "result"), latest)) if latest else None,
-            "progress": list(creation_progress(database_url, project_id=project_id, formation_run_id=formation_run_id))}
+    if latest and latest[1] == "DEAD_LETTER" and state == "PRODUCING":
+        state = "OWNER_RECOVERY_REQUIRED"
+    return {
+        "formation_run_id": formation_run_id,
+        "production": production,
+        "author_state": state,
+        "next_action": "RECOVER_ORIGINAL_CREATION_AFTER_RESOLVING_RETAINED_FAILURE"
+        if state == "OWNER_RECOVERY_REQUIRED"
+        else "WAIT_FOR_NATIVE_EXECUTOR"
+        if state == "PRODUCING"
+        else state,
+        "responsible_party": "RUNTIME_OWNER"
+        if state == "OWNER_RECOVERY_REQUIRED"
+        else "AUTHOR"
+        if state == "AUTHOR_DECISION"
+        else "BOOK_AUTHORITY_WORKER",
+        "delivery": {
+            "required_action": "SELECT_EXACT_EDITION_AND_EXPORT",
+            "export_status": "QUERY_EDITION_AUTHORITY",
+            "literary_quality": "NOT_PROVEN",
+        },
+        "formation_lifecycle": run["lifecycle"],
+        "stage": run["current_stage"],
+        "version": run["version"],
+        "cancellation": cancellation,
+        "candidates": candidates,
+        "failure": run["failure"],
+        "recovery_instruction": run["recovery_instruction"],
+        "coordination": dict(
+            zip(
+                ("runtime_job_id", "status", "next_attempt_at", "error", "result"),
+                latest,
+            )
+        )
+        if latest
+        else None,
+        "progress": list(
+            creation_progress(
+                database_url, project_id=project_id, formation_run_id=formation_run_id
+            )
+        ),
+    }
 
 
 def execute_creation_command(settings: Any, args: Any, *, request_input: dict[str, Any] | None = None, brief_source: tuple[str, str] | None = None) -> dict[str, Any]:

@@ -5164,7 +5164,8 @@ class PostgresPlanningExecutionPreparer:
         inputs: tuple[FrozenPlanningInput, ...],
         context_policy_ref: str = "",
         planning_task_token_budget: int | None = None,
-    ) -> tuple[AuthorityAssetDocument, tuple[AuthorityAssetDocument, ...]]:
+        preflight_only: bool = False,
+    ) -> tuple[Any, tuple[AuthorityAssetDocument, ...]]:
         documents: list[AuthorityAssetDocument] = []
         selected: list[dict[str, Any]] = []
         for item in inputs:
@@ -5384,6 +5385,15 @@ class PostgresPlanningExecutionPreparer:
             or not 0 < planning_task_token_budget <= 512_000
         ):
             raise KernelError("PLANNING_TASK_TOKEN_BUDGET_INVALID", "new Planning policy requires an explicit bounded task token target")
+        if command.runtime_continuation_id and not preflight_only:
+            from .runtime_continuation import require_binding
+
+            runtime = require_binding(
+                self.database_url, command.runtime_continuation_id
+            )["target_runtime"]
+            planning_task_token_budget = runtime.get("planning_capacity", {}).get(
+                "allocated_task_tokens", planning_task_token_budget
+            )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
             "project_id": command.project_id,
@@ -5485,6 +5495,8 @@ class PostgresPlanningExecutionPreparer:
         content["estimated_tokens"] = int(
             content["context_manifest"]["token_accounting"]["accepted_tokens"]
         )
+        if preflight_only:
+            return content, tuple(documents)
         context = self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=operation_id,
