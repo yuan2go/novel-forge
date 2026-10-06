@@ -92,10 +92,16 @@ def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
                 "directed repair cannot replace the selected world batch",
             )
         return action
-    return query.require(
-        project_id=command.project_id,
-        logical_ref=f"world_preparation/{operation_id}/action",
-    )
+    from .world_optional import continuation_action
+    action = continuation_action(query.database_url, command)
+    if action is not None:
+        return action
+    try:
+        return query.require(project_id=command.project_id, logical_ref=f"world_preparation/{operation_id}/optional_action")
+    except KernelError as error:
+        if error.code != 'AUTHORITY_ASSET_NOT_FOUND':
+            raise
+    return query.require(project_id=command.project_id, logical_ref=f"world_preparation/{operation_id}/action")
 
 
 class PlanningWorldPreparation:
@@ -110,6 +116,10 @@ class PlanningWorldPreparation:
         execute_stage: Callable[[PlanningProviderStage], Any],
         knowledge_selection: Mapping[str, Any] | None = None,
     ) -> Any:
+        from .world_optional import continuation_action, optional_policy, deferred_action
+        retained_action = continuation_action(self.preparer.database_url, command)
+        if retained_action is not None:
+            return retained_action
         if command.repair_of_candidate_id:
             action = require_world_action(
                 self.preparer.query, command=command, operation_id=operation_id
@@ -184,6 +194,14 @@ class PlanningWorldPreparation:
             "asset_version_id": source_document.asset_version_id,
             "content_hash": source_document.content_hash,
         }
+        with AuthorityUnitOfWork(self.preparer.database_url) as uow:
+            admission = optional_policy(uow.cursor, project_id=command.project_id, book_id=command.book_id, operation_id=operation_id)
+        if admission:
+            from novel_forge.modules.production_execution.execution_template import decision_template
+            template = decision_template({'task': {'work_id': command.book_id, 'policy_snapshot': admission['policy_snapshot']}})
+            if template['world_future_preparation'] == 'DISABLED':
+                return self._store(command, operation_id, f'{prefix}/optional_action', 'narrative_governance_action',
+                    deferred_action(source=source, source_ref=source_ref, command=command, admission=admission))
         policy = WorldProductionPolicy(**source["policy"])
         actor_proposals = []
         actor_refs = []
@@ -353,6 +371,12 @@ class PlanningWorldPreparation:
             action,
         )
         if plan["disposition"] == "BLOCKED":
+            if admission:
+                action = deferred_action(source=source, source_ref=source_ref, command=command, admission=admission,
+                    rejected=action_document.content['contract'])
+                action['optional_preparation']['retained_rejected_action'] = {
+                    'asset_version_id':action_document.asset_version_id, 'content_hash':action_document.content_hash}
+                return self._store(command, operation_id, f'{prefix}/optional_action', 'narrative_governance_action', action)
             raise KernelError(
                 "WORLD_PREPARATION_BLOCKED",
                 f"No legal world path; inspect {action_document.asset_version_id}",
@@ -487,6 +511,8 @@ class PlanningWorldPreparation:
                 "camera": ["ON_CAMERA", "OFF_CAMERA", "UNDERCURRENT"],
                 "explanation_status": "UNVERIFIED_CAUSAL_HYPOTHESIS",
                 "required_conditions": "All compiled hard predicates and actor epistemic bases remain mandatory regardless of score.",
+                "known_character_basis": "Every approved character action needs a nonempty predicate referencing that character's own accepted knowledge or belief. Missing support requires NO_OP/DEFER; Foundation descriptions are not invented knowledge facts.",
+                "batch_local_names": "For preparation paths, transition_id is a bare name matching [A-Za-z][A-Za-z0-9_-]{0,63}; only dependency references use local:<name>.",
             },
             "fact_mutation_allowed": False,
         }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from copy import deepcopy
 from typing import Any
 from uuid import uuid4
 
@@ -61,10 +62,17 @@ def owned_policy_definition(
     campaign_renewal = False
     campaign_reallocation = False
     execution_templates = owner == "PROVIDER_ROUTING" and "execution_templates" in content
+    world_templates = execution_templates and any(value.get('version') == 'creative-execution-template.v3'
+        for value in content['execution_templates'])
     routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
         policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources or execution_templates else LEGACY_POLICY_SCHEMA
+        if execution_templates and not world_templates:
+            policy_schema = deepcopy(policy_schema)
+            legacy = policy_schema['properties']['execution_templates']['items']
+            legacy['properties']['version']['enum'] = ['creative-execution-template.v1', 'creative-execution-template.v2']
+            legacy['properties'].pop('world_future_preparation')
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
         from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_REALLOCATION_VERSION, PROVIDER_REALLOCATION_POLICY_SCHEMA
         from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_RENEWAL_VERSION, PROVIDER_RENEWAL_POLICY_SCHEMA, PAIRED_SAMPLES_VERSION, V5_POLICY_SCHEMA, PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, PROVIDER_CAMPAIGN_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA, V4_POLICY_SCHEMA
@@ -107,12 +115,12 @@ def owned_policy_definition(
         command_schema["properties"]["expected_policy_hash"] = {"type": "string"}
     return {
         "name": name,
-        "definition_version": "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v7" if execution_templates else f"{name}.command.v7" if campaign_reallocation else f"{name}.command.v6" if campaign_renewal else f"{name}.command.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v7" if execution_templates else f"{name}.result.v7" if campaign_reallocation else f"{name}.result.v6" if campaign_renewal else f"{name}.result.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v8" if world_templates else f"{name}.command.v7" if execution_templates else f"{name}.command.v7" if campaign_reallocation else f"{name}.command.v6" if campaign_renewal else f"{name}.command.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v8" if world_templates else f"{name}.result.v7" if execution_templates else f"{name}.result.v7" if campaign_reallocation else f"{name}.result.v6" if campaign_renewal else f"{name}.result.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,

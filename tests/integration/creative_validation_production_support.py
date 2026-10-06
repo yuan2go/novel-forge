@@ -44,12 +44,15 @@ class MemoryObjectClient:
         return response
 
 
-def prepare_native_template(harness, chapter_pack, *, bounded_repairs=False):
+def prepare_native_template(harness, chapter_pack, *, bounded_repairs=False, world_disabled=False):
     actor = replace(harness.compiler, permissions=harness.compiler.permissions | {"book.authority.execute", "agent.authority.admin"})
     value = template(harness.book_ids[0])
     if bounded_repairs:
         value.update(version="creative-execution-template.v2", repair_routing={
             "version": "native-repair-routing.v1", "max_same_route_repairs": 2})
+    if world_disabled:
+        value.update(version='creative-execution-template.v3',world_future_preparation='DISABLED',repair_routing={
+            'version':'native-repair-routing.v1','max_same_route_repairs':2})
     value["allowed_candidates"] = ["codex-cli:gpt-test:high"]
     configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=harness.project_id,
         workspace_id=harness.workspace_id, principal=actor, application_build_id=harness.application_build_id,

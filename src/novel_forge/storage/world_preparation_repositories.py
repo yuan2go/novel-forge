@@ -52,7 +52,12 @@ class WorldPreparationRepository:
                 "WORLD_BINDING_SOURCE_DRIFT",
                 "private working source differs from its immutable source artifact",
             )
-        stage_refs = [action["generation"], action["evaluation"], *action.get("actor_proposals", [])]
+        if action.get('optional_preparation'):
+            from novel_forge.modules.story_planning_runtime.world_optional import validate_optional_action
+            validate_optional_action(self.cursor, action=action, source=source)
+            stage_refs = []
+        else:
+            stage_refs = [action["generation"], action["evaluation"], *action.get("actor_proposals", [])]
         for stage_ref in stage_refs:
             output = contract(stage_ref)
             evidence = output["evidence"]

@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .cost_routing import RoutingDecision, snapshot_hash
 
 
-VERSION = "creative-execution-template.v2"
+VERSION = "creative-execution-template.v3"
 MODE = "CREATIVE_VALIDATION"
 RESOURCE_VERSION = "billing-channel-resources.v1"
 BOOK_USAGE_SQL = """(e.request_payload #>> '{_production_execution,book_id}'=%s
@@ -37,7 +37,7 @@ class RepairRoutingConfiguration(BaseModel):
 
 class ExecutionTemplateConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    version: Literal["creative-execution-template.v1", "creative-execution-template.v2"]
+    version: Literal["creative-execution-template.v1", "creative-execution-template.v2", "creative-execution-template.v3"]
     book_id: _Identity
     mode: Literal["CREATIVE_VALIDATION", "STRICT_PRODUCTION"]
     allowed_candidates: Annotated[list[_Identity], Field(min_length=1, json_schema_extra={"uniqueItems": True})]
@@ -48,6 +48,7 @@ class ExecutionTemplateConfiguration(BaseModel):
     require_independent_review: bool
     require_pack_human_approval: bool
     repair_routing: RepairRoutingConfiguration | None = None
+    world_future_preparation: Literal["REQUIRED", "OPTIONAL", "DISABLED"] | None = None
 
 
 TEMPLATE_SCHEMA = ExecutionTemplateConfiguration.model_json_schema()
@@ -86,8 +87,11 @@ def validate_templates(content: Mapping[str, Any]) -> None:
         if value["mode"] == "STRICT_PRODUCTION" and not value["require_literary_qualification"]:
             raise KernelError("STRICT_TEMPLATE_QUALIFICATION_REQUIRED", value["book_id"])
         if (value["version"] == "creative-execution-template.v1" and value.get("repair_routing") is not None
-                or value["version"] == VERSION and value.get("repair_routing") is None):
+                or value["version"] in {"creative-execution-template.v2", VERSION} and value.get("repair_routing") is None):
             raise KernelError("EXECUTION_TEMPLATE_REPAIR_VERSION_INVALID", value["book_id"])
+        if ((value['version'] == VERSION) != (value.get('world_future_preparation') is not None)
+                or value['mode'] == 'STRICT_PRODUCTION' and value.get('world_future_preparation', 'REQUIRED') != 'REQUIRED'):
+            raise KernelError('EXECUTION_TEMPLATE_WORLD_POLICY_INVALID', value['book_id'])
         paid = value["deepseek"]
         if paid is not None and Decimal(paid["maximum_amount"]) <= 0:
             raise KernelError("PAID_TEMPLATE_AMOUNT_INVALID", value["book_id"])
@@ -220,7 +224,7 @@ def template_decision(decision: RoutingDecision) -> RoutingDecision:
         if relax:
             row["rejected_reasons"] = [reason for reason in row["rejected_reasons"]
                                        if reason not in {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}]
-        if relax and template["version"] == VERSION:
+        if relax and template["version"] in {"creative-execution-template.v2", VERSION}:
             from .planning_repair_routing import repair_route_admission
             repair = repair_route_admission(snapshot, row, template)
             if repair is not None:

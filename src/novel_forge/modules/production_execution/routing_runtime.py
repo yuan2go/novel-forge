@@ -1021,7 +1021,7 @@ class ProductionProviderRouter:
             policy_snapshot=policy_snapshot,
             **requirements,
         )
-        if template and template["version"] == "creative-execution-template.v2" and template["mode"] == "CREATIVE_VALIDATION":
+        if template and template["version"] in {"creative-execution-template.v2", "creative-execution-template.v3"} and template["mode"] == "CREATIVE_VALIDATION":
             from .planning_repair_routing import native_planning_repair
             with AuthorityUnitOfWork(self.registry.database_url) as uow:
                 repair_evidence = native_planning_repair(uow.cursor,project_id=project_id,book_id=work_id,

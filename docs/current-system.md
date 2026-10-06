@@ -135,6 +135,17 @@ no-progress/attempt bounds remain blocking. Strict and frozen v1 selection retai
 original rules. Adoption excerpts must be exact substrings of the pointed string leaf,
 including punctuation; paraphrases are not evidence.
 
+The v3 template explicitly selects `world_future_preparation` as `REQUIRED`, `OPTIONAL`
+or `DISABLED`. Creative validation defaults to `DISABLED`: World Foundation and accepted
+state remain context and acceptance constraints; speculative future simulation is not a
+prerequisite for ordinary prose. Disabled or infeasible optional simulation produces a
+versioned `DEFER` action with `NOT_RUN` or retained rejection evidence, never an eligible
+future or accepted fact. Strict production requires `REQUIRED`. Accepted preparation
+commitments and independent actor experiments cannot use this optional deferral. Migration
+0160 permits only owner-registered deferral with two verified, settled world stages;
+original input, repair lineage and counter stay exact. It leaves all older migration
+bodies and zero-dispatch continuation rules intact.
+
 The following sections describe existing strict and historical campaign contracts;
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes

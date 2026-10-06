@@ -159,3 +159,30 @@ def test_inherited_paid_configuration_is_closed_and_missing_configuration_disabl
     paid["currency"] = "CNY"
     (tmp_path / "paid.json").write_text(json.dumps(paid))
     assert load_paid_configuration(values)[1] == "PAID_TEMPLATE_UNAVAILABLE_OR_INVALID"
+
+
+def test_v3_world_policy_is_explicit_and_strict_requires_simulation():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    repair = {"version": "native-repair-routing.v1", "max_same_route_repairs": 2}
+    value = template(version="creative-execution-template.v3", repair_routing=repair, world_future_preparation="DISABLED")
+    validate_templates({"execution_templates": [value]})
+    definition = owned_policy_definition(owner="PROVIDER_ROUTING", content={"execution_templates": [value]},
+        application_build_id="fixture", commit_sha="a"*40)
+    assert definition["definition_version"] == "1.8.0"
+    previous = template(version="creative-execution-template.v2", repair_routing=repair)
+    assert owned_policy_definition(owner="PROVIDER_ROUTING", content={"execution_templates": [previous]},
+        application_build_id="fixture", commit_sha="a"*40)["definition_version"] == "1.7.0"
+    with pytest.raises(KernelError):
+        validate_templates({"execution_templates": [{k:v for k,v in value.items() if k != "world_future_preparation"}]})
+    with pytest.raises(KernelError):
+        validate_templates({"execution_templates": [{**value, "mode":"STRICT_PRODUCTION", "require_literary_qualification":True}]})
+    validate_templates({"execution_templates": [{**value, "mode":"STRICT_PRODUCTION",
+        "require_literary_qualification":True, "world_future_preparation":"REQUIRED"}]})
+
+
+@pytest.mark.parametrize("field", ["actor_experiment", "preparation_sources"])
+def test_optional_world_policy_cannot_defer_independent_or_accepted_commitments(field):
+    from novel_forge.modules.story_planning_runtime.world_optional import require_optional_source
+    require_optional_source({"actor_experiment":None, "preparation_sources":[]})
+    with pytest.raises(KernelError, match="WORLD_OPTIONAL_DEFERRAL_DEPENDENCY_REQUIRED"):
+        require_optional_source({field: ["required"]})

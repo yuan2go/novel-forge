@@ -669,6 +669,9 @@ For world payload or recovery changes also run
 `test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance` there,
 and `test_native_world_identifier_checkpoint_recovers_settled_effect_without_resend`,
 with `tests/unit/test_world_causal_preparation.py` and `tests/unit/test_world_actor_isolation.py`.
+For v3 optional world preparation also run `test_native_disabled_world_future_reaches_review_acceptance_without_simulation`
+and `test_native_settled_optional_world_failure_continues_without_repeating_calls` there,
+plus `tests/unit/test_creative_execution_template.py`.
 Run integration modules serially in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
 process protocol, state owners and recovery; it proves no real membership entitlement,
@@ -693,6 +696,17 @@ For a historical world identifier error checkpoint, continue the same creation i
 The owner verifies the original completed receipt, settlement, checkpoint diagnosis and
 released lease before using Kernel completed-effect recovery. It makes no remote resend.
 Reference validation remains strict; a rejected result consumes the existing repair bound.
+
+The default creative v3 template disables speculative world futures while retaining World
+Foundation, accepted state, source isolation and all actual acceptance constraints. To
+exercise simulation, select `OPTIONAL` or `REQUIRED` explicitly. Infeasible optional
+futures remain rejected and contribute no facts. A historical settled, blocked world search
+may adopt v3 through native Planning deferral continuation (migration 0160): exact same Book/frontier/input
+roles, original receipts and usage, no active lease, no ChapterPlan generation dispatch,
+same authenticated route and repair counter. The owner creates a successor and preserves
+the former failed Operation and rejected action. Resume the original Formation identity;
+no user budget allocation or manual database edit is required. Independent actor experiments,
+accepted preparation commitments, strict policy and genuinely unknown calls still block.
 
 ## Credentialed Provider qualification
 

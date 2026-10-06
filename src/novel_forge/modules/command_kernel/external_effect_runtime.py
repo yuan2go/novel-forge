@@ -145,8 +145,8 @@ def read_failed_operation_success(
             [context.operation_id, context.project_id],
         )
         row = uow.cursor.fetchone()
-        if row is None or row[0] != "FAILED_FINAL":
-            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "retained result recovery requires a failed terminal owner")
+        if row is None or row[0] not in {"FAILED_FINAL", "FAILED_RETRYABLE"}:
+            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "retained result recovery requires a failed owner")
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 

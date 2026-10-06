@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -80,7 +80,7 @@ def test_native_formation_generates_foundation_from_author_brief(
     chapter_pack.pack_id += "-chapter"
     if creative_validation:
         from tests.integration.creative_validation_production_support import prepare_native_template
-        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation)
+        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled)
     else:
         approved_chapter = chapter_pack.register_compile_approve(
             "1.0.0",
@@ -280,6 +280,21 @@ def test_native_formation_generates_foundation_from_author_brief(
             bounded_serialization(result)
             return result
         transport.planning = consistent_fixture
+    if world_optional_recovery:
+        normal_world = transport.planning
+        def unsupported_world_future(stage, inputs):
+            result = normal_world(stage, inputs)
+            if stage == 'world_candidates.generate':
+                for candidate in result['candidates']:
+                    payload = json.loads(candidate['transition']['payload_json'])
+                    payload['cause_refs'] = ['unknown:event']
+                    candidate['transition']['payload_json'] = json.dumps(payload)
+            return result
+        transport.planning = unsupported_world_future
+        from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass
+        classify = WorkerFailureClassifier.classify
+        monkeypatch.setattr(WorkerFailureClassifier,'classify',staticmethod(lambda error:
+            WorkerFailureClass.RETRYABLE if getattr(error,'code','') == 'WORLD_PREPARATION_BLOCKED' else classify(error)))
     if world_result_repair:
         if world_result_repair == "reference-checkpoint":
             from copy import deepcopy
@@ -864,6 +879,16 @@ def test_native_formation_generates_foundation_from_author_brief(
                     chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
                     env=env, registry=registry, transport=transport, admitted=admitted, monkeypatch=monkeypatch,
                     routing=True, input_order=input_order_continuation)
+            if world_optional_recovery:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with pytest.raises(KernelError,match='WORLD_PREPARATION_BLOCKED'):
+                    continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                execution.close()
+                formation,execution,chapter,composition = _recover_capacity_formation(harness=harness,chapter_pack=chapter_pack,
+                    principal=principal,pack_actor=template_actor,settings=settings,env=env,registry=registry,
+                    transport=transport,admitted=admitted,monkeypatch=monkeypatch,world_optional=True)
             if world_result_repair == "reference-checkpoint":
                 from novel_forge.modules.command_kernel.errors import KernelError
                 with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_SOURCE_INVALID"):
@@ -884,6 +909,18 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            if world_disabled or world_optional_recovery:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT e.status,r.status FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.project_id=%s AND e.request_payload->>'stage' IN ('world_candidates.generate','world_candidates.evaluate')", [harness.project_id])
+                    assert uow.cursor.fetchall() == ([('SUCCEEDED','SETTLED')]*2 if world_optional_recovery else [])
+                actions = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id,asset_type='narrative_governance_action')
+                deferred = [a for a in actions if a.content.get('contract',{}).get('optional_preparation')]
+                assert deferred and all(a.content['contract']['world_plan']['disposition']=='DEFER' for a in deferred)
+                assert all(a.content['contract']['optional_preparation']['status']=='NOT_RUN' for a in deferred)
+                if world_optional_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT g.repair_number,o.status FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE g.generator_operation_name='chapter_plan.generate' AND o.project_id=%s ORDER BY o.created_at",[harness.project_id])
+                        assert uow.cursor.fetchall() == [(0,'FAILED_FINAL'),(0,'SUCCEEDED')]
             if world_result_repair:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id,g.operation_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_plan.generate' ORDER BY o.created_at", [harness.project_id])
@@ -1365,7 +1402,7 @@ def test_native_retained_valid_result_admission_without_another_provider_call(tm
     )
 
 
-def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch, routing=False, input_order=False):
+def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch, routing=False, input_order=False,world_optional=False):
     from concurrent.futures import ThreadPoolExecutor
     from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
     from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
@@ -1375,10 +1412,10 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
         uow.cursor.execute("SELECT o.operation_id,o.version,o.command_payload->'payload' FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.project_id=%s AND o.status=%s", [harness.project_id,"FAILED_FINAL" if input_order else "FAILED_RETRYABLE"])
         source, version, original = uow.cursor.fetchone()
         uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s", [source])
-        assert uow.cursor.fetchone()[0] == 0
+        assert uow.cursor.fetchone()[0] == (2 if world_optional else 0)
     before = len(transport.calls)
-    if input_order:
-        cancelled = {"status":"FAILED_FINAL", "version":version}
+    if input_order or world_optional:
+        cancelled = {"status":"FAILED_FINAL" if input_order else 'FAILED_RETRYABLE', "version":version}
     else:
         cancelled = request_cancellation(DATABASE_URL,CancelCommand(operation_id=source,project_id=harness.project_id,
             actor_id=principal.principal_id,expected_version=version,reason="native capacity successor; zero dispatch",
@@ -1387,12 +1424,14 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     sha = "f"*40
     hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=sha)
     harness.release_sha=sha
-    if routing:
+    if routing or world_optional:
         from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
         from tests.unit.test_creative_execution_template import template
         value = template(harness.book_ids[0], version="creative-execution-template.v2", repair_routing={
             "version": "native-repair-routing.v1", "max_same_route_repairs": 2})
         value["allowed_candidates"] = ["codex-cli:gpt-test:high"]
+        if world_optional:
+            value.update(version='creative-execution-template.v3',world_future_preparation='DISABLED')
         configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=harness.project_id,
             workspace_id=harness.workspace_id, principal=pack_actor, application_build_id=harness.application_build_id,
             commit_sha=sha, idempotency_key=harness.project_id+":repair-policy-v2", trace_id=harness.project_id,
@@ -1412,6 +1451,8 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
     formation=composition.formation
     planning=formation.generation.planning
+    if world_optional:
+        return formation,execution,chapter,composition
     def register():
         return planning.register_runtime_continuation(source,project_id=harness.project_id,principal=principal,
             expected_source_version=cancelled["version"],decision_evidence={"authorization_ref":"member-grant",
@@ -1466,3 +1507,13 @@ def test_native_world_raw_result_repair_preserves_world_source_and_reaches_accep
 def test_native_world_identifier_checkpoint_recovers_settled_effect_without_resend(tmp_path, monkeypatch):
     test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
         False, False, False, False, False, False, 1, creative_validation=True, world_result_repair="reference-checkpoint")
+
+
+def test_native_disabled_world_future_reaches_review_acceptance_without_simulation(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        False, False, False, False, False, False, 1, creative_validation=True, world_disabled=True)
+
+
+def test_native_settled_optional_world_failure_continues_without_repeating_calls(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        False, False, False, False, False, False, 1, creative_validation=True, world_optional_recovery=True)
