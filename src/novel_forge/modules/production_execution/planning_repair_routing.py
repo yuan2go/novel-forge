@@ -13,12 +13,17 @@ def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_ty
     cursor.execute("""SELECT o.command_payload->'payload',g.input_snapshot_hash,g.input_snapshot
         FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id)
         WHERE o.operation_id=%s AND o.project_id=%s AND g.book_id=%s
-          AND g.generator_operation_name=%s AND o.definition_name='story_planning.generate'""",
-        [operation_id,project_id,book_id,task_type])
+          AND (g.generator_operation_name=%s OR (%s='world_candidates.generate'
+            AND o.command_payload #>> '{payload,repair_result_diagnostic,error_code}'='WORLD_PROVIDER_TRANSITION_INVALID'))
+          AND o.definition_name='story_planning.generate'""",
+        [operation_id,project_id,book_id,task_type,task_type])
     current = cursor.fetchone()
     if not current:
         return None
     command, input_hash, inputs = current
+    world_repair = (command.get('repair_result_diagnostic') or {}).get('error_code') == 'WORLD_PROVIDER_TRANSITION_INVALID'
+    if world_repair and task_type != 'world_candidates.generate':
+        return None
     candidate = command.get("repair_of_candidate_id")
     raw = command.get("repair_result_asset_version_id")
     number = command.get("repair_number",0)
@@ -35,13 +40,14 @@ def native_planning_repair(cursor, *, project_id, book_id, operation_id, task_ty
         JOIN authority_story_planning_generation g ON g.operation_id=o.operation_id
         JOIN authority_external_effect e ON e.operation_id=o.operation_id AND e.status='SUCCEEDED'
           AND e.external_effect_id=COALESCE(v.content #>> '{execution_evidence,external_receipt_ref}',
-              v.content->>'external_effect_id')
+              v.content->>'external_effect_id',v.content #>> '{contract,evidence,external_receipt_ref}')
         JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id AND r.status='SETTLED'
         WHERE output.asset_version_id=%s AND o.project_id=%s AND g.book_id=%s
           AND g.generator_operation_name=%s AND g.logical_key=%s
+          AND e.request_payload->>'stage'=%s
           AND (%s AND g.candidate_asset_version_id=%s AND o.status='SUCCEEDED'
                OR NOT %s AND o.operation_id=%s AND g.candidate_asset_version_id IS NULL AND o.status='FAILED_FINAL')""",
-        [result_id,project_id,book_id,task_type,command['logical_key'],
+        [result_id,project_id,book_id,command.get('generator_operation_name',task_type),command['logical_key'],task_type,
          bool(candidate),result_id,bool(candidate),command.get('repair_of_operation_id','')])
     parents = cursor.fetchall()
     if len(parents) != 1:

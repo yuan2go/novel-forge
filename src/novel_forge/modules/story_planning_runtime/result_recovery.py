@@ -190,6 +190,13 @@ def require_result_repair_source(
             ],
         )
         sources = [str(item[0]) for item in uow.cursor.fetchall()]
+    if not sources:
+        from .world_result_recovery import require_world_result_repair_source
+        world_result = require_world_result_repair_source(database_url, command=command,
+            operation_id=operation_id, source_asset_version_id=source_asset_version_id,
+            require_valid_result=require_valid_result)
+        if world_result is not None:
+            return world_result
     if source_asset_version_id and source_asset_version_id not in sources:
         raise KernelError(
             "PLANNING_RESULT_REPAIR_SOURCE_INVALID",

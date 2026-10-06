@@ -18,6 +18,7 @@ from novel_forge.modules.worldbuilding.production_schema import (
     decode_world_generation,
     world_evaluation_schema,
     world_generation_schema,
+    world_transition_payload_schema,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.world_preparation_repositories import (
@@ -141,6 +142,17 @@ class PlanningWorldPreparation:
             uow.commit()
         prefix = f"world_preparation/{operation_id}"
         source_document = self._read(command.project_id, f"{prefix}/source")
+        world_repair = None
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+            retained = require_result_repair_source(self.preparer.database_url, command=command,
+                operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+            if retained.get("provider_stage") == "world_candidates.generate":
+                world_repair = retained
+                source_document = self.preparer.query.require(project_id=command.project_id,
+                    asset_version_id=retained["world_source"]["asset_version_id"])
+                if source_document.content_hash != retained["world_source"]["content_hash"]:
+                    raise KernelError("WORLD_REPAIR_SOURCE_DRIFT", "World repair retains its exact frozen source")
         if source_document is None:
             with AuthorityUnitOfWork(self.preparer.database_url) as uow:
                 source = WorldPreparationRepository(uow.cursor).require_source(
@@ -184,6 +196,9 @@ class PlanningWorldPreparation:
             for index, task in enumerate(tasks):
                 logical_ref = f"{prefix}/actor/{index}"
                 document = self._read(command.project_id, logical_ref)
+                if document is None and world_repair:
+                    document = self._read(command.project_id,
+                        f"world_preparation/{world_repair['source_operation_id']}/actor/{index}")
                 if document is None:
                     generated = execute_stage(PlanningProviderStage(ACTOR_STAGES[index], task, actor_output_schema(task)))
                     output = validate_actor_output(generated.raw_output, task)
@@ -217,8 +232,18 @@ class PlanningWorldPreparation:
         from .knowledge_translation import validate_knowledge_translations
 
         if generation_document is None:
+            stage = self.generation_stage(source, source_ref, knowledge_selection, actor_proposals=actor_proposals)
+            if world_repair:
+                stage = PlanningProviderStage(stage.name, {**stage.task, "result_repair": {
+                    "contract_version": "world-result-repair.v1",
+                    "source_result_asset_version_id": world_repair["asset_version_id"],
+                    "source_result_hash": world_repair["content_hash"],
+                    "raw_result": world_repair["raw_result"],
+                    "diagnostic": world_repair["diagnostic"],
+                    "instruction": "Repair the entire world generation against the typed payload schema and exact frozen world source. Preserve correct proposals; do not invent facts, missing quantities or knowledge to satisfy requirements.",
+                }}, stage.output_schema)
             generated = execute_stage(
-                self.generation_stage(source, source_ref, knowledge_selection, actor_proposals=actor_proposals)
+                stage
             )
             if knowledge_selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 validate_knowledge_translations(generated.raw_output, knowledge_selection)
@@ -447,6 +472,8 @@ class PlanningWorldPreparation:
                 else {}
             ),
             "transition_contract": {
+                "version": "world-transition-payload.v1",
+                "payload_schema": world_transition_payload_schema(),
                 "fields": list(WorldTransition.__dataclass_fields__),
                 "state_kinds": [kind.value for kind in NarrativeStateKind],
                 "requirement_operators": [

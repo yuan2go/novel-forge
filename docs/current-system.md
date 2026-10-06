@@ -69,6 +69,14 @@ styles without the new policy retain the v1 contract.
 
 ## Creative validation and resource policy
 
+World preparation delivers the complete typed transition payload contract, including
+StoryTime and causal/epistemic requirements, inside its existing Provider task. A malformed
+settled world generation remains failed proposal evidence, never accepted world state. Native Planning result repair
+retains its exact world source, Book frontier, inputs and receipt, and adds a bounded
+successor; it neither rewrites the failed Operation nor invents state to normalize it.
+Valid generation and evaluation receipts are reused on recovery. Unknown calls require
+reconciliation before repair, and strict policy does not acquire validation routing rights.
+
 The creative-validation work contract separates internal creative acceptance from
 strict production certification. It is a `CONFIGURABLE_POLICY`: selecting validation
 must retain real principals, permissions, source isolation, complete request admission,

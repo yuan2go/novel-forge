@@ -664,8 +664,11 @@ process `test_creative_validation_native_controlled_process_to_internal_acceptan
 `test_native_bounded_semantic_repair_reaches_review_acceptance_and_replays_without_calls`
 and `test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance`
 and `test_native_failed_final_input_order_successor_preserves_terminal_history_and_counter`
-there, plus `tests/unit/test_native_planning_repair_routing.py`. Run integration modules serially
-in a disposable database because their cleanup shares Authority tables. The controlled
+there, plus `tests/unit/test_native_planning_repair_routing.py`.
+For world payload or recovery changes also run
+`test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance` there,
+with `tests/unit/test_world_causal_preparation.py` and `tests/unit/test_world_actor_isolation.py`.
+Run integration modules serially in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
 process protocol, state owners and recovery; it proves no real membership entitlement,
 paid-account permission, literary quality or strict release qualification. Before deployment,
@@ -678,6 +681,13 @@ the terminal history. The owner requires identical complete input roles/artifact
 settled rejected candidate parent, unchanged member identity and repair count. Apply
 migration 0159 after backup/restore verification. Dispatched or unknown results require
 their existing reconciliation path.
+
+A malformed settled `world_candidates.generate` output before ChapterPlan materialization
+uses the same native Planning raw-result repair bound. Continue the original creation
+identity; the owner verifies the source asset, exact succeeded/settled receipt, unchanged
+world frontier and complete input roles. It sends a new repair with the full typed payload
+schema and actual diagnostic. The former result and usage remain immutable. A valid result,
+another Book's source, stale frontier or unknown Effect cannot authorize that repair.
 
 ## Credentialed Provider qualification
 

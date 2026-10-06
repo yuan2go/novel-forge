@@ -5223,6 +5223,8 @@ class PostgresPlanningExecutionPreparer:
                 "validation_failure": source["diagnostic"],
                 "instruction": "Repair this invalid raw Provider result against the frozen task and complete current Schema. It was never a Candidate or Canon. Preserve correct content, return the entire valid result; do not invent scope or omit fields.",
             }
+            if source.get("provider_stage") == "world_candidates.generate":
+                repair_context = None
         if command.repair_of_candidate_id:
             repair_document = self.query.require(
                 project_id=command.project_id,

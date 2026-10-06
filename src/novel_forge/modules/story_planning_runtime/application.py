@@ -774,7 +774,9 @@ class StoryPlanningGenerationApplication:
                 worker_id=self.worker_id,
             ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
         except KernelError as error:
-            if error.code != "PLANNING_GENERATION_RESULT_INVALID":
+            if error.code != "PLANNING_GENERATION_RESULT_INVALID" and not (
+                command.world_preparation_request and error.code == "WORLD_PROVIDER_TRANSITION_INVALID"
+            ):
                 raise
             return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
         self._probe(execution_probe)

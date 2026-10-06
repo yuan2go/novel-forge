@@ -9,6 +9,38 @@ from .dynamics import WorldTransition
 from .production_planning import WorldProductionPolicy
 
 
+def world_transition_payload_schema() -> dict[str, Any]:
+    from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
+    from .dynamics import RequirementOperator
+
+    text = {"type": "string", "minLength": 1}
+    predicate = _object({
+        "requirement_id": text,
+        "state_kind": {"type": "string", "enum": [kind.value for kind in NarrativeStateKind]},
+        "entity_key": text, "field": text,
+        "operator": {"type": "string", "enum": [kind.value for kind in RequirementOperator]},
+        "value": {"type": ["string", "number", "boolean", "null"],
+            "description": "AT_LEAST/AT_MOST require a finite number, never a textual quantity. EXISTS checks the field's presence."},
+    })
+    return _object({
+        "transition_id": text, "actor_id": text,
+        "camera": {"type": "string", "enum": ["ON_CAMERA", "OFF_CAMERA", "UNDERCURRENT"]},
+        "story_time": _object({
+            "timeline_id": text, "start_ordinal": {"type": "integer"},
+            "end_ordinal": {"type": "integer"},
+            "precision": {"type": "string", "enum": ["EXACT", "ORDERED", "RANGE", "UNSPECIFIED"]},
+            "label": {"type": "string"},
+        }),
+        "action": text,
+        "state_kind": {"type": "string", "enum": [kind.value for kind in NarrativeStateKind]},
+        "entity_key": text, "changes": {"type": "object"},
+        "requirements": {"type": "array", "items": predicate},
+        "cause_refs": {"type": "array", "minItems": 1, "uniqueItems": True, "items": text},
+        "epistemic_basis": {"type": "array", "items": predicate,
+            "description": "Only character_knowledge/character_belief predicates. Use an empty array when no epistemic predicate applies; never a prose string."},
+    })
+
+
 def _object(properties: dict[str, Any]) -> dict[str, Any]:
     return {
         "type": "object",
@@ -30,7 +62,8 @@ def world_generation_schema(
     policy: WorldProductionPolicy, *, audience_scoped: bool = False
 ) -> dict[str, Any]:
     transition = _object(
-        {"payload_json": {"type": "string", "minLength": 2, "maxLength": 16384}}
+        {"payload_json": {"type": "string", "minLength": 2, "maxLength": 16384,
+            "description": "Serialize exactly one typed WorldTransition object matching world_preparation.transition_contract.payload_schema. Do not encode StoryTime, requirements or epistemic_basis as prose."}}
     )
     path = _object(
         {

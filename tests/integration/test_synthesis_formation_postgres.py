@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -80,7 +80,7 @@ def test_native_formation_generates_foundation_from_author_brief(
     chapter_pack.pack_id += "-chapter"
     if creative_validation:
         from tests.integration.creative_validation_production_support import prepare_native_template
-        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=semantic_repair and not route_continuation)
+        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation)
     else:
         approved_chapter = chapter_pack.register_compile_approve(
             "1.0.0",
@@ -280,6 +280,24 @@ def test_native_formation_generates_foundation_from_author_brief(
             bounded_serialization(result)
             return result
         transport.planning = consistent_fixture
+    if world_result_repair:
+        normal_world_planning = transport.planning
+        damaged_world_transition = False
+        def invalid_world_payload_once(stage, inputs):
+            nonlocal damaged_world_transition
+            result = normal_world_planning(stage, inputs)
+            if stage == "world_candidates.generate":
+                task = inputs["world_preparation"]
+                assert task["transition_contract"]["payload_schema"]["properties"]["story_time"]["type"] == "object"
+                if not damaged_world_transition and result["candidates"]:
+                    damaged_world_transition = True
+                    transition = json.loads(result["candidates"][0]["transition"]["payload_json"])
+                    transition["story_time"] = "chapter:1:morning"
+                    result["candidates"][0]["transition"]["payload_json"] = json.dumps(transition)
+                else:
+                    assert task["result_repair"]["diagnostic"]["error_code"] == "WORLD_PROVIDER_TRANSITION_INVALID"
+            return result
+        transport.planning = invalid_world_payload_once
     if semantic_repair:
         normal_group_planning = transport.planning
         damaged_group = 0
@@ -818,6 +836,21 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            if world_result_repair:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id,g.operation_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_plan.generate' ORDER BY o.created_at", [harness.project_id])
+                    world_generations = uow.cursor.fetchall()
+                    assert [row[:2] for row in world_generations] == [(0, "FAILED_FINAL"), (1, "SUCCEEDED")]
+                    assert world_generations[0][2] is None and world_generations[1][2]
+                    uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [world_generations[0][3]])
+                    assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
+                    uow.cursor.execute("SELECT command_payload->'payload' FROM authority_operation WHERE operation_id=%s", [world_generations[0][3]])
+                    world_original = uow.cursor.fetchone()[0]
+                from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                world_call_count = len(transport.calls), len(transport.chapter.calls)
+                world_replay = formation.generation.planning.generate(_command_from_payload(world_original), principal=worker)
+                assert world_replay.candidate_asset_version_id == world_generations[1][2]
+                assert world_call_count == (len(transport.calls), len(transport.chapter.calls))
             if semantic_repair:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' ORDER BY o.created_at", [harness.project_id])
@@ -1375,3 +1408,8 @@ def test_native_failed_final_input_order_successor_preserves_terminal_history_an
     test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, False,
         False, False, False, False, False, 1, creative_validation=True, semantic_repair=True,
         input_order_continuation=True)
+
+
+def test_native_world_raw_result_repair_preserves_world_source_and_reaches_acceptance(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        False, False, False, False, False, False, 1, creative_validation=True, world_result_repair=True)

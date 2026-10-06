@@ -883,3 +883,20 @@ def test_professional_card_translation_changes_native_world_resource_feasibility
                 evaluation=no_path_evaluation, policy=WorldProductionPolicy(),
                 chapter_number=2, intent_version_id="intent:professional-reserve",
             )["disposition"] == "BLOCKED"
+
+
+def test_world_provider_delivers_typed_nested_payload_without_normalizing_invalid_fields():
+    from novel_forge.modules.command_kernel.service import _validate_json_schema as validate
+    from novel_forge.modules.worldbuilding.production_schema import world_transition_payload_schema, decode_world_generation
+    from novel_forge.modules.worldbuilding.dynamics import WorldTransition
+
+    payload = generated_paths()["candidates"][0]["transition"]
+    schema = world_transition_payload_schema()
+    validate(schema, payload)
+    WorldTransition.from_mapping(payload)
+    for key, invalid in [("story_time", "chapter:1:morning"), ("epistemic_basis", "Observed directly"), ("requirements", "Supplies exist")]:
+        damaged = {**payload, key: invalid}
+        with pytest.raises(KernelError):
+            validate(schema, damaged)
+        with pytest.raises(KernelError, match="WORLD_PROVIDER_TRANSITION_INVALID"):
+            decode_world_generation({"candidates": [{"transition": {"payload_json": json.dumps(damaged)}, "preparation_paths": []}]})
