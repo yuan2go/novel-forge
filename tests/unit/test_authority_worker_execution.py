@@ -110,6 +110,16 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
             with self.subTest(error=error):
                 self.assertEqual(WorkerFailureClassifier.classify(error), expected)
 
+    def test_unbound_task_capacity_is_configuration_failure_not_unknown_send(self) -> None:
+        self.assertEqual(
+            WorkerFailureClassifier.classify(KernelError("TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "capacity not configured")),
+            WorkerFailureClass.FINAL_FAILURE,
+        )
+        self.assertEqual(
+            WorkerFailureClassifier.classify(KernelError("EFFECT_STATE_UNKNOWN", "remote outcome unknown")),
+            WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
+        )
+
     def test_batch_continues_after_known_task_failure(self) -> None:
         visited: list[str] = []
 

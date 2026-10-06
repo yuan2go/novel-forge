@@ -44,6 +44,7 @@ _MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED"})
 _FINAL_FAILURE_CODES = frozenset(
     {
         "CHAPTER_QUALITY_GATE_FAILED",
+        "TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN",
         "SOURCE_PROVIDER_SCHEMA_REJECTED",
         "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
         # WHY: Once a semantic Provider attempt has reached the final send gate,
@@ -232,6 +233,8 @@ class WorkerFailureClassifier:
             return WorkerFailureClass.CANCELLATION
         if code in _DEAD_LETTER_CODES or "DEAD_LETTER" in code or "EXHAUST" in code:
             return WorkerFailureClass.DEAD_LETTER
+        if code in _FINAL_FAILURE_CODES:
+            return WorkerFailureClass.FINAL_FAILURE
         if "UNKNOWN" in code or "RECONCILIATION" in code:
             return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
         if (
@@ -244,8 +247,6 @@ class WorkerFailureClassifier:
         if code == "MODEL_EFFECT_TIMEOUT" or code.startswith("MODEL_EFFECT_RETRYABLE_"):
             return WorkerFailureClass.RETRYABLE
         if code.startswith("MODEL_EFFECT_FINAL_"):
-            return WorkerFailureClass.FINAL_FAILURE
-        if code in _FINAL_FAILURE_CODES:
             return WorkerFailureClass.FINAL_FAILURE
         if any(
             marker in code

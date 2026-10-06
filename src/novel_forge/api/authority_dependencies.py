@@ -435,6 +435,7 @@ def build_production_execution_composition(
                 default_candidate.provider, default_candidate.model, default_candidate.reasoning
             )
             context_limit = default_candidate.context_limit
+            output_limit = default_candidate.output_limit
             accounting_method = "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
             accounting_evidence = default_candidate.capability_version
         else:
@@ -442,6 +443,10 @@ def build_production_execution_composition(
             model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
             reasoning = codex_router_reasoning
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
+            catalog_model = next((entry for entry in codex_catalog
+                if entry["model"] == model and entry["reasoning"] == reasoning), None)
+            output_limit = int(catalog_model["output_limit"] if catalog_model
+                else values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
             accounting_method = "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
             accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
         for stage_name in ("MODEL", "MEMO", "DRAFT", "REVIEW", "REVISION", "REREVIEW",
@@ -454,6 +459,7 @@ def build_production_execution_composition(
         templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(context_limit)
+        templates.setdefault("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", str(output_limit))
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = accounting_method
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = accounting_evidence
         values = templates
