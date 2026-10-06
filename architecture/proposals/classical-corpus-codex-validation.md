@@ -9,24 +9,24 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `a57b8dbb959f790c606c59c98fccfbe863434a40`
+Reality baseline: `578d59b08ef79fdd51836dd9e214913125f38b9d`
 Baseline implementation identity:
-`sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36`
+`sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147`
 
-2026-10-05 baseline revalidation includes work Quality semantics and Context routing.
-Remaining proposal decisions retain their declared status. MOCK_E2E does not establish
-full backend qualification, real-Provider qualification or literary quality.
+2026-10-07 scope review: Current Formation and Planning add exact source/Pack/Context recovery, versioned Foundation v4 and bounded native successors. These change the campaign execution contract; they do not supply G3 twenty-work consumption or G4 four-arm real comparison.
+This checkpoint review is implementation evidence, not final backend qualification,
+real-Provider qualification or literary quality.
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-05",
+  "reviewed_on": "2026-10-07",
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "a57b8dbb959f790c606c59c98fccfbe863434a40",
-    "implementation_tree_sha": "sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36"
+    "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+    "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
@@ -72,7 +72,20 @@ full backend qualification, real-Provider qualification or literary quality.
       "symbol": "PostgresPlanningExecutionPreparer"
     }
   ],
-  "superseding_refs": [],
+  "superseding_refs": [
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+      "symbol": "foundation_output_schema_ref"
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/binder.py",
+      "symbol": "CapabilityPackBackedPlanningExecutionBinder"
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+      "symbol": "require_settled_failed_lineage"
+    }
+  ],
   "remaining_decisions": [],
   "remaining_work": [
     {

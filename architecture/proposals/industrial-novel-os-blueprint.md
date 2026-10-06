@@ -8,22 +8,22 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `a57b8dbb959f790c606c59c98fccfbe863434a40`
-Baseline implementation identity: `sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36`
+Current-reality baseline: `578d59b08ef79fdd51836dd9e214913125f38b9d`
+Baseline implementation identity: `sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147`
 
-2026-10-05 baseline revalidation includes work Quality semantics and Context routing.
-Remaining proposal decisions retain their declared status. MOCK_E2E does not establish
-full backend qualification, real-Provider qualification or literary quality.
+2026-10-07 scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
+This checkpoint review is implementation evidence, not final backend qualification,
+real-Provider qualification or literary quality.
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-05",
+  "reviewed_on": "2026-10-07",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "a57b8dbb959f790c606c59c98fccfbe863434a40",
-    "implementation_tree_sha": "sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36"
+    "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+    "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -175,7 +175,24 @@ full backend qualification, real-Provider qualification or literary quality.
       "symbol": "merge_task_retrieval_projections"
     }
   ],
-  "superseding_refs": [],
+  "superseding_refs": [
+    {
+      "path": "src/novel_forge/modules/book_authority/edition_application.py",
+      "symbol": "BookEditionApplication._validate"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/edition_application.py",
+      "symbol": "BookEditionApplication._select"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+      "symbol": "inherit_unchanged_prefix"
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "symbol": "drive_book"
+    }
+  ],
   "remaining_decisions": [
     {
       "id": "optional-volume",
@@ -189,7 +206,7 @@ full backend qualification, real-Provider qualification or literary quality.
     },
     {
       "id": "segment-boundaries",
-      "description": "Implementation contract required: immutable Book-owned editions preserve accepted originals, bind exact base manifests and revalidate affected facts before controlled switching; this is authorized WP02 scope, not a request for another approval.",
+      "description": "DESIGN_REVIEW_REQUIRED: exact Narrative Segment identity and boundary-change policy after accepted chapters. Implemented immutable Book editions preserve accepted originals but do not decide this Segment contract.",
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
@@ -235,15 +252,6 @@ full backend qualification, real-Provider qualification or literary quality.
       "evidence_refs": [
         {
           "path": "src/novel_forge/modules/reader_judge_authority/domain.py"
-        }
-      ]
-    },
-    {
-      "id": "retrospective-correction",
-      "description": "Implementation contract required: immutable Book-owned editions preserve accepted originals, bind exact base manifests and revalidate affected facts before controlled switching; this is authorized WP02 scope, not a request for another approval.",
-      "evidence_refs": [
-        {
-          "path": "src/novel_forge/storage/book_authority_repositories.py"
         }
       ]
     }
@@ -336,6 +344,20 @@ full backend qualification, real-Provider qualification or literary quality.
           "path": "src/novel_forge/modules/book_authority/production.py"
         }
       ]
+    },
+    {
+      "id": "edition-current-release-qualification",
+      "description": "Native immutable edition capture, exact base manifests, affected-frontier validation and fenced head selection are implemented. Complete current-release applicable qualification and independently authorized real-editorial use remain unverified; do not rewrite accepted originals or treat scripted selection as literary proof.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "symbol": "BookEditionApplication._select"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+          "symbol": "inherit_unchanged_prefix"
+        }
+      ]
     }
   ]
 }
@@ -374,12 +396,13 @@ required before changing the affected current contract.
    Whole-book Completion at each publication class.
 6. `DESIGN_REVIEW_REQUIRED`: reader-data privacy, consent, cohort retention, and causal
    attribution policy before real behavior can drive adaptation proposals.
-7. `IN_SCOPE_IMPLEMENTATION_REQUIRED`: retrospective correction creates an immutable edition
-   bound to an exact base manifest under Book/Editor ownership. Revalidate affected facts
-   and projections from the earliest changed boundary; atomic switching must preserve the
-   old edition and settle in-flight work. Future-only Plan Change keeps its current meaning.
+7. `CURRENT_RUNTIME_FACT`: retrospective correction uses an immutable Book-owned edition
+   with an exact base manifest, affected-frontier native validation and controlled head
+   selection. The original edition remains immutable; in-flight work settles in its
+   original Book run. Current-release qualification and real editorial evidence remain
+   incomplete. Future-only Plan Change keeps its current meaning.
 
-Unresolved design decision count: **6**; the edition direction is decided and its implementation remains required. Foundation ownership is resolved by the implemented
+Unresolved design decision count: **6**; the edition direction is decided and its native implementation is present; current-release qualification and real editorial evidence remain required. Foundation ownership is resolved by the implemented
 single Story Design owner and Book Design's immutable binding; a physical service split
 is not a prerequisite for one-fact/one-Authority semantics.
 

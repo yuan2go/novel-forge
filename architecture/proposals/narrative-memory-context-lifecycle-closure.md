@@ -9,23 +9,23 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `a57b8dbb959f790c606c59c98fccfbe863434a40`
+Reality baseline: `578d59b08ef79fdd51836dd9e214913125f38b9d`
 Baseline implementation identity:
-`sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36`
+`sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147`
 
-2026-10-05 baseline revalidation includes work Quality semantics and Context routing.
-Remaining proposal decisions retain their declared status. MOCK_E2E does not establish
-full backend qualification, real-Provider qualification or literary quality.
+2026-10-07 scope review: Task Context and Provider recovery retain exact frozen identities and fail closed on unknown outcomes. New recovery journals preserve protected evidence; they do not implement Digest freshness, diagnostic GC, active read generations or destructive representation cutover. Gates B–E remain unresolved.
+This checkpoint review is implementation evidence, not final backend qualification,
+real-Provider qualification or literary quality.
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-05",
+  "reviewed_on": "2026-10-07",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "a57b8dbb959f790c606c59c98fccfbe863434a40",
-    "implementation_tree_sha": "sha256:3b9e80602491186094d5caf94d0556fb65210ba8dc05f9cbc29abc7e0601ff36"
+    "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+    "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
@@ -89,7 +89,16 @@ full backend qualification, real-Provider qualification or literary quality.
       "symbol": "merge_task_retrieval_projections"
     }
   ],
-  "superseding_refs": [],
+  "superseding_refs": [
+    {
+      "path": "src/novel_forge/modules/production_execution/rejected_output.py",
+      "symbol": "read_retained_rejected_output"
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+      "symbol": "replace_derived_step"
+    }
+  ],
   "remaining_decisions": [
     {
       "id": "digest-consumer-contract",
