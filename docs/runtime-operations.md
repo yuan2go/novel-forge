@@ -2986,4 +2986,7 @@ the historical global counter and verifies the per-stage ordinal from dispatched
 It creates a new candidate from the original failed report and current authorized route,
 without relabeling the rejected result or resending completed calls. A Book waiting on
 that rejected plan may continue only when the new stage policy authorizes this native
-repair; real author approvals and strict certification remain separate.
+repair. The scoped scheduler Worker claims execution; the Planning command retains its
+original Actor, which must match the resolved Book composition principal and hold native
+Planning permission. These identities need not be the same. Real author approvals and
+strict certification remain separate.

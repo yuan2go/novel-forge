@@ -178,9 +178,10 @@ def resume_rejected_book_plan(composition, book, *, worker):
     from .application import _command_from_payload, GENERATOR_CATALOG
 
     command = _command_from_payload(row[1])
-    worker.require("story_planning.authority.execute", book["project_id"])
+    worker.require("book.authority.execute", book["project_id"])
+    composition.principal.require("story_planning.authority.execute", book["project_id"])
     if (
-        command.actor_id != worker.principal_id
+        command.actor_id != composition.principal.principal_id
         or (command.world_preparation_request or {}).get("book_run_id")
         != book["book_run_id"]
         or (command.world_preparation_request or {}).get("accepted_through_chapter")

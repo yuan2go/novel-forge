@@ -920,6 +920,7 @@ def test_native_formation_generates_foundation_from_author_brief(
             import time
 
             worker = replace(principal, principal_type=PrincipalType.WORKER,
+                principal_id="creation-book" if stage_repair_recovery else principal.principal_id,
                 permissions=principal.permissions - {"book.authority.approve_replan"})
             if route_continuation or input_order_continuation:
                 from novel_forge.modules.command_kernel.errors import KernelError
