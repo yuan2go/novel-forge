@@ -76,6 +76,20 @@ class ContentAuthorityApplication:
         *,
         principal: Principal | None = None,
     ) -> ContentOperationAdmission:
+        from novel_forge.modules.chapter_quality_authority.model_reference import (
+            MODEL_REFERENCE_ADJUDICATION, MODEL_REFERENCE_EVALUATION, require_model_reference_annotation,
+        )
+
+        model_reference_annotation = request.definition_name in {MODEL_REFERENCE_EVALUATION, MODEL_REFERENCE_ADJUDICATION}
+        if model_reference_annotation:
+            if principal is None:
+                raise PermissionError("model reference record requires an authenticated principal")
+            principal.require("content.authority.execute", request.project_id)
+            principal.require("content.operation:" + request.definition_name, request.project_id)
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                require_model_reference_annotation(uow.cursor, project_id=request.project_id,
+                    definition_name=request.definition_name, payload=request.payload,
+                    actor_id=principal.principal_id, input_assets=list(request.input_assets))
         reference_annotation = "reference_sample" in request.payload
         if reference_annotation and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):
             raise PermissionError("sample annotations require an authenticated local operator")
@@ -103,6 +117,7 @@ class ContentAuthorityApplication:
             planning_reference_annotations=planning_reference_annotation,
             prose_reference_annotations=prose_reference_annotation,
             screenplay_reference_annotations=screenplay_reference_annotation,
+            model_reference_annotations=model_reference_annotation,
         )
         definition = next((item for item in definitions if item["name"] == request.definition_name), None)
         if definition is None:

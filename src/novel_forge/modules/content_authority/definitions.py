@@ -22,6 +22,7 @@ def content_operation_definitions(
     planning_reference_annotations: bool = False,
     prose_reference_annotations: bool = False,
     screenplay_reference_annotations: bool = False,
+    model_reference_annotations: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     from novel_forge.modules.chapter_quality_authority.reference_subject import (
         REFERENCE_ANNOTATION_DEFINITIONS, REFERENCE_ANNOTATION_VERSION, WORLD_REFERENCE_ANNOTATION_VERSION,
@@ -30,6 +31,9 @@ def content_operation_definitions(
     from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION
 
     from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import SCREENPLAY_ANNOTATION_VERSION
+    from novel_forge.modules.chapter_quality_authority.model_reference import (
+        MODEL_REFERENCE_ADJUDICATION, MODEL_REFERENCE_EVALUATION, MODEL_REFERENCE_VERSION,
+    )
     if screenplay_reference_annotations and (not reference_annotations or any((prose_reference_annotations, world_reference_annotations, planning_reference_annotations))):
         raise ValueError("Screenplay sample annotations require their own reference annotation contract")
     if prose_reference_annotations and (not reference_annotations or world_reference_annotations or planning_reference_annotations):
@@ -67,7 +71,11 @@ def content_operation_definitions(
     }
     definitions = []
     for name, codec in CONTENT_CODECS.items():
+        if name in {MODEL_REFERENCE_EVALUATION, MODEL_REFERENCE_ADJUDICATION} and not model_reference_annotations:
+            continue
         if reference_annotations and name not in REFERENCE_ANNOTATION_DEFINITIONS:
+            continue
+        if model_reference_annotations and name not in {MODEL_REFERENCE_EVALUATION, MODEL_REFERENCE_ADJUDICATION}:
             continue
         is_proven = name in proven
         status = "integration_proven" if is_proven else "handler_bound"
@@ -75,7 +83,7 @@ def content_operation_definitions(
         definitions.append(
             {
                 "name": name,
-                "definition_version": SCREENPLAY_ANNOTATION_VERSION if screenplay_reference_annotations else PROSE_ANNOTATION_VERSION if prose_reference_annotations else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_reference_annotations else
+                "definition_version": MODEL_REFERENCE_VERSION if model_reference_annotations else SCREENPLAY_ANNOTATION_VERSION if screenplay_reference_annotations else PROSE_ANNOTATION_VERSION if prose_reference_annotations else PLANNING_REFERENCE_ANNOTATION_VERSION if planning_reference_annotations else
                     WORLD_REFERENCE_ANNOTATION_VERSION if world_reference_annotations else
                     REFERENCE_ANNOTATION_VERSION if reference_annotations else
                     CONTENT_AUTHOR_REVIEW_VERSION if name == "story_design.review.author" else
@@ -111,6 +119,7 @@ def content_operation_definitions(
                 },
                 "policy": {
                     **({"reference_sample_annotation_input_allowed": True} if reference_annotations else {}),
+                    **({"model_reference_annotation_input_allowed": True} if model_reference_annotations else {}),
                     **({"world_reference_sample_annotation": True} if world_reference_annotations else {}),
                     **({"planning_reference_sample_annotation": True} if planning_reference_annotations else {}),
                     **({"prose_reference_sample_annotation": True} if prose_reference_annotations else {}),

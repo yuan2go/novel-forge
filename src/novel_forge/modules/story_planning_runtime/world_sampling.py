@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Mapping
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -282,17 +282,25 @@ def require_world_reference(database_url: str, *, frozen: FrozenWorldSample, bin
 
 def _require_world_reference(cursor: Any, *, frozen: FrozenWorldSample, binding: Any,
                             evaluator_actor_id: str) -> dict[str, Any]:
-    from novel_forge.modules.chapter_quality_authority.reference_sampling import require_adjudicated_reference
+    from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+        require_adjudicated_reference, require_model_consensus_reference,
+    )
     from novel_forge.modules.hierarchical_planning.causal_domain import DIRECTOR_DIMENSIONS
 
     generation = frozen.stage.task["generation_ref"]
+    dimensions = tuple(f"{item['transition']['transition_id']}:{dimension}"
+        for item in frozen.stage.task["generated_portfolio"]["candidates"] for dimension in DIRECTOR_DIMENSIONS)
+    if isinstance(binding, Mapping) and binding.get("basis") == "MODEL_CONSENSUS":
+        return require_model_consensus_reference(cursor, project_id=frozen.command_payload["project_id"],
+            binding=binding, target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
+            chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
+            expected_dimensions=dimensions, allowed_statuses={"PASSED", "FAILED"})
     return require_adjudicated_reference(cursor, project_id=frozen.command_payload["project_id"], binding=binding,
         target_id=generation["asset_version_id"], target_hash=generation["content_hash"],
         generators=[frozen.generation_sample["generation_actor_id"] if frozen.generation_sample else frozen.command_payload["actor_id"]],
         evaluator_actor_id=evaluator_actor_id,
         chapter=int(frozen.command_payload["world_preparation_request"]["accepted_through_chapter"]) + 1,
-        expected_dimensions=tuple(f"{item['transition']['transition_id']}:{dimension}"
-            for item in frozen.stage.task["generated_portfolio"]["candidates"] for dimension in DIRECTOR_DIMENSIONS),
+        expected_dimensions=dimensions,
         allowed_statuses={"PASSED", "FAILED"})
 
 
@@ -420,6 +428,8 @@ def world_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[s
         agreed = reviewed["rule_validation"]["status"] == "PASSED" and reviewed["reference_evaluation"] is not None and all(
             item["score_in_range"] for item in reviewed["reference_evaluation"]["comparisons"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "reference_basis": reference["reference_basis"],
+            "same_model_correlated": reference.get("same_model_correlated", False),
             "generator_assessment": {"target_asset_version_id": reference["target_asset_version_id"],
                 "target_content_hash": reference["target_content_hash"], "labels": reference["labels"],
                 "protocol_version": reference["binding"]["protocol_version"]},
@@ -427,11 +437,13 @@ def world_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: list[s
             "reference_protocol_hash": authorization_hash({"protocol_version": reference["binding"]["protocol_version"],
                 "evaluation_versions": sorted({item["evaluation_version"] for item in reference["labels"]}),
                 "dimensions": sorted(DIRECTOR_DIMENSIONS), "agreement_contract": "world-reference-agreement.v1",
+                **({"reference_basis": "MODEL_CONSENSUS"} if reference["reference_basis"] == "MODEL_CONSENSUS" else {}),
                 "world_policy": frozen.source.content["contract"]["policy"]}),
             "reference_sample_identity": authorization_hash({"task_type": stage, "generated_portfolio": frozen.stage.task["generated_portfolio"]}),
             "failure_class": "" if agreed else "QUALITY_FAILURE",
             "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
-                *("asset-version:" + item["adjudication_asset_version_id"] for item in reference["labels"])]}
+                *("asset-version:" + item["adjudication_asset_version_id"] for item in reference["labels"]),
+                *reference.get("evidence_refs", [])]}
     return outcomes
 
 
@@ -440,7 +452,9 @@ def actor_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]
     from novel_forge.modules.chapter_quality_authority.generator_reference import DIRECT_GENERATOR_DIMENSIONS, generator_reference_contract
     from novel_forge.modules.chapter_quality_authority.reference_sampling import (
         reference_label_classes, reference_provider_result, require_adjudicated_reference,
+        require_model_consensus_reference,
     )
+    from novel_forge.modules.chapter_quality_authority.model_reference import MODEL_REFERENCE_PROTOCOL
     from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
 
     if not effect_ids:
@@ -495,12 +509,31 @@ def actor_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]
                 ORDER BY version.created_at,version.asset_version_id""",
                 [project_id, target_id, contract["protocol_version"], contract["evaluation_version"]])
             labels = [{"asset_version_id": row[0], "content_hash": row[1]} for row in cursor.fetchall()]
-            reference = require_adjudicated_reference(cursor, project_id=project_id,
-                binding={"protocol_version": contract["protocol_version"], "adjudications": labels},
-                target_id=target_id, target_hash=digest, generators=[subject["generation_actor_id"]],
-                evaluator_actor_id=subject["generation_actor_id"], chapter=int(frozen.stage.task["accepted_through_chapter"]) + 1,
-                expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
-                allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"})
+            chapter = int(frozen.stage.task["accepted_through_chapter"]) + 1
+            if labels:
+                reference = require_adjudicated_reference(cursor, project_id=project_id,
+                    binding={"protocol_version": contract["protocol_version"], "adjudications": labels},
+                    target_id=target_id, target_hash=digest, generators=[subject["generation_actor_id"]],
+                    evaluator_actor_id=subject["generation_actor_id"], chapter=chapter,
+                    expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
+                    allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"})
+            else:
+                cursor.execute("""SELECT version.asset_version_id,version.content_hash
+                    FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+                    WHERE asset.project_id=%s AND asset.asset_type='model_reference_adjudication'
+                      AND version.lifecycle='ACTIVE' AND version.governance='CLEAR'
+                      AND version.content->'subject'->>'asset_version_id'=%s
+                      AND version.content->>'protocol_version'=%s
+                      AND version.content->>'producer_contract_hash'=%s
+                    ORDER BY version.created_at,version.asset_version_id""",
+                    [project_id, target_id, MODEL_REFERENCE_PROTOCOL, producer])
+                labels = [{"asset_version_id": row[0], "content_hash": row[1]} for row in cursor.fetchall()]
+                reference = require_model_consensus_reference(cursor, project_id=project_id,
+                    binding={"basis": "MODEL_CONSENSUS", "protocol_version": MODEL_REFERENCE_PROTOCOL,
+                             "adjudications": labels}, target_id=target_id, target_hash=digest,
+                    chapter=chapter, expected_dimensions=DIRECT_GENERATOR_DIMENSIONS[stage],
+                    allowed_statuses={"PASSED", "PASSED_WITH_WARNINGS", "FAILED", "BLOCKED", "NEEDS_REVISION"},
+                    expected_producer_contract_hash=producer)
             if not reference_label_classes(cursor, project_id=project_id, reference=reference, stage=stage):
                 continue
             score = adjudicated_generator_score(reference["labels"])
@@ -514,14 +547,19 @@ def actor_sample_outcomes(cursor: Any, *, project_id: str, effect_ids: list[str]
             for key, value in provider["result"].items()}
         outcomes[effect_id] = {
             "metric": "INDEPENDENT_GENERATOR_ADJUDICATION.v1", "accepted": None,
-            "generator_quality_score": score, "generator_protocol_hash": authorization_hash(contract),
+            "generator_quality_score": score, "generator_protocol_hash": authorization_hash(contract if reference["reference_basis"] != "MODEL_CONSENSUS" else {
+                "protocol_version": MODEL_REFERENCE_PROTOCOL, "task_type": stage,
+                "producer_contract_hash": producer, "dimensions": list(DIRECT_GENERATOR_DIMENSIONS[stage]),
+                "score_basis": "MINIMUM_MODEL_CONSENSUS_LOWER_ENDPOINT"}),
             "generator_risk": decision["policy"]["risk"], "generator_context_tokens": routed["input_tokens"],
             "generator_sample_identity": authorization_hash({"task_type": stage, "output": normalized_output}),
             "generator_assessment": {"target_asset_version_id": target_id, "target_content_hash": digest,
-                "labels": reference["labels"], "protocol_version": contract["protocol_version"]},
+                "labels": reference["labels"], "protocol_version": reference["binding"]["protocol_version"]},
             "evidence_refs": ["asset-version:" + target_id, "asset-version:" + provider["model_call_asset_version_id"],
-                *("asset-version:" + item["asset_version_id"] for item in labels)],
-            "assessment_basis": "INDEPENDENT_HUMAN_ADJUDICATION", "sample_promoted": False,
+                *("asset-version:" + item["asset_version_id"] for item in labels),
+                *reference.get("evidence_refs", [])],
+            "assessment_basis": "INDEPENDENT_MODEL_CONSENSUS" if reference["reference_basis"] == "MODEL_CONSENSUS" else "INDEPENDENT_HUMAN_ADJUDICATION",
+            "sample_promoted": False,
         }
     return outcomes
 

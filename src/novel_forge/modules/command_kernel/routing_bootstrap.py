@@ -117,7 +117,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         "currency",
         "purpose",
     }
-    if set(grant) - {"campaign", "reference_evaluation", "producer_contract_hash", "accounting_basis", "cost_authorization_ref"} != strings | {
+    if set(grant) - {"campaign", "reference_evaluation", "model_reference", "producer_contract_hash", "accounting_basis", "cost_authorization_ref"} != strings | {
         "maximum_calls",
         "maximum_tokens",
         "maximum_amount",
@@ -130,7 +130,7 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
         raise ValueError("ROUTING_BOOTSTRAP_IDENTITY_REQUIRED")
     if (
         grant["environment"] != "validation"
-        or grant["purpose"] not in {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION"}
+        or grant["purpose"] not in {"BENCHMARK_CHALLENGER", "REFERENCE_EVALUATION", "MODEL_REFERENCE_CREATION"}
         or grant["production_eligible"] is not False
     ):
         raise ValueError("ROUTING_BOOTSTRAP_BOUNDARY_INVALID")
@@ -151,13 +151,28 @@ def validate_bootstrap_authorization(grant: Mapping[str, Any]) -> None:
     else:
         raise ValueError("ROUTING_BOOTSTRAP_ACCOUNTING_INVALID")
     reference = grant.get("reference_evaluation")
+    model_reference = grant.get("model_reference")
     if grant["purpose"] == "REFERENCE_EVALUATION":
+        if model_reference is not None:
+            raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
         if grant["task_type"] not in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", "screenplay_review", *CHAPTER_REFERENCE_TASKS.values()} or "campaign" not in grant:
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
         validate_reference_evaluation_binding(reference)
-        if (grant["task_type"] in {*CHAPTER_REFERENCE_TASKS.values(), "world_candidates.evaluate"}) != ("adjudications" in reference):
+        adjudications_required = (grant["task_type"] in {*CHAPTER_REFERENCE_TASKS.values(), "world_candidates.evaluate"}
+            or reference.get("basis") == "MODEL_CONSENSUS" and grant["task_type"] == "narrative_semantic_evaluation")
+        if adjudications_required != ("adjudications" in reference):
             raise ValueError("ROUTING_REFERENCE_SCOPE_INVALID")
-    elif reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", "screenplay_review", *CHAPTER_REFERENCE_TASKS.values()}:
+    elif grant["purpose"] == "MODEL_REFERENCE_CREATION":
+        if (reference is not None or grant["task_type"] not in {"model_reference_evaluate", "model_reference_adjudicate"}
+            or "campaign" not in grant):
+            raise ValueError("ROUTING_MODEL_REFERENCE_SCOPE_INVALID")
+        validate_model_reference_creation_binding(model_reference)
+        if model_reference["producer_contract_hash"] != grant.get("producer_contract_hash"):
+            raise ValueError("ROUTING_MODEL_REFERENCE_PRODUCER_INVALID")
+        expected_role = ("BLIND_EVALUATION" if grant["task_type"] == "model_reference_evaluate" else "ADJUDICATION")
+        if model_reference["role"] != expected_role:
+            raise ValueError("ROUTING_MODEL_REFERENCE_SCOPE_INVALID")
+    elif reference is not None or model_reference is not None or grant["task_type"] in {"narrative_semantic_evaluation", "world_candidates.evaluate", "longform_prose_review", "screenplay_review", *CHAPTER_REFERENCE_TASKS.values()}:
         raise ValueError("ROUTING_REFERENCE_AUTHORIZATION_REQUIRED")
     if grant["task_type"] in SOURCE_BOOTSTRAP_TASKS.values() and "campaign" not in grant:
         raise ValueError("ROUTING_SOURCE_CAMPAIGN_REQUIRED")
@@ -225,6 +240,18 @@ def validate_bootstrap_producer(
 
 
 def validate_reference_evaluation_binding(reference: Any) -> None:
+    if isinstance(reference, Mapping) and "basis" in reference:
+        if (set(reference) != {"basis", "protocol_version", "adjudications"}
+            or reference["basis"] != "MODEL_CONSENSUS"
+            or reference["protocol_version"] != "model-reference-consensus.v1"
+            or not isinstance(reference["adjudications"], list)
+            or not reference["adjudications"]):
+            raise ValueError("ROUTING_REFERENCE_BINDING_INVALID")
+        validate_reference_evaluation_binding({
+            "protocol_version": reference["protocol_version"],
+            "adjudications": reference["adjudications"],
+        })
+        return
     if isinstance(reference, Mapping) and "adjudicated_reference" in reference:
         native = reference["adjudicated_reference"]
         if (set(reference) != {"asset_version_id", "content_hash", "protocol_version", "adjudicated_reference"}
@@ -262,6 +289,48 @@ def validate_reference_evaluation_binding(reference: Any) -> None:
         char not in "0123456789abcdef" for char in digest[7:]
     ):
         raise ValueError("ROUTING_REFERENCE_HASH_INVALID")
+
+
+def validate_model_reference_creation_binding(binding: Any) -> None:
+    required = {"subject", "author_baseline", "policy_hash", "producer_contract_hash",
+                "protocol_version", "evaluation_version", "dimension", "scope", "role"}
+    if not isinstance(binding, Mapping) or set(binding) not in (required, required | {"source_evaluations"}):
+        raise ValueError("ROUTING_MODEL_REFERENCE_BINDING_INVALID")
+    if (binding["protocol_version"] != "model-reference-consensus.v1"
+        or binding["role"] not in {"BLIND_EVALUATION", "ADJUDICATION"}
+        or any(not isinstance(binding[key], str) or not binding[key].strip()
+               for key in ("evaluation_version", "dimension"))):
+        raise ValueError("ROUTING_MODEL_REFERENCE_BINDING_INVALID")
+    scope = binding["scope"]
+    chapter_scope = (isinstance(scope, Mapping)
+        and set(scope) == {"scope_type", "chapter_start", "chapter_end"}
+        and scope["scope_type"] == "CHAPTER"
+        and type(scope["chapter_start"]) is int and scope["chapter_start"] > 0
+        and scope["chapter_end"] == scope["chapter_start"])
+    book_scope = (isinstance(scope, Mapping)
+        and set(scope) == {"scope_type", "book_id"}
+        and scope["scope_type"] == "BOOK"
+        and isinstance(scope["book_id"], str) and bool(scope["book_id"].strip()))
+    if not (chapter_scope or book_scope):
+        raise ValueError("ROUTING_MODEL_REFERENCE_BINDING_INVALID")
+    for key in ("subject", "author_baseline"):
+        validate_reference_evaluation_binding({**binding[key], "protocol_version": binding["protocol_version"]})
+    for key in ("policy_hash", "producer_contract_hash"):
+        digest = binding[key]
+        if (not isinstance(digest, str) or len(digest) != 71 or not digest.startswith("sha256:")
+            or any(char not in "0123456789abcdef" for char in digest[7:])):
+            raise ValueError("ROUTING_MODEL_REFERENCE_BINDING_INVALID")
+    sources = binding.get("source_evaluations")
+    if binding["role"] == "BLIND_EVALUATION":
+        if sources is not None:
+            raise ValueError("ROUTING_MODEL_REFERENCE_BLINDNESS_INVALID")
+    elif not isinstance(sources, list) or len(sources) != 2:
+        raise ValueError("ROUTING_MODEL_REFERENCE_SOURCES_INVALID")
+    else:
+        for source in sources:
+            validate_reference_evaluation_binding({**source, "protocol_version": binding["protocol_version"]})
+        if sources[0]["asset_version_id"] == sources[1]["asset_version_id"]:
+            raise ValueError("ROUTING_MODEL_REFERENCE_SOURCES_INVALID")
 
 
 def validate_bootstrap_campaign(campaign: Mapping[str, Any]) -> None:
@@ -328,7 +397,7 @@ def validate_bootstrap_history(
         groups[group] = partition
         sample = (identity, campaign["sample_id"])
         binding = (campaign["group_id"], grant["task_type"], grant["input_versions_hash"],
-                   grant.get("producer_contract_hash"), grant.get("reference_evaluation"))
+                   grant.get("producer_contract_hash"), grant.get("reference_evaluation"), grant.get("model_reference"))
         if sample in samples and samples[sample] != binding:
             raise KernelError("ROUTING_CAMPAIGN_SAMPLE_REDEFINED",
                               "a sample retains its data group, task, producer and input versions")
@@ -401,6 +470,8 @@ def validate_bootstrap_scope(
             raise ValueError("command identity differs")
         if grant.get("reference_evaluation") != payload.get("reference_evaluation"):
             raise ValueError("reference identity differs")
+        if grant.get("model_reference") != payload.get("model_reference"):
+            raise ValueError("model reference identity differs")
     except (KeyError, ValueError, TypeError, ArithmeticError) as exc:
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",
@@ -573,6 +644,16 @@ def load_bootstrap_authorization(
     if payload.get("screenplay_sampling"):
         from novel_forge.modules.book_followup_authority.screenplay_sampling import sample_definition_name, SCREENPLAY_SAMPLE_VERSION, SCREENPLAY_SAMPLE_SCOPE
         contract = (sample_definition_name(payload.get("generator_operation_name")), SCREENPLAY_SAMPLE_VERSION, SCREENPLAY_SAMPLE_SCOPE)
+    if payload.get("model_reference"):
+        from novel_forge.modules.chapter_quality_authority.model_reference_execution import (
+            MODEL_REFERENCE_ADJUDICATE, MODEL_REFERENCE_EVALUATE, MODEL_REFERENCE_EXECUTION_VERSION,
+        )
+        name = (MODEL_REFERENCE_EVALUATE if payload.get("generator_operation_name") == "model_reference_evaluate"
+                else MODEL_REFERENCE_ADJUDICATE if payload.get("generator_operation_name") == "model_reference_adjudicate"
+                else "")
+        if not name:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "model reference requires its formal task")
+        contract = (name, MODEL_REFERENCE_EXECUTION_VERSION, "book:model-reference-creation")
     if tuple(row[1:4]) != contract or row[4] != payload.get("idempotency_key"):
         raise KernelError(
             "ROUTING_BOOTSTRAP_SCOPE_MISMATCH",

@@ -390,6 +390,18 @@ def default_chapter_artifact_resolver(
             "v9",
             "config/capability_packs/artifacts/chapter_generation_template_v9.md",
         ),
+        (
+            ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
+            "prompt-system:model-reference-creation",
+            "v1",
+            "config/capability_packs/artifacts/model_reference_system_instruction_v1.md",
+        ),
+        (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:model-reference-creation",
+            "v1",
+            "config/capability_packs/artifacts/model_reference_template_v1.md",
+        ),
     ):
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
         artifacts.append(
@@ -401,6 +413,22 @@ def default_chapter_artifact_resolver(
         "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
     )
     artifacts.extend(signed_catalog.artifacts())
+    artifacts.extend((
+        _artifact(ArtifactKind.SCHEMA, "schema:model-reference-creation-input:v1", "v1",
+            {"type": "object", "required": ["model_reference", "subject", "author_baseline", "context"],
+             "properties": {"model_reference": {"type": "object"}, "subject": {"type": "object"},
+                 "author_baseline": {"type": "object"}, "context": {"type": "object"},
+                 "source_evaluations": {"type": "array", "minItems": 2, "maxItems": 2}},
+             "additionalProperties": False}, "native:model-reference-creation-input-v1"),
+        _artifact(ArtifactKind.SCHEMA, "schema:model-reference-creation-output:v1", "v1",
+            {"type": "object", "required": ["status", "score_range", "findings"],
+             "properties": {"status": {"enum": ["PASSED", "FAILED", "UNCERTAIN"]},
+                 "score_range": {"type": "array", "minItems": 2, "maxItems": 2,
+                     "items": {"type": "integer", "minimum": 0, "maximum": 100}},
+                 "findings": {"type": "array", "items": {"type": "string"}},
+                 "evaluation": {"type": "object"}}, "additionalProperties": False},
+            "native:model-reference-creation-output-v1"),
+    ))
     return ExplicitArtifactResolver(artifacts)
 
 

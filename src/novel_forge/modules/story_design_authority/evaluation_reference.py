@@ -26,6 +26,7 @@ def reference_execution_gate(
         raise KernelError("NARRATIVE_REFERENCE_EXECUTION_GATE_CLOSED",
                           "reference sampling requires a live isolated Kernel Operation and exact grant")
     reference = payload["reference_evaluation"]
+    primary = (reference["adjudications"][0] if reference.get("basis") == "MODEL_CONSENSUS" else reference)
     uow.cursor.execute(
         """SELECT EXISTS (
             SELECT 1 FROM authority_operation generation
@@ -45,7 +46,7 @@ def reference_execution_gate(
               AND candidate.governance='CLEAR'
               AND candidate.content->>'routing_eligibility'='BENCHMARK_ONLY'
               AND COALESCE(generation.command_payload #> '{payload,opening_execution_binding}','{}'::jsonb)='{}'::jsonb
-        )""", [reference["asset_version_id"], reference["content_hash"], project_id,
+        )""", [primary["asset_version_id"], primary["content_hash"], project_id,
                 payload["generation_operation_id"], payload["generation_actor_id"], row[2],
                 payload["candidate_asset_version_id"], payload["candidate_content_hash"]],
     )
@@ -72,6 +73,7 @@ def reference_command_fields(command: Any) -> dict[str, Any]:
         raise ValueError("reference sampling requires the governed Provider evaluator")
     validate_reference_evaluation_binding(command.reference_evaluation)
     reference = dict(command.reference_evaluation)
+    primary = reference["adjudications"][0] if reference.get("basis") == "MODEL_CONSENSUS" else reference
     return {
         "project_id": command.project_id,
         "logical_key": command.candidate_asset_version_id,
@@ -79,8 +81,8 @@ def reference_command_fields(command: Any) -> dict[str, Any]:
         "input_versions": {
             "candidate": command.candidate_asset_version_id,
             "candidate_content_hash": command.candidate_content_hash,
-            "reference": reference["asset_version_id"],
-            "reference_content_hash": reference["content_hash"],
+            "reference": primary["asset_version_id"],
+            "reference_content_hash": primary["content_hash"],
         },
         "routing_bootstrap_authorization_id": command.routing_bootstrap_authorization_id,
         "reference_evaluation": reference,
@@ -107,6 +109,36 @@ def _require_reference_review(
 ) -> Mapping[str, Any]:
     reference = payload["reference_evaluation"]
     validate_reference_evaluation_binding(reference)
+    if reference.get("basis") == "MODEL_CONSENSUS":
+        from novel_forge.modules.chapter_quality_authority.model_reference import require_model_panel_reference
+        from novel_forge.modules.chapter_quality_authority.reference_subject import require_planning_reference_subject
+
+        if len(reference["adjudications"]) != 1:
+            raise KernelError("NARRATIVE_REFERENCE_COVERAGE_INCOMPLETE", "Planning model panel requires one complete adjudicated evaluation")
+        target = {"asset_version_id": payload["candidate_asset_version_id"],
+                  "content_hash": payload["candidate_content_hash"]}
+        subject = require_planning_reference_subject(cursor, project_id=project_id, binding=target)
+        if (subject["generation_operation_id"] != payload["generation_operation_id"]
+            or subject["generation_actor_id"] != payload["generation_actor_id"]):
+            raise KernelError("NARRATIVE_REFERENCE_NOT_INDEPENDENT", "Planning model reference candidate lineage differs")
+        panel = require_model_panel_reference(cursor, project_id=project_id,
+            binding={"protocol_version": reference["protocol_version"],
+                     "adjudications": reference["adjudications"]})
+        if (panel["target_asset_version_id"] != target["asset_version_id"]
+            or panel["target_content_hash"] != target["content_hash"]
+            or panel["scope"] != {"scope_type": "BOOK", "book_id": payload["book_id"]}
+            or panel["labels"][0]["dimension"] != "narrative_semantic_evaluation"
+            or panel["labels"][0]["status"] not in {"PASSED", "FAILED"}):
+            raise KernelError("NARRATIVE_REFERENCE_COVERAGE_INCOMPLETE", "Planning model panel scope or dimension differs")
+        evaluation = panel["adjudicated_judgment"].get("evaluation")
+        options = qualification_profile_options(subject["content"])
+        qualified = validate_narrative_qualification(generator_operation_name=payload["generator_operation_name"],
+            value=evaluation, require_pass=False, **options)
+        if panel["labels"][0]["status"] != {"PASS": "PASSED", "FAIL": "FAILED"}.get(qualified.status):
+            raise KernelError("NARRATIVE_REFERENCE_LABEL_CONFLICT", "model panel status differs from exact narrative criterion verdicts")
+        return {"content": {"evaluation": evaluation}, "work_requirements": uses_work_requirements(subject["content"]),
+            "profile_version": options["profile_version"], "model_reference": panel,
+            "author_actor_id": "", "operation_id": ""}
     cursor.execute(
         """SELECT version.content,version.content_hash,operation.actor_id,
                   operation.operation_id
@@ -228,16 +260,18 @@ def reference_agreement(
          "agrees": expected[(layer, criterion)] == observed[(layer, criterion)]}
         for layer, criterion in sorted(expected)
     ]
+    model_panel = reference.get("model_reference")
     return {
-        "schema_version": "narrative-reference-agreement.v2" if reference.get("adjudicated_reference") else "narrative-reference-agreement.v1",
+        "schema_version": "narrative-reference-agreement.v3" if model_panel else "narrative-reference-agreement.v2" if reference.get("adjudicated_reference") else "narrative-reference-agreement.v1",
         "reference": dict(payload["reference_evaluation"]),
-        "reference_operation_id": reference["operation_id"],
-        "reference_author_actor_id": reference["author_actor_id"],
+        **({"reference_operation_id": reference["operation_id"],
+            "reference_author_actor_id": reference["author_actor_id"]} if not model_panel else {}),
         "generator_operation_name": payload["generator_operation_name"],
         "criterion_agreement": comparisons,
         "agreement_rate": sum(item["agrees"] for item in comparisons) / len(comparisons),
-        "reference_basis": "ADJUDICATED_SUBJECTIVE_EVIDENCE" if reference.get("adjudicated_reference") else "INDEPENDENT_OPERATOR_PROXY_LABELS",
+        "reference_basis": "MODEL_CONSENSUS" if model_panel else "ADJUDICATED_SUBJECTIVE_EVIDENCE" if reference.get("adjudicated_reference") else "INDEPENDENT_OPERATOR_PROXY_LABELS",
         **({"adjudicated_reference": reference["adjudicated_reference"]} if reference.get("adjudicated_reference") else {}),
+        **({"model_reference": model_panel} if model_panel else {}),
         "ground_truth_claimed": False,
         "human_preference_evidence": False,
         "production_qualification_eligible": False,
@@ -268,7 +302,9 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
         ORDER BY version.created_at,version.asset_version_id""", [project_id, effect_ids])
     outcomes = {}
     for effect_id, operation_id, attempt_id, actor, payload, asset_id, digest, content, model_hash, model in cursor.fetchall():
-        if digest != authorization_hash(content) or not payload.get("reference_evaluation", {}).get("adjudicated_reference"):
+        binding = payload.get("reference_evaluation") or {}
+        if (digest != authorization_hash(content)
+            or not (binding.get("adjudicated_reference") or binding.get("basis") == "MODEL_CONSENSUS")):
             continue
         try:
             snapshot = load_bootstrap_authorization(cursor, project_id=project_id, operation_id=operation_id, check_expiry=False)
@@ -297,9 +333,9 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
                 continue
             reference = _require_reference_review(cursor, project_id=project_id, payload=payload, evaluator_actor_id=actor)
             agreement = reference_agreement(payload=payload, reference=reference, evaluation=provider["result"])
-            if agreement != content.get("reference_evaluation") or not reference.get("adjudicated_reference"):
+            if agreement != content.get("reference_evaluation") or not (reference.get("adjudicated_reference") or reference.get("model_reference")):
                 continue
-            adjudicated = reference["adjudicated_reference"]
+            adjudicated = reference.get("model_reference") or reference["adjudicated_reference"]
             classes = reference_label_classes(cursor, project_id=project_id, reference=adjudicated, stage="narrative_semantic_evaluation")
             if not classes:
                 continue
@@ -310,6 +346,8 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
             continue
         agreed = all(item["agrees"] for item in agreement["criterion_agreement"])
         outcomes[effect_id] = {"accepted": None, "metric": "REFERENCE_AGREEMENT.v1", "reference_agreed": agreed,
+            "reference_basis": adjudicated["reference_basis"],
+            "same_model_correlated": adjudicated.get("same_model_correlated", False),
             "generator_assessment": {"target_asset_version_id": adjudicated["target_asset_version_id"],
                 "target_content_hash": adjudicated["target_content_hash"], "labels": adjudicated["labels"],
                 "protocol_version": payload["reference_evaluation"]["protocol_version"]},
@@ -317,10 +355,14 @@ def narrative_reference_outcomes(cursor: Any, *, project_id: str, effect_ids: li
             "reference_protocol_hash": authorization_hash({"protocol_version": payload["reference_evaluation"]["protocol_version"],
                 "generator_operation_name": payload["generator_operation_name"], "scope_type": adjudicated["scope"]["scope_type"],
                 "evaluation_versions": sorted({item["evaluation_version"] for item in adjudicated["labels"]}),
-                "dimensions": sorted(item["dimension"] for item in adjudicated["labels"]), "agreement_contract": "narrative-reference-agreement.v2"}),
+                "dimensions": sorted(item["dimension"] for item in adjudicated["labels"]),
+                **({"reference_basis": "MODEL_CONSENSUS"} if adjudicated["reference_basis"] == "MODEL_CONSENSUS" else {}),
+                "agreement_contract": "narrative-reference-agreement.v3" if adjudicated["reference_basis"] == "MODEL_CONSENSUS" else "narrative-reference-agreement.v2"}),
             "reference_sample_identity": authorization_hash({"task_type": payload["generator_operation_name"], "candidate": candidate["candidate_payload"]}),
             "failure_class": "" if agreed else "QUALITY_FAILURE",
             "evidence_refs": ["asset-version:" + asset_id, "asset-version:" + provider["model_call_asset_version_id"],
-                "asset-version:" + payload["reference_evaluation"]["asset_version_id"],
-                *("asset-version:" + item["adjudication_asset_version_id"] for item in adjudicated["labels"])]}
+                *(("asset-version:" + payload["reference_evaluation"]["asset_version_id"],)
+                    if adjudicated["reference_basis"] != "MODEL_CONSENSUS" else ()),
+                *("asset-version:" + item["adjudication_asset_version_id"] for item in adjudicated["labels"]),
+                *adjudicated.get("evidence_refs", [])]}
     return outcomes

@@ -1,0 +1,38 @@
+{
+  "captured_at": "2026-10-05T23:43:27.601800+00:00",
+  "evidence_classes": [
+    "STATIC",
+    "OFFLINE"
+  ],
+  "not_a_completion_report": true,
+  "head_sha": "d8c2e44ef52bf7f9bf6eb08d00a9b00664e1a619",
+  "branch": "codex/work-intent-context-e2e-20261005",
+  "tracked_diff_sha256": "1af3ff40ff76d59509e71a8fbe4564644f7111a0ded8018c3939946341b2c7c2",
+  "implementation_in_progress": true,
+  "first_formal_gate": "CAPABILITY_PACK_DEPLOYMENT_NOT_RESOLVED",
+  "missing_engineering": [
+    "complete native model-reference execution/independent blind sessions/adjudication/reference qualification consumption",
+    "Planning/World/Chapter reference coverage and formal integration checks",
+    "explicit frozen-run successor/budget selection handling"
+  ],
+  "missing_external_input": "distinct configured trusted Pack approver; no new model or aggregate budget confirmation required",
+  "latest_native_ledger_file": "native-ledger-refresh.json",
+  "real_inference_dispatches": 0,
+  "accepted_chapters": "0/40",
+  "phase_reallocation": {
+    "contract": "creative-provider-campaign-budget.v6",
+    "definition": "creative.experiment_budget.configure@1.7.0",
+    "unit_tests": 114,
+    "postgres_tests": 35,
+    "counts_include_existing_contract_regressions": true,
+    "native_policy_selected": false,
+    "prepared_reference_calls": 120,
+    "prepared_reference_tokens": 6000000,
+    "total_caps_unchanged": true,
+    "old_reserved_dispatch_regression_reproduced_then_repaired": true,
+    "independent_review": "STATIC no remaining mandatory issue in budget slice only"
+  },
+  "real_provider_validated": "NOT_VERIFIED",
+  "creative_quality_proven": "NOT_VERIFIED",
+  "production_ready": "FAIL"
+}

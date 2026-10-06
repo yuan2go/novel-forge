@@ -157,6 +157,8 @@ TASK_TAXONOMY = {
             "context_compress",
             "context_fidelity",
             "narrative_semantic_evaluation",
+            "model_reference_evaluate",
+            "model_reference_adjudicate",
             "canon_support",
             "canon_high_impact_conflict",
             "creative_foundation.generate",

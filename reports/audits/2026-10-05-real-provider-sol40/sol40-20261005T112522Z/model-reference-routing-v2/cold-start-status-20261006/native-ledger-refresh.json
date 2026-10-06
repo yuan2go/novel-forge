@@ -1,0 +1,68 @@
+{
+  "captured_at": "2026-10-05T23:27:20.593175+00:00",
+  "evidence_class": "OFFLINE",
+  "native_ledger_read_only": true,
+  "counts": {
+    "authority_external_effect": 0,
+    "authority_external_effect_dispatch": 0,
+    "authority_external_receipt": 0,
+    "authority_budget_reservation": 0,
+    "authority_book_chapter_acceptance": 0,
+    "authority_capability_pack_compilation": 16,
+    "authority_capability_pack_approval": 0,
+    "authority_capability_pack_activation": 0,
+    "authority_capability_pack_deployment": 0,
+    "authority_quality_qualification_campaign": 0,
+    "authority_quality_qualification_decision": 0
+  },
+  "operation_statuses": [
+    {
+      "definition_name": "book.create",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "definition_name": "capability_pack.compile",
+      "status": "SUCCEEDED",
+      "count": 16
+    },
+    {
+      "definition_name": "capability_pack.manifest.register",
+      "status": "SUCCEEDED",
+      "count": 16
+    },
+    {
+      "definition_name": "chapter_group.execution_policy.configure",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "definition_name": "creative.brief.create",
+      "status": "SUCCEEDED",
+      "count": 2
+    },
+    {
+      "definition_name": "creative.experiment_budget.configure",
+      "status": "SUCCEEDED",
+      "count": 2
+    },
+    {
+      "definition_name": "project_lifecycle.create",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "definition_name": "story.formation.admit",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "definition_name": "story_planning.generate",
+      "status": "FAILED_RETRYABLE",
+      "count": 1
+    }
+  ],
+  "accepted_chapters": 0,
+  "target_chapters": 40,
+  "inference_dispatches": 0
+}

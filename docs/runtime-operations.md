@@ -638,6 +638,20 @@ calls, tokens and entitlement lanes remain frozen. The same configure command va
 this lineage, and campaign queries include earlier grants, reservations and settlements.
 Old requests retain their original limits. An increased ceiling is never reported as usage.
 
+To move allowance between phases without increasing the approved ceiling, select
+`creative-provider-campaign-budget.v6` through the same native configure command
+(`creative.experiment_budget.configure@1.7.0`). Retain campaign, manifest, Book, expiry,
+aggregate caps, entitlement lanes and business permissions. Bind `previous_policy` to the
+exact selected v4 or v6 policy; `reallocation` contains timezone-aware `authorized_at`
+and `carry_forward` from the native ledger, with accounted reservation IDs, totals, phases
+and entitlement usage. Every authorized phase cap must equal its new allocation. Selection
+rejects stale usage and allocations below consumed or unresolved reservations. A production
+renewal cannot use this contract to acquire diagnostic allowance. Dispatch checks the current
+shared ceiling and the request's frozen authorization against consumption in its own policy
+lineage; successor reservations cannot retroactively consume an earlier phase cap. Old
+request identities, expiry and unresolved outcomes remain frozen. This contract grants
+neither model qualification nor spending beyond the existing ceiling.
+
 For a new, explicitly approved finite production window, use
 `creative-provider-campaign-budget.v5` through the same configure command. Preserve the
 campaign, manifest, project and Book and bind `previous_policy` to the selected native
@@ -832,6 +846,15 @@ correlated model consensus; selection alone cannot qualify a model. Do not repla
 human reference, frozen route or budget when enabling a model panel. Model reference
 creation, native record/adjudication and reference feedback
 must be implemented and verified before dispatch or production admission can use that basis.
+
+The model-only contract uses separate `model_reference_evaluation` and
+`model_reference_adjudication` assets. Each evaluation binds the exact subject, author
+baseline, policy, Producer contract, and a successful native ModelCallLog/ExternalEffect
+receipt. Two blind evaluations require distinct native Operations, Attempts, Effects and
+model sessions; a third independent execution adjudicates their frozen outputs. A panel
+using one model family declares its correlation and remains `MODEL_CONSENSUS`, never
+HumanEvaluation or reader preference. Reference consumers validate the native source
+chain again and keep model-consensus qualification separate from human calibration.
 
 Planning bootstrap and reference provenance must read the exact admitted execution
 version, rather than assuming the historical `1.16.0` contract. The current supported

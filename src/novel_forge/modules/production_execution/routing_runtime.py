@@ -267,6 +267,9 @@ class PostgresRoutingRegistry:
             same_effect_provider_retry,
             repeated_experiment_input,
         ) in rows:
+            if ((decision or {}).get("bootstrap_authorization", {}).get("authorization", {})
+                .get("purpose") == "MODEL_REFERENCE_CREATION"):
+                continue
             evidence = content.get("provider_evidence", content)
             if evidence.get("fixture_protocol_only") or content.get(
                 "fixture_protocol_only"

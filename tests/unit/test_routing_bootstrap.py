@@ -631,6 +631,47 @@ def test_adjudicated_reference_binding_requires_exact_scoped_native_labels():
             validate_reference_evaluation_binding(bad)
 
 
+def test_model_consensus_reference_binding_is_exact_and_does_not_claim_human_identity():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_reference_evaluation_binding
+
+    binding = {"basis": "MODEL_CONSENSUS", "protocol_version": "model-reference-consensus.v1",
+        "adjudications": [{"asset_version_id": "model-adjudication:v1", "content_hash": "sha256:" + "a" * 64}]}
+    validate_reference_evaluation_binding(binding)
+    for bad in ({**binding, "basis": "HUMAN"}, {**binding, "human_verified": True},
+                {**binding, "adjudications": []},
+                {**binding, "adjudications": binding["adjudications"] * 2}):
+        with pytest.raises(ValueError):
+            validate_reference_evaluation_binding(bad)
+
+
+def test_model_reference_creation_grant_freezes_blind_and_adjudication_inputs():
+    from novel_forge.modules.command_kernel.routing_bootstrap import validate_bootstrap_authorization
+
+    payload, grant, snapshot = contract()
+    subject = {"asset_version_id": "draft:v1", "content_hash": "sha256:" + "a" * 64}
+    baseline = {"asset_version_id": "baseline:v1", "content_hash": "sha256:" + "b" * 64}
+    binding = {"subject": subject, "author_baseline": baseline,
+        "policy_hash": "sha256:" + "c" * 64, "producer_contract_hash": grant["producer_contract_hash"],
+        "protocol_version": "model-reference-consensus.v1", "evaluation_version": "review-v1",
+        "dimension": "prose_quality", "scope": {"scope_type": "CHAPTER", "chapter_start": 1, "chapter_end": 1},
+        "role": "BLIND_EVALUATION"}
+    payload.update(generator_operation_name="model_reference_evaluate", model_reference=binding)
+    grant.update(task_type="model_reference_evaluate", purpose="MODEL_REFERENCE_CREATION", model_reference=binding,
+        command_hash=bootstrap_command_hash(payload), campaign=campaign_grant()["campaign"])
+    snapshot.update(authorization_hash=authorization_hash(grant))
+    validate_bootstrap_authorization(grant)
+    validate_bootstrap_scope(snapshot, payload)
+    with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+        validate_bootstrap_scope(snapshot, {**payload, "model_reference": {**binding, "dimension": "other"}})
+    for altered in ({**binding, "source_evaluations": [subject, baseline]},
+                    {**binding, "role": "ADJUDICATION"},
+                    {**binding, "scope": {"scope_type": "CHAPTER", "chapter_start": 1, "chapter_end": 2}}):
+        with pytest.raises(ValueError):
+            validate_bootstrap_authorization({**grant, "model_reference": altered})
+    adjudication = {**binding, "role": "ADJUDICATION", "source_evaluations": [subject, baseline]}
+    validate_bootstrap_authorization({**grant, "task_type": "model_reference_adjudicate", "model_reference": adjudication})
+
+
 def test_reference_agreement_counts_disagreement_without_production_or_human_claims():
     from copy import deepcopy
     from novel_forge.modules.story_design_authority import scripted_qualification

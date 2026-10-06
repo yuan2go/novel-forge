@@ -1441,6 +1441,31 @@ def _adjudication_v2_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
     }
 
 
+def _model_reference_record(request: AuthorityHandlerRequest) -> dict[str, Any]:
+    from novel_forge.modules.chapter_quality_authority.model_reference import (
+        MODEL_REFERENCE_ADJUDICATION, MODEL_REFERENCE_PROTOCOL,
+    )
+
+    record = dict(_payload(request)["model_reference"])
+    for key in ("subject", "author_baseline", "model_call"):
+        binding = record[key]
+        frozen = _require_frozen_version(request, binding["asset_version_id"])
+        if frozen.content_hash != binding["content_hash"]:
+            raise ValueError("model reference frozen input hash differs")
+    if request.definition_name == MODEL_REFERENCE_ADJUDICATION:
+        for asset_id in record["source_evaluation_asset_version_ids"]:
+            source = _require_frozen_version(request, asset_id)
+            if source.asset_type != "model_reference_evaluation":
+                raise ValueError("model adjudication requires exact model evaluation inputs")
+    if record["protocol_version"] != MODEL_REFERENCE_PROTOCOL or record["recording_actor_id"] != request.actor_id:
+        raise ValueError("model reference protocol or actor differs")
+    return {"type": "ModelReferenceAdjudication" if request.definition_name == MODEL_REFERENCE_ADJUDICATION
+            else "ModelReferenceEvaluation", "contract_version": MODEL_REFERENCE_PROTOCOL,
+            "project_id": request.project_id, **record, "human_verified": False,
+            "human_preference_evidence": False, "reference_basis": "MODEL_CONSENSUS",
+            "production_qualification_eligible": False}
+
+
 def _blind_pair_preference_v2_record(
     request: AuthorityHandlerRequest,
 ) -> dict[str, Any]:
@@ -1796,6 +1821,18 @@ CONTENT_CODECS: dict[str, ContentHandlerCodec] = {
             "adjudicated_evaluation",
             "quality.adjudication",
             _adjudication_v2_record,
+        ),
+        (
+            "quality.model_reference_evaluation.record",
+            "model_reference_evaluation",
+            "quality.model_reference_evaluation",
+            _model_reference_record,
+        ),
+        (
+            "quality.model_reference_adjudication.record",
+            "model_reference_adjudication",
+            "quality.model_reference_adjudication",
+            _model_reference_record,
         ),
         (
             "quality.blind_pair_preference.record",

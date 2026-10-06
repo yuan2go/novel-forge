@@ -213,6 +213,8 @@ _PACK_SKILL_FOR_STAGE = {
     "screenplay_review": "quality-review",
     "screenplay_revision": "prose-generation",
     "narrative_semantic_evaluation": "quality-review",
+    "model_reference_evaluate": "quality-review",
+    "model_reference_adjudicate": "quality-review",
     "agent_session": "agent-loop-governance",
     "retrieval": "context-builder-source-isolation",
     "retrieval_query_expansion": "context-builder-source-isolation",
@@ -424,12 +426,13 @@ def build_production_execution_composition(
             accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
         for stage_name in ("MODEL", "MEMO", "DRAFT", "REVIEW", "REVISION", "REREVIEW",
                            "CANON_EXTRACTION", "CANON_SUPPORT", "QUALITY", "READER_OUTCOME",
-                           "NARRATIVE_EVALUATOR", "AGENT", "PLANNING"):
+                           "NARRATIVE_EVALUATOR", "MODEL_REFERENCE", "AGENT", "PLANNING"):
             templates[f"NOVEL_FORGE_{stage_name}_PROVIDER"] = provider
             templates[f"NOVEL_FORGE_{stage_name}_MODEL"] = model
         templates["NOVEL_FORGE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_AGENT_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = reasoning
+        templates["NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(context_limit)
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = accounting_method
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = accounting_evidence
@@ -529,6 +532,15 @@ def build_production_execution_composition(
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
         ),
     ]
+    model_reference_provider = str(values.get("NOVEL_FORGE_MODEL_REFERENCE_PROVIDER") or "").strip()
+    model_reference_model = str(values.get("NOVEL_FORGE_MODEL_REFERENCE_MODEL") or "").strip()
+    if bool(model_reference_provider) != bool(model_reference_model):
+        raise RuntimeError("model reference route requires both explicit Provider and model")
+    if model_reference_provider:
+        stage_routes.extend((
+            ("model_reference_evaluate", "NOVEL_FORGE_MODEL_REFERENCE_PROVIDER", "NOVEL_FORGE_MODEL_REFERENCE_MODEL"),
+            ("model_reference_adjudicate", "NOVEL_FORGE_MODEL_REFERENCE_PROVIDER", "NOVEL_FORGE_MODEL_REFERENCE_MODEL"),
+        ))
     stage_routes.extend([
         ("context_compress", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
         ("context_fidelity", "NOVEL_FORGE_REVIEW_PROVIDER", "NOVEL_FORGE_REVIEW_MODEL"),
@@ -600,6 +612,7 @@ def build_production_execution_composition(
             stage
             in {
                 "narrative_semantic_evaluation",
+                "model_reference_evaluate", "model_reference_adjudicate",
                 "agent_session",
                 "retrieval_query_expansion",
             }
@@ -613,12 +626,14 @@ def build_production_execution_composition(
                     (
                         "NOVEL_FORGE_AGENT_REASONING_EFFORT"
                         if stage in {"agent_session", "retrieval_query_expansion"}
+                        else "NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"
+                        if stage in {"model_reference_evaluate", "model_reference_adjudicate"}
                         else "NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"
                     ),
                 )
             ):
                 raise RuntimeError(
-                    "controlled Narrative Evaluator requires an explicit Provider, model, and reasoning effort"
+                    "controlled evaluator requires an explicit Provider, model, and reasoning effort"
                 )
         provider = str(
             values.get(provider_key)
@@ -629,7 +644,7 @@ def build_production_execution_composition(
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_PROVIDER")
                 if stage.startswith("quality_")
-                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation"}
+                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation", "model_reference_evaluate", "model_reference_adjudicate"}
                 else ""
             )
             or values.get("NOVEL_FORGE_MODEL_PROVIDER")
@@ -649,7 +664,7 @@ def build_production_execution_composition(
                 if stage == "canon_extraction"
                 else values.get("NOVEL_FORGE_REVIEW_MODEL")
                 if stage.startswith("quality_")
-                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation"}
+                or stage in {"reader_outcome", "longform_prose_review", "narrative_semantic_evaluation", "model_reference_evaluate", "model_reference_adjudicate"}
                 else ""
             )
             or ""
@@ -667,6 +682,8 @@ def build_production_execution_composition(
             qualification_ref = "capability-probe:codex-cli:real-runtime-v1"
             reasoning_effort = str(
                 values.get(f"NOVEL_FORGE_{stage.upper()}_REASONING_EFFORT")
+                or (values.get("NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT")
+                    if stage in {"model_reference_evaluate", "model_reference_adjudicate"} else "")
                 or values.get("NOVEL_FORGE_REASONING_EFFORT")
                 or "high"
             )
@@ -2262,6 +2279,60 @@ def build_narrative_semantic_evaluation_execution_port(
     )
 
 
+def build_model_reference_execution_port(
+    settings: IndustrialSettings, *, execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+):
+    """CONSTRAINT: model reference calls use the existing Gateway and validation Pack gate."""
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import (
+        ModelReferenceExecutionContractBinder, ModelReferenceExecutionPort,
+    )
+
+    if not settings.database_url:
+        raise RuntimeError("PostgreSQL is required for model reference execution")
+    values = os.environ if env is None else env
+    runtime_environment = RuntimeEnvironment.parse(
+        str(values.get("NOVEL_FORGE_ENVIRONMENT") or settings.environment))
+    if runtime_environment is not execution.runtime_environment or runtime_environment.value != "validation":
+        raise RuntimeError("model reference creation requires the validation runtime")
+    if not {"model_reference_evaluate", "model_reference_adjudicate"}.issubset(execution.gateway.routes):
+        raise RuntimeError("model reference creation requires explicit evaluator Provider/model routes")
+    registered = execution.gateway.execution_binders.get("model_reference")
+    if registered is None:
+        binder = ModelReferenceExecutionContractBinder(settings.database_url,
+            execution.gateway.routes,
+            capability_pack_id=str(values.get("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID") or "chapter_generation_pack") + ".model_reference_creation",
+            pack_environment="validation", pack_runtime_profile="validation",
+            pack_release_channel=str(values.get("NOVEL_FORGE_RELEASE_CHANNEL") or "VALIDATION").upper(),
+            pack_required=True)
+        execution.gateway.register_execution_binder("model_reference", binder)
+    elif isinstance(registered, ModelReferenceExecutionContractBinder):
+        binder = registered
+    else:
+        raise RuntimeError("model reference execution binder domain is already owned")
+    model_port = ExternalEffectChapterModelPort(settings.database_url,
+        adapter=execution.gateway, worker_id="model-reference-worker",
+        max_cost_per_call=execution.max_cost_per_call,
+        budget_caps=execution.budget_caps(), capability_binder=binder,
+        execution_binding_domain="model_reference")
+    return ModelReferenceExecutionPort(settings.database_url, model_port=model_port)
+
+
+def build_model_reference_creation_application(
+    settings: IndustrialSettings, *, execution: ProductionExecutionComposition,
+    env: Mapping[str, str] | None = None,
+):
+    """CONSTRAINT: creation remains diagnostic and inherits the governed execution composition."""
+    from novel_forge.modules.chapter_quality_authority.model_reference_execution import ModelReferenceCreationApplication
+
+    values = os.environ if env is None else env
+    build_id, commit_sha = authority_release_identity(env=values)
+    return ModelReferenceCreationApplication(settings.database_url,
+        application_build_id=build_id, commit_sha=commit_sha,
+        execution_port=build_model_reference_execution_port(settings,
+            execution=execution, env=values))
+
+
 def build_story_planning_generation_application(
     settings: IndustrialSettings,
     *,
@@ -2431,6 +2502,8 @@ __all__ = [
     "build_book_production_composition",
     "build_reader_outcome_model_port",
     "build_narrative_semantic_evaluation_execution_port",
+    "build_model_reference_execution_port",
+    "build_model_reference_creation_application",
     "build_story_planning_generation_application",
     "build_capability_pack_authority_application",
     "build_capability_pack_authority_query",

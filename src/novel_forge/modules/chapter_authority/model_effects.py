@@ -58,6 +58,8 @@ MODEL_CAPABILITY_STAGES = frozenset(
         "quality_longform",
         "quality_platform",
         "narrative_semantic_evaluation",
+        "model_reference_evaluate",
+        "model_reference_adjudicate",
         "agent_session",
         "retrieval",
         "retrieval_query_expansion",
@@ -551,6 +553,9 @@ class ExternalEffectChapterModelPort:
                 "generator_operation_name": str(
                     business_payload.get("generator_operation_name") or ""
                 ),
+                **({"model_reference": dict(business_payload["model_reference"])}
+                   if stage in {"model_reference_evaluate", "model_reference_adjudicate"}
+                   and isinstance(business_payload.get("model_reference"), Mapping) else {}),
                 "route_provider": str(
                     getattr(
                         self.adapter,
@@ -1885,6 +1890,8 @@ def _normalize_model_output(
             ),
         }
     if stage == "narrative_semantic_evaluation":
+        return dict(raw)
+    if stage in {"model_reference_evaluate", "model_reference_adjudicate"}:
         return dict(raw)
     if stage == "retrieval":
         vectors = raw.get("vectors")
