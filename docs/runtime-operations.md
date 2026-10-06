@@ -3128,3 +3128,11 @@ their existing representation. Native creative recovery admits the exact known
 3.9.6 rejection as a new contract successor. Both earlier 3.9.5 and 3.9.6 failures
 remain terminal; unsettled or producing calls cannot use this path. Host decoding,
 Schema validation, semantic validation and grounded acceptance remain mandatory.
+
+For a legacy support-review taxonomy failure, register proposal 3.9.8 and install
+Pack 2.22 before continuing. The native `chapter-support-contract-repair.v1`
+successor requires an exact complete retained support result with unknown kind
+names and no unsupported claims, producing output, uncertain effect, dependent
+work or live lease. Source Attempts and settled membership receipts remain
+unchanged. The new support call uses v2 taxonomy and normal independent validation;
+a real support rejection requires Canon re-extraction through its owning path.

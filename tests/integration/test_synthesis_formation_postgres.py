@@ -68,8 +68,10 @@ def test_native_formation_generates_foundation_from_author_brief(
         saved_review_version = scene_definitions.CHAPTER_REVIEW_DEFINITION_VERSION
         saved_canon_version = scene_definitions.CHAPTER_CANON_DEFINITION_VERSION
         saved_revision_version = scene_definitions.CHAPTER_REVISION_DEFINITION_VERSION
+        saved_support_version = scene_definitions.CHAPTER_SUPPORT_DEFINITION_VERSION
         if length_scope_recovery:
             monkeypatch.setattr(scene_definitions, "CHAPTER_CANON_DEFINITION_VERSION", "3.9.0")
+            monkeypatch.setattr(scene_definitions, "CHAPTER_SUPPORT_DEFINITION_VERSION", "3.9.0")
             monkeypatch.setattr(scene_definitions, "CHAPTER_REVISION_DEFINITION_VERSION", "3.9.0")
         elif review_knowledge_recovery:
             monkeypatch.setattr(scene_definitions, 'CHAPTER_REVIEW_DEFINITION_VERSION', '3.9.0')
@@ -558,8 +560,9 @@ def test_native_formation_generates_foundation_from_author_brief(
     if length_scope_recovery:
         original_length_transport = transport.chapter
         length_revision_calls = 0
+        support_calls = 0
         def measured_length_response(stage, inputs):
-            nonlocal length_revision_calls
+            nonlocal length_revision_calls, support_calls
             value = original_length_transport(stage, inputs)
             if stage == 'draft':
                 value['scene_artifacts'][0]['text'] += '甲'
@@ -576,6 +579,13 @@ def test_native_formation_generates_foundation_from_author_brief(
                     assert inputs['candidate_repair']['diagnostic']['error_code'] == 'CHAPTER_LENGTH_REPAIR_INCOMPLETE'
                     assert inputs['candidate_repair']['length_observation']['observed'] == 2
                     assert '2' in inputs['candidate_repair']['diagnostic']['error_message']
+            if stage == 'canon_support':
+                support_calls += 1
+                if support_calls == 1:
+                    for claim in value['claims']:
+                        claim['observed_kind']='DOCUMENT_CONTENT'
+                else:
+                    assert inputs['support_kind_contract']=='canon-support-kinds.v2'
             if stage in {'draft','revision'}:
                 from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
                 value['text'] = serialize_realization(value['scene_artifacts'])
@@ -1200,6 +1210,9 @@ def test_native_formation_generates_foundation_from_author_brief(
                         canon_definition = next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-canon-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.extract')
                         node = next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.extract')
                         node.update(operation_definition_ref='chapter.canon.extract@3.9.0',operation_definition_hash=definition_hash(canon_definition))
+                        support_definition=next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-canon-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.propose_changes')
+                        support_node=next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.propose_changes')
+                        support_node.update(operation_definition_ref='chapter.canon.propose_changes@3.9.0',operation_definition_hash=definition_hash(support_definition))
                         return json.dumps(value)
                     monkeypatch.setattr(Path,'read_text',old_canon_pack)
                 execution.close()
@@ -1285,7 +1298,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                     frozen_scene_deadline = uow.cursor.fetchone()[0]
                 def expired_window(url, **kwargs):
                     source_deadline = frozen_scene_deadline
-                    if kwargs['target_version']=='3.9.7':
+                    if kwargs['target_version'] in {'3.9.7','3.9.8'}:
                         with AuthorityUnitOfWork(url) as uow:
                             uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s',[kwargs['root_id']])
                             source_deadline = uow.cursor.fetchone()[0]
@@ -1351,7 +1364,18 @@ def test_native_formation_generates_foundation_from_author_brief(
                     uow.cursor.execute('SELECT count(*) FROM authority_external_effect WHERE operation_id=%s',[retained_canon[0]['operation_id']])
                     assert uow.cursor.fetchone()==(0,)
                 monkeypatch.setattr(scene_definitions,'CHAPTER_CANON_DEFINITION_VERSION',saved_canon_version)
-                monkeypatch.setattr(Path,'read_text',normal_scene_read)
+                def current_canon_legacy_support_pack(path,*args,**kwargs):
+                    value=normal_scene_read(path,*args,**kwargs)
+                    if path.name!='chapter_generation_pack.json':
+                        return value
+                    from novel_forge.storage.authority_repositories import definition_hash
+                    value=json.loads(value)
+                    value['identity']['version']='2.21.0'
+                    definition=next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='retained-support',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.propose_changes')
+                    node=next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.propose_changes')
+                    node.update(operation_definition_ref='chapter.canon.propose_changes@3.9.0',operation_definition_hash=definition_hash(definition))
+                    return json.dumps(value)
+                monkeypatch.setattr(Path,'read_text',current_canon_legacy_support_pack)
                 monkeypatch.setattr(candidate_repair,'recover_canon_capacity_frontier',original_canon_recovery)
                 execution.close()
                 harness.release_sha = 'd'*40
@@ -1369,6 +1393,36 @@ def test_native_formation_generates_foundation_from_author_brief(
                 creation_result=continue_creation(composition=composition,content=content,chapter=chapter,
                     formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
                     maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                assert creation_result['stop_reason']=='CANON_GROUNDING_REEXTRACTION_REQUIRED',creation_result
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT o.operation_id,to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.propose_changes' AND o.definition_version='3.9.0'",[failed_scene_step[0]['root_operation_id']])
+                    old_support=uow.cursor.fetchone()
+                monkeypatch.setattr(scene_definitions,'CHAPTER_SUPPORT_DEFINITION_VERSION',saved_support_version)
+                monkeypatch.setattr(Path,'read_text',normal_scene_read)
+                execution.close()
+                harness.release_sha='c'*40
+                hashes=register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
+                harness.pack_id += '.support-successor'
+                chapter_pack.pack_id += '.support-successor'
+                install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+                    workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,
+                    commit_sha=harness.release_sha,compiler=template_actor,approver=template_actor,agent_admin=template_actor,pack_id_override=chapter_pack.pack_id)
+                install_planning(harness,build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes['planning'],pack_id=harness.pack_id),template_actor)
+                env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+                chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+                composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+                creation_result=continue_creation(composition=composition,content=content,chapter=chapter,
+                    formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                    maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                assert support_calls==2
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute('SELECT to_jsonb(a) FROM authority_attempt a WHERE attempt_id=%s',[old_support[1]['attempt_id']])
+                    assert uow.cursor.fetchone()==(old_support[1],)
+                    uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[old_support[0]])
+                    assert uow.cursor.fetchone()==('CANCELLED',)
+                    uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s",[old_support[0]])
+                    assert uow.cursor.fetchone()==('SUCCEEDED','3.9.8')
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(a) FROM authority_attempt a WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
                     assert uow.cursor.fetchone()==(retained_canon[1],)

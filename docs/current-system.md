@@ -2161,3 +2161,13 @@ A creative protocol successor can explicitly adopt this codec from a settled,
 non-producing Canon 3.9.6 Schema rejection. Terminal histories and all prior
 account evidence remain unchanged. Acceptance follows the verified succession
 chain to the current successful Saga step; it cannot relabel any failure as success.
+
+Canon proposal 3.9.8 / Pack 2.22 declares `canon-support-kinds.v2`. Its support
+Schema restricts observed_kind to the canonical epistemic taxonomy, including
+NARRATIVE_OBSERVATION, rather than an unconstrained string. The reviewer can
+still report a different known kind, UNSUPPORTED or UNCERTAIN; full coverage,
+exact-kind agreement and prose support remain mandatory. A creative successor
+can replace only a settled, non-producing legacy proposal whose complete review
+used unknown category names while reporting every claim supported. It binds the
+original extraction, candidate and review receipt; classification is reviewed
+again independently. No extraction or accepted prose is regenerated.

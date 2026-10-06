@@ -947,6 +947,8 @@ class PostgresChapterExecutionContractBinder:
             legacy_contract=materialization.prompt_template.version == "v2",
             prompt_contract_version=materialization.prompt_template.version,
         )
+        if stage == "canon_support" and graph["definition_version"]=="3.9.8" and provider_schema_ref!="schema:chapter-provider-output:canon_support:v2":
+            raise KernelError("CHAPTER_CANON_SUPPORT_CONTRACT_REQUIRED", "Support requires its exact finite taxonomy Schema binding")
         schema_hash = canonical_hash(provider_schema)
         embedding_output_contract = (
             _retrieval_embedding_output_contract(route)
@@ -1314,6 +1316,10 @@ class PostgresChapterExecutionContractBinder:
             from .provider_output_contracts import shared_canon_schema
             schema = shared_canon_schema(schema)
             schema_ref = "schema:chapter-provider-output:canon_extraction:v25" if prompt_contract_version=="v11" else "schema:chapter-provider-output:canon_extraction:v24"
+        if stage == "canon_support" and inputs.get("support_kind_contract")=="canon-support-kinds.v2":
+            from novel_forge.modules.canon_graph.grounding import SUPPORT_CLAIM_KINDS
+            schema['properties']['claims']['items']['properties']['observed_kind']={'type':'string','enum':list(SUPPORT_CLAIM_KINDS)}
+            schema_ref="schema:chapter-provider-output:canon_support:v2"
         return schema, schema_ref
 
     def bind(
@@ -2093,6 +2099,7 @@ class PostgresChapterExecutionContractBinder:
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
+        compatible = compatible or (str(row[0]) == ChapterNode.CANON_PROPOSAL.definition_name and str(row[1])=="3.9.8")
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7"})
         compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) == "3.9.4")
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
@@ -4600,6 +4607,8 @@ def _materialize_production_codex_prompt(
             "query is needed). Returning FINAL before this governed accepted-boundary "
             "query is semantically invalid."
         )
+    if stage == "canon_support" and schema.get("ref")=="schema:chapter-provider-output:canon_support:v2":
+        stage_semantic_contract += "\nUse only the canonical epistemic kinds listed in observed_kind enum. Classify the actual prose independently. A different allowed kind, UNSUPPORTED or UNCERTAIN is valid evidence and prevents admission; do not copy the claimant's kind to manufacture agreement. Describe finer content categories in reason, not observed_kind.\n"
     if stage == "canon_extraction" and schema.get("ref") == "schema:chapter-provider-output:canon_extraction:v25":
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
     prompt_sections = [

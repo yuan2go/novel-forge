@@ -207,7 +207,10 @@ class ChapterAuthorityQuery:
                              AND attempt.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED'))
                            OR (succ.policy_evidence->>'contract_version'='chapter-length-output-repair.v1' AND source.status='CANCELLED'
                              AND source.definition_name='chapter.revision.apply' AND replacement.definition_version='3.9.4'
-                             AND attempt.result->>'error_code'='REVISION_OUTSIDE_DIAGNOSIS_SCOPE'))
+                             AND attempt.result->>'error_code'='REVISION_OUTSIDE_DIAGNOSIS_SCOPE')
+                           OR (succ.policy_evidence->>'contract_version'='chapter-support-contract-repair.v1' AND source.status='CANCELLED'
+                             AND source.definition_name='chapter.canon.propose_changes' AND source.definition_version='3.9.0' AND replacement.definition_version='3.9.8'
+                             AND attempt.result->>'error_code'='CANON_GROUNDING_REEXTRACTION_REQUIRED'))
                          AND replacement.status='SUCCEEDED'
                          AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
                          AND succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id

@@ -136,7 +136,8 @@ def _recover_settled_output_frontier(authority, *, book_run_id, principal, defin
         if not policy or policy.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
             return False
         uow.cursor.execute("""SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o
-            JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
+            JOIN authority_saga_step s USING(operation_id)
+            JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name=%s
             AND o.definition_version='3.9.0' AND o.status=ANY(%s)
             AND a.result->>'error_code'=ANY(%s)
@@ -152,6 +153,11 @@ def _recover_settled_output_frontier(authority, *, book_run_id, principal, defin
         effects = uow.cursor.fetchall()
         if not effects or any(r[2:] != ('SUCCEEDED','SETTLED') for r in effects):
             raise KernelError('CHAPTER_REVIEW_RECOVERY_UNSETTLED', 'Reconcile original review effects before recovery')
+    support_proof = None
+    if contract_version == 'chapter-support-contract-repair.v1':
+        from novel_forge.modules.canon_graph.support_recovery import support_kind_repair_evidence
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            support_proof = support_kind_repair_evidence(uow.cursor, source['operation_id'], attempt['attempt_id'])
     length_scope = None
     if contract_version == 'chapter-length-output-repair.v1':
         from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -171,6 +177,7 @@ def _recover_settled_output_frontier(authority, *, book_run_id, principal, defin
         'input_snapshot':source['input_asset_snapshot'], 'source_failure':attempt,
         'source_operation':source, 'settled_candidate_effects':effects,
         **({'length_scope':length_scope} if length_scope is not None else {}),
+        **({'support_kind_repair':support_proof} if support_proof is not None else {}),
         'completion_checks':'UNCHANGED', 'accepted_cursor':book['accepted_through_chapter']}
     def guard(uow):
         uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
@@ -196,6 +203,12 @@ def recover_review_frontier(authority, *, book_run_id, principal):
     return _recover_settled_output_frontier(authority, book_run_id=book_run_id, principal=principal,
         definition_name='chapter.review.evaluate', target_version='3.9.3', contract_version='chapter-review-output-repair.v1',
         failure_codes=('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED'), statuses=('FAILED_FINAL',))
+
+
+def recover_support_frontier(authority, *, book_run_id, principal):
+    return _recover_settled_output_frontier(authority, book_run_id=book_run_id, principal=principal,
+        definition_name='chapter.canon.propose_changes', target_version='3.9.8', contract_version='chapter-support-contract-repair.v1',
+        failure_codes=('CANON_GROUNDING_REEXTRACTION_REQUIRED',), statuses=('FAILED_RETRYABLE','CANCELLATION_REQUESTED'))
 
 
 def recover_length_frontier(authority, *, book_run_id, principal):

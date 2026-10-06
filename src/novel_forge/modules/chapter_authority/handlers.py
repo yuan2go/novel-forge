@@ -2012,6 +2012,7 @@ class _CanonProposalHandler:
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
                 "claims": grounded_claims(extraction.content),
+                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.definition_version)=="3.9.8" else {}),
             })
             if request.command.get("chapter_sampling"):
                 from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result

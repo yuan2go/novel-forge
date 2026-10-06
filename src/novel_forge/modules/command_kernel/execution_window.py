@@ -47,6 +47,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         cursor.execute("SELECT o.status,a.result->>'error_code',o.actor_id,o.definition_name FROM authority_operation o JOIN authority_attempt a USING(operation_id) JOIN authority_saga_step s USING(operation_id) WHERE o.operation_id=%s AND o.root_operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1", [predecessor_id,root_id])
         source = cursor.fetchone()
         corrections = {
+            ('chapter.canon.propose_changes','CANCELLATION_REQUESTED','CANON_GROUNDING_REEXTRACTION_REQUIRED'):('3.9.8','support_kind_contract','canon-support-kinds.v2'),
             ('chapter.draft.generate','CANCELLATION_REQUESTED','REALIZATION_EPISTEMIC_SCOPE_VIOLATION'):('3.9.2','scene_information_flow','scene-information-flow.v1'),
             ('chapter.review.evaluate','FAILED_FINAL','REVIEW_KNOWLEDGE_CHECK_INVALID'):('3.9.3','review_knowledge_scope','delivered-card-scope.v1'),
             ('chapter.review.evaluate','FAILED_FINAL','REVIEW_KNOWLEDGE_CHECK_REQUIRED'):('3.9.3','review_knowledge_scope','delivered-card-scope.v1'),
@@ -109,6 +110,31 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             if any(r[1] not in {'FAILED_FINAL','FAILED_RETRYABLE'} or r[2:]!=('SETTLED','ACCOUNT_ENTITLEMENT') for r in ancestor_effects):
                 raise KernelError('EXECUTION_WINDOW_PROTOCOL_UNSETTLED','Historical protocol predecessors must retain settled membership failures')
             protocol_effect_ids.extend(r[0] for r in ancestor_effects)
+        if source[3]=='chapter.canon.propose_changes' and target_version=='3.9.8':
+            from novel_forge.modules.canon_graph.support_recovery import support_kind_repair_evidence
+            cursor.execute('SELECT attempt_id FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1',[predecessor_id])
+            support_kind_repair_evidence(cursor,predecessor_id,cursor.fetchone()[0])
+            cursor.execute("""SELECT e.status,r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref'
+                FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id)
+                WHERE e.operation_id=%s""",[predecessor_id])
+            support_effects=cursor.fetchall()
+            if not support_effects or any(r[:3]!=('SUCCEEDED','SETTLED','ACCOUNT_ENTITLEMENT') or not r[3] for r in support_effects):
+                raise KernelError('EXECUTION_WINDOW_SUPPORT_UNSETTLED','Only exact authorized settled support reviews can precede a taxonomy successor')
+            cursor.execute("""WITH RECURSIVE lineage(operation_id) AS (
+                SELECT o.operation_id FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
+                WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' AND o.status='SUCCEEDED'
+                UNION ALL SELECT j.predecessor_operation_id FROM authority_saga_step_successor j
+                JOIN lineage l ON j.successor_operation_id=l.operation_id
+                WHERE j.contract_version='kernel-failed-step-successor.v1'
+                    AND j.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1')
+                SELECT e.external_effect_id FROM lineage l JOIN authority_saga_step_successor j ON j.predecessor_operation_id=l.operation_id
+                JOIN authority_external_effect e ON e.operation_id=l.operation_id JOIN authority_budget_reservation r USING(external_effect_id)
+                WHERE e.status IN ('FAILED_FINAL','FAILED_RETRYABLE') AND r.status='SETTLED' AND r.accounting_basis='ACCOUNT_ENTITLEMENT'
+                AND COALESCE(r.evidence->>'cost_authorization_ref','')<>''
+                AND EXISTS(SELECT 1 FROM jsonb_array_elements(j.policy_evidence->'known_failed_effects') b
+                    WHERE b->>0=e.external_effect_id AND b->>1=e.request_hash AND b->>2=e.status
+                        AND b->>3=r.status AND b->>4=r.accounting_basis AND b->>5=r.evidence->>'cost_authorization_ref')""",[root_id])
+            protocol_effect_ids.extend(r[0] for r in cursor.fetchall())
         cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id
             JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s
             AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED') AND e.external_effect_id IS DISTINCT FROM %s AND NOT (e.external_effect_id=ANY(%s::text[]))),
