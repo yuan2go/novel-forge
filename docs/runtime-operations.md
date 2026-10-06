@@ -3068,9 +3068,17 @@ policies and live leases remain ineligible. Run
 Formation integration module, plus `tests/unit/test_work_realization_contract.py`.
 
 A known settled `CHAPTER_LENGTH_REPAIR_INCOMPLETE` retry under creative v5 starts one
-`chapter-execution-window-renewal.v2` phase bound to its exact failed Attempt. This
+phase bound to its exact failed Attempt. Historical `chapter-execution-window-renewal.v2`
+records retain their Root-only window. The current v3 phase
 retains the original Root window duration and preserves any later existing deadline;
-it does not change an author deadline, the Attempt limit, receipts or accounting.
+it does not change an author deadline, the Provider retry limit, receipts or accounting.
 The native creation driver continues the remaining accounted Attempt automatically
 with the latest rejected output and measured Han count, including after restart.
 An exhausted Attempt limit still saves the checkpoint and reports the real failure.
+`chapter-execution-window-renewal.v3` atomically retains before/after Root and retry
+child windows. A recorded pre-dispatch timeout can authorize at most one additional
+control recovery Attempt, bound to that exact terminal Attempt, with no Effect and
+an unused original Provider retry. It preserves the original maximum Provider calls,
+terminal history and accounting; author deadlines, strict mode and unknown effects
+remain ineligible. Verify an expired child and an already recorded no-send timeout
+through the native length-scope integration before resuming such a checkpoint.

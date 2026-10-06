@@ -74,7 +74,7 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
                     events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
-                    if error.code == "CHAPTER_LENGTH_REPAIR_INCOMPLETE" and recover_length_retry_phase(
+                    if error.code in {"CHAPTER_LENGTH_REPAIR_INCOMPLETE", "OPERATION_BUSINESS_TIMEOUT"} and recover_length_retry_phase(
                         composition.authority, book_run_id=book_run_id, principal=composition.principal
                     ):
                         events({"kind": "CHAPTER_LENGTH_RETRY_PHASE", "operation_id": active})

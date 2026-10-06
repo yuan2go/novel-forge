@@ -1270,8 +1270,27 @@ def test_native_formation_generates_foundation_from_author_brief(
                     assert first['continued'] and not first['replayed']
                     replay = original_window(url, **kwargs, clock=lambda: first['deadline']+timedelta(seconds=1))
                     assert replay['replayed'] and replay['deadline'] == first['deadline'].isoformat()
+                    if kwargs.get('start_repair_phase'):
+                        with AuthorityUnitOfWork(url) as uow:
+                            uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s',[kwargs['predecessor_id']])
+                            assert uow.cursor.fetchone()[0] > frozen_scene_deadline+timedelta(seconds=1)
                     return first
                 monkeypatch.setattr(execution_window,'continue_candidate_execution_window',expired_window)
+                if length_scope_recovery:
+                    from novel_forge.modules.chapter_authority import scheduler as scheduler_module
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    normal_probe = scheduler_module.probe_operation_execution
+                    no_send_timeout = False
+                    def controlled_no_send_timeout(url, *, operation_id, project_id):
+                        nonlocal no_send_timeout
+                        with AuthorityUnitOfWork(url) as uow:
+                            uow.cursor.execute("SELECT o.definition_version,a.attempt_number FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.operation_id=%s AND a.status='RUNNING'",[operation_id])
+                            current = uow.cursor.fetchone()
+                        if current == ('3.9.4',2) and not no_send_timeout:
+                            no_send_timeout = True
+                            raise KernelError('OPERATION_BUSINESS_TIMEOUT','Controlled pre-dispatch child deadline failure; no Provider call')
+                        return normal_probe(url,operation_id=operation_id,project_id=project_id)
+                    monkeypatch.setattr(scheduler_module,'probe_operation_execution',controlled_no_send_timeout)
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
@@ -1302,6 +1321,9 @@ def test_native_formation_generates_foundation_from_author_brief(
                         assert review_scope_calls == 2
                     if length_scope_recovery:
                         assert length_revision_calls == 3
+                        assert no_send_timeout
+                        uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_version='3.9.4' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
+                        assert uow.cursor.fetchall() == [(1,'FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'),(2,'FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'),(3,'SUCCEEDED',None)]
             if memo_timeout_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])

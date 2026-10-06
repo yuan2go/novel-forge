@@ -219,15 +219,24 @@ def recover_length_retry_phase(authority, *, book_run_id, principal):
         template = selected_template(admission['policy_snapshot']['policy'],book['book_id']) if admission else None
         if not template or template.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
             return False
-        uow.cursor.execute("""SELECT o.operation_id,o.actor_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int
-            FROM authority_operation o JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
+        uow.cursor.execute("""SELECT o.operation_id,o.actor_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int,a.result->>'error_code'
+            FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
+            JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.revision.apply'
             AND o.definition_version='3.9.4' AND o.status='FAILED_RETRYABLE'
-            AND a.result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE'
+            AND a.result->>'error_code' IN ('CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT')
             ORDER BY a.attempt_number DESC LIMIT 1""",[request['chapter_root_operation_id'],book['project_id']])
         row = uow.cursor.fetchone()
-        if not row or row[2]>=row[3]:
+        if not row or row[2]>row[3] or (row[2]==row[3] and row[4]!='OPERATION_BUSINESS_TIMEOUT'):
             return False
+        if row[4] == 'OPERATION_BUSINESS_TIMEOUT':
+            uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND attempt_number=%s AND result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE'),
+                EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_attempt a ON a.operation_id=e.operation_id AND a.attempt_number=%s
+                    WHERE e.operation_id=%s AND e.request_payload #>> '{_production_execution,attempt_id}'=a.attempt_id),
+                (SELECT count(*) FROM authority_attempt WHERE operation_id=%s AND result->>'error_code'='OPERATION_BUSINESS_TIMEOUT')""",[row[0],row[2]-1,row[2],row[0],row[0]])
+            known_length,sent,timeouts = uow.cursor.fetchone()
+            if not known_length or sent or timeouts != 1:
+                return False
         if row[1] != principal.principal_id:
             raise KernelError('CHAPTER_LENGTH_RETRY_ACTOR_INVALID','Retry requires the original actor')
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window

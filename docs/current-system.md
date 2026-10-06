@@ -2110,3 +2110,8 @@ Known settled length retries retain the latest returned candidate, its diagnosti
 host-measured count. Creative v5 may start one bounded execution phase for the exact
 failed Attempt and continue its remaining retry automatically from the native creation
 entry point; per-call timeouts, retry exhaustion and no-progress checks remain active.
+The bounded phase renews the retrying child's derived window as well as its Root.
+An already recorded pre-dispatch child timeout may receive one separately journaled
+control recovery Attempt under v5, only with no Effect for that Attempt and a remaining
+original Provider retry. Terminal Attempts remain immutable; Provider retry capacity
+does not increase. Repeated timeouts or dispatched failures cannot replenish capacity.
