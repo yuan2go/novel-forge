@@ -3082,3 +3082,9 @@ an unused original Provider retry. It preserves the original maximum Provider ca
 terminal history and accounting; author deadlines, strict mode and unknown effects
 remain ineligible. Verify an expired child and an already recorded no-send timeout
 through the native length-scope integration before resuming such a checkpoint.
+For an unaccepted Canon extraction stopped before dispatch by rendered context
+capacity, creative v5 may renew its original bounded execution window for the
+remaining Attempt when the frozen failure has no Effect. The old inline Schema and
+route failure are retained; Prompt v10/v24 receives a new Attempt snapshot and full
+physical admission. Schema factoring restores the exact original constraints and
+does not authorize a larger model window or additional Provider retry capacity.

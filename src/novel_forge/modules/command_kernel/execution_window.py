@@ -53,6 +53,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.revision.apply','CANCELLATION_REQUESTED','REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
+            ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
         correction = corrections.get((source[3],source[0],source[1])) if source else None
         if source and source[1] == 'OPERATION_BUSINESS_TIMEOUT' and not start_repair_phase:
@@ -60,7 +61,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         if not correction or source[2] != principal.principal_id or correction[0] != target_version or has_candidate_domain_outputs(cursor,predecessor_id):
             raise KernelError('EXECUTION_WINDOW_CANDIDATE_INVALID','Only the recorded failed contract and exact correction can authorize a window')
         target = uow.repositories.definitions.get(source[3],target_version)
-        if not target or target['policy'].get(correction[1]) != correction[2]:
+        if not target or (correction[1] and target['policy'].get(correction[1]) != correction[2]):
             raise KernelError('EXECUTION_WINDOW_TARGET_INVALID','The unexecuted successor requires the declared correction')
         cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED')), EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())", [root_id,root_id])
         if any(cursor.fetchone()):
@@ -68,15 +69,27 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         key_parts = [root_id,predecessor_id,target_version,admission['policy_snapshot']['policy_hash']]
         child = None
         control_recovery_limit = None
+        canon_capacity = bool(source[3] == 'chapter.canon.extract' and source[1] == 'PROVIDER_ROUTING_BLOCKED')
+        if canon_capacity and not start_repair_phase:
+            raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Canon capacity recovery requires its explicit bounded phase')
         if start_repair_phase:
-            if source[0] != 'FAILED_RETRYABLE' or source[1] not in {'CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT'}:
+            if source[0] != 'FAILED_RETRYABLE' or (not canon_capacity and source[1] not in {'CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT'}):
                 raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Only a known settled bounded length retry may start a new phase')
             cursor.execute('SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s FOR UPDATE',[predecessor_id])
             child,child_deadline = cursor.fetchone()
-            if child['definition_version'] != '3.9.4' or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
+            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.4') or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
                 raise KernelError('EXECUTION_PHASE_CHILD_INVALID','Only the exact derived length retry window can continue')
             cursor.execute("SELECT a.attempt_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int FROM authority_attempt a JOIN authority_operation o USING(operation_id) WHERE o.operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1",[predecessor_id])
             failed_attempt,number,maximum = cursor.fetchone()
+            if canon_capacity:
+                cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
+                    EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset a ON a.asset_id=oa.asset_id JOIN authority_asset_version v USING(asset_version_id)
+                        WHERE oa.operation_id=%s AND a.asset_type='routing_decision' AND v.content #>> '{candidates,0,rejected_reasons}' LIKE '%%CONTEXT_CAPACITY_EXCEEDED%%'),
+                    EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset a ON a.asset_id=oa.asset_id JOIN authority_asset_version v USING(asset_version_id)
+                        WHERE oa.operation_id=%s AND a.asset_type='capability_materialization_manifest' AND v.content #>> '{contract,output_schema,ref}' IN ('schema:chapter-provider-output:canon_extraction:v22','schema:chapter-provider-output:canon_extraction:v23'))""",[predecessor_id,predecessor_id,predecessor_id])
+                sent,capacity,inline_schema = cursor.fetchone()
+                if sent or not capacity or not inline_schema:
+                    raise KernelError('EXECUTION_PHASE_CAPACITY_PROOF_REQUIRED','Only exact no-send rendered-capacity failures can continue')
             if source[1] == 'OPERATION_BUSINESS_TIMEOUT':
                 cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND request_payload #>> '{_production_execution,attempt_id}'=%s),
                     EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND attempt_number=%s AND status='FAILED_RETRYABLE' AND result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE'),
@@ -88,7 +101,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                 control_recovery_limit = maximum+1
             elif number>=maximum:
                 raise KernelError('EXECUTION_PHASE_RETRY_EXHAUSTED','A new execution phase cannot reset retry exhaustion')
-            key_parts.extend(['chapter-execution-window-renewal.v3',failed_attempt])
+            key_parts.extend(['chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3',failed_attempt])
         key = hashlib.sha256(json.dumps(key_parts,sort_keys=True).encode()).hexdigest()
         cursor.execute('SELECT payload FROM audit_log WHERE operation_id=%s AND action=%s AND payload->>\'continuation_key\'=%s', [root_id,EVENT,key])
         previous = cursor.fetchone()
@@ -112,7 +125,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         if cursor.rowcount != 1:
             raise KernelError('EXECUTION_WINDOW_VERSION_CONFLICT','Reload the current Root fence')
         _record(uow.repositories.operation_graph,GraphCommandContext(root['project_id'],principal.principal_id,root['trace_id'],root['correlation_id'],predecessor_id), root_id,EVENT,
-                {'contract_version':'chapter-execution-window-renewal.v3' if start_repair_phase else 'chapter-execution-window-renewal.v1','continuation_key':key,'source_root':root,
+                {'contract_version':('chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3') if start_repair_phase else 'chapter-execution-window-renewal.v1','continuation_key':key,'source_root':root,
                  'predecessor_operation_id':predecessor_id,'target_definition_version':target_version,
                  'policy_admission':admission,'original_deadline':deadline.isoformat(),'new_deadline':renewed.isoformat(),
                  **({'source_child':child,'continued_child':child_after[0],'failed_attempt_id':failed_attempt,

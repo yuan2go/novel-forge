@@ -2119,3 +2119,8 @@ Book reconciliation records a mutation only when the referenced Chapter status o
 Book state changes. Its v2 key binds the expected Book version and observed child
 Operation/Saga versions; a recovery window or Saga tick cannot reuse a historical
 status-only key with a different request. Prior reconciliation receipts remain intact.
+Chapter Prompt v10 / Pack 2.18 uses `canon-provider-shared-types.v1` for the Canon
+output Schema. Exact repeated Schema fragments become local `$defs` references;
+expansion restores the original Schema without removing fields, bounds or gates.
+Canon Provider v24 retains v23 domain semantics. Historical Prompt v9/v23 remains
+unchanged. Complete rendered-request admission still owns the physical capacity check.

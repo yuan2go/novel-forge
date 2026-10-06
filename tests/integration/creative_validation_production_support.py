@@ -154,7 +154,8 @@ else:
                 if isinstance(value, list):
                     return [project_schema(item, schema.get("items", {})) for item in value]
                 return value
-            result = project_schema(result, payload.output_schema)
+            from novel_forge.modules.chapter_authority.provider_output_contracts import inline_shared_canon_schema
+            result = project_schema(result, inline_shared_canon_schema(payload.output_schema))
         if stage in {"review", "rereview"}:
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):

@@ -243,3 +243,36 @@ def recover_length_retry_phase(authority, *, book_run_id, principal):
     continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
         predecessor_id=row[0],target_version='3.9.4',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
     return True
+
+
+def recover_canon_capacity_phase(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    principal.require('book.authority.execute',book['project_id'])
+    principal.require('chapter.authority.execute',book['project_id'])
+    if not book.get('active_chapter_request_id'):
+        return False
+    request = authority.require_chapter_request(book['active_chapter_request_id'])
+    if request['chapter_number'] != book['accepted_through_chapter']+1:
+        return False
+    from novel_forge.modules.production_execution.execution_template import selected_template
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        admission = selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id'])
+        template = selected_template(admission['policy_snapshot']['policy'],book['book_id']) if admission else None
+        if not template or template.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
+            return False
+        uow.cursor.execute("""SELECT o.operation_id FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
+            JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.actor_id=%s AND o.definition_name='chapter.canon.extract'
+            AND o.definition_version='3.9.0' AND o.status='FAILED_RETRYABLE' AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED'
+            AND a.attempt_number<(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int
+            AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=o.operation_id)
+            AND EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset x ON x.asset_id=oa.asset_id
+                JOIN authority_asset_version v USING(asset_version_id) WHERE oa.operation_id=o.operation_id AND x.asset_type='capability_materialization_manifest'
+                AND v.content #>> '{contract,output_schema,ref}' IN ('schema:chapter-provider-output:canon_extraction:v22','schema:chapter-provider-output:canon_extraction:v23'))""",[request['chapter_root_operation_id'],book['project_id'],principal.principal_id])
+        row = uow.cursor.fetchone()
+        if not row:
+            return False
+    from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
+    continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
+        predecessor_id=row[0],target_version='3.9.0',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
+    return True

@@ -1278,7 +1278,28 @@ def test_native_formation_generates_foundation_from_author_brief(
                 monkeypatch.setattr(execution_window,'continue_candidate_execution_window',expired_window)
                 if length_scope_recovery:
                     from novel_forge.modules.chapter_authority import scheduler as scheduler_module
+                    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+                    from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
                     from novel_forge.modules.command_kernel.errors import KernelError
+                    normal_canon_contract = PostgresChapterExecutionContractBinder._provider_output_contract
+                    normal_route = ProductionProviderRouter.select
+                    canon_capacity_rejected = False
+                    def inline_first_canon(**kwargs):
+                        if kwargs['stage']=='canon_extraction' and not canon_capacity_rejected:
+                            kwargs['prompt_contract_version']='v9'
+                        return normal_canon_contract(**kwargs)
+                    def controlled_capacity_route(router, base, **kwargs):
+                        nonlocal canon_capacity_rejected
+                        candidates = router.candidates
+                        if kwargs['task_type']=='canon_extraction' and not canon_capacity_rejected:
+                            canon_capacity_rejected = True
+                            router.candidates = tuple(replace(c,context_limit=kwargs['input_tokens']+kwargs['output_tokens']-1) for c in candidates)
+                        try:
+                            return normal_route(router,base,**kwargs)
+                        finally:
+                            router.candidates=candidates
+                    monkeypatch.setattr(PostgresChapterExecutionContractBinder,'_provider_output_contract',staticmethod(inline_first_canon))
+                    monkeypatch.setattr(ProductionProviderRouter,'select',controlled_capacity_route)
                     normal_probe = scheduler_module.probe_operation_execution
                     no_send_timeout = False
                     def controlled_no_send_timeout(url, *, operation_id, project_id):
@@ -1322,8 +1343,11 @@ def test_native_formation_generates_foundation_from_author_brief(
                     if length_scope_recovery:
                         assert length_revision_calls == 3
                         assert no_send_timeout
+                        assert canon_capacity_rejected
                         uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_version='3.9.4' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
                         assert uow.cursor.fetchall() == [(1,'FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'),(2,'FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'),(3,'SUCCEEDED',None)]
+                        uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
+                        assert uow.cursor.fetchall() == [(1,'FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'),(2,'SUCCEEDED',None)]
             if memo_timeout_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])

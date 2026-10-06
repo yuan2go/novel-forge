@@ -11,6 +11,64 @@ from novel_forge.modules.narrative_state.contracts import (
 )
 
 _SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
+
+
+def shared_canon_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    counts: dict[str, int] = {}
+    def identity(value):
+        return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False)
+    def collect(value):
+        if isinstance(value,dict):
+            if any(k in value for k in ('$id','$anchor','$ref','$defs')):
+                raise KernelError('CANON_SHARED_SCHEMA_SCOPE_INVALID','Only a complete inline Schema can receive shared local types')
+            if len(identity(value))>=96 and (isinstance(value.get('type'),(str,list)) or any(isinstance(value.get(k),list) for k in ('anyOf','oneOf','allOf'))):
+                key=identity(value)
+                counts[key]=counts.get(key,0)+1
+            for item in value.values():
+                collect(item)
+        elif isinstance(value,list):
+            for item in value:
+                collect(item)
+    collect(schema)
+    names = {key:"s"+str(i) for i,key in enumerate(sorted(k for k,n in counts.items() if n>1))}
+    definitions = {}
+    def project(value, *, inline=False):
+        if isinstance(value,dict):
+            key=identity(value)
+            if not inline and counts.get(key,0)>1:
+                name=names[key]
+                if name not in definitions:
+                    definitions[name]=project(value,inline=True)
+                return {'$ref':'#/$defs/'+name}
+            return {k:project(v) for k,v in value.items()}
+        if isinstance(value,list):
+            return [project(v) for v in value]
+        return value
+    result=project(schema,inline=True)
+    if definitions:
+        result['$defs']=definitions
+    return result
+
+
+def inline_shared_canon_schema(schema: Mapping[str, Any]) -> dict[str, Any]:
+    definitions = schema.get('$defs')
+    if not isinstance(definitions,dict):
+        return dict(schema)
+    def expand(value, active=()):
+        if isinstance(value,dict):
+            if '$ref' in value:
+                reference=value['$ref']
+                if set(value)!={'$ref'} or not isinstance(reference,str) or not reference.startswith('#/$defs/'):
+                    raise ValueError('only exact local shared Schema references are permitted')
+                name=reference[len('#/$defs/'):]
+                if name not in definitions or name in active:
+                    raise ValueError('missing or recursive shared Schema definition')
+                return expand(definitions[name],(*active,name))
+            return {k:expand(v,active) for k,v in value.items() if k!='$defs'}
+        if isinstance(value,list):
+            return [expand(v,active) for v in value]
+        return value
+    return expand(dict(schema))
 _QUALITY_STAGES = {
     "quality_structural",
     "quality_commercial",
@@ -1039,7 +1097,7 @@ def validate_chapter_provider_output_against_schema(
 ) -> dict[str, Any]:
 
     try:
-        _validate(dict(schema), value, path="$", enforce_dialect=True)
+        _validate(inline_shared_canon_schema(schema), value, path="$", enforce_dialect=True)
     except ValueError as exc:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
@@ -1073,7 +1131,7 @@ def validate_chapter_provider_output_semantics(
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
-    work_requirements = output_schema_ref.endswith((":v22", ":v23"))
+    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24"))
     if stage == "canon_extraction":
         if output_schema_ref:
             if output_schema_ref not in {
@@ -1083,13 +1141,14 @@ def validate_chapter_provider_output_semantics(
                 "schema:chapter-provider-output:canon_extraction:v21",
                 "schema:chapter-provider-output:canon_extraction:v22",
                 "schema:chapter-provider-output:canon_extraction:v23",
+                "schema:chapter-provider-output:canon_extraction:v24",
             }:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED",
                     "unknown frozen Canon output contract",
                 )
             host_bind_known_metadata = output_schema_ref.endswith(
-                (":v20", ":v21", ":v22", ":v23")
+                (":v20", ":v21", ":v22", ":v23", ":v24")
             )
         original_realization = {item.get("planned_event_id"): item for item in normalized.get("realization_evidence", [])}
         normalized = _without_null_object_properties(normalized)
