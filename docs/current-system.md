@@ -2208,3 +2208,22 @@ World baseline requires a source-bound assessment against the frozen Book Design
 qualified Foundation World Bible, not a prose change or invented accepted history.
 Revalidation applies only to the unaccepted frontier and appends successor records;
 completed content, previous assessments and usage remain immutable.
+
+Bounded Quality edit range interpretation is CONFIGURABLE_POLICY. The historical
+intersection interpretation requires each named diagnosis to contain an edit; it can
+reject a valid combined fix for overlapping findings. The explicit successor uses the
+connected union of named frozen ranges, requiring every named finding to intersect
+the edit and every changed code point to remain covered. Slot boundaries, source
+hashes, preserved facts and independent re-review remain mandatory. A terminal Root
+requires a new governed continuation; its status and Saga history cannot be reset.
+Template v7 explicitly enables `RETAIN_SETTLED_QUALITY_RANGE_RESULT`. Kernel's
+`kernel-retained-graph-continuation.v1` admits a new Root/Saga and references the
+completed pre-publication steps without copying execution state. Book atomically
+links a successor ChapterRequest at the unaccepted frontier. Revision 3.9.17 is a
+fenced pure derivation from the exact settled membership receipt; ordinary Revision
+3.9.16 uses named-range union only for internal disposition v2 tasks. Best Candidate
+3.9.18 compares those internal blockers while retaining strict reports. PostgreSQL
+migration 0166 stores immutable continuation and retained-step journals. An unrelated
+failure, live lease, unknown effect, changed authorization, changed request or accepted
+chapter cannot use this recovery. Independent re-review and downstream acceptance
+still decide whether the derived candidate can advance production.

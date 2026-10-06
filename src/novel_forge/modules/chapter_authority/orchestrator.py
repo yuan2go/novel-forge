@@ -687,6 +687,9 @@ def _command(
     definition_version: str = CHAPTER_SLICE_DEFINITION_VERSION,
     input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if definition_name == ChapterNode.BEST_CANDIDATE.definition_name and definition_version == "3.9.0":
+        from .definitions import CHAPTER_BEST_DEFINITION_VERSION
+        definition_version = CHAPTER_BEST_DEFINITION_VERSION
     if definition_name == ChapterNode.DRAFT.definition_name and definition_version == "3.9.0" and not (request.preparation_report or {}).get("author_draft_adoption"):
         from .definitions import CHAPTER_DRAFT_DEFINITION_VERSION
         definition_version = CHAPTER_DRAFT_DEFINITION_VERSION

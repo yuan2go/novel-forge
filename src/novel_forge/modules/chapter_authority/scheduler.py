@@ -725,9 +725,6 @@ class ChapterAuthorityScheduler:
         if node is ChapterNode.QUALITY_LONGFORM and self.registry.model_effects_required:
             from novel_forge.modules.chapter_quality_authority.foundation_context import world_input_bindings
             inputs.extend(world_input_bindings(self.database_url, project_id=request.project_id, root_operation_id=root['operation_id']))
-        if node is ChapterNode.QUALITY_LONGFORM and self.registry.model_effects_required:
-            from novel_forge.modules.chapter_quality_authority.foundation_context import world_input_bindings
-            inputs.extend(world_input_bindings(self.database_url, project_id=request.project_id, root_operation_id=root['operation_id']))
         inputs = list(
             {str(item["asset_version_id"]): dict(item) for item in inputs}.values()
         )
@@ -746,9 +743,7 @@ class ChapterAuthorityScheduler:
         if dependency_operation_ids is not None:
             dependency_ids = list(dependency_operation_ids)
         previous_id = dependency_ids[-1] if dependency_ids else root["operation_id"]
-        admitted = admit_command(
-            self.database_url,
-            _command(
+        command = _command(
                 request,
                 definition_name=node.definition_name,
                 idempotency_key=f"{root_key}:{node.value}{idempotency_suffix}",
@@ -758,9 +753,15 @@ class ChapterAuthorityScheduler:
                 causation_operation_id=previous_id,
                 definition_version=root["definition_version"],
                 input_overrides=effective_overrides,
-            ),
-            context=admission,
-        )
+            )
+        retained = (request.preparation_report or {}).get("retained_graph_continuation")
+        if retained and node is ChapterNode.REVISION and idempotency_suffix == ":quality-correction:1":
+            command["definition_version"] = "3.9.17"
+            from .definitions import retained_revision_definition
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.repositories.definitions.register(retained_revision_definition(application_build_id=admission.application_build_id,commit_sha=admission.commit_sha))
+                uow.commit()
+        admitted = admit_command(self.database_url, command, context=admission)
         operation_id = str(admitted["operation_id"])
         graph_context = GraphCommandContext(
             project_id=root["project_id"],
@@ -990,19 +991,21 @@ class ChapterAuthorityScheduler:
                          1
                        )
                 FROM authority_operation
-                WHERE root_operation_id=%s AND project_id=%s
+                WHERE (root_operation_id=%s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)) AND project_id=%s
                   AND definition_name=%s
-                  AND operation_id IN (SELECT operation_id FROM authority_saga_step)
+                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step))
                   AND (idempotency_key=%s
                     OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE contract_version='kernel-failed-step-successor.v1')
-                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE contract_version='kernel-derived-step-successor.v1'))
+                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE contract_version='kernel-derived-step-successor.v1') OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s))
                 LIMIT 1
                 """,
                 [
                     root_operation_id,
+                    root_operation_id,
                     project_id,
                     node.definition_name,
                     idempotency_key,
+                    root_operation_id,
                 ],
             )
             row = uow.cursor.fetchone()
@@ -1303,6 +1306,10 @@ class ChapterAuthorityScheduler:
     ) -> str:
         operation_id = str(operation["operation_id"])
         project_id = request.project_id
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT definition_snapshot->'external_capabilities' FROM authority_operation WHERE operation_id=%s AND project_id=%s",[operation_id,project_id])
+            frozen_capabilities=uow.cursor.fetchone()[0]
+        requires_model_commit=any(str(capability).startswith('model.') for capability in frozen_capabilities)
         active = self._active_attempt(operation_id, project_id)
         recovery_mode = "fresh_attempt"
         if operation["status"] in {"READY", "FAILED_RETRYABLE"}:
@@ -1433,6 +1440,7 @@ class ChapterAuthorityScheduler:
                 if (
                     self.agent_binding_recorder is not None
                     and node.value in MODEL_CAPABILITY_STAGES
+                    and requires_model_commit
                 ):
                     self.agent_binding_recorder.finalize_domain_commit(
                         project_id=project_id,
@@ -1591,17 +1599,20 @@ class ChapterAuthorityScheduler:
                            WHERE attempt.operation_id=authority_operation.operation_id
                              AND attempt.status='FAILED_RETRYABLE')
                 FROM authority_operation
-                WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
-                  AND operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s)
-                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s))
+                WHERE (root_operation_id = %s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)) AND operation_id <> %s AND project_id = %s
+                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s))
+                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s))
                 ORDER BY created_at, operation_id
                 """,
                 [
                     root_operation_id,
                     root_operation_id,
+                    root_operation_id,
                     project_id,
                     saga_row[0],
+                    saga_row[0],
                     initial_child_keys,
+                    saga_row[0],
                     saga_row[0],
                     saga_row[0],
                 ],

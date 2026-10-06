@@ -21,7 +21,10 @@ def build_chapter_slice_evidence_manifest(
             SELECT operation_id, definition_name, definition_version, status,
                    version, trace_id, correlation_id, input_asset_snapshot
             FROM authority_operation
-            WHERE project_id = %s AND root_operation_id = %s
+            WHERE project_id = %s AND root_operation_id IN (WITH RECURSIVE lineage(root_id) AS (
+                SELECT %s::text UNION ALL SELECT j.source_root_operation_id FROM authority_graph_continuation j
+                JOIN lineage l ON j.successor_root_operation_id=l.root_id WHERE j.contract_version='kernel-retained-graph-continuation.v1'
+            ) SELECT root_id FROM lineage)
             ORDER BY created_at, operation_id
             """,
             [project_id, root_operation_id],

@@ -60,10 +60,14 @@ def add_operation_dependency(
                 lock=True,
             )
             if operation["root_operation_id"] != dependency["root_operation_id"]:
-                raise KernelError(
-                    "DEPENDENCY_ROOT_CONFLICT",
-                    "dependency operations do not belong to the same root graph",
-                )
+                from .retained_graph import permits_retained_dependency
+                if permits_retained_dependency(uow.cursor, operation["root_operation_id"], depends_on_operation_id):
+                    pass
+                else:
+                    raise KernelError(
+                        "DEPENDENCY_ROOT_CONFLICT",
+                        "dependency operations do not belong to the same root graph",
+                    )
             created = repository.add_dependency(
                 operation_id,
                 depends_on_operation_id,

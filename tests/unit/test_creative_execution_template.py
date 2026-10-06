@@ -224,3 +224,20 @@ def test_v6_canon_validation_is_explicit_preserves_v5_and_strict():
                     {k:v for k,v in value.items() if k!='canon_validation_contract'}):
         with pytest.raises(KernelError):
             validate_templates({'execution_templates':[invalid]})
+
+
+def test_retained_graph_policy_is_explicit_and_does_not_change_historical_schema():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    value=template(version='creative-execution-template.v7',world_future_preparation='DISABLED',repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',canon_validation_contract='grounded-canon-validation.v2',chapter_graph_recovery='RETAIN_SETTLED_QUALITY_RANGE_RESULT')
+    validate_templates({'execution_templates':[value]})
+    current=owned_policy_definition(owner='PROVIDER_ROUTING',content={'execution_templates':[value]},application_build_id='unit',commit_sha='a'*40)
+    assert current['definition_version']=='1.12.0'
+    old={k:v for k,v in value.items() if k!='chapter_graph_recovery'}
+    old['version']='creative-execution-template.v6'
+    legacy=owned_policy_definition(owner='PROVIDER_ROUTING',content={'execution_templates':[old]},application_build_id='unit',commit_sha='a'*40)
+    assert legacy['definition_version']=='1.11.0'
+    schema=legacy['command_schema']['properties']['policy']['properties']['execution_templates']['items']
+    assert 'chapter_graph_recovery' not in schema['properties'] and 'creative-execution-template.v7' not in schema['properties']['version']['enum']
+    for invalid in ({**value,'version':'creative-execution-template.v6'},{**value,'mode':'STRICT_PRODUCTION','require_literary_qualification':True,'canon_validation_contract':None}):
+        with pytest.raises(KernelError):
+            validate_templates({'execution_templates':[invalid]})

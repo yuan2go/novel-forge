@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0165_derived_step_revalidation",
+  "migration_head": "20261007_0166_retained_graph_continuation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -4964,6 +4964,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/service.py",
           "symbol": "admit_command"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/retained_graph.py",
+          "symbol": "continue_graph_in_uow"
         }
       ],
       "domain_symbols": [
@@ -7059,6 +7063,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/execution_recovery.py",
           "symbol": "recover_timeout"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/retained_recovery.py",
+          "symbol": "recover_retained_quality"
         }
       ],
       "domain_symbols": [
@@ -7530,6 +7538,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/author_editor.py",
           "symbol": "ChapterAuthorEditingApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/quality_revision_recovery.py",
+          "symbol": "materialize_retained_revision"
         }
       ],
       "domain_symbols": [
@@ -8862,6 +8874,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_derived_step_revalidation.py",
           "locator": "MIGRATION_ID = '20261007_0165_derived_step_revalidation'",
           "id": "20261007_0165_derived_step_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_retained_graph_continuation.py",
+          "locator": "MIGRATION_ID = '20261007_0166_retained_graph_continuation'",
+          "id": "20261007_0166_retained_graph_continuation"
         }
       ],
       "external_effects": {
@@ -9370,7 +9387,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:5bc6ee02444af6e47ec502fc36acee9b992f1d85bad6d49cda44ca715d94ce2a"
+    "implementation_tree_sha": "sha256:3ad7e71cf1dd5ce8f763f1cccc9f0c8d8aac092c721369b7673faf370184578b"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9815,6 +9832,30 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
           "symbol": "PlanningWorldPreparation.prepare"
+        }
+      ]
+    },
+    {
+      "id": "creative-retained-quality-range-continuation",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Explicit trusted Template v7 permits an unaccepted Book child continuation for one reproduced legacy overlap diagnostic. Kernel references completed steps, preserves terminal history and settled membership identity, and a fenced pure Revision derives a candidate from the original receipt. Independent re-review, Canon, Quality and atomic Book acceptance remain required; strict policy and unknown external outcomes cannot use this path.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/retained_graph.py",
+          "symbol": "continue_graph_in_uow"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/retained_recovery.py",
+          "symbol": "recover_retained_quality"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/quality_revision_recovery.py",
+          "symbol": "materialize_retained_revision"
+        },
+        {
+          "path": "tests/unit/test_retained_graph_authority.py",
+          "symbol": "test_terminal_graph_recovery_cannot_reopen_or_borrow_other_authorities"
         }
       ]
     }

@@ -527,3 +527,36 @@ def test_native_review_preflight_and_handler_keep_exact_incumbent_and_sample_tar
     assert payload['review'] == selected_review
     assert payload['target_candidate_asset_version_id'] == target_id
     assert payload['draft'] == payload['revision'] == target
+
+
+def quality_ranges_fixture():
+    text='0123456789abcdefghij'
+    diagnoses=[{'code':'wide','status':'OPEN','severity':'blocking','qualification':'ELIGIBLE','evidence_locator':{'start':3,'end':11,'quote':text[3:11]}},
+               {'code':'overlap','status':'OPEN','severity':'blocking','qualification':'ELIGIBLE','evidence_locator':{'start':3,'end':7,'quote':text[3:7]}}]
+    return {'text':text},{'target_text_hash':prose_hash(text),'issues':diagnoses}, {'edits':[{'quote':text[3:11],'replacement':'X','issue_codes':['wide','overlap']}]}
+
+
+def test_explicit_union_accepts_connected_named_scope_without_changing_historical_policy():
+    draft,review,result=quality_ranges_fixture()
+    retained=deepcopy((draft,review,result))
+    with pytest.raises(KernelError,match='REVISION_TARGETED_EDIT_INVALID'):
+        apply_targeted_edits(draft=draft,review=review,result=result)
+    actual=apply_targeted_edits(draft=draft,review=review,result=result,range_policy='NAMED_DIAGNOSIS_UNION_V1')
+    assert actual['repaired_text']=='012Xbcdefghij'
+    assert (draft,review,result)==retained
+
+
+@pytest.mark.parametrize('case',['outside','gap','unrelated','unknown'])
+def test_union_cannot_expand_scope_or_claim_an_unrelated_finding(case):
+    draft,review,result=quality_ranges_fixture()
+    if case=='outside':
+        result['edits'][0]['quote']=draft['text'][2:11]
+    elif case=='gap':
+        review['issues'][1]['evidence_locator']={'start':12,'end':16,'quote':draft['text'][12:16]}
+        result['edits'][0]['quote']=draft['text'][3:16]
+    elif case=='unrelated':
+        review['issues'][1]['evidence_locator']={'start':12,'end':16,'quote':draft['text'][12:16]}
+    else:
+        result['edits'][0]['issue_codes'].append('unfrozen')
+    with pytest.raises(KernelError):
+        apply_targeted_edits(draft=draft,review=review,result=result,range_policy='NAMED_DIAGNOSIS_UNION_V1')

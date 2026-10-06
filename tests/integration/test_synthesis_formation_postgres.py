@@ -1197,6 +1197,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 monkeypatch.setattr(scene_definitions, 'CHAPTER_REVISION_DEFINITION_VERSION', saved_revision_version)
                 monkeypatch.setattr(Path, 'read_text', normal_scene_read)
                 if length_scope_recovery:
+                    monkeypatch.setattr(scene_definitions, "CHAPTER_REVISION_DEFINITION_VERSION", "3.9.4")
                     def old_canon_pack(path, *args, **kwargs):
                         value = normal_scene_read(path, *args, **kwargs)
                         if path.name != 'chapter_generation_pack.json':
@@ -1213,6 +1214,9 @@ def test_native_formation_generates_foundation_from_author_brief(
                         support_definition=next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-canon-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.propose_changes')
                         support_node=next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.propose_changes')
                         support_node.update(operation_definition_ref='chapter.canon.propose_changes@3.9.0',operation_definition_hash=definition_hash(support_definition))
+                        revision_definition=next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-revision-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.revision.apply')
+                        revision_node=next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.revision.apply')
+                        revision_node.update(operation_definition_ref='chapter.revision.apply@3.9.4',operation_definition_hash=definition_hash(revision_definition))
                         return json.dumps(value)
                     monkeypatch.setattr(Path,'read_text',old_canon_pack)
                 execution.close()
@@ -1379,6 +1383,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 monkeypatch.setattr(candidate_repair,'recover_canon_capacity_frontier',original_canon_recovery)
                 execution.close()
                 harness.release_sha = 'd'*40
+                monkeypatch.setattr(scene_definitions, 'CHAPTER_REVISION_DEFINITION_VERSION', saved_revision_version)
                 hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
                 harness.pack_id += '.canon-successor'
                 chapter_pack.pack_id += '.canon-successor'

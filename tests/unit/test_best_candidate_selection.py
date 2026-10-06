@@ -103,3 +103,11 @@ def test_native_selection_preserves_prose_identity_across_three_workspaces() -> 
         (ChapterInputAsset("broken", "best_draft_candidate", "hash", broken), *inputs[1:]))
     with pytest.raises(KernelError, match="BEST_CANDIDATE_EVIDENCE_REQUIRED"):
         handler.execute(request)
+
+
+def test_internal_disposition_uses_actual_prose_repairs_and_preserves_strict_actions():
+    from novel_forge.modules.chapter_authority.candidate_selection import prior_quality_actions
+    quality={'internal_admission':{'version':'creative-quality-admission.v2','status':'BLOCKED','strict_certification_eligible':False},'internal_required_actions':[{'observation':'QUALITY_CHAPTER_ECONOMY_FAILED'},{'observation':'QUALITY_REPETITION_FAILED'}],'required_actions':[{'observation':'STRICT_CALIBRATION_EVIDENCE_REQUIRED'}]}
+    assert prior_quality_actions(quality,'3.9.18')==tuple(quality['internal_required_actions'])
+    assert prior_quality_actions(quality,'3.9.0')==tuple(quality['required_actions'])
+    assert prior_quality_actions({**quality,'internal_admission':{}},'3.9.18')==tuple(quality['required_actions'])

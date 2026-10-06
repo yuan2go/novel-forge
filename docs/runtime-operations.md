@@ -3158,3 +3158,16 @@ Book Design Foundation binding and admit their exact hashes as assessment inputs
 Missing evidence remains blocking for its dependent acceptance; located semantic
 failures use the ordinary bounded Quality revision and independent re-review chain.
 Never relabel a previous assessment, reset retries or regenerate accepted chapters.
+
+A retained Quality edit rejected solely by the historical overlap interpretation
+requires exact reproduction of that diagnostic and full validation under the versioned
+named-range union contract. Preserve the failed Root, Saga, Attempt, original Provider
+result and settlement. Recover through a new Book child continuation with references
+to completed work; never reopen a terminal Root or fabricate another successful call.
+The recovered candidate still requires ordinary independent re-review, Canon, Quality
+and internal acceptance. Unknown results or changed input hashes block this recovery. Template v7 activation
+affects new work explicitly; the original v6 admission, Pack and result remain frozen.
+Apply migration 0166 with a verified PostgreSQL backup, register the successor
+definitions and Pack, select the template, then use the same `authority-creation
+continue` command and Formation identity. The Book child link and retained-step
+journal commit atomically and duplicate continuation reuses the current checkpoint.

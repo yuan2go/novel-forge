@@ -1592,12 +1592,16 @@ class _RevisionHandler:
             item for item in request.inputs if item.asset_type == "revision_task"
         )
         if quality_tasks:
+            if request.definition_version == "3.9.17":
+                from .quality_revision_recovery import materialize_retained_revision
+                return _output(ChapterNode.REVISION, materialize_retained_revision(request))
+            range_policy = "NAMED_DIAGNOSIS_UNION_V1" if request.definition_version == "3.9.16" and all(t.content.get("disposition_contract") == "creative-quality-disposition.v2" for t in quality_tasks) else "INTERSECTION_V1"
             revision = request.require_input("best_draft_candidate")
             quality = request.require_input("quality_score_report")
             context = request.require_input("context_bundle")
             from novel_forge.modules.revision.domain import quality_edit_contract
             edit_contract = quality_edit_contract(revision=revision.content, revision_asset_version_id=revision.asset_version_id,
-                                                  revision_tasks=tuple(item.content for item in quality_tasks))
+                                                  revision_tasks=tuple(item.content for item in quality_tasks), range_policy=range_policy)
             revised = self.provider.invoke(
                 request,
                 stage="revision",
@@ -1623,6 +1627,7 @@ class _RevisionHandler:
                     ),
                     context_bundle_version_id=context.asset_version_id,
                     result=revised.output,
+                    range_policy=range_policy,
                     provider_evidence=_provider_evidence(revised),
                 ),
                 request=request,
@@ -1633,7 +1638,7 @@ class _RevisionHandler:
         context = request.require_input("context_bundle")
         length_scope = None
         repair_payload = {}
-        if request.definition_version == "3.9.4":
+        if request.definition_version in {"3.9.4", "3.9.16"}:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             from .candidate_repair import candidate_repair_payload
             length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
@@ -1749,6 +1754,7 @@ class _BestCandidateHandler:
             None,
         )
         if prior_quality is not None:
+            from .candidate_selection import prior_quality_actions
             previous_blockers = tuple(
                 sorted(
                     {
@@ -1759,8 +1765,7 @@ class _BestCandidateHandler:
                                 or item.get("issue", {}).get("code")
                                 or ""
                             )
-                            for item in prior_quality.content.get("required_actions")
-                            or ()
+                            for item in prior_quality_actions(prior_quality.content,request.definition_version)
                         ),
                     }
                     - {""}

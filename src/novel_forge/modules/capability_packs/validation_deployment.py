@@ -32,6 +32,8 @@ from novel_forge.modules.capability_packs.longform_profiles import (
 )
 from novel_forge.modules.chapter_authority.definitions import (
     chapter_operation_definitions,
+    chapter_root_operation_definition,
+    retained_revision_definition,
     chapter_provider_sample_definitions,
     CHAPTER_SAMPLE_WORKFLOW_ID,
 )
@@ -99,7 +101,7 @@ def register_validation_runtime_definitions(
     from novel_forge.modules.chapter_quality_authority.model_reference_execution import model_reference_creation_definitions
 
     with AuthorityUnitOfWork(database_url) as uow:
-        for item in (planning, reader, prose_review, prose_sample, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
+        for item in (planning, reader, prose_review, prose_sample, narrative_evaluation, chapter_root_operation_definition(application_build_id=application_build_id,commit_sha=commit_sha,model_effects_required=True),retained_revision_definition(application_build_id=application_build_id,commit_sha=commit_sha), *chapter, *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,

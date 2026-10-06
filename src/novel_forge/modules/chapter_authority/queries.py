@@ -140,7 +140,10 @@ class ChapterAuthorityQuery:
                 SELECT operation_id, definition_name, definition_version, status,
                        version, parent_operation_id, step_key, created_at, updated_at
                 FROM authority_operation
-                WHERE root_operation_id = %s AND project_id = %s
+                WHERE root_operation_id IN (WITH RECURSIVE lineage(root_id) AS (
+                    SELECT %s::text UNION ALL SELECT j.source_root_operation_id FROM authority_graph_continuation j
+                    JOIN lineage l ON j.successor_root_operation_id=l.root_id WHERE j.contract_version='kernel-retained-graph-continuation.v1'
+                ) SELECT root_id FROM lineage) AND project_id = %s
                 ORDER BY created_at, operation_id
                 """,
                 [root_operation_id, project_id],
@@ -279,6 +282,8 @@ class ChapterAuthorityQuery:
             ]
             from novel_forge.modules.command_kernel.derived_step_revalidation import acknowledge_revalidated_effects
             acknowledge_revalidated_effects(cursor, model_effects, operation_ids)
+            from novel_forge.modules.command_kernel.retained_graph import acknowledge_retained_result
+            acknowledge_retained_result(cursor,model_effects,root_operation_id)
             cursor.execute(
                 """
                 SELECT saga_id, status, coordinator_owner,

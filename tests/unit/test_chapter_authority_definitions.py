@@ -188,7 +188,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
 
         self.assertEqual(
             {item["definition_version"] for item in definitions},
-            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.9.2", "3.9.3", "3.9.4", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15"},
+            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.9.2", "3.9.3", "3.9.16", "3.9.18", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15"},
         )
         self.assertEqual(
             {item["handler_contract_version"] for item in definitions},
@@ -312,3 +312,14 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_retained_revision_is_a_pure_derivation_with_ordinary_fenced_asset_completion():
+    from novel_forge.modules.chapter_authority.definitions import retained_revision_definition
+    definition=retained_revision_definition(application_build_id='unit',commit_sha='a'*40)
+    assert definition['definition_version']=='3.9.17'
+    assert definition['external_capabilities']==[]
+    assert 'required_external_effects' not in definition['completion_contract']
+    assert definition['policy']['retained_result_contract']=='chapter-quality-range-revalidation.v1'
+    assert definition['permissions']==['chapter.authority.execute']
+    assert definition['completion_contract']['required_asset_selectors'][0]['lifecycle']=='ACTIVE'

@@ -303,3 +303,9 @@ __all__ = [
     "build_best_candidate",
     "compare_candidates",
 ]
+
+
+def prior_quality_actions(quality: dict[str, Any], definition_version: str) -> tuple[dict[str, Any], ...]:
+    admission=quality.get('internal_admission') or {}
+    internal=definition_version=='3.9.18' and admission.get('version')=='creative-quality-admission.v2' and admission.get('strict_certification_eligible') is False
+    return tuple(quality.get('internal_required_actions' if internal else 'required_actions') or ())

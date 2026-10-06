@@ -62,15 +62,21 @@ def owned_policy_definition(
     campaign_renewal = False
     campaign_reallocation = False
     execution_templates = owner == "PROVIDER_ROUTING" and "execution_templates" in content
-    world_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6'}
+    world_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7'}
         for value in content['execution_templates'])
-    stage_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6'} for value in content['execution_templates'])
-    contract_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v5','creative-execution-template.v6'} for value in content['execution_templates'])
-    canon_templates = execution_templates and any(value.get('version') == 'creative-execution-template.v6' for value in content['execution_templates'])
+    stage_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7'} for value in content['execution_templates'])
+    contract_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7'} for value in content['execution_templates'])
+    canon_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v6','creative-execution-template.v7'} for value in content['execution_templates'])
+    graph_templates = execution_templates and any(value.get('version') == 'creative-execution-template.v7' for value in content['execution_templates'])
     routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
         policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources or execution_templates else LEGACY_POLICY_SCHEMA
+        if not graph_templates and 'execution_templates' in policy_schema['properties']:
+            policy_schema = deepcopy(policy_schema)
+            old_template = policy_schema['properties']['execution_templates']['items']
+            old_template['properties'].pop('chapter_graph_recovery', None)
+            old_template['properties']['version']['enum'] = ['creative-execution-template.v'+str(i) for i in range(1,7)]
         if not canon_templates and 'execution_templates' in policy_schema['properties']:
             policy_schema = deepcopy(policy_schema)
             old_template = policy_schema['properties']['execution_templates']['items']
@@ -135,7 +141,7 @@ def owned_policy_definition(
         command_schema["properties"]["expected_policy_hash"] = {"type": "string"}
     return {
         "name": name,
-        "definition_version": "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "1.12.0" if graph_templates else "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",

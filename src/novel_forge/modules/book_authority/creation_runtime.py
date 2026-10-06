@@ -40,6 +40,10 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "COMPLETED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from .retained_recovery import recover_retained_quality
+        if recover_retained_quality(composition.authority,book_run_id=book_run_id,principal=composition.principal):
+            book=composition.authority.require(book_run_id)
+            events({"kind":"CHAPTER_RETAINED_GRAPH_CONTINUATION","book_run_id":book_run_id})
         from novel_forge.modules.chapter_authority.derived_recovery import recover_derived_frontier
         while recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
             events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
