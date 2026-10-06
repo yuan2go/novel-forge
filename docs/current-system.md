@@ -2115,3 +2115,7 @@ An already recorded pre-dispatch child timeout may receive one separately journa
 control recovery Attempt under v5, only with no Effect for that Attempt and a remaining
 original Provider retry. Terminal Attempts remain immutable; Provider retry capacity
 does not increase. Repeated timeouts or dispatched failures cannot replenish capacity.
+Book reconciliation records a mutation only when the referenced Chapter status or
+Book state changes. Its v2 key binds the expected Book version and observed child
+Operation/Saga versions; a recovery window or Saga tick cannot reuse a historical
+status-only key with a different request. Prior reconciliation receipts remain intact.

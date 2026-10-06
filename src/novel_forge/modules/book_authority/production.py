@@ -2161,6 +2161,8 @@ class PostgresBookAuthority:
         else:
             request_status, book_state = "RUNNING", BookProductionState.CHAPTER_RUNNING
         book = self.require(request["book_run_id"])
+        if request["status_reference"] == request_status and book["state"] == book_state.value:
+            return request
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2202,8 +2204,9 @@ class PostgresBookAuthority:
             action="chapter_reconcile",
             event_type="book.chapter.status_reconciled",
             idempotency_key=(
-                f"{request['stable_idempotency_key']}:reconcile:"
-                f"{request['status_reference']}:{request_status}"
+                f"{request['stable_idempotency_key']}:reconcile:v2:{book['version']}:"
+                f"{run.get('version', 0)}:{run.get('saga', {}).get('version', 0)}:"
+                f"{request['status_reference']}:{request_status}:{operation_status}:{saga_status}"
             ),
             actor_id=str(root_identity[0]),
             trace_id=str(root_identity[1]),
@@ -2213,6 +2216,8 @@ class PostgresBookAuthority:
                 "chapter_request_id": chapter_request_id,
                 "child_operation_status": operation_status,
                 "child_saga_status": saga_status,
+                "child_operation_version": run.get("version"),
+                "child_saga_version": run.get("saga", {}).get("version"),
             },
             handler=commit_reconciliation,
         )
