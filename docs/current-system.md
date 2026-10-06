@@ -2279,3 +2279,13 @@ This projection does not patch claim kinds or promote retained claims into accep
 A new Pack deployment and Attempt materialization freeze its version and actual request
 hash. A known no-send capacity refusal may use the existing retry bounds with this
 projection; it does not reset the Attempt count or expand the model window.
+
+Saga completion counts completed initial-graph members, not completed correction
+references. Extension references retain their own successful execution evidence but
+cannot substitute for unexecuted publish/export/finalization nodes. An erroneously
+successful historical Root with this exact incomplete retained graph remains immutable.
+The creative recovery owner may append a successor only at an unaccepted Book frontier,
+with the exact no-send Canon capacity failure, original settled result and missing
+completion assets reproduced. It cancels only the undispatched nonterminal child through
+Kernel transitions, retains the false completion declaration and all old Attempts, and
+references completed work. A genuinely complete or accepted Root cannot use this policy.

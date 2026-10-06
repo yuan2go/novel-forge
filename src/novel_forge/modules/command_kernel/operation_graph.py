@@ -467,15 +467,7 @@ def coordinate_saga(
                     admission_context,
                 )
                 steps = repository.saga_steps(saga_id)
-        elif (
-            steps
-            and all(step["status"] == "SUCCEEDED" for step in steps)
-            and (
-                repository.expected_saga_step_count(saga["root_operation_id"]) == 0
-                or len(steps)
-                >= repository.expected_saga_step_count(saga["root_operation_id"])
-            )
-        ):
+        elif initial_graph_complete(steps, repository.expected_saga_step_count(saga["root_operation_id"])):
             target_status = "SUCCEEDED"
             repository.update_saga(saga_id, saga["version"], target_status)
             if repository.complete_root(saga["root_operation_id"], target_status):
@@ -735,3 +727,14 @@ def _admit_saga_compensation_children(
 def _validate_context(context: GraphCommandContext) -> None:
     if not all((context.project_id, context.actor_id, context.trace_id, context.correlation_id)):
         raise KernelError("KERNEL_COMMAND_INVALID", "graph command context is incomplete")
+
+
+def initial_graph_complete(steps, expected_count):
+    members = {
+        step["step_key"] for step in steps if step.get("initial_completion_member", True)
+    }
+    return (
+        bool(steps)
+        and all(step["status"] == "SUCCEEDED" for step in steps)
+        and (expected_count == 0 or len(members) >= expected_count)
+    )

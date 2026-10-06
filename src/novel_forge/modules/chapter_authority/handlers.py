@@ -1982,7 +1982,7 @@ class _CanonExtractionHandler:
         generated: ModelProviderResult | None = None
         localization = None
         repair = None
-        current_contract = request.definition_version == "3.9.21"
+        current_contract = request.definition_version in {"3.9.21", "3.9.22"}
         if current_contract and request.database_url:
             from .canon_output_recovery import repair_feedback
             repair = repair_feedback(request)

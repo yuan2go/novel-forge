@@ -48,14 +48,16 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
             "RETAINED_GRAPH_SOURCE_INVALID", "Retain the original terminal Saga"
         )
     saga = row[0]
+    incomplete_completion = (root['status'] == 'SUCCEEDED' and saga['status'] == 'SUCCEEDED'
+        and ((root.get('command_payload') or {}).get('preparation_report') or {}).get(BINDING, {}).get('retained_result', {}).get('contract_version') == 'chapter-canon-output-repair.v1')
     if (
         root["definition_name"] != "chapter.slice.run"
         or saga["project_id"] != project_id
         or root["root_operation_id"] != root_id
         or root["actor_id"] != actor_id
-        or root["status"] != "FAILED_FINAL"
+        or root["status"] != "FAILED_FINAL" and not incomplete_completion
         or root["definition_version"] != "3.9.0"
-        or saga["status"] != "MANUAL_INTERVENTION"
+        or saga["status"] != "MANUAL_INTERVENTION" and not incomplete_completion
     ):
         raise KernelError(
             "RETAINED_GRAPH_SOURCE_INVALID",
@@ -66,7 +68,7 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
         [root_id, "%:quality-correction:%", saga["saga_id"], "quality-correction:%"],
     )
     extension = sorted([r[0] for r in cursor.fetchall()], key=lambda o: o["created_at"])
-    failed = [o for o in extension if o["status"] == "FAILED_FINAL"]
+    failed = [o for o in extension if o["status"] == "FAILED_FINAL" or incomplete_completion and o["status"] == "FAILED_RETRYABLE"]
     if len(failed) != 1 or any(o["actor_id"] != actor_id or o["project_id"] != project_id or o["workspace_id"] != root["workspace_id"] for o in extension):
         raise KernelError("RETAINED_GRAPH_FAILURE_AMBIGUOUS", "One exact reproduced Quality result failure and original actor are required")
     source = failed[0]
@@ -91,7 +93,11 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                     ('chapter.candidate.select_best','3.9.18','SUCCEEDED')]
                 or source['idempotency_key'] != root['idempotency_key']+':canon_extraction:quality-correction:1'):
             raise KernelError('RETAINED_GRAPH_EXTENSION_CONFLICT', 'Retain the exact completed correction prefix and failed Canon extraction')
-        proof, _ = retained_canon_output(cursor, source)
+        if incomplete_completion:
+            from novel_forge.modules.chapter_authority.canon_output_recovery import retained_canon_admission
+            proof, _ = retained_canon_admission(cursor, source)
+        else:
+            proof, _ = retained_canon_output(cursor, source)
     else:
         if extension != [source] or source["definition_name"] != "chapter.revision.apply":
             raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Other correction work retains its own recovery ownership")
@@ -245,7 +251,7 @@ def continue_graph_in_uow(uow, *, source, request, context):
         or template.get("chapter_graph_recovery")
         not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
         or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") not in {"RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
-        or source["retained_result"]["contract_version"] == "chapter-canon-output-repair.v1" and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
+        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
         or admission != binding.get("admission")
         or template["member_authorization_ref"]
         != source["retained_result"]["cost_authorization_ref"]
@@ -318,6 +324,16 @@ def continue_graph_in_uow(uow, *, source, request, context):
             Jsonb(binding),
         ],
     )
+    pending = source['retained_result'].get('undispatched_operation_id')
+    if pending:
+        c.execute('SELECT version,status FROM authority_operation WHERE operation_id=%s FOR UPDATE', [pending])
+        version, status = c.fetchone()
+        for before, after in ((status,'CANCELLATION_REQUESTED'),('CANCELLATION_REQUESTED','CANCELLED')):
+            transition_operation_in_uow(uow, OperationTransitionCommand(operation_id=pending,project_id=request.project_id,
+                expected_version=version,expected_status=before,target_status=after,actor_id=context.actor_id,
+                reason='Exact incomplete terminal graph continuation; preserve no-send failure',trace_id=request.trace_id,
+                correlation_id=request.correlation_id,causation_id=continuation))
+            version += 1
     for item in source["steps"]:
         step = item["step"]
         c.execute(
@@ -399,13 +415,13 @@ def acknowledge_retained_result(cursor, effects, root_id):
         """SELECT o.operation_id,v.content FROM authority_operation o JOIN authority_operation_output_asset output USING(operation_id)
         JOIN authority_asset_version v USING(asset_version_id) WHERE (o.root_operation_id=%s OR o.operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=(SELECT successor_saga_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s))) AND o.definition_version=%s
         AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
-        [root_id, root_id, "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
+        [root_id, root_id, "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
     )
     successors = cursor.fetchall()
     if len(successors) != 1:
         return
     successor, content = successors[0]
-    fresh_repair = proof["contract_version"] == "chapter-canon-output-repair.v1"
+    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2"}
     derived = content.get("retained_result_repair" if fresh_repair else "retained_result_derivation") or {}
     if (
         any(

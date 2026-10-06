@@ -336,13 +336,13 @@ class OperationGraphRepository:
             "compensation_operation_status",
         )
         owned=[dict(zip(fields, row, strict=True)) for row in self.cursor.fetchall()]
-        self.cursor.execute("""SELECT ref.operation_id,ref.step_key,ref.ordinal,operation.status
+        self.cursor.execute("""SELECT ref.operation_id,ref.step_key,ref.ordinal,operation.status,ref.source_step_snapshot->>'reference_source'
             FROM authority_saga_retained_step ref JOIN authority_operation operation USING(operation_id)
             JOIN authority_graph_continuation journal USING(continuation_id)
             WHERE ref.saga_id=%s AND journal.successor_saga_id=ref.saga_id
               AND journal.contract_version='kernel-retained-graph-continuation.v1'
             ORDER BY ref.ordinal FOR SHARE OF operation""",[saga_id])
-        retained=[{"operation_id":row[0],"step_key":row[1],"ordinal":row[2],"compensation_definition":"","compensation_status":"NOT_REQUIRED","status":row[3],"compensation_operation_id":None,"compensation_operation_status":None,"retained":True} for row in self.cursor.fetchall()]
+        retained=[{"operation_id":row[0],"step_key":row[1],"ordinal":row[2],"compensation_definition":"","compensation_status":"NOT_REQUIRED","status":row[3],"compensation_operation_id":None,"compensation_operation_status":None,"retained":True,"initial_completion_member":row[4]!="native-completed-correction-command.v1"} for row in self.cursor.fetchall()]
         if any(item['status']!='SUCCEEDED' for item in retained):
             raise KernelError('RETAINED_GRAPH_STEP_DRIFT','Retained completed operations cannot change lifecycle')
         return sorted(owned+retained,key=lambda item:item['ordinal'])

@@ -32,8 +32,15 @@ def recover_retained_quality(authority, *, book_run_id, principal):
             [old["chapter_root_operation_id"]],
         )
         row = c.fetchone()
-        if not row or row[0] != "FAILED_FINAL":
+        if not row or row[0] not in {"FAILED_FINAL", "SUCCEEDED"}:
             return False
+        if row[0] == 'SUCCEEDED':
+            c.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation o JOIN authority_attempt a USING(operation_id)
+                WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.21'
+                AND o.status='FAILED_RETRYABLE' AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED'
+                AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=o.operation_id))""",[old['chapter_root_operation_id']])
+            if not c.fetchone()[0]:
+                return False
         c.execute(
             "SELECT to_jsonb(r) FROM authority_book_chapter_request r WHERE chapter_request_id=%s",
             [old["chapter_request_id"]],

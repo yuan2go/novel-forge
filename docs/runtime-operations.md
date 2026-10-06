@@ -3186,3 +3186,14 @@ Book frontier without resending that successful result. Restore and verify its b
 install the successor template/Pack, then run the original native continuation command.
 Inspect normalization mappings separately from independent semantic support; no literal
 failure, unknown outcome, identity, accounting or certification record may be rewritten.
+
+A reproduced retained-extension cardinality error can leave an unaccepted Root/Saga
+declared complete while its undispatched Canon 3.9.21 has a frozen capacity refusal
+and publish/export/final gate outputs are absent. Install Pack 2.30 / Canon 3.9.22
+and continue the same Formation under creative v9. The native successor cancels only
+that nonterminal, undispatched child and retains the erroneous terminal declaration,
+its Attempt, settled calls and completed correction references. Completion counts
+initial steps separately from correction extensions; all extensions must also succeed.
+Accepted chapters, uncertain effects and unrelated successful Roots are ineligible.
+The focused regression includes `test_retained_correction_references_cannot_replace_missing_initial_completion_steps`
+and a restored PostgreSQL native continuation through complete-request admission.
