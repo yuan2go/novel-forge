@@ -56,7 +56,14 @@ def validate_migration_chain(migrations: tuple[Migration, ...] = MIGRATIONS) -> 
 
 def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
     validate_migration_chain(migrations)
-    return [migration for migration in migrations if migration.migration_id not in applied_ids]
+    known = [migration.migration_id for migration in migrations]
+    extra = sorted(applied_ids - set(known))
+    if extra:
+        raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+    prefix_length = len(applied_ids)
+    if applied_ids != set(known[:prefix_length]):
+        raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+    return list(migrations[prefix_length:])
 
 
 def downgrade_plan(target_revision: str | None, applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:

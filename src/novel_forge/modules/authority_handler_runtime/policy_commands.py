@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import json
+from copy import deepcopy
 from typing import Any
 from uuid import uuid4
 
@@ -61,10 +63,37 @@ def owned_policy_definition(
     campaign_renewal = False
     campaign_reallocation = False
     execution_templates = owner == "PROVIDER_ROUTING" and "execution_templates" in content
+    world_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6'}
+        for value in content['execution_templates'])
+    stage_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6'} for value in content['execution_templates'])
+    contract_templates = execution_templates and any(value.get('version') in {'creative-execution-template.v5','creative-execution-template.v6'} for value in content['execution_templates'])
+    canon_templates = execution_templates and any(value.get('version') == 'creative-execution-template.v6' for value in content['execution_templates'])
     routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
         policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources or execution_templates else LEGACY_POLICY_SCHEMA
+        if not canon_templates and 'execution_templates' in policy_schema['properties']:
+            policy_schema = deepcopy(policy_schema)
+            old_template = policy_schema['properties']['execution_templates']['items']
+            old_template['properties'].pop('canon_validation_contract', None)
+            old_template['properties']['version']['enum'] = ['creative-execution-template.v1','creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5']
+        if not contract_templates and 'execution_templates' in policy_schema['properties']:
+            policy_schema = deepcopy(policy_schema)
+            old_template = policy_schema['properties']['execution_templates']['items']
+            old_template['properties'].pop('chapter_contract_recovery', None)
+            old_template['properties']['version']['enum'] = ['creative-execution-template.v1','creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4']
+        if execution_templates and not stage_templates:
+            policy_schema = deepcopy(policy_schema)
+            legacy = policy_schema['properties']['execution_templates']['items']
+            legacy['properties']['version']['enum'] = ['creative-execution-template.v1','creative-execution-template.v2','creative-execution-template.v3']
+            repair = legacy['$defs']['RepairRoutingConfiguration']['properties']['version']
+            repair.pop('enum')
+            repair['const'] = 'native-repair-routing.v1'
+        if execution_templates and not world_templates:
+            policy_schema = deepcopy(policy_schema)
+            legacy = policy_schema['properties']['execution_templates']['items']
+            legacy['properties']['version']['enum'] = ['creative-execution-template.v1', 'creative-execution-template.v2']
+            legacy['properties'].pop('world_future_preparation')
     if owner == "CREATIVE_EXPERIMENT_BUDGET":
         from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_REALLOCATION_VERSION, PROVIDER_REALLOCATION_POLICY_SCHEMA
         from novel_forge.modules.command_kernel.creative_budget_contract import PROVIDER_RENEWAL_VERSION, PROVIDER_RENEWAL_POLICY_SCHEMA, PAIRED_SAMPLES_VERSION, V5_POLICY_SCHEMA, PRODUCTION_BOOK_VERSION, SINGLE_BOOK_VERSION, PROVIDER_CAMPAIGN_VERSION, V1_POLICY_SCHEMA, V2_POLICY_SCHEMA, V3_POLICY_SCHEMA, V4_POLICY_SCHEMA
@@ -107,12 +136,12 @@ def owned_policy_definition(
         command_schema["properties"]["expected_policy_hash"] = {"type": "string"}
     return {
         "name": name,
-        "definition_version": "1.6.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
-        "command_schema_version": f"{name}.command.v6" if execution_templates else f"{name}.command.v7" if campaign_reallocation else f"{name}.command.v6" if campaign_renewal else f"{name}.command.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
-        "result_schema_version": f"{name}.result.v6" if execution_templates else f"{name}.result.v7" if campaign_reallocation else f"{name}.result.v6" if campaign_renewal else f"{name}.result.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
+        "command_schema_version": f"{name}.command.v9" if stage_templates else f"{name}.command.v8" if world_templates else f"{name}.command.v7" if execution_templates else f"{name}.command.v7" if campaign_reallocation else f"{name}.command.v6" if campaign_renewal else f"{name}.command.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.command.v3" if production_book_budget or routing_sources else f"{name}.command.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.command.v1",
+        "result_schema_version": f"{name}.result.v9" if stage_templates else f"{name}.result.v8" if world_templates else f"{name}.result.v7" if execution_templates else f"{name}.result.v7" if campaign_reallocation else f"{name}.result.v6" if campaign_renewal else f"{name}.result.v5" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else f"{name}.result.v3" if production_book_budget or routing_sources else f"{name}.result.v2" if single_book_budget or owner == "PROVIDER_ROUTING" else f"{name}.result.v1",
         "command_schema": command_schema,
         "result_schema": result_schema,
         "input_contract": command_schema,
@@ -271,3 +300,49 @@ def configure_owned_policy(
         handler=handler,
         fault_injector=fault_injector,
     )
+
+def configure_execution_template(settings: Any, args: Any) -> dict[str, Any]:
+    import os
+    from novel_forge.api.authority_dependencies import authority_release_identity, build_trusted_principal_resolver
+    from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
+    from novel_forge.modules.production_execution.execution_template import validate_templates
+    from novel_forge.modules.production_execution.membership_identity import observe_membership_identity
+    from novel_forge.modules.production_execution.routing_runtime import PostgresRoutingRegistry
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    principal = build_trusted_principal_resolver().resolve_api_principal()
+    principal.require("book.authority.execute", args.project_id)
+    if os.environ.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") != "billing-channel-resources.v1":
+        raise ValueError("BILLING_CHANNEL_RESOURCE_CONFIGURATION_REQUIRED")
+    identity = observe_membership_identity(os.environ.get("NOVEL_FORGE_CODEX_HOME", ""))
+    if identity["account_ref"] != os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF"):
+        raise ValueError("CODEX_MEMBERSHIP_IDENTITY_DRIFT")
+    authorization = os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF", "").strip()
+    if not authorization:
+        raise ValueError("CODEX_MEMBERSHIP_AUTHORIZATION_REQUIRED")
+    models = parse_codex_model_catalog(os.environ.get("NOVEL_FORGE_CODEX_ROUTER_MODELS", ""))
+    value = json.loads(args.template_file.read_text())
+    value.update(book_id=args.book_id, member_authorization_ref=authorization,
+        allowed_candidates=[f"codex-cli:{model['model']}:{model['reasoning']}" for model in models if model["role"] in {"PRIMARY", "REFERENCE"}])
+    from novel_forge.modules.production_execution.execution_template import load_paid_configuration
+    if value.get("deepseek") is not None:
+        raise ValueError("PAID_TEMPLATE_MUST_INHERIT_CONFIGURED_AUTHORIZATION")
+    paid, paid_unavailable = load_paid_configuration(os.environ)
+    if paid is not None:
+        value["deepseek"] = paid
+        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
+        value["allowed_candidates"].extend(model.candidate_id for model in deepseek_candidates(available=True))
+    validate_templates({"execution_templates": [value]})
+    with AuthorityUnitOfWork(settings.database_url) as uow:
+        uow.cursor.execute("SELECT workspace_id FROM authority_book WHERE project_id=%s AND book_id=%s", [args.project_id, args.book_id])
+        if uow.cursor.fetchone() != (args.workspace_id,):
+            raise ValueError("EXECUTION_TEMPLATE_BOOK_SCOPE_INVALID")
+    prior = PostgresRoutingRegistry(settings.database_url).policy(args.project_id)
+    content = dict(prior.get("policy") or {"task_overrides": [], "reason": "configured template for internal creative validation"})
+    content.update(policy_version=args.policy_version, reason="native creation template; paid channel: " + (paid_unavailable or "AUTHORIZED_CONFIGURATION"), execution_templates=[
+        item for item in content.get("execution_templates", []) if item["book_id"] != args.book_id] + [value])
+    build_id, sha = authority_release_identity()
+    return configure_owned_policy(database_url=settings.database_url, owner="PROVIDER_ROUTING", content=content,
+        project_id=args.project_id, workspace_id=args.workspace_id, idempotency_key=args.idempotency_key,
+        trace_id="trace:" + args.idempotency_key, correlation_id=args.book_id,
+        application_build_id=build_id, commit_sha=sha, principal=principal)

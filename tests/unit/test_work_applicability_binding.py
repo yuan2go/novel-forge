@@ -404,3 +404,69 @@ def test_frozen_execution_preserves_selected_legacy_style_without_silent_replace
         request.inputs[1].content["contract_version"]
         == "foundation-style-projection.v3"
     )
+
+
+@pytest.mark.parametrize('selected', ['serial progress', None])
+def test_explicit_v4_serialization_method_keeps_frozen_work_requirement(selected):
+    style = compile_foundation_style(compilation('APPLICABLE'))
+    plan, context, _ = work_input('克制观察')
+    plan.update(book_id='book-1', chapter_contract_schema_version='chapter-mission-scene.v4',
+                runtime_projection_version='3.0.0', primary_function='progression', serialization_function=selected)
+    context['book_id'] = 'book-1'
+    context['context_segments'][-1]['structured_facts'] = style['structured_facts']
+    if selected is None:
+        with pytest.raises(KernelError, match='QUALITY_APPLICABILITY_CONFLICT'):
+            build_creative_baseline(plan, context)
+    else:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import build_draft_plan_view
+        baseline = build_creative_baseline(plan, context)
+        assert baseline['method_requirements']['serialization_function']['status'] == 'APPLICABLE'
+        view = build_draft_plan_view(plan, work_requirements=True)
+        assert view['contract_version'] == 'draft-plan-view-v4'
+        assert view['method_choices']['serialization_function'] == selected
+
+
+@pytest.mark.parametrize('version, semantic, enabled', [
+    ('3.9.16', '3.9.0', True),
+    ('3.8.0', '3.8.0', True),
+    ('3.9.17', '3.9.17', False),
+])
+def test_plan_contract_retains_exact_work_semantics_without_future_version_inheritance(version, semantic, enabled):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    request = ChapterHandlerRequest('op', 'project', 'workspace', 'trace', 'correlation', {}, (),
+                                   definition_version=version)
+    assert request.semantic_definition_version == semantic
+    assert request.work_requirements_enabled is enabled
+
+
+@pytest.mark.parametrize('version', ['3.8.0', '3.9.16'])
+def test_plan_fallback_manifest_binds_style_exactly_before_work_context_delivery(monkeypatch, version):
+    from dataclasses import dataclass
+    from novel_forge.modules.chapter_authority import handlers
+    from novel_forge.modules.chapter_authority.chapter_plan_views import build_draft_style_view
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+
+    @dataclass
+    class Qualification:
+        status: str = 'QUALIFIED'
+
+    monkeypatch.setattr(handlers, 'normalize_authoritative_chapter_plan',
+                        lambda **kwargs: ({'chapter': 1}, Qualification()))
+    plan = ChapterInputAsset('plan:v1', 'chapter_plan', 'sha256:plan', {'chapter': 1})
+    request = ChapterHandlerRequest('op', 'project', 'workspace', 'trace', 'correlation', {
+        'chapter': 1, 'chapter_plan_asset_version_id': plan.asset_version_id,
+        'chapter_plan_content_hash': plan.content_hash,
+        'context_candidates': [{'asset_version_id': 'style:selected', 'asset_type': 'style_policy',
+                                'content_hash': 'sha256:selected'}],
+    }, (plan,), definition_version=version)
+    output = handlers._PlanHandler().execute(request)
+    manifest = next(item.content for item in output.auxiliary_outputs
+                    if item.asset_type == 'production_input_manifest')
+    assert manifest['style_policy_version_id'] == 'style:selected'
+    context = {'production_input_manifest': manifest, 'context_segments': [
+        {'asset_type': 'style_policy', 'asset_version_id': 'style:selected'},
+    ]}
+    assert build_draft_style_view(context, work_requirements=True)['style_policy_version_id'] == 'style:selected'
+    context['context_segments'][0]['asset_version_id'] = 'style:unselected'
+    with pytest.raises(KernelError, match='WORK_STYLE_SELECTION_INVALID'):
+        build_draft_style_view(context, work_requirements=True)

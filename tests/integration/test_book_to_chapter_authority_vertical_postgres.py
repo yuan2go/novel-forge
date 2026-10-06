@@ -288,6 +288,22 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         )
         self.assertEqual(recovered, frozen)
 
+        successor_effect = {"operation_id":"operation:canon-successor", "external_effect_id":"effect:canon-successor",
+            "attempt_id":"attempt:canon-successor", "attempt_status":"SUCCEEDED", "status":"SUCCEEDED"}
+        predecessor_effect = {"operation_id":"operation:canon-rejected", "external_effect_id":"effect:canon-rejected",
+            "attempt_id":"attempt:canon-rejected", "attempt_status":"FAILED_FINAL", "status":"FAILED_FINAL",
+            "settled_nonproducing_superseded":True, "successor_operation_id":"operation:canon-successor"}
+        successor_request={"chapter_number":1,"project_id":"grounded-contract-fixture",
+            "chapter_plan_version":logical_plan,"chapter_plan_content_hash":"sha256:logical-plan",
+            "command_payload":{"execution_chapter_plan_asset_version_id":execution_plan,"execution_chapter_plan_content_hash":execution_hash}}
+        successor_evidence={"status":"SUCCEEDED","saga":{"status":"SUCCEEDED"},"outputs":outputs,
+            "model_effects":[predecessor_effect,successor_effect],"budgets":[{"status":"SETTLED"}]}
+        self.assertEqual(_validate_chapter_acceptance_evidence(request=successor_request,evidence=successor_evidence),frozen)
+        for invalid in ({"settled_nonproducing_superseded":False}, {"successor_operation_id":""}, {"status":"UNKNOWN"}):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(KernelError,"effects_terminal"):
+                _validate_chapter_acceptance_evidence(request=successor_request,
+                    evidence={**successor_evidence,"model_effects":[{**predecessor_effect,**invalid},successor_effect]})
+
         with self.assertRaisesRegex(KernelError, "effects_terminal"):
             _validate_chapter_acceptance_evidence(
                 request={
@@ -1261,7 +1277,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             self._chapter_command(fixture, chapter_number=1),
             principal=fixture["principal"],
         )
-        with self.assertRaisesRegex(KernelError, "BOOK_CHAPTER_ACCEPTANCE_NOT_READY"):
+        with self.assertRaisesRegex(KernelError, "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING"):
             fixture["authority"].accept_chapter(
                 delegated["chapter_request_id"],
                 principal=fixture["principal"],
@@ -1346,6 +1362,36 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             self.assertEqual(uow.cursor.fetchone()[0], "ACCEPTED")
             uow.cursor.execute("SELECT status FROM authority_book_chapter_acceptance WHERE chapter_request_id=%s", [delegated["chapter_request_id"]])
             self.assertEqual(uow.cursor.fetchone()[0], "COMMITTED")
+
+    def test_book_reconcile_running_child_versions_preserves_receipts_and_acceptance(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=1)
+        authority = fixture['authority']
+        request = authority.submit_chapter(self._chapter_command(fixture,chapter_number=1),principal=fixture['principal'])
+        request_id,root_id = request['chapter_request_id'],request['chapter_root_operation_id']
+        authority.reconcile_chapter(request_id)
+        before = authority.require(fixture['book'].book_run_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT operation_id,request_digest,status FROM authority_operation WHERE project_id=%s AND command_payload #>> '{payload,action}'='chapter_reconcile' ORDER BY operation_id",[fixture['project_id']])
+            receipts = uow.cursor.fetchall()
+        scheduler = fixture['chapter'].scheduler(principal=fixture['worker'])
+        for _ in range(2):
+            scheduler.tick(project_id=fixture['project_id'],root_operation_id=root_id)
+            authority.reconcile_chapter(request_id)
+            self.assertEqual(authority.require(fixture['book'].book_run_id),before)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT operation_id,request_digest,status FROM authority_operation WHERE project_id=%s AND command_payload #>> '{payload,action}'='chapter_reconcile' ORDER BY operation_id",[fixture['project_id']])
+            self.assertEqual(uow.cursor.fetchall(),receipts)
+        self._run_child(fixture,root_id)
+        authority.reconcile_chapter(request_id)
+        completed = authority.require(fixture['book'].book_run_id)
+        self.assertEqual(completed['state'],'CHAPTER_COMPLETED')
+        authority.reconcile_chapter(request_id)
+        self.assertEqual(authority.require(fixture['book'].book_run_id),completed)
+        accepted = authority.accept_chapter(request_id,principal=fixture['principal'])
+        self.assertEqual(accepted['accepted_through_chapter'],1)
+        accepted_state = authority.require(fixture['book'].book_run_id)
+        authority.reconcile_chapter(request_id)
+        self.assertEqual(authority.require(fixture['book'].book_run_id),accepted_state)
 
     def test_book_reconcile_after_worker_restart(self) -> None:
         failure = {"enabled": True}

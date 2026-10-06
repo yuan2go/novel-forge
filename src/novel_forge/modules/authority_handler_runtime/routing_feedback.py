@@ -438,9 +438,11 @@ def domain_gate_outcomes(
     from novel_forge.modules.story_planning_runtime.world_sampling import actor_sample_outcomes
 
     from .context_feedback import context_gate_outcomes
+    from novel_forge.modules.story_planning_runtime.world_result_recovery import world_result_failures
     from .generator_feedback import generator_sample_outcomes
     return {
         **planning,
+        **world_result_failures(cursor, project_id=project_id, effect_ids=effect_ids),
         **context_gate_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
         **generator_sample_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
         **actor_sample_outcomes(cursor, project_id=project_id, effect_ids=list(effect_ids)),

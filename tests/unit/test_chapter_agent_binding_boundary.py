@@ -74,4 +74,6 @@ def test_legacy_binding_surface_tracks_model_capability_stages() -> None:
         "quality_longform",
         "quality_platform",
         "agent_session",
+        "model_reference_evaluate",
+        "model_reference_adjudicate",
     }

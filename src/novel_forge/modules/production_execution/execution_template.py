@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .cost_routing import RoutingDecision, snapshot_hash
 
 
-VERSION = "creative-execution-template.v1"
+VERSION = "creative-execution-template.v6"
 MODE = "CREATIVE_VALIDATION"
 RESOURCE_VERSION = "billing-channel-resources.v1"
 BOOK_USAGE_SQL = """(e.request_payload #>> '{_production_execution,book_id}'=%s
@@ -29,9 +29,15 @@ class PaidResourceConfiguration(BaseModel):
     authorization_ref: _Identity
 
 
+class RepairRoutingConfiguration(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    version: Literal["native-repair-routing.v1", "native-repair-routing.v2"]
+    max_same_route_repairs: Annotated[int, Field(ge=0, le=2)]
+
+
 class ExecutionTemplateConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    version: Literal["creative-execution-template.v1"]
+    version: Literal["creative-execution-template.v1", "creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6"]
     book_id: _Identity
     mode: Literal["CREATIVE_VALIDATION", "STRICT_PRODUCTION"]
     allowed_candidates: Annotated[list[_Identity], Field(min_length=1, json_schema_extra={"uniqueItems": True})]
@@ -41,6 +47,10 @@ class ExecutionTemplateConfiguration(BaseModel):
     require_literary_qualification: bool
     require_independent_review: bool
     require_pack_human_approval: bool
+    repair_routing: RepairRoutingConfiguration | None = None
+    chapter_contract_recovery: Literal["KNOWN_SETTLED_CONTRACT_REPAIR"] | None = None
+    canon_validation_contract: Literal["grounded-canon-validation.v2"] | None = None
+    world_future_preparation: Literal["REQUIRED", "OPTIONAL", "DISABLED"] | None = None
 
 
 TEMPLATE_SCHEMA = ExecutionTemplateConfiguration.model_json_schema()
@@ -78,6 +88,19 @@ def validate_templates(content: Mapping[str, Any]) -> None:
         books.add(value["book_id"])
         if value["mode"] == "STRICT_PRODUCTION" and not value["require_literary_qualification"]:
             raise KernelError("STRICT_TEMPLATE_QUALIFICATION_REQUIRED", value["book_id"])
+        if (value["version"] == "creative-execution-template.v1" and value.get("repair_routing") is not None
+                or value["version"] in {"creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5", VERSION} and value.get("repair_routing") is None):
+            raise KernelError("EXECUTION_TEMPLATE_REPAIR_VERSION_INVALID", value["book_id"])
+        if ((value['version'] in {'creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5',VERSION}) != (value.get('world_future_preparation') is not None)
+                or value['mode'] == 'STRICT_PRODUCTION' and value.get('world_future_preparation', 'REQUIRED') != 'REQUIRED'):
+            raise KernelError('EXECUTION_TEMPLATE_WORLD_POLICY_INVALID', value['book_id'])
+        if value.get("repair_routing") and ((value['version'] in {'creative-execution-template.v4','creative-execution-template.v5',VERSION}) != (value['repair_routing']['version'] == 'native-repair-routing.v2')):
+            raise KernelError('EXECUTION_TEMPLATE_STAGE_REPAIR_VERSION_INVALID',value['book_id'])
+        if value.get("chapter_contract_recovery") and (value["version"] not in {"creative-execution-template.v5", VERSION} or value["mode"] != MODE):
+            raise KernelError("EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID", value["book_id"])
+        if (value.get("canon_validation_contract") is not None and (value["version"] != VERSION or value["mode"] != MODE)
+                or value["version"] == VERSION and value["mode"] == MODE and value.get("canon_validation_contract") != "grounded-canon-validation.v2"):
+            raise KernelError("EXECUTION_TEMPLATE_CANON_CONTRACT_INVALID", value["book_id"])
         paid = value["deepseek"]
         if paid is not None and Decimal(paid["maximum_amount"]) <= 0:
             raise KernelError("PAID_TEMPLATE_AMOUNT_INVALID", value["book_id"])
@@ -258,51 +281,3 @@ def verify_book_template(cursor: Any, admission: Mapping[str, Any]) -> None:
         "work_id": admission["book_id"], "policy_snapshot": admission["policy_snapshot"]}})
     if not template or template["mode"] != MODE or template["require_literary_qualification"] or admission.get("mode") != MODE:
         raise KernelError("CREATIVE_BOOK_POLICY_INVALID", admission["book_id"])
-
-
-def configure_execution_template(settings: Any, args: Any) -> dict[str, Any]:
-    import os
-    from novel_forge.api.authority_dependencies import authority_release_identity, build_trusted_principal_resolver
-    from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
-    from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
-    from novel_forge.modules.production_execution.execution_template import validate_templates
-    from novel_forge.modules.production_execution.membership_identity import observe_membership_identity
-    from novel_forge.modules.production_execution.routing_runtime import PostgresRoutingRegistry
-    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-
-    principal = build_trusted_principal_resolver().resolve_api_principal()
-    principal.require("book.authority.execute", args.project_id)
-    if os.environ.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") != "billing-channel-resources.v1":
-        raise ValueError("BILLING_CHANNEL_RESOURCE_CONFIGURATION_REQUIRED")
-    identity = observe_membership_identity(os.environ.get("NOVEL_FORGE_CODEX_HOME", ""))
-    if identity["account_ref"] != os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF"):
-        raise ValueError("CODEX_MEMBERSHIP_IDENTITY_DRIFT")
-    authorization = os.environ.get("NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF", "").strip()
-    if not authorization:
-        raise ValueError("CODEX_MEMBERSHIP_AUTHORIZATION_REQUIRED")
-    models = parse_codex_model_catalog(os.environ.get("NOVEL_FORGE_CODEX_ROUTER_MODELS", ""))
-    value = json.loads(args.template_file.read_text())
-    value.update(book_id=args.book_id, member_authorization_ref=authorization,
-        allowed_candidates=[f"codex-cli:{model['model']}:{model['reasoning']}" for model in models if model["role"] in {"PRIMARY", "REFERENCE"}])
-    from novel_forge.modules.production_execution.execution_template import load_paid_configuration
-    if value.get("deepseek") is not None:
-        raise ValueError("PAID_TEMPLATE_MUST_INHERIT_CONFIGURED_AUTHORIZATION")
-    paid, paid_unavailable = load_paid_configuration(os.environ)
-    if paid is not None:
-        value["deepseek"] = paid
-        from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
-        value["allowed_candidates"].extend(model.candidate_id for model in deepseek_candidates(available=True))
-    validate_templates({"execution_templates": [value]})
-    with AuthorityUnitOfWork(settings.database_url) as uow:
-        uow.cursor.execute("SELECT workspace_id FROM authority_book WHERE project_id=%s AND book_id=%s", [args.project_id, args.book_id])
-        if uow.cursor.fetchone() != (args.workspace_id,):
-            raise ValueError("EXECUTION_TEMPLATE_BOOK_SCOPE_INVALID")
-    prior = PostgresRoutingRegistry(settings.database_url).policy(args.project_id)
-    content = dict(prior.get("policy") or {"task_overrides": [], "reason": "configured template for internal creative validation"})
-    content.update(policy_version=args.policy_version, reason="native creation template; paid channel: " + (paid_unavailable or "AUTHORIZED_CONFIGURATION"), execution_templates=[
-        item for item in content.get("execution_templates", []) if item["book_id"] != args.book_id] + [value])
-    build_id, sha = authority_release_identity()
-    return configure_owned_policy(database_url=settings.database_url, owner="PROVIDER_ROUTING", content=content,
-        project_id=args.project_id, workspace_id=args.workspace_id, idempotency_key=args.idempotency_key,
-        trace_id="trace:" + args.idempotency_key, correlation_id=args.book_id,
-        application_build_id=build_id, commit_sha=sha, principal=principal)

@@ -268,3 +268,30 @@ def test_aggregate_keeps_uncalibrated_review_as_semantic_veto_without_numeric_vo
     )
     assert action["required_action"] == "EVIDENCE_REASSESSMENT"
     assert action["permitted_change_scope"] == "EVIDENCE_ONLY"
+
+
+def test_quality_schema_freezes_host_applicability_without_forcing_positive_evidence():
+    from novel_forge.modules.chapter_quality_authority.applicability_contract import bind_quality_applicability_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema, validate_chapter_provider_output_against_schema
+    from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+    from copy import deepcopy
+    schema=chapter_provider_output_schema('quality_commercial',work_requirements=True)
+    baseline={'method_requirements':{'golden_opening':{'status':'NOT_APPLICABLE'}}}
+    bound=bind_quality_applicability_schema(schema,baseline,'commercial')
+    original=deepcopy(schema)
+    assert schema==original
+    choices={b['properties']['dimension']['enum'][0]:b['properties']['gate_status']['enum'] for b in bound['properties']['dimensions']['items']['anyOf']}
+    assert choices['golden_opening']==['NOT_APPLICABLE']
+    assert 'NOT_APPLICABLE' not in choices['toxic_point']
+    assert {'FAILED','INSUFFICIENT_EVIDENCE'} <= set(choices['toxic_point'])
+    from novel_forge.modules.chapter_quality_authority.domain import QUALITY_GROUPS
+    result=default_chapter_fixture_response('quality_commercial',{'revision':{'text':'她关上门。'},'dimensions':list(QUALITY_GROUPS['commercial'])})
+    for item in result['dimensions']:
+        item['evidence_locations']=[{'quote':'她关上门。','claim':'The narrated action is legible.'}]
+        if item['dimension']=='golden_opening':
+            item.update(gate_status='NOT_APPLICABLE',score=None,evidence_locations=[])
+    validate_chapter_provider_output_against_schema('quality_commercial',bound,result)
+    invalid=deepcopy(result)
+    next(i for i in invalid['dimensions'] if i['dimension']=='toxic_point').update(gate_status='NOT_APPLICABLE',score=None,evidence_locations=[])
+    with pytest.raises(KernelError):
+        validate_chapter_provider_output_against_schema('quality_commercial',bound,invalid)

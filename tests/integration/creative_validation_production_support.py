@@ -44,9 +44,18 @@ class MemoryObjectClient:
         return response
 
 
-def prepare_native_template(harness, chapter_pack):
+def prepare_native_template(harness, chapter_pack, *, bounded_repairs=False, world_disabled=False, contract_recovery=False):
     actor = replace(harness.compiler, permissions=harness.compiler.permissions | {"book.authority.execute", "agent.authority.admin"})
     value = template(harness.book_ids[0])
+    if bounded_repairs:
+        value.update(version="creative-execution-template.v2", repair_routing={
+            "version": "native-repair-routing.v1", "max_same_route_repairs": 2})
+    if world_disabled:
+        value.update(version='creative-execution-template.v3',world_future_preparation='DISABLED',repair_routing={
+            'version':'native-repair-routing.v1','max_same_route_repairs':2})
+    if contract_recovery:
+        value.update(version='creative-execution-template.v5', chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',
+            world_future_preparation='DISABLED',repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2})
     value["allowed_candidates"] = ["codex-cli:gpt-test:high"]
     configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=harness.project_id,
         workspace_id=harness.workspace_id, principal=actor, application_build_id=harness.application_build_id,
@@ -117,6 +126,11 @@ else:
         else:
             result = transport.chapter(stage, inputs) if stage not in {"agent_session", "retrieval", "retrieval_query_expansion"} else default_chapter_fixture_response(stage, inputs)
         if stage.startswith("quality_"):
+            if payload.output_schema_version.endswith(":v5"):
+                methods=inputs["quality_context"]["creative_baseline"]["method_requirements"]
+                for dimension in result.get("dimensions",[]):
+                    if methods.get(dimension['dimension'],{}).get('status') in {'NOT_APPLICABLE','PROHIBITED'}:
+                        dimension.update(gate_status='NOT_APPLICABLE',score=None,evidence_locations=[],issue_codes=[],revision_strategies=[])
             for dimension in result.get("dimensions", []):
                 for location in dimension.get("evidence_locations", []):
                     quote = inputs["revision"]["text"][location["start"]:location["end"]]
@@ -145,7 +159,8 @@ else:
                 if isinstance(value, list):
                     return [project_schema(item, schema.get("items", {})) for item in value]
                 return value
-            result = project_schema(result, payload.output_schema)
+            from novel_forge.modules.chapter_authority.provider_output_contracts import inline_shared_canon_schema
+            result = project_schema(result, inline_shared_canon_schema(payload.output_schema))
         if stage in {"review", "rereview"}:
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):
@@ -153,6 +168,8 @@ else:
                         issue["evidence"] = {"quote": issue["evidence"]["quote"]}
         if payload.output_schema and payload.output_schema.get("additionalProperties") is False:
             result = {key: value for key, value in result.items() if key in payload.output_schema["properties"]}
+        if payload.output_schema_version == "schema:chapter-provider-output:canon_extraction:v25":
+            result = {"output_json": json.dumps(result, ensure_ascii=False, allow_nan=False)}
         layout = PersistentExecutionDirectory(values["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
         layout.result_path("fixture-response.json").write_text(json.dumps(result, ensure_ascii=False))
         return payload

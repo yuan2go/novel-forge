@@ -50,9 +50,13 @@ class PostgresRoutingRegistry:
         database_url: str,
         *,
         outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
+        planning_repair_resolver: Callable[..., dict[str, Any] | None] | None = None,
+        legacy_planning_repair_validator: Callable[..., None] | None = None,
     ) -> None:
         self.database_url = database_url
         self.outcome_projection = outcome_projection
+        self.planning_repair_resolver = planning_repair_resolver
+        self.legacy_planning_repair_validator = legacy_planning_repair_validator
         self.query = AuthorityAssetQuery(database_url)
         self.writer = AuthorityAssetWriter(database_url)
 
@@ -732,12 +736,9 @@ class PostgresRoutingRegistry:
         input_hash: str,
         lineage: tuple[str, ...],
     ) -> dict[str, Any] | None:
-        from novel_forge.modules.story_planning_runtime.execution import (
-            planning_repair_route_receipt,
-        )
-
-        return planning_repair_route_receipt(
-            self.database_url,
+        if self.planning_repair_resolver is None:
+            return None
+        return self.planning_repair_resolver(
             project_id=project_id,
             book_id=book_id,
             operation_id=operation_id,
@@ -789,6 +790,8 @@ class ProductionProviderRouter:
         token_caps: Mapping[str, int] | None = None,
         call_caps: Mapping[str, int] | None = None,
         outcome_projection: Callable[..., dict[str, dict[str, Any]]] | None = None,
+        planning_repair_resolver: Callable[..., dict[str, Any] | None] | None = None,
+        legacy_planning_repair_validator: Callable[..., None] | None = None,
         execution_environment: str = "production",
         provider_auth_profiles: Mapping[str, str] | None = None,
         review_requirement_resolver: Callable[..., dict[str, Any]] | None = None,
@@ -799,7 +802,9 @@ class ProductionProviderRouter:
         disabled_provider_reasons: Mapping[str, str] | None = None,
     ) -> None:
         self.registry = PostgresRoutingRegistry(
-            database_url, outcome_projection=outcome_projection
+            database_url, outcome_projection=outcome_projection,
+            planning_repair_resolver=planning_repair_resolver,
+            legacy_planning_repair_validator=legacy_planning_repair_validator,
         )
         self.candidates = tuple(candidates)
         self.task_money_limit = task_money_limit
@@ -1242,6 +1247,7 @@ class ProductionProviderRouter:
         return budgets
 
     def _selected_route(self, base: Any, snapshot: Mapping[str, Any]) -> Any:
+        template = None
         task = snapshot["task"]
         repair = task.get("declared_requirements", {}).get("governed_repair")
         if repair:
@@ -1300,7 +1306,11 @@ class ProductionProviderRouter:
                 raise KernelError("CREATIVE_ROUTING_ENVIRONMENT_INVALID", "Creative validation requires the validation runtime profile")
             from .execution_template import verify_template_provenance
             with AuthorityUnitOfWork(self.registry.database_url) as uow:
-                verify_template_provenance(uow.cursor, snapshot)
+                template = verify_template_provenance(uow.cursor, snapshot)
+                if snapshot["task"].get("declared_requirements", {}).get("native_planning_repair"):
+                    if self.registry.legacy_planning_repair_validator is None:
+                        raise KernelError("ROUTING_REPAIR_READER_REQUIRED", "Frozen Planning evidence requires its owning validator")
+                    self.registry.legacy_planning_repair_validator(uow.cursor, snapshot)
             selected_candidate = snapshot["selected"]["candidate"]
             if selected_candidate["provider"] == "codex-cli" and (self.membership_identity.get("billing_channel") != "ACCOUNT_ENTITLEMENT"
                     or snapshot["task"]["budget_snapshot"]["candidates"][selected_candidate["candidate_id"]].get("membership_identity") != self.membership_identity):
@@ -1363,6 +1373,15 @@ class ProductionProviderRouter:
             allowed_model_profile_ids=(profile.profile_id,),
         )
         changes = dict(model_profile=profile, route_policy=policy)
+        if template is not None:
+            identity = f"{candidate['provider']}:{candidate['model']}:{candidate['reasoning']}"
+            if identity != candidate["candidate_id"] or identity not in template["allowed_candidates"]:
+                raise KernelError("TEMPLATE_MODEL_UNAUTHORIZED", identity)
+        if hasattr(base, "task_reasoning_authorization"):
+            changes["task_reasoning_authorization"] = (
+                (candidate["reasoning"], "sha256:" + snapshot["task"]["policy_snapshot"]["policy_hash"].removeprefix("sha256:"))
+                if template is not None and template["mode"] == "CREATIVE_VALIDATION" else None
+            )
         if self.provider_auth_profiles:
             auth_profile = self.provider_auth_profiles.get(candidate["provider"])
             if not auth_profile:

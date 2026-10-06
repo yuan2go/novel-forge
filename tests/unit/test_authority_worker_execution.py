@@ -121,6 +121,16 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
             with self.subTest(error=error):
                 self.assertEqual(WorkerFailureClassifier.classify(error), expected)
 
+    def test_unbound_task_capacity_is_configuration_failure_not_unknown_send(self) -> None:
+        self.assertEqual(
+            WorkerFailureClassifier.classify(KernelError("TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "capacity not configured")),
+            WorkerFailureClass.MANUAL_INTERVENTION,
+        )
+        self.assertEqual(
+            WorkerFailureClassifier.classify(KernelError("EFFECT_STATE_UNKNOWN", "remote outcome unknown")),
+            WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
+        )
+
     def test_batch_continues_after_known_task_failure(self) -> None:
         visited: list[str] = []
 
@@ -137,6 +147,13 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
         self.assertEqual(visited, ["first", "second"])
         self.assertEqual(len(failures), 1)
         self.assertEqual(failures[0].classification, WorkerFailureClass.FINAL_FAILURE)
+
+    def test_unknown_world_identifier_is_not_unknown_external_outcome(self) -> None:
+        for code in ("WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN", "WORLD_GENERATION_IDENTITY_UNKNOWN"):
+            self.assertEqual(WorkerFailureClassifier.classify(KernelError(code, "known rejected identifier")),
+                WorkerFailureClass.FINAL_FAILURE)
+        self.assertEqual(WorkerFailureClassifier.classify(KernelError("EFFECT_STATE_UNKNOWN", "unconfirmed send")),
+            WorkerFailureClass.UNKNOWN_EXTERNAL_STATE)
 
     def test_supervision_snapshot_exposes_restart_and_fatal_contract(self) -> None:
         observed = []

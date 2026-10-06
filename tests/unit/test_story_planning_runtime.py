@@ -58,13 +58,13 @@ from novel_forge.modules.story_planning_runtime import (
 HASH = "sha256:" + "a" * 64
 
 
-@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0"])
+@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0", "1.19.0"])
 def test_planning_handler_retains_exact_frozen_supported_version(version):
     registry = planning_application.StoryPlanningGenerationHandlerRegistry(SimpleNamespace(), "postgresql://unused")
     assert registry.registration("story_planning.generate", version).definition_version == version
 
 
-@pytest.mark.parametrize("version", ["1.19.0", "1.170.0", "1.17.0-extra"])
+@pytest.mark.parametrize("version", ["1.20.0", "1.170.0", "1.17.0-extra"])
 def test_planning_handler_rejects_adjacent_unregistered_versions(version):
     registry = planning_application.StoryPlanningGenerationHandlerRegistry(SimpleNamespace(), "postgresql://unused")
     with pytest.raises(KeyError):
@@ -194,7 +194,7 @@ def test_candidate_repair_routing_lineage_uses_immutable_generation_source(monke
     rows = {
         "repair": (*successor[:4], None if legacy_causation else "root"),
         "root": _routing_lineage_row("", 0),
-        "candidate:root": ("root", digest, digest, content),
+        "candidate:root": ("root", digest, digest, content, "SUCCEEDED"),
     }
     monkeypatch.setattr(planning_execution, "get_database_runtime", lambda _: _routing_lineage_runtime(rows))
     assert _planning_repair_routing_lineage(
@@ -214,7 +214,7 @@ def test_candidate_repair_routing_lineage_rejects_unbound_candidate(monkeypatch,
     digest = canonical_hash(content)
     rows = {
         "repair": _routing_lineage_row("", 1, repair_of_candidate_id="candidate:root"),
-        "candidate:root": ("root", HASH if defect == "content_hash" else digest, digest, content),
+        "candidate:root": ("root", HASH if defect == "content_hash" else digest, digest, content, "SUCCEEDED"),
         "root": _routing_lineage_row("", 0),
     }
     monkeypatch.setattr(planning_execution, "get_database_runtime", lambda _: _routing_lineage_runtime(rows))
@@ -2255,7 +2255,7 @@ def test_book_search_rejects_oversized_or_drifted_opening_topology_before_activa
 
     oversized = deepcopy(candidate)
     oversized["volume_skeleton"].append({"volume": 5, "goal": "poisoned outer"})
-    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT"):
         _validate_narrative_search_horizon(command, oversized)
     repaired = replace(
         command,
@@ -2267,7 +2267,7 @@ def test_book_search_rejects_oversized_or_drifted_opening_topology_before_activa
     assert repaired.narrative_search_planning_horizon == (
         command.narrative_search_planning_horizon
     )
-    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT"):
         _validate_narrative_search_horizon(repaired, oversized)
 
     drifted = replace(
@@ -2882,6 +2882,38 @@ def test_planning_binder_requires_pack_capability_and_pep_on_one_attempt() -> No
     ]["objective"]
 
 
+def test_invalid_primary_result_retains_exact_context_before_candidate_validation():
+    from novel_forge.modules.story_planning_runtime.result_recovery import PlanningResultValidationError
+
+    class InvalidPort(_ExecutionPort):
+        def execute(self, command):
+            candidate = super().execute(command)
+            return replace(candidate, raw_output={"objective": " "})
+
+    class ExactContextResolver(_Resolver):
+        def resolve(self, **kwargs):
+            bundle = super().resolve(**kwargs)
+            bundle.capability_binding.context_bundle_asset_version_id = "primary-context:v1"
+            bundle.capability_binding.context_bundle_hash = HASH
+            bundle.capability_binding.narrative_intelligence_selection_digest = HASH
+            return replace(bundle, execution_port=InvalidPort())
+
+    command = _command("book_plan.generate")
+    with pytest.raises(PlanningResultValidationError) as failure:
+        CapabilityPackBackedPlanningExecutionBinder(ExactContextResolver()).execute(
+            operation_id="operation-1", attempt_id="attempt-1", fencing_token=7,
+            worker_id="planning-worker", command=command, inputs=_inputs(command),
+            definition=GENERATOR_CATALOG[command.generator_operation_name],
+        )
+    evidence = failure.value.execution_evidence
+    assert evidence["context_bundle_asset_version_id"] == "primary-context:v1"
+    assert evidence["context_bundle_hash"] == HASH
+    assert evidence["narrative_intelligence_selection_digest"] == HASH
+    assert evidence["external_receipt_ref"] == "external-effect-receipt-1"
+    assert evidence["capability_execution_ref"] == "binding-1"
+    assert failure.value.raw_result == {"objective": " "}
+
+
 def test_planning_capability_cannot_claim_chapter_commit_authority() -> None:
     command = _command("chapter_plan.generate")
     with pytest.raises(KernelError, match="Planning Capability can only submit"):
@@ -3006,6 +3038,7 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
     from novel_forge.modules.story_planning_runtime import result_recovery
     from novel_forge.modules.story_planning_runtime.application import _command_from_payload, _command_payload
 
+    monkeypatch.setattr("novel_forge.modules.story_planning_runtime.stage_repairs.repair_bound", lambda *args, **kwargs: None)
     original = replace(_command("world.design.generate"), execution_contract_version="1.14.0")
     historical = _command_payload(original)
     assert "repair_of_operation_id" not in historical
@@ -3248,3 +3281,42 @@ def test_changed_static_candidate_configuration_can_restore_original_active_plan
     assert receipt == before
     assert read == list(documents)
     assert recovered.model_context_limit == recovered.model_output_limit == 0
+
+
+def test_runtime_repair_route_lineage_keeps_same_structural_count(monkeypatch):
+    cancelled=_routing_lineage_row('root',1)
+    target=_routing_lineage_row('root',1,runtime_continuation_id='continuation:1')
+    target=(*target[:4],'cancelled-repair')
+    rows={'target':target,'cancelled-repair':cancelled,'root':_routing_lineage_row('',0),
+        'continuation:1':('cancelled-repair',target[3],cancelled[3],cancelled[3])}
+    monkeypatch.setattr(planning_execution,'get_database_runtime',lambda _: _routing_lineage_runtime(rows))
+    assert _planning_repair_routing_lineage('unused',project_id='project-1',book_id='book-1',generator_operation_name='world.design.generate',
+        operation_id='target',repair_of_operation_id='root')==('root','cancelled-repair','target')
+    rows.pop('continuation:1')
+    with pytest.raises(KernelError,match='PLANNING_ROUTING_LINEAGE_INVALID'):
+        _planning_repair_routing_lineage('unused',project_id='project-1',book_id='book-1',generator_operation_name='world.design.generate',
+            operation_id='target',repair_of_operation_id='root')
+
+
+def test_current_serialization_contract_preserves_historical_strict_property_set():
+    arguments = dict(parent_version_id="group:v1", arc_plan_version_id="arc:v1",
+        narrative_realization=_realization_slice(parent_version_id="group:v1"),
+        chapter_schedule_row=_chapter_schedule_row(), work_requirements=True,
+        aligned_methods=True)
+    historical = planning_provider_output_schema(PlanContractType.CHAPTER, **arguments)
+    current = planning_provider_output_schema(PlanContractType.CHAPTER, **arguments, serialization_contract=True)
+    assert historical["additionalProperties"] is False
+    assert "serialization_function" not in historical["properties"]
+    assert historical["properties"]["chapter_contract_schema_version"]["const"] == "chapter-mission-scene.v3"
+    assert current["properties"]["chapter_contract_schema_version"]["const"] == "chapter-mission-scene.v4"
+    assert "serialization_function" in current["required"]
+    assert current["properties"]["serialization_function"]["type"] == ["string", "null"]
+    assert {k: v for k, v in current["properties"].items() if k not in {"serialization_function", "chapter_contract_schema_version"}} == {k: v for k, v in historical["properties"].items() if k != "chapter_contract_schema_version"}
+
+
+@pytest.mark.parametrize("mission,projection", [("chapter-mission-scene.v3", "3.0.0"), ("chapter-mission-scene.v4", "2.0.0")])
+def test_chapter_projection_cannot_reinterpret_another_frozen_mission(monkeypatch, mission, projection):
+    import novel_forge.modules.hierarchical_planning.chapter_contracts as contracts
+    monkeypatch.setattr(contracts, "require_chapter_contracts", lambda candidate: None)
+    with pytest.raises(KernelError, match="CHAPTER_PROJECTION_CONTRACT_MISMATCH"):
+        planning_application._chapter_runtime_projection({"chapter_contract_schema_version": mission}, projection_version=projection)

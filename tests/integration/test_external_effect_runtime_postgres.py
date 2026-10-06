@@ -7,6 +7,7 @@ from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier
+from dataclasses import replace
 
 import psycopg
 
@@ -36,7 +37,9 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     prepare_effect_dispatch,
     reconcile_external_effect,
     submit_effect_dispatch_result,
+    resume_operation_from_completed_effect,
 )
+from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.provider_control import ScriptedProviderAdapterV2
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
@@ -120,6 +123,41 @@ class ExternalEffectRuntimePostgresTests(unittest.TestCase):
         )
         self.assertEqual(result["outcome"], "success")
         self._assert_effect(effect, "SUCCEEDED", "SUCCEEDED")
+
+    def test_completed_effect_recovery_resumes_waiting_owner_and_rejects_unknown_or_foreign_effect(self):
+        context = self._context()
+        provider = _CountingProvider(DATABASE_URL)
+        effect = self._plan(context, scenario="success")
+        dispatch_external_effect(DATABASE_URL, context, effect_id=effect,
+            worker_id="completed-recovery", lease_seconds=30, adapter=provider)
+        with transaction() as connection:
+            version = connection.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [context.operation_id]).fetchone()[0]
+        transition_operation(DATABASE_URL, OperationTransitionCommand(operation_id=context.operation_id,
+            project_id=context.project_id, expected_status="EXECUTING", expected_version=version,
+            target_status="WAITING_EXTERNAL_RESULT", actor_id=context.actor_id, reason="Recovered known completed call",
+            trace_id=context.trace_id, correlation_id=context.correlation_id, causation_id=effect))
+        recovered = resume_operation_from_completed_effect(DATABASE_URL, context, effect_id=effect)
+        self.assertEqual(recovered["operation_status"], "EXECUTING")
+        self.assertEqual(resume_operation_from_completed_effect(DATABASE_URL, context, effect_id=effect), recovered)
+        self.assertEqual(provider.execute_count, 1)
+        unrelated_operation = identifier("unrelated-operation")
+        unrelated_definition = identifier("unrelated-definition")
+        with transaction() as connection, connection.cursor() as cursor:
+            insert_definition(cursor, unrelated_definition)
+            insert_operation(cursor, operation_id=unrelated_operation,
+                definition_name=unrelated_definition, project_id=context.project_id, status="EXECUTING")
+        with self.assertRaises(KernelError) as wrong_owner:
+            resume_operation_from_completed_effect(DATABASE_URL, replace(context, operation_id=unrelated_operation), effect_id=effect)
+        self.assertEqual(wrong_owner.exception.code, "EFFECT_OPERATION_CONFLICT")
+        foreign = self._context()
+        with self.assertRaises(KernelError):
+            resume_operation_from_completed_effect(DATABASE_URL, foreign, effect_id=effect)
+        unknown = self._plan(foreign, scenario="timeout_after")
+        dispatch_external_effect(DATABASE_URL, foreign, effect_id=unknown,
+            worker_id="unknown-recovery", lease_seconds=30, adapter=FakeDeterministicProvider("timeout_after"))
+        with self.assertRaises(KernelError) as rejected:
+            resume_operation_from_completed_effect(DATABASE_URL, foreign, effect_id=unknown)
+        self.assertEqual(rejected.exception.code, "EFFECT_STATUS_CONFLICT")
 
     def test_permanent_pre_send_denial_blocks_provider_and_terminalizes_effect(
         self,

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0159_planning_dead_letter_result_recovery",
+  "migration_head": "20261007_0168_derived_step_revalidation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -8829,6 +8829,51 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261006_0156_resource_journal_indexes.py",
           "locator": "MIGRATION_ID = \"20261006_0156_resource_journal_indexes\"",
           "id": "20261006_0156_resource_journal_indexes"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+          "locator": "MIGRATION_ID = '20261007_0160_planning_result_admission'",
+          "id": "20261007_0160_planning_result_admission"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+          "locator": "MIGRATION_ID = '20261007_0161_planning_capacity_lineage'",
+          "id": "20261007_0161_planning_capacity_lineage"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+          "locator": "MIGRATION_ID = '20261007_0162_planning_input_order_recovery'",
+          "id": "20261007_0162_planning_input_order_recovery"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+          "locator": "MIGRATION_ID = '20261007_0163_optional_world_continuation'",
+          "id": "20261007_0163_optional_world_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+          "locator": "MIGRATION_ID = '20261007_0164_gateway_result_revalidation'",
+          "id": "20261007_0164_gateway_result_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+          "locator": "MIGRATION_ID = '20261007_0165_stage_repair_policy'",
+          "id": "20261007_0165_stage_repair_policy"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+          "locator": "MIGRATION_ID = '20261007_0166_failed_step_successor'",
+          "id": "20261007_0166_failed_step_successor"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+          "locator": "MIGRATION_ID = '20261007_0167_execution_contract_continuation'",
+          "id": "20261007_0167_execution_contract_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py",
+          "locator": "MIGRATION_ID = '20261007_0168_derived_step_revalidation'",
+          "id": "20261007_0168_derived_step_revalidation"
         }
       ],
       "external_effects": {
@@ -9195,6 +9240,318 @@
       "qualification_state": "EXECUTABLE",
       "qualification_run_ids": [],
       "proof_ceiling": "SCRIPTED_PROVIDER_BACKEND_ENGINEERING"
+    },
+    {
+      "concept": "creative-validation-bounded-recovery",
+      "fact_type": "CURRENT_RUNTIME_FACT",
+      "owner": "Domain recovery Authorities with Command Kernel successor lifecycle",
+      "production_entries": [
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+          "symbol": "drive_book"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication._terminal_generation_replay"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+          "symbol": "run_single_chapter_slice"
+        }
+      ],
+      "application": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+          "symbol": "recover"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/gateway_result_recovery.py",
+          "symbol": "recover"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/world_optional.py",
+          "symbol": "follow_optional_failure"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/execution_recovery.py",
+          "symbol": "recover_timeout"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/candidate_repair.py",
+          "symbol": "recover_length_frontier"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/derived_recovery.py",
+          "symbol": "recover_derived_frontier"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/execution_artifacts.py",
+          "symbol": "build_chapter_execution_intent"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/foundation_context.py",
+          "symbol": "world_input_bindings"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+          "symbol": "FormationGeneration.prepare_design"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+          "symbol": "build_provider_task_view"
+        }
+      ],
+      "domain_symbols": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/stage_repairs.py",
+          "symbol": "stage_ordinal"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/revalidation.py",
+          "symbol": "quality_revalidation_evidence"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/foundation_context.py",
+          "symbol": "frozen_world_evidence"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+          "symbol": "normalize_authoritative_chapter_plan"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+          "symbol": "build_draft_plan_view"
+        },
+        {
+          "path": "src/novel_forge/modules/book_design_authority/foundation_validation.py",
+          "symbol": "validate_foundation_layer"
+        },
+        {
+          "path": "src/novel_forge/modules/story_design_authority/qualification.py",
+          "symbol": "qualification_profile_options"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+          "symbol": "foundation_output_schema_ref"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+          "symbol": "foundation_task"
+        }
+      ],
+      "commands_operations": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+          "symbol": "StoryPlanningGenerationApplication.register_result_admission_recovery"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+          "symbol": "replace_failed_step"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/execution_window.py",
+          "symbol": "continue_candidate_execution_window"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+          "symbol": "replace_derived_step"
+        }
+      ],
+      "state_ownership": {
+        "owned_state": [
+          "Planning retained-result admission and continuation bindings",
+          "Kernel failed/derived step successor and execution-window journals",
+          "Book Chapter request replacement references"
+        ],
+        "write_rule": "Command Kernel alone owns lifecycle journals; Planning and Book validate and mutate only their native domain records. Old terminal and accepted history remain immutable.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+            "symbol": "replace_failed_step"
+          },
+          {
+            "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+            "symbol": "recover"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/execution_recovery.py",
+            "symbol": "recover_timeout"
+          }
+        ]
+      },
+      "mutation_boundary": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+          "symbol": "replace_failed_step"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+          "symbol": "replace_derived_step"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+          "symbol": "recover"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/execution_recovery.py",
+          "symbol": "recover_timeout"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+          "symbol": "require_settled_failed_lineage"
+        }
+      ],
+      "persistence": [
+        {
+          "path": "src/novel_forge/storage/authority_uow.py",
+          "symbol": "AuthorityUnitOfWork"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+          "symbol": "replace_failed_step"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+          "symbol": "recover"
+        }
+      ],
+      "migrations": [
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+          "locator": "MIGRATION_ID = '20261007_0160_planning_result_admission'",
+          "id": "20261007_0160_planning_result_admission"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+          "locator": "MIGRATION_ID = '20261007_0161_planning_capacity_lineage'",
+          "id": "20261007_0161_planning_capacity_lineage"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+          "locator": "MIGRATION_ID = '20261007_0162_planning_input_order_recovery'",
+          "id": "20261007_0162_planning_input_order_recovery"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+          "locator": "MIGRATION_ID = '20261007_0163_optional_world_continuation'",
+          "id": "20261007_0163_optional_world_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+          "locator": "MIGRATION_ID = '20261007_0164_gateway_result_revalidation'",
+          "id": "20261007_0164_gateway_result_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+          "locator": "MIGRATION_ID = '20261007_0165_stage_repair_policy'",
+          "id": "20261007_0165_stage_repair_policy"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+          "locator": "MIGRATION_ID = '20261007_0166_failed_step_successor'",
+          "id": "20261007_0166_failed_step_successor"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+          "locator": "MIGRATION_ID = '20261007_0167_execution_contract_continuation'",
+          "id": "20261007_0167_execution_contract_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py",
+          "locator": "MIGRATION_ID = '20261007_0168_derived_step_revalidation'",
+          "id": "20261007_0168_derived_step_revalidation"
+        }
+      ],
+      "external_effects": {
+        "mode": "INDIRECT",
+        "rule": "Local revalidation does not resend; admitted successors use ordinary governed Provider dispatch outside business transactions. Unknown outcomes require reconciliation.",
+        "evidence": [
+          {
+            "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+            "symbol": "planning_repair_route_receipt"
+          },
+          {
+            "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+            "symbol": "ProductionExecutionGatewayExternalEffectAdapter"
+          },
+          {
+            "path": "src/novel_forge/modules/production_execution/rejected_output.py",
+            "symbol": "read_retained_rejected_output"
+          }
+        ]
+      },
+      "upstream_dependencies": [
+        "command-attempt-lease-fence",
+        "external-effect-provider-control",
+        "postgresql-persistence-and-migrations",
+        "book-production-coordination"
+      ],
+      "downstream_consumers": [
+        "chapter-production-saga",
+        "review-revision-quality",
+        "book-chapter-acceptance"
+      ],
+      "tests": [
+        {
+          "path": "tests/unit/test_derived_step_revalidation.py",
+          "symbol": "test_chapter_recovery_rejects_closed_foreign_or_cancelled_frontier"
+        },
+        {
+          "path": "tests/unit/test_book_execution_recovery.py",
+          "symbol": "test_only_known_preprose_member_timeout_is_eligible"
+        },
+        {
+          "path": "tests/unit/test_native_stage_repair_bound.py",
+          "symbol": "test_stage_ordinal_retains_world_spend_and_monotonic_counter_without_spending_main_repairs"
+        },
+        {
+          "path": "tests/unit/test_migration_history_admission.py",
+          "symbol": "test_foreign_or_discontinuous_history_is_rejected_before_pending_ddl"
+        },
+        {
+          "path": "tests/unit/test_creation_recovery_control.py",
+          "symbol": "test_original_cancellation_between_hooks_prevents_next_recovery"
+        },
+        {
+          "path": "tests/integration/test_migration_history_admission_postgres.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/integration/test_creative_validation_integration_upgrade_postgres.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_quality_frozen_world_foundation.py",
+          "symbol": "test_independent_qualification_cannot_replace_native_world_binding"
+        },
+        {
+          "path": "tests/unit/test_creative_execution_template.py",
+          "symbol": "test_optional_world_invalid_raw_without_blocked_action_cannot_defer"
+        },
+        {
+          "path": "tests/unit/test_creative_execution_template.py",
+          "symbol": "test_optional_world_unresolved_or_retryable_source_has_no_permission"
+        },
+        {
+          "path": "tests/integration/test_creative_validation_admission_postgres.py",
+          "symbol": "test_result_admission_blocks_unsettled_lineage_before_materialization"
+        },
+        {
+          "path": "tests/unit/test_work_foundation_contract.py",
+          "symbol": "test_frozen_main_foundation_provider_schema_hashes_remain_exact"
+        },
+        {
+          "path": "tests/unit/test_work_foundation_contract.py",
+          "symbol": "test_current_foundation_task_identity_cannot_reinterpret_historical_request"
+        },
+        {
+          "path": "tests/unit/test_planning_result_context_identity.py",
+          "symbol": "test_primary_failure_rejects_other_stage_context_or_changed_frozen_hash"
+        }
+      ],
+      "qualification_state": "WIRED",
+      "qualification_run_ids": [],
+      "proof_ceiling": "LOCAL_RECOVERY_ENGINEERING"
     }
   ],
   "negative_boundaries": [
@@ -9337,7 +9694,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:0ba7b5f5eac3260f741f53eeac25936fb640376800d09ec32b4e0fb9aabbc68c"
+    "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9782,6 +10139,54 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
           "symbol": "PlanningWorldPreparation.prepare"
+        }
+      ]
+    },
+    {
+      "id": "creative-stage-repair-versioned-bounds",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Frozen planning-route-repair.v1 retains its lineage-wide bound; new v2 receipts bind explicit creative v4-v6 policy, Provider stage, stage ordinal and complete unchanged input scope. Per-stage two and global four repairs do not reset counters or replace dispatch-time native admission. Historical branch evidence is readable only.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+          "symbol": "planning_repair_route_receipt"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/stage_repairs.py",
+          "symbol": "stage_ordinal"
+        }
+      ]
+    },
+    {
+      "id": "migration-history-prefix-admission",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Pending migration DDL accepts only an exact prefix of the registered main identity chain. Foreign branch IDs and holes are refused; applied IDs and published migrations are not rewritten.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/storage/migrations/runner.py",
+          "symbol": "pending_migrations"
+        },
+        {
+          "path": "tests/unit/test_migration_history_admission.py",
+          "symbol": "test_foreign_or_discontinuous_history_is_rejected_before_pending_ddl"
+        }
+      ]
+    },
+    {
+      "id": "creative-successor-live-unaccepted-frontier",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Versioned Chapter and derived recovery requires the original actor and exact live unaccepted frontier, settled Effects and no held lease or committed downstream state. Book and Group update references; Kernel preserves terminal lifecycle and charges.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+          "symbol": "require_live_chapter_frontier"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+          "symbol": "replace_derived_step"
         }
       ]
     }

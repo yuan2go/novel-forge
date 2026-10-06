@@ -15,5 +15,5 @@ def add_execution_template_parser(subparsers: Any) -> None:
 
 
 def run_execution_template_command(settings: Any, args: Any) -> dict[str, Any]:
-    from novel_forge.modules.production_execution.execution_template import configure_execution_template
+    from novel_forge.modules.authority_handler_runtime.policy_commands import configure_execution_template
     return configure_execution_template(settings, args)

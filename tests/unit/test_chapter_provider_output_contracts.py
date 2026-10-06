@@ -1205,3 +1205,75 @@ def test_provider_schema_has_no_open_object_escape_hatch() -> None:
 
     for stage in ("canon_extraction", "quality_structural", "reader_outcome"):
         assert_closed(chapter_provider_output_schema(stage))
+
+
+def test_literal_null_branch_retains_nullable_const_and_rejects_other_types():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    schema = {"type":"object", "required":["value"], "additionalProperties":False,
+        "properties":{"value":{"anyOf":[{"type":"null"},{"type":"string"}]}}}
+    _validate(schema, {"value":None}, path="$")
+    _validate(schema, {"value":"text"}, path="$")
+    with pytest.raises(ValueError):
+        _validate(schema, {"value":1}, path="$")
+    with pytest.raises(ValueError):
+        _validate({"type":["string","null"],"const":"frozen"}, None, path="$")
+
+
+@pytest.mark.parametrize('stage', ['review','rereview'])
+def test_delivered_knowledge_schema_rejects_catalog_only_judgments(stage):
+    from novel_forge.modules.chapter_authority.provider_output_contracts import bind_delivered_knowledge_scope
+    base = chapter_provider_output_schema(stage)
+    check = {'knowledge_card_asset_version_id':'catalog-only', 'status':'NOT_USED','reason':'inspiration',
+        'evidence':None, 'conditions_checked':[], 'exceptions_checked':[], 'issue_codes':[]}
+    value = {'score':80, 'issues':[], 'resolution_checks':[], 'knowledge_checks':[check]}
+    empty = bind_delivered_knowledge_scope(base, [])
+    with pytest.raises(KernelError,match='SCHEMA_INVALID'):
+        validate_chapter_provider_output_against_schema(stage, empty, value)
+    validate_chapter_provider_output_against_schema(stage, empty, {**value,'knowledge_checks':[]})
+    scoped = bind_delivered_knowledge_scope(base,[{'knowledge_card_asset_version_id':'delivered:v1'}])
+    with pytest.raises(KernelError,match='SCHEMA_INVALID'):
+        validate_chapter_provider_output_against_schema(stage, scoped, value)
+    validate_chapter_provider_output_against_schema(stage, scoped, {**value,'knowledge_checks':[{**check,'knowledge_card_asset_version_id':'delivered:v1'}]})
+    assert base['properties']['knowledge_checks'].get('maxItems') is None
+
+
+def test_shared_canon_schema_restores_every_inline_constraint_and_rejects_invalid_outputs():
+    import json
+    from novel_forge.modules.chapter_authority.provider_output_contracts import shared_canon_schema
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    original, old_ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='canon_extraction',request_payload={'input':{}},prompt_contract_version='v9')
+    shared, new_ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='canon_extraction',request_payload={'input':{}},prompt_contract_version='v10')
+    def expand(value):
+        if isinstance(value,dict):
+            if '$ref' in value:
+                return expand(shared['$defs'][value['$ref'].split('/')[-1]])
+            return {key:expand(item) for key,item in value.items() if key!='$defs'}
+        if isinstance(value,list):
+            return [expand(item) for item in value]
+        return value
+    assert expand(shared) == original
+    assert old_ref.endswith(':v22') and new_ref.endswith(':v24')
+    assert len(json.dumps(shared)) < len(json.dumps(original))
+    candidate = {key:[] for key in original['properties'] if original['properties'][key].get('type')=='array'}
+    candidate.update(extraction_status='NO_CHANGE',no_change_reason='No observed change in this controlled schema probe.')
+    for schema in (original,shared):
+        validate_chapter_provider_output_against_schema('canon_extraction',schema,candidate)
+        broken = {**candidate,'invented_approval':True}
+        with pytest.raises(KernelError):
+            validate_chapter_provider_output_against_schema('canon_extraction',schema,broken)
+        with pytest.raises(KernelError):
+            validate_chapter_provider_output_against_schema('canon_extraction',schema,{**candidate,'canon_facts':[{}]})
+        broken = dict(candidate)
+        broken.pop('canon_facts')
+        with pytest.raises(KernelError):
+            validate_chapter_provider_output_against_schema('canon_extraction',schema,broken)
+    assert validate_chapter_provider_output_semantics('canon_extraction',candidate,output_schema_ref=old_ref) == validate_chapter_provider_output_semantics('canon_extraction',candidate,output_schema_ref=new_ref)
+    with pytest.raises(KernelError,match='CANON_SHARED_SCHEMA_SCOPE_INVALID'):
+        shared_canon_schema({'type':'object','$id':'nested-scope'})
+    malformed=deepcopy(shared)
+    name=next(iter(malformed['$defs']))
+    malformed['$defs'][name]={'$ref':'#/$defs/'+name}
+    with pytest.raises(KernelError,match='CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID'):
+        validate_chapter_provider_output_against_schema('canon_extraction',malformed,candidate)

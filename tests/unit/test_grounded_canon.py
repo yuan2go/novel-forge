@@ -312,3 +312,37 @@ def test_accepted_payoff_rejects_candidate_or_claim_scope_tampering(field, value
     change['payoff_evidence'][field] = value
     with pytest.raises(KernelError, match='payoff'):
         payoff_events(change)
+
+
+def test_taxonomy_repair_requires_only_unknown_labels_and_fresh_independent_review():
+    from copy import deepcopy
+    from novel_forge.modules.canon_graph.grounding import grounded_claims, support_kind_repair_diagnostic
+    text="门关上了。"
+    extraction=extract(text,{"extraction_status":"EXTRACTED","facts":[fact(text)]})
+    review={"coverage":"COMPLETE","no_change_supported":False,"claims":[{
+        "claim_id":c['claim']['grounded_claim_id'],"assessment":"SUPPORTED",
+        "observed_kind":"DOCUMENT_CONTENT","reason":"The door closes in the supplied prose."
+    } for c in grounded_claims(extraction)]}
+    proof=support_kind_repair_diagnostic(extraction,review)
+    assert proof and proof['assessment_reused'] is False
+    with pytest.raises(KernelError,match="CANON_GROUNDING_REEXTRACTION_REQUIRED"):
+        validate_support_review(extraction=extraction,revision={"text":text},revision_asset_version_id="final-candidate",result=review)
+    for field,value in [('assessment','UNSUPPORTED'),('assessment','UNCERTAIN'),('observed_kind','BELIEF'),('reason','')]:
+        changed=deepcopy(review)
+        changed['claims'][0][field]=value
+        assert support_kind_repair_diagnostic(extraction,changed) is None
+    for changed in [dict(review,coverage='PARTIAL'),dict(review,claims=[]),dict(review,claims=review['claims']*2)]:
+        assert support_kind_repair_diagnostic(extraction,changed) is None
+
+
+def test_support_taxonomy_schema_does_not_force_agreement_or_success():
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    from novel_forge.modules.canon_graph.grounding import SUPPORT_CLAIM_KINDS
+    schema,ref=PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='canon_support',request_payload={'input':{'support_kind_contract':'canon-support-kinds.v2'}},
+        legacy_contract=False,prompt_contract_version='v11')
+    assert ref=='schema:chapter-provider-output:canon_support:v2'
+    fields=schema['properties']['claims']['items']['properties']
+    assert fields['observed_kind']['enum']==list(SUPPORT_CLAIM_KINDS)
+    assert set(fields['assessment']['enum'])=={'SUPPORTED','UNSUPPORTED','UNCERTAIN'}
+    assert 'const' not in fields['observed_kind']

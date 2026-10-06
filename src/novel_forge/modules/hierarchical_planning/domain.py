@@ -549,7 +549,7 @@ def _validate_canonical_narrative_contract(
             not content.get(field)
             and not (
                 content.get("chapter_contract_schema_version")
-                == "chapter-mission-scene.v3"
+                in {"chapter-mission-scene.v3", "chapter-mission-scene.v4"}
                 and field
                 in {
                     "arc_schedule",
@@ -627,7 +627,7 @@ def _validate_canonical_narrative_contract(
     if sum(str(item.get("role") or "") == "PRIMARY" for item in schedule) != (
         0
         if not schedule
-        and content.get("chapter_contract_schema_version") == "chapter-mission-scene.v3"
+        and content.get("chapter_contract_schema_version") in {"chapter-mission-scene.v3", "chapter-mission-scene.v4"}
         else 1
     ):
         raise KernelError(

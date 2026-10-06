@@ -73,6 +73,12 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
         "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
     }, monkeypatch, transport)
+    if full_creation:
+        catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+        for model in catalog["models"]:
+            model["reasoning"] = "medium"
+        env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+        env["NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT"] = "medium"
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -394,7 +400,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                     visit(child)
         visit(result)
         if mode == "partial-alternative" and stage == "creative.candidates.generate" and len(creative_calls) > 1:
-            result["applicability"][0]["field_path"] = "/serialization_potential"
+            result["applicability"][0]["field_path"] = "serialization_potential"
         return result
     transport.planning = bounded_planning
     env = controlled_member_environment(tmp_path, {
@@ -419,6 +425,11 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
         "--idempotency-key", "durable", "--repository-root", str(root)])
+    if mode.startswith("world-"):
+        execution_template = json.loads((root / "config/execution_templates/creative_validation.json").read_text())
+        execution_template["world_future_preparation"] = "REQUIRED"
+        args.execution_template_file = tmp_path / "required-world-execution-template.json"
+        args.execution_template_file.write_text(json.dumps(execution_template))
     settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="validation")
     first = run_creation_command(settings, args)
     identity = first["formation_run_id"]

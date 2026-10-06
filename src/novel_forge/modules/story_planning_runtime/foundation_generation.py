@@ -51,7 +51,7 @@ def _records(fields: str, *, minimum: int = 1, maximum: int = 16) -> dict[str, A
     }
 
 
-def _apply_work_schema(properties: dict[str, Any], role: FoundationRole, *, provider_path_constraints: bool) -> None:
+def _apply_work_schema(properties: dict[str, Any], role: FoundationRole, *, provider_path_constraints: bool, rfc6901_paths: bool) -> None:
     optional = {
         FoundationRole.CREATIVE_FOUNDATION: "subgenre core_desire core_fear core_conflict serialization_potential",
         FoundationRole.ENDING_INTENT: "protagonist_cost",
@@ -82,7 +82,7 @@ def _apply_work_schema(properties: dict[str, Any], role: FoundationRole, *, prov
         "maxItems": 256,
         "items": _object(
             {
-                "field_path": {"type": "string", "pattern": r"^\$(?:\.[A-Za-z_][A-Za-z0-9_]*|\[[0-9]+\])+$", "description": "Exact JSONPath of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."} if provider_path_constraints else _text(),
+                "field_path": ({"type": "string", "pattern": r"^(?:\$(?:\.[A-Za-z_][A-Za-z0-9_]*|\[[0-9]+\])+|/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*)$", "description": "Exact JSONPath or RFC 6901 JSON Pointer of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."} if rfc6901_paths else {"type": "string", "pattern": r"^\$(?:\.[A-Za-z_][A-Za-z0-9_]*|\[[0-9]+\])+$", "description": "Exact JSONPath of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."}) if provider_path_constraints else _text(),
                 "status": {
                     "type": "string",
                     "enum": [
@@ -99,25 +99,30 @@ def _apply_work_schema(properties: dict[str, Any], role: FoundationRole, *, prov
 
 
 def validate_foundation_applicability(
-    payload: Mapping[str, Any], schema: Mapping[str, Any]
+    payload: Mapping[str, Any], schema: Mapping[str, Any], *, rfc6901_paths: bool = False
 ) -> None:
     nullable: dict[str, Any] = {}
+    paths: dict[str, str] = {}
 
-    def visit(value: Any, contract: Mapping[str, Any], path: str) -> None:
+    def visit(value: Any, contract: Mapping[str, Any], path: str, pointer: str) -> None:
         if isinstance(contract.get("type"), list) and "null" in contract["type"]:
-            nullable[path] = value
+            nullable[pointer] = value
+            paths[path] = pointer
+            if rfc6901_paths:
+                paths[pointer] = pointer
         if isinstance(value, Mapping):
             for field, child in contract.get("properties", {}).items():
                 if field in value:
-                    visit(value[field], child, f"{path}.{field}")
+                    token = field.replace("~", "~0").replace("/", "~1")
+                    visit(value[field], child, f"{path}.{field}", f"{pointer}/{token}")
         elif isinstance(value, list):
             for index, child in enumerate(value):
-                visit(child, contract.get("items", {}), f"{path}[{index}]")
+                visit(child, contract.get("items", {}), f"{path}[{index}]", f"{pointer}/{index}")
 
-    visit(payload, schema, "$")
+    visit(payload, schema, "$", "")
     declarations: dict[str, Mapping[str, Any]] = {}
     for item in payload.get("applicability", []):
-        path = item["field_path"]
+        path = paths.get(item["field_path"])
         if path not in nullable or path in declarations:
             raise KernelError(
                 "FOUNDATION_APPLICABILITY_INVALID",
@@ -139,7 +144,7 @@ def validate_foundation_applicability(
 
 
 def foundation_output_schema(
-    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True
+    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True, rfc6901_paths: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     properties: dict[str, Any] = {
@@ -238,15 +243,20 @@ def foundation_output_schema(
             minimum=0,
         )
     if work_requirements:
-        _apply_work_schema(properties, role, provider_path_constraints=provider_path_constraints)
+        _apply_work_schema(properties, role, provider_path_constraints=provider_path_constraints, rfc6901_paths=rfc6901_paths)
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         **_object(properties),
     }
 
 
+def foundation_output_schema_ref(generator: str, *, execution_contract_version: str) -> str:
+    version = {"1.17.0": 2, "1.18.0": 3, "1.19.0": 4}.get(execution_contract_version, 1)
+    return f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[generator].value.lower()}:v{version}"
+
+
 def foundation_task(
-    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False
+    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     tasks = {
@@ -267,7 +277,7 @@ def foundation_task(
             FoundationRole.CHARACTER_CAST: "Design characters suitable for this work and distinct voices grounded in their circumstances. Wounds, false beliefs, secrets and transformation are optional, not mandatory identities. Preserve exact references, capabilities, knowledge and approved initial conditions; never invent accepted history.",
         }
     return {
-        "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
+        "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
         if work_requirements
         else "foundation-generation.v1",
         "role": role.value,
@@ -282,7 +292,7 @@ def foundation_task(
         "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
         **(
             {
-                "applicability_contract": "All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+                "applicability_contract": ("Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. " if rfc6901_paths else "") + "All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
             }
             if work_requirements
             else {}
@@ -291,7 +301,7 @@ def foundation_task(
 
 
 def foundation_envelope(
-    *, generator: str, inputs: tuple[Any, ...], work_requirements: bool = False, aligned_methods: bool = False
+    *, generator: str, inputs: tuple[Any, ...], work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
     by_role = {item.role: item for item in inputs}
@@ -301,7 +311,7 @@ def foundation_envelope(
             "Foundation input roles differ from the frozen dependency contract",
         )
     return {
-        "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
+        "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
         if work_requirements
         else "foundation-generation.v1",
         "role": role.value,
@@ -353,7 +363,7 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload["world_foundation_json"] = json.dumps(
             world, ensure_ascii=False, separators=(",", ":")
         )
-    work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3"}
+    work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}
     schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False)
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
@@ -377,7 +387,7 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload.pop("knowledge_translations")
     validate_chapter_provider_output_against_schema(generator, schema, payload)
     if work_requirements:
-        validate_foundation_applicability(payload, schema)
+        validate_foundation_applicability(payload, schema, rfc6901_paths=envelope.get("contract_version") == "foundation-generation.v4")
     if generator == "character.cast.generate":
         ids = [character["character_id"] for character in payload["characters"]]
         if len(ids) != len(set(ids)) or any(

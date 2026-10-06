@@ -278,7 +278,7 @@ class WorkflowBindingCatalog:
 _NON_PROVIDER_CAPABILITIES = {
     "plan": "planning.chapter.generate",
     "execution_intent": "planning.chapter.generate",
-    "memo": "planning.chapter.generate",
+    "memo": "planning.chapter.memo",
     "retrieval": "retrieval.embed",
     "best_candidate": "planning.chapter.generate",
     "context": "context.task.compile",

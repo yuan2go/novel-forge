@@ -63,6 +63,23 @@ def test_optional_feature_requires_consistent_exact_applicability():
         )
 
 
+def test_applicability_accepts_exact_json_pointer_without_rewriting_evidence():
+    payload = ending_payload()
+    payload["constraint_envelope"]["contract_version"] = "foundation-generation.v4"
+    payload["applicability"][0]["field_path"] = "/protagonist_cost"
+    original = deepcopy(payload)
+    validate_foundation_payload("ending.intent.generate", {"candidate_payload": payload})
+    assert payload == original
+
+
+def test_applicability_aliases_cannot_duplicate_the_same_optional_field():
+    payload = ending_payload()
+    payload["constraint_envelope"]["contract_version"] = "foundation-generation.v4"
+    payload["applicability"].append({**payload["applicability"][0], "field_path": "/protagonist_cost"})
+    with pytest.raises(KernelError, match="FOUNDATION_APPLICABILITY_INVALID"):
+        validate_foundation_payload("ending.intent.generate", {"candidate_payload": payload})
+
+
 def test_old_ending_contract_remains_cost_required():
     payload = ending_payload()
     payload.pop("applicability")
@@ -154,3 +171,70 @@ def test_admitted_runtime_continuation_retains_frozen_pack_after_activation_chan
     monkeypatch.setattr(runtime, "resolve_target", lambda *_: {"pack": "new"})
     with pytest.raises(KernelError, match="PLANNING_RUNTIME_CONTINUATION_RUNTIME_DRIFT"):
         runtime.require_successor(application, command)
+
+
+FROZEN_MAIN_WORK_SCHEMA_HASHES = {
+    "creative.candidates.generate": "sha256:671b35a9ef5158dc77a655dbab390369a9d1c5dd80d9585933baba07dbeae84d",
+    "theme.candidates.generate": "sha256:0f93626df2180d88911e5bc37f4c5f564c20140a3d3c50efa049509997dbba26",
+    "ending.intent.generate": "sha256:2bc8dadca6f873db906ab8b94db2aea76900dfe798aeff432d584ee8fbffb1c3",
+    "reader.promise.generate": "sha256:204b9abcdc48b8c568d05027f074f90dd14906f12a7c98d3aa1a957294568749",
+    "world.design.generate": "sha256:7cfdaf29699c4d9dae919c43ed8912b163de0172fea5e79e2435106427a0d345",
+    "character.cast.generate": "sha256:fb91cf083cb1c3ac4eb6c7971b9aa9111a6d2fb9794678caf916a284db45e546",
+}
+
+
+@pytest.mark.parametrize("generator,expected", FROZEN_MAIN_WORK_SCHEMA_HASHES.items())
+@pytest.mark.parametrize("version,schema_version", [("1.17.0", 2), ("1.18.0", 3)])
+def test_frozen_main_foundation_provider_schema_hashes_remain_exact(generator, expected, version, schema_version):
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.modules.story_planning_runtime.foundation_generation import foundation_output_schema, foundation_output_schema_ref
+    schema = foundation_output_schema(generator, work_requirements=True, rfc6901_paths=version == "1.19.0")
+    assert canonical_hash(schema) == expected
+    assert foundation_output_schema_ref(generator, execution_contract_version=version).endswith(f":v{schema_version}")
+
+
+@pytest.mark.parametrize("version", ["foundation-generation.v2", "foundation-generation.v3"])
+def test_historical_foundation_reader_retains_jsonpath_only(version):
+    payload = ending_payload()
+    payload["constraint_envelope"]["contract_version"] = version
+    validate_foundation_payload("ending.intent.generate", {"candidate_payload": payload})
+    payload["applicability"][0]["field_path"] = "/protagonist_cost"
+    with pytest.raises(KernelError, match="FOUNDATION_APPLICABILITY_INVALID"):
+        validate_foundation_payload("ending.intent.generate", {"candidate_payload": payload})
+
+
+@pytest.mark.parametrize("path", ["$.protagonist_cost", "/protagonist_cost"])
+def test_current_foundation_v4_provider_and_reader_agree_on_exact_paths(path):
+    from novel_forge.modules.story_planning_runtime.foundation_generation import foundation_output_schema, foundation_output_schema_ref
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    payload = ending_payload()
+    payload.pop("foundation_parent_bindings")
+    payload.pop("constraint_envelope")
+    payload["applicability"][0]["field_path"] = path
+    schema = foundation_output_schema("ending.intent.generate", work_requirements=True, rfc6901_paths=True)
+    validate_chapter_provider_output_against_schema("ending.intent.generate", schema, payload)
+    from novel_forge.modules.story_planning_runtime.result_recovery import validate_raw_result
+    validate_raw_result("ending.intent.generate", payload, work_requirements=True, aligned_methods=True, rfc6901_paths=True)
+    assert foundation_output_schema_ref("ending.intent.generate", execution_contract_version="1.19.0").endswith(":v4")
+    payload["applicability"][0]["field_path"] = "protagonist_cost"
+    with pytest.raises(KernelError, match="OUTPUT_SCHEMA_INVALID"):
+        validate_chapter_provider_output_against_schema("ending.intent.generate", schema, payload)
+    with pytest.raises(KernelError, match="FOUNDATION_APPLICABILITY_INVALID"):
+        validate_raw_result("ending.intent.generate", payload, work_requirements=True, aligned_methods=True, rfc6901_paths=True)
+
+
+def test_current_foundation_task_identity_cannot_reinterpret_historical_request():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    from novel_forge.modules.story_planning_runtime.foundation_generation import FOUNDATION_INPUT_ROLES
+    generator = "ending.intent.generate"
+    inputs = {
+        "planning_command": {"planning_scope": "NOT_APPLICABLE", "creative_requirements_contract": "work-requirements.v2", "execution_contract_version": "1.19.0"},
+        "frozen_inputs": [{"role": role} for role in FOUNDATION_INPUT_ROLES[generator]],
+        "foundation_task": foundation_task(generator, work_requirements=True, aligned_methods=True, rfc6901_paths=True),
+    }
+    assert "foundation-generation.v4" in str(build_provider_task_view(stage=generator, inputs=inputs))
+    inputs["planning_command"]["execution_contract_version"] = "1.18.0"
+    with pytest.raises(KernelError, match="FOUNDATION_PROVIDER_TASK_INVALID"):
+        build_provider_task_view(stage=generator, inputs=inputs)
+    inputs["foundation_task"] = foundation_task(generator, work_requirements=True, aligned_methods=True)
+    assert "foundation-generation.v3" in str(build_provider_task_view(stage=generator, inputs=inputs))

@@ -161,6 +161,15 @@ from . import (
     v20261006_0157_creation_continuation_control,
     v20261006_0158_planning_capacity_causation,
     v20261007_0159_planning_dead_letter_result_recovery,
+    v20261007_0160_planning_result_admission,
+    v20261007_0161_planning_capacity_lineage,
+    v20261007_0162_planning_input_order_recovery,
+    v20261007_0163_optional_world_continuation,
+    v20261007_0164_gateway_result_revalidation,
+    v20261007_0165_stage_repair_policy,
+    v20261007_0166_failed_step_successor,
+    v20261007_0167_execution_contract_continuation,
+    v20261007_0168_derived_step_revalidation,
 )
 
 VERSION_MODULES = [
@@ -324,6 +333,15 @@ VERSION_MODULES = [
     v20261006_0157_creation_continuation_control,
     v20261006_0158_planning_capacity_causation,
     v20261007_0159_planning_dead_letter_result_recovery,
+    v20261007_0160_planning_result_admission,
+    v20261007_0161_planning_capacity_lineage,
+    v20261007_0162_planning_input_order_recovery,
+    v20261007_0163_optional_world_continuation,
+    v20261007_0164_gateway_result_revalidation,
+    v20261007_0165_stage_repair_policy,
+    v20261007_0166_failed_step_successor,
+    v20261007_0167_execution_contract_continuation,
+    v20261007_0168_derived_step_revalidation,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -50,8 +50,8 @@ from .process_supervisor import (
 )
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
-    CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION,
-    codex_output_schema, codex_retry_overrides, require_codex_home,
+    CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
+    codex_output_schema, decode_codex_output, strict_codex_json_loads, CODEX_CANONICAL_JSON_SCHEMA_REF, CODEX_CANONICAL_JSON_CODEC, codex_retry_overrides, require_codex_home,
 )
 
 
@@ -1469,7 +1469,7 @@ def codex_protocol_failure(stdout: str) -> str | None:
                 continue
             message = event.get("message") if event.get("type") == "error" else None
             detail = json.loads(message) if isinstance(message, str) else {}
-            if (isinstance(detail, dict) and detail.get("status") == 400
+            if (isinstance(detail, dict) and detail.get("status", 400) == 400
                 and isinstance(detail.get("error"), dict)
                 and detail["error"].get("code") == "invalid_json_schema"):
                 return "PROVIDER_SCHEMA_REJECTED"
@@ -1689,8 +1689,9 @@ class CodexCliExecutionBackend:
             "output_schema": dict(payload.output_schema or {}),
             "provider_schema_contract": {
                 "version": CODEX_SCHEMA_PROJECTION_VERSION,
+                "equivalent_projection": CODEX_CANONICAL_JSON_CODEC if payload.output_schema_version==CODEX_CANONICAL_JSON_SCHEMA_REF else CODEX_NULLABLE_SHARED_TYPES_VERSION,
                 "canonical_hash": _sha256(dict(payload.output_schema or {})),
-                "provider_hash": _sha256(codex_output_schema(dict(payload.output_schema or {}))),
+                "provider_hash": _sha256(codex_output_schema(dict(payload.output_schema or {}), schema_ref=payload.output_schema_version)),
                 "local_constraints_retained": ["uniqueItems"],
             },
             "capability_evidence": dict(payload.capability_evidence or {}),
@@ -1835,7 +1836,7 @@ class CodexCliExecutionBackend:
         schema_path = layout.result_path("output.schema.json")
         schema_path.write_text(
             json.dumps(
-                codex_output_schema(payload.output_schema),
+                codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),
                 ensure_ascii=False,
                 sort_keys=True,
                 indent=2,
@@ -2024,9 +2025,11 @@ class CodexCliExecutionBackend:
                 "INVALID_JSON", "Codex result is missing or corrupt", retryable=False
             )
         self.execution_policy.assert_result(receipt.result_path)
+        frozen = record.frozen_output_contract or record.raw_evidence
         try:
-            parsed = json.loads(Path(receipt.result_path).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
+            loader = strict_codex_json_loads if frozen.get("output_schema_version")==CODEX_CANONICAL_JSON_SCHEMA_REF else json.loads
+            parsed = loader(Path(receipt.result_path).read_text(encoding="utf-8"))
+        except (OSError, ValueError, RecursionError) as exc:
             raise _CodexResultFailure(
                 "INVALID_JSON", "Codex last message is not valid JSON", retryable=False
             ) from exc
@@ -2038,6 +2041,12 @@ class CodexCliExecutionBackend:
             )
         frozen = record.frozen_output_contract or record.raw_evidence
         output_schema = frozen.get("output_schema")
+        try:
+            parsed, decoding = decode_codex_output(dict(parsed), schema_ref=str(frozen.get("output_schema_version") or ""))
+            if decoding:
+                record.raw_evidence["transport_decode"] = decoding
+        except (ValueError, TypeError, RecursionError) as exc:
+            raise _CodexResultFailure("OUTPUT_SCHEMA_FAILURE", "Canonical JSON transport decode failed", retryable=False) from exc
         stage = str(record.raw_evidence.get("stage") or record.request.stage)
         normalized: Mapping[str, Any] = parsed
         if self.structured_result_validator is not None:
@@ -2054,6 +2063,8 @@ class CodexCliExecutionBackend:
                 )
             except ValueError as exc:
                 code = str(getattr(exc, "code", ""))
+                record.raw_evidence["structured_validation_error"] = {
+                    "contract_version": "structured-validation-error.v1", "code": code, "message": str(exc)}
                 failure_code = (
                     "OUTPUT_SCHEMA_FAILURE"
                     if "SCHEMA" in code

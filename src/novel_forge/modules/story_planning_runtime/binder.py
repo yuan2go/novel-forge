@@ -433,69 +433,72 @@ class CapabilityPackBackedPlanningExecutionBinder:
             )
         )
         evidence = execution.evidence
+        planning_evidence = PlanningExecutionEvidence(
+            operation_id=evidence.operation_id,
+            attempt_id=evidence.attempt_id,
+            fencing_token=evidence.fencing_token,
+            route_snapshot_id=evidence.route_snapshot_id,
+            input_manifest_ref=evidence.input_manifest_ref,
+            output_manifest_ref=evidence.output_manifest_ref,
+            validation_manifest_ref=evidence.validation_manifest_ref,
+            usage_receipt_ref=evidence.usage_receipt_ref,
+            cost_receipt_ref=evidence.cost_receipt_ref,
+            external_receipt_ref=evidence.external_receipt_ref,
+            capability_pack_attempt_snapshot_id=(
+                bundle.attempt_snapshot.snapshot_id
+            ),
+            capability_pack_attempt_snapshot_hash=(
+                bundle.attempt_snapshot.snapshot_hash
+            ),
+            capability_execution_ref=bundle.capability_binding.binding_id,
+            capability_execution_hash=bundle.capability_binding.binding_hash,
+            capability_runtime_binding_ref=(bundle.attempt_snapshot.snapshot_id),
+            capability_runtime_binding_hash=(bundle.attempt_snapshot.snapshot_hash),
+            commit_authority=bundle.capability_binding.commit_authority,
+            fixture_protocol_only=evidence.fixture_protocol_only,
+            context_bundle_asset_version_id=(
+                getattr(
+                    bundle.capability_binding,
+                    "context_bundle_asset_version_id",
+                    "",
+                )
+            ),
+            context_bundle_hash=getattr(
+                bundle.capability_binding, "context_bundle_hash", ""
+            ),
+            narrative_intelligence_selection_digest=(
+                getattr(
+                    bundle.capability_binding,
+                    "narrative_intelligence_selection_digest",
+                    "",
+                )
+            ),
+            real_provider_proven=(
+                evidence.real_model_call and not evidence.fixture_protocol_only
+            ),
+            production_verified=evidence.production_verified,
+        )
         from .result_recovery import PlanningResultValidationError, validate_raw_result
 
         try:
             validate_raw_result(
                 command.generator_operation_name,
                 execution.raw_output,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-                aligned_methods=command.execution_contract_version == "1.18.0",
-                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0"} else None,
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+                rfc6901_paths=command.execution_contract_version == "1.19.0",
+                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"} else None,
             )
         except KernelError as error:
-            raise PlanningResultValidationError(error, raw_result=execution.raw_output, execution_evidence=evidence.to_dict()) from error
+            raise PlanningResultValidationError(error, raw_result=execution.raw_output, execution_evidence=planning_evidence.to_dict()) from error
         return PlanningGenerationCandidate(
             generator_operation_name=command.generator_operation_name,
             planning_scope=command.planning_scope,
             logical_key=command.logical_key,
             candidate_payload=dict(execution.raw_output),
+            raw_provider_result=dict(execution.raw_output),
             frozen_inputs=inputs,
-            evidence=PlanningExecutionEvidence(
-                operation_id=evidence.operation_id,
-                attempt_id=evidence.attempt_id,
-                fencing_token=evidence.fencing_token,
-                route_snapshot_id=evidence.route_snapshot_id,
-                input_manifest_ref=evidence.input_manifest_ref,
-                output_manifest_ref=evidence.output_manifest_ref,
-                validation_manifest_ref=evidence.validation_manifest_ref,
-                usage_receipt_ref=evidence.usage_receipt_ref,
-                cost_receipt_ref=evidence.cost_receipt_ref,
-                external_receipt_ref=evidence.external_receipt_ref,
-                capability_pack_attempt_snapshot_id=(
-                    bundle.attempt_snapshot.snapshot_id
-                ),
-                capability_pack_attempt_snapshot_hash=(
-                    bundle.attempt_snapshot.snapshot_hash
-                ),
-                capability_execution_ref=bundle.capability_binding.binding_id,
-                capability_execution_hash=bundle.capability_binding.binding_hash,
-                capability_runtime_binding_ref=(bundle.attempt_snapshot.snapshot_id),
-                capability_runtime_binding_hash=(bundle.attempt_snapshot.snapshot_hash),
-                commit_authority=bundle.capability_binding.commit_authority,
-                fixture_protocol_only=evidence.fixture_protocol_only,
-                context_bundle_asset_version_id=(
-                    getattr(
-                        bundle.capability_binding,
-                        "context_bundle_asset_version_id",
-                        "",
-                    )
-                ),
-                context_bundle_hash=getattr(
-                    bundle.capability_binding, "context_bundle_hash", ""
-                ),
-                narrative_intelligence_selection_digest=(
-                    getattr(
-                        bundle.capability_binding,
-                        "narrative_intelligence_selection_digest",
-                        "",
-                    )
-                ),
-                real_provider_proven=(
-                    evidence.real_model_call and not evidence.fixture_protocol_only
-                ),
-                production_verified=evidence.production_verified,
-            ),
+            evidence=planning_evidence,
         )
 
     @staticmethod

@@ -81,7 +81,7 @@ def prose_repair_diagnoses(review: dict[str, Any], *, work_requirements: bool = 
     } and item.get("status", "OPEN") == "OPEN"]
 
 
-def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str) -> None:
+def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str, Any]], text: str, *, length_scope: dict[str, Any] | None = None) -> None:
     from difflib import SequenceMatcher
     original = str(source.get("text") or "")
     scopes = []
@@ -104,6 +104,11 @@ def validate_prose_repair_scope(source: dict[str, Any], diagnoses: list[dict[str
         else:
             scopes.append((original.rfind("\n\n", 0, location["start"]) + 2 if "\n\n" in original[:location["start"]] else 0,
                 original.find("\n\n", location["end"]) if "\n\n" in original[location["end"]:] else len(original)))
+    if length_scope is not None:
+        from novel_forge.modules.revision.domain import validate_chapter_length_scope
+        validate_chapter_length_scope(length_scope, source, text, source_asset_version_id=length_scope["source_asset_version_id"],
+            context_asset_version_id=length_scope["context_asset_version_id"])
+        scopes.append((0, len(original)))
     for tag, start, end, _, _ in SequenceMatcher(None, original, text, autojunk=False).get_opcodes():
         if tag != "equal" and not any(low <= start <= end <= high for low, high in scopes):
             raise KernelError("REVISION_OUTSIDE_DIAGNOSIS_SCOPE", "Revision changed an unaffected Scene or paragraph; evidence uncertainty and aesthetic advice do not authorize prose changes")

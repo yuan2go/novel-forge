@@ -278,6 +278,7 @@ def build_canon_update(
     historical_state: dict[str, list[dict[str, Any]]] | None = None,
     planned_execution: dict[str, Any] | None = None,
     identity_profiles: Iterable[dict[str, Any]] = (),
+    validation_contract: str = "LEGACY_V1",
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError("CANON_INPUT_INVALID", "versioned canon lineage is required")
@@ -318,6 +319,7 @@ def build_canon_update(
         planned_execution=planned_execution,
         revision_text=str((revision or {}).get("text") or ""),
         identity_profiles=identity_profiles,
+        validation_contract=validation_contract,
     )
     expected_realization_ids = {
         str(item.get("event_id") or "")
@@ -633,6 +635,7 @@ def validate_deterministic_continuity(
     planned_execution: dict[str, Any] | None = None,
     revision_text: str = "",
     identity_profiles: Iterable[dict[str, Any]] = (),
+    validation_contract: str = "LEGACY_V1",
 ) -> dict[str, Any]:
 
     if chapter <= 0:
@@ -645,12 +648,23 @@ def validate_deterministic_continuity(
         frozen_reality=frozen_world,
     )
     profiles = tuple(dict(item) for item in identity_profiles)
-    conflicts.extend(
-        _deterministic_identity_pronoun_conflicts(
-            revision_text=revision_text,
-            identity_profiles=profiles,
-        )
-    )
+    if validation_contract not in {"LEGACY_V1","grounded-canon-validation.v2"}:
+        raise KernelError("CANON_VALIDATION_CONTRACT_INVALID","Canon validation requires a declared versioned contract")
+    identity_conflicts=_deterministic_identity_pronoun_conflicts(revision_text=revision_text,identity_profiles=profiles)
+    identity_observations=[]
+    if validation_contract=="grounded-canon-validation.v2":
+        kept=[]
+        for conflict in identity_conflicts:
+            observed=conflict['candidate_version']['observed_pronoun']
+            inferred=conflict['existing_version']['character_id']
+            alternate=observed=='它' or any(observed in profile.get('pronouns',[]) and profile.get('character_id')!=inferred for profile in profiles)
+            if alternate:
+                identity_observations.append({'status':'NOT_RUN','reason':'AMBIGUOUS_LEADING_PRONOUN_REFERENCE',
+                    'inferred_character_id':inferred,**conflict['candidate_version'],'review_required':True})
+            else:
+                kept.append(conflict)
+        identity_conflicts=kept
+    conflicts.extend(identity_conflicts)
     _validate_transition_preconditions(
         conflicts,
         state=state,
@@ -661,6 +675,7 @@ def validate_deterministic_continuity(
         state=state,
         extraction=extraction,
         planned_execution=planned_execution or {},
+        validation_contract=validation_contract,
     )
     for event in extraction.get("timeline_event_candidates", []):
         event_chapter = int(event.get("effective_from_chapter", chapter))
@@ -983,7 +998,13 @@ def validate_deterministic_continuity(
             "OOC",
             "EXPECTED_EXIT_STATE",
         ],
-        "contract_version": "deterministic-continuity-v3",
+        "contract_version": "deterministic-continuity-v4" if validation_contract=="grounded-canon-validation.v2" else "deterministic-continuity-v3",
+        **({'validation_contract':validation_contract,'identity_reference_observations':identity_observations,
+            'identity_reference_check_status':'PARTIAL' if identity_observations else 'EXECUTED',
+            'deterministic_rule_count':15+int(bool(profiles) and not identity_observations),
+            'used_text_heuristics':bool(profiles and revision_text),
+            'semantic_judgment_required':['CHARACTER_MOTIVATION','EMOTIONAL_PLAUSIBILITY','OOC','EXPECTED_EXIT_STATE','CHARACTER_COREFERENCE']}
+            if validation_contract=="grounded-canon-validation.v2" else {}),
     }
 
 
@@ -1250,6 +1271,7 @@ def _validate_planned_execution(
     state: dict[str, list[dict[str, Any]]],
     extraction: dict[str, Any],
     planned_execution: dict[str, Any],
+    validation_contract: str = "LEGACY_V1",
 ) -> None:
 
     if not planned_execution:
@@ -1283,14 +1305,19 @@ def _validate_planned_execution(
             if entity_key in _candidate_entity_keys(state_kind, item)
         ]
 
+        def value_matches(item,expected):
+            return _transition_value(item,prefix="to")==expected or (
+                validation_contract=="grounded-canon-validation.v2" and state_kind=='character_knowledge'
+                and item.get('status')=='KNOWN' and bool(expected) and item.get('summary')==expected)
+
         def matches(item: dict[str, Any]) -> bool:
-            if _transition_value(item, prefix="to") != expected_to:
+            if not value_matches(item,expected_to):
                 return False
             actual_from = _transition_value(item, prefix="from")
             if not accepted_candidates:
                 return not actual_from
             baseline_matches = any(
-                _current_state_value(accepted) == expected_from
+                value_matches(accepted,expected_from)
                 for accepted in accepted_candidates
             )
             # INVARIANT: The frozen execution plan owns the compare-and-set precondition.
@@ -1298,7 +1325,10 @@ def _validate_planned_execution(
             # to duplicate it when the exact accepted baseline is already bound.
             # A repeated value must still agree, so extraction cannot override
             # either the plan or accepted Story State.
-            return baseline_matches and actual_from in {"", expected_from}
+            allowed_from={"",expected_from}
+            if validation_contract=="grounded-canon-validation.v2" and state_kind=='character_knowledge':
+                allowed_from.update(_current_state_value(a) for a in accepted_candidates if value_matches(a,expected_from))
+            return baseline_matches and actual_from in allowed_from
 
         if not any(matches(item) for item in candidates):
             conflicts.append(

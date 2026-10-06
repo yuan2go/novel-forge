@@ -9,6 +9,9 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 from .domain import PROVIDER_SEMANTIC_CHANGE_FIELDS, extract_canon_candidates
 
+SUPPORT_CLAIM_KINDS = ("OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION", "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE", "NARRATIVE_OBSERVATION")
+SUPPORT_KIND_CONTRACT = "canon-support-kinds.v2"
+
 OBSERVATION_FIELDS = ("arc_evidence", "realization_evidence")
 FINAL_CANDIDATE_PAYOFF = {"asset_version_id": "$FINAL_CANDIDATE", "event_id": "$CURRENT_CLAIM"}
 
@@ -260,3 +263,29 @@ def validate_support_review(
         "support_review": result,
         "claim_set_hash": text_hash(json.dumps(grounded_claims(extraction), ensure_ascii=False, sort_keys=True)),
     }
+
+
+def support_kind_repair_diagnostic(extraction, review):
+    claims={i['claim']['grounded_claim_id']:i['claim'] for i in grounded_claims(extraction)}
+    values=review.get('claims')
+    if (review.get('coverage')!='COMPLETE' or not isinstance(values,list) or len(values)!=len(claims)
+        or any(not isinstance(i,dict) for i in values)
+        or {i.get('claim_id') for i in values}!=set(claims)):
+        return None
+    unknown=[]
+    for item in values:
+        if item.get('assessment')!='SUPPORTED' or not isinstance(item.get('reason'),str) or not item['reason'].strip():
+            return None
+        kind=item.get('observed_kind')
+        if not isinstance(kind,str) or not kind.strip():
+            return None
+        if kind in SUPPORT_CLAIM_KINDS and kind!=claims[item['claim_id']].get('claim_kind'):
+            return None
+        if kind not in SUPPORT_CLAIM_KINDS:
+            unknown.append({'claim_id':item['claim_id'],'recorded_kind':kind})
+    if not unknown:
+        return None
+    return {'contract_version':SUPPORT_KIND_CONTRACT,'unknown_kinds':unknown,
+        'source_review_hash':text_hash(json.dumps(review,ensure_ascii=False,sort_keys=True)),
+        'claim_set_hash':text_hash(json.dumps(grounded_claims(extraction),ensure_ascii=False,sort_keys=True)),
+        'assessment_reused':False}

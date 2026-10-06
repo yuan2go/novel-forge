@@ -198,7 +198,45 @@ class ChapterAuthorityQuery:
                        effect.created_at,
                        effect.request_payload #>>
                            '{_production_execution,attempt_id}' AS attempt_id,
-                       attempt.status AS attempt_status
+                       attempt.status AS attempt_status,
+                       COALESCE((succ.contract_version='kernel-failed-step-successor.v1'
+                         AND ((succ.policy_evidence->>'contract_version'='chapter-candidate-contract-repair.v1' AND source.status='CANCELLED'
+                             AND attempt.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION')
+                           OR (succ.policy_evidence->>'contract_version'='chapter-review-output-repair.v1' AND source.status='FAILED_FINAL'
+                             AND source.definition_name='chapter.review.evaluate' AND replacement.definition_version='3.9.3'
+                             AND attempt.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED'))
+                           OR (succ.policy_evidence->>'contract_version'='chapter-length-output-repair.v1' AND source.status='CANCELLED'
+                             AND source.definition_name='chapter.revision.apply' AND replacement.definition_version='3.9.4'
+                             AND attempt.result->>'error_code'='REVISION_OUTSIDE_DIAGNOSIS_SCOPE')
+                           OR (succ.policy_evidence->>'contract_version'='chapter-support-contract-repair.v1' AND source.status='CANCELLED'
+                             AND source.definition_name='chapter.canon.propose_changes' AND source.definition_version='3.9.0' AND replacement.definition_version='3.9.8'
+                             AND attempt.result->>'error_code'='CANON_GROUNDING_REEXTRACTION_REQUIRED')
+                           OR (succ.policy_evidence->>'contract_version'='chapter-quality-contract-repair.v1' AND source.status='DEAD_LETTER'
+                             AND source.definition_name LIKE 'chapter.quality.%%' AND source.definition_version='3.9.0' AND replacement.definition_version='3.9.9'
+                             AND attempt.result->>'error_code'='QUALITY_APPLICABILITY_CONFLICT'))
+                         AND replacement.status='SUCCEEDED'
+                         AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
+                         AND (succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id OR (
+                           succ.policy_evidence->>'contract_version'='chapter-quality-contract-repair.v1'
+                           AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.source_failure_snapshot->'attempts') recorded
+                               WHERE recorded->>'attempt_id'=attempt.attempt_id AND recorded->>'status'='FAILED_RETRYABLE'
+                               AND recorded #>> '{result,error_code}'='QUALITY_APPLICABILITY_CONFLICT')))
+                         AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'settled_candidate_effects') binding
+                             WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash ) OR (succ.contract_version='kernel-failed-step-successor.v1'
+                         AND succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
+                         AND source.status='FAILED_FINAL' AND source.definition_name='chapter.canon.extract' AND source.definition_version IN ('3.9.5','3.9.6')
+                         AND replacement.definition_version IN ('3.9.6','3.9.7')
+                         AND (replacement.status='SUCCEEDED' OR (replacement.status='FAILED_FINAL' AND replacement.definition_version='3.9.6'
+                           AND next_succ.contract_version='kernel-failed-step-successor.v1'
+                           AND next_succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
+                           AND next_replacement.status='SUCCEEDED' AND next_replacement.definition_version='3.9.7'))
+                         AND active.operation_id IS NOT NULL
+                         AND effect.status IN ('FAILED_FINAL','FAILED_RETRYABLE') AND budget.status='SETTLED' AND budget.accounting_basis='ACCOUNT_ENTITLEMENT'
+                         AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'known_failed_effects') binding
+                             WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash
+                               AND binding->>2=effect.status AND binding->>3='SETTLED' AND binding->>4='ACCOUNT_ENTITLEMENT'
+                               AND binding->>5=budget.evidence->>'cost_authorization_ref'))),FALSE),
+                       COALESCE(next_succ.successor_operation_id,succ.successor_operation_id)
                 FROM authority_external_effect AS effect
                 LEFT JOIN authority_attempt AS attempt
                   ON attempt.operation_id=effect.operation_id
@@ -206,6 +244,26 @@ class ChapterAuthorityQuery:
                      effect.request_payload #>>
                          '{_production_execution,attempt_id}'
                  )
+                LEFT JOIN authority_saga_step_successor succ ON succ.predecessor_operation_id=effect.operation_id
+                LEFT JOIN authority_operation source ON source.operation_id=succ.predecessor_operation_id
+                  AND source.project_id=succ.project_id AND source.saga_id=succ.saga_id
+                  AND source.actor_id=succ.actor_id
+                LEFT JOIN authority_operation replacement ON replacement.operation_id=succ.successor_operation_id
+                  AND replacement.project_id=source.project_id AND replacement.workspace_id=source.workspace_id
+                  AND replacement.root_operation_id=source.root_operation_id AND replacement.saga_id=succ.saga_id
+                  AND replacement.step_key=source.step_key AND replacement.actor_id=source.actor_id
+                  AND replacement.definition_name=source.definition_name
+                LEFT JOIN authority_saga_step_successor next_succ ON next_succ.predecessor_operation_id=succ.successor_operation_id
+                  AND next_succ.saga_id=succ.saga_id AND next_succ.contract_version='kernel-failed-step-successor.v1'
+                  AND next_succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
+                LEFT JOIN authority_operation next_replacement ON next_replacement.operation_id=next_succ.successor_operation_id
+                  AND next_succ.project_id=succ.project_id AND next_succ.actor_id=succ.actor_id
+                  AND next_replacement.project_id=source.project_id AND next_replacement.workspace_id=source.workspace_id
+                  AND next_replacement.root_operation_id=source.root_operation_id AND next_replacement.saga_id=succ.saga_id
+                  AND next_replacement.step_key=source.step_key AND next_replacement.actor_id=source.actor_id
+                  AND next_replacement.definition_name=source.definition_name
+                LEFT JOIN authority_saga_step active ON active.operation_id=COALESCE(next_succ.successor_operation_id,succ.successor_operation_id) AND active.saga_id=succ.saga_id
+                LEFT JOIN authority_budget_reservation budget ON budget.external_effect_id=effect.external_effect_id
                 WHERE effect.operation_id = ANY(%s)
                   AND effect.effect_type = 'model.invoke'
                 ORDER BY effect.created_at, effect.external_effect_id
@@ -224,9 +282,14 @@ class ChapterAuthorityQuery:
                     "created_at": str(row[7]),
                     "attempt_id": row[8] or "",
                     "attempt_status": row[9] or "",
+                    "settled_candidate_superseded": bool(row[10]) and row[4] == "SUCCEEDED",
+                    "settled_nonproducing_superseded": bool(row[10]) and row[4] in {"FAILED_FINAL", "FAILED_RETRYABLE"},
+                    "successor_operation_id": row[11] or "",
                 }
                 for row in cursor.fetchall()
             ]
+            from novel_forge.modules.command_kernel.derived_step_revalidation import acknowledge_revalidated_effects
+            acknowledge_revalidated_effects(cursor, model_effects, operation_ids)
             cursor.execute(
                 """
                 SELECT saga_id, status, coordinator_owner,

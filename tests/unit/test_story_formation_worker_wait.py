@@ -50,6 +50,9 @@ def test_manual_approval_completes_technical_job_without_retry_or_failure() -> N
     class Formation:
         failure_recorded = False
 
+        def require(self, _formation_run_id):
+            return {"lifecycle": "RUNNING"}
+
         def advance_expected(self, *_args: object, **kwargs: object) -> None:
             assert kwargs["principal"] is principal
             raise FormationApprovalRequired(

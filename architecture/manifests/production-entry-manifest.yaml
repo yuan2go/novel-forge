@@ -351,6 +351,33 @@
       "dispatch": "worker_claim",
       "api_call": "application.admit_provider_sample",
       "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "story_planning.result_admission.recover",
+      "source": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "recover(self, source_operation_id=source_operation_id",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.result_admission:result_admission_definition"
+    },
+    {
+      "name": "story_planning.gateway_result.revalidate",
+      "source": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/gateway_result_recovery.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "recover(self, command=command, operation_id=str(row[0])",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.gateway_result_recovery:gateway_result_revalidation_definition"
+    },
+    {
+      "name": "story_planning.world_preparation.defer",
+      "source": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/world_optional.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "follow_optional_failure(self, command=command",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.world_optional:world_optional_deferral_definition"
     }
   ]
 }

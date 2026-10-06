@@ -140,6 +140,14 @@ def require_source(
             frozen=frozen,
             attempt=attempt,
         )
+    if attempt and attempt[0] in {"FAILED_RETRYABLE", "FAILED_FINAL"} and (
+        row[0] == "CANCELLED" and failure_code in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_ROUTING_BLOCKED"}
+        or row[0] == "FAILED_FINAL" and failure_code == "NATIVE_PLANNING_REPAIR_SOURCE_INVALID"
+    ):
+        from .preflight_continuation import require_capacity_source
+        return require_capacity_source(uow, source_operation_id=source_operation_id, project_id=project_id,
+            frozen=frozen, version=int(row[1]), routing_failure=failure_code == "PROVIDER_ROUTING_BLOCKED",
+            input_order_failure=failure_code == "NATIVE_PLANNING_REPAIR_SOURCE_INVALID")
     if row[0] != "CANCELLED":
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
@@ -152,12 +160,20 @@ def require_source(
             dict(attempt[1] or {}).get("error_code")
             or dict(attempt[2] or {}).get("error_code")
         )
-        != "EXECUTION_CONTRACT_FROZEN_CONFLICT"
+        not in {"EXECUTION_CONTRACT_FROZEN_CONFLICT", "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_ROUTING_BLOCKED", "NATIVE_PLANNING_REPAIR_SOURCE_INVALID"}
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED",
-            "only the retained frozen execution-contract failure permits runtime continuation",
+            "only a retained execution-contract or undispatched result-repair Context failure permits runtime continuation",
         )
+    preflight_code = dict(attempt[1] or {}).get("error_code") or dict(attempt[2] or {}).get("error_code")
+    if (row[0] == "FAILED_FINAL") != (preflight_code == "NATIVE_PLANNING_REPAIR_SOURCE_INVALID"):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID","Terminal history only permits the proven undispatched input-order recovery")
+    if preflight_code in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED","PROVIDER_ROUTING_BLOCKED","NATIVE_PLANNING_REPAIR_SOURCE_INVALID"}:
+        from .preflight_continuation import require_capacity_source
+        return require_capacity_source(uow, source_operation_id=source_operation_id, project_id=project_id,
+            frozen=frozen, version=int(row[1]),routing_failure=preflight_code == "PROVIDER_ROUTING_BLOCKED",
+            input_order_failure=preflight_code == "NATIVE_PLANNING_REPAIR_SOURCE_INVALID")
     uow.cursor.execute(
         "SELECT external_effect_id, status, provider, model_id, request_payload FROM authority_external_effect WHERE operation_id=%s AND project_id=%s ORDER BY external_effect_id FOR UPDATE",
         [source_operation_id, project_id],
@@ -567,6 +583,28 @@ def require_route_evidence(
         "reasoning_evidence_source": "CURRENT_USER_DECISION",
         "authorized_reasoning_effort": authorized_reasoning_effort,
     }
+    if source.get("preflight_failure"):
+        if (source["source_auth_profile_ref"] != target["auth_profile_ref"]
+                or source["source_backend_id"] != target["model_backend_id"]
+                or source["source_reasoning_effort"] != target["reasoning_effort"]
+                or target["cost_accounting_basis"] != "ACCOUNT_ENTITLEMENT" or not target["account"]):
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT", "Capacity successors must retain the original authenticated membership binding and reasoning")
+        if source["preflight_failure"].get("contract_version") in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"}:
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, decision_template
+            admission = selected_book_template(uow.cursor,project_id=source["command"]["project_id"],book_id=source["command"]["book_id"])
+            template = decision_template({"task":{"work_id":source["command"]["book_id"],
+                "policy_snapshot":admission["policy_snapshot"]}}) if admission else None
+            repair = source["preflight_failure"]["blocked_decision"]["native_repair_evidence"]
+            if (not template or template['version'] not in {'creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6'}
+                    or not template.get('repair_routing')
+                    or repair.get('stage_repair_number', repair['repair_number']) > template['repair_routing']['max_same_route_repairs']
+                    or repair['repair_number'] > 4
+                    or repair['parent_candidate_id'] not in template['allowed_candidates']):
+                raise KernelError("PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED","Routing successor requires the explicit trusted v2 native repair policy")
+            decision["target_repair_template"] = admission
+        return {**decision,"account_evidence_source":"ORIGINAL_SETTLED_NATIVE_RESULT_ROUTE",
+            "source_auth_profile_ref":source["source_auth_profile_ref"],"source_result_operation_id":source["route_evidence_operation_id"],
+            "account_runtime_hash":canonical_hash(target["account"])}
     if (
         source["provider"] == "scripted_provider_v2"
         and target["runtime_class"] == "SCRIPTED_FIXTURE"
@@ -688,7 +726,7 @@ def require_route_evidence(
         )
     uow.cursor.execute(
         "SELECT evidence->>'cost_authorization_ref' FROM authority_budget_reservation WHERE operation_id=%s AND project_id=%s ORDER BY created_at",
-        [source["source_operation_id"], command["project_id"]],
+        [source.get("route_evidence_operation_id", source["source_operation_id"]), command["project_id"]],
     )
     references = {str(row[0] or "") for row in uow.cursor.fetchall()}
     if len(references) != 1 or not next(iter(references)):
@@ -798,6 +836,10 @@ def register(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "runtime continuation cannot switch the frozen Provider model or routing policy",
         )
+    capacity_decision = None
+    if source.get("preflight_failure"):
+        from .preflight_continuation import require_capacity_target
+        capacity_decision = require_capacity_target(source, target)
     if capacity:
         target, route_evidence = _capacity_target(
             application, source, successor, principal, target
@@ -842,6 +884,8 @@ def register(
         "source_release_sha": source["snapshot"]["release_sha"],
         "target_release_sha": application.commit_sha,
         "chain_depth": source["depth"],
+        **({"source_preflight_failure": source["preflight_failure"], "capacity_decision": capacity_decision}
+           if source.get("preflight_failure") else {}),
         "control_evidence_only": True,
     }
 
@@ -1020,7 +1064,7 @@ def require_successor(
     binding = require_binding(application.database_url, command.runtime_continuation_id)
     if (
         binding["successor_command"] != _command_payload(command)
-        or binding["target_release_sha"] != application.commit_sha
+        or validate_runtime and binding["target_release_sha"] != application.commit_sha
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT",
@@ -1063,9 +1107,11 @@ def follow(
     command: StoryPlanningGenerationCommand,
     *,
     principal: Principal,
+    execution_probe: Any = None,
 ):
     from .application import _command_from_payload, _command_payload
 
+    application._probe(execution_probe)
     with AuthorityUnitOfWork(application.database_url) as uow:
         uow.cursor.execute(
             "SELECT source_command, successor_command FROM authority_story_planning_runtime_continuation WHERE source_operation_id=%s AND project_id=%s",
@@ -1080,7 +1126,7 @@ def follow(
             "original-stage replay must retain the exact registered source task",
         )
     return application.generate(
-        _command_from_payload(dict(row[1])), principal=principal
+        _command_from_payload(dict(row[1])), principal=principal, execution_probe=execution_probe
     )
 
 

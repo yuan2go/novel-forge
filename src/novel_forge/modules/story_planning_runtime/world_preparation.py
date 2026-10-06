@@ -19,6 +19,7 @@ from novel_forge.modules.worldbuilding.production_schema import (
     world_evaluation_schema,
     world_generation_schema,
     world_transition_schema,
+    world_transition_payload_schema,
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.world_preparation_repositories import (
@@ -92,6 +93,15 @@ def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
                 "directed repair cannot replace the selected world batch",
             )
         return action
+    from .world_optional import continuation_action
+    action = continuation_action(query.database_url, command)
+    if action is not None:
+        return action
+    try:
+        return query.require(project_id=command.project_id, logical_ref=f"world_preparation/{operation_id}/optional_action")
+    except KernelError as error:
+        if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+            raise
     try:
         return query.require(
             project_id=command.project_id,
@@ -118,6 +128,10 @@ class PlanningWorldPreparation:
         execute_stage: Callable[[PlanningProviderStage], Any],
         knowledge_selection: Mapping[str, Any] | None = None,
     ) -> Any:
+        from .world_optional import continuation_action, optional_policy, deferred_action
+        retained_action = continuation_action(self.preparer.database_url, command)
+        if retained_action is not None:
+            return retained_action
         if command.repair_of_candidate_id:
             action = require_world_action(
                 self.preparer.query, command=command, operation_id=operation_id
@@ -213,6 +227,14 @@ class PlanningWorldPreparation:
             "asset_version_id": source_document.asset_version_id,
             "content_hash": source_document.content_hash,
         }
+        with AuthorityUnitOfWork(self.preparer.database_url) as uow:
+            admission = optional_policy(uow.cursor, project_id=command.project_id, book_id=command.book_id, operation_id=operation_id)
+        if admission:
+            from novel_forge.modules.production_execution.execution_template import decision_template
+            template = decision_template({'task': {'work_id': command.book_id, 'policy_snapshot': admission['policy_snapshot']}})
+            if template['world_future_preparation'] == 'DISABLED':
+                return self._store(command, operation_id, f'{prefix}/optional_action', 'narrative_governance_action',
+                    deferred_action(source=source, source_ref=source_ref, command=command, admission=admission))
         policy = WorldProductionPolicy(**source["policy"])
         actor_proposals = []
         actor_refs = []
@@ -259,7 +281,8 @@ class PlanningWorldPreparation:
 
         if generation_document is None:
             stage = self.generation_stage(
-                source, source_ref, knowledge_selection, actor_proposals=actor_proposals
+                source, source_ref, knowledge_selection, actor_proposals=actor_proposals,
+                allowed_references=world_plan_references(source, command)
             )
             if repair_source:
                 retained = self.preparer.query.require(
@@ -402,6 +425,12 @@ class PlanningWorldPreparation:
             action,
         )
         if plan["disposition"] == "BLOCKED":
+            if admission:
+                action = deferred_action(source=source, source_ref=source_ref, command=command, admission=admission,
+                    rejected=action_document.content['contract'])
+                action['optional_preparation']['retained_rejected_action'] = {
+                    'asset_version_id':action_document.asset_version_id, 'content_hash':action_document.content_hash}
+                return self._store(command, operation_id, f'{prefix}/optional_action', 'narrative_governance_action', action)
             raise KernelError(
                 "WORLD_PREPARATION_RESULT_INVALID",
                 f"No legal world path; inspect {action_document.asset_version_id}",
@@ -409,15 +438,19 @@ class PlanningWorldPreparation:
         return action_document
 
     @classmethod
-    def generation_stage(cls, source, source_ref, knowledge_selection, *, actor_proposals=None):
+    def generation_stage(cls, source, source_ref, knowledge_selection, *, actor_proposals=None, allowed_references=None):
         from .knowledge_translation import add_translation_contract
 
         if source.get("actor_experiment") is not None and not actor_proposals:
             raise KernelError("WORLD_ACTOR_PROPOSAL_REQUIRED", "Actor intervention requires its frozen independent proposals; unified sampling cannot substitute for them")
         task = {**cls._task(source, source_ref, "WORLD_REASONER"), "narrative_intelligence": knowledge_selection}
+        if allowed_references is not None:
+            task["plan_reference_contract"] = {"version": "world-plan-references.v1", **allowed_references,
+                "instruction": "References must belong to these exact selected Arc and accepted obligation lists. Other visible arcs are background, not authority for this task."}
         schema = add_translation_contract(world_generation_schema(
             WorldProductionPolicy(**source["policy"]),
             audience_scoped=source["contract_version"] == "world-preparation-source.v2",
+            **({key: tuple(value) for key, value in allowed_references.items()} if allowed_references is not None else {}),
         ), knowledge_selection)
         if actor_proposals:
             from novel_forge.modules.worldbuilding.actor_isolation import actor_judge_schema
@@ -522,6 +555,8 @@ class PlanningWorldPreparation:
                 else {}
             ),
             "transition_contract": {
+                "version": "world-transition-payload.v1",
+                "payload_schema": world_transition_payload_schema(),
                 "fields": list(WorldTransition.__dataclass_fields__),
                 "schema": world_transition_schema(),
                 "state_kinds": [kind.value for kind in NarrativeStateKind],
@@ -531,6 +566,8 @@ class PlanningWorldPreparation:
                 "camera": ["ON_CAMERA", "OFF_CAMERA", "UNDERCURRENT"],
                 "explanation_status": "UNVERIFIED_CAUSAL_HYPOTHESIS",
                 "required_conditions": "All compiled hard predicates and actor epistemic bases remain mandatory regardless of score.",
+                "known_character_basis": "Every approved character action needs a nonempty predicate referencing that character's own accepted knowledge or belief. Missing support requires NO_OP/DEFER; Foundation descriptions are not invented knowledge facts.",
+                "batch_local_names": "For preparation paths, transition_id is a bare name matching [A-Za-z][A-Za-z0-9_-]{0,63}; only dependency references use local:<name>.",
             },
             "fact_mutation_allowed": False,
         }
@@ -733,11 +770,7 @@ class PlanningWorldPreparation:
                 for item in frozen.get("preparation_sources", [])
             ]
             plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
-        if plan != binding["world_plan"] or plan["disposition"] != "BLOCKED":
-            raise KernelError(
-                "WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT",
-                "World causal repair must reproduce its immutable hard gate failure",
-            )
+        require_exact_blocked_plan(plan, binding["world_plan"])
         diagnostic = {
             "action": {
                 "asset_version_id": action.asset_version_id,
@@ -746,10 +779,7 @@ class PlanningWorldPreparation:
             "plan_digest": plan["plan_digest"],
             "reason": plan["reason"],
             "candidate_rejections": [
-                {
-                    "transition_id": item["transition_id"],
-                    "rejection": item.get("rejection"),
-                }
+                blocked_candidate_diagnostic(item)
                 for item in plan["candidate_futures"]
                 if not item["eligible"]
             ],
@@ -820,14 +850,8 @@ class PlanningWorldPreparation:
             for entry in state.get("character_state", [])
             if entry["state"].get("character_id")
         }
-        arcs = {
-            command.input_versions.get("arc_plans"),
-            *command.related_arc_plan_version_ids,
-        }
-        obligations = {
-            entry["state"].get("obligation_id")
-            for entry in state.get("narrative_obligation", [])
-        }
+        refs = world_plan_references(source, command)
+        arcs, obligations = set(refs["arc_refs"]), set(refs["obligation_refs"])
         for candidate in candidates:
             transitions = [
                 candidate["transition"],
@@ -879,3 +903,33 @@ class PlanningWorldPreparation:
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
         )
+
+
+def world_plan_references(source, command):
+    return {
+        'arc_refs': sorted({value for value in (command.input_versions.get('arc_plans'),
+            *command.related_arc_plan_version_ids) if value}),
+        'obligation_refs': sorted({entry['state']['obligation_id']
+            for entry in source['reality']['current_state'].get('narrative_obligation', [])
+            if entry['state'].get('obligation_id')}),
+    }
+
+
+def require_exact_blocked_plan(plan: Mapping[str, Any], retained: Mapping[str, Any]) -> None:
+    from .domain import canonical_hash
+
+    if canonical_hash(plan) != canonical_hash(retained) or plan.get("disposition") != "BLOCKED":
+        raise KernelError("WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT", "World causal repair must reproduce its immutable JSON hard gate failure")
+
+
+def blocked_candidate_diagnostic(candidate: Mapping[str, Any]) -> dict[str, Any]:
+    transition = candidate.get("transition") or {}
+    identifier = candidate.get("transition_id") or transition.get("transition_id")
+    if not identifier or (candidate.get("transition_id") and transition.get("transition_id") and candidate["transition_id"] != transition["transition_id"]):
+        raise KernelError("WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT", "Blocked candidate requires one exact native transition identity")
+    return {
+        "transition_id": identifier,
+        "rejection": candidate.get("rejection"),
+        **({"unmet_requirements": [dict(item) for item in candidate["requirements"] if not item["satisfied"]]}
+           if "requirements" in candidate else {}),
+    }

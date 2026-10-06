@@ -636,3 +636,37 @@ class DeterministicContinuityValidatorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_creative_pronoun_contract_records_ambiguity_without_relabeling_it_passed():
+    profiles=({'character_id':'lu','canonical_name':'陆圆','pronouns':['他']},
+        {'character_id':'tuan','canonical_name':'团耳','pronouns':['它']})
+    inputs=dict(chapter=1,historical_state={},extraction={},identity_profiles=profiles,
+        revision_text='团耳抬起爪子。\n他把照料单转向团耳，指给它看。')
+    legacy=validate_deterministic_continuity(**inputs)
+    assert legacy['gate']=='BLOCKED'
+    current=validate_deterministic_continuity(**inputs,validation_contract='grounded-canon-validation.v2')
+    assert not current['violations']
+    assert current['identity_reference_check_status']=='PARTIAL'
+    assert current['identity_reference_observations'][0]['status']=='NOT_RUN'
+    assert current['identity_reference_observations'][0]['review_required'] is True
+    explicit=validate_deterministic_continuity(chapter=1,historical_state={},extraction={},
+        identity_profiles=({'character_id':'lin','canonical_name':'林遥','pronouns':['她']},),
+        revision_text='林遥蹲下。\n他拿起图纸。',validation_contract='grounded-canon-validation.v2')
+    assert explicit['gate']=='BLOCKED'
+
+
+def test_known_summary_plan_target_does_not_replace_typed_status_or_accepted_cas():
+    from copy import deepcopy
+    change={'character_id':'character:hero','fact_id':'fact:delivery','status':'KNOWN','summary':'亲眼核对当日到货'}
+    plan={'required_state_transitions':[{'state_kind':'character_knowledge','entity_key':'character:hero:fact:delivery',
+        'from_state':'尚未核对当日到货','to_state':'亲眼核对当日到货'}]}
+    args=dict(chapter=1,historical_state={},extraction={'character_knowledge_changes':[change]},planned_execution=plan)
+    assert any(v['conflict_code']=='PLANNED_STATE_TRANSITION_MISMATCH' for v in validate_deterministic_continuity(**args)['violations'])
+    current=validate_deterministic_continuity(**args,validation_contract='grounded-canon-validation.v2')
+    assert not any(v['conflict_code']=='PLANNED_STATE_TRANSITION_MISMATCH' for v in current['violations'])
+    for field,value in [('status','UNKNOWN'),('summary','尚未核对当日到货'),('from_state','invented accepted state')]:
+        changed=deepcopy(args)
+        changed['extraction']['character_knowledge_changes'][0][field]=value
+        report=validate_deterministic_continuity(**changed,validation_contract='grounded-canon-validation.v2')
+        assert report['gate']=='BLOCKED'

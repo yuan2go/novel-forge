@@ -628,6 +628,8 @@ class ChapterAuthorityDependenciesTests(unittest.TestCase):
         self.assertTrue(candidates[0].escalation_only)
         self.assertEqual(candidates[0].quota_remaining, 3)
         self.assertEqual(candidates[0].pricing.accounting_basis, "ACCOUNT_ENTITLEMENT")
+        from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
+        self.assertEqual(task_provider_output_reserve("creative_foundation.generate", execution.gateway.routes["draft"]), 32000)
         self.assertEqual({route.model_profile.model_provider
                           for route in execution.gateway.routes.values()}, {"codex-cli"})
         self.assertTrue(all(route.token_accounting_method ==

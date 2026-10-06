@@ -40,7 +40,6 @@ from novel_forge.modules.capability_packs.versioning import (
 )
 from novel_forge.modules.chapter_authority.contracts import ChapterNode
 from novel_forge.modules.chapter_authority.definitions import (
-    CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
     chapter_operation_definitions,
 )
 from novel_forge.modules.command_kernel.lifecycle import AttemptStatus, OperationStatus
@@ -239,9 +238,11 @@ class CapabilityPackP1ATests(unittest.TestCase):
 
     def test_current_chapter_operations_all_resolve(self) -> None:
         catalog = chapter_operation_definition_catalog(release_sha=FIXTURE_RELEASE_SHA)
+        bindings = {binding.node_id: binding for binding in self.manifest().workflow_template.nodes}
         for node in ChapterNode:
+            binding = bindings[node.value]
             definition = catalog.resolve(
-                node.definition_name, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
+                node.definition_name, binding.operation_definition_ref.rsplit("@", 1)[1]
             )
             self.assertEqual(definition.handler_key, node.handler_key)
             self.assertTrue(definition.definition_hash.startswith("sha256:"))

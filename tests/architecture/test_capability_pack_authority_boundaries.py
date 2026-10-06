@@ -111,7 +111,11 @@ def test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed() ->
     assert "RolloutStatus.COMPLETED" not in runtime
     assert "complete_rollout(" in application and "activate_deployment_cas(" in repository
     assert "CapabilityPackApprovalScope.from_payload" in application
-    assert "CapabilityPackApprovalScope.from_payload" in runtime
+    authorization = (
+        ROOT / "src/novel_forge/modules/capability_pack_authority/validation_admission.py"
+    ).read_text(encoding="utf-8")
+    assert "require_deployment_authorization(" in runtime
+    assert "CapabilityPackApprovalScope.from_payload" in authorization
     assert "authority_agent_runtime_pack_integrity_fact_guard" in migration
     assert '"authority_capability_pack_assignment",' in migration_71
     assert "owner_scope_type" in migration and "owner_project_id" in migration
