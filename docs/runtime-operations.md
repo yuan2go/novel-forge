@@ -192,7 +192,7 @@ boundaries, not a product or narrative development sequence.
 
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
-with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v12`
+with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v13`
 classifies `context_compress` and `context_fidelity` as HIGH-risk tasks using independent
 `DOMAIN_GATE_ACCEPTANCE` qualification (20 effective samples and the existing conservative
 quality floor). A cold or failed cohort blocks before dispatch; no direct Provider path
@@ -207,6 +207,12 @@ failed fidelity or mandatory overflow fails closed. Positive feedback requires a
 Context output and matching native verified receipts. Every fidelity assessment and failed
 Context terminal outcome remains in the feedback denominator. Dispatch generation and receipt
 integrity determine which native result is used; retry failure history cannot be washed away.
+Context qualification retains negative domain outcomes from retried independent samples;
+retried successes cannot add positive qualification. A positive native assessment requires
+both Effects to be successful at their latest dispatch generation and matching dispatch
+and verified receipt hashes. Pending or UNKNOWN generations require reconciliation before
+their older receipts can supply positive feedback. Frozen routing decisions retain their
+original policy snapshots and accounting rules.
 Restoration reconstructs original attributed units for the normal Draft/Review Context.
 Replay uses the durable Effect result and exact Pack, Prompt, Skill, Schema and baseline;
 changed sources, cross-Book frontier or stale binding cannot silently replace them.

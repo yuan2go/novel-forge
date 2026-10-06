@@ -4,6 +4,7 @@ from dataclasses import replace
 import pytest
 
 from novel_forge.modules.production_execution.cost_routing import task_policy
+from novel_forge.modules.production_execution.cost_routing import benchmark_snapshot
 from novel_forge.modules.production_execution.routing_policy import (
     validate_routing_policy,
 )
@@ -99,3 +100,25 @@ def test_overflow_invokes_both_formal_task_routes_then_reconstructs_the_original
         "other-book"
     )
     assert assess_extract(assessment, compressor=comp, fidelity=changed) is None
+
+
+@pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+def test_context_retried_failures_remain_in_the_qualification_denominator(stage):
+    from tests.unit.test_cost_aware_routing import NOW
+
+    observations = [
+        replace(row, sample_identity="success:" + row.evidence_ref)
+        for row in samples(n=150, domain_gate_accepted=True)
+    ] + [
+        replace(row, evidence_ref="failed:" + row.evidence_ref,
+                sample_identity="failed:" + row.evidence_ref, accepted=False, retried=True)
+        for row in samples(n=25, domain_gate_accepted=False)
+    ]
+    policy = task_policy(stage)
+    snapshot = benchmark_snapshot(observations, now=NOW, policy=policy)
+    assert snapshot["domain_gate_sample_count"] == 175
+    assert route(replace(task(), task_type=stage), [candidate()], {"flash": observations})["status"] == "BLOCKED"
+    # COMPATIBILITY: frozen policies keep their original accounting rule.
+    frozen_policy = replace(policy, retain_failed_domain_samples=False)
+    assert benchmark_snapshot(observations, now=NOW, policy=frozen_policy)["domain_gate_sample_count"] == 150
+    assert task_policy("source.deconstruction.observe").retain_failed_domain_samples is False
