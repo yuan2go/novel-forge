@@ -1314,6 +1314,15 @@ class PostgresChapterExecutionContractBinder:
             from .provider_output_contracts import bind_delivered_knowledge_scope
             schema = bind_delivered_knowledge_scope(schema, inputs.get("knowledge_review_targets") or [])
             schema_ref += ":delivered-card-scope-v1"
+        if stage == "rereview" and inputs.get("review_resolution_namespace") == "quality-review-namespaces.v1":
+            from novel_forge.modules.review.diagnostics import open_diagnoses
+            codes = [item["code"] for item in open_diagnoses(inputs["review"])]
+            checks = schema["properties"]["resolution_checks"]
+            if codes:
+                checks["items"]["properties"]["code"] = {**checks["items"]["properties"]["code"], "enum": codes}
+            else:
+                checks["maxItems"] = 0
+            schema_ref += ":quality-review-namespaces-v1"
         if stage == "canon_extraction" and prompt_contract_version in {"v10", "v11"}:
             from .provider_output_contracts import shared_canon_schema
             schema = shared_canon_schema(schema)
@@ -2104,11 +2113,11 @@ class PostgresChapterExecutionContractBinder:
             str(row[0]) == ChapterNode.DRAFT.definition_name
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
-        compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
+        compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) in {"3.9.3", "3.9.19"})
         compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1]) in {"3.9.9", "3.9.12"})
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_PROPOSAL.definition_name and str(row[1])=="3.9.8")
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7"})
-        compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) == "3.9.4")
+        compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) in {"3.9.4", "3.9.16"})
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
                 "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",

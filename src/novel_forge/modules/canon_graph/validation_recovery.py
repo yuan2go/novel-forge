@@ -31,7 +31,7 @@ def selected_validation_policy(cursor, *, project_id, root_operation_id, lock=Fa
     )
     if (
         not template
-        or template.get("version") not in {"creative-execution-template.v6", "creative-execution-template.v7"}
+        or template.get("version") not in {"creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8"}
         or template.get("canon_validation_contract") != CONTRACT
         or template.get("chapter_contract_recovery") != "KNOWN_SETTLED_CONTRACT_REPAIR"
         or book[5] != book[3] + 1

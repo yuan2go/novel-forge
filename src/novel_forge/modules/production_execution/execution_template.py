@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .cost_routing import RoutingDecision, snapshot_hash
 
 
-VERSION = "creative-execution-template.v7"
+VERSION = "creative-execution-template.v8"
 MODE = "CREATIVE_VALIDATION"
 RESOURCE_VERSION = "billing-channel-resources.v1"
 BOOK_USAGE_SQL = """(e.request_payload #>> '{_production_execution,book_id}'=%s
@@ -37,7 +37,7 @@ class RepairRoutingConfiguration(BaseModel):
 
 class ExecutionTemplateConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    version: Literal["creative-execution-template.v1", "creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7"]
+    version: Literal["creative-execution-template.v1", "creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8"]
     book_id: _Identity
     mode: Literal["CREATIVE_VALIDATION", "STRICT_PRODUCTION"]
     allowed_candidates: Annotated[list[_Identity], Field(min_length=1, json_schema_extra={"uniqueItems": True})]
@@ -50,7 +50,7 @@ class ExecutionTemplateConfiguration(BaseModel):
     repair_routing: RepairRoutingConfiguration | None = None
     chapter_contract_recovery: Literal["KNOWN_SETTLED_CONTRACT_REPAIR"] | None = None
     canon_validation_contract: Literal["grounded-canon-validation.v2"] | None = None
-    chapter_graph_recovery: Literal["RETAIN_SETTLED_QUALITY_RANGE_RESULT"] | None = None
+    chapter_graph_recovery: Literal["RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT"] | None = None
     world_future_preparation: Literal["REQUIRED", "OPTIONAL", "DISABLED"] | None = None
 
 
@@ -90,19 +90,21 @@ def validate_templates(content: Mapping[str, Any]) -> None:
         if value["mode"] == "STRICT_PRODUCTION" and not value["require_literary_qualification"]:
             raise KernelError("STRICT_TEMPLATE_QUALIFICATION_REQUIRED", value["book_id"])
         if (value["version"] == "creative-execution-template.v1" and value.get("repair_routing") is not None
-                or value["version"] in {"creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", VERSION} and value.get("repair_routing") is None):
+                or value["version"] in {"creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7", VERSION} and value.get("repair_routing") is None):
             raise KernelError("EXECUTION_TEMPLATE_REPAIR_VERSION_INVALID", value["book_id"])
-        if ((value['version'] in {'creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6',VERSION}) != (value.get('world_future_preparation') is not None)
+        if ((value['version'] in {'creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7',VERSION}) != (value.get('world_future_preparation') is not None)
                 or value['mode'] == 'STRICT_PRODUCTION' and value.get('world_future_preparation', 'REQUIRED') != 'REQUIRED'):
             raise KernelError('EXECUTION_TEMPLATE_WORLD_POLICY_INVALID', value['book_id'])
-        if value.get("repair_routing") and ((value['version'] in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6',VERSION}) != (value['repair_routing']['version'] == 'native-repair-routing.v2')):
+        if value.get("repair_routing") and ((value['version'] in {'creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7',VERSION}) != (value['repair_routing']['version'] == 'native-repair-routing.v2')):
             raise KernelError('EXECUTION_TEMPLATE_STAGE_REPAIR_VERSION_INVALID',value['book_id'])
-        if value.get("chapter_contract_recovery") and (value["version"] not in {"creative-execution-template.v5", "creative-execution-template.v6", VERSION} or value["mode"] != MODE):
+        if value.get("chapter_contract_recovery") and (value["version"] not in {"creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7", VERSION} or value["mode"] != MODE):
             raise KernelError("EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID", value["book_id"])
-        if (value.get("canon_validation_contract") is not None and (value["version"] not in {"creative-execution-template.v6", VERSION} or value["mode"] != MODE)
-                or value["version"] in {"creative-execution-template.v6", VERSION} and value["mode"] == MODE and value.get("canon_validation_contract") != "grounded-canon-validation.v2"):
+        if (value.get("canon_validation_contract") is not None and (value["version"] not in {"creative-execution-template.v6", "creative-execution-template.v7", VERSION} or value["mode"] != MODE)
+                or value["version"] in {"creative-execution-template.v6", "creative-execution-template.v7", VERSION} and value["mode"] == MODE and value.get("canon_validation_contract") != "grounded-canon-validation.v2"):
             raise KernelError("EXECUTION_TEMPLATE_CANON_CONTRACT_INVALID", value["book_id"])
-        if value.get("chapter_graph_recovery") and (value["version"] != VERSION or value["mode"] != MODE):
+        if value.get("chapter_graph_recovery") and (value["version"] not in {"creative-execution-template.v7", VERSION} or value["mode"] != MODE):
+            raise KernelError("EXECUTION_TEMPLATE_GRAPH_RECOVERY_INVALID", value["book_id"])
+        if value.get("chapter_graph_recovery") == "RETAIN_SETTLED_QUALITY_RESULT" and value["version"] != VERSION:
             raise KernelError("EXECUTION_TEMPLATE_GRAPH_RECOVERY_INVALID", value["book_id"])
         paid = value["deepseek"]
         if paid is not None and Decimal(paid["maximum_amount"]) <= 0:
@@ -236,7 +238,7 @@ def template_decision(decision: RoutingDecision) -> RoutingDecision:
         if relax:
             row["rejected_reasons"] = [reason for reason in row["rejected_reasons"]
                                        if reason not in {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}]
-        if relax and template["version"] in {"creative-execution-template.v2", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", VERSION}:
+        if relax and template["version"] in {"creative-execution-template.v2", "creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7", VERSION}:
             from .planning_repair_routing import repair_route_admission
             repair = repair_route_admission(snapshot, row, template)
             if repair is not None:

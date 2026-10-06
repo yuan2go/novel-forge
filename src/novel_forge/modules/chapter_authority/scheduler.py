@@ -755,11 +755,17 @@ class ChapterAuthorityScheduler:
                 input_overrides=effective_overrides,
             )
         retained = (request.preparation_report or {}).get("retained_graph_continuation")
-        if retained and node is ChapterNode.REVISION and idempotency_suffix == ":quality-correction:1":
+        if retained and retained["retained_result"]["contract_version"] == "chapter-quality-range-revalidation.v1" and node is ChapterNode.REVISION and idempotency_suffix == ":quality-correction:1":
             command["definition_version"] = "3.9.17"
             from .definitions import retained_revision_definition
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.repositories.definitions.register(retained_revision_definition(application_build_id=admission.application_build_id,commit_sha=admission.commit_sha))
+                uow.commit()
+        if retained and retained["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and node is ChapterNode.REREVIEW and idempotency_suffix == ":quality-correction:1":
+            command["definition_version"] = "3.9.20"
+            from .definitions import retained_rereview_definition
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.repositories.definitions.register(retained_rereview_definition(application_build_id=admission.application_build_id,commit_sha=admission.commit_sha))
                 uow.commit()
         admitted = admit_command(self.database_url, command, context=admission)
         operation_id = str(admitted["operation_id"])
@@ -993,7 +999,7 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation
                 WHERE (root_operation_id=%s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)) AND project_id=%s
                   AND definition_name=%s
-                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step))
+                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step WHERE step_key NOT LIKE 'quality-correction:%%') OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE step_key NOT LIKE 'quality-correction:%%'))
                   AND (idempotency_key=%s
                     OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE contract_version='kernel-failed-step-successor.v1')
                     OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE contract_version='kernel-derived-step-successor.v1') OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s))
@@ -1040,11 +1046,11 @@ class ChapterAuthorityScheduler:
                          1
                        )
                 FROM authority_operation
-                WHERE root_operation_id=%s AND project_id=%s
-                  AND idempotency_key=ANY(%s)
+                WHERE project_id=%s AND ((root_operation_id=%s AND idempotency_key=ANY(%s))
+                    OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s AND ref.step_key LIKE %s))
                 ORDER BY created_at, operation_id
                 """,
-                [root_operation_id, project_id, expected_keys],
+                [project_id, root_operation_id, expected_keys, root_operation_id, f"quality-correction:{generation}:%"],
             )
             rows = uow.cursor.fetchall()
         by_definition = {node.definition_name: node for node in ChapterNode}
@@ -1600,8 +1606,8 @@ class ChapterAuthorityScheduler:
                              AND attempt.status='FAILED_RETRYABLE')
                 FROM authority_operation
                 WHERE (root_operation_id = %s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)) AND operation_id <> %s AND project_id = %s
-                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s))
-                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s))
+                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s AND step_key NOT LIKE 'quality-correction:%%'))
+                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s AND step_key NOT LIKE 'quality-correction:%%'))
                 ORDER BY created_at, operation_id
                 """,
                 [

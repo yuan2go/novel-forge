@@ -241,3 +241,19 @@ def test_retained_graph_policy_is_explicit_and_does_not_change_historical_schema
     for invalid in ({**value,'version':'creative-execution-template.v6'},{**value,'mode':'STRICT_PRODUCTION','require_literary_qualification':True,'canon_validation_contract':None}):
         with pytest.raises(KernelError):
             validate_templates({'execution_templates':[invalid]})
+
+
+def test_quality_result_recovery_requires_explicit_successor_and_cannot_weaken_strict():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    value=template(version='creative-execution-template.v8',world_future_preparation='DISABLED',repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',canon_validation_contract='grounded-canon-validation.v2',chapter_graph_recovery='RETAIN_SETTLED_QUALITY_RESULT')
+    validate_templates({'execution_templates':[value]})
+    definition=owned_policy_definition(owner='PROVIDER_ROUTING',content={'execution_templates':[value]},application_build_id='test',commit_sha='a'*40)
+    assert definition['definition_version']=='1.13.0'
+    value['version']='creative-execution-template.v7'
+    with pytest.raises(KernelError):
+        validate_templates({'execution_templates':[value]})
+    value['version']='creative-execution-template.v8'
+    value['mode']='STRICT_PRODUCTION'
+    value['require_literary_qualification']=True
+    with pytest.raises(KernelError):
+        validate_templates({'execution_templates':[value]})

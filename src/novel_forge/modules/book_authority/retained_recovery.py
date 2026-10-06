@@ -23,8 +23,6 @@ def recover_retained_quality(authority, *, book_run_id, principal):
     if not book.get("active_chapter_request_id"):
         return False
     old = authority.require_chapter_request(book["active_chapter_request_id"])
-    if (old["command_payload"].get("preparation_report") or {}).get(BINDING):
-        return False
     principal.require("book.authority.execute", book["project_id"])
     principal.require("chapter.authority.execute", book["project_id"])
     with AuthorityUnitOfWork(authority.database_url) as uow:
@@ -53,9 +51,11 @@ def recover_retained_quality(authority, *, book_run_id, principal):
         )
         if (
             template.get("chapter_graph_recovery")
-            != "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+            not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT"}
             or template["mode"] != "CREATIVE_VALIDATION"
         ):
+            return False
+        if template.get("chapter_graph_recovery") == "RETAIN_SETTLED_QUALITY_RANGE_RESULT" and (old["command_payload"].get("preparation_report") or {}).get(BINDING):
             return False
         source = source_graph(
             c,

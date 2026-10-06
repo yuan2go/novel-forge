@@ -3171,3 +3171,11 @@ Apply migration 0166 with a verified PostgreSQL backup, register the successor
 definitions and Pack, select the template, then use the same `authority-creation
 continue` command and Formation identity. The Book child link and retained-step
 journal commit atomically and duplicate continuation reuses the current checkpoint.
+
+For a settled creative Quality rereview namespace error, select the explicit successor
+template and Pack, then use the same native `authority-creation continue` command.
+Recovery retains the original receipt and fenced input snapshots, references completed
+base and correction work in a new Root/Saga, and derives a normal rereview asset without
+another Provider call. Unknown outcomes, unrelated failures and accepted chapters remain
+ineligible. Native candidate selection, Quality reevaluation and Book acceptance must
+still execute. The old result and failure remain available for inspection.

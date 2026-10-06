@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0166_retained_graph_continuation",
+  "migration_head": "20261007_0167_quality_review_namespace",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7542,6 +7542,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/quality_revision_recovery.py",
           "symbol": "materialize_retained_revision"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/quality_review_recovery.py",
+          "symbol": "materialize_retained_rereview"
         }
       ],
       "domain_symbols": [
@@ -8879,6 +8883,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_retained_graph_continuation.py",
           "locator": "MIGRATION_ID = '20261007_0166_retained_graph_continuation'",
           "id": "20261007_0166_retained_graph_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0167_quality_review_namespace.py",
+          "locator": "MIGRATION_ID = '20261007_0167_quality_review_namespace'",
+          "id": "20261007_0167_quality_review_namespace"
         }
       ],
       "external_effects": {
@@ -9387,7 +9396,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:3ad7e71cf1dd5ce8f763f1cccc9f0c8d8aac092c721369b7673faf370184578b"
+    "implementation_tree_sha": "sha256:966b6d7fce4fd8e25853fb18c020f817cbb3ba6a60793c7fed942ae14bed4547"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

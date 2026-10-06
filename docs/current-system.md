@@ -2227,3 +2227,16 @@ migration 0166 stores immutable continuation and retained-step journals. An unre
 failure, live lease, unknown effect, changed authorization, changed request or accepted
 chapter cannot use this recovery. Independent re-review and downstream acceptance
 still decide whether the derived candidate can advance production.
+
+Quality range reassessment and original Review diagnosis resolution use separate typed
+namespaces. A Quality range code is not an original Review issue code. Pack 2.27 and Review 3.9.19 successor
+contract constrains the latter list to the exact open diagnoses. Template v8 explicitly selects `RETAIN_SETTLED_QUALITY_RESULT`. Pure Rereview
+3.9.20 derives evidence under `chapter-quality-review-revalidation.v1`; migration
+0167 admits the template successor. Creative retained-result recovery may preserve a settled independent reassessment
+whose additional checks exactly name frozen Quality ranges, retain those checks as
+auxiliary evidence, and validate the separate per-observation Quality checks through
+normal domain logic. It cannot discard an unknown code, missing Review check, conflicting
+assessment, invalid prose evidence, or an actual unresolved defect. Terminal continuation
+references completed native correction steps as well as base steps; it does not rerun
+accepted work or rewrite the previous terminal Root. Strict production retains its
+original contract and certification requirements.

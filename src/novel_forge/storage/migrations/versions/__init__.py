@@ -168,6 +168,7 @@ from . import (
     v20261006_0164_execution_contract_continuation,
     v20261007_0165_derived_step_revalidation,
     v20261007_0166_retained_graph_continuation,
+    v20261007_0167_quality_review_namespace,
 )
 
 VERSION_MODULES = [
@@ -338,6 +339,7 @@ VERSION_MODULES = [
     v20261006_0164_execution_contract_continuation,
     v20261007_0165_derived_step_revalidation,
     v20261007_0166_retained_graph_continuation,
+    v20261007_0167_quality_review_namespace,
 ]
 
 __all__ = ["VERSION_MODULES"]

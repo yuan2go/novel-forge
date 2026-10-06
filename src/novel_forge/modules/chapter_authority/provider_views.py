@@ -980,6 +980,10 @@ def build_provider_task_view(
                 (revision or {}).get("creative_execution") or {}
             ),
             prior_diagnoses=issues,
+            **({"review_resolution_namespace": {"contract_version": "quality-review-namespaces.v1",
+                "allowed_review_codes": [item["code"] for item in issues],
+                "instructions": "resolution_checks uses only allowed_review_codes; return [] when none are open. Quality ranges belong solely to quality_resolution_checks, keyed by observation. A Quality range code is never a Review diagnosis."}}
+               if inputs.get("review_resolution_namespace") else {}),
             knowledge_review_targets=deepcopy(
                 inputs.get("knowledge_review_targets") or []
             ),

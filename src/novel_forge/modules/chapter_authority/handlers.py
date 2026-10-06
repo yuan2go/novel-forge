@@ -1677,6 +1677,9 @@ class _ReReviewHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        if request.definition_version == "3.9.20":
+            from .quality_review_recovery import materialize_retained_rereview
+            return _output(ChapterNode.REREVIEW, materialize_retained_rereview(request))
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
@@ -1694,6 +1697,10 @@ class _ReReviewHandler:
             payload=payload,
         )
         require_review_frontier(request)
+        result = reviewed.output
+        if request.definition_version == "3.9.19":
+            from novel_forge.modules.review.quality_namespace import separate_quality_checks
+            result = separate_quality_checks(result, review.content, revision.content)
         return _model_output(
             ChapterNode.REREVIEW,
             normalize_rereview_result(
@@ -1703,7 +1710,7 @@ class _ReReviewHandler:
                 revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id,
                 context_bundle_version_id=context.asset_version_id,
-                result=reviewed.output,
+                result=result,
                 provider_evidence=_provider_evidence(reviewed),
                 project_id=request.project_id,
                 knowledge_targets=targets,

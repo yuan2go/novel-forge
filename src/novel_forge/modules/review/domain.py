@@ -264,6 +264,7 @@ def evaluate_rereview_result(
             {**check, "evidence": validate_location(dict(check.get("evidence") or {}), str(revision.get("text") or ""))}
             for check in result["preservation_checks"]
         ]} if initial_review.get("cross_chapter_window") else {}),
+        **({"quality_range_reassessment": result["quality_range_reassessment"]} if result.get("quality_range_reassessment") else {}),
         "resolved_issue_codes": sorted(resolved),
         "remaining_issue_codes": sorted(remaining),
         "unresolved_issues": [

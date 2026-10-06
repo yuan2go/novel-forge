@@ -62,35 +62,47 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
             "Retain the exact terminal root and extension history",
         )
     cursor.execute(
-        "SELECT to_jsonb(o) FROM authority_operation o WHERE root_operation_id=%s AND status='FAILED_FINAL' AND definition_name='chapter.revision.apply' AND idempotency_key LIKE %s",
-        [root_id, "%:quality-correction:1"],
-    )
-    sources = cursor.fetchall()
-    if len(sources) != 1:
-        raise KernelError(
-            "RETAINED_GRAPH_FAILURE_AMBIGUOUS",
-            "One exact reproduced Quality range failure is required",
-        )
-    cursor.execute(
-        "SELECT operation_id FROM authority_operation WHERE root_operation_id=%s AND idempotency_key LIKE %s",
+        "SELECT to_jsonb(o) FROM authority_operation o WHERE root_operation_id=%s AND idempotency_key LIKE %s ORDER BY created_at",
         [root_id, "%:quality-correction:%"],
     )
-    if cursor.fetchall() != [(sources[0][0]["operation_id"],)]:
-        raise KernelError(
-            "RETAINED_GRAPH_EXTENSION_CONFLICT",
-            "Other correction work retains its own recovery ownership",
-        )
-    if sources[0][0]["actor_id"] != actor_id:
-        raise KernelError(
-            "RETAINED_GRAPH_SOURCE_INVALID", "Retain the original extension actor"
-        )
-    proof, _ = retained_quality_revision(cursor, sources[0][0])
+    extension = [r[0] for r in cursor.fetchall()]
+    failed = [o for o in extension if o["status"] == "FAILED_FINAL"]
+    if len(failed) != 1 or any(o["actor_id"] != actor_id or o["project_id"] != project_id or o["workspace_id"] != root["workspace_id"] for o in extension):
+        raise KernelError("RETAINED_GRAPH_FAILURE_AMBIGUOUS", "One exact reproduced Quality result failure and original actor are required")
+    source = failed[0]
+    review_recovery = source["definition_name"] == "chapter.revision.review"
+    if review_recovery:
+        from novel_forge.modules.chapter_authority.quality_review_recovery import retained_quality_review
+        if (len(extension) != 2 or extension[0]["definition_name"] != "chapter.revision.apply"
+                or extension[0]["definition_version"] != "3.9.17" or extension[0]["status"] != "SUCCEEDED"
+                or extension[1] != source
+                or extension[0]["idempotency_key"] != root["idempotency_key"] + ":revision:quality-correction:1"
+                or source["idempotency_key"] != root["idempotency_key"] + ":rereview:quality-correction:1"):
+            raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Only the completed retained revision and its exact failed independent rereview may continue")
+        proof, _ = retained_quality_review(cursor, source)
+    else:
+        if extension != [source] or source["definition_name"] != "chapter.revision.apply":
+            raise KernelError("RETAINED_GRAPH_EXTENSION_CONFLICT", "Other correction work retains its own recovery ownership")
+        proof, _ = retained_quality_revision(cursor, source)
     effects = _settled_graph(cursor, root_id)
     cursor.execute(
         """SELECT to_jsonb(step),to_jsonb(o) FROM authority_saga_step step JOIN authority_operation o USING(operation_id)
         WHERE step.saga_id=%s ORDER BY step.ordinal FOR UPDATE OF step,o""",
         [saga["saga_id"]],
     )
+    native_rows = cursor.fetchall()
+    cursor.execute("""SELECT ref.source_step_snapshot,to_jsonb(o) FROM authority_saga_retained_step ref
+        JOIN authority_operation o USING(operation_id) WHERE ref.saga_id=%s ORDER BY ref.ordinal FOR SHARE OF ref,o""", [saga["saga_id"]])
+    inherited_rows = cursor.fetchall()
+    if review_recovery:
+        operation = extension[0]
+        inherited_rows.append(({
+            "saga_id": saga["saga_id"], "operation_id": operation["operation_id"],
+            "step_key": "quality-correction:1:revision", "ordinal": 2001,
+            "compensation_status": "NOT_REQUIRED", "compensation_definition_ref": "",
+            "reference_source": "native-completed-correction-command.v1",
+            "command_hash": snapshot_hash(operation["command_payload"]),
+        }, operation))
     steps = []
     from novel_forge.modules.chapter_authority.contracts import ChapterNode
 
@@ -101,8 +113,9 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
         ChapterNode.EXPORT.value,
         ChapterNode.FINAL_RELEASE_GATE.value,
     }
-    for step, operation in cursor.fetchall():
-        if step["step_key"] not in expected:
+    for step, operation in sorted([*native_rows, *inherited_rows], key=lambda item: item[0]["ordinal"]):
+        correction_step = review_recovery and step["step_key"] == "quality-correction:1:revision"
+        if step["step_key"] not in expected and not correction_step:
             if operation[
                 "definition_name"
             ] != ChapterNode.PUBLISH_GATE.definition_name or operation[
@@ -124,7 +137,7 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 )
             continue
         if (
-            operation["definition_name"] != definitions[step["step_key"]]
+            operation["definition_name"] != ("chapter.revision.apply" if correction_step else definitions[step["step_key"]])
             or operation["project_id"] != project_id
             or operation["workspace_id"] != root["workspace_id"]
             or operation["actor_id"] != actor_id
@@ -160,7 +173,7 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 "outputs": [list(r) for r in outputs],
             }
         )
-    if {item["step"]["step_key"] for item in steps} != expected:
+    if {item["step"]["step_key"] for item in steps} != expected | ({"quality-correction:1:revision"} if review_recovery else set()):
         raise KernelError(
             "RETAINED_GRAPH_STEP_MISSING", "Retain the complete pre-publication graph"
         )
@@ -212,7 +225,8 @@ def continue_graph_in_uow(uow, *, source, request, context):
     if (
         not template
         or template.get("chapter_graph_recovery")
-        != "RETAIN_SETTLED_QUALITY_RANGE_RESULT"
+        not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT"}
+        or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_QUALITY_RESULT"
         or admission != binding.get("admission")
         or template["member_authorization_ref"]
         != source["retained_result"]["cost_authorization_ref"]
@@ -358,12 +372,15 @@ def acknowledge_retained_result(cursor, effects, root_id):
     row = cursor.fetchone()
     if not row:
         return
+    cursor.execute("SELECT source_root_operation_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s", [root_id])
+    predecessor = cursor.fetchone()[0]
+    acknowledge_retained_result(cursor, effects, predecessor)
     proof = row[0]["retained_result"]
     cursor.execute(
         """SELECT o.operation_id,v.content FROM authority_operation o JOIN authority_operation_output_asset output USING(operation_id)
-        JOIN authority_asset_version v USING(asset_version_id) WHERE o.root_operation_id=%s AND o.definition_version='3.9.17'
+        JOIN authority_asset_version v USING(asset_version_id) WHERE (o.root_operation_id=%s OR o.operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=(SELECT successor_saga_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s))) AND o.definition_version=%s
         AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
-        [root_id],
+        [root_id, root_id, "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
     )
     successors = cursor.fetchall()
     if len(successors) != 1:
