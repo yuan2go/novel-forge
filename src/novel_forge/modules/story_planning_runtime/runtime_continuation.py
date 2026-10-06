@@ -780,7 +780,7 @@ def require_successor(
     binding = require_binding(application.database_url, command.runtime_continuation_id)
     if (
         binding["successor_command"] != _command_payload(command)
-        or binding["target_release_sha"] != application.commit_sha
+        or validate_runtime and binding["target_release_sha"] != application.commit_sha
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT",

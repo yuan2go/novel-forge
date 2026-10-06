@@ -111,6 +111,11 @@ both ordered snapshot hashes. A terminal, undispatched input-order preflight fai
 may receive an owner-registered runtime successor without changing its terminal history,
 parent candidate or repair number; migration 0159 requires exact native registration
 and zero Effects/reservations. Unknown or already dispatched outcomes cannot use this path.
+Completed successors can replay their exact frozen results on a newer application release.
+An unselected but structurally valid completed candidate resumes its existing owner
+admission/selection; it does not regenerate the Provider result or bypass those decisions.
+Every unexecuted successor still requires its registered release and Pack before admission;
+historical replay cannot authorize another Provider call under an old binding.
 A candidate rejected by the actual contract remains rejected until a new
 repair passes that contract; schema/causality rejection does not permanently exclude its
 only authorized generator. UNKNOWN, permission, independence, capacity, rate-limit and

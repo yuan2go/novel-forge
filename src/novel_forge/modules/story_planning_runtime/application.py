@@ -1843,6 +1843,11 @@ class StoryPlanningGenerationApplication:
                     replayed=True,
                 )
         if state["lifecycle"] not in {"ACTIVE", "REJECTED"}:
+            if row[2] == "SUCCEEDED":
+                asset = self._require_asset(project_id=command.project_id, asset_version_id=str(row[4]))
+                return self._advance_candidate(operation_id=str(row[0]), candidate_asset_version_id=str(row[4]),
+                    candidate_content_hash=asset["content_hash"], command=command, principal=principal, replayed=True,
+                    definition=GENERATOR_CATALOG[command.generator_operation_name])
             return None
         binding = (
             self.planning.require_binding(

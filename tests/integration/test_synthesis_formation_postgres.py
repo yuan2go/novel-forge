@@ -841,11 +841,36 @@ def test_native_formation_generates_foundation_from_author_brief(
                 uow.cursor.execute("SELECT count(*) FROM authority_capability_pack_approval approval JOIN authority_operation op ON op.operation_id=approval.decided_by_operation_id WHERE op.project_id=%s", [harness.project_id])
                 assert uow.cursor.fetchone()[0] == 0
             execution.close()
+            if route_continuation:
+                from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+                from tests.integration.creative_validation_production_support import install_planning
+                sha = "c" * 40
+                hashes = register_validation_runtime_definitions(DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=sha)
+                harness.release_sha = sha
+                harness.pack_id += ".replay"
+                chapter_pack.pack_id += ".replay"
+                install_chapter_validation_pack(DATABASE_URL, repository_root=Path(__file__).resolve().parents[2],
+                    project_id=harness.project_id, workspace_id=harness.workspace_id, book_id=harness.book_ids[0],
+                    application_build_id=harness.application_build_id, commit_sha=sha, compiler=template_actor,
+                    approver=template_actor, agent_admin=template_actor, pack_id_override=chapter_pack.pack_id)
+                profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2],
+                    operation_definition_hash=hashes["planning"], pack_id=harness.pack_id)
+                install_planning(harness, profile, template_actor)
+                env.update(NOVEL_FORGE_COMMIT_SHA=sha, NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,
+                    NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
             execution = build_production_execution_composition(settings, env=env, provider_registry=registry,
                 planning_fixture_factory=transport.planning, chapter_fixture_factory=transport.chapter)
             chapter = build_chapter_authority_application(settings, execution=execution, env=env)
             rebuilt = build_book_production_composition(settings, principal=principal, execution=execution,
                 chapter_application=chapter, env=env)
+            if route_continuation:
+                from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT o.command_payload->'payload' FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' AND g.repair_number=0 ORDER BY o.created_at LIMIT 1", [harness.project_id])
+                    original = _command_from_payload(uow.cursor.fetchone()[0])
+                replayed = rebuilt.formation.generation.planning.generate(original, principal=principal)
+                assert replayed.candidate_asset_version_id
+                assert (len(transport.calls), len(transport.chapter.calls)) == calls
             resumed = continue_creation(composition=rebuilt, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=5, deadline=time.monotonic() + 30, creation_policy=policy)
