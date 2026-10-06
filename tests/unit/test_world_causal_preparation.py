@@ -922,3 +922,20 @@ def test_professional_card_translation_changes_native_world_resource_feasibility
                 evaluation=no_path_evaluation, policy=WorldProductionPolicy(),
                 chapter_number=2, intent_version_id="intent:professional-reserve",
             )["disposition"] == "BLOCKED"
+
+
+@pytest.mark.parametrize("field", ["affected_entities", "world_consequences"])
+def test_retained_world_candidate_missing_required_evidence_is_diagnosable_before_director(
+    field,
+):
+    from novel_forge.modules.worldbuilding.production_planning import (
+        WorldProductionPolicy,
+        validate_generated_candidates,
+    )
+
+    raw = generated_paths()
+    raw["candidates"][0][field] = []
+    with pytest.raises(
+        KernelError, match="WORLD_GENERATION_CANDIDATE_EVIDENCE_INVALID"
+    ):
+        validate_generated_candidates(raw, WorldProductionPolicy())

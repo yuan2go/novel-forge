@@ -333,7 +333,7 @@ def planning_repair_route_receipt(
     from .result_recovery import require_result_repair_source
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-    world_stage = task_type == "world_candidates.generate"
+    world_stage = task_type in {"world_candidates.generate", "world_candidates.evaluate"}
     owner_generator = "chapter_plan.generate" if world_stage else task_type
     if owner_generator not in GENERATOR_CATALOG:
         return None
@@ -362,7 +362,7 @@ def planning_repair_route_receipt(
             )
         if world_stage and not command.repair_of_operation_id:
             return None
-        result = None
+        dependency = None
         if command.repair_of_candidate_id:
             source = require_candidate_repair_operation(
                 uow.cursor,
@@ -393,8 +393,71 @@ def planning_repair_route_receipt(
                 operation_id=source,
                 source_asset_version_id=command.repair_result_asset_version_id,
             )
-            if result["diagnostic"].get("provider_stage", owner_generator) != task_type:
-                return None
+            target_stage = result["diagnostic"].get("provider_stage", owner_generator)
+            if target_stage != task_type:
+                if (
+                    task_type != "world_candidates.evaluate"
+                    or target_stage != "world_candidates.generate"
+                    or result["diagnostic"].get("validation_kind")
+                    != "WORLD_CAUSAL_GATE"
+                ):
+                    return None
+                query = AuthorityAssetQuery(database_url)
+                previous = query.require(
+                    project_id=project_id, asset_version_id=result["asset_version_id"]
+                )
+                current = query.require(
+                    project_id=project_id,
+                    logical_ref=f"world_preparation/{operation_id}/generation",
+                )
+                from .world_preparation import PlanningWorldPreparation
+
+                if (
+                    current.asset_type != "world_preparation_generation"
+                    or PlanningWorldPreparation._source_operation(
+                        database_url, project_id, current.asset_version_id
+                    )
+                    != operation_id
+                ):
+                    raise KernelError(
+                        "PLANNING_ROUTING_DEPENDENCY_EVIDENCE_INVALID",
+                        "Director repair must bind its current native World generation",
+                    )
+                current_contract = current.content["contract"]
+                previous_contract = previous.content["contract"]
+                if current_contract["source"] != previous_contract[
+                    "source"
+                ] or current_contract.get(
+                    "knowledge_selection_digest"
+                ) != previous_contract.get("knowledge_selection_digest"):
+                    raise KernelError(
+                        "PLANNING_ROUTING_DEPENDENCY_INPUT_DRIFT",
+                        "Director repair must retain the rejected proposal's exact source and knowledge selection",
+                    )
+                receipt = read_succeeded_external_effect(
+                    database_url,
+                    EffectCommandContext(
+                        operation_id=operation_id,
+                        project_id=project_id,
+                        actor_id=command.actor_id,
+                        trace_id=command.trace_id,
+                        correlation_id=command.correlation_id,
+                    ),
+                    effect_id=str(
+                        current_contract["evidence"].get("external_receipt_ref") or ""
+                    ),
+                )
+                if (
+                    receipt is None
+                    or receipt["provider_evidence"].get("result")
+                    != current_contract["output"]
+                    or receipt["budget_reservation_status"] != "SETTLED"
+                ):
+                    raise KernelError(
+                        "PLANNING_ROUTING_DEPENDENCY_UNSETTLED",
+                        "Director repair requires its exact known World result and settled usage",
+                    )
+                dependency = {"stage": task_type, "repair_target_stage": target_stage, "generation": {"asset_version_id": current.asset_version_id, "content_hash": current.content_hash}, "external_effect_id": current_contract["evidence"]["external_receipt_ref"]}
             evidence_id = result["asset_version_id"]
             diagnosis_hash = canonical_hash(result["diagnostic"])
         else:
@@ -430,6 +493,7 @@ def planning_repair_route_receipt(
         )
     return {
         "contract_version": "planning-route-repair.v1",
+        **({"dependent_evaluation": dependency} if dependency else {}),
         "operation_id": operation_id,
         "source_operation_id": source,
         "source_asset_version_id": evidence_id,

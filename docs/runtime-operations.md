@@ -2544,7 +2544,18 @@ causal predicates and epistemic bases. A retained failed World proposal is repai
 within the same Chapter Planning allowance, against its exact source, Actor proposals,
 knowledge selection and accepted frontier. It does not enter Chapter constraints as
 accepted fact. A raw Chapter Plan repair reuses its already selected World action;
-it does not repeat successful World preparation. Changed-input repair routing excludes
+it does not repeat successful World preparation. A structurally valid proposal with a
+blocked causal plan can use the same bounded repair chain only after the runtime
+reproduces the exact hard gate from the frozen Reality and verifies the retained
+Director receipt and settled usage. It does not convert a blocked action to NO_OP,
+add accepted support or relax a causal predicate. The owning Planning result becomes
+terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
+older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
+the original receipt before this classification, without another Provider request.
+A new World proposal can obtain its necessary Director evaluation within that same
+allowance only with the current generation's verified settled receipt, exact source
+and frozen knowledge selection. This dependent evaluation receipt cannot authorize
+another stage or repeat an unchanged request. Changed-input repair routing excludes
 verified rejected results from transport retry counting while retaining all receipts
 and the native two-repair bound. UNKNOWN, in-flight effects, service failures and
 unchanged requests keep their existing blocks.

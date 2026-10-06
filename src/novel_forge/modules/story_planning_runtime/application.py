@@ -784,7 +784,7 @@ class StoryPlanningGenerationApplication:
                 )
                 if continued is not None:
                     return continued
-            if error.code != "PLANNING_GENERATION_RESULT_INVALID":
+            if error.code not in {"PLANNING_GENERATION_RESULT_INVALID", "WORLD_PREPARATION_RESULT_INVALID"}:
                 raise
             return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
         self._probe(execution_probe)

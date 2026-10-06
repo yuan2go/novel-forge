@@ -403,7 +403,7 @@ class PlanningWorldPreparation:
         )
         if plan["disposition"] == "BLOCKED":
             raise KernelError(
-                "WORLD_PREPARATION_BLOCKED",
+                "WORLD_PREPARATION_RESULT_INVALID",
                 f"No legal world path; inspect {action_document.asset_version_id}",
             )
         return action_document
@@ -622,6 +622,146 @@ class PlanningWorldPreparation:
             decoded, WorldProductionPolicy(**source["policy"])
         )
         PlanningWorldPreparation._validate_references(source, candidates, command)
+        PlanningWorldPreparation._validate_retained_plan(
+            query,
+            command=command,
+            generation=generation,
+            source=source_document,
+            decoded=decoded,
+        )
+
+    @staticmethod
+    def _validate_retained_plan(
+        query: Any,
+        *,
+        command: Any,
+        generation: Any,
+        source: Any,
+        decoded: Mapping[str, Any],
+    ) -> None:
+        from novel_forge.modules.command_kernel.external_effect_runtime import (
+            EffectCommandContext,
+            read_failed_operation_success,
+        )
+        from novel_forge.modules.worldbuilding.continuation import (
+            decide_preparation,
+            apply_preparation_decisions,
+        )
+
+        owner = PlanningWorldPreparation._source_operation(
+            query.database_url, command.project_id, generation.asset_version_id
+        )
+        try:
+            action = query.require(
+                project_id=command.project_id,
+                logical_ref=f"world_preparation/{owner}/action",
+            )
+        except KernelError as error:
+            if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
+            return
+        binding = action.content["contract"]
+        if binding["world_plan"]["disposition"] != "BLOCKED":
+            return
+        evaluation = query.require(
+            project_id=command.project_id,
+            logical_ref=f"world_preparation/{owner}/evaluation",
+        )
+        expected_source = {
+            "asset_version_id": source.asset_version_id,
+            "content_hash": source.content_hash,
+        }
+        expected_generation = {
+            "asset_version_id": generation.asset_version_id,
+            "content_hash": generation.content_hash,
+        }
+        expected_evaluation = {
+            "asset_version_id": evaluation.asset_version_id,
+            "content_hash": evaluation.content_hash,
+        }
+        retained = evaluation.content["contract"]
+        if (
+            binding["source"] != expected_source
+            or binding["generation"] != expected_generation
+            or binding["evaluation"] != expected_evaluation
+            or retained["source"] != expected_source
+            or retained["generation"] != expected_generation
+        ):
+            raise KernelError(
+                "WORLD_REPAIR_EVALUATION_DRIFT",
+                "World causal repair must bind its exact frozen proposal and Director receipt",
+            )
+        receipt = read_failed_operation_success(
+            query.database_url,
+            EffectCommandContext(
+                operation_id=owner,
+                project_id=command.project_id,
+                actor_id=command.actor_id,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            ),
+            effect_id=str(retained["evidence"].get("external_receipt_ref") or ""),
+        )
+        if (
+            receipt is None
+            or receipt["provider_evidence"].get("result") != retained["output"]
+            or receipt["budget_reservation_status"] != "SETTLED"
+        ):
+            raise KernelError(
+                "WORLD_REPAIR_EVALUATION_UNSETTLED",
+                "World causal repair requires verified known Director outcome and settled usage",
+            )
+        frozen = source.content["contract"]
+        chapter = int(frozen["request"]["accepted_through_chapter"]) + 1
+        plan = compile_world_plan(
+            reality=frozen["reality"],
+            generated=decoded,
+            evaluation=retained["output"],
+            policy=WorldProductionPolicy(**frozen["policy"]),
+            chapter_number=chapter,
+            intent_version_id=frozen["intent_version_id"],
+        )
+        if frozen["contract_version"] == "world-preparation-source.v2":
+            decisions = [
+                decide_preparation(
+                    reality=frozen["reality"],
+                    origin=item["origin"],
+                    accepted_steps=item["accepted_steps"],
+                    chapter_number=chapter,
+                    intent_version_id=frozen["intent_version_id"],
+                )
+                for item in frozen.get("preparation_sources", [])
+            ]
+            plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+        if plan != binding["world_plan"] or plan["disposition"] != "BLOCKED":
+            raise KernelError(
+                "WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT",
+                "World causal repair must reproduce its immutable hard gate failure",
+            )
+        diagnostic = {
+            "action": {
+                "asset_version_id": action.asset_version_id,
+                "content_hash": action.content_hash,
+            },
+            "plan_digest": plan["plan_digest"],
+            "reason": plan["reason"],
+            "candidate_rejections": [
+                {
+                    "transition_id": item["transition_id"],
+                    "rejection": item.get("rejection"),
+                }
+                for item in plan["candidate_futures"]
+                if not item["eligible"]
+            ],
+            "path_rejections": [
+                {"path_id": item["path_id"], "rejection": item["rejection"]}
+                for item in plan["rejected_paths"]
+            ],
+        }
+        raise KernelError(
+            "WORLD_GENERATION_CAUSAL_REJECTED",
+            json.dumps(diagnostic, ensure_ascii=False, sort_keys=True),
+        )
 
     @staticmethod
     def retained_action(query: Any, command: Any) -> Any:

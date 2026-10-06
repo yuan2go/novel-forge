@@ -308,6 +308,8 @@ def require_result_repair_source(
         ).diagnostic
         if world_generation:
             diagnostic["provider_stage"] = "world_candidates.generate"
+            if error.code == "WORLD_GENERATION_CAUSAL_REJECTED":
+                diagnostic["validation_kind"] = "WORLD_CAUSAL_GATE"
     else:
         raise KernelError(
             "PLANNING_RESULT_REPAIR_NOT_REQUIRED",

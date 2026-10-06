@@ -56,7 +56,7 @@ def world_transition_schema() -> dict[str, Any]:
     )
     result = _object(
         {
-            "transition_id": text,
+            "transition_id": {**text, "description": "Use a batch-local name matching [A-Za-z][A-Za-z0-9_-]{0,63}, without a local: prefix. In cause_refs, refer to a preparation event as local:<name>; other references must be exact supplied foundation or accepted event identities."},
             "actor_id": text,
             "camera": {
                 "type": "string",
@@ -183,6 +183,8 @@ def world_generation_schema(
                     "narrative_preferences",
                 )
             },
+            "affected_entities": {**_strings(), "minItems": 1},
+            "world_consequences": {**_strings(), "minItems": 1},
             "rationale": {"type": "string", "minLength": 1},
             "preparation_paths": {
                 "type": "array",

@@ -183,6 +183,8 @@ def replace_args(args, **changes):
         "capacity-retained-repair-cause",
         "world-result-repair",
         "world-primary-result-repair",
+        "world-causal-result-repair",
+        "world-causal-legacy-replay",
     ],
 )
 def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(
@@ -254,6 +256,32 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         monkeypatch.setattr(planning_application, "admit_command", retain_repair_cause)
 
+    if mode == "world-causal-legacy-replay":
+        from novel_forge.modules.story_planning_runtime.world_preparation import (
+            PlanningWorldPreparation,
+        )
+
+        native_world_prepare = PlanningWorldPreparation.prepare
+        legacy_block = []
+
+        def historical_gate_checkpoint(preparation, **values):
+            try:
+                return native_world_prepare(preparation, **values)
+            except KernelError as error:
+                if (
+                    error.code == "WORLD_PREPARATION_RESULT_INVALID"
+                    and not legacy_block
+                ):
+                    legacy_block.append(True)
+                    raise KernelError(
+                        "WORLD_PREPARATION_BLOCKED", error.message
+                    ) from error
+                raise
+
+        monkeypatch.setattr(
+            PlanningWorldPreparation, "prepare", historical_gate_checkpoint
+        )
+
     def bounded_planning(stage, inputs):
         result = planning(stage, inputs)
         if stage == "world_candidates.generate":
@@ -268,14 +296,66 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                             "transition": {
                                 "payload_json": json.dumps({"story_time": "chapter:1"})
                             },
-                            "affected_entities": [],
-                            "world_consequences": [],
+                            "affected_entities": [
+                                inputs["world_preparation"]["approved_entity_ids"][0]
+                            ],
+                            "world_consequences": [
+                                "Controlled proposed consequence; not accepted fact."
+                            ],
                             "arc_refs": [],
                             "obligation_refs": [],
                             "risks": [],
                             "soft_assumptions": [],
                             "narrative_preferences": [],
                             "rationale": "Controlled Schema-valid but domain-invalid result.",
+                            "preparation_paths": [],
+                            "information_scope": {"disclosures": []},
+                        }
+                    ],
+                }
+            if (
+                mode in {"world-causal-result-repair", "world-causal-legacy-replay"}
+                and len(world_calls) <= 2
+            ):
+                identity = inputs["world_preparation"]["approved_entity_ids"][0]
+                proposal = {
+                    "transition_id": "blocked_future",
+                    "actor_id": identity,
+                    "camera": "ON_CAMERA",
+                    "story_time": {
+                        "timeline_id": "controlled",
+                        "start_ordinal": 1,
+                        "end_ordinal": 1,
+                        "precision": "EXACT",
+                        "label": "controlled",
+                    },
+                    "action": "Controlled proposal with unavailable causal support.",
+                    "state_kind": "world_state",
+                    "entity_key": identity,
+                    "changes": {"status": "controlled"},
+                    "requirements": [],
+                    "cause_refs": ["controlled:missing-source"],
+                    "epistemic_basis": [],
+                }
+                result = {
+                    **result,
+                    "disposition": "CANDIDATES",
+                    "reason": "Controlled causal rejection, not a fabricated manuscript flaw.",
+                    "candidates": [
+                        {
+                            "transition": {"payload_json": json.dumps(proposal)},
+                            "affected_entities": [
+                                inputs["world_preparation"]["approved_entity_ids"][0]
+                            ],
+                            "world_consequences": [
+                                "Controlled proposed consequence; not accepted fact."
+                            ],
+                            "arc_refs": [],
+                            "obligation_refs": [],
+                            "risks": [],
+                            "soft_assumptions": [],
+                            "narrative_preferences": [],
+                            "rationale": "Controlled unavailable causal support.",
                             "preparation_paths": [],
                             "information_scope": {"disclosures": []},
                         }
@@ -492,10 +572,15 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         try:
             return execute_creation_worker_claim(settings, current)
         except KernelError as error:
-            if (
-                mode != "world-result-repair"
-                or error.code != "WORLD_PROVIDER_TRANSITION_INVALID"
-            ):
+            if mode not in {
+                "world-result-repair",
+                "world-causal-result-repair",
+                "world-causal-legacy-replay",
+            } or error.code not in {
+                "WORLD_PROVIDER_TRANSITION_INVALID",
+                "WORLD_PREPARATION_RESULT_INVALID",
+                "WORLD_PREPARATION_BLOCKED",
+            }:
                 raise
             assert jobs.get(current.runtime_job_id)["status"] == "RETRY_WAIT"
             return {"stop_reason": "YIELDED_CHECKPOINT", "error_code": error.code}
@@ -538,9 +623,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert next_claim is not None, result
         result = execute_window(next_claim)
     assert result["stop_reason"] == "COMPLETED", result
-    if mode in {"world-result-repair", "world-primary-result-repair"}:
-        assert len(world_calls) == (3 if mode == "world-result-repair" else 1)
-        assert len(primary_calls) == (1 if mode == "world-result-repair" else 3)
+    if mode in {
+        "world-result-repair",
+        "world-primary-result-repair",
+        "world-causal-result-repair",
+        "world-causal-legacy-replay",
+    }:
+        assert len(world_calls) == (1 if mode == "world-primary-result-repair" else 3)
+        assert len(primary_calls) == (3 if mode == "world-primary-result-repair" else 1)
         assert (
             len(
                 {
@@ -550,7 +640,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             )
             == 1
         )
-        if mode == "world-result-repair":
+        if mode in {"world-result-repair", "world-causal-result-repair", "world-causal-legacy-replay"}:
             assert "Controlled Schema-valid but domain-invalid result." not in json.dumps(primary_calls[0])
             assert all(
                 item["world_preparation"]["result_repair"]["diagnostic"][
@@ -573,6 +663,20 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert [row[2]["repair_number"] for row in lineage] == [0, 1, 2]
         assert lineage[1][1] == lineage[1][2]["repair_of_operation_id"]
         assert lineage[2][1] == lineage[2][2]["repair_of_operation_id"]
+        if mode in {"world-causal-result-repair", "world-causal-legacy-replay"}:
+            assert all(
+                row[2]["repair_result_diagnostic"]["validation_kind"]
+                == "WORLD_CAUSAL_GATE"
+                for row in lineage[1:]
+            )
+        if mode == "world-causal-legacy-replay":
+            assert legacy_block
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute(
+                    "SELECT status FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number",
+                    [lineage[1][1]],
+                )
+                assert [row[0] for row in uow.cursor.fetchall()] == ["FAILED_RETRYABLE", "FAILED_FINAL"]
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT checkpoint->'generated_layer'->>'asset_version_id' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage='CREATIVE_FOUNDATION'", [identity])
         assert uow.cursor.fetchone()[0] == selected
