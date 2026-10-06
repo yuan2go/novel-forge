@@ -113,8 +113,12 @@ try {
   assert.equal(requests[0].creative_brief_content_hash,sourceHash);
   assert.deepEqual(requests[0].production_intent,{title:'原创调查',target_chapters:12,creative_candidates:2,language_contract:{required_language:'zh-CN'},chapter_length:{minimum:1200,maximum:2400}});
   assert.equal(requests[0].generation_policy,undefined);
-  formation={...formation,creation:{...formation.creation,coordination:{status:'SUCCEEDED',result:{wait_class:'OWNER_RECOVERY_REQUIRED',stop_reason:'CREATION_NO_PROGRESS'}}}};
+  formation={...formation,creation:{...formation.creation,author_state:'OWNER_RECOVERY_REQUIRED',responsible_party:'RUNTIME_OWNER',next_action:'RECOVER_ORIGINAL_CREATION_AFTER_RESOLVING_RETAINED_FAILURE',failure:{code:'PLANNING_RESULT_REPAIR_BOUND_EXCEEDED'},coordination:{status:'SUCCEEDED',result:{wait_class:'OWNER_RECOVERY_REQUIRED',stop_reason:'PLANNING_RESULT_REPAIR_BOUND_EXCEEDED'}}}};
   await creationPage.reload();
+  await creationPage.getByRole('alert').filter({hasText:'方案修复次数已用完'}).waitFor();
+  const ownerProgress = await creationPage.getByRole('status').filter({hasText:'创作进度：等待责任方解决停点'}).innerText();
+  assert.ok(ownerProgress.includes('当前责任方：生产运行责任方'));
+  assert.ok(ownerProgress.includes('下一动作：先解决已保存问题，再恢复原任务'));
   await creationPage.getByRole('button',{name:'核对停点后恢复创作',exact:true}).click();
   await creationPage.getByRole('button',{name:'恢复上次提交（保留原输入和幂等键）',exact:true}).waitFor();
   await creationPage.reload();
