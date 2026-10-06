@@ -231,7 +231,8 @@ def add_author_decision_contract(schema: Mapping[str, Any], projection: Mapping[
         "fragment_id": {"type": "string", "enum": [i["fragment_id"] for i in selected]},
         "content_hash": {"type": "string", "enum": [i["content_hash"] for i in selected]},
         "decision": {"type": "string", "enum": ["ADOPT", "ADAPT", "REJECT", "RETAIN_PRIVATE"]},
-        "rationale": text, "target_pointer": {"type": "string"}, "realization_excerpt": {"type": "string"},
+        "rationale": text, "target_pointer": {"type": "string", "description": "RFC6901 pointer to an actual candidate string leaf; never an author decision or frozen input."},
+        "realization_excerpt": {"type": "string", "description": "Copy an exact contiguous substring of at least four characters from that pointed candidate string, including identical punctuation. Do not paraphrase, summarize, rewrite punctuation or quote the source fragment instead. Empty for REJECT or RETAIN_PRIVATE."},
     }
     result = deepcopy(dict(schema))
     result["properties"]["author_design_decisions"] = {

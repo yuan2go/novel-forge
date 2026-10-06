@@ -862,6 +862,8 @@ class ProductionProviderRouter:
                             "quality_floor": quality_floor,
                             "chapter": chapter,
                             **({"provider_task_scope": self.provider_task_scope} if self.provider_task_scope is not None else {}),
+                            **({"native_planning_repair": original["declared_requirements"]["native_planning_repair"]}
+                               if original.get("declared_requirements", {}).get("native_planning_repair") else {}),
                             **({"cross_model_review": original["declared_requirements"]["cross_model_review"]}
                                if original.get("declared_requirements", {}).get("cross_model_review") else {}),
                         },
@@ -1019,6 +1021,14 @@ class ProductionProviderRouter:
             policy_snapshot=policy_snapshot,
             **requirements,
         )
+        if template and template["version"] == "creative-execution-template.v2" and template["mode"] == "CREATIVE_VALIDATION":
+            from .planning_repair_routing import native_planning_repair
+            with AuthorityUnitOfWork(self.registry.database_url) as uow:
+                repair_evidence = native_planning_repair(uow.cursor,project_id=project_id,book_id=work_id,
+                    operation_id=operation_id,task_type=task_type,lineage=lineage)
+            if repair_evidence:
+                task = replace(task,declared_requirements={**task.declared_requirements,
+                    "native_planning_repair":repair_evidence})
         from novel_forge.modules.command_kernel.routing_bootstrap import (
             load_bootstrap_authorization,
         )
@@ -1222,6 +1232,8 @@ class ProductionProviderRouter:
             from .execution_template import verify_template_provenance
             with AuthorityUnitOfWork(self.registry.database_url) as uow:
                 template = verify_template_provenance(uow.cursor, snapshot)
+                from .planning_repair_routing import verify_native_repair
+                verify_native_repair(uow.cursor,snapshot)
             selected_candidate = snapshot["selected"]["candidate"]
             if selected_candidate["provider"] == "codex-cli" and (self.membership_identity.get("billing_channel") != "ACCOUNT_ENTITLEMENT"
                     or snapshot["task"]["budget_snapshot"]["candidates"][selected_candidate["candidate_id"]].get("membership_identity") != self.membership_identity):

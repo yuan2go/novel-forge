@@ -647,7 +647,10 @@ class StoryPlanningGenerationApplication:
                     [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
                 )
                 retained = uow.cursor.fetchone()
-            causation_operation_id = retained[0] if retained else source_operation_id
+            causation_operation_id = (
+                retained[0] if retained else
+                continuation["source_operation_id"] if continuation else source_operation_id
+            )
         input_assets = self._replay_ordered_input_assets(
             command=command,
             resolved_input_assets=_canonical_admission_assets(input_assets),
@@ -2957,8 +2960,12 @@ class StoryPlanningGenerationApplication:
         )
         if command.runtime_continuation_id:
             repair_fields += ("runtime_continuation_id",)
+        source_operation_id = command.repair_of_operation_id
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_binding
+            source_operation_id = require_binding(self.database_url, command.runtime_continuation_id)["source_operation_id"]
         with AuthorityUnitOfWork(self.database_url) as uow:
-            if command.repair_of_operation_id:
+            if source_operation_id:
                 uow.cursor.execute(
                     """
                     SELECT input_snapshot, input_snapshot_hash
@@ -2966,7 +2973,7 @@ class StoryPlanningGenerationApplication:
                     WHERE operation_id=%s AND project_id=%s AND workspace_id=%s
                       AND book_id=%s AND generator_operation_name=%s AND logical_key=%s
                     """,
-                    [command.repair_of_operation_id, command.project_id,
+                    [source_operation_id, command.project_id,
                      command.workspace_id, command.book_id,
                      command.generator_operation_name, command.logical_key],
                 )

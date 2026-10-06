@@ -509,6 +509,16 @@ are frozen together as `formation-generation.v4`; continue uses that snapshot ev
 template file later changes. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
+The shipped creative template is the explicit v2 successor. Its bounded native repair
+policy permits the same authorized generator to repair contract/causality rejections;
+it does not accept rejected content or certify unperformed model qualification. Old v1
+routing snapshots remain immutable. An undispatched native Planning repair blocked solely
+by the old failed-route exclusion can be cancelled through Command Kernel and registered
+as a runtime continuation under the new native template. Preserve the parent candidate,
+repair count, inputs, billing account, model and reasoning. No Effect/reservation may
+exist for the replaced preflight task; the original settled call and its failed contract
+remain history. Reconcile dispatched or unknown calls instead of replacing them.
+
 Configure the deployment once with the existing trusted local operator, exact release,
 PostgreSQL, MinIO and authenticated Codex configuration. The operator still needs native
 Project, Book, content, Pack compiler/deployer and Agent-admin permissions in the selected
@@ -650,7 +660,10 @@ The applicable engineering matrix is the focused routing, budget, Pack, owner/ou
 and quality tests; PostgreSQL channel accounting, native Pack admission, Opening succession,
 clean installation and previous-head migration; native CLI admission; and the controlled
 process `test_creative_validation_native_controlled_process_to_internal_acceptance` in
-`tests/integration/test_synthesis_formation_postgres.py`. Run integration modules serially
+`tests/integration/test_synthesis_formation_postgres.py`. For v2 repair changes also run
+`test_native_bounded_semantic_repair_reaches_review_acceptance_and_replays_without_calls`
+and `test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance`
+there, plus `tests/unit/test_native_planning_repair_routing.py`. Run integration modules serially
 in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
 process protocol, state owners and recovery; it proves no real membership entitlement,

@@ -101,6 +101,16 @@ Independent evaluation retains its independence requirement. A blocked dependenc
 not authorize self-qualification or early completion. Pause with a durable checkpoint
 only when the remaining work has no authorized executable path.
 
+The successor `creative-execution-template.v2` may enable `native-repair-routing.v1`
+for at most two same-route Planning repairs. Admission binds the persisted native repair,
+exact parent result and input scope, unchanged authorized route and successful settled
+parent call. A candidate rejected by the actual contract remains rejected until a new
+repair passes that contract; schema/causality rejection does not permanently exclude its
+only authorized generator. UNKNOWN, permission, independence, capacity, rate-limit and
+no-progress/attempt bounds remain blocking. Strict and frozen v1 selection retain their
+original rules. Adoption excerpts must be exact substrings of the pointed string leaf,
+including punctuation; paraphrases are not evidence.
+
 The following sections describe existing strict and historical campaign contracts;
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes

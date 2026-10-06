@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -80,7 +80,7 @@ def test_native_formation_generates_foundation_from_author_brief(
     chapter_pack.pack_id += "-chapter"
     if creative_validation:
         from tests.integration.creative_validation_production_support import prepare_native_template
-        template_actor = prepare_native_template(harness, chapter_pack)
+        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=semantic_repair and not route_continuation)
     else:
         approved_chapter = chapter_pack.register_compile_approve(
             "1.0.0",
@@ -280,6 +280,19 @@ def test_native_formation_generates_foundation_from_author_brief(
             bounded_serialization(result)
             return result
         transport.planning = consistent_fixture
+    if semantic_repair:
+        normal_group_planning = transport.planning
+        damaged_group = False
+
+        def invalid_cause_once(stage, inputs):
+            nonlocal damaged_group
+            result = normal_group_planning(stage, inputs)
+            if stage == "chapter_group_plan.generate" and not damaged_group:
+                damaged_group = True
+                result["narrative_event_chain"][0]["causes"] = ["absent-causal-event"]
+            return result
+
+        transport.planning = invalid_cause_once
     registry.register(transport)
     if creative_validation:
         from tests.integration.creative_validation_production_support import controlled_member_environment
@@ -763,10 +776,33 @@ def test_native_formation_generates_foundation_from_author_brief(
 
             worker = replace(principal, principal_type=PrincipalType.WORKER,
                 permissions=principal.permissions - {"book.authority.approve_replan"})
+            if route_continuation:
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with pytest.raises(KernelError, match="PROVIDER_ROUTING_BLOCKED"):
+                    continue_creation(composition=composition, content=content, chapter=chapter,
+                        formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                        book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                execution.close()
+                formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
+                    chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
+                    env=env, registry=registry, transport=transport, admitted=admitted, monkeypatch=monkeypatch,
+                    routing=True)
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            if semantic_repair:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' ORDER BY o.created_at", [harness.project_id])
+                    groups = uow.cursor.fetchall()
+                    assert [row[0] for row in groups] == ([0, 1, 1, 0, 0] if route_continuation else [0, 1, 0, 0])
+                    assert all(row[1] == "SUCCEEDED" and row[2] for row in groups if row[1] != "CANCELLED")
+                    if route_continuation:
+                        assert groups[1][1:] == ("CANCELLED", None)
+                    uow.cursor.execute("SELECT e.request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect e JOIN authority_story_planning_generation g USING(operation_id) WHERE e.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' AND g.repair_number=1", [harness.project_id])
+                    decision = uow.cursor.fetchone()[0]
+                    assert decision["selected"]["native_repair_admission"]["status"] == "BOUNDED_REPAIR_ADMITTED"
+                    assert decision["selected"]["native_repair_admission"]["retained_failed_outcomes"][0]["failure_class"] == "SCHEMA_REJECTION"
             book_run = SimpleNamespace(book_run_id=creation_result["book_run_id"])
             calls = len(transport.calls), len(transport.chapter.calls)
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1193,7 +1229,7 @@ def test_native_retained_valid_result_admission_without_another_provider_call(tm
     )
 
 
-def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch):
+def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor, settings, env, registry, transport, admitted, monkeypatch, routing=False):
     from concurrent.futures import ThreadPoolExecutor
     from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
     from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
@@ -1212,13 +1248,24 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     sha = "f"*40
     hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=sha)
     harness.release_sha=sha
+    if routing:
+        from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+        from tests.unit.test_creative_execution_template import template
+        value = template(harness.book_ids[0], version="creative-execution-template.v2", repair_routing={
+            "version": "native-repair-routing.v1", "max_same_route_repairs": 2})
+        value["allowed_candidates"] = ["codex-cli:gpt-test:high"]
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=harness.project_id,
+            workspace_id=harness.workspace_id, principal=pack_actor, application_build_id=harness.application_build_id,
+            commit_sha=sha, idempotency_key=harness.project_id+":repair-policy-v2", trace_id=harness.project_id,
+            correlation_id=harness.project_id, content={"policy_version":"creative-e2e.v2", "task_overrides":[],
+                "reason":"explicit successor for undispatched native repair", "execution_templates":[value]})
     harness.pack_id += ".capacity"
     chapter_pack.pack_id += ".capacity"
     install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
         workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,commit_sha=sha,
         compiler=pack_actor,approver=pack_actor,agent_admin=pack_actor,pack_id_override=chapter_pack.pack_id)
     profile=build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes["planning"],
-        pack_id=harness.pack_id,planning_task_token_budget=128000)
+        pack_id=harness.pack_id,planning_task_token_budget=None if routing else 128000)
     install_planning(harness,profile,pack_actor)
     env.update(NOVEL_FORGE_COMMIT_SHA=sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
     execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
@@ -1235,7 +1282,7 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     with monkeypatch.context() as strict:
         verified=preflight_continuation.verify_template_provenance
         strict.setattr(preflight_continuation,"verify_template_provenance",lambda *args: {**verified(*args),"mode":"STRICT_PRODUCTION"})
-        with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED"):
+        with pytest.raises(KernelError,match="PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED" if routing else "PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED"):
             register()
     with ThreadPoolExecutor(max_workers=2) as pool:
         records=list(pool.map(lambda _:register(),range(2)))
@@ -1243,8 +1290,9 @@ def _recover_capacity_formation(*, harness, chapter_pack, principal, pack_actor,
     binding=require_binding(DATABASE_URL,records[0]["continuation_id"])
     assert binding["source_command"]==original
     assert binding["successor_command"]["repair_number"]==original["repair_number"]==1
-    failed=formation.require(admitted.formation_run_id)
-    formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
+    if not routing:
+        failed=formation.require(admitted.formation_run_id)
+        formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
     return formation,execution,chapter,composition
 
 
@@ -1252,3 +1300,14 @@ def test_native_undispatched_result_repair_capacity_successor_preserves_raw_task
     test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,author_guided=True,
         result_repair=False,runtime_recovery=False,evaluation_recovery=False,manual_review=False,advice_only=False,
         target_chapters=1,creative_validation=True,author_result_repair=True,capacity_continuation=True)
+
+
+def test_native_bounded_semantic_repair_reaches_review_acceptance_and_replays_without_calls(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, False,
+        False, False, False, False, False, 1, creative_validation=True, semantic_repair=True)
+
+
+def test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch, False,
+        False, False, False, False, False, 1, creative_validation=True, semantic_repair=True,
+        route_continuation=True)

@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .cost_routing import RoutingDecision, snapshot_hash
 
 
-VERSION = "creative-execution-template.v1"
+VERSION = "creative-execution-template.v2"
 MODE = "CREATIVE_VALIDATION"
 RESOURCE_VERSION = "billing-channel-resources.v1"
 BOOK_USAGE_SQL = """(e.request_payload #>> '{_production_execution,book_id}'=%s
@@ -29,9 +29,15 @@ class PaidResourceConfiguration(BaseModel):
     authorization_ref: _Identity
 
 
+class RepairRoutingConfiguration(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    version: Literal["native-repair-routing.v1"]
+    max_same_route_repairs: Annotated[int, Field(ge=0, le=2)]
+
+
 class ExecutionTemplateConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    version: Literal["creative-execution-template.v1"]
+    version: Literal["creative-execution-template.v1", "creative-execution-template.v2"]
     book_id: _Identity
     mode: Literal["CREATIVE_VALIDATION", "STRICT_PRODUCTION"]
     allowed_candidates: Annotated[list[_Identity], Field(min_length=1, json_schema_extra={"uniqueItems": True})]
@@ -41,6 +47,7 @@ class ExecutionTemplateConfiguration(BaseModel):
     require_literary_qualification: bool
     require_independent_review: bool
     require_pack_human_approval: bool
+    repair_routing: RepairRoutingConfiguration | None = None
 
 
 TEMPLATE_SCHEMA = ExecutionTemplateConfiguration.model_json_schema()
@@ -78,6 +85,9 @@ def validate_templates(content: Mapping[str, Any]) -> None:
         books.add(value["book_id"])
         if value["mode"] == "STRICT_PRODUCTION" and not value["require_literary_qualification"]:
             raise KernelError("STRICT_TEMPLATE_QUALIFICATION_REQUIRED", value["book_id"])
+        if (value["version"] == "creative-execution-template.v1" and value.get("repair_routing") is not None
+                or value["version"] == VERSION and value.get("repair_routing") is None):
+            raise KernelError("EXECUTION_TEMPLATE_REPAIR_VERSION_INVALID", value["book_id"])
         paid = value["deepseek"]
         if paid is not None and Decimal(paid["maximum_amount"]) <= 0:
             raise KernelError("PAID_TEMPLATE_AMOUNT_INVALID", value["book_id"])
@@ -210,6 +220,13 @@ def template_decision(decision: RoutingDecision) -> RoutingDecision:
         if relax:
             row["rejected_reasons"] = [reason for reason in row["rejected_reasons"]
                                        if reason not in {"QUALITY_FLOOR_NOT_MET", "BENCHMARK_INSUFFICIENT"}]
+        if relax and template["version"] == VERSION:
+            from .planning_repair_routing import repair_route_admission
+            repair = repair_route_admission(snapshot, row, template)
+            if repair is not None:
+                row["native_repair_admission"] = repair
+                row["rejected_reasons"] = [reason for reason in row["rejected_reasons"]
+                    if reason not in repair["superseded_route_reasons"]]
         if candidate["provider"] == "codex-cli" and candidate["authorization_ref"] != template["member_authorization_ref"]:
             row["rejected_reasons"].append("MEMBERSHIP_BILLING_IDENTITY_MISMATCH")
         if (pressure and snapshot["task"]["task_type"] in template["optional_enhancements"]

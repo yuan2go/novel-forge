@@ -124,16 +124,17 @@ def require_source(
             dict(attempt[1] or {}).get("error_code")
             or dict(attempt[2] or {}).get("error_code")
         )
-        not in {"EXECUTION_CONTRACT_FROZEN_CONFLICT", "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"}
+        not in {"EXECUTION_CONTRACT_FROZEN_CONFLICT", "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_ROUTING_BLOCKED"}
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED",
             "only a retained execution-contract or undispatched result-repair Context failure permits runtime continuation",
         )
-    if (dict(attempt[1] or {}).get("error_code") or dict(attempt[2] or {}).get("error_code")) == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+    preflight_code = dict(attempt[1] or {}).get("error_code") or dict(attempt[2] or {}).get("error_code")
+    if preflight_code in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED","PROVIDER_ROUTING_BLOCKED"}:
         from .preflight_continuation import require_capacity_source
         return require_capacity_source(uow, source_operation_id=source_operation_id, project_id=project_id,
-            frozen=frozen, version=int(row[1]))
+            frozen=frozen, version=int(row[1]),routing_failure=preflight_code == "PROVIDER_ROUTING_BLOCKED")
     uow.cursor.execute(
         "SELECT external_effect_id, status, provider, model_id, request_payload FROM authority_external_effect WHERE operation_id=%s AND project_id=%s ORDER BY external_effect_id FOR UPDATE",
         [source_operation_id, project_id],
@@ -325,6 +326,18 @@ def require_route_evidence(
                 or source["source_reasoning_effort"] != target["reasoning_effort"]
                 or target["cost_accounting_basis"] != "ACCOUNT_ENTITLEMENT" or not target["account"]):
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT", "Capacity successors must retain the original authenticated membership binding and reasoning")
+        if source["preflight_failure"].get("contract_version") == "planning-repair-route-preflight.v1":
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, decision_template
+            admission = selected_book_template(uow.cursor,project_id=source["command"]["project_id"],book_id=source["command"]["book_id"])
+            template = decision_template({"task":{"work_id":source["command"]["book_id"],
+                "policy_snapshot":admission["policy_snapshot"]}}) if admission else None
+            repair = source["preflight_failure"]["blocked_decision"]["native_repair_evidence"]
+            if (not template or template['version'] != 'creative-execution-template.v2'
+                    or not template.get('repair_routing')
+                    or repair['repair_number'] > template['repair_routing']['max_same_route_repairs']
+                    or repair['parent_candidate_id'] not in template['allowed_candidates']):
+                raise KernelError("PLANNING_RUNTIME_CONTINUATION_POLICY_REQUIRED","Routing successor requires the explicit trusted v2 native repair policy")
+            decision["target_repair_template"] = admission
         return {**decision,"account_evidence_source":"ORIGINAL_SETTLED_NATIVE_RESULT_ROUTE",
             "source_auth_profile_ref":source["source_auth_profile_ref"],"source_result_operation_id":source["route_evidence_operation_id"],
             "account_runtime_hash":canonical_hash(target["account"])}
