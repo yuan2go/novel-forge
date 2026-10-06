@@ -1504,8 +1504,9 @@ The same command exercises Creative Memo, directed revision and grounded Canon o
 current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
 `NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
 routes; if omitted they inherit the explicitly configured Review route. They use the
-existing Provider admission, token and cost limits. Memo has the Planning capability's
-60-second operation bound; Canon support uses the Canon capability's frozen bound.
+existing Provider admission, token and cost limits. Current Memo uses `planning.chapter.memo` and its 600-second model-operation bound.
+Historical 3.8 Memo snapshots retain their 60-second bound; local Chapter planning
+steps retain their existing bound. Canon support uses its frozen Canon bound.
 
 The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
 claim support, accepted state references, attempt errors and receipt/cost references.
@@ -2990,3 +2991,19 @@ repair. The scoped scheduler Worker claims execution; the Planning command retai
 original Actor, which must match the resolved Book composition principal and hold native
 Planning permission. These identities need not be the same. Real author approvals and
 strict certification remain separate.
+
+For historical 3.8 Memo timeouts, continue the same native creation identity after
+installing the 3.9 Chapter contract and Pack. Creative recovery can replace only a
+pre-prose Chapter whose sole model effect is a known timed-out membership Memo with
+settled accounting. It cancels the predecessor through Kernel, appends a Book request
+generation and updates the unaccepted ChapterGroup reference through its owner. No
+successful model call or accepted chapter is repeated. Unknown calls, paid sends,
+partial prose, live leases, strict production and changed inputs cannot use this path.
+
+For the 3.9 Memo execution change, run
+`test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts`
+in `tests/integration/test_synthesis_formation_postgres.py`, the native creative entry
+and stage-repair regressions, and focused Chapter definition, historical codec, dispatch,
+Pack and execution-recovery boundary tests. The fixture preserves stopped-process evidence
+and old accounting while proving native cancellation, successor linking, full acceptance
+and component reconstruction. It remains controlled engineering evidence.

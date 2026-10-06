@@ -161,6 +161,15 @@ Historical v1-v3 templates retain their whole-lineage repair semantics. A scoped
 successor can repair an already rejected creative candidate only from its retained failure
 report and exact inputs; the original rejected candidate and Operation remain rejected.
 
+Chapter model contract 3.9 gives Memo the same bounded Provider operation window as
+other model stages. Frozen 3.8 Memo's 60-second policy remains unchanged. An authorized
+creative Book may append one pre-prose execution successor after a known stopped Memo
+timeout: no successful model output, prose, acceptance, live lease or unknown result may
+exist in the replaced Chapter. Kernel cancellation retains the old attempts and effects;
+Book owns the successor request and ChapterGroup reference, preserving the exact plan,
+inputs, accepted frontier and cumulative resource ledger. The successor is execution
+recovery, with no author decision, qualification or acceptance granted.
+
 The following sections describe existing strict and historical campaign contracts;
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes
@@ -829,6 +838,9 @@ The existing Chapter Memo node invokes the governed Provider path from a frozen
 ExecutionIntent. Its creative guidance describes motivated choices and costs, POV and
 voice, scene conflict and information release, emotional movement and the ending change.
 Draft receives this guidance and the Memo fingerprint as suggestions, not Canon.
+Current Memo uses the distinct governed `planning.chapter.memo` capability with a
+600-second model-operation timeout; local plan materialization remains 60 seconds.
+Historical Memo requests retain their original capability and frozen timeout.
 Provider execution receipts remain on the immutable Memo for audit. Its governed
 writing projection excludes those receipts; they are not narrative material and do
 not consume the chapter's writing Context budget.

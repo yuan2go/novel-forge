@@ -50,7 +50,7 @@ def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_cont
     assert {item["definition_version"] for item in definitions} == {version}
     assert all(
         item["policy"]["source_definition_versions"]
-        == ["3.4.1", "3.8.0", "3.8.0-author-input.v2"]
+        == ["3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"]
         for item in definitions
     )
     if reference:

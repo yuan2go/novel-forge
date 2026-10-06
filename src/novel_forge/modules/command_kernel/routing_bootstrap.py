@@ -62,7 +62,7 @@ def chapter_sample_definition_supported(name: str, version: str, *, reference_sa
 def chapter_sample_source_version_supported(version: Any) -> bool:
     from novel_forge.modules.chapter_authority.definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
 
-    return isinstance(version, str) and version in {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS, "3.8.0-author-input.v2"}
+    return isinstance(version, str) and version in {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS, "3.8.0-author-input.v2", "3.9.0-author-input.v2"}
 
 
 def chapter_sample_definition_name(task_type: str) -> str:

@@ -60,8 +60,43 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False,
 ):
+    if memo_timeout_recovery:
+        from novel_forge.modules.chapter_authority import execution_gateway as memo_gateway
+        from novel_forge.modules.capability_packs import operation_catalog as memo_catalog
+        from novel_forge.modules.production_execution import CapabilityId
+        monkeypatch.setitem(memo_gateway._STAGE_CAPABILITIES, 'memo', CapabilityId.PLANNING_CHAPTER_GENERATE)
+        monkeypatch.setitem(memo_catalog._NON_PROVIDER_CAPABILITIES, 'memo', 'planning.chapter.generate')
+        normal_read_text=Path.read_text
+        def legacy_manifest(path,*args,**kwargs):
+            value=normal_read_text(path,*args,**kwargs)
+            if path.name!='chapter_generation_pack.json':
+                return value
+            from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+            from novel_forge.storage.authority_repositories import definition_hash
+            value=json.loads(value.replace('3.9.0','3.8.0').replace('2.13.0','2.12.0'))
+            definitions={d['name']:d for d in chapter_operation_definitions(application_build_id='legacy-fixture',commit_sha='0'*40,model_effects_required=True)}
+            for node in value['workflow_template']['nodes']:
+                node['operation_definition_hash']=definition_hash(definitions[node['operation_name']])
+                if node['node_id']=='memo':
+                    node['timeout_policy_ref']='timeout:planning-chapter-generate:v1'
+                    node['capability_id']='planning.chapter.generate'
+            return json.dumps(value)
+        monkeypatch.setattr(Path,'read_text',legacy_manifest)
+    old_chapter_constants = {}
+    if memo_timeout_recovery:
+        from novel_forge.modules.chapter_authority import definitions as chapter_definitions
+        from novel_forge.modules.chapter_authority.contracts import ChapterNode
+        for key,value in {
+            'CHAPTER_MODEL_EFFECT_DEFINITION_VERSION':'3.8.0',
+            'CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION':'3.8.0-author-input.v2',
+            'CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION':'3.8.0',
+            'CHAPTER_MODEL_WORKFLOW_DEFINITION_REF':'chapter_authority_slice@3.8.0',
+            'CHAPTER_LONG_TIMEOUT_POLICY_NODES':chapter_definitions.CHAPTER_LONG_TIMEOUT_POLICY_NODES-{ChapterNode.MEMO},
+        }.items():
+            old_chapter_constants[key]=getattr(chapter_definitions,key)
+            monkeypatch.setattr(chapter_definitions,key,value)
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
     if advice_only:
@@ -442,6 +477,33 @@ def test_native_formation_generates_foundation_from_author_brief(
     if creative_validation:
         from tests.integration.creative_validation_production_support import controlled_member_environment
         env = controlled_member_environment(tmp_path, env, monkeypatch, transport)
+        if memo_timeout_recovery:
+            from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+            from novel_forge.modules.production_execution.process_supervisor import CodexProcessSupervisor, ProcessTimeout, PersistentExecutionDirectory
+            import hashlib
+            executable=Path(env['NOVEL_FORGE_CODEX_EXECUTABLE'])
+            script=executable.read_text().replace('import json,pathlib,sys','import json,pathlib,sys,time').replace(
+                ' target.write_bytes(', ' if target.with_name("memo-timeout-fixture").exists(): time.sleep(1000)\n target.write_bytes(')
+            executable.write_text(script)
+            env['NOVEL_FORGE_CODEX_EXECUTABLE_SHA256']='sha256:'+hashlib.sha256(executable.read_bytes()).hexdigest()
+            normal_resolve=PostgresProductionExecutionPayloadResolver.resolve
+            normal_run=CodexProcessSupervisor.run
+            delayed=False
+            def delayed_memo(resolver,request,admission):
+                nonlocal delayed
+                payload=normal_resolve(resolver,request,admission)
+                if request.stage=='memo' and not delayed:
+                    delayed=True
+                    layout=PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
+                    layout.result_path('memo-timeout-fixture').write_text('controlled timeout; no real Provider')
+                return payload
+            def short_controlled_timeout(supervisor,request,**kwargs):
+                layout=supervisor.execution_directory.prepare(request.execution_id)
+                if layout.result_path('memo-timeout-fixture').exists():
+                    request=replace(request,timeout=ProcessTimeout(0.05,poll_interval_seconds=0.01,termination_grace_seconds=1))
+                return normal_run(supervisor,request,**kwargs)
+            monkeypatch.setattr(PostgresProductionExecutionPayloadResolver,'resolve',delayed_memo)
+            monkeypatch.setattr(CodexProcessSupervisor,'run',short_controlled_timeout)
         settings = replace(settings, environment="validation", root=Path(__file__).resolve().parents[2])
     execution = build_production_execution_composition(
         settings,
@@ -993,6 +1055,37 @@ def test_native_formation_generates_foundation_from_author_brief(
                     assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
                     uow.cursor.execute("SELECT status,checkpoint->>'error_code' FROM authority_attempt WHERE operation_id=%s", [checkpoint_operation])
                     assert uow.cursor.fetchall() == [("CHECKPOINTED", "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN")]
+            if memo_timeout_recovery:
+                first=continue_creation(composition=composition,content=content,chapter=chapter,
+                    formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                    maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                assert first['stop_reason']=='MODEL_EFFECT_TIMEOUT', first
+                old_book=composition.authority.require(first['book_run_id'])
+                old_request=composition.authority.require_chapter_request(old_book['active_chapter_request_id'])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s',[old_request['chapter_root_operation_id']])
+                    stopped_io=uow.cursor.fetchone()
+                    assert stopped_io[0]['status']=='FAILED_RETRYABLE' and stopped_io[1]['status']=='SETTLED'
+                for key,value in old_chapter_constants.items():
+                    monkeypatch.setattr(chapter_definitions,key,value)
+                monkeypatch.setattr(Path,'read_text',normal_read_text)
+                monkeypatch.setitem(memo_gateway._STAGE_CAPABILITIES, 'memo', CapabilityId.PLANNING_CHAPTER_MEMO)
+                monkeypatch.setitem(memo_catalog._NON_PROVIDER_CAPABILITIES, 'memo', 'planning.chapter.memo')
+                execution.close()
+                from tests.integration.creative_validation_production_support import install_planning
+                from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+                harness.release_sha='f'*40
+                hashes=register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
+                harness.pack_id+='.memo-successor'
+                chapter_pack.pack_id+='.memo-successor'
+                install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+                    workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,
+                    commit_sha=harness.release_sha,compiler=template_actor,approver=template_actor,agent_admin=template_actor,pack_id_override=chapter_pack.pack_id)
+                install_planning(harness,build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes['planning'],pack_id=harness.pack_id),template_actor)
+                env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+                chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+                composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
             if stage_repair_recovery:
                 stopped=continue_creation(composition=composition,content=content,chapter=chapter,
                     formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
@@ -1012,6 +1105,14 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            if memo_timeout_recovery:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])
+                    assert uow.cursor.fetchone()==stopped_io
+                    uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[old_request['chapter_root_operation_id']])
+                    assert uow.cursor.fetchone()==('CANCELLED',)
+                    uow.cursor.execute('SELECT generation,predecessor_request_id FROM authority_book_chapter_request WHERE predecessor_request_id=%s',[old_request['chapter_request_id']])
+                    assert uow.cursor.fetchone()==(2,old_request['chapter_request_id'])
             if stage_repair_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT g.repair_number,g.status,o.status FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE g.project_id=%s AND g.generator_operation_name='chapter_plan.generate' ORDER BY g.created_at",[harness.project_id])
@@ -1660,3 +1761,9 @@ def test_native_world_repairs_do_not_exhaust_rejected_chapter_plan_stage(tmp_pat
     test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,
         False,False,False,False,False,False,1,creative_validation=True,world_result_repair=True,
         gateway_null_recovery=True,stage_repair_recovery=True)
+
+
+def test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts(tmp_path,monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,
+        author_guided=False,result_repair=False,runtime_recovery=False,evaluation_recovery=False,manual_review=False,advice_only=False,target_chapters=1,
+        complete_after_result_repair=True,creative_validation=True,world_disabled=True,memo_timeout_recovery=True)

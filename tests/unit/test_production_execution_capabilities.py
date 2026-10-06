@@ -30,6 +30,7 @@ REQUIRED_CAPABILITIES = {
     "planning.arc.generate",
     "planning.chapter_group.generate",
     "planning.chapter.generate",
+    "planning.chapter.memo",
     "planning.story_chapter.generate",
     "prose.chapter.draft",
     "review.chapter.evaluate",

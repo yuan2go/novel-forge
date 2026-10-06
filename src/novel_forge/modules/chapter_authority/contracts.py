@@ -309,7 +309,7 @@ class ChapterHandlerRequest:
 
     @property
     def work_requirements_enabled(self) -> bool:
-        return self.semantic_definition_version in {"3.6.0", "3.6.0-author-input.v2", "3.7.0", "3.7.0-author-input.v2", "3.8.0", "3.8.0-author-input.v2"}
+        return self.semantic_definition_version in {"3.6.0", "3.6.0-author-input.v2", "3.7.0", "3.7.0-author-input.v2", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
 
     def require_input(self, asset_type: str) -> ChapterInputAsset:
         matching = [item for item in self.inputs if item.asset_type == asset_type]

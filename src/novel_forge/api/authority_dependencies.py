@@ -168,6 +168,7 @@ from novel_forge.modules.provider_control import (
 from novel_forge.modules.provider_control.contracts import ProviderControlLevel
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.production_execution import (
+    CapabilityId,
     AdmissionController,
     AuthorityExecutionRecoveryStore,
     CodexAccountEntitlementSnapshot,
@@ -792,7 +793,7 @@ def build_production_execution_composition(
         )
         profile = ModelProfile(
             profile_id=profile_id,
-            profile_version=1,
+            profile_version=2 if capability_definition.capability_id is CapabilityId.PLANNING_CHAPTER_MEMO else 1,
             backend_id=backend_id,
             runtime_class=runtime_class,
             model_provider=provider_identity,

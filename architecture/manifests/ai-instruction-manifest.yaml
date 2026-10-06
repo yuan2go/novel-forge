@@ -58,6 +58,7 @@
         "src/novel_forge/modules/source_authority/deconstruction.py",
         "src/novel_forge/modules/source_import/execution.py",
         "src/novel_forge/modules/story_planning_runtime/execution.py",
+        "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
         "src/novel_forge/modules/chapter_authority/provider_views.py",
         "src/novel_forge/modules/chapter_authority/execution_gateway.py",
         "src/novel_forge/modules/chapter_authority/realization_composition.py",

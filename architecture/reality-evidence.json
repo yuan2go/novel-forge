@@ -7055,6 +7055,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
           "symbol": "continue_creation"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/execution_recovery.py",
+          "symbol": "recover_timeout"
         }
       ],
       "domain_symbols": [
@@ -7195,6 +7199,10 @@
         {
           "path": "tests/integration/test_synthesis_formation_postgres.py",
           "symbol": "test_creative_validation_native_controlled_process_to_internal_acceptance"
+        },
+        {
+          "path": "tests/integration/test_synthesis_formation_postgres.py",
+          "symbol": "test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9335,7 +9343,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:99024762fa29116feb8e0138f9223e6664716be0982a8c55931463ec7dc5bbfe"
+    "implementation_tree_sha": "sha256:ea257c19fc46aa0b8703c4e541eab6b7c99361fbb6db009da41d451e46aebff3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

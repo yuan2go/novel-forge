@@ -140,7 +140,7 @@ _PLANNING_STAGES = frozenset(
 )
 
 _STAGE_CAPABILITIES = {
-    "memo": CapabilityId.PLANNING_CHAPTER_GENERATE,
+    "memo": CapabilityId.PLANNING_CHAPTER_MEMO,
     "draft": CapabilityId.PROSE_CHAPTER_DRAFT,
     "review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
     "revision": CapabilityId.REVISION_CHAPTER_REVISE,

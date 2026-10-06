@@ -27,6 +27,7 @@ class CapabilityId(StrEnum):
     PLANNING_ARC_GENERATE = "planning.arc.generate"
     PLANNING_CHAPTER_GROUP_GENERATE = "planning.chapter_group.generate"
     PLANNING_CHAPTER_GENERATE = "planning.chapter.generate"
+    PLANNING_CHAPTER_MEMO = "planning.chapter.memo"
     PLANNING_STORY_CHAPTER_GENERATE = "planning.story_chapter.generate"
     PROSE_CHAPTER_DRAFT = "prose.chapter.draft"
     REVIEW_CHAPTER_EVALUATE = "review.chapter.evaluate"

@@ -607,7 +607,8 @@ def test_revision_renderer_projects_one_output_method(targeted: bool) -> None:
             "source_chapter_plan_asset_version_id": "plan:v1",
             "source_chapter_plan_content_hash": HASH,
         },
-        {},
+        {"production_input_manifest": {"style_policy_version_id": "style:v1"},
+         "context_segments": [{"asset_type": "style_policy", "asset_version_id": "style:v1", "content": {}}]},
     )
     prompt, evidence = _materialize_chapter_codex_prompt(
         request=request,
