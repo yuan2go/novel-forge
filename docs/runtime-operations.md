@@ -3095,3 +3095,8 @@ consumption. Draft 3.9.2 revalidates that receipt without dispatch; every existi
 content and completion check still applies. UNKNOWN, business outputs, dependent work,
 live leases, cancellation and changed Book frontiers forbid this recovery. Its host
 revalidation is not a new Agent generation or a literary revision.
+
+For `REVIEW_KNOWLEDGE_CHECK_INVALID` after a successful historical Review receipt,
+inspect the exact frozen target set and Pack rule hashes. The native successor retains
+the raw judgment, validates literal evidence, separates only delivered advisory rules,
+and reruns required checks. Do not drop unknown checks or replay the Provider call.

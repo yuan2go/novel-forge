@@ -1562,27 +1562,22 @@ class _ReviewHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         from .review_window import prepare_native_review, require_review_frontier
         draft, context, targets, window, payload = prepare_native_review(request, stage="review")
-        reviewed = self.provider.invoke(
+        from .receipt_recovery import consume_known_draft_receipt
+        reviewed = consume_known_draft_receipt(request) or self.provider.invoke(
             request,
             stage="review",
             payload=payload,
         )
         require_review_frontier(request)
-        return _model_output(
-            ChapterNode.REVIEW,
-            normalize_review_result(
-                draft=draft.content,
-                draft_asset_version_id=draft.asset_version_id,
-                result=reviewed.output,
-                provider_evidence=_provider_evidence(reviewed),
-                project_id=request.project_id,
-                context_bundle_version_id=context.asset_version_id,
-                knowledge_targets=targets,
-                cross_chapter_window=window,
-            ),
-            request=request,
-            generated=reviewed,
-        )
+        from .review_window import separate_pack_rule_advice
+        review_result, advice = separate_pack_rule_advice(request, reviewed.output, targets, draft)
+        content = normalize_review_result(
+            draft=draft.content, draft_asset_version_id=draft.asset_version_id,
+            result=review_result, provider_evidence=_provider_evidence(reviewed), project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,knowledge_targets=targets,cross_chapter_window=window)
+        if advice:
+            content["advisory_rule_checks"] = advice
+        return _model_output(ChapterNode.REVIEW,content,request=request,generated=reviewed)
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,14 @@
+{
+  "evidence_kind": "NATIVE_REVIEW_TARGET_SCOPE_RECEIPT_REVALIDATION",
+  "effects_before": 57,
+  "effects_after": 57,
+  "provider_dispatches": 0,
+  "predecessor": "a1845fbc-b43e-4a2e-91db-f70884546639",
+  "successor": "8f83bcfe-0bd1-4b4b-a9cc-b3def05d1d54",
+  "old_failure_preserved": true,
+  "definition_version": "3.9.1",
+  "pack_version": "2.16.0",
+  "review_status": "SUCCEEDED",
+  "guidance_evidence": "RETAINED_AS_ADVISORY_PACK_RULE_ONLY",
+  "real_book_acceptance": "NOT_RUN"
+}

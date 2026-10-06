@@ -41,8 +41,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
         u.cursor.execute(
             """SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
-            AND o.definition_name='chapter.draft.generate' AND o.definition_version='3.9.1'
-            AND o.status='FAILED_FINAL' AND a.result->>'error_code'='PROGRAMMING_BUG'""",
+            AND o.status='FAILED_FINAL' AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.9.1' AND a.result->>'error_code'='PROGRAMMING_BUG') OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID'))""",
             [request["chapter_root_operation_id"], book["project_id"]],
         )
         row = u.cursor.fetchone()
@@ -124,7 +123,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
     replace_failed_step(
         authority.database_url,
         predecessor_id=source["operation_id"],
-        target_version="3.9.2",
+        target_version="3.9.2" if source["definition_name"] == "chapter.draft.generate" else "3.9.1",
         context=AdmissionContext(
             principal.principal_id,
             principal.permissions,
@@ -133,7 +132,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
             authority.commit_sha,
         ),
         policy_evidence=evidence,
-        expected_failure_code="PROGRAMMING_BUG",
+        expected_failure_code="PROGRAMMING_BUG" if source["definition_name"] == "chapter.draft.generate" else "REVIEW_KNOWLEDGE_CHECK_INVALID",
         known_receipt_effects=((effect["external_effect_id"], effect["request_hash"]),),
         transaction_guard=guard,
     )
@@ -141,7 +140,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
 
 
 def consume_known_draft_receipt(request):
-    if request.definition_version != "3.9.2" or not request.database_url:
+    if request.definition_version not in {"3.9.1", "3.9.2"} or not request.database_url:
         return None
     with AuthorityUnitOfWork(request.database_url) as u:
         u.cursor.execute(
@@ -207,5 +206,5 @@ def _cancelled(cursor, book):
 
 def is_known_receipt_revalidation(database_url, operation_id):
     with AuthorityUnitOfWork(database_url) as u:
-        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version='3.9.2' AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
+        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version IN ('3.9.1','3.9.2') AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
         return u.cursor.fetchone()[0]

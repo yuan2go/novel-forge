@@ -1279,10 +1279,17 @@ class PostgresChapterExecutionContractBinder:
         current_review = stage in {"review", "rereview"} and prompt_contract_version == "v9"
         if current_review:
             schema_ref = f"schema:chapter-provider-output:{stage}:v6"
+            if inputs.get("knowledge_check_scope") == "review-target-scope.v1":
+                targets = inputs.get("knowledge_review_targets") or []
+                field = schema["properties"]["knowledge_checks"]
+                field["minItems"] = field["maxItems"] = len(targets)
+                if targets:
+                    field["items"]["properties"]["knowledge_card_asset_version_id"] = {**field["items"]["properties"]["knowledge_card_asset_version_id"], "enum": [t["knowledge_card_asset_version_id"] for t in targets]}
+                schema_ref = f"schema:chapter-provider-output:{stage}:v7"
         if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
             cross_version = (
-                "v2" if legacy_contract else "v6" if current_review
+                "v2" if legacy_contract else "v7" if current_review and inputs.get("knowledge_check_scope") == "review-target-scope.v1" else "v6" if current_review
                 else "v5" if targeted_revision and prompt_contract_version == "v9" and not inputs.get("quality_edit_contract")
                 else "v4" if targeted_revision else "v3"
             )
@@ -2077,6 +2084,9 @@ class PostgresChapterExecutionContractBinder:
             *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
             CHAPTER_SLICE_DEFINITION_VERSION,
         }
+        compatible = compatible or (
+            str(row[0]) in {ChapterNode.REVIEW.definition_name,ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.1"
+        )
         compatible = compatible or (
             str(row[0]) == ChapterNode.DRAFT.definition_name
             and str(row[1]) == CHAPTER_DRAFT_DEFINITION_VERSION

@@ -1681,7 +1681,7 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.15.0 binds System v3, Prompt Template v9 and
+reconciliation chain. Chapter Pack 2.16.0 binds System v3, Prompt Template v9 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot
@@ -2062,3 +2062,10 @@ under Draft 3.9.2 after a terminal host failure, without another model call. Ker
 completion recognizes only its immutable exact effect/hash and identical input binding.
 Host revalidation carries source execution provenance; it does not claim a new Agent
 turn or exempt the candidate from Review, Quality, comparison or Acceptance.
+
+Review and ReReview 3.9.1 bind knowledge checks to the exact Context review targets.
+Their Provider Schema v7 fixes the target count and permitted identities; an empty
+target set requires an empty check array. Historical receipt revalidation preserves
+located checks of exact frozen Pack PRINCIPLE/REFERENCE rules as advisory rule checks,
+separate from required knowledge evidence. Unknown cards and hard constraints are not
+converted into advice. Model scores and these rule judgments remain semantic evidence.

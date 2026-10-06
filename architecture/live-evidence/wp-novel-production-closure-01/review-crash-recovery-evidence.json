@@ -1,0 +1,33 @@
+{
+  "pid": 54765,
+  "worker_kind": "book",
+  "checkpoint": "after_provider_success",
+  "signal": "SIGKILL",
+  "time_unix": 1791330045.085131,
+  "durable_effect": [
+    "56da1aaa-022b-426d-8055-54ef2a191845",
+    "a1845fbc-b43e-4a2e-91db-f70884546639",
+    "chapter.review.evaluate",
+    "SUCCEEDED"
+  ],
+  "mode": "ISOLATED_ORIGINAL_BOOK_REAL_PROVIDER",
+  "leases": [
+    [
+      "68d09431-c52d-4f00-a359-5908bd9d9e1a",
+      1,
+      "EXPIRED"
+    ],
+    [
+      "68d09431-c52d-4f00-a359-5908bd9d9e1a",
+      2,
+      "RELEASED"
+    ]
+  ],
+  "dispatch_count": 1,
+  "consumption": [
+    "SETTLED",
+    "ACCOUNT_ENTITLEMENT"
+  ],
+  "business_result": "FAILED_FINAL_REVIEW_KNOWLEDGE_CHECK_INVALID_PRESERVED",
+  "crash_recovery_scope": "SAME_ATTEMPT_LEASE_TAKEOVER_SAME_SUCCESSFUL_RECEIPT_NO_RESEND"
+}
