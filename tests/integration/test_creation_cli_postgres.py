@@ -173,7 +173,15 @@ def replace_args(args, **changes):
 
 @pytest.mark.parametrize(
     "mode",
-    ["complete", "partial-alternative", "cancel", "no-progress", "capacity-recovery"],
+    [
+        "complete",
+        "partial-alternative",
+        "cancel",
+        "no-progress",
+        "capacity-recovery",
+        "capacity-repair",
+        "capacity-retained-repair-cause",
+    ],
 )
 def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(
     tmp_path, monkeypatch, mode
@@ -188,7 +196,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
-    if mode == "capacity-recovery":
+    if mode.startswith("capacity-"):
         from novel_forge.modules.story_planning_runtime.execution import (
             PostgresPlanningExecutionPreparer,
         )
@@ -201,6 +209,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             if (
                 command.generator_operation_name == "chapter_group_plan.generate"
                 and not command.runtime_continuation_id
+                and (mode == "capacity-recovery" or command.repair_of_candidate_id)
             ):
                 raise KernelError(
                     "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
@@ -213,8 +222,43 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         )
     planning = transport.planning
     creative_calls = []
+    group_calls = []
+    if mode == "capacity-retained-repair-cause":
+        from novel_forge.modules.story_planning_runtime import (
+            application as planning_application,
+        )
+
+        native_admit = planning_application.admit_command
+
+        def retain_repair_cause(database_url, request, **options):
+            payload = request["input"]["payload"]
+            if payload.get("runtime_continuation_id") and payload.get(
+                "repair_of_candidate_id"
+            ):
+                with AuthorityUnitOfWork(database_url) as uow:
+                    uow.cursor.execute(
+                        "SELECT operation_id FROM authority_story_planning_generation WHERE candidate_asset_version_id=%s",
+                        [payload["repair_of_candidate_id"]],
+                    )
+                    request = {
+                        **request,
+                        "causation_operation_id": uow.cursor.fetchone()[0],
+                    }
+            return native_admit(database_url, request, **options)
+
+        monkeypatch.setattr(planning_application, "admit_command", retain_repair_cause)
+
     def bounded_planning(stage, inputs):
         result = planning(stage, inputs)
+        if stage == "chapter_group_plan.generate":
+            group_calls.append(stage)
+            if (
+                mode in {"capacity-repair", "capacity-retained-repair-cause"}
+                and len(group_calls) == 1
+            ):
+                result["narrative_event_chain"][0]["causes"] = [
+                    "controlled-missing-predecessor"
+                ]
         if stage == "creative.candidates.generate":
             creative_calls.append(stage)
             result["serialization_potential"] = None
@@ -451,14 +495,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert uow.cursor.fetchone()[0] == selected
         uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE book_run_id=%s AND status='COMMITTED'", [result["book_run_id"]])
         assert uow.cursor.fetchone()[0] == inputs["target_chapters"]
-    if mode == "capacity-recovery":
+    if mode.startswith("capacity-"):
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
                 "SELECT source_operation_id,successor_operation_id,source_command,successor_command,target_runtime FROM authority_story_planning_runtime_continuation WHERE project_id=%s",
                 [project],
             )
             registrations = uow.cursor.fetchall()
-            assert len(registrations) == 3
+            assert len(registrations) == (3 if mode == "capacity-recovery" else 1)
             for (
                 source,
                 successor,
@@ -486,6 +530,20 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                     [successor],
                 )
                 assert uow.cursor.fetchone()[0] == 1
+                if mode != "capacity-recovery":
+                    uow.cursor.execute(
+                        "SELECT causation_operation_id FROM authority_operation WHERE operation_id=%s",
+                        [successor],
+                    )
+                    cause = uow.cursor.fetchone()[0]
+                    if mode == "capacity-retained-repair-cause":
+                        uow.cursor.execute(
+                            "SELECT operation_id FROM authority_story_planning_generation WHERE candidate_asset_version_id=%s",
+                            [original_command["repair_of_candidate_id"]],
+                        )
+                        assert cause == uow.cursor.fetchone()[0]
+                    else:
+                        assert cause == source
     before = len(transport.calls), len(transport.chapter.calls)
     assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
     assert claim() is None

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261006_0157_creation_continuation_control",
+  "migration_head": "20261006_0158_planning_capacity_causation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -6230,6 +6230,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261006_0157_creation_continuation_control.py",
           "locator": "MIGRATION_ID = \"20261006_0157_creation_continuation_control\"",
           "id": "20261006_0157_creation_continuation_control"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0158_planning_capacity_causation.py",
+          "locator": "MIGRATION_ID = \"20261006_0158_planning_capacity_causation\"",
+          "id": "20261006_0158_planning_capacity_causation"
         }
       ],
       "external_effects": {
@@ -9327,7 +9332,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:afafbab1bcb4226c8e2a64e3b338205065005c78d395108e0599fe806165505c"
+    "implementation_tree_sha": "sha256:847abbb12999178f579ddebaf14cc1be7e7b9264089073c27263fa8a8984c99c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

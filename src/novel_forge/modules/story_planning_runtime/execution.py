@@ -213,6 +213,7 @@ def _planning_repair_routing_lineage(
     current_id = operation_id
     expected_logical_key = ""
     expected_repair_number: int | None = None
+    expected_repair_delta = 1
     with runtime.connection() as connection, connection.cursor() as cursor:
         while True:
             if current_id in seen:
@@ -264,6 +265,25 @@ def _planning_repair_routing_lineage(
                     generator_operation_name=generator_operation_name, logical_key=logical_key,
                 )
             allowed_causation = {predecessor}
+            capacity_predecessor = ""
+            if payload.get("runtime_continuation_id"):
+                cursor.execute(
+                    "SELECT source_operation_id,successor_command FROM authority_story_planning_runtime_continuation WHERE continuation_id=%s AND successor_operation_id=%s AND project_id=%s AND book_id=%s",
+                    [
+                        payload["runtime_continuation_id"],
+                        current_id,
+                        project_id,
+                        book_id,
+                    ],
+                )
+                binding = cursor.fetchone()
+                if binding is None or binding[1] != payload:
+                    raise KernelError(
+                        "PLANNING_ROUTING_LINEAGE_INVALID",
+                        "Runtime successor lacks its exact native continuation",
+                    )
+                capacity_predecessor = str(binding[0])
+                allowed_causation.add(capacity_predecessor)
             if candidate_predecessor:
                 allowed_causation.update({"", str(payload.get("parent_agent_session_operation_id") or "")})
             if (
@@ -278,7 +298,7 @@ def _planning_repair_routing_lineage(
                 or (expected_logical_key and logical_key != expected_logical_key)
                 or (
                     expected_repair_number is not None
-                    and repair_number != expected_repair_number - 1
+                    and repair_number != expected_repair_number - expected_repair_delta
                 )
                 or (predecessor and str(row[4] or "") not in allowed_causation)
             ):
@@ -289,12 +309,132 @@ def _planning_repair_routing_lineage(
             if not lineage:
                 expected_logical_key = logical_key
             lineage.append(current_id)
-            if not predecessor:
+            if not predecessor and not capacity_predecessor:
                 break
             expected_repair_number = repair_number
-            current_id = predecessor
+            expected_repair_delta = 0 if capacity_predecessor else 1
+            current_id = capacity_predecessor or predecessor
     lineage.reverse()
     return tuple(lineage)
+
+
+def planning_repair_route_receipt(
+    database_url: str,
+    *,
+    project_id: str,
+    book_id: str,
+    operation_id: str,
+    task_type: str,
+    input_hash: str,
+    lineage: tuple[str, ...],
+) -> dict[str, Any] | None:
+    from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
+    from .application import _command_from_payload
+    from .result_recovery import require_result_repair_source
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    if task_type not in GENERATOR_CATALOG:
+        return None
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            "SELECT op.command_payload->'payload',g.repair_number,g.input_snapshot_hash FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.operation_id=%s AND op.project_id=%s AND g.book_id=%s AND g.generator_operation_name=%s",
+            [operation_id, project_id, book_id, task_type],
+        )
+        row = uow.cursor.fetchone()
+        if row is None or not row[1]:
+            return None
+        payload = row[0]
+        command = _command_from_payload(payload)
+        definition = GENERATOR_CATALOG[task_type]
+        maximum = max(
+            definition.maximum_semantic_repairs,
+            definition.maximum_structural_regenerations,
+        )
+        if (
+            command.repair_number != int(row[1])
+            or not 0 < command.repair_number <= maximum
+        ):
+            raise KernelError(
+                "PLANNING_ROUTING_REPAIR_BOUND_EXCEEDED",
+                "Routing cannot extend the owning Planning repair allowance",
+            )
+        if command.repair_of_candidate_id:
+            source = require_candidate_repair_operation(
+                uow.cursor,
+                candidate_asset_version_id=command.repair_of_candidate_id,
+                project_id=project_id,
+                book_id=book_id,
+                generator_operation_name=task_type,
+                logical_key=command.logical_key,
+            )
+            _, _, report_hash = command.repair_reason.partition(":")
+            uow.cursor.execute(
+                "SELECT report_hash FROM authority_story_planning_validation_report WHERE project_id=%s AND candidate_asset_version_id=%s AND status='FAIL' AND report_hash=%s",
+                [project_id, command.repair_of_candidate_id, report_hash],
+            )
+            report = uow.cursor.fetchone()
+            if report is None:
+                raise KernelError(
+                    "PLANNING_ROUTING_REPAIR_EVIDENCE_MISSING",
+                    "Repair requires the exact immutable failed diagnosis",
+                )
+            evidence_id = command.repair_of_candidate_id
+            diagnosis_hash = report[0]
+        elif command.repair_of_operation_id:
+            source = command.repair_of_operation_id
+            result = require_result_repair_source(
+                database_url,
+                command=command,
+                operation_id=source,
+                source_asset_version_id=command.repair_result_asset_version_id,
+            )
+            evidence_id = result["asset_version_id"]
+            diagnosis_hash = canonical_hash(result["diagnostic"])
+        else:
+            return None
+        uow.cursor.execute(
+            "SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect WHERE operation_id=%s AND project_id=%s AND status='SUCCEEDED' ORDER BY created_at DESC LIMIT 1",
+            [source, project_id],
+        )
+        source_input = uow.cursor.fetchone()
+        if (
+            not source_input
+            or not source_input[0]
+            or not input_hash
+            or source_input[0] == input_hash
+        ):
+            raise KernelError(
+                "PLANNING_ROUTING_REPAIR_INPUT_UNCHANGED",
+                "A failed frozen request cannot be relabelled as a new repair",
+            )
+    authoritative = _planning_repair_routing_lineage(
+        database_url,
+        project_id=project_id,
+        book_id=book_id,
+        generator_operation_name=task_type,
+        operation_id=operation_id,
+        repair_of_operation_id=command.repair_of_operation_id,
+        repair_of_candidate_id=command.repair_of_candidate_id,
+    )
+    if authoritative != lineage:
+        raise KernelError(
+            "PLANNING_ROUTING_LINEAGE_INVALID",
+            "Repair receipt must cover the exact native lineage",
+        )
+    return {
+        "contract_version": "planning-route-repair.v1",
+        "operation_id": operation_id,
+        "source_operation_id": source,
+        "source_asset_version_id": evidence_id,
+        "diagnosis_hash": diagnosis_hash,
+        "repair_number": command.repair_number,
+        "maximum_repairs": maximum,
+        "source_input_hash": source_input[0],
+        "input_hash": input_hash,
+        "command_hash": canonical_hash(payload),
+        "authorized_history_operation_ids": list(lineage[:-1]),
+        "accepted_history_mutation_allowed": False,
+    }
 
 
 def _planning_narrative_intelligence_need(

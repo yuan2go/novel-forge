@@ -814,7 +814,41 @@ class CostAwareRouter:
         policy = task_policy(task.task_type, task.risk, task.quality_floor)
         if len({item.candidate_id for item in candidates}) != len(candidates):
             raise ValueError("ROUTING_DUPLICATE_CANDIDATE")
-        failures = [str(item.get("failure_class") or "") for item in task.history]
+        repair = task.declared_requirements.get("governed_repair", {})
+        repair_sources = (
+            set(repair.get("authorized_history_operation_ids", ()))
+            if (
+                repair.get("contract_version") == "planning-route-repair.v1"
+                and repair.get("operation_id") == task.operation_id
+                and repair.get("input_hash") == task.input_hash
+                and repair.get("source_input_hash")
+                and repair.get("source_input_hash") != task.input_hash
+                and type(repair.get("repair_number")) is int
+                and type(repair.get("maximum_repairs")) is int
+                and 0
+                < repair.get("repair_number", 0)
+                <= repair.get("maximum_repairs", 0)
+            )
+            else set()
+        )
+
+        def superseded_failure(item):
+            return (
+                item.get("operation_id") in repair_sources
+                and item.get("operation_id") != task.operation_id
+                and item.get("failure_class")
+                in {
+                    "QUALITY_FAILURE",
+                    "CANON_CONFLICT",
+                    "SCHEMA_REJECTION",
+                    "MALFORMED_STRUCTURED_OUTPUT",
+                }
+            )
+
+        blocking_history = tuple(
+            item for item in task.history if not superseded_failure(item)
+        )
+        failures = [str(item.get("failure_class") or "") for item in blocking_history]
         semantic_failures = sum(
             item
             in {
@@ -884,7 +918,7 @@ class CostAwareRouter:
                 reasons.append("SEMANTIC_ARBITRATION_REQUIRED")
             previous = [
                 item
-                for item in task.history
+                for item in blocking_history
                 if item.get("candidate_id") == candidate.candidate_id
             ]
             if any(

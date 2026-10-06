@@ -615,7 +615,7 @@ class PostgresRoutingRegistry:
                 """SELECT effect.external_effect_id, effect.status, dispatch.created_at,
                           effect.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
                           dispatch.evidence,
-                          quality.content
+                          quality.content,effect.operation_id
                    FROM authority_external_effect effect
                    LEFT JOIN LATERAL (
                        SELECT evidence,COALESCE(finished_at,updated_at,created_at) AS created_at FROM authority_external_effect_dispatch
@@ -647,7 +647,15 @@ class PostgresRoutingRegistry:
                 else {}
             )
         history = []
-        for effect_id, status, updated_at, decision, evidence, quality in rows:
+        for (
+            effect_id,
+            status,
+            updated_at,
+            decision,
+            evidence,
+            quality,
+            source_operation_id,
+        ) in rows:
             if not decision:
                 continue
             selected = (decision.get("selected") or {}).get("candidate") or {}
@@ -695,6 +703,7 @@ class PostgresRoutingRegistry:
             history.append(
                 {
                     "external_effect_id": effect_id,
+                    "operation_id": source_operation_id,
                     "candidate_id": selected.get("candidate_id"),
                     "failure_class": failure,
                     "status": status,
@@ -712,6 +721,30 @@ class PostgresRoutingRegistry:
                     updated_at + timedelta(seconds=delay)
                 ).isoformat()
         return tuple(history)
+
+    def planning_repair_receipt(
+        self,
+        *,
+        project_id: str,
+        book_id: str,
+        operation_id: str,
+        task_type: str,
+        input_hash: str,
+        lineage: tuple[str, ...],
+    ) -> dict[str, Any] | None:
+        from novel_forge.modules.story_planning_runtime.execution import (
+            planning_repair_route_receipt,
+        )
+
+        return planning_repair_route_receipt(
+            self.database_url,
+            project_id=project_id,
+            book_id=book_id,
+            operation_id=operation_id,
+            task_type=task_type,
+            input_hash=input_hash,
+            lineage=lineage,
+        )
 
     def save(
         self,
@@ -821,6 +854,18 @@ class ProductionProviderRouter:
         lineage = _routing_operation_lineage(operation_id, lineage_operation_ids)
         contract = dict(producer_contract or {})
         contract_hash = snapshot_hash(contract) if contract else ""
+        repair = (
+            self.registry.planning_repair_receipt(
+                project_id=project_id,
+                book_id=work_id,
+                operation_id=operation_id,
+                task_type=task_type,
+                input_hash=input_hash,
+                lineage=lineage,
+            )
+            if isinstance(self.registry, PostgresRoutingRegistry) and len(lineage) > 1
+            else None
+        )
         logical_ref = (
             "production_execution/routing/"
             + snapshot_hash(
@@ -861,9 +906,23 @@ class ProductionProviderRouter:
                             "risk": risk,
                             "quality_floor": quality_floor,
                             "chapter": chapter,
-                            **({"provider_task_scope": self.provider_task_scope} if self.provider_task_scope is not None else {}),
-                            **({"cross_model_review": original["declared_requirements"]["cross_model_review"]}
-                               if original.get("declared_requirements", {}).get("cross_model_review") else {}),
+                            **({"governed_repair": repair} if repair else {}),
+                            **(
+                                {"provider_task_scope": self.provider_task_scope}
+                                if self.provider_task_scope is not None
+                                else {}
+                            ),
+                            **(
+                                {
+                                    "cross_model_review": original[
+                                        "declared_requirements"
+                                    ]["cross_model_review"]
+                                }
+                                if original.get("declared_requirements", {}).get(
+                                    "cross_model_review"
+                                )
+                                else {}
+                            ),
                         },
                         "cache_prefix_hash": snapshot_hash(cache_prefix.hex())
                         if cache_prefix
@@ -1014,7 +1073,12 @@ class ProductionProviderRouter:
                 "risk": risk,
                 "quality_floor": quality_floor,
                 "chapter": chapter,
-                **({"provider_task_scope": self.provider_task_scope} if self.provider_task_scope is not None else {}),
+                **({"governed_repair": repair} if repair else {}),
+                **(
+                    {"provider_task_scope": self.provider_task_scope}
+                    if self.provider_task_scope is not None
+                    else {}
+                ),
             },
             policy_snapshot=policy_snapshot,
             **requirements,
@@ -1178,6 +1242,22 @@ class ProductionProviderRouter:
         return budgets
 
     def _selected_route(self, base: Any, snapshot: Mapping[str, Any]) -> Any:
+        task = snapshot["task"]
+        repair = task.get("declared_requirements", {}).get("governed_repair")
+        if repair:
+            expected = self.registry.planning_repair_receipt(
+                project_id=task["project_id"],
+                book_id=task["work_id"],
+                operation_id=task["operation_id"],
+                task_type=task["task_type"],
+                input_hash=task["input_hash"],
+                lineage=tuple(task["lineage_operation_ids"]),
+            )
+            if repair != expected:
+                raise KernelError(
+                    "ROUTING_REPAIR_EVIDENCE_DRIFT",
+                    "Frozen repair receipt differs from native Planning facts",
+                )
         frozen_scope = snapshot["task"].get("declared_requirements", {}).get("provider_task_scope")
         if frozen_scope != self.provider_task_scope:
             raise KernelError("ROUTING_REQUEST_DRIFT", "Provider task authorization differs from the frozen request")

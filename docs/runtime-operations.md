@@ -1602,8 +1602,8 @@ with no external intent, reservation or frozen Context uses the existing Plannin
 Authority automatically. The retained source remains terminal; a linked successor keeps its exact
 story inputs and Pack while increasing only the single-task allocation within the configured
 model capacity. Preflight must succeed before registration; no more than two successors are
-allowed. An external intent of any status, including UNKNOWN, excludes this capacity path.
-Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
+allowed. An external intent of any status, including UNKNOWN, excludes this capacity path. Migration 0158 permits reconciliation of a previously admitted capacity successor with its verified candidate-repair cause; it requires the exact registered command and terminal zero-intent source. New successors use the failed capacity Operation as their causal source. Neither path rewrites terminal Operations or candidate provenance.
+Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
 unchanged Book/dependency evidence. Owner recovery uses the original creation `recover` command
 after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
 

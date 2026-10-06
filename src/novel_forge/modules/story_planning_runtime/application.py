@@ -643,7 +643,15 @@ class StoryPlanningGenerationApplication:
                     [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
                 )
                 retained = uow.cursor.fetchone()
-            causation_operation_id = retained[0] if retained else source_operation_id
+            causation_operation_id = (
+                retained[0]
+                if retained
+                else (
+                    continuation["source_operation_id"]
+                    if continuation
+                    else source_operation_id
+                )
+            )
         input_assets = self._replay_ordered_input_assets(
             command=command,
             resolved_input_assets=_canonical_admission_assets(input_assets),

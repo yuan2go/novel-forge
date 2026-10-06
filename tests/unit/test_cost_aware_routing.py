@@ -888,3 +888,82 @@ def test_generator_judge_requires_independent_concrete_model_identity(scenario):
             "production_execution": {"process_evidence": {"served_model_identity_hash": served}}}
     assert independent_model_identities(generator, evaluator, receipt(generator, "served-A"),
         receipt(evaluator, "served-A" if scenario == "same_served_model" else "served-B")) is (scenario == "distinct")
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "SCHEMA_REJECTION",
+        "MALFORMED_STRUCTURED_OUTPUT",
+        "QUALITY_FAILURE",
+        "CANON_CONFLICT",
+    ],
+)
+def test_governed_changed_input_repair_can_reuse_authorized_model(failure):
+    history = (
+        {
+            "operation_id": "source",
+            "candidate_id": "flash",
+            "failure_class": failure,
+            "status": "SUCCEEDED",
+        },
+    )
+    receipt = {
+        "contract_version": "planning-route-repair.v1",
+        "operation_id": "operation",
+        "input_hash": "changed-input",
+        "source_input_hash": "original-input",
+        "repair_number": 1,
+        "maximum_repairs": 2,
+        "authorized_history_operation_ids": ["source"],
+    }
+    context = task(
+        input_hash="changed-input",
+        history=history,
+        declared_requirements={"governed_repair": receipt},
+    )
+    result = route(context, [candidate()], {"flash": samples()})
+    assert result["status"] == "SELECTED"
+    assert (
+        result["task"]["history"] == list(history)
+        or tuple(result["task"]["history"]) == history
+    )
+
+
+@pytest.mark.parametrize(
+    "change,failure",
+    [
+        ({"input_hash": "original-input"}, "SCHEMA_REJECTION"),
+        ({"authorized_history_operation_ids": ["unrelated"]}, "SCHEMA_REJECTION"),
+        ({"repair_number": 3}, "SCHEMA_REJECTION"),
+        ({}, "UNKNOWN_EXTERNAL_OUTCOME"),
+        ({}, "PROVIDER_UNAVAILABLE"),
+        ({}, "CONTEXT_OVERFLOW"),
+        ({}, "AMBIGUOUS_JUDGE"),
+    ],
+)
+def test_governed_repair_does_not_relax_identical_unknown_or_unrelated_failure(
+    change, failure
+):
+    receipt = {
+        "contract_version": "planning-route-repair.v1",
+        "operation_id": "operation",
+        "input_hash": "changed-input",
+        "source_input_hash": "original-input",
+        "repair_number": 1,
+        "maximum_repairs": 2,
+        "authorized_history_operation_ids": ["source"],
+        **change,
+    }
+    context = task(
+        input_hash="changed-input",
+        history=(
+            {
+                "operation_id": "source",
+                "candidate_id": "flash",
+                "failure_class": failure,
+            },
+        ),
+        declared_requirements={"governed_repair": receipt},
+    )
+    assert route(context, [candidate()], {"flash": samples()})["status"] == "BLOCKED"

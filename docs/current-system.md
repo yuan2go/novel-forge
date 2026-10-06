@@ -130,7 +130,7 @@ continuous v5 membership creation with no external intent, reservation or frozen
 append a capacity successor through the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
 reserves the configured model output and framing margin, and permits at most two successors.
-The final rendered-request admission remains authoritative. Historical cancelled runtime
+The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
 no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression
