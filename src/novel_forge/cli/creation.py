@@ -20,7 +20,7 @@ def add_creation_parser(subparsers: Any) -> None:
     parser.add_argument("--input-file", type=Path)
     parser.add_argument("--formation-run-id", default="")
     parser.add_argument("--idempotency-key", default="")
-    parser.add_argument("--creation-policy-file", type=Path, default=Path("config/execution_templates/creation_inputs.json"))
+    parser.add_argument("--creation-policy-file", type=Path)
     parser.add_argument("--execution-template-file", type=Path, default=Path("config/execution_templates/creative_validation.json"))
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     parser.add_argument("--maximum-ticks", type=int, default=100)
@@ -51,6 +51,9 @@ def run_creation_command(settings: Any, args: Any) -> dict[str, Any]:
     if settings.environment != "validation" or args.maximum_ticks <= 0 or args.work_window_seconds <= 0:
         raise ValueError("Creative creation requires validation runtime and positive execution window")
     args = SimpleNamespace(**vars(args))
+    explicit_creation_policy = args.creation_policy_file is not None
+    if args.creation_policy_file is None:
+        args.creation_policy_file = args.repository_root / "config/execution_templates/creation_inputs.json"
     if args.action == "start" and args.idempotency_key:
         args.idempotency_key = f"creation:{args.project_id}:{args.book_id}:{args.idempotency_key}"
     runtime_values = dict(os.environ)
@@ -192,7 +195,7 @@ def run_creation_command(settings: Any, args: Any) -> dict[str, Any]:
                 formation_worker=resolver.resolve_book_formation_worker_principal("creation-formation"),
                 book_worker=resolver.resolve_worker_principal("creation-book"), maximum_ticks=args.maximum_ticks,
                 deadline=monotonic() + args.work_window_seconds,
-                creation_policy=json.loads(args.creation_policy_file.read_text()) if args.action == "continue" else None)
+                creation_policy=json.loads(args.creation_policy_file.read_text()) if args.action == "continue" and explicit_creation_policy else None)
             if result["stop_reason"] != "YIELDED_CHECKPOINT" or args.yield_after_window:
                 return {"formation_run_id": formation_id, **result}
             current = creation_progress(settings.database_url, project_id=args.project_id, formation_run_id=formation_id)

@@ -2857,7 +2857,9 @@ and continues by default until completion or a real dependency/failure. Use
 windows without durable Formation/Provider/accepted-cursor progress return
 `CREATION_NO_PROGRESS`. Windows are execution controls, never Book resource budgets.
 They never reduce the Book target or declare completion at a pilot cursor. Frozen profiles remain unchanged on
-resume. Historical v1-v3 Formation runs use their original explicit creation policy.
+resume. Historical v1-v3 Formation runs without a frozen creation-input profile require
+`--creation-policy-file "$ORIGINAL_CREATION_POLICY"` on continuation. The current shipped
+default cannot silently replace that historical profile.
 
 Absent an explicit context policy, creation derives its context plan from the authorized
 PRIMARY Codex catalog windows, subtracting each output allowance. World execution uses
