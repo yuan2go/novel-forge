@@ -1268,6 +1268,9 @@ its deterministic revision-digest fact remain interpretable unchanged.
 Existing 3.4.1/3.5.0 Chapter and 1.11.0–1.16.0 Planning requests retain frozen definitions,
 validators, schemas, profiles and assets; technical retry/resume and raw-result repair
 preserve the source semantic version and require a compatible operation-bound Pack.
+Invalid author adoption locations use the same bounded raw-result repair path. Repair
+revalidates the original Operation's frozen author projection, including retained legacy
+model-call results; it cannot treat a missing or substituted Context as a content defect.
 An admitted runtime-continuation successor retains its frozen Pack while domain
 approval remains pending; only its first admission resolves the approved active target.
 New future tasks separately require the current Pack. Frontier alias normalization

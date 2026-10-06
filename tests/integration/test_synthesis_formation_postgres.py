@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -213,6 +213,19 @@ def test_native_formation_generates_foundation_from_author_brief(
     )
     registry = ProviderAdapterRegistry()
     transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
+    if author_result_repair:
+        normal_planning = transport.planning
+        damaged_author_decision = False
+
+        def malformed_author_once(stage, inputs):
+            nonlocal damaged_author_decision
+            result = normal_planning(stage, inputs)
+            if stage == "reader.promise.generate" and not damaged_author_decision:
+                damaged_author_decision = True
+                result["author_design_decisions"][0]["realization_excerpt"] = "不存在的作者采纳摘录"
+            return result
+
+        transport.planning = malformed_author_once
     if advice_only:
         from tests.integration.synthesis_production_support import AdviceOnlySynthesisChapterTransport
 
@@ -583,7 +596,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 for _, source, qualification in dependencies
             )
         assert (
-            recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair else 7)
+            recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair or author_result_repair else 7)
         )
         assert {call["stage"] for call in transport.calls} == {
             "creative.candidates.generate",
@@ -639,6 +652,27 @@ def test_native_formation_generates_foundation_from_author_brief(
                 assert uow.cursor.fetchone()[0] == 2
             if not complete_after_result_repair:
                 return
+        if author_result_repair:
+            from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+            from novel_forge.modules.story_planning_runtime.result_recovery import require_result_repair_source
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT op.operation_id,op.status,op.command_payload->'payload',op.causation_operation_id,g.candidate_asset_version_id FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND g.generator_operation_name='reader.promise.generate' ORDER BY op.created_at", [harness.project_id])
+                failed, repaired = uow.cursor.fetchall()
+                uow.cursor.execute("SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) WHERE output.operation_id=%s AND asset.asset_type='model_call_log'", [failed[0]])
+                legacy_result_asset = str(uow.cursor.fetchone()[0])
+            assert failed[1] == "FAILED_FINAL" and not failed[4]
+            assert repaired[1] == "SUCCEEDED" and repaired[3] == failed[0]
+            failures = asset_query.list_versions(project_id=harness.project_id, asset_type="planning_generation_result_failure")
+            assert len(failures) == 1 and failures[0].eligibility == "INELIGIBLE"
+            assert failures[0].content["diagnostic"]["error_code"] == "AUTHOR_DESIGN_INPUT_INVALID"
+            original = _command_from_payload(dict(failed[2]))
+            retained = require_result_repair_source(DATABASE_URL, command=original, operation_id=str(failed[0]), source_asset_version_id=legacy_result_asset)
+            assert retained["diagnostic"] == failures[0].content["diagnostic"]
+            before = len(transport.calls)
+            replayed = formation.generation.planning.generate(original, principal=formation_worker)
+            assert replayed.candidate_asset_version_id == str(repaired[4])
+            assert len(transport.calls) == before
+            return
         from novel_forge.modules.book_authority.creation_inputs import (
             prepare_creation_inputs,
         )
@@ -1078,4 +1112,11 @@ def test_creative_validation_native_controlled_process_to_internal_acceptance(tm
     test_native_formation_generates_foundation_from_author_brief(
         tmp_path, monkeypatch, False, False, False, False, False, False, 1,
         creative_validation=True,
+    )
+
+
+def test_native_author_adoption_result_repair_and_legacy_receipt_replay(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(
+        tmp_path, monkeypatch, True, False, False, False, False, False, 1,
+        author_result_repair=True,
     )

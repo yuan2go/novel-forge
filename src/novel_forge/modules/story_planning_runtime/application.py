@@ -251,7 +251,11 @@ class _PlanningGenerationHandler:
                 raise KernelError("CRAFT_PLANNING_SELECTION_DRIFT", "Craft planning evidence must bind the exact persisted Context and frozen selection")
             from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
             author_projection = dict(context.content.get("author_design_projection") or {})
-            validate_author_decisions(candidate.candidate_payload, author_projection)
+            try:
+                validate_author_decisions(candidate.candidate_payload, author_projection)
+            except KernelError as error:
+                from .result_recovery import PlanningResultValidationError
+                raise PlanningResultValidationError(error, raw_result=candidate.candidate_payload, execution_evidence=evidence) from error
             if selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 try:
                     validate_knowledge_translations(candidate.candidate_payload, selection)

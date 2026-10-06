@@ -249,6 +249,19 @@ def require_result_repair_source(
             "PLANNING_RESULT_REPAIR_BUDGET_UNSETTLED",
             "settle the known original Provider usage before admitting a repair request",
         )
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT output.asset_version_id,version.content_hash,version.content
+            FROM authority_operation_output_asset output
+            JOIN authority_asset asset ON asset.asset_id=output.asset_id
+            JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=%s AND asset.asset_type='context_bundle'""", [operation_id])
+        contexts = uow.cursor.fetchall()
+    if len(contexts) != 1:
+        raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair requires the original Operation's exact frozen Context")
+    context_id, context_hash, context_content = contexts[0]
+    if ((evidence.get("context_bundle_asset_version_id") and evidence["context_bundle_asset_version_id"] != str(context_id))
+            or (evidence.get("context_bundle_hash") and evidence["context_bundle_hash"] != context_hash)):
+        raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair cannot substitute another author projection")
     try:
         validate_raw_result(
             command.generator_operation_name,
@@ -259,6 +272,9 @@ def require_result_repair_source(
             if command.generator_operation_name == "world.design.generate"
             else None,
         )
+        from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
+
+        validate_author_decisions(raw, context_content.get("author_design_projection") or {})
         if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"]["error_code"].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
             from novel_forge.modules.mkaos_authority.craft_reselection import validate_concrete_selection
             from novel_forge.modules.mkaos_authority.craft_selection import build_craft_strategy
