@@ -1,0 +1,243 @@
+{
+  "chapter_memo": {
+    "creative_guidance": {
+      "narrative": "用简体中文写一个连贯场景，人物必须通过可观察的动作执行目标。"
+    },
+    "scene_directives": []
+  },
+  "plan": {
+    "cast": [
+      "江澈",
+      "许灯"
+    ],
+    "chapter": 21,
+    "chapter_intent": "取出指定物品，当面归还，然后处理门的通行条件。",
+    "knowledge_boundaries": [
+      {
+        "fact_id": "fact:harbor-token",
+        "layer": "CHARACTER_KNOWLEDGE",
+        "status": "KNOWN",
+        "subject_id": "江澈"
+      }
+    ],
+    "premise": "在时间限制下完成归还并面对通行条件。",
+    "required_long_distance_fact_ids": [
+      "fact:harbor-token"
+    ],
+    "required_obligation_ids": [
+      "obligation:return-harbor-token"
+    ],
+    "scene_plan": [
+      {
+        "accessible_knowledge": [
+          "fact:harbor-token"
+        ],
+        "beats": [
+          "寻找",
+          "交还",
+          "处理通行条件"
+        ],
+        "focalization": "江澈",
+        "goal": "取出指定物品，当面归还，然后处理门的通行条件。",
+        "participants": [
+          "江澈",
+          "许灯"
+        ],
+        "scene_id": "s1"
+      }
+    ],
+    "source_chapter_plan_asset_version_id": "offline:harbor-token:chapter-plan:v1",
+    "source_chapter_plan_content_hash": "sha256:c8b8ed5d5736c0128863ae72da37cc97a7d71fc073f167583e0db792c21f99f8",
+    "title": "归还"
+  },
+  "realization_contract": {
+    "authority": "CANDIDATE_REALIZATION_ONLY",
+    "composition_method": "Write and edit the chapter as one narrative; slots serialize the final prose and are not a proof of integration.",
+    "contract_digest": "sha256:fad0d59cb2c243b1859865bf1609d3ae81400c0d5e056bfa69ce8f96ab8f0147",
+    "contract_version": "scene-realization-composition.v2",
+    "craft_tasks": {
+      "applicability": {
+        "classification": "CONFIGURABLE_POLICY",
+        "instruction": "Apply cost, pressured choice, growth, reversal, reward and hook only when the frozen chapter function, Scene, actor, author intent, Arc or due accepted obligation calls for them. Use the delivered accepted Context for obligations. Do not add a technique or penalize its absence merely to fill a template. An explicit author requirement, accepted fact or due obligation remains binding and cannot be declared inapplicable.",
+        "sources": {
+          "chapter_intent": "取出指定物品，当面归还，然后处理门的通行条件。"
+        }
+      },
+      "chapter_edit": [
+        "Assess scene junctions together",
+        "Retain causal and epistemic sequence",
+        "Remove redundant recaps",
+        "Preserve unresolved uncertainty"
+      ],
+      "contract_version": "scene-craft-tasks.v2",
+      "semantic_proof": "NOT_CLAIMED_BY_SLOT_COVERAGE_OR_DECLARED_FACT_IDS",
+      "tasks": [
+        {
+          "actor_ids": [
+            "江澈",
+            "许灯"
+          ],
+          "available_fact_ids": [
+            "fact:harbor-token"
+          ],
+          "beat_ids": [
+            "s1:legacy-beat:0",
+            "s1:legacy-beat:1",
+            "s1:legacy-beat:2"
+          ],
+          "craft_checks": [
+            "follow the scene's function",
+            "show motive and consequences when a planned choice calls for them",
+            "cause before consequence"
+          ],
+          "objective": "Render the frozen scene's events in causal order",
+          "output_use": "A passage within the continuous final chapter, subject to grounded review; no state mutation",
+          "scene_goal": "取出指定物品，当面归还，然后处理门的通行条件。",
+          "slot_id": "s1:skeleton",
+          "specialism": "SKELETON",
+          "voice_sources": [
+            {
+              "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:style_policy:v1",
+              "guidance": "plain observation",
+              "layer": "NARRATOR",
+              "voice_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1:NARRATOR"
+            },
+            {
+              "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:style_policy:v1",
+              "guidance": [],
+              "layer": "GENRE",
+              "voice_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1:GENRE"
+            }
+          ]
+        }
+      ]
+    },
+    "integration_policy": "ordered-slot-concatenation.v1",
+    "plan_content_hash": "sha256:c8b8ed5d5736c0128863ae72da37cc97a7d71fc073f167583e0db792c21f99f8",
+    "plan_representation": "LEGACY_TEXT_BEATS_FROZEN_ADAPTATION",
+    "plan_version_id": "offline:harbor-token:chapter-plan:v1",
+    "scene_source_digest": "sha256:3e7df897de513756e4d6867bbd6c2304d4597b5f551243f1375094de705cac34",
+    "slots": [
+      {
+        "accessible_knowledge": [
+          "fact:harbor-token"
+        ],
+        "beat_ids": [
+          "s1:legacy-beat:0",
+          "s1:legacy-beat:1",
+          "s1:legacy-beat:2"
+        ],
+        "capability": "SKELETON",
+        "character_ids": [
+          "江澈",
+          "许灯"
+        ],
+        "scene_id": "s1",
+        "slot_id": "s1:skeleton"
+      }
+    ],
+    "style_digest": "sha256:3b5c1905e39305eed79cb982c847b77beb18a253899b51f983f65da51917f27b",
+    "voices": [
+      {
+        "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:style_policy:v1",
+        "forbidden_markers": [],
+        "guidance": "plain observation",
+        "kind": "voice_contract",
+        "layer": "NARRATOR",
+        "required_markers": [],
+        "voice_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1:NARRATOR"
+      },
+      {
+        "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:style_policy:v1",
+        "forbidden_markers": [],
+        "guidance": [],
+        "kind": "voice_contract",
+        "layer": "GENRE",
+        "required_markers": [],
+        "voice_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1:GENRE"
+      }
+    ]
+  },
+  "style": {
+    "contract_version": "draft-style-view-v2",
+    "policies": [
+      {
+        "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:style_policy:v1",
+        "constraints": null,
+        "content_hash": "sha256:3b479863e882024bc872e56faca3561bd56ff0d1a3159c4d776b9e243775b8c3",
+        "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+        "structured_facts": [
+          {
+            "forbidden_markers": [],
+            "guidance": "plain observation",
+            "kind": "voice_contract",
+            "layer": "NARRATOR",
+            "required_markers": [],
+            "voice_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1:NARRATOR"
+          },
+          {
+            "forbidden_markers": [],
+            "guidance": [],
+            "kind": "voice_contract",
+            "layer": "GENRE",
+            "required_markers": [],
+            "voice_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1:GENRE"
+          },
+          {
+            "key": "work_applicability",
+            "value": {
+              "book_id": "book:project-5210e21136f94d7c9736ef6770c49789",
+              "declarations": [
+                {
+                  "field_path": "$.serialization_potential",
+                  "rationale": "Offline state fixture explicitly declines serial rhythm.",
+                  "status": "NOT_APPLICABLE"
+                }
+              ],
+              "scope": "BOOK",
+              "source_asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:creative_foundation:v1",
+              "source_bindings": [
+                {
+                  "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:book_design:v1",
+                  "content_hash": "sha256:21a0fe263e55e63004f0bd0c2d0773330a64e434cb33bfcc9f6b27e7383be1b2"
+                },
+                {
+                  "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:creative_foundation:v1",
+                  "content_hash": "sha256:36017d08cb9893f2803d5b35caa775eb114aa6e92163f46cf161f2423eb0e87d"
+                },
+                {
+                  "asset_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:character_cast:v1",
+                  "content_hash": "sha256:cba774b3df342461c25f946fd9bee22a1e860e4ff0bd3551728c7c7125d8949c"
+                }
+              ],
+              "source_content_hash": "sha256:36017d08cb9893f2803d5b35caa775eb114aa6e92163f46cf161f2423eb0e87d"
+            }
+          },
+          {
+            "key": "creative_style",
+            "value": {
+              "constraints": [
+                "Use concrete witnessed details."
+              ],
+              "genre_conventions": [],
+              "narrator": "plain observation",
+              "pov": "limited"
+            }
+          },
+          {
+            "key": "creative_direction",
+            "value": {}
+          },
+          {
+            "key": "realization_policy",
+            "value": {
+              "contract_version": "scene-craft-tasks.v2",
+              "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS"
+            }
+          }
+        ]
+      }
+    ],
+    "style_policy_version_id": "project-5210e21136f94d7c9736ef6770c49789:state-fixture:style_policy:v1"
+  }
+}

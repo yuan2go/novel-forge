@@ -1,0 +1,12 @@
+{
+  "evidence_ceiling": "EXECUTABLE",
+  "exact_target_multiplicity": 1,
+  "identical_remainder_bytes": true,
+  "identical_total_bytes": true,
+  "model_behavior": "NOT_RUN",
+  "real_provider_calls": 0,
+  "requests": 48,
+  "status": "PASS",
+  "token_position": "NOT_RUN",
+  "triples": 16
+}

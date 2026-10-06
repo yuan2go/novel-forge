@@ -1,0 +1,90 @@
+{
+  "accepted_boundary": {
+    "accepted_through_chapter": 20,
+    "canon_snapshot_version": "offline:canon:20",
+    "story_state_snapshot_version": "offline:state:20"
+  },
+  "after_estimated_tokens": 73289,
+  "before_estimated_tokens": 73289,
+  "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY",
+  "compression_trace": [],
+  "deduplications": [],
+  "dependency_coverage": {
+    "available_refs": [],
+    "coverage": "COMPLETE",
+    "required_refs": [],
+    "verified_foundation_refs": []
+  },
+  "excluded_asset_version_ids": [],
+  "fact_mutation_allowed": false,
+  "fast_path": true,
+  "policy_version": "task-scoped-context.v1",
+  "protected_estimated_tokens": 73289,
+  "receipt_hash": "sha256:28ad58b1762e3dd0d188f00161ae01c03edf9e91769de366a4974d48037be3fe",
+  "source_bindings": [
+    {
+      "asset_version_id": "offline:harbor-token:source:00:v1",
+      "content_hash": "sha256:45d535f66364db5bbe4424e7122dd791b7f1d8a23540f5816142433f02df98ed",
+      "source_revision": "sha256:45d535f66364db5bbe4424e7122dd791b7f1d8a23540f5816142433f02df98ed"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:01:v1",
+      "content_hash": "sha256:1bd19b251bc156dadfa3212366d5be0d22c104b2e33c4581c5b59f56f785cf64",
+      "source_revision": "sha256:1bd19b251bc156dadfa3212366d5be0d22c104b2e33c4581c5b59f56f785cf64"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:02:v1",
+      "content_hash": "sha256:d4a146eacc7201dd19ad40688a944861712fa3f0fce1683b93e3ef6b9d143c40",
+      "source_revision": "sha256:d4a146eacc7201dd19ad40688a944861712fa3f0fce1683b93e3ef6b9d143c40"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:03:v1",
+      "content_hash": "sha256:69cfa73560ef9c903c9f5f3ad1ac890a006b185fafa5de5986df955914b76727",
+      "source_revision": "sha256:69cfa73560ef9c903c9f5f3ad1ac890a006b185fafa5de5986df955914b76727"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:04:v1",
+      "content_hash": "sha256:9e4471f50945c9bcd3769654de6101a7aef998df16329400fa18c431bece5cab",
+      "source_revision": "sha256:9e4471f50945c9bcd3769654de6101a7aef998df16329400fa18c431bece5cab"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:05:v1",
+      "content_hash": "sha256:f8b9e2a79929d55e9272e83368bc5e3f4103713780bc6633a079d8e2248cfbbc",
+      "source_revision": "sha256:f8b9e2a79929d55e9272e83368bc5e3f4103713780bc6633a079d8e2248cfbbc"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:06:v1",
+      "content_hash": "sha256:fdff6bdaa0e4b6638342bdcaf21c1c60c77aac75170b378e016187db254aed90",
+      "source_revision": "sha256:fdff6bdaa0e4b6638342bdcaf21c1c60c77aac75170b378e016187db254aed90"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:07:v1",
+      "content_hash": "sha256:83cbd3e946bc17f87542f1383db6427541bcc84b7fa3c4c9cf71e2c16e4a2154",
+      "source_revision": "sha256:83cbd3e946bc17f87542f1383db6427541bcc84b7fa3c4c9cf71e2c16e4a2154"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:08:v1",
+      "content_hash": "sha256:b0a22b91649657f6cc73ef2160d08e0e74721d7c206ef233792bbe71ef413e9f",
+      "source_revision": "sha256:b0a22b91649657f6cc73ef2160d08e0e74721d7c206ef233792bbe71ef413e9f"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:09:v1",
+      "content_hash": "sha256:2449dab86f710bbbe1dc707049e0d5473b64bf00bc811e2aa5890f2b16f60d93",
+      "source_revision": "sha256:2449dab86f710bbbe1dc707049e0d5473b64bf00bc811e2aa5890f2b16f60d93"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:10:v1",
+      "content_hash": "sha256:91641cad28c67d184544b2a113c57f0929c5acf3f6d1903271ef4bb606b826fe",
+      "source_revision": "sha256:91641cad28c67d184544b2a113c57f0929c5acf3f6d1903271ef4bb606b826fe"
+    },
+    {
+      "asset_version_id": "offline:harbor-token:source:11:v1",
+      "content_hash": "sha256:c5e85f30045a8881baa25a8e617760a516e262fc7bbb1ced3f77eb0765713a1a",
+      "source_revision": "sha256:c5e85f30045a8881baa25a8e617760a516e262fc7bbb1ced3f77eb0765713a1a"
+    }
+  ],
+  "system_context_window_tokens": 512000,
+  "task_hash": "sha256:b6199bbe92c11f2d0b91ee47551f40ad9782d064b95109575bef6b5388c760d3",
+  "task_target_tokens": 512000,
+  "token_accounting": "utf8-byte-upper-bound.v1"
+}

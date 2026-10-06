@@ -1,0 +1,13 @@
+test_all_frozen_triples_have_only_one_position_difference (__main__.OfflineHarnessCheck.test_all_frozen_triples_have_only_one_position_difference) ... ok
+test_duplicate_or_missing_evidence_cannot_enter_metric (__main__.OfflineHarnessCheck.test_duplicate_or_missing_evidence_cannot_enter_metric) ... ok
+test_failed_prose_verdict_is_preserved_not_overridden_by_fact_ids (__main__.OfflineHarnessCheck.test_failed_prose_verdict_is_preserved_not_overridden_by_fact_ids) ... ok
+test_host_rejects_out_of_scope_self_reported_fact (__main__.OfflineHarnessCheck.test_host_rejects_out_of_scope_self_reported_fact) ... ok
+test_native_render_replays_exact_receipt_hash (__main__.OfflineHarnessCheck.test_native_render_replays_exact_receipt_hash) ... ok
+test_repeats_do_not_inflate_independent_case_count (__main__.OfflineHarnessCheck.test_repeats_do_not_inflate_independent_case_count) ... ok
+test_unknown_review_and_unverifiable_quote_cannot_pass (__main__.OfflineHarnessCheck.test_unknown_review_and_unverifiable_quote_cannot_pass) ... ok
+test_wire_drift_and_truncation_do_not_count_as_position_failures (__main__.OfflineHarnessCheck.test_wire_drift_and_truncation_do_not_count_as_position_failures) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.564s
+
+OK

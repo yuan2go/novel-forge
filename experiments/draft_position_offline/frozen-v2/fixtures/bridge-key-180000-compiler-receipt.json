@@ -1,0 +1,90 @@
+{
+  "accepted_boundary": {
+    "accepted_through_chapter": 20,
+    "canon_snapshot_version": "offline:canon:20",
+    "story_state_snapshot_version": "offline:state:20"
+  },
+  "after_estimated_tokens": 191515,
+  "before_estimated_tokens": 191515,
+  "compression_source": "ORIGINAL_FROZEN_PROJECTION_ONLY",
+  "compression_trace": [],
+  "deduplications": [],
+  "dependency_coverage": {
+    "available_refs": [],
+    "coverage": "COMPLETE",
+    "required_refs": [],
+    "verified_foundation_refs": []
+  },
+  "excluded_asset_version_ids": [],
+  "fact_mutation_allowed": false,
+  "fast_path": true,
+  "policy_version": "task-scoped-context.v1",
+  "protected_estimated_tokens": 191515,
+  "receipt_hash": "sha256:90cea6ea09362c83d90136120a5adf4aca84c26943e13b77d1046253daec4a90",
+  "source_bindings": [
+    {
+      "asset_version_id": "offline:bridge-key:source:00:v1",
+      "content_hash": "sha256:970b9606b153449f64aa5c938ad0e0da3764aea2adef5bfa02cb77b4119aa92a",
+      "source_revision": "sha256:970b9606b153449f64aa5c938ad0e0da3764aea2adef5bfa02cb77b4119aa92a"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:01:v1",
+      "content_hash": "sha256:5d7127ef524cd56e63221d7c60c2f020740f2d8bfe81bdc35a971e4a2c7126f9",
+      "source_revision": "sha256:5d7127ef524cd56e63221d7c60c2f020740f2d8bfe81bdc35a971e4a2c7126f9"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:02:v1",
+      "content_hash": "sha256:bfc095294d5b7790780481f6f541f503ebf1c06dd3af8e53396554b07f87d74c",
+      "source_revision": "sha256:bfc095294d5b7790780481f6f541f503ebf1c06dd3af8e53396554b07f87d74c"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:03:v1",
+      "content_hash": "sha256:aac1fb873d951f78163323cb702a91ed7344e83b682d8cf6df6de2bb43e2c3ac",
+      "source_revision": "sha256:aac1fb873d951f78163323cb702a91ed7344e83b682d8cf6df6de2bb43e2c3ac"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:04:v1",
+      "content_hash": "sha256:26354217c015f3df12002c306ee0c932bef76c8953d231ebd4229dff7e01bf35",
+      "source_revision": "sha256:26354217c015f3df12002c306ee0c932bef76c8953d231ebd4229dff7e01bf35"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:05:v1",
+      "content_hash": "sha256:551c3f2c6cb6411b76720d8ff3817a36ba3ee20f4d7278c09f69e248da540efa",
+      "source_revision": "sha256:551c3f2c6cb6411b76720d8ff3817a36ba3ee20f4d7278c09f69e248da540efa"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:06:v1",
+      "content_hash": "sha256:37389b4f6d517e692a3703d0d7ef6581a7202e3380fa1670004e98b8a524ffdb",
+      "source_revision": "sha256:37389b4f6d517e692a3703d0d7ef6581a7202e3380fa1670004e98b8a524ffdb"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:07:v1",
+      "content_hash": "sha256:cfccc192a9fd657cdb9984faa8bb960c9bce38ba7062811bc393f8c81a3869b5",
+      "source_revision": "sha256:cfccc192a9fd657cdb9984faa8bb960c9bce38ba7062811bc393f8c81a3869b5"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:08:v1",
+      "content_hash": "sha256:f1410295ca954e672c1eb1eafb1e7b795af4f249229b9d3afd2d93e66d702cfe",
+      "source_revision": "sha256:f1410295ca954e672c1eb1eafb1e7b795af4f249229b9d3afd2d93e66d702cfe"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:09:v1",
+      "content_hash": "sha256:f77030b08689e570011a304fd9b6f400297cc1d5ea35d917d31ab7b22f65fbe9",
+      "source_revision": "sha256:f77030b08689e570011a304fd9b6f400297cc1d5ea35d917d31ab7b22f65fbe9"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:10:v1",
+      "content_hash": "sha256:ff208851e0a33c472977a784b46ba531cc1c16a042a9afab7700ef18a20a94b6",
+      "source_revision": "sha256:ff208851e0a33c472977a784b46ba531cc1c16a042a9afab7700ef18a20a94b6"
+    },
+    {
+      "asset_version_id": "offline:bridge-key:source:11:v1",
+      "content_hash": "sha256:e95bdc58b2c8f63c86e02653adc2d37d70b920e20719e829d884f20c88fc4515",
+      "source_revision": "sha256:e95bdc58b2c8f63c86e02653adc2d37d70b920e20719e829d884f20c88fc4515"
+    }
+  ],
+  "system_context_window_tokens": 512000,
+  "task_hash": "sha256:a575da6f7950420813d8fc4894756e01efa522d18bf59e6385ea6d84d7f21258",
+  "task_target_tokens": 512000,
+  "token_accounting": "utf8-byte-upper-bound.v1"
+}

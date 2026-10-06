@@ -1,0 +1,60 @@
+{
+  "schema_version": "draft-position-validation.v1",
+  "main_sha": "9bd1d34f24ebe302533ffc26c72bda97336c4152",
+  "production_files_changed": false,
+  "implementation_tree_identity": {
+    "current_implementation_tree_sha": "sha256:c02ccccc262ffa9cb6aa5202ebf0b14780e051aa07583ec9a422c78cf7273648",
+    "head_implementation_tree_sha": "sha256:c02ccccc262ffa9cb6aa5202ebf0b14780e051aa07583ec9a422c78cf7273648",
+    "records_equal": true,
+    "experimental_files_affect_implementation_identity": false
+  },
+  "evidence_ceiling": "EXECUTABLE",
+  "real_provider_calls": 0,
+  "model_behavior_status": "NOT_RUN",
+  "native_replay": "MATCH",
+  "frozen_requests": 48,
+  "planned_calls": 144,
+  "checks": [
+    {
+      "name": "focused_existing_unit_matrix",
+      "status": "PASS",
+      "passed": 204,
+      "duration_seconds": 1.64,
+      "command": "PYTHONPATH=src python -m pytest -q tests/unit/test_provider_task_views.py tests/unit/test_task_scoped_context.py tests/unit/test_context_retrieval_v2.py tests/unit/test_task_context_admission.py tests/unit/test_context_semantic_fidelity.py tests/unit/test_context_compression_provider.py tests/unit/test_provider_token_admission.py",
+      "evidence_source": "Observed terminal command output in this task; summary retained, not a fabricated full log."
+    },
+    {
+      "name": "offline_harness_selfcheck",
+      "status": "PASS",
+      "passed": 8,
+      "log": "checks/selfcheck.log"
+    },
+    {
+      "name": "ruff_experiment_package",
+      "status": "PASS"
+    },
+    {
+      "name": "documentation_reality",
+      "status": "PASS",
+      "log": "checks/documentation-reality.log"
+    },
+    {
+      "name": "make_validate",
+      "status": "FAIL",
+      "log": "checks/make-validate.log",
+      "failed_gate": "proposal-lifecycle-check",
+      "preexisting_main_failure": true,
+      "errors": [
+        "architecture/proposals/classical-corpus-codex-validation.md: stale lifecycle: implementation scope changed since review",
+        "architecture/proposals/narrative-memory-context-lifecycle-closure.md: stale lifecycle: implementation scope changed since review",
+        "architecture/proposals/prompt-and-generation-contract-convergence-01.md: stale lifecycle: implementation scope changed since review"
+      ],
+      "later_gates": "NOT_RUN"
+    },
+    {
+      "name": "full_p0_postgresql_provider_longform",
+      "status": "NOT_RUN",
+      "reason": "No production change; offline experiment delivery only; no service activation or model grant."
+    }
+  ]
+}

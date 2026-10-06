@@ -1,0 +1,46 @@
+{
+  "absolute_floors": {
+    "causal_constraint": 1.0,
+    "due_obligation": 0.95,
+    "execution_consistency": 0.95,
+    "fact_recall": 0.95,
+    "knowledge_boundary": 1.0
+  },
+  "alpha": 0.05,
+  "authorization": "NO_GRANT_FOR_THIS_EXPERIMENT",
+  "bootstrap_iterations": 2000,
+  "classification": "CONFIGURABLE_POLICY",
+  "clearance_max_gap_upper_ci": 0.05,
+  "content_lengths_bytes": [
+    60000,
+    180000
+  ],
+  "critical_violation_tolerance": 0,
+  "evidence_ceiling": "EXECUTABLE",
+  "frozen_main_sha": "9bd1d34f24ebe302533ffc26c72bda97336c4152",
+  "minimum_independent_cases_for_clearance": 24,
+  "minimum_scenario_families_for_clearance": 6,
+  "output_reserve_tokens": 16384,
+  "position_bands": {
+    "end": [
+      0.8,
+      1.0
+    ],
+    "front": [
+      0.0,
+      0.2
+    ],
+    "middle": [
+      0.4,
+      0.6
+    ]
+  },
+  "position_gap_alarm": 0.1,
+  "production_changes": false,
+  "randomization_seed": 20261006,
+  "real_provider_status": "NOT_RUN",
+  "repetitions": 3,
+  "schema_version": "draft-position-policy.v1",
+  "token_policy": "actual_model_tokenizer_and_complete_request_admission_required_before_real_dispatch",
+  "unknown_policy": "UNKNOWN_AND_INCOMPLETE_NEVER_PASS"
+}
