@@ -21,6 +21,21 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 CONTRACT = "kernel-failed-step-successor.v1"
 
 
+def has_candidate_domain_outputs(cursor, operation_id):
+    cursor.execute("""SELECT a.asset_type,o.role FROM authority_operation_output_asset o
+        JOIN authority_asset a USING(asset_id) WHERE o.operation_id=%s""", [operation_id])
+    contract_types = {'capability_materialization_manifest','execution_commit_policy','execution_context_policy',
+        'execution_source_policy','execution_validation_policy','fallback_policy','input_manifest','model_profile',
+        'prompt_bundle','provider_request_admission_manifest','route_policy','route_snapshot','skill_bundle','tool_permission_snapshot'}
+    allowed = {(t,'execution_contract') for t in contract_types}
+    allowed |= {('execution_evidence',r) for r in ('cost-receipt','normalized-output','output-manifest','process-receipt',
+        'raw-output','usage-receipt','validation-manifest')}
+    allowed |= {('cost_ledger','cost_evidence'),('execution_recovery_session','execution_recovery_projection'),
+        ('model_call_log','model_evidence'),('routing_decision','routing_evidence')}
+    return any(tuple(row) not in allowed for row in cursor.fetchall())
+
+
+
 def replace_failed_step(
     database_url,
     *,
@@ -29,6 +44,7 @@ def replace_failed_step(
     context: AdmissionContext,
     policy_evidence,
     expected_failure_code,
+    settled_candidate_effects=(),
     transaction_guard=None,
 ):
     digest = hashlib.sha256(
@@ -38,6 +54,7 @@ def replace_failed_step(
                 "target": target_version,
                 "policy": policy_evidence,
                 "failure_code": expected_failure_code,
+                **({"settled_candidate_effects": settled_candidate_effects} if settled_candidate_effects else {}),
             },
             sort_keys=True,
             default=str,
@@ -88,7 +105,7 @@ def replace_failed_step(
         row = cursor.fetchone()
         if (
             not row
-            or source["status"] != "FAILED_FINAL"
+            or source["status"] != ("CANCELLATION_REQUESTED" if settled_candidate_effects else "FAILED_FINAL")
             or root["status"] != "WAITING_CHILDREN"
             or saga["status"] != "RUNNING"
             or source["actor_id"] != context.actor_id
@@ -125,7 +142,16 @@ def replace_failed_step(
                 WHERE a.operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())""",
             [predecessor_id] * 4,
         )
-        if any(cursor.fetchone()):
+        external, output, dependent, live_lease = cursor.fetchone()
+        if settled_candidate_effects:
+            output = has_candidate_domain_outputs(cursor, predecessor_id)
+        if external and settled_candidate_effects:
+            cursor.execute("SELECT e.external_effect_id,e.request_hash,e.status,r.status,e.effect_type FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id", [predecessor_id])
+            effects = cursor.fetchall()
+            if effects != [(effect, digest, "SUCCEEDED", "SETTLED", "model.invoke") for effect, digest in sorted(settled_candidate_effects)]:
+                raise KernelError("STEP_SUCCESSOR_CANDIDATE_UNSETTLED", "Only exact known succeeded settled candidates may be superseded")
+            external = False
+        if external or output or dependent or live_lease:
             raise KernelError(
                 "STEP_SUCCESSOR_EXTERNAL_OR_DEPENDENT_WORK",
                 "Effects, outputs, dependents or leases prevent step succession",
@@ -161,6 +187,13 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
+        if settled_candidate_effects:
+            from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
+            transition_operation_in_uow(uow, OperationTransitionCommand(operation_id=predecessor_id,
+                project_id=project, expected_version=source['version'], expected_status='CANCELLATION_REQUESTED',
+                target_status='CANCELLED', actor_id=context.actor_id,
+                reason='Known settled model candidate superseded; receipts and settlement retained',
+                trace_id=source['trace_id'], correlation_id=source['correlation_id'], causation_id=predecessor_id))
         graph_context = GraphCommandContext(
             project,
             context.actor_id,

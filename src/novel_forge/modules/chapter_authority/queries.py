@@ -198,7 +198,16 @@ class ChapterAuthorityQuery:
                        effect.created_at,
                        effect.request_payload #>>
                            '{_production_execution,attempt_id}' AS attempt_id,
-                       attempt.status AS attempt_status
+                       attempt.status AS attempt_status,
+                       COALESCE(succ.contract_version='kernel-failed-step-successor.v1'
+                         AND succ.policy_evidence->>'contract_version'='chapter-candidate-contract-repair.v1'
+                         AND source.status='CANCELLED' AND replacement.status='SUCCEEDED'
+                         AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
+                         AND succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id
+                         AND attempt.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION'
+                         AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'settled_candidate_effects') binding
+                             WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash),FALSE),
+                       succ.successor_operation_id
                 FROM authority_external_effect AS effect
                 LEFT JOIN authority_attempt AS attempt
                   ON attempt.operation_id=effect.operation_id
@@ -206,6 +215,11 @@ class ChapterAuthorityQuery:
                      effect.request_payload #>>
                          '{_production_execution,attempt_id}'
                  )
+                LEFT JOIN authority_saga_step_successor succ ON succ.predecessor_operation_id=effect.operation_id
+                LEFT JOIN authority_operation source ON source.operation_id=succ.predecessor_operation_id
+                LEFT JOIN authority_operation replacement ON replacement.operation_id=succ.successor_operation_id
+                LEFT JOIN authority_saga_step active ON active.operation_id=succ.successor_operation_id AND active.saga_id=succ.saga_id
+                LEFT JOIN authority_budget_reservation budget ON budget.external_effect_id=effect.external_effect_id
                 WHERE effect.operation_id = ANY(%s)
                   AND effect.effect_type = 'model.invoke'
                 ORDER BY effect.created_at, effect.external_effect_id
@@ -224,6 +238,8 @@ class ChapterAuthorityQuery:
                     "created_at": str(row[7]),
                     "attempt_id": row[8] or "",
                     "attempt_status": row[9] or "",
+                    "settled_candidate_superseded": bool(row[10]),
+                    "successor_operation_id": row[11] or "",
                 }
                 for row in cursor.fetchall()
             ]

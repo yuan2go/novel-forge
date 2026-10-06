@@ -2061,9 +2061,33 @@ Draft contracts retain their explicit-SKELETON interpretation. This projection c
 no Scene, Beat, character, knowledge or accepted plan. It records the source selection
 and intrinsic core separately. Realization validation still requires all frozen slots.
 
-Kernel owns failed-step succession. Only a terminal child with no external intent,
+Kernel owns failed-step succession. Ordinary pre-dispatch recovery requires a terminal child with no external intent,
 output, live lease or admitted dependent can receive a new step under the same live
 Root/Saga. The current Saga binding changes atomically with append-only predecessor
 evidence; terminal Operations, Attempts and successful siblings remain unchanged.
 Creative Chapter recovery binds the original inputs, current trusted template and the
 new exact Draft definition. It cannot resume unknown sends or grant strict certification.
+
+Draft 3.9.2 selects `scene-information-flow.v1` alongside the core slot projection.
+Scene entry knowledge remains distinct from information gained in that Scene. Only
+planned gains or earlier gains with an explicit scoped KNOWN boundary or CONFIRM
+Disclosure become accessible to the named character; reader prose retains its declared
+reader Disclosure boundary. Future gains, unknown facts and withheld disclosures remain
+ineligible. The contract records this derivation for each slot. Output repair receives
+the actual rejected result and diagnostic and uses a new accounted call.
+
+A known settled candidate failure may use `chapter-candidate-contract-repair.v1` step
+succession after native cancellation. Kernel verifies every original Effect is succeeded
+and settled, preserves its receipt and usage, and rejects unknown sends, outputs or
+started dependents. The Chapter owner binds the same Book frontier and trusted template.
+This creates an unexecuted successor with the new contract; it grants no acceptance.
+
+Creative template v5 may explicitly select `KNOWN_SETTLED_CONTRACT_REPAIR` execution
+window recovery. The Chapter Root's admission-derived timeout is execution policy rather
+than a book spending limit. For a known settled candidate contract correction, Kernel
+may admit one new bounded window per predecessor/target/policy binding. Its event, audit
+and outbox preserve the complete prior Root and original deadline. Child deadlines,
+terminal Attempts, effects, settlement and accepted history do not change. Author
+specified deadlines, cancellation, unknown effects, live leases, foreign actors and
+strict production cannot use this continuation. Replaying the same binding never
+extends the new window again.

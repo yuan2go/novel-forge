@@ -700,6 +700,7 @@ def build_provider_task_view(
             style=_compact(inputs.get("style")),
             creative_memo=memo_view,
             realization_contract=realization,
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
         )
     if stage == "review":
         from novel_forge.modules.review.craft import craft_provider_task

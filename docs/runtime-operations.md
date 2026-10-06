@@ -509,7 +509,7 @@ are frozen together as `formation-generation.v4`; continue uses that snapshot ev
 template file later changes. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
-The shipped creative template is the explicit v4 successor. Its bounded native repair
+The shipped creative template is the explicit v5 successor with the v4 stage repair bound. Its bounded native repair
 policy permits the same authorized generator to repair contract/causality rejections;
 it does not accept rejected content or certify unperformed model qualification. Old v1
 routing snapshots remain immutable. An undispatched native Planning repair blocked solely
@@ -703,7 +703,7 @@ The owner verifies the original completed receipt, settlement, checkpoint diagno
 released lease before using Kernel completed-effect recovery. It makes no remote resend.
 Reference validation remains strict; a rejected result consumes the existing repair bound.
 
-The default creative v4 template disables speculative world futures while retaining World
+The default creative v5 template disables speculative world futures while retaining World
 Foundation, accepted state, source isolation and all actual acceptance constraints. To
 exercise simulation, select `OPTIONAL` or `REQUIRED` explicitly. Infeasible optional
 futures remain rejected and contribute no facts. A historical settled, blocked world search
@@ -3015,3 +3015,27 @@ Kernel admits a successor. Memo and Context remain the original successful sibli
 no old model call is sent again. Expired or terminal Roots, live leases, effects, outputs,
 foreign identities and already-started dependent steps remain ineligible. The recovery
 record preserves the old Saga binding and exact failure alongside the new binding.
+
+For a retained Draft 3.9.1 epistemic failure, install Draft 3.9.2 and continue the same
+Formation. Candidate recovery requires a succeeded settled result, the exact failure,
+unchanged input versions, original actor and no accepted output. Native cancellation
+and step succession preserve the source Attempt and calls. Repair includes the rejected
+result, slot knowledge scopes and the work length requirements. It remains subject to
+normal length, review, revision and acceptance checks.
+
+Creative template v5 explicitly authorizes bounded execution-window continuation for
+known settled contract repair. Continuing after engineering downtime can renew only the
+unfinished Chapter Root through Kernel's versioned command; the original admission and
+deadline remain in durable before/after evidence. It does not reset calls, costs, child
+timeouts or no-progress detection. A strict template or actual author deadline cannot
+renew this way. Replaying a consumed continuation returns its existing window.
+
+The focused continuation matrix adds
+`test_native_information_flow_repairs_settled_candidate_and_preserves_usage` and
+`test_native_scene_core_successor_reuses_memo_and_preserves_failed_step` in the native
+Formation PostgreSQL module, plus `test_work_realization_contract.py` and
+`test_creative_execution_template.py`. It covers expired-window continuation, exact
+replay, latest rejected-candidate repair, cancellation, original usage, internal acceptance
+and reconstruction. Restore the previous-head database and verify retained effects,
+receipts, reservations and acceptance records before migration 0164. Routing policy
+configuration v1.10 is the explicit v5 successor; v1.7/v1.8/v1.9 keep their frozen schemas.

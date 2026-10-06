@@ -61,7 +61,7 @@ def repair_bound(application, *, command, operation_id, maximum):
             if admission
             else None
         )
-        if not template or template["version"] != "creative-execution-template.v4":
+        if not template or template["version"] not in {"creative-execution-template.v4", "creative-execution-template.v5"}:
             return None
         from .execution import _planning_repair_routing_lineage
 

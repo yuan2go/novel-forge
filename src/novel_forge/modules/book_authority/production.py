@@ -3581,7 +3581,11 @@ def _validate_chapter_acceptance_evidence(
         "effects_terminal": (
             not model_effects
             or (
-                effect_operation_ids == succeeded_effect_operation_ids
+                effect_operation_ids == succeeded_effect_operation_ids | {
+                    str(item["operation_id"]) for item in model_effects
+                    if item.get("settled_candidate_superseded") is True
+                    and item.get("successor_operation_id") and item.get("status") == "SUCCEEDED"
+                }
                 and all(
                     item.get("status") == "SUCCEEDED"
                     for item in model_effects

@@ -1487,6 +1487,7 @@ class _DraftHandler:
                     request.require_input("context_bundle").content,
                 )
             return authored
+        from .candidate_repair import candidate_repair_payload
         plan = request.require_input("chapter_plan")
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
@@ -1501,8 +1502,9 @@ class _DraftHandler:
         plan_view = build_draft_plan_view(
             plan.content, work_requirements=request.work_requirements_enabled
         )
-        core_policy = "scene-core-slots.v1" if request.definition_version == "3.9.1" else "EXPLICIT_SKELETON_V1"
-        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy)
+        core_policy = "scene-core-slots.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "EXPLICIT_SKELETON_V1"
+        information_policy = "scene-information-flow.v1" if request.definition_version == "3.9.2" else "ENTRY_ONLY_V1"
+        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         generated = self.provider.invoke(
@@ -1512,6 +1514,7 @@ class _DraftHandler:
                 "plan": plan_view,
                 "style": style,
                 "realization_contract": realization_contract,
+                **candidate_repair_payload(request),
                 "execution_intent": intent.content,
                 "chapter_memo": memo.content,
             },
@@ -1525,6 +1528,7 @@ class _DraftHandler:
             provider_evidence=_provider_evidence(generated),
             work_requirements=request.work_requirements_enabled,
             core_policy=core_policy,
+            information_policy=information_policy,
         )
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,

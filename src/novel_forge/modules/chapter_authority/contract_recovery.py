@@ -94,7 +94,7 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
     replace_failed_step(
         authority.database_url,
         predecessor_id=source[0],
-        target_version="3.9.1",
+        target_version="3.9.2",
         context=AdmissionContext(
             principal.principal_id,
             principal.permissions,

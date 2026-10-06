@@ -2080,7 +2080,7 @@ class PostgresChapterExecutionContractBinder:
         }
         compatible = compatible or (
             str(row[0]) == ChapterNode.DRAFT.definition_name
-            and str(row[1]) == CHAPTER_DRAFT_DEFINITION_VERSION
+            and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(

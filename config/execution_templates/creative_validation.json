@@ -1,5 +1,5 @@
 {
-  "version": "creative-execution-template.v4",
+  "version": "creative-execution-template.v5",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
@@ -13,5 +13,6 @@
   "repair_routing": {
     "version": "native-repair-routing.v2",
     "max_same_route_repairs": 2
-  }
+  },
+  "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR"
 }

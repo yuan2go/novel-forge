@@ -60,12 +60,12 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, scene_core_recovery=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, scene_core_recovery=False, scene_information_recovery=False,
 ):
-    if scene_core_recovery:
+    if scene_core_recovery or scene_information_recovery:
         from novel_forge.modules.chapter_authority import definitions as scene_definitions
         saved_draft_version = scene_definitions.CHAPTER_DRAFT_DEFINITION_VERSION
-        monkeypatch.setattr(scene_definitions, 'CHAPTER_DRAFT_DEFINITION_VERSION', '3.9.0')
+        monkeypatch.setattr(scene_definitions, 'CHAPTER_DRAFT_DEFINITION_VERSION', '3.9.1' if scene_information_recovery else '3.9.0')
         normal_scene_read = Path.read_text
         def legacy_scene_manifest(path, *args, **kwargs):
             value = normal_scene_read(path, *args, **kwargs)
@@ -73,7 +73,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 return value
             from novel_forge.storage.authority_repositories import definition_hash
             value = json.loads(value)
-            value['identity']['version'] = '2.13.0'
+            value['identity']['version'] = '2.14.0' if scene_information_recovery else '2.13.0'
             definitions = {d['name']: d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-scene-fixture', commit_sha='0'*40, model_effects_required=True)}
             for node in value['workflow_template']['nodes']:
                 node['operation_definition_ref'] = node['operation_name'] + '@' + definitions[node['operation_name']]['definition_version']
@@ -133,7 +133,7 @@ def test_native_formation_generates_foundation_from_author_brief(
     chapter_pack.pack_id += "-chapter"
     if creative_validation:
         from tests.integration.creative_validation_production_support import prepare_native_template
-        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled)
+        template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled,contract_recovery=scene_information_recovery)
     else:
         approved_chapter = chapter_pack.register_compile_approve(
             "1.0.0",
@@ -491,15 +491,38 @@ def test_native_formation_generates_foundation_from_author_brief(
                 value['character_participation'][0]['known_fact_ids']=['unknown:fact']
             return value
         transport.planning=invalid_knowledge_once
-    if scene_core_recovery:
+    if scene_core_recovery or scene_information_recovery:
         original_scene_planning = transport.planning
         def selected_specialisms_only(stage, inputs):
             value = original_scene_planning(stage, inputs)
             if stage == 'chapter_plan.generate':
                 for scene in value['scene_plan']:
-                    scene['realization_capabilities'] = ['ACTION']
+                    scene['realization_capabilities'] = ['SKELETON','ACTION'] if scene_information_recovery else ['ACTION']
             return value
         transport.planning = selected_specialisms_only
+    if scene_information_recovery:
+        original_information_draft = transport.chapter
+        information_call_count = 0
+        def information_draft(stage, inputs):
+            nonlocal information_call_count
+            value = original_information_draft(stage, inputs)
+            if stage == 'draft':
+                information_call_count += 1
+                if information_call_count == 1:
+                    value['scene_artifacts'][0]['used_fact_ids'] = ['fact:hidden-cost']
+                else:
+                    assert inputs.get('candidate_repair', {}).get('source_effect_id')
+                    if information_call_count == 2:
+                        value['scene_artifacts'][0]['used_fact_ids'] = ['fact:undeclared']
+                    else:
+                        assert inputs['candidate_repair']['contract_version'] == 'chapter-candidate-output-repair.v1'
+            return value
+        class InformationDraftTransport:
+            def __call__(self, stage, inputs):
+                return information_draft(stage, inputs)
+            def __getattr__(self, name):
+                return getattr(original_information_draft, name)
+        transport.chapter = InformationDraftTransport()
     registry.register(transport)
     if creative_validation:
         from tests.integration.creative_validation_production_support import controlled_member_environment
@@ -1082,13 +1105,13 @@ def test_native_formation_generates_foundation_from_author_brief(
                     assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
                     uow.cursor.execute("SELECT status,checkpoint->>'error_code' FROM authority_attempt WHERE operation_id=%s", [checkpoint_operation])
                     assert uow.cursor.fetchall() == [("CHECKPOINTED", "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN")]
-            if scene_core_recovery:
+            if scene_core_recovery or scene_information_recovery:
                 stopped = continue_creation(composition=composition, content=content, chapter=chapter,
                     formation_run_id=admitted.formation_run_id, formation_worker=formation_worker, book_worker=worker,
                     maximum_ticks=80, deadline=time.monotonic()+240, creation_policy=policy)
-                assert stopped['stop_reason'] == 'REALIZATION_CAPABILITY_INVALID', stopped
+                assert stopped['stop_reason'] == ('REALIZATION_EPISTEMIC_SCOPE_VIOLATION' if scene_information_recovery else 'REALIZATION_CAPABILITY_INVALID'), stopped
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                    uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.project_id=%s AND o.definition_name='chapter.draft.generate' AND o.status='FAILED_FINAL'", [harness.project_id])
+                    uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.project_id=%s AND o.definition_name='chapter.draft.generate' AND o.status IN ('FAILED_FINAL','FAILED_RETRYABLE')", [harness.project_id])
                     failed_scene_step = uow.cursor.fetchone()
                     uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.project_id=%s ORDER BY e.external_effect_id", [harness.project_id])
                     completed_scene_calls = uow.cursor.fetchall()
@@ -1120,7 +1143,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                 ):
                     with pytest.raises(KernelError, match=error_code):
                         replace_failed_step(DATABASE_URL, predecessor_id=failed_scene_step[0]['operation_id'],
-                            target_version='3.9.1', context=invalid_context, policy_evidence={},
+                            target_version='3.9.2', context=invalid_context, policy_evidence={},
                             expected_failure_code='REALIZATION_CAPABILITY_INVALID')
             if memo_timeout_recovery:
                 first=continue_creation(composition=composition,content=content,chapter=chapter,
@@ -1168,19 +1191,46 @@ def test_native_formation_generates_foundation_from_author_brief(
                 formation,execution,chapter,composition=_recover_capacity_formation(harness=harness,chapter_pack=chapter_pack,
                     principal=principal,pack_actor=template_actor,settings=settings,env=env,registry=registry,
                     transport=transport,admitted=admitted,monkeypatch=monkeypatch,stage_repairs=True)
+            if scene_information_recovery:
+                from datetime import timedelta
+                from novel_forge.modules.command_kernel import execution_window
+                original_window = execution_window.continue_candidate_execution_window
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s', [failed_scene_step[0]['root_operation_id']])
+                    frozen_scene_deadline = uow.cursor.fetchone()[0]
+                def expired_window(url, **kwargs):
+                    first = original_window(url, **kwargs, clock=lambda: frozen_scene_deadline+timedelta(seconds=1))
+                    assert first['continued'] and not first['replayed']
+                    replay = original_window(url, **kwargs, clock=lambda: first['deadline']+timedelta(seconds=1))
+                    assert replay['replayed'] and replay['deadline'] == first['deadline'].isoformat()
+                    return first
+                monkeypatch.setattr(execution_window,'continue_candidate_execution_window',expired_window)
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+            if scene_information_recovery:
+                assert creation_result['stop_reason'] == 'REALIZATION_EPISTEMIC_SCOPE_VIOLATION', creation_result
+                creation_result = continue_creation(composition=composition,content=content,chapter=chapter,
+                    formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                    maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                assert information_call_count == 3
             assert creation_result["stop_reason"] == "COMPLETED", creation_result
-            if scene_core_recovery:
+            if scene_core_recovery or scene_information_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.operation_id=%s", [failed_scene_step[0]['operation_id']])
-                    assert uow.cursor.fetchone() == failed_scene_step
+                    retained = uow.cursor.fetchone()
+                    assert retained[1] == failed_scene_step[1]
+                    assert retained[0]['definition_snapshot'] == failed_scene_step[0]['definition_snapshot']
+                    assert retained[0]['input_asset_snapshot'] == failed_scene_step[0]['input_asset_snapshot']
+                    if scene_information_recovery:
+                        assert retained[0]['status'] == 'CANCELLED'
+                    else:
+                        assert retained == failed_scene_step
                     for effect, reservation in completed_scene_calls:
                         uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.external_effect_id=%s", [effect['external_effect_id']])
                         assert uow.cursor.fetchone() == (effect, reservation)
                     uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s", [failed_scene_step[0]['operation_id']])
-                    assert uow.cursor.fetchone() == ('SUCCEEDED','3.9.1')
+                    assert uow.cursor.fetchone() == ('SUCCEEDED','3.9.2')
             if memo_timeout_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])
@@ -1850,3 +1900,10 @@ def test_native_scene_core_successor_reuses_memo_and_preserves_failed_step(tmp_p
         author_guided=False, result_repair=False, runtime_recovery=False, evaluation_recovery=False,
         manual_review=False, advice_only=False, target_chapters=1,
         complete_after_result_repair=True, creative_validation=True, world_disabled=True, scene_core_recovery=True)
+
+
+def test_native_information_flow_repairs_settled_candidate_and_preserves_usage(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(tmp_path, monkeypatch,
+        author_guided=False, result_repair=False, runtime_recovery=False, evaluation_recovery=False,
+        manual_review=False, advice_only=False, target_chapters=1,
+        complete_after_result_repair=True, creative_validation=True, world_disabled=True, scene_information_recovery=True)

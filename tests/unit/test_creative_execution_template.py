@@ -186,3 +186,17 @@ def test_optional_world_policy_cannot_defer_independent_or_accepted_commitments(
     require_optional_source({"actor_experiment":None, "preparation_sources":[]})
     with pytest.raises(KernelError, match="WORLD_OPTIONAL_DEFERRAL_DEPENDENCY_REQUIRED"):
         require_optional_source({field: ["required"]})
+
+
+def test_execution_window_recovery_is_explicit_creative_v5_only():
+    value = template(version='creative-execution-template.v5',world_future_preparation='DISABLED',
+        repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},
+        chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR')
+    validate_templates({'execution_templates':[value]})
+    value['version'] = 'creative-execution-template.v4'
+    with pytest.raises(KernelError,match='EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID'):
+        validate_templates({'execution_templates':[value]})
+    value.update(version='creative-execution-template.v5',mode='STRICT_PRODUCTION',
+        require_literary_qualification=True,world_future_preparation='REQUIRED')
+    with pytest.raises(KernelError,match='EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID'):
+        validate_templates({'execution_templates':[value]})

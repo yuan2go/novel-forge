@@ -165,6 +165,7 @@ from . import (
     v20261006_0161_gateway_result_revalidation,
     v20261006_0162_stage_repair_policy,
     v20261006_0163_failed_step_successor,
+    v20261006_0164_execution_contract_continuation,
 )
 
 VERSION_MODULES = [
@@ -332,6 +333,7 @@ VERSION_MODULES = [
     v20261006_0161_gateway_result_revalidation,
     v20261006_0162_stage_repair_policy,
     v20261006_0163_failed_step_successor,
+    v20261006_0164_execution_contract_continuation,
 ]
 
 __all__ = ["VERSION_MODULES"]

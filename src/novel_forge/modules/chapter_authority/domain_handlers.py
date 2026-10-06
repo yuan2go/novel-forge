@@ -573,6 +573,7 @@ def normalize_draft_result(
     provider_evidence: dict[str, Any],
     work_requirements: bool = False,
     core_policy: str = "EXPLICIT_SKELETON_V1",
+    information_policy: str = "ENTRY_ONLY_V1",
 ) -> dict[str, Any]:
     from .realization_composition import prose_from_output
 
@@ -626,6 +627,7 @@ def normalize_draft_result(
                 context_content or {}, work_requirements=work_requirements
             ),
             core_policy=core_policy,
+            information_policy=information_policy,
         ),
         artifacts=result.get("scene_artifacts", []),
         text=text,
