@@ -2606,6 +2606,12 @@ Director receipts, a current source and a fully viable recompiled causal plan.
 World stages are reused without a new dispatch; only the new Chapter Plan request
 continues. The chain bound and consumed repair count remain unchanged. Cancellation,
 unknown consumption, source drift or unresolved causal defects block revalidation.
+0162 permits one additional zero-intent successor for the retained public-direction
+projection failure. It requires the same validated action, Pack and World receipts;
+the original task remains failed. This accounts for a third host continuation record,
+without increasing content repairs or Provider retries. Other failures and repeated
+projection succession remain blocked. The public direction projection consumes a
+validated action and does not require private source state from its callers.
 Back up the original database before applying this forward migration. Preserve old
 published migration bodies and the original receipts. `NO_OP` and `DEFER` retain their
 actual narrative meanings and cannot substitute for legal initialization.

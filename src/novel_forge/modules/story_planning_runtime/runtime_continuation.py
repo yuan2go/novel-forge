@@ -130,6 +130,15 @@ def require_source(
         else ""
     )
     if (
+        row[0] == "FAILED_FINAL"
+        and failure_code == "PROGRAMMING_BUG"
+        and dict(attempt[2] or {}).get("error_message") == "'frozen_source'"
+        and frozen.get("repair_reason") == "WORLD_HOST_REVALIDATION_SUCCESSOR"
+    ):
+        return _world_projection_source(
+            uow, source_operation_id=source_operation_id, row=row, frozen=frozen
+        )
+    if (
         row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
         and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
     ):
@@ -275,6 +284,71 @@ def require_source(
         "provider": str(identity["provider"]),
         "model_id": str(effects[0][3]),
         "depth": depth + 1,
+    }
+
+
+def _world_projection_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .world_preparation import require_world_host_revalidation
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    command = _command_from_payload(frozen)
+    uow.cursor.execute(
+        "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED')",
+        [source_operation_id, source_operation_id, command.project_id, command.book_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "public projection recovery requires a zero-intent failed task and an uncancelled Book",
+        )
+    uow.cursor.execute(
+        "SELECT chain_depth,target_runtime FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",
+        [source_operation_id],
+    )
+    prior = uow.cursor.fetchone()
+    if not prior or prior[0] != 2 or not prior[1].get("world_host_revalidation"):
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
+            "public projection recovery applies once after the known-result revalidation",
+        )
+    retained = prior[1]["world_host_revalidation"]
+    proof = require_world_host_revalidation(
+        uow.database_url, command=command, operation_id=retained["source_operation_id"]
+    )
+    action = AuthorityAssetQuery(uow.database_url).require(
+        project_id=command.project_id,
+        logical_ref=f"world_preparation/{source_operation_id}/action",
+    )
+    if (
+        proof != retained
+        or action.content["contract"]["world_plan"]["plan_digest"]
+        != proof["plan_digest"]
+    ):
+        raise KernelError(
+            "WORLD_HOST_REVALIDATION_DRIFT",
+            "public projection recovery must preserve the already validated immutable action",
+        )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING",
+            "public projection recovery retains the failed task's Pack",
+        )
+    return {
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": action.asset_version_id,
+        "evidence_hash": action.content_hash,
+        "snapshot": dict(snapshot[0]),
+        "depth": 3,
+        "mode": "WORLD_HOST_PROJECTION",
+        "world_host_revalidation": proof,
     }
 
 
@@ -1084,7 +1158,10 @@ def register(
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     contract_change = source.get("mode") == "WORLD_AGENCY_CONTRACT"
-    host_revalidation = source.get("mode") == "WORLD_HOST_REVALIDATION"
+    host_revalidation = source.get("mode") in {
+        "WORLD_HOST_REVALIDATION",
+        "WORLD_HOST_PROJECTION",
+    }
     successor = replace(
         original,
         execution_contract_version="1.19.0"
@@ -1096,7 +1173,9 @@ def register(
                 "repair_result_asset_version_id": "",
                 "repair_result_diagnostic": None,
                 "repair_of_candidate_id": "",
-                "repair_reason": "WORLD_HOST_REVALIDATION_SUCCESSOR"
+                "repair_reason": "WORLD_HOST_PROJECTION_SUCCESSOR"
+                if source.get("mode") == "WORLD_HOST_PROJECTION"
+                else "WORLD_HOST_REVALIDATION_SUCCESSOR"
                 if host_revalidation
                 else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
                 "parent_agent_session_operation_id": "",
@@ -1159,6 +1238,11 @@ def register(
             "capacity_only": False,
             "host_revalidation": "world-host-revalidation.v1",
             "preserved_repair_number": original.repair_number,
+            **(
+                {"projection_revalidation": "world-direction-projection.v1"}
+                if source.get("mode") == "WORLD_HOST_PROJECTION"
+                else {}
+            ),
         }
     elif contract_change:
         with AuthorityUnitOfWork(application.database_url) as uow:
@@ -1275,7 +1359,12 @@ def register(
                 != {
                     key: value
                     for key, value in route_evidence.items()
-                    if key not in {"host_revalidation", "preserved_repair_number"}
+                    if key
+                    not in {
+                        "host_revalidation",
+                        "preserved_repair_number",
+                        "projection_revalidation",
+                    }
                 }
                 | {"capacity_only": True}
             )

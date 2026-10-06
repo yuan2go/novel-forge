@@ -1786,7 +1786,7 @@ class StoryPlanningGenerationApplication:
                 return continued
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
-                    "SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                    "SELECT result->>'error_code',result->>'error_message' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
                     [row[0]],
                 )
                 failure = uow.cursor.fetchone()
@@ -1806,6 +1806,8 @@ class StoryPlanningGenerationApplication:
                 failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.18.0" and agency_failure
             ) or (
                 failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.19.0" and host_failure
+            ) or (
+                failure[0] == "PROGRAMMING_BUG" and failure[1] == "'frozen_source'" and command.repair_reason == "WORLD_HOST_REVALIDATION_SUCCESSOR"
             )):
                 register(
                     self,

@@ -395,6 +395,18 @@ def test_first_chapter_plan_binds_canon_identity_and_executes_only_due_causal_ba
             "frozen_source": {"reality": source},
         }
         due = scheduled_world_events(binding)
+        from novel_forge.modules.canon_graph.background import public_world_direction
+
+        public = public_world_direction(
+            {
+                "asset_version_id": "action:exact",
+                "content_hash": "sha256:" + "a" * 64,
+                "action": binding["action"],
+            }
+        )
+        assert [event["transition_id"] for event in public["on_camera_events"]] == [
+            item["transition_id"] for item in due
+        ]
         assert [item["transition_id"] for item in due] == (
             ["open"] if fault == "future" else ["open", "read", "choose"]
         )

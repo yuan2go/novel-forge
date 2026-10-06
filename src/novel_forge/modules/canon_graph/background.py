@@ -42,17 +42,7 @@ def scheduled_world_events(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
                 for item in plan["candidate_futures"]
                 if item.get("candidate_id") == plan["selected_candidate_id"]
             )
-            from novel_forge.modules.worldbuilding.working_state import (
-                validate_preparation_batch,
-            )
-
-            ordered, _ = validate_preparation_batch(
-                reality=binding["frozen_source"]["reality"],
-                transitions=[*due, selected["transition"]],
-                chapter_number=plan["chapter_number"],
-                path_id=plan["selected_path_id"],
-            )
-            return ordered
+            return [*due, deepcopy(selected["transition"])]
         return due
     if plan["disposition"] not in {"NO_OP", "DEFER"}:
         raise KernelError(

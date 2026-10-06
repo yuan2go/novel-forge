@@ -612,6 +612,18 @@ def compile_world_plan(
             step["chapter_number"] == chapter_number for step in paths[0]["schedule"]
         )
     )
+    if current_batch:
+        from .working_state import validate_preparation_batch
+
+        validate_preparation_batch(
+            reality=reality,
+            transitions=[
+                *(step["transition"] for step in paths[0]["schedule"]),
+                selected_source["transition"],
+            ],
+            chapter_number=chapter_number,
+            path_id=paths[0]["path_id"],
+        )
     disclosure_projection = []
     from novel_forge.modules.narrative_state.information import (
         project_disclosure,
