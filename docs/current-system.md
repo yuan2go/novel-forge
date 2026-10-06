@@ -23,8 +23,11 @@ The existing Formation API accepts either six exact qualified layer references o
 `creative-brief-v2` asset and a frozen `formation-generation.v1` policy. The latter
 uses Story Formation RuntimeJobs to generate Creative Foundation, Theme, Ending,
 Reader Promise, World and Character candidates through the governed Planning
-Provider path. Independent semantic diagnosis and bounded repair precede Story
-Design approval/activation; Book Design then validates the exact six-layer lineage.
+Provider path. Strict policy requires independent semantic diagnosis and bounded repair
+before Story Design approval/activation. Creative validation instead admits the exact
+structurally validated candidates under a native template receipt with literary checks
+recorded `NOT_RUN`; Book Design and context preparation verify that receipt and the exact
+six-layer lineage.
 `AUTO` is explicit policy authorization, while `REVIEW_PLAN` exposes the frozen
 candidate comparison through the author production page. Author choices, rejection and
 change requests retain exact candidate hashes, reasons and authenticated identities in
@@ -33,8 +36,9 @@ Book Design Authority; resume consumes the persisted choice, including a non-fir
 candidate, without changing the frozen brief or candidate set. Generated assets remain
 proposals until their owning Authority activates them. Foundation activation is never
 chapter acceptance or narrative history. The AUTO creative-search baseline selects the
-first independently qualified branch and retains alternatives; it does not claim a
-literary ranking. Only the selected branch is activated; alternatives retain their
+first branch admitted by the selected policy and retains alternatives; it does not
+claim a literary ranking. Strict selection requires independent qualification, whereas
+creative validation records `FIRST_TEMPLATE_VALIDATED_BRANCH`. Only the selected branch is activated; alternatives retain their
 qualification and author decision evidence. World depth follows
 the current story need and includes deferred dimensions; generated voice anchors are
 part of character/creative inputs. Scripted Formation execution proves wiring only.
@@ -62,6 +66,50 @@ whole-chapter generation call receives distinct scene craft tasks and actor-scop
 voice inputs; targeted revision consumes evidenced diagnoses. Slot concatenation is
 serialization only, not evidence of narrative integration or voice quality. Frozen
 styles without the new policy retain the v1 contract.
+
+## Creative validation and resource policy
+
+The creative-validation work contract separates internal creative acceptance from
+strict production certification. It is a `CONFIGURABLE_POLICY`: selecting validation
+must retain real principals, permissions, source isolation, complete request admission,
+Schema checks, durable effects, idempotency, grounded Canon and accepted-state recovery.
+Pack human approval, duties separation, publication/canary certification and literary
+model calibration are independent optional objectives. Omitted checks retain their
+reason and `NOT_RUN` evidence; they cannot contribute PASS or qualification evidence.
+Strict production and existing frozen requests retain their original gates. Chapter
+quality retains its strict assessment and records a separate versioned internal
+validation admission. Located basic judgments, selected work thresholds, Canon and
+review closure still govern that admission. Internal export and Book acceptance bind
+`INTERNAL_ADMITTED` / `INTERNAL_VALIDATION_FINALIZED` evidence to the native template;
+uncalibrated model judgments never become qualified literary or external-release PASS.
+
+Resource policy follows authenticated billing identity. Codex membership execution
+has no project/book cumulative money, token or call budget and requires no budget
+contract. Usage, latency and outcome evidence remain recorded, together with per-call
+capacity, timeout, concurrency, rate-limit, cancellation and no-progress controls.
+A verified membership identity never authorizes an API-key paid replacement.
+DeepSeek dispatch requires an authorized account/currency spending template. Its hard
+ceiling covers the same work across planning, generation, review, repair and retry;
+phase allocations are soft scheduling estimates. Outstanding unknown dispatches remain
+reserved until native reconciliation; restart and policy succession retain cumulative
+spending. Missing paid authorization disables only that channel.
+
+Completion scheduling preserves the input's scope and template quality floor. Before
+anticipated paid headroom is exhausted, eliminate duplicate work and no-progress retries,
+defer permitted optional enhancements and route substitutable unstarted work to Codex.
+Independent evaluation retains its independence requirement. A blocked dependency does
+not authorize self-qualification or early completion. Pause with a durable checkpoint
+only when the remaining work has no authorized executable path.
+
+The following sections describe existing strict and historical campaign contracts;
+their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
+requirements for the membership execution contract. The native creation CLI freezes
+`formation-generation.v4` inputs and uses the existing Formation, Opening, Chapter Saga,
+Quality, export and Book acceptance owners. The controlled process/PostgreSQL regression
+exercises internal acceptance and component reconstruction without repeated calls or
+accepted chapters. Its ceiling is `EXECUTABLE`; real Provider operation, long-form
+literary quality and strict production certification remain unproven. See the executable
+commands and focused matrix in `docs/runtime-operations.md`.
 
 ## Scoped worker approval and local Codex execution
 
@@ -283,11 +331,12 @@ reservation and dispatch also enforce retry deferral on the frozen existing effe
 Independent Planning and Source outcome references participate in retry history.
 
 The existing versioned policy Authority governs per-work/task/chapter risk and quality
-increases. Optional Codex escalation reuses the actual CLI backend, explicit entitlement
-identity, configuration revision, finite call/token limits and expiry. Mixed accounting
-is frozen per reservation; entitlement is not free USD. Book Opening envelopes must
-explicitly authorize a finite entitlement lane alongside priced execution. Both lanes
-share parent call/token limits, while USD and unknown subscription cost remain separate.
+increases. Historical campaign escalation reuses the actual CLI backend, explicit entitlement
+identity, configuration revision, finite call/token limits and expiry. That frozen contract
+remains `HISTORICAL_COMPATIBILITY`. Mixed accounting is frozen per reservation; entitlement
+is not free USD. Historical Book Opening envelopes require finite entitlement lanes
+and shared parent call/token limits. Native membership templates instead impose only
+execution controls; USD and unknown subscription cost remain separate.
 Planning's frozen-effect recovery preserves its original route. New repair Operations
 derive a bounded root-to-current lineage from durable repair relationships and share
 failure, escalation and task budget history. Historical decisions remain legacy/unknown,
@@ -318,7 +367,7 @@ The production Provider registry includes the local Codex CLI as an ExternalEffe
 backend. Its frozen route records the executable, model, reasoning setting, configuration
 identity, structured output contract and isolated process/receipt directory. The process
 uses an environment allowlist and has no cross-Book resume state. `ACCOUNT_ENTITLEMENT`
-uses the existing budget lifecycle with finite call and token ceilings; observed terminal
+historically used the budget lifecycle with finite call and token ceilings; observed terminal
 usage settles after execution while unavailable monetary cost remains `UNKNOWN`. These
 controls do not turn post-call usage into an exact pre-call remote token hard limit and do
 not permit silent rerouting to another model, account or billing method. New diagnostic
@@ -326,14 +375,14 @@ requests may explicitly freeze `codex-no-transport-retry.v1`, which disables CLI
 stream retries on the same authenticated OpenAI route. The policy participates in the
 local binding hash and receipt; old bindings retain their former retry semantics.
 
-Creative experiments additionally select an immutable allocation plan and append explicit
+Historical creative-provider campaigns select an immutable allocation plan and append explicit
 operator phase grants through the existing versioned runtime policy mechanism. Command
 Kernel reservations classify the actual Effect as Source, creation or repair and freeze
 the grant on that Effect. The existing PostgreSQL budget ledger enforces cumulative phase,
 project and shared totals, including unresolved usage; new run keys and evidence directories
 do not create allowances. Source uses its curated consumption lineage to identify the
 authorized Book, rather than its internal synthetic Source Book. Allocation plans are not
-authorization. Existing single-Book contracts retain their account-entitlement semantics.
+authorization. Frozen single-Book contracts retain their original account-entitlement semantics.
 The `creative-provider-campaign-budget.v4` contract binds one Book, a frozen campaign
 manifest and expiry across reference evaluation, screening, calibration, holdout, Source,
 design, production and repair. It adds cumulative priced USD ceilings and exact
@@ -1513,8 +1562,10 @@ replay; pre-Candidate repair fields are written only for a repair, after its mig
 source contract has been verified. Provider receipts remain pending domain validation;
 the later Candidate and validation reports establish successful materialization.
 Opening recovery passes no monetary claim for a replay assessment and obtains any next
-Provider allowance from the frozen budget policy. Account entitlement therefore retains
-its token and call limits without inventing a zero-dollar measurement.
+Provider allowance from the frozen budget policy. Historical account entitlement retains
+its frozen token and call limits without inventing a zero-dollar measurement. Native
+resource successors apply the authenticated membership execution contract only to future
+work and preserve every past reservation and receipt.
 An exact unstarted Opening blocked by capacity can append one native
 `book.opening.continue_unstarted` successor. It retains the Book, Formation and frozen
 story inputs, proves absence of Effects, reservations, outputs and node receipts, and

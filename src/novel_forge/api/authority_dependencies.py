@@ -346,9 +346,11 @@ def validate_production_structured_result(
 ) -> Mapping[str, object]:
     if stage in {CLASSIFICATION_STAGE, DECONSTRUCTION_STAGE, MKAOS_STAGE}:
         return validate_content_intelligence_output(stage, output_schema, value)
-    validated = validate_chapter_provider_output_against_schema(
-        stage, output_schema, value,
-    )
+    if stage in WORLD_SAMPLE_TASKS and "$schema" not in output_schema:
+        from novel_forge.modules.chapter_authority.provider_output_contracts import validate_native_world_schema_fragment
+        validated = validate_native_world_schema_fragment(stage, output_schema, value, output_schema_ref=output_schema_ref)
+    else:
+        validated = validate_chapter_provider_output_against_schema(stage, output_schema, value)
     if stage in {
         *FOUNDATION_GENERATORS,
         "book_plan.generate", "volume_plan.generate", "arc_plan.generate",
@@ -382,6 +384,24 @@ def build_production_execution_composition(
     )
     environment = runtime_environment.value
     router_providers = configured_router_provider_ids(runtime_environment, values)
+    channel_resources = str(values.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") or "") == "billing-channel-resources.v1"
+    disabled_provider_reasons = {}
+    if channel_resources and {"codex-cli", "deepseek"}.issubset(router_providers):
+        values = dict(values)
+        from novel_forge.modules.production_execution.execution_template import load_paid_configuration
+        paid, unavailable = load_paid_configuration(values)
+        if unavailable or not values.get("DEEPSEEK_API_KEY"):
+            disabled_provider_reasons["deepseek"] = unavailable or "PAID_CREDENTIAL_UNAVAILABLE"
+            router_providers = tuple(provider for provider in router_providers if provider != "deepseek")
+            values["NOVEL_FORGE_ROUTER_PROVIDERS"] = ",".join(router_providers)
+            if "NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE" in values:
+                scope = json.loads(values["NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE"])
+                if not isinstance(scope, dict):
+                    raise ValueError("ROUTING_PROVIDER_TASK_SCOPE_INVALID")
+                scope.pop("deepseek", None)
+                values["NOVEL_FORGE_ROUTER_PROVIDER_TASK_SCOPE"] = json.dumps(scope)
+        else:
+            values.setdefault("NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL", paid["maximum_amount"])
     router_enabled = bool(router_providers)
     deepseek_enabled = "deepseek" in router_providers
     codex_router_enabled = "codex-cli" in router_providers
@@ -935,7 +955,7 @@ def build_production_execution_composition(
     codex_escalation_enabled = codex_router_enabled and not codex_catalog
     if codex_router_enabled:
         escalation_model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
-        if not escalation_model or int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT") or 0) <= 0:
+        if not escalation_model or (not channel_resources and int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT") or 0) <= 0):
             raise RuntimeError("Codex Router lane requires an explicit model and finite call allowance")
         if codex_catalog and not any(entry["model"] == escalation_model and entry["role"] == "PRIMARY" for entry in codex_catalog):
             raise RuntimeError("Codex model catalog must explicitly bind the configured primary model")
@@ -953,7 +973,7 @@ def build_production_execution_composition(
                 "mixed Codex and alternate Provider routing is not supported in this phase"
             )
     cost_accounting_basis = (
-        str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
+        str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or ("ACCOUNT_ENTITLEMENT" if channel_resources else "PRICED")).strip().upper()
     )
     codex_accounting_basis = cost_accounting_basis
     if codex_router_enabled:
@@ -1041,6 +1061,8 @@ def build_production_execution_composition(
                 "controlled Codex requires an absolute executable, empty isolated "
                 "workspace, and absolute persistent execution root"
             )
+        if channel_resources and codex_accounting_basis != "ACCOUNT_ENTITLEMENT":
+            raise RuntimeError("membership resource policy forbids priced Codex execution")
         if codex_accounting_basis == "PRICED":
             if codex_catalog:
                 raise RuntimeError("Codex model catalog requires account entitlement")
@@ -1108,6 +1130,12 @@ def build_production_execution_composition(
                 raise RuntimeError(
                     "controlled Codex CLI version differs from its frozen identity"
                 )
+            if channel_resources:
+                from novel_forge.modules.production_execution.membership_identity import observe_membership_identity
+                billing_identity = observe_membership_identity(codex_home)
+                if entitlement_values["account_identity_ref"] != billing_identity["account_ref"]:
+                    raise RuntimeError("Codex account reference differs from observed membership identity")
+                entitlement_values["billing_identity"] = billing_identity
             codex_entitlement = CodexAccountEntitlementSnapshot(**entitlement_values)
         local_binding = codex_local_binding_hash(
             codex_home=codex_home, executable=codex_executable,
@@ -1267,7 +1295,7 @@ def build_production_execution_composition(
         for dimension, environment_name in token_cap_environment.items()
         if str(values.get(environment_name) or "").strip()
     }
-    if codex_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
+    if not channel_resources and codex_accounting_basis == "ACCOUNT_ENTITLEMENT" and (
         provider_call_caps.get("project_total", 0) <= 0
         or provider_token_caps.get("project_total", 0) <= 0
     ):
@@ -1287,11 +1315,13 @@ def build_production_execution_composition(
         ),
         provider_call_caps=provider_call_caps,
         provider_token_caps=provider_token_caps,
+        resource_control_version="billing-channel-resources.v1" if channel_resources else "",
     )
     if router_enabled:
         from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
         from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates
         from novel_forge.modules.authority_handler_runtime.routing_feedback import domain_gate_outcomes
+        from novel_forge.modules.production_execution.membership_identity import observed_paid_binding
 
         candidates = list(deepseek_candidates(available=True)) if deepseek_enabled else []
         if codex_router_enabled:
@@ -1303,7 +1333,7 @@ def build_production_execution_composition(
                 from novel_forge.modules.production_execution.codex_model_catalog import codex_catalog_candidates
                 candidates.extend(codex_catalog_candidates(codex_catalog,
                     entitlement=codex_entitlement.to_dict(),
-                    quota=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                    quota=None if channel_resources else int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
                     valid_from=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_FROM") or ""),
                     valid_until=str(values.get("NOVEL_FORGE_CODEX_ESCALATION_VALID_UNTIL") or "")))
             else:
@@ -1321,7 +1351,7 @@ def build_production_execution_composition(
                     capability_version=codex_entitlement.configuration_ref,
                     model_revision=codex_entitlement.configuration_ref,
                     escalation_only=codex_escalation_enabled,
-                    quota_remaining=int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
+                    quota_remaining=None if channel_resources else int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
                     authorization_ref=codex_entitlement.authorization_ref,
                 ))
         from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
@@ -1329,10 +1359,15 @@ def build_production_execution_composition(
             settings.database_url, candidates=candidates, execution_environment=environment,
             provider_task_scope=provider_task_scope,
             task_money_limit=max_cost_per_call or "0",
-            task_token_limit=int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
+            task_token_limit=int(values.get("NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT") or 0) if channel_resources else int(values.get("NOVEL_FORGE_OPERATION_PROVIDER_TOKEN_LIMIT") or 0),
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
             outcome_projection=domain_gate_outcomes,
             review_requirement_resolver=freeze_review_requirement,
+            membership_identity=codex_entitlement.billing_identity if codex_entitlement else None,
+            disabled_provider_reasons=disabled_provider_reasons,
+            provider_billing_accounts={"deepseek": str(values.get("NOVEL_FORGE_DEEPSEEK_BILLING_ACCOUNT_REF") or "").strip()},
+            provider_billing_identities={"deepseek": observed_paid_binding(
+                str(values.get("NOVEL_FORGE_DEEPSEEK_BILLING_ACCOUNT_REF") or "").strip(), str(values.get("DEEPSEEK_API_KEY") or ""))},
             provider_auth_profiles={
                 **({"codex-cli": next(iter(routes.values())).auth_profile_ref} if codex_router_enabled else {}),
                 **({"deepseek": "provider-account:deepseek:credential-sha256:"
@@ -1342,7 +1377,7 @@ def build_production_execution_composition(
         )
     from novel_forge.modules.production_execution.provider_admission import SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
 
-    shared_budget_caps = {
+    shared_budget_caps = {} if channel_resources else {
         key: str(values[value])
         for key, value in SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
         if str(values.get(value) or "").strip()
@@ -1355,7 +1390,7 @@ def build_production_execution_composition(
         model_gateway.provider_router.money_caps = dict(shared_budget_caps)
         model_gateway.provider_router.token_caps = dict(provider_token_caps)
         model_gateway.provider_router.call_caps = dict(provider_call_caps)
-    chapter_total_budget_cap = str(
+    chapter_total_budget_cap = "" if channel_resources else str(
         values.get("NOVEL_FORGE_CHAPTER_PROVIDER_CAP") or ""
     ).strip()
     if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" and chapter_total_budget_cap:
@@ -1903,6 +1938,12 @@ def build_book_followup_authority_application(
 def _book_opening_provider_budget_policy(
     execution: Any, values: Mapping[str, str],
 ) -> dict[str, Any]:
+    if values.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") == "billing-channel-resources.v1":
+        if not execution.account_authorization_ref:
+            raise RuntimeError("Membership resource controls require authenticated account authorization")
+        return {"resource_control_version": "billing-channel-resources.v1", "execution_mode": "PROVIDER_ALLOWED",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT", "authorization_ref": execution.account_authorization_ref,
+            "cost_observability": "UNKNOWN", "per_call_token_limit": int(values.get("NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT") or values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)}
     opening_budget_policy: dict[str, Any] = {
         "execution_mode": "PROVIDER_ALLOWED",
         "provider_call_limit": int(

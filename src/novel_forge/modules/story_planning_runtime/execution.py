@@ -4134,6 +4134,10 @@ class PostgresPlanningExecutionPreparer:
         stable_key = f"{operation_id}:{definition.capability}:planning-pep-v2"
         if provider_stage is not None:
             stable_key = f"{operation_id}:{definition.capability}:{stage_identity}:v1"
+        if getattr(self.execution_transport, "resource_control_version", "") == "billing-channel-resources.v1":
+            from novel_forge.modules.command_kernel.resource_route_recovery import next_resource_effect_key
+            stable_key = next_resource_effect_key(self.database_url, project_id=command.project_id,
+                operation_id=operation_id, stable_key=stable_key)
         planning_route = self.planning_route
         routing_decision = None
         provider_router = getattr(self.execution_transport, "provider_router", None)
@@ -4724,38 +4728,46 @@ class PostgresPlanningExecutionPreparer:
             effect_id=effect_id,
         )
         if recovered_completion is None:
-            reservation = reserve_provider_budget(
-                self.database_url,
-                BudgetReservationRequest(
-                    operation_id=operation_id,
-                    external_effect_id=effect_id,
-                    project_id=command.project_id,
-                    stable_idempotency_key=(
-                        f"budget:{stable_key}:attempt:{attempt_id}"
+            try:
+                reservation = reserve_provider_budget(
+                    self.database_url,
+                    BudgetReservationRequest(
+                        operation_id=operation_id,
+                        external_effect_id=effect_id,
+                        project_id=command.project_id,
+                        stable_idempotency_key=(
+                            f"budget:{stable_key}:attempt:{attempt_id}"
+                        ),
+                        provider=planning_route.model_profile.model_provider if routing_decision else self.execution_transport.provider,
+                        model_id=planning_route.model_profile.model_id if routing_decision else "",
+                        work_id=command.book_id if routing_decision else "",
+                        currency=(
+                            "UNKNOWN"
+                            if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
+                            else "USD"
+                        ),
+                        estimated_amount=provider_reservation_amount,
+                        estimated_tokens=provider_reservation_tokens,
+                        caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
+                        call_caps=self.provider_call_caps,
+                        token_caps=self.provider_token_caps,
+                        budget_scope_id=str(provider_token_contract["budget_scope_id"]),
+                        expected_budget_scope_revision=(
+                            int(provider_token_contract["budget_scope_revision"])
+                            if provider_token_contract["budget_scope_revision"] is not None
+                            else None
+                        ),
+                        accounting_basis=cost_accounting_basis,
+                        cost_authorization_ref=account_authorization_ref,
                     ),
-                    provider=planning_route.model_profile.model_provider if routing_decision else self.execution_transport.provider,
-                    model_id=planning_route.model_profile.model_id if routing_decision else "",
-                    work_id=command.book_id if routing_decision else "",
-                    currency=(
-                        "UNKNOWN"
-                        if cost_accounting_basis == "ACCOUNT_ENTITLEMENT"
-                        else "USD"
-                    ),
-                    estimated_amount=provider_reservation_amount,
-                    estimated_tokens=provider_reservation_tokens,
-                    caps={} if cost_accounting_basis == "ACCOUNT_ENTITLEMENT" else self.budget_caps,
-                    call_caps=self.provider_call_caps,
-                    token_caps=self.provider_token_caps,
-                    budget_scope_id=str(provider_token_contract["budget_scope_id"]),
-                    expected_budget_scope_revision=(
-                        int(provider_token_contract["budget_scope_revision"])
-                        if provider_token_contract["budget_scope_revision"] is not None
-                        else None
-                    ),
-                    accounting_basis=cost_accounting_basis,
-                    cost_authorization_ref=account_authorization_ref,
-                ),
-            )
+                )
+            except KernelError as error:
+                if error.code != "RESOURCE_ROUTE_RESELECT_REQUIRED":
+                    raise
+                return self._prepare_stage(operation_id=operation_id, attempt_id=attempt_id,
+                    fencing_token=fencing_token, worker_id=worker_id, command=command, inputs=inputs,
+                    definition=definition, attempt_snapshot=attempt_snapshot, provider_stage=provider_stage,
+                    world_action=world_action, frozen_world_sample=frozen_world_sample)
             if not bool(reservation.get("execution_authorized")):
                 raise KernelError(
                     "BUDGET_RESERVATION_EXECUTION_NOT_AUTHORIZED",

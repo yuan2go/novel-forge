@@ -273,6 +273,15 @@ class PostgresStoryDesignAssetAuthority:
             supervision = candidate_supervision(uow.cursor, project_id=command.project_id,
                                                 asset_version_id=command.asset_version_id,
                                                 author_input=command.transition is DesignTransition.ENROLL and command.source_kind == "OPERATOR_AUTHORED")
+        from .creative_validation import candidate_validation
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            validation = candidate_validation(uow.cursor, project_id=command.project_id, asset_version_id=command.asset_version_id)
+        if validation is not None:
+            if command.transition in {DesignTransition.QUALIFY, DesignTransition.SEMANTIC_VALIDATE}:
+                raise KernelError("CREATIVE_DESIGN_NOT_QUALIFICATION", "Validation admission cannot create semantic or literary qualification")
+            command = replace(command, evidence={**dict(command.evidence or {}), "creative_validation": validation})
+        elif (command.evidence or {}).get("creative_validation"):
+            raise KernelError("CREATIVE_DESIGN_ADMISSION_INVALID", command.asset_version_id)
         if supervision is not None:
             review_receipts = []
             if command.transition is DesignTransition.QUALIFY:

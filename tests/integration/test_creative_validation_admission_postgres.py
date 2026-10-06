@@ -1,0 +1,44 @@
+from dataclasses import replace
+
+import pytest
+
+from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+from novel_forge.modules.capability_packs.validation_deployment import install_chapter_validation_pack
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from tests.integration.authority_postgres_support import DATABASE_URL
+from tests.integration.capability_pack_postgres_support import CapabilityPackPostgresHarness, ROOT
+from tests.unit.test_creative_execution_template import template
+
+
+def test_native_pack_template_admission_has_no_human_approval_and_cannot_enter_production():
+    harness = CapabilityPackPostgresHarness("creative-admission")
+    book = harness.book_ids[0]
+    operator = replace(harness.compiler, permissions=harness.compiler.permissions | {"book.authority.execute", "agent.authority.admin"})
+    configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+        content={"policy_version": "creative.v1", "task_overrides": [], "reason": "isolated native contract test",
+                 "execution_templates": [template(book)]}, project_id=harness.project_id, workspace_id=harness.workspace_id,
+        idempotency_key=harness.project_id + ":template", trace_id=harness.project_id, correlation_id=harness.project_id,
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha, principal=operator)
+    result = install_chapter_validation_pack(DATABASE_URL, repository_root=ROOT, project_id=harness.project_id,
+        workspace_id=harness.workspace_id, book_id=book, application_build_id=harness.application_build_id,
+        commit_sha=harness.release_sha, compiler=operator, approver=operator, agent_admin=operator,
+        pack_id_override=harness.pack_id)
+    assert result["approval"]["checks"]["human_pack_approval"]["status"] == "NOT_RUN"
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT count(*) FROM authority_capability_pack_approval WHERE compilation_id=%s", [result["compilation_id"]])
+        assert uow.cursor.fetchone()[0] == 0
+    with pytest.raises(KernelError):
+        harness.execute("capability_pack.deployment.create", principal=operator, pack_version="1.0.0",
+            compilation_id=result["compilation_id"], deployment_id=harness.project_id + ":production",
+            payload={"target_scope_type": "BOOK", "project_id": harness.project_id, "workspace_id": harness.workspace_id,
+                     "book_id": book, "environment": "production", "runtime_profile": "production", "rollout_policy_ref": "rollout:stable-sha256:v1"})
+    configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING",
+        content={"policy_version": "creative.v2", "task_overrides": [], "reason": "explicit human approval objective",
+                 "execution_templates": [template(book, require_pack_human_approval=True)]}, project_id=harness.project_id, workspace_id=harness.workspace_id,
+        idempotency_key=harness.project_id + ":human-objective", trace_id=harness.project_id, correlation_id=harness.project_id,
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha, principal=operator)
+    from novel_forge.modules.capability_pack_authority.validation_admission import require_validation_admission
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        compilation = uow.repositories.capability_packs.require_compilation(result["compilation_id"])
+        assert require_validation_admission(uow.repositories.capability_packs, compilation, environment="validation", book_id=book) is None

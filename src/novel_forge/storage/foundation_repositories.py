@@ -89,7 +89,13 @@ def require_current_foundation_set(
     bindings: list[FoundationBinding] = []
     for row in rows:
         qualification_status = "QUALIFIED"
-        if row[15] == "SEMANTICALLY_VALID":
+        if row[15] == "STRUCTURALLY_VALID":
+            from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+            receipt = approved_validation_design(cursor, project_id=project_id, book_id=book_id, asset_version_id=str(row[2]))
+            if receipt is None or (receipt["decision_asset_version_id"], receipt["decision_content_hash"]) != (str(row[5]), str(row[6])):
+                raise KernelError("FOUNDATION_VALIDATION_DRIFT", "Foundation validation receipt differs from the frozen binding")
+            qualification_status = "STRUCTURALLY_VALID"
+        elif row[15] == "SEMANTICALLY_VALID":
             from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
             receipt = approved_design_receipt(cursor, project_id=project_id, book_id=book_id, asset_version_id=str(row[2]))
             if receipt is None or (receipt["decision_asset_version_id"], receipt["decision_content_hash"]) != (str(row[5]), str(row[6])):

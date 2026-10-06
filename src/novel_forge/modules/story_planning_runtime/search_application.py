@@ -1535,6 +1535,17 @@ class PostgresNarrativeSearchApplication:
         book_id: str,
         generator_operation_name: str,
     ) -> dict[str, Any]:
+        from novel_forge.modules.story_design_authority.creative_validation import candidate_validation
+        admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+        if admission is not None:
+            uow.cursor.execute("""SELECT qualification,approval,freshness FROM authority_story_design_version_state
+                WHERE project_id=%s AND asset_version_id=%s FOR SHARE""", [project_id, candidate_asset_version_id])
+            state = uow.cursor.fetchone()
+            if (admission["book_id"] != book_id or admission["generation_operation_id"] != operation_id
+                    or not state or state[0] != "STRUCTURALLY_VALID" or state[1] not in {"PENDING", "APPROVED"} or state[2] != "CURRENT"):
+                raise KernelError("NARRATIVE_VALIDATION_RECEIPT_INVALID", candidate_asset_version_id)
+            return {"narrative_qualification_hash": canonical_hash(admission), "qualification_receipts": [admission],
+                    "qualification_receipt_set_hash": canonical_hash([admission])}
         profiles = qualification_profiles_for_asset(
             uow.cursor,
             project_id=project_id,

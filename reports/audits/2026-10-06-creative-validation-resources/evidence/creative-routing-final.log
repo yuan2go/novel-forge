@@ -1,0 +1,28 @@
+.............F.......................................................... [ 41%]
+................................................................ [ 78%]
+......................................                         [100%]
+=================================== FAILURES ===================================
+_ test_inherited_paid_configuration_is_closed_and_missing_configuration_disables_only_paid _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-770/test_inherited_paid_configurat0')
+
+    def test_inherited_paid_configuration_is_closed_and_missing_configuration_disables_only_paid(tmp_path):
+        from novel_forge.modules.production_execution.execution_template import load_paid_configuration
+        values = {"NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE": str(tmp_path / "paid.json"),
+                  "NOVEL_FORGE_DEEPSEEK_BILLING_ACCOUNT_REF": "actual-configured-account"}
+        assert load_paid_configuration(values)[0] is None
+        paid = {"account_ref": "actual-configured-account", "currency": "USD", "maximum_amount": "2",
+                "authorization_ref": "existing-paid-grant"}
+        (tmp_path / "paid.json").write_text(json.dumps(paid))
+        assert load_paid_configuration(values) == (paid, "")
+        paid["currency"] = "CNY"
+        (tmp_path / "paid.json").write_text(json.dumps(paid))
+>       assert load_paid_configuration(values)[1] == "PAID_TEMPLATE_UNAVAILABLE_OR_INVALID"
+E       AssertionError: assert '' == 'PAID_TEMPLAT...LE_OR_INVALID'
+E         
+E         - PAID_TEMPLATE_UNAVAILABLE_OR_INVALID
+
+tests/unit/test_creative_execution_template.py:161: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_creative_execution_template.py::test_inherited_paid_configuration_is_closed_and_missing_configuration_disables_only_paid
+1 failed, 173 passed, 18 subtests passed in 5.31s

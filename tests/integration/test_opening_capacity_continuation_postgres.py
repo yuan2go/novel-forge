@@ -24,7 +24,7 @@ def _migrations():
     ensure_migrated()
 
 
-def _capacity_fixture():
+def _capacity_fixture(*, resource_successor=False):
     fixture = build_workflow_fixture(target_chapter_count=6)
     policy = budget_policy()
     plan = policy["comparison_budget"]
@@ -54,9 +54,22 @@ def _capacity_fixture():
         return PostgresBookOpeningApplication(DATABASE_URL, narrative_search=fixture.opening.narrative_search,
                 input_resolver=fixture.opening.input_resolver, application_build_id="capacity-continuation-test",
                 commit_sha=RELEASE_SHA, provider_budget_policy=policy)
+    if resource_successor:
+        from novel_forge.modules.authority_handler_runtime.policy_commands import configure_owned_policy
+        from tests.unit.test_creative_execution_template import template
+        value = template(fixture.book_id, member_authorization_ref=authorization["authorization_ref"])
+        configure_owned_policy(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=fixture.project_id,
+            workspace_id=fixture.workspace_id, principal=fixture.principal, application_build_id="capacity-continuation-test",
+            commit_sha=RELEASE_SHA, idempotency_key=identifier("resource-policy"), trace_id=identifier("trace"),
+            correlation_id=fixture.book_id, content={"policy_version": "creative-v1", "reason": "native resource successor",
+                "task_overrides": [], "execution_templates": [value]})
     fixture.opening = app(initial)
     admission = fixture.admit()
-    return fixture, admission, app({**initial, "token_limit": 7_680_000, "per_call_token_limit": 160_000})
+    successor = ({"resource_control_version": "billing-channel-resources.v1", "execution_mode": "PROVIDER_ALLOWED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT", "authorization_ref": authorization["authorization_ref"],
+        "cost_observability": "UNKNOWN", "per_call_token_limit": 160_000} if resource_successor else
+        {**initial, "token_limit": 7_680_000, "per_call_token_limit": 160_000})
+    return fixture, admission, app(successor)
 
 
 def _fail_before_result(fixture, monkeypatch):
@@ -69,8 +82,9 @@ def _fail_before_result(fixture, monkeypatch):
         fixture.execute(claim)
 
 
-def test_capacity_continuation_is_causal_idempotent_and_fences_failed_source(monkeypatch):
-    fixture, original, successor_app = _capacity_fixture()
+@pytest.mark.parametrize("resource_successor", [False, True])
+def test_capacity_continuation_is_causal_idempotent_and_fences_failed_source(monkeypatch, resource_successor):
+    fixture, original, successor_app = _capacity_fixture(resource_successor=resource_successor)
     _fail_before_result(fixture, monkeypatch)
     failed = fixture.opening.require(original.opening_run_id)
     usage = get_creative_budget(DATABASE_URL, fixture.project_id)
@@ -191,3 +205,64 @@ def test_recovery_sees_planning_effect_before_any_candidate(monkeypatch, outcome
                 reason="must reconcile the original Provider request", principal=fixture.principal)
         assert fixture.opening.require(original.opening_run_id)["current_execution_generation"] == before["current_execution_generation"]
     assert get_creative_budget(DATABASE_URL, fixture.project_id) == budget
+
+
+def test_resource_policy_successor_preserves_completed_nodes_and_historical_scope(monkeypatch):
+    from novel_forge.modules.book_authority.resource_succession import adopt_resource_policy, prospective_scope
+    from novel_forge.modules.command_kernel.budget_runtime import assess_budget_scope_in_uow, lock_budget_scope_in_uow
+    fixture, original, successor_app = _capacity_fixture(resource_successor=True)
+    fixture.execute(fixture.claim(fixture.principal.principal_id))
+    before = fixture.opening.require(original.opening_run_id)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT node_receipt_id FROM authority_book_opening_node_receipt WHERE opening_run_id=%s", [original.opening_run_id])
+        receipts = uow.cursor.fetchall()
+        assert receipts
+        scope = lock_budget_scope_in_uow(uow, budget_scope_id=before["budget_scope_id"], project_id=fixture.project_id)
+    args = dict(opening_run_id=original.opening_run_id, expected_version=before["version"],
+        principal=fixture.principal, idempotency_key="adopt-resource-policy:" + original.opening_run_id)
+    adopted = adopt_resource_policy(successor_app, **args)
+    assert adopt_resource_policy(successor_app, **args)["replayed"]
+    assert adopted["source_policy_hash"] == scope["policy_hash"]
+    assert fixture.opening.require(original.opening_run_id) == before
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        assert lock_budget_scope_in_uow(uow, budget_scope_id=before["budget_scope_id"], project_id=fixture.project_id) == scope
+        modern = prospective_scope(uow, scope)
+        assert modern["policy_snapshot"]["resource_control_version"] == "billing-channel-resources.v1"
+        assert prospective_scope(uow, scope, operation_id=before["root_operation_id"]) == scope
+        assessment = assess_budget_scope_in_uow(uow, budget_scope_id=before["budget_scope_id"], project_id=fixture.project_id,
+            requested_tokens=160000, requested_amount=None)
+        assert assessment["outcome"] == "ELIGIBLE" and assessment["headroom"]["tokens"] is None
+        assert assessment["scope"]["resource_successor"]["source_policy_hash"] == scope["policy_hash"]
+        uow.cursor.execute("SELECT node_receipt_id FROM authority_book_opening_node_receipt WHERE opening_run_id=%s", [original.opening_run_id])
+        assert uow.cursor.fetchall() == receipts
+    fixture.opening = successor_app
+    _fail_before_result(fixture, monkeypatch)
+    failed = fixture.opening.require(original.opening_run_id)
+    assessment = successor_app.recovery.assess_recovery(original.opening_run_id,
+        idempotency_key="resource-successor-recovery", principal=fixture.principal)
+    assert assessment.snapshot["budget"]["outcome"] == "ELIGIBLE"
+    successor_app.recovery.recover(assessment.recovery_assessment_id, idempotency_key="resource-successor-resume",
+        reason="continue unexecuted work after adopting native resource policy", principal=fixture.principal)
+    recovered = successor_app.require(original.opening_run_id)
+    assert recovered["current_execution_generation"] == failed["current_execution_generation"] + 1
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT node_receipt_id FROM authority_book_opening_node_receipt WHERE opening_run_id=%s", [original.opening_run_id])
+        assert uow.cursor.fetchall() == receipts
+
+
+def test_resource_successor_cannot_adopt_an_unresolved_provider_intent(monkeypatch):
+    from novel_forge.modules.book_authority.resource_succession import adopt_resource_policy
+    fixture, original, successor_app = _capacity_fixture(resource_successor=True)
+    def fail_after_intent(**kwargs):
+        plan_external_effect(DATABASE_URL, EffectCommandContext(kwargs["operation_id"], fixture.project_id,
+            fixture.principal.principal_id, identifier("trace"), identifier("correlation")),
+            effect_type="model.invoke", provider="fake_deterministic_provider", capability="model.fixture",
+            stable_idempotency_key=identifier("unresolved-intent"), request_payload={"fixture": True}, max_attempts=1, reversible=False)
+        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "unresolved historical intent")
+    monkeypatch.setattr(fixture.binder, "execute", fail_after_intent)
+    with pytest.raises(KernelError):
+        fixture.execute(fixture.claim(fixture.principal.principal_id))
+    failed = fixture.opening.require(original.opening_run_id)
+    with pytest.raises(KernelError, match="RESOURCE_SUCCESSOR_RECONCILIATION_REQUIRED"):
+        adopt_resource_policy(successor_app, opening_run_id=original.opening_run_id,
+            expected_version=failed["version"], principal=fixture.principal, idempotency_key="reject-unresolved")

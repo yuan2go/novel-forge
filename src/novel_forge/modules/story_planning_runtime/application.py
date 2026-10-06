@@ -3,7 +3,6 @@ from .foundation_generation import FOUNDATION_GENERATORS, validate_foundation_pa
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, replace
-import re
 from typing import Any
 from uuid import uuid4
 from psycopg import sql
@@ -1070,7 +1069,8 @@ class StoryPlanningGenerationApplication:
             ),
             principal=principal,
         )
-        if supervised_state(approved):
+        from novel_forge.modules.story_design_authority.creative_validation import validation_state
+        if supervised_state(approved) or validation_state(approved):
             self._set_candidate_eligibility(project_id=generation["project_id"],
                 candidate_asset_version_id=candidate_asset_version_id, eligibility="ELIGIBLE")
         self._update_generation_status(
@@ -1143,7 +1143,8 @@ class StoryPlanningGenerationApplication:
             )
         from novel_forge.modules.story_design_authority.author_supervision import supervised_state
         current = self.story_design.require(project_id=generation["project_id"], asset_version_id=candidate_asset_version_id)
-        if not supervised_state(current):
+        from novel_forge.modules.story_design_authority.creative_validation import validation_state
+        if not supervised_state(current) and not validation_state(current):
             self._require_narrative_qualification_summary(
                 operation_id=generation["generation_operation_id"], candidate_asset_version_id=candidate_asset_version_id,
                 project_id=generation["project_id"], book_id=generation["book_id"],
@@ -2346,6 +2347,27 @@ class StoryPlanningGenerationApplication:
                 expected_version=int(state["version"]),
                 evidence={"passed": True, "validation_report": evidence},
             )
+        from novel_forge.modules.story_design_authority.creative_validation import validation_state
+        if validation_state(state):
+            if state["approval"] == "NOT_REQUESTED":
+                state = self._transition(command, principal, candidate_asset_version_id, candidate_content_hash,
+                    DesignTransition.SUBMIT_APPROVAL, expected_version=int(state["version"]), evidence={})
+            self._update_generation_status(operation_id, "APPROVAL_PENDING")
+            if definition.risk_class != "HIGH" and command.auto_approve_low_risk:
+                state = self.approve_candidate(
+                    candidate_asset_version_id, principal=principal,
+                    idempotency_key=f"{command.idempotency_key}:auto-approve",
+                    trace_id=command.trace_id, correlation_id=command.correlation_id,
+                )
+                activated = self.activate_candidate(
+                    candidate_asset_version_id, principal=principal,
+                    idempotency_key=f"{command.idempotency_key}:auto-activate",
+                    trace_id=command.trace_id, correlation_id=command.correlation_id,
+                )
+                return PlanningGenerationResult(operation_id, candidate_asset_version_id,
+                    PlanningGenerationStatus.ACTIVE, state, activated["planning_binding"], replayed)
+            return PlanningGenerationResult(operation_id, candidate_asset_version_id,
+                PlanningGenerationStatus.APPROVAL_PENDING, state, replayed=replayed)
         from novel_forge.modules.story_design_authority.author_supervision import supervised_state
         if supervised_state(state):
             self._update_generation_status(operation_id, "APPROVAL_PENDING")
@@ -2756,7 +2778,8 @@ class StoryPlanningGenerationApplication:
                         raise KernelError("FOUNDATION_INPUT_OWNER_INVALID", "Generated Foundation role differs from its semantic owner")
                     state = self.story_design.require(project_id=command.project_id, asset_version_id=asset_version_id)
                     from novel_forge.modules.story_design_authority.author_supervision import supervised_state
-                    admitted = state["qualification"] == "QUALIFIED" or supervised_state(state)
+                    from novel_forge.modules.story_design_authority.creative_validation import validation_state
+                    admitted = state["qualification"] == "QUALIFIED" or supervised_state(state) or validation_state(state)
                     if not admitted or (state["lifecycle"], state["approval"], state["freshness"]) != ("ACTIVE", "APPROVED", "CURRENT"):
                         raise KernelError("FOUNDATION_INPUT_NOT_ACTIVE", "Generated Foundation must be independently qualified and activated")
                 if item["asset_type"] not in allowed_asset_types and not generated_foundation:
@@ -3183,6 +3206,13 @@ class StoryPlanningGenerationApplication:
         eligibility: str,
     ) -> None:
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from novel_forge.modules.story_design_authority.creative_validation import candidate_validation
+            validation = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+            if validation is not None:
+                uow.cursor.execute("SELECT qualification,execution_evidence FROM authority_story_design_version_state WHERE project_id=%s AND asset_version_id=%s FOR UPDATE", [project_id, candidate_asset_version_id])
+                state = uow.cursor.fetchone()
+                if not state or state[0] != "STRUCTURALLY_VALID" or state[1].get("creative_validation") != validation:
+                    raise KernelError("PLANNING_VALIDATION_ELIGIBILITY_INVALID", candidate_asset_version_id)
             uow.cursor.execute(
                 """
                 UPDATE authority_asset_version AS version
@@ -3206,6 +3236,11 @@ class StoryPlanningGenerationApplication:
                     "PLANNING_CANDIDATE_ELIGIBILITY_CONFLICT",
                     "Planning candidate eligibility changed outside qualification",
                 )
+            if validation is not None:
+                identity = canonical_hash({"asset_version_id": candidate_asset_version_id, "validation": validation, "decision": eligibility})
+                uow.cursor.execute("INSERT INTO authority_asset_qualification(qualification_id,asset_version_id,policy_version,decision,evidence) VALUES (%s,%s,'creative-validation-eligibility.v1',%s,%s) ON CONFLICT (qualification_id) DO NOTHING", [identity, candidate_asset_version_id, eligibility, Jsonb(validation)])
+                uow.commit()
+                return
             uow.cursor.execute(
                 """
                 SELECT evaluation_operation_id, qualification_hash
@@ -3826,71 +3861,11 @@ def _validate_narrative_search_horizon(
             )
         topology = dict(raw_topology or {})
         if topology:
-            expected = {
-                "contract_version",
-                "policy_contract_version",
-                "policy_hash",
-                "arc_count",
-                "calls_per_search",
-                "reserved_search_count",
-                "provider_call_capacity",
-                "reserved_provider_calls",
-                "max_volume_count",
-            }
-            integer_fields = {
-                "arc_count",
-                "calls_per_search",
-                "reserved_search_count",
-                "provider_call_capacity",
-                "reserved_provider_calls",
-                "max_volume_count",
-            }
-            valid_integers = all(
-                isinstance(topology.get(field), int)
-                and not isinstance(topology.get(field), bool)
-                and int(topology[field]) > 0
-                for field in integer_fields
-            )
-            if (
-                set(topology) != expected
-                or not valid_integers
-                or topology.get("contract_version") != "book-opening-topology-budget.v2"
-                or topology.get("policy_contract_version")
-                != "book-opening-provider-budget.v2"
-                or re.fullmatch(
-                    r"sha256:[0-9a-f]{64}", str(topology.get("policy_hash") or "")
-                )
-                is None
-                or topology.get("calls_per_search") != 6
-                or topology.get("reserved_search_count") != 1
-                or topology.get("reserved_provider_calls") != 6
-                or 6
-                * (
-                    1
-                    + int(topology.get("max_volume_count") or 0)
-                    + int(topology.get("arc_count") or 0)
-                    + 1
-                )
-                > int(topology.get("provider_call_capacity") or 0)
-                or 6
-                * (
-                    1
-                    + int(topology.get("max_volume_count") or 0)
-                    + 1
-                    + int(topology.get("arc_count") or 0)
-                    + 1
-                )
-                <= int(topology.get("provider_call_capacity") or 0)
-            ):
-                raise KernelError(
-                    "NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT",
-                    "Book candidate topology budget differs from its immutable Opening horizon",
-                )
-            if len(skeleton) > int(topology["max_volume_count"]):
-                raise KernelError(
-                    "NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED",
-                    "Book candidate Volume skeleton exceeds its immutable Opening budget",
-                )
+            from novel_forge.modules.book_authority.opening_workflow import BookOpeningTopologyBudget
+            try:
+                BookOpeningTopologyBudget.from_mapping(topology).require_volume_count(len(skeleton))
+            except (TypeError, ValueError) as exc:
+                raise KernelError("NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT", "Book candidate differs from frozen Opening workload") from exc
         return
     chapter_range = command.narrative_search_chapter_range
     if chapter_range is None:

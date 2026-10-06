@@ -125,7 +125,8 @@ class FormationGeneration:
             from novel_forge.modules.story_design_authority.author_supervision import (
                 supervised_state,
             )
-            if state["qualification"] != "QUALIFIED" and not supervised_state(state):
+            from novel_forge.modules.story_design_authority.creative_validation import validation_state
+            if state["qualification"] != "QUALIFIED" and not supervised_state(state) and not validation_state(state):
                 raise KernelError(
                     "STORY_FORMATION_GENERATION_BLOCKED",
                     f"{role.value} candidate {candidate_id} remains {state['qualification']}; no Foundation activation",
@@ -205,8 +206,8 @@ class FormationGeneration:
                 reasons=(
                     ("AUTHOR_SUPERVISED_SELECTION" if supervised_state(state) else "AUTHOR_SELECTED_QUALIFIED_BRANCH", str(selection["reason"]))
                     if selection else (
-                        "FIRST_INDEPENDENTLY_QUALIFIED_BRANCH",
-                        "Frozen brief and parent constraints passed; alternatives retain their independent evaluations",
+                        "FIRST_TEMPLATE_VALIDATED_BRANCH" if validation_state(state) else "FIRST_INDEPENDENTLY_QUALIFIED_BRANCH",
+                        "Frozen brief and parent constraints passed; literary qualification NOT_RUN" if validation_state(state) else "Frozen brief and parent constraints passed; alternatives retain their independent evaluations",
                     )
                 ),
             )
@@ -350,14 +351,14 @@ class FormationGeneration:
                     "book_design.candidate.decide",
                     {
                         "decision": "APPROVE",
-                        "reason": "Frozen AUTO Formation policy; independently evaluated Foundation synthesis",
+                        "reason": "Frozen AUTO Formation policy; exact admitted Foundation synthesis",
                     },
                 ),
                 (
                     "book_design.activate",
                     "book_design.candidate.activate",
                     {
-                        "reason": "Activate exact independently evaluated Foundation synthesis"
+                        "reason": "Activate exact admitted Foundation synthesis"
                     },
                 ),
             ):

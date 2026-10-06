@@ -94,7 +94,7 @@ class FormationLayerInput:
             or not self.selection_reason
         ):
             raise ValueError("Formation selection evidence is incomplete")
-        if self.selection_basis not in {"INDEPENDENT_COMPARISON", "AUTHOR_COMPARISON", "AUTHOR_DIRECTION"}:
+        if self.selection_basis not in {"INDEPENDENT_COMPARISON", "AUTHOR_COMPARISON", "AUTHOR_DIRECTION", "TEMPLATE_VALIDATION"}:
             raise ValueError("Formation selection basis is undeclared")
         if self.role is FoundationRole.CREATIVE_FOUNDATION and self.selection_basis != "AUTHOR_DIRECTION" and len(
             self.candidate_asset_version_ids
@@ -173,6 +173,13 @@ class StoryFormationInput:
                 "title",
             }
             contract_version = str(policy.get("contract_version") or "")
+            if contract_version == "formation-generation.v4":
+                creation = policy.get("creation_input_policy")
+                if (not isinstance(creation, dict) or creation.get("contract_version") != "creation-input-policy.v1"
+                        or not isinstance(creation.get("profiles"), dict)
+                        or not creation["profiles"].get("production_profile", {}).get("content", {}).get("language_contract")):
+                    raise ValueError("Creation requires frozen profiles and the current input language contract")
+                base_fields.add("creation_input_policy")
             if contract_version == "formation-generation.v3":
                 selected = policy.get("author_creative_foundation")
                 if (not isinstance(selected, dict) or set(selected) != {"asset_version_id", "content_hash"}
@@ -182,14 +189,14 @@ class StoryFormationInput:
                 base_fields.add("author_creative_foundation")
             expected_fields = (
                 base_fields | {"auto_authorization"}
-                if contract_version == "formation-generation.v2"
+                if contract_version in {"formation-generation.v2", "formation-generation.v4"}
                 and policy.get("approval_mode") == "AUTO"
                 else base_fields
             )
             if (
                 set(policy) != expected_fields
                 or contract_version
-                not in {"formation-generation.v1", "formation-generation.v2", "formation-generation.v3"}
+                not in {"formation-generation.v1", "formation-generation.v2", "formation-generation.v3", "formation-generation.v4"}
                 or policy["approval_mode"] not in {"AUTO", "REVIEW_PLAN"}
                 or not isinstance(policy["creative_candidates"], int)
                 or isinstance(policy["creative_candidates"], bool)
@@ -269,7 +276,7 @@ class StoryFormationInput:
         policy = dict(self.generation_policy or {})
         if policy.get("approval_mode") != "AUTO":
             return
-        if policy.get("contract_version") != "formation-generation.v2":
+        if policy.get("contract_version") not in {"formation-generation.v2", "formation-generation.v4"}:
             raise ValueError(
                 "AUTO Formation requires a frozen scoped authorization contract"
             )

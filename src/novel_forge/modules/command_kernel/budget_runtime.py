@@ -26,11 +26,19 @@ class BudgetAssessmentOutcome(StrEnum):
 def canonical_budget_policy(policy: Mapping[str, Any]) -> dict[str, Any]:
     """INVARIANT: Validate and hash the immutable Provider budget contract.
 
-    Provider work is accepted only with explicit finite call, token and cost
-    limits.  Projection-only work is a separate, zero-Provider contract rather
-    than an implicit zero-value budget.
+    Historical scopes retain their finite limits. Membership resource policies
+    retain per-call controls without declaring cumulative call, token or cost
+    allowances. Projection-only contracts forbid Provider dispatch.
     """
     raw = dict(policy)
+    if raw.get("resource_control_version") == "billing-channel-resources.v1":
+        if (set(raw) != {"resource_control_version", "execution_mode", "accounting_basis", "authorization_ref", "cost_observability", "per_call_token_limit"}
+                or raw.get("execution_mode") != "PROVIDER_ALLOWED" or raw.get("accounting_basis") != "ACCOUNT_ENTITLEMENT"
+                or not str(raw.get("authorization_ref") or "").strip() or raw.get("cost_observability") != "UNKNOWN"
+                or type(raw.get("per_call_token_limit")) is not int or raw["per_call_token_limit"] <= 0):
+            raise KernelError("MEMBERSHIP_RESOURCE_POLICY_INVALID", "Resource controls cannot declare cumulative membership budgets")
+        normalized = _canonical_value(raw)
+        return {"policy_snapshot": normalized, "policy_hash": _canonical_hash(normalized)}
     execution_mode = str(raw.get("execution_mode") or "").strip().upper()
     if execution_mode not in {"PROVIDER_ALLOWED", "PROJECTION_ONLY"}:
         raise KernelError(
@@ -196,6 +204,9 @@ def canonical_budget_snapshot(
 def next_provider_budget_allowance(policy: Mapping[str, Any]) -> dict[str, Any]:
 
     canonical = canonical_budget_policy(policy)["policy_snapshot"]
+    if canonical.get("resource_control_version") == "billing-channel-resources.v1":
+        return {"execution_mode": "PROVIDER_ALLOWED", "accounting_basis": "ACCOUNT_ENTITLEMENT", "requested_calls": 1,
+                "requested_tokens": canonical["per_call_token_limit"], "requested_amount": None, "cost_status": "UNKNOWN"}
     if str(canonical["execution_mode"]) == "PROJECTION_ONLY":
         return {
             "execution_mode": "PROJECTION_ONLY",
@@ -275,6 +286,8 @@ def resolve_provider_token_reservation_contract(
             project_id=project_id,
             currency=currency,
         )
+        if binding is not None and dict(binding["policy_snapshot"]).get("resource_control_version") == "billing-channel-resources.v1":
+            binding = None
         if binding is not None:
             policy = canonical_budget_policy(binding["policy_snapshot"])["policy_snapshot"]
             if normalized_basis == "ACCOUNT_ENTITLEMENT" and policy.get("account_entitlement_lane"):
@@ -958,6 +971,8 @@ def resolve_book_opening_budget_scope_in_uow(
         budget_scope_id=budget_scope_id,
         project_id=project_id,
     )
+    from novel_forge.modules.book_authority.resource_succession import prospective_scope
+    scope = prospective_scope(uow, scope, operation_id=operation_id)
     if (
         int(scope["revision"]) != scope_revision
         or str(scope["owner_kind"]) != "BOOK_OPENING"
@@ -1487,6 +1502,8 @@ def assert_provider_execution_authorized(
             project_id=project_id,
             lock=True,
         )
+        from novel_forge.modules.book_authority.resource_succession import prospective_scope
+        scope = prospective_scope(uow, scope, operation_id=operation_id)
         uow.cursor.execute(
             """
             SELECT operation.project_id,effect.project_id,effect.status,
@@ -1571,7 +1588,7 @@ def assert_provider_execution_authorized(
             or int(scope["revision"]) != int(budget_scope_revision)
             or final_clock is None
             or not bool(final_clock[1])
-            or scope["deadline_at"] <= final_clock[0]
+            or (scope["policy_snapshot"].get("resource_control_version") != "billing-channel-resources.v1" and scope["deadline_at"] <= final_clock[0])
             or execution is None
             or str(execution[0]) != project_id
             or str(execution[1]) != project_id
@@ -1760,6 +1777,9 @@ def assess_budget_scope_in_uow(
             "BUDGET_SCOPE_REASSESS_REQUIRED",
             "budget scope policy revision changed after assessment",
         )
+    if mode != "DURABLE_RESULT_REPLAY":
+        from novel_forge.modules.book_authority.resource_succession import prospective_scope
+        scope = prospective_scope(uow, scope)
     canonical_policy = canonical_budget_policy(dict(scope["policy_snapshot"] or {}))
     if canonical_policy["policy_hash"] != str(scope["policy_hash"]) or canonical_policy[
         "policy_snapshot"
@@ -1772,7 +1792,10 @@ def assess_budget_scope_in_uow(
     accounting_basis = str(policy.get("accounting_basis") or "PRICED").upper()
     entitlement_lane = dict(policy.get("account_entitlement_lane") or {})
     request_basis = requested_accounting_basis or accounting_basis
-    if request_basis != accounting_basis and not (
+    resource_scope = policy.get("resource_control_version") == "billing-channel-resources.v1"
+    if request_basis not in {"ACCOUNT_ENTITLEMENT", "PRICED"}:
+        raise KernelError("BUDGET_ASSESSMENT_INVALID", "Unknown billing channel")
+    if not resource_scope and request_basis != accounting_basis and not (
         request_basis == "ACCOUNT_ENTITLEMENT" and entitlement_lane
     ):
         raise KernelError("BUDGET_ASSESSMENT_INVALID", "requested accounting lane is not authorized")
@@ -2023,7 +2046,7 @@ def assess_budget_scope_in_uow(
     for reservation in reservations:
         status = str(reservation["status"])
         reservation_basis = str(reservation.get("accounting_basis") or "PRICED").upper()
-        if reservation_basis != accounting_basis:
+        if not resource_scope and reservation_basis != accounting_basis:
             if not (
                 entitlement_lane and reservation_basis == "ACCOUNT_ENTITLEMENT"
                 and reservation["currency"] == "UNKNOWN"
@@ -2042,7 +2065,7 @@ def assess_budget_scope_in_uow(
                 committed_amount += Decimal(reservation["reserved_amount"])
         elif status == "RELEASED" and str(reservation["reservation_id"]) in accounted_reservations:
             committed_tokens += max(int(reservation["actual_tokens"]), int(reservation["estimated_tokens"]))
-        if status == "HELD_UNKNOWN" or bool(reservation["budget_breach"]):
+        if not resource_scope and (status == "HELD_UNKNOWN" or bool(reservation["budget_breach"])):
             reasons.append("budget_external_state_ambiguous")
         reservation_revision = reservation["budget_scope_revision"]
         if reservation_revision is None or int(reservation_revision) != revision:
@@ -2110,6 +2133,9 @@ def assess_budget_scope_in_uow(
         outcome = BudgetAssessmentOutcome.RECONCILIATION_REQUIRED
         call_headroom = token_headroom = None
         cost_headroom = None
+    elif policy.get("resource_control_version") == "billing-channel-resources.v1":
+        call_headroom = token_headroom = cost_headroom = None
+        outcome = BudgetAssessmentOutcome.ELIGIBLE
     else:
         call_limit = int(policy["provider_call_limit"])
         token_limit = int(policy["token_limit"])
@@ -2647,7 +2673,7 @@ def _record_budget_scope(
 
 
 def _scope_currency_authorized(scope: Mapping[str, Any], currency: str) -> bool:
-    return str(scope["currency"]).upper() == currency.strip().upper() or (
+    return (dict(scope.get("policy_snapshot") or {}).get("resource_control_version") == "billing-channel-resources.v1" and currency.upper() in {"USD", "UNKNOWN"}) or str(scope["currency"]).upper() == currency.strip().upper() or (
         currency.strip().upper() == "UNKNOWN"
         and bool(dict(scope.get("policy_snapshot") or {}).get("account_entitlement_lane"))
     )
@@ -2742,10 +2768,17 @@ def reserve_provider_budget(
     database_url: str,
     request: BudgetReservationRequest,
 ) -> dict[str, Any]:
-    with AuthorityUnitOfWork(database_url) as uow:
-        result = reserve_provider_budget_in_uow(uow, request)
-        uow.commit()
-        return result
+    try:
+        with AuthorityUnitOfWork(database_url) as uow:
+            result = reserve_provider_budget_in_uow(uow, request)
+            uow.commit()
+            return result
+    except KernelError as error:
+        if error.code == "PAID_WORK_BUDGET_EXHAUSTED":
+            from .resource_route_recovery import cancel_unreserved_paid_intent
+            if cancel_unreserved_paid_intent(database_url, request):
+                raise KernelError("RESOURCE_ROUTE_RESELECT_REQUIRED", "PAID_WORK_BUDGET_EXHAUSTED: unsent paid intent cancelled; reselect an authorized resource route") from error
+        raise
 
 
 def reserve_provider_budget_in_uow(
@@ -2853,6 +2886,14 @@ def reserve_provider_budget_in_uow(
             )
     else:
         acquire_budget_locks_in_uow(uow, currencies=(request.currency,))
+    from novel_forge.modules.production_execution.execution_template import enforce_template_resources
+    channel_resources = enforce_template_resources(uow.cursor, request, amount)
+    if locked_budget_scope and locked_budget_scope.get("resource_successor") and not channel_resources:
+        raise KernelError("EXECUTION_TEMPLATE_PROVENANCE_INVALID", request.operation_id)
+    if channel_resources:
+        caps, call_caps, token_caps = {}, {}, {}
+        if locked_budget_scope is not None and locked_budget_scope["policy_snapshot"].get("resource_control_version") != "billing-channel-resources.v1":
+            raise KernelError("BUDGET_RESOURCE_SUCCESSOR_REQUIRED", "Frozen historical Opening requires a native resource-policy successor before unstarted work changes contract")
     if locked_budget_scope is not None:
         scope_policy = canonical_budget_policy(
             dict(locked_budget_scope.get("policy_snapshot") or {})
@@ -2860,9 +2901,9 @@ def reserve_provider_budget_in_uow(
         if accounting_basis == "ACCOUNT_ENTITLEMENT" and scope_policy.get("account_entitlement_lane"):
             scope_policy = dict(scope_policy["account_entitlement_lane"])
         scope_basis = str(scope_policy.get("accounting_basis") or "PRICED").upper()
-        if scope_basis != accounting_basis or (
+        if not channel_resources and (scope_basis != accounting_basis or (
             accounting_basis == "PRICED" and request.currency.upper() != str(locked_budget_scope["currency"]).upper()
-        ):
+        )):
             raise KernelError(
                 "BUDGET_SCOPE_CONFLICT",
                 "reservation accounting basis differs from its BudgetScope",
@@ -3018,7 +3059,7 @@ def reserve_provider_budget_in_uow(
         }
     _enforce_scope_entitlement_lane(uow, locked_budget_scope, request)
     from novel_forge.modules.command_kernel.creative_budget_runtime import reserve_creative_budget_in_uow
-    creative_budget = reserve_creative_budget_in_uow(uow, request)
+    creative_budget = None if channel_resources else reserve_creative_budget_in_uow(uow, request)
     budget_scope_revision: int | None = None
     if locked_budget_scope is not None:
         budget_scope_revision = effective_budget_scope_revision
@@ -3079,6 +3120,8 @@ def reserve_provider_budget_in_uow(
                 "UNKNOWN" if accounting_basis == "ACCOUNT_ENTITLEMENT" else "KNOWN"
             ),
             "cost_authorization_ref": request.cost_authorization_ref,
+            **({"resource_control_version": "billing-channel-resources.v1"} if channel_resources else {}),
+            **({"resource_successor": locked_budget_scope["resource_successor"]} if locked_budget_scope and locked_budget_scope.get("resource_successor") else {}),
             **lane_evidence,
             "model_id": request.model_id,
             "work_id": request.work_id,
@@ -3338,6 +3381,8 @@ def _enforce_routing_chain_budget(
             "ROUTING_BUDGET_ACCOUNTING_CONFLICT",
             "reservation differs from frozen route accounting",
         )
+    from novel_forge.modules.production_execution.execution_template import decision_template
+    template = decision_template(decision)
     policy = decision.get("escalation_policy") or {}
     try:
         max_attempts = int(policy["max_attempts"])
@@ -3353,7 +3398,7 @@ def _enforce_routing_chain_budget(
         max_attempts <= 0
         or max_escalations < 0
         or token_limit <= 0
-        or (money_limit == 0 and request.accounting_basis != "ACCOUNT_ENTITLEMENT")
+        or (money_limit == 0 and request.accounting_basis != "ACCOUNT_ENTITLEMENT" and template is None)
     ):
         raise KernelError(
             "ROUTING_BUDGET_CONTRACT_REQUIRED",
@@ -3415,11 +3460,11 @@ def _enforce_routing_chain_budget(
         ],
     )
     spent, tokens = cursor.fetchone()
-    if int(tokens) + request.estimated_tokens > token_limit:
+    if template is None and int(tokens) + request.estimated_tokens > token_limit:
         raise KernelError(
             "BUDGET_TOKEN_CAP_EXCEEDED", "execution chain token limit would be exceeded"
         )
-    if amount is not None and Decimal(spent) + amount > money_limit:
+    if template is None and amount is not None and Decimal(spent) + amount > money_limit:
         raise KernelError(
             "BUDGET_CAP_EXCEEDED", "execution chain monetary limit would be exceeded"
         )
@@ -3470,7 +3515,7 @@ def _enforce_routing_chain_budget(
                 "ROUTING_ESCALATION_LIMIT_REACHED",
                 "execution chain escalation attempts exhausted",
             )
-    if check_attempts and candidate.get("provider") == "codex-cli":
+    if check_attempts and template is None and candidate.get("provider") == "codex-cli":
         cursor.execute(
             f"""SELECT count(*) FROM authority_budget_reservation
                 WHERE provider=%s AND evidence->>'cost_authorization_ref'=%s
@@ -3693,7 +3738,8 @@ def settle_provider_budget_in_uow(
         and row["reserved_amount"] is not None
         and amount > row["reserved_amount"]
     )
-    token_overrun = actual_tokens > int(row["estimated_tokens"])
+    channel_resources = dict(row.get("evidence") or {}).get("resource_control_version") == "billing-channel-resources.v1"
+    token_overrun = not channel_resources and actual_tokens > int(row["estimated_tokens"])
     settlement_evidence = dict(evidence)
     entitlement_usage_reconciled = False
     entitlement_usage_cap_error = ""
@@ -3748,7 +3794,8 @@ def settle_provider_budget_in_uow(
     from novel_forge.modules.command_kernel.creative_budget_runtime import check_creative_settlement_in_uow
     campaign_budget_error_code = ""
     try:
-        check_creative_settlement_in_uow(uow, row, actual_tokens, actual_amount=amount)
+        if not channel_resources:
+            check_creative_settlement_in_uow(uow, row, actual_tokens, actual_amount=amount)
     except KernelError as exc:
         if exc.code not in {"CREATIVE_BUDGET_EXHAUSTED", "CREATIVE_BUDGET_USD_EXHAUSTED"}:
             raise

@@ -22,6 +22,7 @@ def test_capability_pack_operations_are_command_kernel_definitions() -> None:
         "capability_pack.manifest.validate",
         "capability_pack.compile",
         "capability_pack.approval.decide",
+        "capability_pack.validation.admit",
         "capability_pack.deployment.create",
         "capability_pack.deployment.activate",
         "capability_pack.deployment.disable",

@@ -406,7 +406,7 @@ def admitted_reference_calibration(
         )
         effect_row = uow.cursor.fetchone()
         frozen = effect_row[0] if effect_row and isinstance(effect_row[0], dict) else {}
-    required = frozen.get("status") == "SELECTED" and frozen.get("policy", {}).get("quality_metric") == "REFERENCE_AGREEMENT"
+    required = frozen.get("independent_qualification_eligible") is not False and frozen.get("status") == "SELECTED" and frozen.get("policy", {}).get("quality_metric") == "REFERENCE_AGREEMENT"
     if len(rows) != 1:
         if required:
             raise KernelError("QUALITY_REFERENCE_ADMISSION_INVALID", "qualified reviewer call lost its native receipt or target binding")
@@ -446,7 +446,7 @@ def reference_decision_qualifies(decision: Mapping[str, Any], *, evidence: Mappi
     compatible_versions = {POLICY_VERSION} | ({"quality-constrained-routing.v10", "quality-constrained-routing.v11"} if stage != "canon_support" else set())
     if (stage not in REFERENCE_TASKS or decision.get("schema_version") not in compatible_versions
         or decision.get("status") != "SELECTED" or decision.get("bootstrap_authorization")
-        or decision.get("production_eligible") is False or selected.get("rejected_reasons")
+        or decision.get("production_eligible") is False or decision.get("independent_qualification_eligible") is False or selected.get("rejected_reasons")
         or candidate.get("provider") not in {"deepseek", "codex-cli"}
         or evidence.get("real_model_call") is not True or evidence.get("fixture_protocol_only") or process.get("fixture_protocol_only")
         or (execution.get("execution_result") or {}).get("outcome") != "SUCCEEDED"

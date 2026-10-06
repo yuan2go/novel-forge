@@ -786,6 +786,9 @@ class StoryFormationApplication:
             "current_attempt_id": str(row[2] or ""),
         }
 
+    def frozen_input(self, formation_run_id: str) -> StoryFormationInput:
+        return self._frozen_input(formation_run_id)
+
     def _frozen_input(self, formation_run_id: str) -> StoryFormationInput:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(

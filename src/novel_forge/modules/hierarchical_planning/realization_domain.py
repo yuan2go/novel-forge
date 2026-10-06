@@ -62,6 +62,7 @@ def _strings(value: Any, field: str, *, allow_empty: bool = False) -> tuple[str,
 class NarrativeRealizationLifecycle(StrEnum):
     PROPOSED = "PROPOSED"
     QUALIFIED = "QUALIFIED"
+    ADMITTED = "ADMITTED"
     APPROVED = "APPROVED"
     FROZEN = "FROZEN"
     EXECUTED = "EXECUTED"
@@ -426,7 +427,7 @@ class NarrativeRealizationProof:
             "semantic_evaluation_hash",
         }
         work_requirements = (
-            value.get("schema_version") == "narrative-realization-proof.v2"
+            value.get("schema_version") in {"narrative-realization-proof.v2", "narrative-realization-proof.v3"}
         )
         if work_requirements:
             expected.remove("causal_escalation_proven")
@@ -435,6 +436,7 @@ class NarrativeRealizationProof:
         if set(value) != expected or value.get("schema_version") not in {
             NARRATIVE_REALIZATION_PROOF_SCHEMA_VERSION,
             "narrative-realization-proof.v2",
+            "narrative-realization-proof.v3",
         }:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
@@ -457,8 +459,8 @@ class NarrativeRealizationProof:
         if work_requirements and (
             not isinstance(admission, Mapping)
             or admission.get("mode")
-            not in {"STRICT_QUALIFIED", "AUTHOR_SUPERVISED_DESIGN"}
-            or admission.get("literary_qualification") != "NOT_PROVEN"
+            not in {"STRICT_QUALIFIED", "AUTHOR_SUPERVISED_DESIGN", "CREATIVE_VALIDATION"}
+            or admission.get("literary_qualification") not in {"NOT_PROVEN", "NOT_RUN"}
         ):
             raise KernelError(
                 "REALIZATION_DESIGN_ADMISSION_REQUIRED",
@@ -469,7 +471,13 @@ class NarrativeRealizationProof:
                 "NARRATIVE_REALIZATION_INVALID",
                 "realization proof decisions must be boolean",
             )
-        if any(value.get(field) is not True for field in boolean_fields):
+        creative = value.get("schema_version") == "narrative-realization-proof.v3"
+        if creative and (admission.get("mode") != "CREATIVE_VALIDATION" or admission.get("literary_qualification") != "NOT_RUN"
+                or any(value.get(field) is not False for field in boolean_fields)):
+            raise KernelError("REALIZATION_VALIDATION_PROOF_INVALID", "Unexecuted semantic criteria must remain false")
+        if not creative and admission.get("mode") == "CREATIVE_VALIDATION":
+            raise KernelError("REALIZATION_VALIDATION_PROOF_INVALID", "Validation requires its separate proof version")
+        if not creative and any(value.get(field) is not True for field in boolean_fields):
             raise KernelError(
                 "REALIZATION_PROOF_FAILED",
                 "all deterministic and independent proof gates must pass",
@@ -502,7 +510,7 @@ class NarrativeRealizationProof:
 
     def to_dict(self) -> dict[str, Any]:
         value = _json_value(asdict(self))
-        if self.schema_version == "narrative-realization-proof.v2":
+        if self.schema_version in {"narrative-realization-proof.v2", "narrative-realization-proof.v3"}:
             value["causal_alignment_proven"] = value.pop("causal_escalation_proven")
         else:
             value.pop("design_admission")
@@ -612,7 +620,7 @@ class NarrativeRealizationContract:
             for item in raw_events
         )
         if (
-            raw_proof.get("schema_version") == "narrative-realization-proof.v2"
+            raw_proof.get("schema_version") in {"narrative-realization-proof.v2", "narrative-realization-proof.v3"}
         ) != work_requirements:
             raise KernelError(
                 "REALIZATION_PROOF_VERSION_DRIFT",

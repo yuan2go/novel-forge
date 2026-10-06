@@ -1624,6 +1624,7 @@ class PostgresBookProductionQuery:
             if snapshot is None or str(snapshot[3]) not in {
                 "LONGFORM_DESIGN_QUALIFIED",
                 "AUTHOR_SUPERVISED_DESIGN",
+                "CREATIVE_VALIDATION_DESIGN",
             }:
                 raise KernelError(
                     "LONGFORM_DESIGN_QUALIFICATION_REQUIRED",
@@ -1656,7 +1657,16 @@ class PostgresBookProductionQuery:
                     "Book input design qualification has an empty asset identity",
                 )
             supervised = str(snapshot[3]) == "AUTHOR_SUPERVISED_DESIGN"
-            if supervised:
+            creative = str(snapshot[3]) == "CREATIVE_VALIDATION_DESIGN"
+            if creative:
+                from novel_forge.modules.book_design_authority.creative_validation import approved_validation_book
+                from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+                for receipt in global_receipts:
+                    resolver = approved_validation_book if receipt["design_layer"] == "book_design.propose" else approved_validation_design
+                    current = resolver(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=receipt["asset_version_id"])
+                    if current is None or {**current, "design_layer": receipt["design_layer"]} != receipt:
+                        raise KernelError("CREATIVE_DESIGN_RECEIPT_STALE", receipt["asset_version_id"])
+            elif supervised:
                 from novel_forge.modules.book_design_authority.author_supervision import (
                     approved_book_design_receipt,
                 )
@@ -1941,7 +1951,14 @@ class PostgresBookProductionQuery:
             )
             rows = uow.cursor.fetchall()
             author_receipts = []
-            if supervised:
+            if creative:
+                for stage, identity in (("chapter_group_plan.generate", chapter_group_plan_version_id), ("chapter_plan.generate", chapter_plan_version_id)):
+                    receipt = approved_validation_design(uow.cursor, project_id=str(snapshot[0]), book_id=str(snapshot[1]), asset_version_id=identity)
+                    if receipt is None or receipt["lifecycle"] != "ACTIVE":
+                        raise KernelError("CREATIVE_DESIGN_APPROVAL_REQUIRED", identity)
+                    author_receipts.append({**receipt, "design_layer": stage})
+                expected_receipts = []
+            elif supervised:
                 for stage, version_id in (
                     ("chapter_group_plan.generate", chapter_group_plan_version_id),
                     ("chapter_plan.generate", chapter_plan_version_id),

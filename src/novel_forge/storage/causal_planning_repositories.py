@@ -102,7 +102,7 @@ class CausalPlanningRepository:
             JOIN authority_story_design_version_state s ON s.asset_version_id=v.asset_version_id
             LEFT JOIN authority_story_design_active_version a ON a.project_id=s.project_id AND a.asset_version_id=s.asset_version_id
             WHERE v.asset_version_id=%s AND s.project_id=%s
-              AND (NOT %s OR (a.asset_version_id IS NOT NULL AND s.lifecycle='ACTIVE' AND (s.qualification='QUALIFIED' OR (s.qualification='SEMANTICALLY_VALID' AND s.execution_evidence #>> '{author_supervision,mode}'='AUTHOR_SUPERVISED')) AND s.approval='APPROVED' AND s.freshness='CURRENT'))
+              AND (NOT %s OR (a.asset_version_id IS NOT NULL AND s.lifecycle='ACTIVE' AND (s.qualification='QUALIFIED' OR (s.qualification='STRUCTURALLY_VALID' AND s.execution_evidence #>> '{creative_validation,mode}'='CREATIVE_VALIDATION') OR (s.qualification='SEMANTICALLY_VALID' AND s.execution_evidence #>> '{author_supervision,mode}'='AUTHOR_SUPERVISED')) AND s.approval='APPROVED' AND s.freshness='CURRENT'))
               AND s.generator_operation_name='creative.candidates.generate'
             """,
             [intent_version_id, project_id, current],
@@ -116,6 +116,9 @@ class CausalPlanningRepository:
         if current and intent[2] != "QUALIFIED":
             from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
             receipt = approved_design_receipt(self.cursor, project_id=project_id, book_id=reality["book_id"], asset_version_id=intent_version_id)
+            if receipt is None:
+                from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+                receipt = approved_validation_design(self.cursor, project_id=project_id, book_id=reality["book_id"], asset_version_id=intent_version_id)
             if receipt is None or receipt["lifecycle"] != "ACTIVE":
                 raise KernelError("CAUSAL_PLAN_INTENT_NOT_ACTIVE", "Causal planning needs exact native author approval")
         intent_content = dict(intent[1])

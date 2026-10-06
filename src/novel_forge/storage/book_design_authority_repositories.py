@@ -125,6 +125,7 @@ class BookDesignAuthorityRepository:
         book: dict[str, Any],
         design: BookDesignPayload,
         author_supervision: dict[str, Any] | None = None,
+        creative_validation: dict[str, Any] | None = None,
         operation_id: str,
         trace_id: str,
         checkpoint: Callable[[str], None],
@@ -174,7 +175,7 @@ class BookDesignAuthorityRepository:
         )
         candidate_status = (
             "VALIDATED"
-            if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS or author_supervision
+            if design.schema_version not in _PROGRESSIVE_BOOK_DESIGN_SCHEMAS or author_supervision or creative_validation
             else "EVALUATION_PENDING"
         )
         self.cursor.execute(
@@ -227,6 +228,7 @@ class BookDesignAuthorityRepository:
             ),
             "candidate_generation_does_not_evaluate_itself": True,
             **({"author_supervision": author_supervision, "semantic_evaluation_status": "AUTHOR_REVIEW_PENDING"} if author_supervision else {}),
+            **({"creative_validation": creative_validation, "semantic_evaluation_status": "NOT_RUN", "reason": "creative validation template"} if creative_validation else {}),
         }
         self.cursor.execute(
             """
@@ -409,6 +411,7 @@ class BookDesignAuthorityRepository:
         reason: str,
         decided_by: str,
         author_supervision: dict[str, Any] | None = None,
+        creative_validation: dict[str, Any] | None = None,
         operation_id: str,
     ) -> str:
         candidate = self._candidate_for_update(book, asset_version_id)
@@ -419,7 +422,12 @@ class BookDesignAuthorityRepository:
             )
         if candidate["schema_version"] in {FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION, WORK_BOOK_DESIGN_SCHEMA_VERSION, LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION}:
             self._require_v5_foundation(book, asset_version_id)
-        if author_supervision:
+        if creative_validation:
+            from novel_forge.modules.book_design_authority.creative_validation import proposed_validation
+            expected = proposed_validation(self.cursor, project_id=book["project_id"], book_id=book["book_id"], asset_version_id=asset_version_id)
+            if expected != creative_validation:
+                raise KernelError("CREATIVE_BOOK_SCOPE_INVALID", asset_version_id)
+        elif author_supervision:
             from novel_forge.modules.book_design_authority.author_supervision import proposed_supervision
             expected = proposed_supervision(self.cursor, project_id=book["project_id"], book_id=book["book_id"], asset_version_id=asset_version_id)
             if expected != author_supervision or decided_by != expected["author_id"]:
@@ -455,11 +463,20 @@ class BookDesignAuthorityRepository:
                         "reason": reason,
                         **({"author_supervision": author_supervision, "content_hash": candidate["content_hash"],
                             "literary_qualification": "NOT_PROVEN"} if author_supervision else {}),
+                        **({"creative_validation": creative_validation, "content_hash": candidate["content_hash"], "literary_qualification": "NOT_RUN"} if creative_validation else {}),
                     }
                 ),
             ],
         )
-        if author_supervision:
+        if creative_validation:
+            self.cursor.execute("""INSERT INTO authority_asset_qualification(qualification_id,asset_version_id,policy_version,decision,evidence)
+                VALUES (%s,%s,'book-design-creative-validation.v1',%s,%s)""", [str(uuid4()), asset_version_id,
+                "ELIGIBLE" if normalized == "APPROVE" else "INELIGIBLE", Jsonb({"creative_validation": creative_validation,
+                    "decision_id": decision_id, "decision_operation_id": operation_id, "content_hash": candidate["content_hash"],
+                    "literary_qualification": "NOT_RUN"})])
+            self.cursor.execute("UPDATE authority_asset_version SET eligibility=%s WHERE asset_version_id=%s",
+                ["ELIGIBLE" if normalized == "APPROVE" else "INELIGIBLE", asset_version_id])
+        elif author_supervision:
             self.cursor.execute("""INSERT INTO authority_asset_qualification(qualification_id,asset_version_id,policy_version,decision,evidence)
                 VALUES (%s,%s,'book-design-author-supervision.v1',%s,%s)""", [str(uuid4()), asset_version_id,
                 "ELIGIBLE" if normalized == "APPROVE" else "INELIGIBLE", Jsonb({"schema_version": "author-supervised-design-eligibility.v1",

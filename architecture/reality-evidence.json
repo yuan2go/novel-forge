@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261005_0149_zero_increment_chapter_outcome",
+  "migration_head": "20261006_0156_resource_journal_indexes",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -47,6 +47,8 @@
       "src/novel_forge/modules/chapter_authority/provider_views.py",
       "src/novel_forge/modules/chapter_quality_authority/domain.py",
       "src/novel_forge/modules/chapter_quality_authority/longitudinal.py",
+      "src/novel_forge/modules/chapter_quality_authority/model_reference.py",
+      "src/novel_forge/modules/chapter_quality_authority/model_reference_execution.py",
       "src/novel_forge/modules/chapter_quality_authority/qualification.py",
       "src/novel_forge/modules/command_kernel/external_effect_adapters.py",
       "src/novel_forge/modules/command_kernel/object_lifecycle.py",
@@ -5057,6 +5059,10 @@
         {
           "path": "src/novel_forge/modules/capability_pack_authority/application.py",
           "symbol": "CapabilityPackAuthorityApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/capability_pack_authority/validation_admission.py",
+          "symbol": "record_validation_admission"
         }
       ],
       "domain_symbols": [
@@ -5110,6 +5116,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260806_0072_capability_pack_integrity_hardening.py",
           "locator": "MIGRATION_ID = \"20260806_0072_capability_pack_integrity_hardening\"",
           "id": "20260806_0072_capability_pack_integrity_hardening"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0150_creative_pack_admission.py",
+          "locator": "MIGRATION_ID = \"20261006_0150_creative_pack_admission\"",
+          "id": "20261006_0150_creative_pack_admission"
         }
       ],
       "external_effects": {
@@ -5130,6 +5141,10 @@
         {
           "path": "tests/integration/test_capability_pack_runtime_snapshot_postgres.py",
           "symbol": "test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect"
+        },
+        {
+          "path": "tests/integration/test_creative_validation_admission_postgres.py",
+          "symbol": "test_native_pack_template_admission_has_no_human_approval_and_cannot_enter_production"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -5198,6 +5213,10 @@
         {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
           "symbol": "require_provider_campaign_entitlement"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/resource_route_recovery.py",
+          "symbol": "cancel_unreserved_paid_intent"
         }
       ],
       "domain_symbols": [
@@ -5344,6 +5363,18 @@
         {
           "path": "src/novel_forge/modules/command_kernel/creative_budget_renewal.py",
           "symbol": "validate_selection"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/execution_template.py",
+          "symbol": "enforce_template_resources"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/membership_identity.py",
+          "symbol": "observe_membership_identity"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/resource_planning.py",
+          "symbol": "rolling_work_estimate"
         }
       ],
       "commands_operations": [
@@ -5422,6 +5453,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260920_0139_narrative_reference_sampling.py",
           "id": "20260920_0139_narrative_reference_sampling",
           "locator": "MIGRATION_ID = \"20260920_0139_narrative_reference_sampling\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0155_unsent_resource_route_succession.py",
+          "locator": "MIGRATION_ID = \"20261006_0155_unsent_resource_route_succession\"",
+          "id": "20261006_0155_unsent_resource_route_succession"
         }
       ],
       "external_effects": {
@@ -5568,6 +5604,10 @@
         {
           "path": "tests/unit/test_author_supervised_routing.py",
           "symbol": "test_supervised_book_cannot_dispatch_strict_selected_model_without_exact_grant"
+        },
+        {
+          "path": "tests/integration/test_creative_channel_resources_postgres.py",
+          "symbol": "test_paid_concurrency_unknown_resume_and_membership_are_separate"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6071,6 +6111,10 @@
         {
           "path": "src/novel_forge/workers/book_authority.py",
           "symbol": "execute_story_formation_claim"
+        },
+        {
+          "path": "src/novel_forge/cli/creation.py",
+          "symbol": "run_creation_command"
         }
       ],
       "application": [
@@ -6209,6 +6253,10 @@
         {
           "path": "tests/integration/test_content_authority_runtime_postgres.py",
           "symbol": "ContentAuthorityRuntimePostgresTests.test_editorial_discussion_persists_exact_approved_knowledge_and_replays"
+        },
+        {
+          "path": "tests/integration/test_creation_cli_postgres.py",
+          "symbol": "test_native_start_freezes_current_work_and_reuses_original_formation"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6330,6 +6378,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260914_0133_formation_evaluation_recovery.py",
           "locator": "MIGRATION_ID = \"20260914_0133_formation_evaluation_recovery\"",
           "id": "20260914_0133_formation_evaluation_recovery"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
+          "locator": "MIGRATION_ID = \"20261006_0151_creative_design_admission\"",
+          "id": "20261006_0151_creative_design_admission"
         }
       ],
       "external_effects": {
@@ -6649,6 +6702,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260825_0100_hierarchy_closure.py",
           "locator": "MIGRATION_ID = \"20260825_0100_hierarchy_closure\"",
           "id": "20260825_0100_hierarchy_closure"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0152_validation_realization_admission.py",
+          "locator": "MIGRATION_ID = \"20261006_0152_validation_realization_admission\"",
+          "id": "20261006_0152_validation_realization_admission"
         }
       ],
       "external_effects": {
@@ -6823,6 +6881,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/opening.py",
           "symbol": "PostgresBookOpeningApplication"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/resource_succession.py",
+          "symbol": "adopt_resource_policy"
         }
       ],
       "domain_symbols": [
@@ -6894,6 +6956,16 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260920_0137_opening_delete_fence.py",
           "locator": "MIGRATION_ID = \"20260920_0137_opening_delete_fence\"",
           "id": "20260920_0137_opening_delete_fence"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0153_resource_opening_successor.py",
+          "locator": "MIGRATION_ID = \"20261006_0153_resource_opening_successor\"",
+          "id": "20261006_0153_resource_opening_successor"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0154_opening_resource_policy_succession.py",
+          "locator": "MIGRATION_ID = \"20261006_0154_opening_resource_policy_succession\"",
+          "id": "20261006_0154_opening_resource_policy_succession"
         }
       ],
       "external_effects": {
@@ -6935,6 +7007,10 @@
         {
           "path": "tests/integration/test_opening_capacity_continuation_postgres.py",
           "symbol": "test_capacity_continuation_is_causal_idempotent_and_fences_failed_source"
+        },
+        {
+          "path": "tests/integration/test_opening_capacity_continuation_postgres.py",
+          "symbol": "test_resource_policy_successor_preserves_completed_nodes_and_historical_scope"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -6975,6 +7051,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/author_revision.py",
           "symbol": "replace_author_chapter"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+          "symbol": "continue_creation"
         }
       ],
       "domain_symbols": [
@@ -7111,6 +7191,10 @@
         {
           "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
           "symbol": "BookToChapterAuthorityVerticalPostgresTests.test_book_cancel_preserves_accepted_chapter_history"
+        },
+        {
+          "path": "tests/integration/test_synthesis_formation_postgres.py",
+          "symbol": "test_creative_validation_native_controlled_process_to_internal_acceptance"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -7647,6 +7731,10 @@
         {
           "path": "src/novel_forge/modules/review/review_sources.py",
           "symbol": "adopted_source"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+          "symbol": "verify_internal_quality"
         }
       ],
       "commands_operations": [
@@ -8704,6 +8792,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260921_0141_author_chapter_replacement.py",
           "id": "20260921_0141_author_chapter_replacement",
           "locator": "20260921_0141_author_chapter_replacement"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261006_0156_resource_journal_indexes.py",
+          "locator": "MIGRATION_ID = \"20261006_0156_resource_journal_indexes\"",
+          "id": "20261006_0156_resource_journal_indexes"
         }
       ],
       "external_effects": {
@@ -9212,7 +9305,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:7ff1db77b18bc86084842701db1d5c599a70684f0420f3f047b5119dd4386a1e"
+    "implementation_tree_sha": "sha256:c2dca2efa8c7dbfb60fc09890cbe8303190b04ba11c2bad3b0b7aa238ee2369e"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

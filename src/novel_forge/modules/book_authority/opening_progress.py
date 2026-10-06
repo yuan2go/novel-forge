@@ -921,7 +921,7 @@ def _budget_usage(
     )
     committed_calls = int(budget.get("committed_call_count") or 0)
     accounted_tokens = int(budget.get("accounted_tokens") or 0)
-    deadline_exceeded = isinstance(deadline, datetime) and observed_at >= deadline
+    deadline_exceeded = policy.get("resource_control_version") != "billing-channel-resources.v1" and isinstance(deadline, datetime) and observed_at >= deadline
     exhaustion_reasons: list[str] = []
     if int(budget.get("budget_breach_count") or 0) > 0:
         exhaustion_reasons.append("BUDGET_BREACH_RECORDED")

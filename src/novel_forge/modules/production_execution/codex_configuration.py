@@ -171,6 +171,19 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
         "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
         "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
     )
+    membership = values.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") == "billing-channel-resources.v1"
+    if membership:
+        required = tuple(name for name in required if name not in {
+            "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT", "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
+            "NOVEL_FORGE_QUALITY_MODEL"})
+        try:
+            from .membership_identity import observe_membership_identity
+            observed = observe_membership_identity(str(values.get("NOVEL_FORGE_CODEX_HOME") or ""))
+            identity["billing_identity"] = observed
+            if observed["account_ref"] != values.get("NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF"):
+                blockers.append("CODEX_MEMBERSHIP_IDENTITY_DRIFT")
+        except ValueError as error:
+            blockers.append(str(error))
     missing = [name for name in required if not str(values.get(name) or "").strip()]
     retry_policy = str(values.get("NOVEL_FORGE_CODEX_RETRY_POLICY") or "")
     try:
@@ -186,7 +199,8 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
         "invocation_overrides": [*CODEX_INPUT_ONLY_OVERRIDES, *retry_overrides],
         "retry_policy": retry_policy or "LEGACY_CLI_DEFAULTS",
         "authorization": "REQUIRES_EXTERNAL_USER_GRANT_VERIFICATION",
-        "credentials_inspected": False,
+        "credentials_inspected": membership,
+        "credential_evidence_scope": "LOCAL_AUTH_MODE_AND_HASHED_ACCOUNT_ONLY" if membership else "NOT_INSPECTED",
         "remote_availability": "NOT_TESTED",
         "model_calls": 0,
         "fallback": "FORBIDDEN",

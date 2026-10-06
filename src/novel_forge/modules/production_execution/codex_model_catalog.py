@@ -38,7 +38,7 @@ def parse_codex_model_catalog(raw: str) -> tuple[dict[str, Any], ...]:
 
 
 def codex_catalog_candidates(entries: tuple[dict[str, Any], ...], *,
-    entitlement: Mapping[str, str], quota: int, valid_from: str, valid_until: str,
+    entitlement: Mapping[str, Any], quota: int | None, valid_from: str, valid_until: str,
 ) -> tuple[ModelCandidate, ...]:
     price = PricingSnapshot(version=entitlement["configuration_ref"],
         effective_from=valid_from, effective_until=valid_until,

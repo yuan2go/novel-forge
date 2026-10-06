@@ -344,7 +344,7 @@ class BookControlRepository:
                 JOIN authority_asset_version v ON v.asset_version_id=s.asset_version_id
                 WHERE s.project_id=%s AND v.content->>'book_id'=%s
                   AND s.planning_scope IN ('BOOK','VOLUME','ARC','CHAPTER_GROUP','CHAPTER')
-                  AND (s.qualification='QUALIFIED' OR (s.qualification IN ('STRUCTURALLY_VALID','SEMANTICALLY_VALID') AND s.execution_evidence #>> '{author_supervision,mode}'='AUTHOR_SUPERVISED')) AND s.freshness='CURRENT'
+                  AND (s.qualification='QUALIFIED' OR (s.qualification='STRUCTURALLY_VALID' AND s.execution_evidence #>> '{creative_validation,mode}'='CREATIVE_VALIDATION') OR (s.qualification IN ('STRUCTURALLY_VALID','SEMANTICALLY_VALID') AND s.execution_evidence #>> '{author_supervision,mode}'='AUTHOR_SUPERVISED')) AND s.freshness='CURRENT'
                   AND s.lifecycle NOT IN ('REJECTED','SUPERSEDED','ARCHIVED')
                   AND (s.lifecycle<>'ACTIVE' OR EXISTS (SELECT 1 FROM story_plan_binding b WHERE b.asset_version_id=v.asset_version_id AND b.execution_scope='PLANNED'))
                   AND NOT EXISTS (SELECT 1 FROM story_plan_binding b WHERE b.asset_version_id=v.asset_version_id AND b.execution_scope='EXECUTED')

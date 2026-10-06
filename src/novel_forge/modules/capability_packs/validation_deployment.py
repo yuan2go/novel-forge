@@ -439,7 +439,13 @@ def _install_validation_manifest(
         or runtime_environment not in {"test", "validation"}
     ):
         raise ValueError("Capability Pack manifest identity is incomplete")
-    if compiler.principal_id == approver.principal_id:
+    from novel_forge.modules.production_execution.execution_template import selected_book_template
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    with AuthorityUnitOfWork(database_url) as uow:
+        creative = selected_book_template(uow.cursor, project_id=project_id, book_id=book_id, allow_literary_required=True)
+    automatic = bool(creative and runtime_environment == "validation" and not next(
+        item for item in creative["policy_snapshot"]["policy"]["execution_templates"] if item["book_id"] == book_id)["require_pack_human_approval"])
+    if not automatic and compiler.principal_id == approver.principal_id:
         raise PermissionError("Pack compiler and approver must be independent")
     scope_identity = _scope_identity(
         project_id=project_id,
@@ -505,41 +511,53 @@ def _install_validation_manifest(
         agent_generation=agent_generation,
         runtime_environment=runtime_environment,
     )
-    approval = _pack_command(
-        app,
-        approver,
-        action="capability_pack.approval.decide",
-        project_id=project_id,
-        workspace_id=workspace_id,
-        pack_id=pack_id,
-        pack_version=pack_version,
-        compilation_id=compilation_id,
-        stable_suffix=scope_identity,
-        payload={
-            "compilation_hash": compilation["compilation_hash"],
-            "decision": "APPROVED",
-            "approval_policy_ref": "capability-pack-approval-scope:v1",
-            "scope": {
-                "schema_version": "CapabilityPackApprovalScope.v1",
-                "allowed_environments": [runtime_environment],
-                "allowed_runtime_profiles": [runtime_environment],
-                "allowed_release_channels": ["VALIDATION"],
-                "allowed_scope_types": ["BOOK"],
-                "allowed_project_ids": [project_id],
-                "allowed_workspace_ids": [workspace_id],
-                "allowed_book_ids": [book_id],
-                "allowed_workflow_definition_refs": [workflow_ref],
-                "allow_canary": False,
-                "allow_percentage_rollout": False,
-                "allow_full_rollout": True,
-                "maximum_rollout_percentage": 100,
+    if automatic:
+        scope = {"schema_version": "CapabilityPackApprovalScope.v1",
+            "allowed_environments": ["validation"], "allowed_runtime_profiles": ["validation"],
+            "allowed_release_channels": ["VALIDATION"], "allowed_scope_types": ["BOOK"],
+            "allowed_project_ids": [project_id], "allowed_workspace_ids": [workspace_id], "allowed_book_ids": [book_id],
+            "allowed_workflow_definition_refs": [workflow_ref], "allow_canary": False, "allow_percentage_rollout": False,
+            "allow_full_rollout": True, "maximum_rollout_percentage": 100}
+        approval = _pack_command(app, compiler, action="capability_pack.validation.admit", project_id=project_id,
+            workspace_id=workspace_id, pack_id=pack_id, pack_version=pack_version, compilation_id=compilation_id,
+            stable_suffix=scope_identity, payload={"book_id": book_id, "policy_snapshot": creative["policy_snapshot"],
+                "compilation_hash": compilation["compilation_hash"], "scope": scope})
+    else:
+        approval = _pack_command(
+            app,
+            approver,
+            action="capability_pack.approval.decide",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            pack_id=pack_id,
+            pack_version=pack_version,
+            compilation_id=compilation_id,
+            stable_suffix=scope_identity,
+            payload={
+                "compilation_hash": compilation["compilation_hash"],
+                "decision": "APPROVED",
+                "approval_policy_ref": "capability-pack-approval-scope:v1",
+                "scope": {
+                    "schema_version": "CapabilityPackApprovalScope.v1",
+                    "allowed_environments": [runtime_environment],
+                    "allowed_runtime_profiles": [runtime_environment],
+                    "allowed_release_channels": ["VALIDATION"],
+                    "allowed_scope_types": ["BOOK"],
+                    "allowed_project_ids": [project_id],
+                    "allowed_workspace_ids": [workspace_id],
+                    "allowed_book_ids": [book_id],
+                    "allowed_workflow_definition_refs": [workflow_ref],
+                    "allow_canary": False,
+                    "allow_percentage_rollout": False,
+                    "allow_full_rollout": True,
+                    "maximum_rollout_percentage": 100,
+                },
+                "limitations": ["BOUNDED_QUALITY_QUALIFICATION_ONLY"],
+                "reason": "exact-SHA bounded Quality qualification",
+                "evidence_refs": [f"quality-qualification:{commit_sha}"],
+                "enforce_duties_separation": True,
             },
-            "limitations": ["BOUNDED_QUALITY_QUALIFICATION_ONLY"],
-            "reason": "exact-SHA bounded Quality qualification",
-            "evidence_refs": [f"quality-qualification:{commit_sha}"],
-            "enforce_duties_separation": True,
-        },
-    )
+        )
     deployment_id = f"deployment:quality:{pack_id}:{scope_identity}"
     deployment = _pack_command(
         app,

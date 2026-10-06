@@ -106,7 +106,7 @@ class NarrativeRealizationRepository:
         existing = self.cursor.fetchone()
         if existing is not None:
             if (
-                str(existing[0]) == NarrativeRealizationLifecycle.QUALIFIED.value
+                str(existing[0]) == contract.lifecycle.value
                 and str(existing[2]) == contract.contract_digest
             ):
                 return self.require(contract.realization_id)
@@ -114,7 +114,8 @@ class NarrativeRealizationRepository:
                 "NARRATIVE_REALIZATION_CONFLICT",
                 "realization identity already binds different evidence",
             )
-        if contract.lifecycle is not NarrativeRealizationLifecycle.QUALIFIED:
+        expected = NarrativeRealizationLifecycle.ADMITTED if contract.proof.design_admission.get("mode") == "CREATIVE_VALIDATION" else NarrativeRealizationLifecycle.QUALIFIED
+        if contract.lifecycle is not expected:
             raise KernelError(
                 "NARRATIVE_REALIZATION_LIFECYCLE_INVALID",
                 "qualification command requires a QUALIFIED contract",
@@ -136,7 +137,7 @@ class NarrativeRealizationRepository:
                 qualification_operation_id
             ) VALUES (
                 %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-                'QUALIFIED',%s
+                %s,%s
             )
             """,
             [
@@ -170,6 +171,7 @@ class NarrativeRealizationRepository:
                 contract.proof_asset_version_id,
                 contract.proof_hash,
                 contract.contract_digest,
+                contract.lifecycle.value,
                 operation_id,
             ],
         )
@@ -227,6 +229,11 @@ class NarrativeRealizationRepository:
                 "realization lifecycle version changed",
             )
         allowed = {
+            NarrativeRealizationLifecycle.ADMITTED: {
+                NarrativeRealizationLifecycle.APPROVED,
+                NarrativeRealizationLifecycle.REJECTED,
+                NarrativeRealizationLifecycle.STALE,
+            },
             NarrativeRealizationLifecycle.QUALIFIED: {
                 NarrativeRealizationLifecycle.APPROVED,
                 NarrativeRealizationLifecycle.REJECTED,
@@ -354,7 +361,7 @@ class NarrativeRealizationRepository:
             SELECT realization.realization_id
             FROM authority_narrative_realization AS realization
             WHERE realization.project_id=%s AND realization.book_id=%s
-              AND realization.lifecycle IN ('QUALIFIED','APPROVED','FROZEN')
+              AND realization.lifecycle IN ('ADMITTED','QUALIFIED','APPROVED','FROZEN')
               AND (
                 EXISTS (
                   SELECT 1
@@ -404,7 +411,7 @@ class NarrativeRealizationRepository:
             SET lifecycle='STALE', version=version+1,
                 invalidated_by_operation_id=%s, updated_at=NOW()
             WHERE realization_id=ANY(%s)
-              AND lifecycle IN ('QUALIFIED','APPROVED','FROZEN')
+              AND lifecycle IN ('ADMITTED','QUALIFIED','APPROVED','FROZEN')
             """,
             [operation_id, list(realization_ids)],
         )
@@ -724,6 +731,13 @@ class NarrativeRealizationRepository:
         author_supervised = (
             contract.proof.design_admission.get("mode") == "AUTHOR_SUPERVISED_DESIGN"
         )
+        creative = contract.proof.design_admission.get("mode") == "CREATIVE_VALIDATION"
+        if creative:
+            from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+            receipt = approved_validation_design(self.cursor, project_id=contract.project_id, book_id=contract.book_id, asset_version_id=contract.chapter_group_plan_version_id)
+            if (receipt is None or receipt != contract.proof.design_admission or receipt["content_hash"] != contract.chapter_group_content_hash
+                    or receipt["decision_asset_version_id"] != contract.proof_asset_version_id or receipt["decision_content_hash"] != contract.proof_hash):
+                raise KernelError("REALIZATION_VALIDATION_STALE", "Exact validation receipt required")
         if author_supervised:
             from novel_forge.modules.story_design_authority.author_supervision import (
                 approved_design_receipt,
@@ -748,7 +762,7 @@ class NarrativeRealizationRepository:
                 )
         proof_types = (
             {"story_design_transition_receipt"}
-            if author_supervised
+            if author_supervised or creative
             else {"narrative_realization_proof", "narrative_design_evaluation"}
         )
         self._require_asset(
@@ -762,7 +776,7 @@ class NarrativeRealizationRepository:
             contract.proof.semantic_evaluation_asset_version_id,
             contract.proof.semantic_evaluation_hash,
             allowed_types={"story_design_transition_receipt"}
-            if author_supervised
+            if author_supervised or creative
             else {"narrative_design_evaluation"},
         )
 
@@ -934,7 +948,7 @@ class NarrativeRealizationRepository:
                    accepted_through_chapter,
                    story_state_asset_version_id, story_state_content_hash,
                    canon_snapshot_asset_version_id, canon_snapshot_content_hash,
-                   proof_asset_version_id, proof_hash
+                   proof_asset_version_id, proof_hash, proof
             FROM authority_narrative_realization
             WHERE realization_id=%s AND project_id=%s AND book_id=%s
             """,
@@ -961,12 +975,21 @@ class NarrativeRealizationRepository:
             str(row[1]),
             allowed_types={"planning_generation_candidate"},
         )
-        self._require_asset(
-            project_id,
-            str(row[9]),
-            str(row[10]),
-            allowed_types={"narrative_design_evaluation"},
-        )
+        admission = dict(row[11] or {}).get("design_admission", {})
+        proof_types = {"narrative_design_evaluation"}
+        if admission.get("mode") == "CREATIVE_VALIDATION":
+            from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+            receipt = approved_validation_design(self.cursor, project_id=project_id, book_id=book_id, asset_version_id=str(row[0]))
+            if receipt != admission or receipt["decision_asset_version_id"] != str(row[9]) or receipt["decision_content_hash"] != str(row[10]):
+                raise KernelError("REALIZATION_VALIDATION_STALE", "Current realization validation changed")
+            proof_types = {"story_design_transition_receipt"}
+        elif admission.get("mode") == "AUTHOR_SUPERVISED_DESIGN":
+            from novel_forge.modules.story_design_authority.author_supervision import approved_design_receipt
+            receipt = approved_design_receipt(self.cursor, project_id=project_id, book_id=book_id, asset_version_id=str(row[0]))
+            if receipt != admission or receipt["decision_asset_version_id"] != str(row[9]) or receipt["decision_content_hash"] != str(row[10]):
+                raise KernelError("REALIZATION_AUTHOR_APPROVAL_STALE", "Current realization approval changed")
+            proof_types = {"story_design_transition_receipt"}
+        self._require_asset(project_id, str(row[9]), str(row[10]), allowed_types=proof_types)
         for arc in row[3] or ():
             if not isinstance(arc, dict):
                 raise KernelError(

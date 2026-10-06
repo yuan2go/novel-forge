@@ -1,0 +1,71 @@
+........F
+=================================== FAILURES ===================================
+_ test_resource_policy_successor_preserves_completed_nodes_and_historical_scope _
+
+definition = {'name': 'book.opening.adopt_resource_policy', 'definition_version': '1.0.0', 'family': 'book_authority', 'enabled': True, ...}
+command = {'definition_name': 'book.opening.adopt_resource_policy', 'definition_version': '1.0.0', 'project_id': 'project-ea8b8a2b226344308163b666a40f1680', 'workspace_id': 'workspace-ea8b8a2b226344308163b666a40f1680', ...}
+
+    def _resolve_concurrency_key(
+        definition: dict[str, Any],
+        command: dict[str, Any],
+    ) -> str:
+        try:
+>           return str(definition["concurrency_key_template"]).format_map(command)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'book_id'
+
+src/novel_forge/modules/command_kernel/service.py:374: KeyError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d94f6e0>
+
+    def test_resource_policy_successor_preserves_completed_nodes_and_historical_scope(monkeypatch):
+        from novel_forge.modules.book_authority.resource_succession import adopt_resource_policy, prospective_scope
+        from novel_forge.modules.command_kernel.budget_runtime import assess_budget_scope_in_uow, lock_budget_scope_in_uow
+        fixture, original, successor_app = _capacity_fixture(resource_successor=True)
+        fixture.execute(fixture.claim(fixture.principal.principal_id))
+        before = fixture.opening.require(original.opening_run_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT node_receipt_id FROM authority_book_opening_node_receipt WHERE opening_run_id=%s", [original.opening_run_id])
+            receipts = uow.cursor.fetchall()
+            assert receipts
+            scope = lock_budget_scope_in_uow(uow, budget_scope_id=before["budget_scope_id"], project_id=fixture.project_id)
+        args = dict(opening_run_id=original.opening_run_id, expected_version=before["version"],
+            principal=fixture.principal, idempotency_key="adopt-resource-policy:" + original.opening_run_id)
+>       adopted = adopt_resource_policy(successor_app, **args)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_opening_capacity_continuation_postgres.py:223: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/book_authority/resource_succession.py:88: in adopt_resource_policy
+    return execute_transaction_command(application.database_url,
+src/novel_forge/modules/command_kernel/service.py:52: in execute_transaction_command
+    admitted = admit_command_in_uow(uow, command, context=context)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/service.py:193: in admit_command_in_uow
+    concurrency_key = _resolve_concurrency_key(definition, command)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+definition = {'name': 'book.opening.adopt_resource_policy', 'definition_version': '1.0.0', 'family': 'book_authority', 'enabled': True, ...}
+command = {'definition_name': 'book.opening.adopt_resource_policy', 'definition_version': '1.0.0', 'project_id': 'project-ea8b8a2b226344308163b666a40f1680', 'workspace_id': 'workspace-ea8b8a2b226344308163b666a40f1680', ...}
+
+    def _resolve_concurrency_key(
+        definition: dict[str, Any],
+        command: dict[str, Any],
+    ) -> str:
+        try:
+            return str(definition["concurrency_key_template"]).format_map(command)
+        except KeyError as exc:
+>           raise KernelError(
+                "COMMAND_SCHEMA_INVALID",
+                f"concurrency key is missing command field: {exc.args[0]}",
+            ) from exc
+E           novel_forge.modules.command_kernel.errors.KernelError: COMMAND_SCHEMA_INVALID: concurrency key is missing command field: book_id
+
+src/novel_forge/modules/command_kernel/service.py:376: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_opening_capacity_continuation_postgres.py::test_resource_policy_successor_preserves_completed_nodes_and_historical_scope
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 8 passed in 30.23s

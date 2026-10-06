@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False,
+    *, complete_after_result_repair=False, creative_validation=False,
 ):
     fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
         "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
@@ -78,19 +78,23 @@ def test_native_formation_generates_foundation_from_author_brief(
 
     chapter_pack = copy(harness)
     chapter_pack.pack_id += "-chapter"
-    approved_chapter = chapter_pack.register_compile_approve(
-        "1.0.0",
-        generation=1,
-        approval_scope=chapter_pack.approval_scope(
-            environments=("test",), runtime_profiles=("test",)
-        ),
-        target_runtime_profile="test",
-    )
-    chapter_pack.register_agents(approved_chapter.compiled)
-    chapter_deployment = chapter_pack.deploy(
-        approved_chapter, environment="test", runtime_profile="test"
-    )
-    chapter_pack.activate(chapter_deployment, environment="test")
+    if creative_validation:
+        from tests.integration.creative_validation_production_support import prepare_native_template
+        template_actor = prepare_native_template(harness, chapter_pack)
+    else:
+        approved_chapter = chapter_pack.register_compile_approve(
+            "1.0.0",
+            generation=1,
+            approval_scope=chapter_pack.approval_scope(
+                environments=("test",), runtime_profiles=("test",)
+            ),
+            target_runtime_profile="test",
+        )
+        chapter_pack.register_agents(approved_chapter.compiled)
+        chapter_deployment = chapter_pack.deploy(
+            approved_chapter, environment="test", runtime_profile="test"
+        )
+        chapter_pack.activate(chapter_deployment, environment="test")
     from tests.integration.test_postgresql_only_chapter_slice import (
         PostgreSQLOnlyChapterSliceTests,
     )
@@ -130,16 +134,20 @@ def test_native_formation_generates_foundation_from_author_brief(
         environments=("test",), runtime_profiles=("test",)
     )
     approval["allowed_workflow_definition_refs"] = [profile.workflow_ref]
-    approved = harness.register_compile_approve(
-        "1.1.0",
-        generation=1,
-        approval_scope=approval,
-        target_runtime_profile="test",
-        proof_skill_ref=profile.agent_skill_ref,
-    )
-    harness.register_agents(approved.compiled)
-    deployment = harness.deploy(approved, environment="test", runtime_profile="test")
-    harness.activate(deployment, environment="test")
+    if creative_validation:
+        from tests.integration.creative_validation_production_support import install_planning
+        install_planning(harness, profile, template_actor)
+    else:
+        approved = harness.register_compile_approve(
+            "1.1.0",
+            generation=1,
+            approval_scope=approval,
+            target_runtime_profile="test",
+            proof_skill_ref=profile.agent_skill_ref,
+        )
+        harness.register_agents(approved.compiled)
+        deployment = harness.deploy(approved, environment="test", runtime_profile="test")
+        harness.activate(deployment, environment="test")
     principal = _principal(harness.project_id)
     principal = replace(
         principal,
@@ -224,7 +232,33 @@ def test_native_formation_generates_foundation_from_author_brief(
             return result
 
         transport.planning = malformed_once
+    if creative_validation:
+        normal_planning = transport.planning
+        def consistent_fixture(stage, inputs):
+            result = normal_planning(stage, inputs)
+            if stage == "creative.candidates.generate":
+                result["serialization_potential"] = None
+                for declaration in result.get("applicability", []):
+                    if declaration["field_path"] == "$.serialization_potential":
+                        declaration.update(status="NOT_APPLICABLE", rationale="Bounded fixture work")
+            def bounded_serialization(value):
+                if isinstance(value, dict):
+                    for key, child in value.items():
+                        if key == "serialization_function":
+                            value[key] = None
+                        else:
+                            bounded_serialization(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        bounded_serialization(child)
+            bounded_serialization(result)
+            return result
+        transport.planning = consistent_fixture
     registry.register(transport)
+    if creative_validation:
+        from tests.integration.creative_validation_production_support import controlled_member_environment
+        env = controlled_member_environment(tmp_path, env, monkeypatch, transport)
+        settings = replace(settings, environment="validation", root=Path(__file__).resolve().parents[2])
     execution = build_production_execution_composition(
         settings,
         env=env,
@@ -535,18 +569,19 @@ def test_native_formation_generates_foundation_from_author_brief(
                 project_id=harness.project_id, asset_type="book_design"
             ) if item.lifecycle == "ACTIVE"
         )
-        binder = object.__new__(PostgresNarrativeEvaluationExecutionContractBinder)
-        binder.evaluation_query = asset_query
-        dependencies = binder._canonical_dependencies(
-            book_design, book_id=harness.book_ids[0]
-        )
-        assert len(dependencies) == 6
-        assert all(
-            source.asset_type == "planning_generation_candidate"
-            and source.content["book_id"] == harness.book_ids[0]
-            and qualification.content["candidate_content_hash"] == source.content_hash
-            for _, source, qualification in dependencies
-        )
+        if not creative_validation:
+            binder = object.__new__(PostgresNarrativeEvaluationExecutionContractBinder)
+            binder.evaluation_query = asset_query
+            dependencies = binder._canonical_dependencies(
+                book_design, book_id=harness.book_ids[0]
+            )
+            assert len(dependencies) == 6
+            assert all(
+                source.asset_type == "planning_generation_candidate"
+                and source.content["book_id"] == harness.book_ids[0]
+                and qualification.content["candidate_content_hash"] == source.content_hash
+                for _, source, qualification in dependencies
+            )
         assert (
             recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair else 7)
         )
@@ -622,75 +657,112 @@ def test_native_formation_generates_foundation_from_author_brief(
         )
         policy["profiles"]["production_profile"]["content"].update(fixture_production_profile)
         policy["profiles"]["production_profile"]["content"]["target_chapter_count"] = target_chapters
-        prepared = prepare_creation_inputs(
-            composition=composition,
-            content=content,
-            formation_run_id=admitted.formation_run_id,
-            policy=policy,
-        )
-        versions = prepared["versions"]
-        opening_request = OpenBookProductionRequest(
-            project_id=harness.project_id,
-            workspace_id=harness.workspace_id,
-            book_id=harness.book_ids[0],
-            actor_id=principal.principal_id,
-            expected_book_version=prepared["book_version"],
-            production_profile=versions["production_profile"],
-            planning_input_versions={
-                role: versions[role] for role in _OPENING_INPUT_ROLES
-            },
-            arc_logical_keys=("arc:central", "arc:relationship"),
-            idempotency_key=f"{harness.project_id}:synthesis:opening",
-            trace_id="trace:synthesis:opening",
-            correlation_id=harness.project_id,
-            initial_story_state_version=versions["story_state"],
-            initial_canon_snapshot_version=versions["canon_snapshot"],
-        )
-        opening = composition.open_book(opening_request)
-        assert opening.opening_run_id
-        claim = composition.opening.claim_next_execution(
-            worker_id="synthesis-opening",
-            lease_seconds=60,
-            project_id=harness.project_id,
-        )
-        assert claim is not None
-        opened = execute_book_opening_claim(
-            RuntimeJobAuthority(DATABASE_URL),
-            composition.opening,
-            principal,
-            claim,
-            lease_seconds=60,
-        )
-        snapshot = composition.input_resolver.require(opened["input_snapshot_id"])
-        from scripts.run_world_production_smoke import drive, start_command
-        from novel_forge.modules.authority_security import PrincipalType
-        import time
+        if creative_validation:
+            from novel_forge.modules.book_authority.creation_runtime import continue_creation
+            from novel_forge.modules.authority_security import PrincipalType
+            from types import SimpleNamespace
+            import time
 
-        book_run = composition.authority.start(
-            start_command(
-                snapshot,
-                actor=principal.principal_id,
-                run_key=f"{harness.project_id}:synthesis:production",
-                chapters=target_chapters,
-            ),
-            principal=principal,
-        )
-        worker = replace(
-            principal,
-            principal_type=PrincipalType.WORKER,
-            permissions=principal.permissions - {"book.authority.approve_replan"},
-        )
-        ticks = []
-        stop = drive(
-            composition=composition,
-            chapter=chapter,
-            book_run_id=book_run.book_run_id,
-            worker=worker,
-            events=ticks.append,
-            maximum_ticks=80,
-            deadline=time.monotonic() + 240,
-        )
-        assert stop == "ACCEPTED_TARGET_REACHED", (stop, ticks[-3:])
+            worker = replace(principal, principal_type=PrincipalType.WORKER,
+                permissions=principal.permissions - {"book.authority.approve_replan"})
+            creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
+                formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+            assert creation_result["stop_reason"] == "COMPLETED", creation_result
+            book_run = SimpleNamespace(book_run_id=creation_result["book_run_id"])
+            calls = len(transport.calls), len(transport.chapter.calls)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*),sum(actual_tokens) FROM authority_budget_reservation WHERE project_id=%s", [harness.project_id])
+                ledger = uow.cursor.fetchone()
+                uow.cursor.execute("SELECT count(*) FROM authority_capability_pack_approval approval JOIN authority_operation op ON op.operation_id=approval.decided_by_operation_id WHERE op.project_id=%s", [harness.project_id])
+                assert uow.cursor.fetchone()[0] == 0
+            execution.close()
+            execution = build_production_execution_composition(settings, env=env, provider_registry=registry,
+                planning_fixture_factory=transport.planning, chapter_fixture_factory=transport.chapter)
+            chapter = build_chapter_authority_application(settings, execution=execution, env=env)
+            rebuilt = build_book_production_composition(settings, principal=principal, execution=execution,
+                chapter_application=chapter, env=env)
+            resumed = continue_creation(composition=rebuilt, content=content, chapter=chapter,
+                formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                book_worker=worker, maximum_ticks=5, deadline=time.monotonic() + 30, creation_policy=policy)
+            assert resumed["stop_reason"] == "COMPLETED" and resumed["book_run_id"] == book_run.book_run_id
+            assert (len(transport.calls), len(transport.chapter.calls)) == calls
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*),sum(actual_tokens) FROM authority_budget_reservation WHERE project_id=%s", [harness.project_id])
+                assert uow.cursor.fetchone() == ledger
+        else:
+            prepared = prepare_creation_inputs(
+                composition=composition,
+                content=content,
+                formation_run_id=admitted.formation_run_id,
+                policy=policy,
+            )
+            versions = prepared["versions"]
+            opening_request = OpenBookProductionRequest(
+                project_id=harness.project_id,
+                workspace_id=harness.workspace_id,
+                book_id=harness.book_ids[0],
+                actor_id=principal.principal_id,
+                expected_book_version=prepared["book_version"],
+                production_profile=versions["production_profile"],
+                planning_input_versions={
+                    role: versions[role] for role in _OPENING_INPUT_ROLES
+                },
+                arc_logical_keys=("arc:central", "arc:relationship"),
+                idempotency_key=f"{harness.project_id}:synthesis:opening",
+                trace_id="trace:synthesis:opening",
+                correlation_id=harness.project_id,
+                initial_story_state_version=versions["story_state"],
+                initial_canon_snapshot_version=versions["canon_snapshot"],
+            )
+            opening = composition.open_book(opening_request)
+            assert opening.opening_run_id
+            claim = composition.opening.claim_next_execution(
+                worker_id="synthesis-opening",
+                lease_seconds=60,
+                project_id=harness.project_id,
+            )
+            assert claim is not None
+            opened = execute_book_opening_claim(
+                RuntimeJobAuthority(DATABASE_URL),
+                composition.opening,
+                principal,
+                claim,
+                lease_seconds=60,
+            )
+            snapshot = composition.input_resolver.require(opened["input_snapshot_id"])
+            if creative_validation:
+                from novel_forge.modules.book_authority.creation_runtime import drive_book as drive, resolved_book_command as start_command
+            else:
+                from scripts.run_world_production_smoke import drive, start_command
+            from novel_forge.modules.authority_security import PrincipalType
+            import time
+
+            book_run = composition.authority.start(
+                start_command(
+                    snapshot,
+                    actor=principal.principal_id,
+                    run_key=f"{harness.project_id}:synthesis:production",
+                    chapters=target_chapters,
+                ),
+                principal=principal,
+            )
+            worker = replace(
+                principal,
+                principal_type=PrincipalType.WORKER,
+                permissions=principal.permissions - {"book.authority.approve_replan"},
+            )
+            ticks = []
+            stop = drive(
+                composition=composition,
+                chapter=chapter,
+                book_run_id=book_run.book_run_id,
+                worker=worker,
+                events=ticks.append,
+                maximum_ticks=80,
+                deadline=time.monotonic() + 240,
+            )
+            assert stop == ("COMPLETED" if creative_validation else "ACCEPTED_TARGET_REACHED"), (stop, ticks[-3:])
         from tests.integration.creative_grounding_support import (
             verify_creative_workspace,
         )
@@ -789,9 +861,9 @@ def test_native_formation_generates_foundation_from_author_brief(
                 assert delivered["source_receipt"]["content_hash"] == canonical_hash(original)
                 assert any(selected["logical_context_kind"] == "planning_author_design_projection" for selected in manifest["selected_inputs"])
         artifact = {
-            "prepared": prepared,
-            "opening": opened,
-            "ticks": ticks,
+            "prepared": {"creation_input_policy": policy} if creative_validation else prepared,
+            "opening": creation_result if creative_validation else opened,
+            "ticks": {"status": "NOT_RECORDED"} if creative_validation else ticks,
             "workspaces": workspaces,
             "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY",
             "formation": result,
@@ -820,6 +892,20 @@ def test_native_formation_generates_foundation_from_author_brief(
         from scripts.creation_pilot import prepare_pilot_book
         assert set(chapters(tmp_path)) == set(range(1, target_chapters + 1))
         assert len(list(tmp_path.glob("accepted-chapter-*.txt"))) == target_chapters
+        if creative_validation:
+            from copy import deepcopy
+            from novel_forge.modules.chapter_quality_authority.creative_validation import verify_internal_quality
+            reports = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id, asset_type="quality_score_report")
+            assert reports
+            for report in reports:
+                admission = report.content["internal_admission"]
+                assert admission["status"] == "INTERNAL_ADMITTED" and admission["literary_qualification"] == "NOT_RUN"
+                assert report.content["gate"] not in {"PASSED", "PASSED_WITH_WARNINGS"}
+                forged = deepcopy(admission)
+                forged["observations"][0]["status"] = "QUALIFIED"
+                with pytest.raises(ValueError, match="VALIDATION_QUALITY_ADMISSION_TAMPERED"):
+                    verify_internal_quality(DATABASE_URL, forged, project_id=harness.project_id, book_id=harness.book_ids[0])
+            return
         assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key=formation_key)["formation_run_id"] == admitted.formation_run_id
         assert formation.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key="different-key") is None
         assert composition.opening.find_by_key(project_id=harness.project_id, book_id=harness.book_ids[0], idempotency_key=f"{harness.project_id}:synthesis:opening")["opening_run_id"] == opening.opening_run_id
@@ -986,3 +1072,10 @@ def _assert_runtime_continuation_once(formation, harness, transport, principal):
     assert len({item.candidate_asset_version_id for item in outcomes})==1
     assert all(item.generation_operation_id==successor_id for item in outcomes)
     assert len(transport.calls)==before
+
+
+def test_creative_validation_native_controlled_process_to_internal_acceptance(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(
+        tmp_path, monkeypatch, False, False, False, False, False, False, 1,
+        creative_validation=True,
+    )

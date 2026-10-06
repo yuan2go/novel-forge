@@ -230,7 +230,7 @@ class PostgresProductionAssetResolver:
             raise KernelError("PREPARATION_FOUNDATION_ROLE_INVALID", "Generated Foundation requires an exact semantic generator")
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
-                """SELECT binding.foundation_role
+                """SELECT binding.foundation_role,state.qualification
                    FROM authority_book_foundation_binding AS binding
                    JOIN authority_story_design_version_state AS state
                      ON state.project_id=binding.project_id AND state.asset_version_id=binding.asset_version_id
@@ -238,14 +238,20 @@ class PostgresProductionAssetResolver:
                      AND binding.asset_version_id=%s AND binding.content_hash=%s
                      AND binding.foundation_role=%s AND binding.freshness='CURRENT'
                      AND binding.retired_at IS NULL AND state.lifecycle='ACTIVE'
-                     AND state.qualification='QUALIFIED' AND state.approval='APPROVED'
+                     AND state.qualification IN ('QUALIFIED','STRUCTURALLY_VALID') AND state.approval='APPROVED'
                      AND state.freshness='CURRENT'""",
                 [asset.project_id, asset.content.get("book_id"), asset.asset_version_id, asset.content_hash, role.value],
             )
             rows = uow.cursor.fetchall()
+            if len(rows) == 1 and rows[0][1] == "STRUCTURALLY_VALID":
+                from novel_forge.modules.story_design_authority.creative_validation import approved_validation_design
+                admission = approved_validation_design(uow.cursor, project_id=asset.project_id,
+                    book_id=asset.content["book_id"], asset_version_id=asset.asset_version_id)
+                if admission is None:
+                    raise KernelError("PREPARATION_FOUNDATION_NOT_CURRENT", "Native validation admission required")
         if len(rows) != 1:
-            raise KernelError("PREPARATION_FOUNDATION_NOT_CURRENT", "Only the exact current qualified Book Foundation can supply a semantic context role")
-        return replace(asset, asset_type=role.value.lower(), content={**asset.content, "physical_asset_type": asset.asset_type}, selected_reason="current qualified Foundation semantic projection")
+            raise KernelError("PREPARATION_FOUNDATION_NOT_CURRENT", "Only the exact current admitted Book Foundation can supply a semantic context role")
+        return replace(asset, asset_type=role.value.lower(), content={**asset.content, "physical_asset_type": asset.asset_type}, selected_reason="current Authority-admitted Foundation semantic projection")
 
     def resolve_active_arc_plan_override(
         self, *, project_id: str, book_id: str, asset_version_id: str

@@ -61,7 +61,7 @@ class PostgresRoutingRegistry:
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
-                """SELECT v.content,v.content_hash,v.actor_id,s.selected_by_operation_id
+                """SELECT v.content,v.content_hash,v.actor_id,s.selected_by_operation_id,v.created_by_operation_id
                    FROM authority_runtime_policy_selection s
                    JOIN authority_runtime_policy_version v USING(owner,project_id,policy_version)
                    WHERE s.owner=%s AND s.project_id=%s""",
@@ -70,7 +70,8 @@ class PostgresRoutingRegistry:
             row = uow.cursor.fetchone()
         if row is None:
             return {}
-        content, digest, actor, operation = row
+        content, digest, actor, selection_operation, created_operation = row
+        operation = created_operation if content.get("execution_templates") else selection_operation
         if policy_hash(content) != digest:
             raise KernelError(
                 "RUNTIME_POLICY_HASH_MISMATCH", "routing policy integrity failed"
@@ -346,6 +347,7 @@ class PostgresRoutingRegistry:
                 (decision or {}).get("status") == "SELECTED"
                 and not (decision or {}).get("bootstrap_authorization")
                 and (decision or {}).get("production_eligible") is not False
+                and (decision or {}).get("independent_qualification_eligible") is not False
             ):
                 evidence_class = "PRODUCTION_OUTCOME"
                 production_eligible = True
@@ -758,6 +760,10 @@ class ProductionProviderRouter:
         provider_auth_profiles: Mapping[str, str] | None = None,
         review_requirement_resolver: Callable[..., dict[str, Any]] | None = None,
         provider_task_scope: Mapping[str, Sequence[str]] | None = None,
+        membership_identity: Mapping[str, str] | None = None,
+        provider_billing_accounts: Mapping[str, str] | None = None,
+        provider_billing_identities: Mapping[str, Mapping[str, str]] | None = None,
+        disabled_provider_reasons: Mapping[str, str] | None = None,
     ) -> None:
         self.registry = PostgresRoutingRegistry(
             database_url, outcome_projection=outcome_projection
@@ -771,6 +777,10 @@ class ProductionProviderRouter:
         self.call_caps = dict(call_caps or {})
         self.execution_environment = execution_environment
         self.provider_auth_profiles = dict(provider_auth_profiles or {})
+        self.membership_identity = dict(membership_identity or {})
+        self.provider_billing_accounts = dict(provider_billing_accounts or {})
+        self.provider_billing_identities = {key: dict(value) for key, value in (provider_billing_identities or {}).items()}
+        self.disabled_provider_reasons = dict(disabled_provider_reasons or {})
         self.review_requirement_resolver = review_requirement_resolver
         self.provider_task_scope = None
         if provider_task_scope is not None:
@@ -898,12 +908,22 @@ class ProductionProviderRouter:
             money_used, tokens_used = uow.cursor.fetchone()
         remaining_money = max(Decimal(0), Decimal(self.task_money_limit) - money_used)
         remaining_tokens = max(0, self.task_token_limit - int(tokens_used))
+        policy_snapshot = self.registry.policy(project_id)
+        from .execution_template import selected_template
+        template = selected_template(policy_snapshot.get("policy", {}), work_id)
         budgets = self._candidate_budgets(
             project_id=project_id,
             work_id=work_id,
             operation_id=operation_id,
             stable_key=stable_key,
+            template=template,
         )
+        resource_estimate = None
+        if template is not None:
+            from .resource_planning import rolling_work_estimate
+            with AuthorityUnitOfWork(self.registry.database_url) as uow:
+                resource_estimate = rolling_work_estimate(uow.cursor, project_id=project_id, book_id=work_id,
+                    input_tokens=input_tokens, output_tokens=output_tokens, template=template)
         task = RoutingTask(
             task_type,
             project_id,
@@ -929,6 +949,9 @@ class ProductionProviderRouter:
                 "money_used_or_reserved": str(money_used),
                 "tokens_used_or_reserved": int(tokens_used),
                 "admission_recheck_required": True,
+                "unavailable_channels": {provider: {"status": "NOT_RUN", "reason": reason}
+                    for provider, reason in self.disabled_provider_reasons.items()},
+                **({"work_resource_plan": resource_estimate} if resource_estimate is not None else {}),
                 "candidates": budgets,
             },
             lineage_operation_ids=lineage,
@@ -952,7 +975,6 @@ class ProductionProviderRouter:
                 for candidate in self.candidates
             ),
         )
-        policy_snapshot = self.registry.policy(project_id)
         observations = {
             candidate.candidate_id: self.registry.observations(
                 project_id=project_id, task_type=task_type, candidate=candidate,
@@ -1014,7 +1036,7 @@ class ProductionProviderRouter:
             from .author_supervision import matching_grant
             from .cross_model_review import REVIEW_TASKS
             supervised_book = any(book["book_id"] == work_id for book in policy_snapshot.get("policy", {}).get("author_supervised_books", []))
-            if task_type in REVIEW_TASKS and (supervised_book or matching_grant(asdict(task), now=now)):
+            if task_type in REVIEW_TASKS and ((not template and (supervised_book or matching_grant(asdict(task), now=now))) or (template and (template["require_independent_review"] or template["mode"] == "STRICT_PRODUCTION" and (supervised_book or matching_grant(asdict(task), now=now))))):
                 grant = matching_grant(asdict(task), now=now)
                 reviewers = [asdict(candidate) for candidate in candidates if grant
                     and candidate.candidate_id == grant["candidate_id"] and candidate.model_revision == grant["model_revision"]]
@@ -1028,11 +1050,14 @@ class ProductionProviderRouter:
                         request_input=request_input or {}, authorized_reviewer=authorized_reviewer)
                 task = replace(task, declared_requirements={**task.declared_requirements, "cross_model_review": cross_review})
         decision = CostAwareRouter().explain(task, candidates, observations, now=now)
+        if template and not bootstrap:
+            from .execution_template import template_decision
+            decision = template_decision(decision)
         if bootstrap:
             decision = benchmark_decision(
                 decision, bootstrap, environment=self.execution_environment
             )
-        elif (policy_snapshot.get("policy", {}).get("author_supervised_authorizations")
+        elif not template and (policy_snapshot.get("policy", {}).get("author_supervised_authorizations")
                 or policy_snapshot.get("policy", {}).get("author_supervised_books")):
             from .author_supervision import supervised_decision
             decision = supervised_decision(decision, now=now)
@@ -1053,7 +1078,8 @@ class ProductionProviderRouter:
         return self._selected_route(base_route, snapshot), snapshot
 
     def _candidate_budgets(
-        self, *, project_id: str, work_id: str, operation_id: str, stable_key: str
+        self, *, project_id: str, work_id: str, operation_id: str, stable_key: str,
+        template: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         from novel_forge.modules.command_kernel.budget_runtime import (
             BudgetReservationRequest,
@@ -1082,6 +1108,21 @@ class ProductionProviderRouter:
                     "remaining_calls": None,
                     "scopes": {},
                 }
+                if template is not None:
+                    result.update(resource_control_version="billing-channel-resources.v1", remaining_tokens=candidate.context_limit, remaining_calls=None)
+                    if candidate.provider == "codex-cli":
+                        result.update(remaining_money=None, membership=True, membership_identity=self.membership_identity)
+                    elif candidate.provider == "deepseek":
+                        from .execution_template import paid_usage
+                        paid = template["deepseek"]
+                        account = self.provider_billing_accounts.get("deepseek", "")
+                        identity = self.provider_billing_identities.get("deepseek", {})
+                        authorized = paid is not None and bool(identity) and paid["account_ref"] == account
+                        used = paid_usage(uow.cursor, project_id=project_id, book_id=work_id)
+                        result.update(remaining_money=str(max(Decimal(0), Decimal(paid["maximum_amount"]) - used)) if authorized else "0",
+                                      paid_authorized=authorized, account_ref=account, billing_identity=identity, used_or_reserved=str(used))
+                    budgets[candidate.candidate_id] = result
+                    continue
                 if candidate.pricing.accounting_basis == "ACCOUNT_ENTITLEMENT":
                     uow.cursor.execute(
                         f"""SELECT count(*) FROM authority_budget_reservation
@@ -1090,7 +1131,7 @@ class ProductionProviderRouter:
                         [candidate.provider, candidate.authorization_ref],
                     )
                     result["remaining_calls"] = max(
-                        0, candidate.quota_remaining - int(uow.cursor.fetchone()[0])
+                        0, (candidate.quota_remaining or 0) - int(uow.cursor.fetchone()[0])
                     )
                 for kind, caps in (
                     ("money", self.money_caps),
@@ -1174,7 +1215,23 @@ class ProductionProviderRouter:
             raise KernelError(
                 "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
             )
+        if snapshot.get("resource_control_version"):
+            if snapshot.get("mode") == "CREATIVE_VALIDATION" and self.execution_environment != "validation":
+                raise KernelError("CREATIVE_ROUTING_ENVIRONMENT_INVALID", "Creative validation requires the validation runtime profile")
+            from .execution_template import verify_template_provenance
+            with AuthorityUnitOfWork(self.registry.database_url) as uow:
+                verify_template_provenance(uow.cursor, snapshot)
+            selected_candidate = snapshot["selected"]["candidate"]
+            if selected_candidate["provider"] == "codex-cli" and (self.membership_identity.get("billing_channel") != "ACCOUNT_ENTITLEMENT"
+                    or snapshot["task"]["budget_snapshot"]["candidates"][selected_candidate["candidate_id"]].get("membership_identity") != self.membership_identity):
+                raise KernelError("MEMBERSHIP_BILLING_IDENTITY_MISMATCH", "Frozen route requires observed ChatGPT membership")
         candidate = snapshot["selected"]["candidate"]
+        if snapshot.get("resource_control_version") and candidate["provider"] == "deepseek":
+            budget = snapshot["task"]["budget_snapshot"]["candidates"][candidate["candidate_id"]]
+            if not self.provider_billing_accounts.get("deepseek") or budget.get("account_ref") != self.provider_billing_accounts["deepseek"]:
+                raise KernelError("PAID_BILLING_ACCOUNT_DRIFT", "DeepSeek dispatch must retain its configured billing account")
+            if not self.provider_billing_identities.get("deepseek") or budget.get("billing_identity") != self.provider_billing_identities["deepseek"]:
+                raise KernelError("PAID_BILLING_CREDENTIAL_DRIFT", "DeepSeek credential differs from its frozen billing-account binding")
         if frozen_scope is not None and snapshot["task"]["task_type"] not in frozen_scope.get(candidate["provider"], ()):
             raise KernelError("PROVIDER_TASK_NOT_AUTHORIZED", "Selected Provider is outside its frozen task scope")
         if candidate.get("authorized_tasks") is not None and snapshot["task"]["task_type"] not in candidate["authorized_tasks"]:
@@ -1415,7 +1472,9 @@ def validate_routed_reservation(
     if candidate.get("authorized_tasks") is not None and task["task_type"] not in candidate["authorized_tasks"]:
         raise KernelError("MODEL_TASK_NOT_AUTHORIZED", "Reservation model is outside its frozen task scope")
     budget = task.get("budget_snapshot", {}).get("candidates", {}).get(candidate["candidate_id"], {})
-    token_limits = [int(task["remaining_tokens"])]
+    from .execution_template import decision_template
+    template = decision_template(decision)
+    token_limits = [int(candidate["context_limit"])] if template else [int(task["remaining_tokens"])]
     if "remaining_tokens" in budget:
         token_limits.append(int(budget["remaining_tokens"]))
     grant = (decision.get("bootstrap_authorization") or decision.get("author_supervision") or {}).get("authorization", {})
@@ -1430,7 +1489,7 @@ def validate_routed_reservation(
                           f"complete Provider reservation tokens={reserved_tokens} exceeds available limit={limit}")
     if candidate["pricing"]["accounting_basis"] == "PRICED":
         amount = Decimal(reserved_amount) if reserved_amount is not None else Decimal("NaN")
-        money_limits = [Decimal(task["remaining_money"])]
+        money_limits = [] if template else [Decimal(task["remaining_money"])]
         if "remaining_money" in budget:
             money_limits.append(Decimal(str(budget["remaining_money"])))
         if grant.get("maximum_amount") is not None:

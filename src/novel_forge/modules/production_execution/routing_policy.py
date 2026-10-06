@@ -17,6 +17,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 
 from .cost_routing import task_policy
 from .author_supervision import GRANT_SCHEMA, validate_grants
+from .execution_template import TEMPLATE_SCHEMA, validate_templates
 from .routing_sources import BINDING_SCHEMA, EXPORT_SCHEMA
 
 
@@ -62,6 +63,8 @@ POLICY_SCHEMA["properties"].update({
 })
 
 
+POLICY_SCHEMA["properties"]["execution_templates"] = {"type": "array", "items": TEMPLATE_SCHEMA}
+
 AUTHOR_SUPERVISED_POLICY_SCHEMA = deepcopy(POLICY_SCHEMA)
 AUTHOR_SUPERVISED_POLICY_SCHEMA["properties"]["author_supervised_authorizations"] = {"type": "array", "items": GRANT_SCHEMA}
 
@@ -75,6 +78,7 @@ def validate_routing_policy(content: Mapping[str, Any]) -> None:
         from .routing_sources import validate_source_fields
         validate_source_fields(content)
         validate_grants(content)
+        validate_templates(content)
         authorization_ids = set()
         for grant in content.get("bootstrap_authorizations", []):
             validate_bootstrap_authorization(grant)
