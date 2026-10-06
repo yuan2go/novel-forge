@@ -107,13 +107,14 @@ def replace_failed_step(
             and source["definition_name"] == "chapter.review.evaluate" and source["definition_version"] == "3.9.0"
             and expected_failure_code in {"REVIEW_KNOWLEDGE_CHECK_INVALID", "REVIEW_KNOWLEDGE_CHECK_REQUIRED"})
         canon_protocol_repair = policy_evidence.get("contract_version") == "chapter-provider-schema-contract-repair.v1"
+        quality_contract_repair = policy_evidence.get("contract_version")=="chapter-quality-contract-repair.v1"
         canon_support_repair = policy_evidence.get("contract_version") == "chapter-support-contract-repair.v1"
         canon_capacity_repair = policy_evidence.get("contract_version") == "chapter-canon-capacity-repair.v1"
         if (
             not row
-            or source["status"] != ("CANCELLATION_REQUESTED" if canon_capacity_repair or settled_candidate_effects and not final_review_repair else "FAILED_FINAL")
+            or source["status"] != ("CANCELLATION_REQUESTED" if canon_capacity_repair or settled_candidate_effects and not final_review_repair and not quality_contract_repair else "DEAD_LETTER" if quality_contract_repair else "FAILED_FINAL")
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "FORWARD_RECOVERY"} if canon_capacity_repair or canon_protocol_repair or canon_support_repair else {"RUNNING"})
+            or saga["status"] not in ({"RUNNING", "FORWARD_RECOVERY"} if canon_capacity_repair or canon_protocol_repair or canon_support_repair or quality_contract_repair else {"RUNNING"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or source["definition_version"] == target_version
@@ -203,7 +204,7 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
-        if canon_capacity_repair or canon_protocol_repair or canon_support_repair:
+        if canon_capacity_repair or canon_protocol_repair or canon_support_repair or quality_contract_repair:
             from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
             cursor.execute("SELECT book_id,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE", [policy_evidence.get('book_run_id'),project])
             book = cursor.fetchone()
@@ -214,6 +215,20 @@ def replace_failed_step(
             cursor.execute('SELECT chapter_root_operation_id,chapter_number FROM authority_book_chapter_request WHERE chapter_request_id=%s', [book[1]])
             if book[1] != policy_evidence.get('chapter_request_id') or cursor.fetchone() != (source['root_operation_id'],book[2]+1):
                 raise KernelError('STEP_SUCCESSOR_FRONTIER_INVALID', 'Canon succession cannot change an accepted or superseded frontier')
+        if quality_contract_repair:
+            if (not source['definition_name'].startswith('chapter.quality.') or source['definition_version']!='3.9.0'
+                or target_version!='3.9.9' or expected_failure_code!='QUALITY_APPLICABILITY_CONFLICT'
+                or target['policy'].get('quality_applicability_contract')!='quality-host-applicability.v1'
+                or target['retry_policy']!=old_definition['retry_policy']
+                or any(a['status']!='FAILED_RETRYABLE' or a['result'].get('error_code')!=expected_failure_code for a in attempts)):
+                raise KernelError('STEP_SUCCESSOR_CONTRACT_CHANGED','Only the exact Quality applicability contract can succeed this dead letter')
+            from novel_forge.modules.chapter_quality_authority.applicability_contract import quality_applicability_repair_evidence
+            if quality_applicability_repair_evidence(cursor,predecessor_id,attempts[-1]['attempt_id'])!=policy_evidence.get('quality_applicability_repair'):
+                raise KernelError('STEP_SUCCESSOR_QUALITY_EVIDENCE_MISMATCH','Bind the exact recorded applicability diagnostic')
+            cursor.execute("""SELECT r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref' FROM authority_external_effect e
+                LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s""",[predecessor_id])
+            if any(r[:2]!=('SETTLED','ACCOUNT_ENTITLEMENT') or not r[2] for r in cursor.fetchall()):
+                raise KernelError('STEP_SUCCESSOR_QUALITY_UNSETTLED','Retain authorized settled membership reviews')
         if canon_support_repair:
             if (source['definition_name']!='chapter.canon.propose_changes' or source['definition_version']!='3.9.0'
                 or target_version!='3.9.8' or expected_failure_code!='CANON_GROUNDING_REEXTRACTION_REQUIRED'
@@ -270,7 +285,7 @@ def replace_failed_step(
             raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Review recovery requires its versioned delivered scope")
         if policy_evidence.get("contract_version") == "chapter-length-output-repair.v1" and (target["policy"].get("chapter_length_scope") != "chapter-length-repair.v1" or source["definition_name"] != "chapter.revision.apply" or expected_failure_code != "REVISION_OUTSIDE_DIAGNOSIS_SCOPE"):
             raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Length recovery requires its exact versioned correction scope")
-        if canon_capacity_repair or settled_candidate_effects and not final_review_repair:
+        if canon_capacity_repair or settled_candidate_effects and not final_review_repair and not quality_contract_repair:
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
             transition_operation_in_uow(uow, OperationTransitionCommand(operation_id=predecessor_id,
                 project_id=project, expected_version=source['version'], expected_status='CANCELLATION_REQUESTED',

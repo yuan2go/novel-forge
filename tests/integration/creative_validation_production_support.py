@@ -126,6 +126,11 @@ else:
         else:
             result = transport.chapter(stage, inputs) if stage not in {"agent_session", "retrieval", "retrieval_query_expansion"} else default_chapter_fixture_response(stage, inputs)
         if stage.startswith("quality_"):
+            if payload.output_schema_version.endswith(":v5"):
+                methods=inputs["quality_context"]["creative_baseline"]["method_requirements"]
+                for dimension in result.get("dimensions",[]):
+                    if methods.get(dimension['dimension'],{}).get('status') in {'NOT_APPLICABLE','PROHIBITED'}:
+                        dimension.update(gate_status='NOT_APPLICABLE',score=None,evidence_locations=[],issue_codes=[],revision_strategies=[])
             for dimension in result.get("dimensions", []):
                 for location in dimension.get("evidence_locations", []):
                     quote = inputs["revision"]["text"][location["start"]:location["end"]]

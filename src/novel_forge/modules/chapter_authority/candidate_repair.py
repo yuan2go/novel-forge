@@ -158,6 +158,11 @@ def _recover_settled_output_frontier(authority, *, book_run_id, principal, defin
         from novel_forge.modules.canon_graph.support_recovery import support_kind_repair_evidence
         with AuthorityUnitOfWork(authority.database_url) as uow:
             support_proof = support_kind_repair_evidence(uow.cursor, source['operation_id'], attempt['attempt_id'])
+    quality_proof = None
+    if contract_version == 'chapter-quality-contract-repair.v1':
+        from novel_forge.modules.chapter_quality_authority.applicability_contract import quality_applicability_repair_evidence
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            quality_proof=quality_applicability_repair_evidence(uow.cursor,source['operation_id'],attempt['attempt_id'])
     length_scope = None
     if contract_version == 'chapter-length-output-repair.v1':
         from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -178,12 +183,13 @@ def _recover_settled_output_frontier(authority, *, book_run_id, principal, defin
         'source_operation':source, 'settled_candidate_effects':effects,
         **({'length_scope':length_scope} if length_scope is not None else {}),
         **({'support_kind_repair':support_proof} if support_proof is not None else {}),
+        **({'quality_applicability_repair':quality_proof} if quality_proof is not None else {}),
         'completion_checks':'UNCHANGED', 'accepted_cursor':book['accepted_through_chapter']}
     def guard(uow):
         uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
         if uow.cursor.fetchone() != (book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id']) != template:
             raise KernelError('CHAPTER_REVIEW_RECOVERY_CONFLICT', 'Reload the exact current Book frontier')
-    if source['status'] not in {'FAILED_FINAL','CANCELLATION_REQUESTED'}:
+    if source['status'] not in {'FAILED_FINAL','DEAD_LETTER','CANCELLATION_REQUESTED'}:
         request_cancellation(authority.database_url, CancelCommand(operation_id=source['operation_id'], project_id=book['project_id'],
             actor_id=principal.principal_id,reason='Known settled output requires its explicit versioned correction contract',
             expected_version=source['version'],idempotency_key='output-repair:'+source['operation_id'],
@@ -440,3 +446,29 @@ def recover_canon_protocol_frontier(authority, *, book_run_id, principal):
             authority.application_build_id,authority.commit_sha),policy_evidence=evidence,
         expected_failure_code='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED',transaction_guard=guard)
     return True
+
+
+def recover_quality_frontier(authority, *, book_run_id, principal):
+    book=authority.require(book_run_id)
+    if book.get('active_chapter_request_id'):
+        request=authority.require_chapter_request(book['active_chapter_request_id'])
+        from novel_forge.modules.canon_graph.validation_recovery import selected_validation_policy, canon_revalidation_evidence
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            if selected_validation_policy(uow.cursor,project_id=book['project_id'],root_operation_id=request['chapter_root_operation_id']):
+                uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.update'",[request['chapter_root_operation_id']])
+                row=uow.cursor.fetchone()
+                if row and row[0]['definition_version']=='3.9.10':
+                    return False
+                if row and row[0]['status']=='SUCCEEDED':
+                    try:
+                        canon_revalidation_evidence(uow.cursor,row[0])
+                        return False
+                    except KernelError as error:
+                        if error.code!='CANON_REVALIDATION_NOT_APPLICABLE':
+                            raise
+    changed=False
+    for group in ('structural','commercial','source_originality','longform','platform'):
+        changed=_recover_settled_output_frontier(authority,book_run_id=book_run_id,principal=principal,
+            definition_name=f'chapter.quality.{group}.evaluate',target_version='3.9.9',contract_version='chapter-quality-contract-repair.v1',
+            failure_codes=('QUALITY_APPLICABILITY_CONFLICT',),statuses=('DEAD_LETTER',)) or changed
+    return changed

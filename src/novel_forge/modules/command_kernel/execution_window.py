@@ -47,6 +47,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         cursor.execute("SELECT o.status,a.result->>'error_code',o.actor_id,o.definition_name FROM authority_operation o JOIN authority_attempt a USING(operation_id) JOIN authority_saga_step s USING(operation_id) WHERE o.operation_id=%s AND o.root_operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1", [predecessor_id,root_id])
         source = cursor.fetchone()
         corrections = {
+            **{(f'chapter.quality.{g}.evaluate','DEAD_LETTER','QUALITY_APPLICABILITY_CONFLICT'):('3.9.9','quality_applicability_contract','quality-host-applicability.v1') for g in ('structural','commercial','source_originality','longform','platform')},
             ('chapter.canon.propose_changes','CANCELLATION_REQUESTED','CANON_GROUNDING_REEXTRACTION_REQUIRED'):('3.9.8','support_kind_contract','canon-support-kinds.v2'),
             ('chapter.draft.generate','CANCELLATION_REQUESTED','REALIZATION_EPISTEMIC_SCOPE_VIOLATION'):('3.9.2','scene_information_flow','scene-information-flow.v1'),
             ('chapter.review.evaluate','FAILED_FINAL','REVIEW_KNOWLEDGE_CHECK_INVALID'):('3.9.3','review_knowledge_scope','delivered-card-scope.v1'),
@@ -110,10 +111,15 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             if any(r[1] not in {'FAILED_FINAL','FAILED_RETRYABLE'} or r[2:]!=('SETTLED','ACCOUNT_ENTITLEMENT') for r in ancestor_effects):
                 raise KernelError('EXECUTION_WINDOW_PROTOCOL_UNSETTLED','Historical protocol predecessors must retain settled membership failures')
             protocol_effect_ids.extend(r[0] for r in ancestor_effects)
-        if source[3]=='chapter.canon.propose_changes' and target_version=='3.9.8':
+        if (source[3]=='chapter.canon.propose_changes' and target_version=='3.9.8' or source[3].startswith('chapter.quality.') and target_version=='3.9.9'):
             from novel_forge.modules.canon_graph.support_recovery import support_kind_repair_evidence
             cursor.execute('SELECT attempt_id FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1',[predecessor_id])
-            support_kind_repair_evidence(cursor,predecessor_id,cursor.fetchone()[0])
+            current_attempt=cursor.fetchone()[0]
+            if target_version=='3.9.9':
+                from novel_forge.modules.chapter_quality_authority.applicability_contract import quality_applicability_repair_evidence
+                quality_applicability_repair_evidence(cursor,predecessor_id,current_attempt)
+            else:
+                support_kind_repair_evidence(cursor,predecessor_id,current_attempt)
             cursor.execute("""SELECT e.status,r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref'
                 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id)
                 WHERE e.operation_id=%s""",[predecessor_id])

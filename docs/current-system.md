@@ -2171,3 +2171,31 @@ can replace only a settled, non-producing legacy proposal whose complete review
 used unknown category names while reporting every claim supported. It binds the
 original extraction, candidate and review receipt; classification is reviewed
 again independently. No extraction or accepted prose is regenerated.
+
+Quality group 3.9.9 / Pack 2.24 binds `quality-host-applicability.v1` to the
+candidate's frozen creative baseline. The output Schema permits NOT_APPLICABLE
+only for dimensions the host marks inapplicable or prohibited. Mandatory safety,
+continuity and basic craft remain measurable even without a selected commercial
+technique. This does not force a positive score or remove prose-evidence checks.
+A versioned creative successor can correct a dead-letter legacy applicability
+contract only with known settled receipts and no domain output. It retains both
+failed Attempts and performs a fresh review under the explicit output contract.
+
+The legacy leading-pronoun heuristic is HISTORICAL_COMPATIBILITY, not a proven
+coreference invariant: the previous named mention may be an object or another
+speaker. Creative template v6 explicitly selects `grounded-canon-validation.v2`.
+This version defers ambiguous leading-pronoun inference as NOT_RUN evidence for
+independent continuity review, preserving formal identity contracts, explicit
+contradictions and all grounded extraction checks. Strict templates retain the
+legacy contract. Knowledge transitions compare KNOWN status and exact grounded
+summary separately; descriptive plan targets are not silently treated as status
+codes. Accepted-state compare-and-set checks remain authoritative.
+
+Unaccepted derived Canon and affected continuity review can adopt a versioned
+revalidation Operation. Kernel records a distinct derived-step succession with
+exact source outputs and frozen inputs; successful historical Operations and
+receipts remain unchanged. Only the verified Canon input changes for an affected
+continuity review. QualityContext v7 exposes the deferred identity observations and
+governed plan constraints to that independent review. Planned world uses and power
+changes remain distinct from accepted historical facts. Unaffected completed groups are reused. Accepted Canon, prose,
+plans, spend and cursors cannot be rewritten by this recovery.

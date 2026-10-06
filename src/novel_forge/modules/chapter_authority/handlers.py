@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
 from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
 import hashlib
@@ -1880,6 +1882,16 @@ class _CanonHandler:
             decisions=decisions,
         )
         context = request.require_input("context_bundle")
+        validation_contract = 'LEGACY_V1'
+        policy_binding = None
+        if request.definition_version == '3.9.10' and request.database_url:
+            from novel_forge.modules.canon_graph.validation_recovery import selected_validation_policy
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                uow.cursor.execute('SELECT root_operation_id FROM authority_operation WHERE operation_id=%s AND project_id=%s', [request.operation_id,request.project_id])
+                root_id = uow.cursor.fetchone()[0]
+                policy_binding = selected_validation_policy(uow.cursor,project_id=request.project_id,root_operation_id=root_id)
+            if policy_binding:
+                validation_contract = policy_binding['canon_validation_contract']
         content = build_canon_patch(
             revision=revision.content,
             revision_asset_version_id=revision.asset_version_id,
@@ -1887,6 +1899,7 @@ class _CanonHandler:
             context_bundle_version_id=context.asset_version_id,
             extraction=resolved_extraction,
             context_bundle=context.content,
+            validation_contract=validation_contract,
         )
         continuity_report = {
             **dict(content["deterministic_validation"]),
@@ -2081,6 +2094,7 @@ class _QualityGroupHandler:
                 payload={
                     "revision": revision.content,
                     "quality_context": quality_context,
+                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.definition_version=="3.9.9" else {}),
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
@@ -2102,6 +2116,7 @@ class _QualityGroupHandler:
                 (
                     f"schema:chapter-provider-output:quality_{self.group}:v3",
                     f"schema:chapter-provider-output:quality_{self.group}:v4",
+                    f"schema:chapter-provider-output:quality_{self.group}:v5",
                 )
             )
             for item in generated.output.get("dimensions", []):

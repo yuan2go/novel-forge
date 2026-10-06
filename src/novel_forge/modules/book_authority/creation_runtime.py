@@ -40,6 +40,11 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "COMPLETED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.chapter_authority.derived_recovery import recover_derived_frontier
+        while recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+            events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_quality_frontier
+        recover_quality_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.candidate_repair import recover_support_frontier
         recover_support_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.candidate_repair import recover_information_frontier
@@ -82,6 +87,10 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
                     events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
+                    if recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                        while recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                            pass
+                        continue
                     if error.code == "PROVIDER_ROUTING_BLOCKED" and recover_canon_capacity_frontier(
                         composition.authority, book_run_id=book_run_id, principal=composition.principal
                     ):
@@ -99,6 +108,9 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                         continue
                     return error.code
                 events({"kind": "CHAPTER_TICK", "result": asdict(result)})
+                if result.recovery_mode.startswith('derived_canon_') and result.operation_status=='SUCCEEDED':
+                    while recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                        events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
                 if result.saga_status == "SUCCEEDED":
                     break
                 if result.operation_status in {"WAITING_RETRY", "UNKNOWN", "FAILED_FINAL", "FAILED_TERMINAL"}:

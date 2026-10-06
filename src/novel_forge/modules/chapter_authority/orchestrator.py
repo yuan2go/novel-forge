@@ -690,6 +690,15 @@ def _command(
     if definition_name in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and definition_version == "3.9.0":
         from .definitions import CHAPTER_REVIEW_DEFINITION_VERSION
         definition_version = CHAPTER_REVIEW_DEFINITION_VERSION
+    if definition_name == ChapterNode.CANON.definition_name and definition_version == "3.9.0":
+        from .definitions import CHAPTER_CANON_REDUCTION_DEFINITION_VERSION
+        definition_version = CHAPTER_CANON_REDUCTION_DEFINITION_VERSION
+    if definition_name == ChapterNode.CANON_PROPOSAL.definition_name and definition_version == "3.9.0":
+        from .definitions import CHAPTER_SUPPORT_DEFINITION_VERSION
+        definition_version = CHAPTER_SUPPORT_DEFINITION_VERSION
+    if definition_name in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and definition_version == "3.9.0":
+        from .definitions import CHAPTER_QUALITY_DEFINITION_VERSION
+        definition_version = CHAPTER_QUALITY_DEFINITION_VERSION
     if definition_name == ChapterNode.CANON_EXTRACTION.definition_name and definition_version == "3.9.0":
         from .definitions import CHAPTER_CANON_DEFINITION_VERSION
         definition_version = CHAPTER_CANON_DEFINITION_VERSION

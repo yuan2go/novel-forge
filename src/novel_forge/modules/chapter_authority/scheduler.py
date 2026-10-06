@@ -152,6 +152,16 @@ class ChapterAuthorityScheduler:
             trace_id=root["trace_id"],
             correlation_id=root["correlation_id"],
         )
+        canon = children.get(ChapterNode.CANON)
+        if canon and canon['status'] in {'READY','FAILED_RETRYABLE'}:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_revalidation j JOIN authority_operation o ON o.operation_id=j.successor_operation_id WHERE j.successor_operation_id=%s AND j.contract_version='kernel-derived-step-successor.v1' AND o.definition_name='chapter.canon.update' AND o.definition_version='3.9.10')",[canon['operation_id']])
+                pure_revalidation = uow.cursor.fetchone()[0]
+            if pure_revalidation:
+                recovery = self._execute_node(self._request_from_root(root),ChapterNode.CANON,canon)
+                return ChapterSchedulerTick(root_operation_id=root_operation_id,saga_id=saga['saga_id'],saga_status=saga['status'],
+                    operation_id=canon['operation_id'],node=ChapterNode.CANON.value,
+                    operation_status=self._operation_status(canon['operation_id'],project_id),recovery_mode='derived_canon_'+recovery)
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
         if any(c["status"] == "ADMITTED" for c in children.values()):
             root, saga, children = self._graph_state(project_id, root_operation_id)
@@ -965,7 +975,10 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation
                 WHERE root_operation_id=%s AND project_id=%s
                   AND definition_name=%s
-                  AND idempotency_key=%s
+                  AND operation_id IN (SELECT operation_id FROM authority_saga_step)
+                  AND (idempotency_key=%s
+                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE contract_version='kernel-failed-step-successor.v1')
+                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE contract_version='kernel-derived-step-successor.v1'))
                 LIMIT 1
                 """,
                 [
@@ -1563,7 +1576,7 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation
                 WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
                   AND operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s)
-                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s))
+                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s))
                 ORDER BY created_at, operation_id
                 """,
                 [
@@ -1572,6 +1585,7 @@ class ChapterAuthorityScheduler:
                     project_id,
                     saga_row[0],
                     initial_child_keys,
+                    saga_row[0],
                     saga_row[0],
                 ],
             )

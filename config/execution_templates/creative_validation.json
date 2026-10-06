@@ -1,5 +1,5 @@
 {
-  "version": "creative-execution-template.v5",
+  "version": "creative-execution-template.v6",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
@@ -14,5 +14,6 @@
     "version": "native-repair-routing.v2",
     "max_same_route_repairs": 2
   },
-  "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR"
+  "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+  "canon_validation_contract": "grounded-canon-validation.v2"
 }

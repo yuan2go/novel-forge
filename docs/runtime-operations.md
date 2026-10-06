@@ -509,7 +509,7 @@ are frozen together as `formation-generation.v4`; continue uses that snapshot ev
 template file later changes. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
-The shipped creative template is the explicit v5 successor with the v4 stage repair bound. Its bounded native repair
+The shipped creative template is the explicit v6 successor with the v4 stage repair bound and grounded Canon validation. Its bounded native repair
 policy permits the same authorized generator to repair contract/causality rejections;
 it does not accept rejected content or certify unperformed model qualification. Old v1
 routing snapshots remain immutable. An undispatched native Planning repair blocked solely
@@ -3136,3 +3136,17 @@ names and no unsupported claims, producing output, uncertain effect, dependent
 work or live lease. Source Attempts and settled membership receipts remain
 unchanged. The new support call uses v2 taxonomy and normal independent validation;
 a real support rejection requires Canon re-extraction through its owning path.
+
+For a dead-letter Quality applicability contract, install the group 3.9.9 / Pack
+2.24 successor and continue the original Book. Recovery binds the exact frozen
+baseline and retained NOT_APPLICABLE diagnostic. Unknown effects, produced domain
+reports and unrelated failures retain their original owner; no retry counter or
+quality threshold is reset. All unaffected completed groups remain available.
+
+Creative v6 Canon validation requires explicit template admission. Register the
+pure Canon reduction 3.9.10 and affected continuity contract 3.9.9 / Pack 2.24, migrate the derived
+step journal in migration 0165 with a verified backup, then continue the same unaccepted frontier.
+The native recovery appends derived output and reviewed successor records; it
+retains every earlier output and Provider receipt. Ambiguous pronoun inference is
+recorded as NOT_RUN with a reason and reviewed in continuity, never as passed.
+Strict production remains on its original frozen validation contract.

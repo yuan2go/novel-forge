@@ -210,10 +210,17 @@ class ChapterAuthorityQuery:
                              AND attempt.result->>'error_code'='REVISION_OUTSIDE_DIAGNOSIS_SCOPE')
                            OR (succ.policy_evidence->>'contract_version'='chapter-support-contract-repair.v1' AND source.status='CANCELLED'
                              AND source.definition_name='chapter.canon.propose_changes' AND source.definition_version='3.9.0' AND replacement.definition_version='3.9.8'
-                             AND attempt.result->>'error_code'='CANON_GROUNDING_REEXTRACTION_REQUIRED'))
+                             AND attempt.result->>'error_code'='CANON_GROUNDING_REEXTRACTION_REQUIRED')
+                           OR (succ.policy_evidence->>'contract_version'='chapter-quality-contract-repair.v1' AND source.status='DEAD_LETTER'
+                             AND source.definition_name LIKE 'chapter.quality.%%' AND source.definition_version='3.9.0' AND replacement.definition_version='3.9.9'
+                             AND attempt.result->>'error_code'='QUALITY_APPLICABILITY_CONFLICT'))
                          AND replacement.status='SUCCEEDED'
                          AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
-                         AND succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id
+                         AND (succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id OR (
+                           succ.policy_evidence->>'contract_version'='chapter-quality-contract-repair.v1'
+                           AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.source_failure_snapshot->'attempts') recorded
+                               WHERE recorded->>'attempt_id'=attempt.attempt_id AND recorded->>'status'='FAILED_RETRYABLE'
+                               AND recorded #>> '{result,error_code}'='QUALITY_APPLICABILITY_CONFLICT')))
                          AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'settled_candidate_effects') binding
                              WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash ) OR (succ.contract_version='kernel-failed-step-successor.v1'
                          AND succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
@@ -270,6 +277,8 @@ class ChapterAuthorityQuery:
                 }
                 for row in cursor.fetchall()
             ]
+            from novel_forge.modules.command_kernel.derived_step_revalidation import acknowledge_revalidated_effects
+            acknowledge_revalidated_effects(cursor, model_effects, operation_ids)
             cursor.execute(
                 """
                 SELECT saga_id, status, coordinator_owner,

@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261006_0164_execution_contract_continuation",
+  "head": "20261007_0165_derived_step_revalidation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -167,6 +167,7 @@
     "20261006_0161_gateway_result_revalidation",
     "20261006_0162_stage_repair_policy",
     "20261006_0163_failed_step_successor",
-    "20261006_0164_execution_contract_continuation"
+    "20261006_0164_execution_contract_continuation",
+    "20261007_0165_derived_step_revalidation"
   ]
 }

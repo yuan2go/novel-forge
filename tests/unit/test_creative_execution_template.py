@@ -200,3 +200,27 @@ def test_execution_window_recovery_is_explicit_creative_v5_only():
         require_literary_qualification=True,world_future_preparation='REQUIRED')
     with pytest.raises(KernelError,match='EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID'):
         validate_templates({'execution_templates':[value]})
+
+
+def test_v6_canon_validation_is_explicit_preserves_v5_and_strict():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    value=template(version='creative-execution-template.v6',world_future_preparation='DISABLED',
+        repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},
+        chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',canon_validation_contract='grounded-canon-validation.v2')
+    validate_templates({'execution_templates':[value]})
+    kwargs=dict(owner='PROVIDER_ROUTING',application_build_id='fixture',commit_sha='a'*40)
+    new=owned_policy_definition(content={'execution_templates':[value]},**kwargs)
+    assert new['definition_version']=='1.11.0'
+    previous={k:v for k,v in value.items() if k!='canon_validation_contract'}
+    previous['version']='creative-execution-template.v5'
+    validate_templates({'execution_templates':[previous]})
+    old=owned_policy_definition(content={'execution_templates':[previous]},**kwargs)
+    assert old['definition_version']=='1.10.0'
+    schema=old['command_schema']['properties']['policy']['properties']['execution_templates']['items']
+    assert 'canon_validation_contract' not in schema['properties']
+    assert 'creative-execution-template.v6' not in schema['properties']['version']['enum']
+    for invalid in ({**value,'version':'creative-execution-template.v5'},
+                    {**value,'mode':'STRICT_PRODUCTION','require_literary_qualification':True,'world_future_preparation':'REQUIRED'},
+                    {k:v for k,v in value.items() if k!='canon_validation_contract'}):
+        with pytest.raises(KernelError):
+            validate_templates({'execution_templates':[invalid]})

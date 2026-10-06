@@ -751,6 +751,7 @@ def build_canon_patch(
     context_bundle_version_id: str = "legacy-context-bundle",
     extraction: dict[str, Any] | None = None,
     context_bundle: dict[str, Any] | None = None,
+    validation_contract: str = "LEGACY_V1",
 ) -> dict[str, Any]:
     historical_state: dict[str, list[dict[str, Any]]] = {}
     identity_profiles: list[dict[str, Any]] = []
@@ -874,6 +875,7 @@ def build_canon_patch(
             (context_bundle or {}).get("chapter_execution_expectations") or {}
         ),
         identity_profiles=identity_profiles,
+        validation_contract=validation_contract,
     )
 
 

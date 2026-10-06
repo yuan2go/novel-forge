@@ -949,6 +949,8 @@ class PostgresChapterExecutionContractBinder:
         )
         if stage == "canon_support" and graph["definition_version"]=="3.9.8" and provider_schema_ref!="schema:chapter-provider-output:canon_support:v2":
             raise KernelError("CHAPTER_CANON_SUPPORT_CONTRACT_REQUIRED", "Support requires its exact finite taxonomy Schema binding")
+        if stage.startswith("quality_") and graph["definition_version"]=="3.9.9" and provider_schema_ref!=f"schema:chapter-provider-output:{stage}:v5":
+            raise KernelError("CHAPTER_QUALITY_APPLICABILITY_CONTRACT_REQUIRED", "Quality requires its exact frozen applicability Schema")
         schema_hash = canonical_hash(provider_schema)
         embedding_output_contract = (
             _retrieval_embedding_output_contract(route)
@@ -1320,6 +1322,10 @@ class PostgresChapterExecutionContractBinder:
             from novel_forge.modules.canon_graph.grounding import SUPPORT_CLAIM_KINDS
             schema['properties']['claims']['items']['properties']['observed_kind']={'type':'string','enum':list(SUPPORT_CLAIM_KINDS)}
             schema_ref="schema:chapter-provider-output:canon_support:v2"
+        if stage.startswith("quality_") and inputs.get("quality_applicability_contract")=="quality-host-applicability.v1":
+            from novel_forge.modules.chapter_quality_authority.applicability_contract import bind_quality_applicability_schema
+            schema=bind_quality_applicability_schema(schema,inputs["quality_context"]["creative_baseline"],stage.removeprefix("quality_"))
+            schema_ref=f"schema:chapter-provider-output:{stage}:v5"
         return schema, schema_ref
 
     def bind(
@@ -2099,6 +2105,7 @@ class PostgresChapterExecutionContractBinder:
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
+        compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1])=="3.9.9")
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_PROPOSAL.definition_name and str(row[1])=="3.9.8")
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7"})
         compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) == "3.9.4")
@@ -4607,6 +4614,8 @@ def _materialize_production_codex_prompt(
             "query is needed). Returning FINAL before this governed accepted-boundary "
             "query is semantically invalid."
         )
+    if stage.startswith("quality_") and schema.get("ref")==f"schema:chapter-provider-output:{stage}:v5":
+        stage_semantic_contract += "\nUse the host-bound per-dimension status choices in the Schema. Absence of a selected commercial technique does not remove mandatory safety, continuity or basic craft checks. Evaluate an applicable dimension against actual prose and its frozen comparison inputs; report FAILED or INSUFFICIENT_EVIDENCE where appropriate. Never invent supporting evidence or a positive score.\n"
     if stage == "canon_support" and schema.get("ref")=="schema:chapter-provider-output:canon_support:v2":
         stage_semantic_contract += "\nUse only the canonical epistemic kinds listed in observed_kind enum. Classify the actual prose independently. A different allowed kind, UNSUPPORTED or UNCERTAIN is valid evidence and prevents admission; do not copy the claimant's kind to manufacture agreement. Describe finer content categories in reason, not observed_kind.\n"
     if stage == "canon_extraction" and schema.get("ref") == "schema:chapter-provider-output:canon_extraction:v25":
