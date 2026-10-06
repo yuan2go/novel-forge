@@ -276,3 +276,67 @@ def recover_canon_capacity_phase(authority, *, book_run_id, principal):
     continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
         predecessor_id=row[0],target_version='3.9.0',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
     return True
+
+
+def recover_canon_capacity_frontier(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    principal.require('book.authority.execute', book['project_id'])
+    principal.require('chapter.authority.execute', book['project_id'])
+    if not book.get('active_chapter_request_id'):
+        return False
+    request = authority.require_chapter_request(book['active_chapter_request_id'])
+    if request['chapter_number'] != book['accepted_through_chapter'] + 1:
+        return False
+    from novel_forge.modules.production_execution.execution_template import selected_template
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        template = selected_book_template(uow.cursor, project_id=book['project_id'], book_id=book['book_id'])
+        policy = selected_template(template['policy_snapshot']['policy'], book['book_id']) if template else None
+        if not policy or policy.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
+            return False
+        uow.cursor.execute("""SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o
+            JOIN authority_saga_step s USING(operation_id)
+            JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.canon.extract'
+            AND o.definition_version='3.9.0' AND o.status IN ('FAILED_RETRYABLE','CANCELLATION_REQUESTED')
+            AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED'
+            AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=o.operation_id)
+            AND EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id)
+                JOIN authority_asset_version v USING(asset_version_id) WHERE oa.operation_id=o.operation_id
+                AND x.asset_type='capability_materialization_manifest'
+                AND v.content #>> '{contract,output_schema,ref}' IN ('schema:chapter-provider-output:canon_extraction:v22','schema:chapter-provider-output:canon_extraction:v23'))""",
+            [request['chapter_root_operation_id'], book['project_id']])
+        row = uow.cursor.fetchone()
+        if not row:
+            return False
+        source, attempt = row
+        if source['actor_id'] != principal.principal_id:
+            raise KernelError('CHAPTER_CANON_RECOVERY_ACTOR_INVALID', 'Recovery requires the original Canon actor')
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id)
+            JOIN authority_asset_version v USING(asset_version_id) WHERE oa.operation_id=%s AND x.asset_type='routing_decision'
+            AND v.content #>> '{candidates,0,rejected_reasons}' LIKE '%%CONTEXT_CAPACITY_EXCEEDED%%')""", [source['operation_id']])
+        if not uow.cursor.fetchone()[0]:
+            return False
+        if has_candidate_domain_outputs(uow.cursor, source['operation_id']):
+            raise KernelError('CHAPTER_CANON_RECOVERY_OUTPUT_PRESENT', 'Domain outputs retain their original recovery owner')
+    evidence = {'contract_version':'chapter-canon-capacity-repair.v1', 'book_run_id':book_run_id,
+        'chapter_request_id':request['chapter_request_id'], 'policy_admission':template,
+        'input_snapshot':source['input_asset_snapshot'], 'source_failure':attempt,
+        'source_operation':source, 'completion_checks':'UNCHANGED', 'accepted_cursor':book['accepted_through_chapter']}
+    if source['status'] != 'CANCELLATION_REQUESTED':
+        request_cancellation(authority.database_url, CancelCommand(operation_id=source['operation_id'],
+            project_id=book['project_id'],actor_id=principal.principal_id,
+            reason='No-send Canon capacity failure requires a new versioned Schema and Pack binding',
+            expected_version=source['version'],idempotency_key='canon-capacity-repair:'+source['operation_id'],
+            trace_id=source['trace_id'],correlation_id=source['correlation_id']))
+    from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
+    continue_candidate_execution_window(authority.database_url, root_id=request['chapter_root_operation_id'],
+        predecessor_id=source['operation_id'],target_version='3.9.5',book_run_id=book_run_id,principal=principal)
+    def guard(uow):
+        uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
+        if uow.cursor.fetchone() != (book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id']) != template:
+            raise KernelError('CHAPTER_CANON_RECOVERY_CONFLICT', 'Reload the exact current Book frontier')
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.5',
+        context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
+            authority.application_build_id,authority.commit_sha),policy_evidence=evidence,
+        expected_failure_code='PROVIDER_ROUTING_BLOCKED',transaction_guard=guard)
+    return True

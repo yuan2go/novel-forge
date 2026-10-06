@@ -53,6 +53,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.revision.apply','CANCELLATION_REQUESTED','REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
+            ('chapter.canon.extract','CANCELLATION_REQUESTED','PROVIDER_ROUTING_BLOCKED'):('3.9.5','canon_schema_projection','canon-provider-shared-types.v1'),
             ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
         correction = corrections.get((source[3],source[0],source[1])) if source else None
@@ -70,7 +71,18 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         child = None
         control_recovery_limit = None
         canon_capacity = bool(source[3] == 'chapter.canon.extract' and source[1] == 'PROVIDER_ROUTING_BLOCKED')
-        if canon_capacity and not start_repair_phase:
+        if canon_capacity and source[0] == 'CANCELLATION_REQUESTED':
+            cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation WHERE operation_id=%s AND definition_version='3.9.0'),
+                NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
+                NOT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND (status<>'FAILED_RETRYABLE' OR result->>'error_code' IS DISTINCT FROM 'PROVIDER_ROUTING_BLOCKED')),
+                EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id) JOIN authority_asset_version v USING(asset_version_id)
+                    WHERE oa.operation_id=%s AND x.asset_type='routing_decision' AND v.content #>> '{candidates,0,rejected_reasons}' LIKE '%%CONTEXT_CAPACITY_EXCEEDED%%'),
+                EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id) JOIN authority_asset_version v USING(asset_version_id)
+                    WHERE oa.operation_id=%s AND x.asset_type='capability_materialization_manifest' AND v.content #>> '{contract,output_schema,ref}'
+                        IN ('schema:chapter-provider-output:canon_extraction:v22','schema:chapter-provider-output:canon_extraction:v23'))""", [predecessor_id]*5)
+            if not all(cursor.fetchone()):
+                raise KernelError('EXECUTION_WINDOW_CAPACITY_PROOF_REQUIRED','Canon succession requires only exact no-send legacy capacity refusals')
+        if canon_capacity and source[0] != 'CANCELLATION_REQUESTED' and not start_repair_phase:
             raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Canon capacity recovery requires its explicit bounded phase')
         if start_repair_phase:
             if source[0] != 'FAILED_RETRYABLE' or (not canon_capacity and source[1] not in {'CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT'}):

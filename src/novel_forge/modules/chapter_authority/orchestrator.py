@@ -690,6 +690,9 @@ def _command(
     if definition_name in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and definition_version == "3.9.0":
         from .definitions import CHAPTER_REVIEW_DEFINITION_VERSION
         definition_version = CHAPTER_REVIEW_DEFINITION_VERSION
+    if definition_name == ChapterNode.CANON_EXTRACTION.definition_name and definition_version == "3.9.0":
+        from .definitions import CHAPTER_CANON_DEFINITION_VERSION
+        definition_version = CHAPTER_CANON_DEFINITION_VERSION
     if definition_name == ChapterNode.REVISION.definition_name and definition_version == "3.9.0":
         from .definitions import CHAPTER_REVISION_DEFINITION_VERSION
         definition_version = CHAPTER_REVISION_DEFINITION_VERSION

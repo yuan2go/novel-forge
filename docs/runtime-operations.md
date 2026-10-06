@@ -3083,8 +3083,14 @@ terminal history and accounting; author deadlines, strict mode and unknown effec
 remain ineligible. Verify an expired child and an already recorded no-send timeout
 through the native length-scope integration before resuming such a checkpoint.
 For an unaccepted Canon extraction stopped before dispatch by rendered context
-capacity, creative v5 may renew its original bounded execution window for the
-remaining Attempt when the frozen failure has no Effect. The old inline Schema and
-route failure are retained; Prompt v10/v24 receives a new Attempt snapshot and full
-physical admission. Schema factoring restores the exact original constraints and
+capacity, creative v5 can replace an unexecuted legacy Canon step with the
+explicit `chapter-canon-capacity-repair.v1` successor, Canon 3.9.5 / Pack 2.19.
+The predecessor must have only recorded capacity refusals and no ExternalEffect,
+domain output, dependent or live lease. Its Attempts and operation-bound Pack remain
+immutable; the successor binds the current Pack and receives full physical admission.
+A bounded derived Root window can continue for this exact correction; an author
+deadline cannot change. The historical v4 same-operation window remains evidence
+and does not refresh an operation-bound Pack. Native `RUNNING` and
+`FORWARD_RECOVERY` Sagas may replace this exact failed step; terminal Sagas cannot.
+Schema factoring restores the exact original constraints and
 does not authorize a larger model window or additional Provider retry capacity.

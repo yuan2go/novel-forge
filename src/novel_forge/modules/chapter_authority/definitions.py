@@ -16,6 +16,7 @@ CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.9.0"
 CHAPTER_DRAFT_DEFINITION_VERSION = "3.9.2"
 CHAPTER_REVIEW_DEFINITION_VERSION = "3.9.3"
 CHAPTER_REVISION_DEFINITION_VERSION = "3.9.4"
+CHAPTER_CANON_DEFINITION_VERSION = "3.9.5"
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS = frozenset({"3.4.1", "3.5.0", "3.6.0", "3.7.0", "3.8.0"})
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION = "3.4.1"
 CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.9.0-author-input.v2"
@@ -472,7 +473,7 @@ def _definition(
     }
     return {
         "name": node.definition_name,
-        "definition_version": CHAPTER_DRAFT_DEFINITION_VERSION if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_REVIEW_DEFINITION_VERSION if model_effects_required and node in {ChapterNode.REVIEW, ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_REVISION_DEFINITION_VERSION if model_effects_required and node is ChapterNode.REVISION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else chapter_definition_version(model_effects_required),
+        "definition_version": CHAPTER_DRAFT_DEFINITION_VERSION if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_REVIEW_DEFINITION_VERSION if model_effects_required and node in {ChapterNode.REVIEW, ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_REVISION_DEFINITION_VERSION if model_effects_required and node is ChapterNode.REVISION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else CHAPTER_CANON_DEFINITION_VERSION if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else chapter_definition_version(model_effects_required),
         "family": "chapter_authority",
         "enabled": True,
         "command_schema": command_schema,
@@ -515,6 +516,7 @@ def _definition(
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",
+            **({"canon_schema_projection": "canon-provider-shared-types.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION == "3.9.5" else {}),
             **({"chapter_length_scope": "chapter-length-repair.v1"} if model_effects_required and node is ChapterNode.REVISION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_REVISION_DEFINITION_VERSION == "3.9.4" else {}),
             **({"review_knowledge_scope": "delivered-card-scope.v1"} if model_effects_required and node in {ChapterNode.REVIEW, ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_REVIEW_DEFINITION_VERSION == "3.9.3" else {}),
             **({"scene_information_flow": "scene-information-flow.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.2" else {}),

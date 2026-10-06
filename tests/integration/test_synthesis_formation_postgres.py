@@ -66,8 +66,10 @@ def test_native_formation_generates_foundation_from_author_brief(
         from novel_forge.modules.chapter_authority import definitions as scene_definitions
         saved_draft_version = scene_definitions.CHAPTER_DRAFT_DEFINITION_VERSION
         saved_review_version = scene_definitions.CHAPTER_REVIEW_DEFINITION_VERSION
+        saved_canon_version = scene_definitions.CHAPTER_CANON_DEFINITION_VERSION
         saved_revision_version = scene_definitions.CHAPTER_REVISION_DEFINITION_VERSION
         if length_scope_recovery:
+            monkeypatch.setattr(scene_definitions, "CHAPTER_CANON_DEFINITION_VERSION", "3.9.0")
             monkeypatch.setattr(scene_definitions, "CHAPTER_REVISION_DEFINITION_VERSION", "3.9.0")
         elif review_knowledge_recovery:
             monkeypatch.setattr(scene_definitions, 'CHAPTER_REVIEW_DEFINITION_VERSION', '3.9.0')
@@ -1184,6 +1186,22 @@ def test_native_formation_generates_foundation_from_author_brief(
                 monkeypatch.setattr(scene_definitions, 'CHAPTER_REVIEW_DEFINITION_VERSION', saved_review_version)
                 monkeypatch.setattr(scene_definitions, 'CHAPTER_REVISION_DEFINITION_VERSION', saved_revision_version)
                 monkeypatch.setattr(Path, 'read_text', normal_scene_read)
+                if length_scope_recovery:
+                    def old_canon_pack(path, *args, **kwargs):
+                        value = normal_scene_read(path, *args, **kwargs)
+                        if path.name != 'chapter_generation_pack.json':
+                            return value
+                        from novel_forge.modules.capability_packs.artifacts import artifact_content_hash
+                        from novel_forge.storage.authority_repositories import definition_hash
+                        value = json.loads(value)
+                        value['identity']['version'] = '2.18.0'
+                        value['prompt_binding'].update(template_version='v9', compiler_version='chapter-prompt-compiler:v9',
+                            template_hash=artifact_content_hash({'text':normal_scene_read(path.parent/'artifacts/chapter_generation_template_v9.md')}))
+                        canon_definition = next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-canon-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.extract')
+                        node = next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.extract')
+                        node.update(operation_definition_ref='chapter.canon.extract@3.9.0',operation_definition_hash=definition_hash(canon_definition))
+                        return json.dumps(value)
+                    monkeypatch.setattr(Path,'read_text',old_canon_pack)
                 execution.close()
                 from tests.integration.creative_validation_production_support import install_planning
                 from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
@@ -1266,7 +1284,12 @@ def test_native_formation_generates_foundation_from_author_brief(
                     uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s', [failed_scene_step[0]['root_operation_id']])
                     frozen_scene_deadline = uow.cursor.fetchone()[0]
                 def expired_window(url, **kwargs):
-                    first = original_window(url, **kwargs, clock=lambda: frozen_scene_deadline+timedelta(seconds=1))
+                    source_deadline = frozen_scene_deadline
+                    if kwargs['target_version']=='3.9.5':
+                        with AuthorityUnitOfWork(url) as uow:
+                            uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s',[kwargs['root_id']])
+                            source_deadline = uow.cursor.fetchone()[0]
+                    first = original_window(url, **kwargs, clock=lambda: source_deadline+timedelta(seconds=1))
                     assert first['continued'] and not first['replayed']
                     replay = original_window(url, **kwargs, clock=lambda: first['deadline']+timedelta(seconds=1))
                     assert replay['replayed'] and replay['deadline'] == first['deadline'].isoformat()
@@ -1281,6 +1304,9 @@ def test_native_formation_generates_foundation_from_author_brief(
                     from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
                     from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
                     from novel_forge.modules.command_kernel.errors import KernelError
+                    from novel_forge.modules.chapter_authority import candidate_repair
+                    original_canon_recovery = candidate_repair.recover_canon_capacity_frontier
+                    monkeypatch.setattr(candidate_repair,'recover_canon_capacity_frontier',lambda *a,**k: False)
                     normal_canon_contract = PostgresChapterExecutionContractBinder._provider_output_contract
                     normal_route = ProductionProviderRouter.select
                     canon_capacity_rejected = False
@@ -1315,6 +1341,45 @@ def test_native_formation_generates_foundation_from_author_brief(
             creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
                 formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
                 book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+            if length_scope_recovery:
+                assert creation_result['stop_reason']=='PROVIDER_ROUTING_BLOCKED', creation_result
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract'",[failed_scene_step[0]['root_operation_id']])
+                    retained_canon = uow.cursor.fetchone()
+                    uow.cursor.execute('SELECT to_jsonb(s) FROM authority_attempt_capability_pack_snapshot s WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
+                    retained_canon_pack = uow.cursor.fetchone()
+                    uow.cursor.execute('SELECT count(*) FROM authority_external_effect WHERE operation_id=%s',[retained_canon[0]['operation_id']])
+                    assert uow.cursor.fetchone()==(0,)
+                monkeypatch.setattr(scene_definitions,'CHAPTER_CANON_DEFINITION_VERSION',saved_canon_version)
+                monkeypatch.setattr(Path,'read_text',normal_scene_read)
+                monkeypatch.setattr(candidate_repair,'recover_canon_capacity_frontier',original_canon_recovery)
+                execution.close()
+                harness.release_sha = 'd'*40
+                hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
+                harness.pack_id += '.canon-successor'
+                chapter_pack.pack_id += '.canon-successor'
+                install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+                    workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,
+                    commit_sha=harness.release_sha,compiler=template_actor,approver=template_actor,agent_admin=template_actor,pack_id_override=chapter_pack.pack_id)
+                install_planning(harness,build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes['planning'],pack_id=harness.pack_id),template_actor)
+                env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+                chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+                composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+                creation_result=continue_creation(composition=composition,content=content,chapter=chapter,
+                    formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                    maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute('SELECT to_jsonb(a) FROM authority_attempt a WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
+                    assert uow.cursor.fetchone()==(retained_canon[1],)
+                    uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[retained_canon[0]['operation_id']])
+                    assert uow.cursor.fetchone()==('CANCELLED',)
+                    uow.cursor.execute('SELECT to_jsonb(s) FROM authority_attempt_capability_pack_snapshot s WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
+                    assert uow.cursor.fetchone()==retained_canon_pack
+                    uow.cursor.execute('SELECT count(*) FROM authority_external_effect WHERE operation_id=%s',[retained_canon[0]['operation_id']])
+                    assert uow.cursor.fetchone()==(0,)
+                    uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s",[retained_canon[0]['operation_id']])
+                    assert uow.cursor.fetchone()==('SUCCEEDED','3.9.5')
             if scene_information_recovery:
                 assert creation_result['stop_reason'] == 'REALIZATION_EPISTEMIC_SCOPE_VIOLATION', creation_result
                 creation_result = continue_creation(composition=composition,content=content,chapter=chapter,
@@ -1347,7 +1412,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                         uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_version='3.9.4' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
                         assert uow.cursor.fetchall() == [(1,'FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'),(2,'FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'),(3,'SUCCEEDED',None)]
                         uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
-                        assert uow.cursor.fetchall() == [(1,'FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'),(2,'SUCCEEDED',None)]
+                        assert uow.cursor.fetchall() == [(1,'SUCCEEDED',None)]
             if memo_timeout_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])

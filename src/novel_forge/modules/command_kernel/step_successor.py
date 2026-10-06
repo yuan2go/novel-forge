@@ -106,18 +106,19 @@ def replace_failed_step(
         final_review_repair = bool(settled_candidate_effects and policy_evidence.get("contract_version") == "chapter-review-output-repair.v1"
             and source["definition_name"] == "chapter.review.evaluate" and source["definition_version"] == "3.9.0"
             and expected_failure_code in {"REVIEW_KNOWLEDGE_CHECK_INVALID", "REVIEW_KNOWLEDGE_CHECK_REQUIRED"})
+        canon_capacity_repair = policy_evidence.get("contract_version") == "chapter-canon-capacity-repair.v1"
         if (
             not row
-            or source["status"] != ("CANCELLATION_REQUESTED" if settled_candidate_effects and not final_review_repair else "FAILED_FINAL")
+            or source["status"] != ("CANCELLATION_REQUESTED" if canon_capacity_repair or settled_candidate_effects and not final_review_repair else "FAILED_FINAL")
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] != "RUNNING"
+            or saga["status"] not in ({"RUNNING", "FORWARD_RECOVERY"} if canon_capacity_repair else {"RUNNING"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or source["definition_version"] == target_version
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",
-                "Only an owned failed child of a live graph can be replaced",
+                f"Only an owned failed child of a live graph can be replaced (step={bool(row)}, source={source['status']}, root={root['status']}, saga={saga['status']}, source_version={source['definition_version']}, target={target_version})",
             )
         step = row[0]
         if step["compensation_status"] != "NOT_REQUIRED" or step.get(
@@ -146,7 +147,7 @@ def replace_failed_step(
             [predecessor_id] * 4,
         )
         external, output, dependent, live_lease = cursor.fetchone()
-        if settled_candidate_effects:
+        if settled_candidate_effects or canon_capacity_repair:
             output = has_candidate_domain_outputs(cursor, predecessor_id)
         if external and settled_candidate_effects:
             cursor.execute("SELECT e.external_effect_id,e.request_hash,e.status,r.status,e.effect_type FROM authority_external_effect e LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id", [predecessor_id])
@@ -190,16 +191,41 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
+        if canon_capacity_repair:
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
+            cursor.execute("SELECT book_id,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE", [policy_evidence.get('book_run_id'),project])
+            book = cursor.fetchone()
+            admission = selected_book_template(cursor, project_id=project, book_id=book[0]) if book else None
+            template = selected_template(admission['policy_snapshot']['policy'],book[0]) if admission else None
+            if not template or template.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR' or admission != policy_evidence.get('policy_admission'):
+                raise KernelError('STEP_SUCCESSOR_POLICY_REQUIRED', 'Canon succession requires the exact trusted creative policy')
+            cursor.execute('SELECT chapter_root_operation_id,chapter_number FROM authority_book_chapter_request WHERE chapter_request_id=%s', [book[1]])
+            if book[1] != policy_evidence.get('chapter_request_id') or cursor.fetchone() != (source['root_operation_id'],book[2]+1):
+                raise KernelError('STEP_SUCCESSOR_FRONTIER_INVALID', 'Canon succession cannot change an accepted or superseded frontier')
+            if (source["definition_name"] != "chapter.canon.extract" or source["definition_version"] != "3.9.0"
+                or target["retry_policy"] != old_definition["retry_policy"]
+                or target_version != "3.9.5" or expected_failure_code != "PROVIDER_ROUTING_BLOCKED"
+                or target["policy"].get("canon_schema_projection") != "canon-provider-shared-types.v1"
+                or any(a["status"] != "FAILED_RETRYABLE" or a["result"].get("error_code") != expected_failure_code for a in attempts)):
+                raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Canon correction requires exact no-send legacy capacity failures")
+            cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset a USING(asset_id)
+                JOIN authority_asset_version v USING(asset_version_id) WHERE oa.operation_id=%s AND a.asset_type='routing_decision'
+                AND v.content #>> '{candidates,0,rejected_reasons}' LIKE '%%CONTEXT_CAPACITY_EXCEEDED%%'),
+                EXISTS(SELECT 1 FROM authority_operation_output_asset oa JOIN authority_asset a USING(asset_id)
+                JOIN authority_asset_version v USING(asset_version_id) WHERE oa.operation_id=%s AND a.asset_type='capability_materialization_manifest'
+                AND v.content #>> '{contract,output_schema,ref}' IN ('schema:chapter-provider-output:canon_extraction:v22','schema:chapter-provider-output:canon_extraction:v23'))""", [predecessor_id]*2)
+            if not all(cursor.fetchone()):
+                raise KernelError("STEP_SUCCESSOR_CAPACITY_PROOF_REQUIRED", "Retain exact legacy Schema and capacity refusal evidence")
         if final_review_repair and target["policy"].get("review_knowledge_scope") != "delivered-card-scope.v1":
             raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Review recovery requires its versioned delivered scope")
         if policy_evidence.get("contract_version") == "chapter-length-output-repair.v1" and (target["policy"].get("chapter_length_scope") != "chapter-length-repair.v1" or source["definition_name"] != "chapter.revision.apply" or expected_failure_code != "REVISION_OUTSIDE_DIAGNOSIS_SCOPE"):
             raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Length recovery requires its exact versioned correction scope")
-        if settled_candidate_effects and not final_review_repair:
+        if canon_capacity_repair or settled_candidate_effects and not final_review_repair:
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
             transition_operation_in_uow(uow, OperationTransitionCommand(operation_id=predecessor_id,
                 project_id=project, expected_version=source['version'], expected_status='CANCELLATION_REQUESTED',
                 target_status='CANCELLED', actor_id=context.actor_id,
-                reason='Known settled model candidate superseded; receipts and settlement retained',
+                reason='Exact versioned contract successor; terminal attempts, snapshots and settlement retained',
                 trace_id=source['trace_id'], correlation_id=source['correlation_id'], causation_id=predecessor_id))
         graph_context = GraphCommandContext(
             project,
