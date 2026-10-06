@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261007_0168_canon_output_repair",
+  "head": "20261007_0169_quality_correction_control",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -171,6 +171,7 @@
     "20261007_0165_derived_step_revalidation",
     "20261007_0166_retained_graph_continuation",
     "20261007_0167_quality_review_namespace",
-    "20261007_0168_canon_output_repair"
+    "20261007_0168_canon_output_repair",
+    "20261007_0169_quality_correction_control"
   ]
 }

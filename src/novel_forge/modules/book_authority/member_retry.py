@@ -14,7 +14,7 @@ def wait_settled_member_retry(authority, *, book_run_id, root_id, principal, dea
         c = uow.cursor
         admission = selected_book_template(c, project_id=book['project_id'], book_id=book['book_id'])
         template = selected_template(admission['policy_snapshot']['policy'], book['book_id']) if admission else None
-        if not template or template['version'] != 'creative-execution-template.v9' or template['mode'] != 'CREATIVE_VALIDATION':
+        if not template or template['version'] not in {'creative-execution-template.v9','creative-execution-template.v10'} or template['mode'] != 'CREATIVE_VALIDATION':
             return False
         c.execute("""SELECT o.actor_id,o.max_attempts,a.attempt_number,a.result->>'error_code',
             r.evidence->>'cost_authorization_ref'

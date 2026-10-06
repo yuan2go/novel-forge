@@ -128,7 +128,7 @@ def localize_new_result(request, generated, candidate):
         template = verify_template_provenance(c, row[0]) if row else None
     if not template or template.get("canon_evidence_localization") != "TYPOGRAPHIC_QUOTE_EQUIVALENCE_V1":
         return generated, None
-    if template["mode"] != "CREATIVE_VALIDATION" or template["version"] != "creative-execution-template.v9":
+    if template["mode"] != "CREATIVE_VALIDATION" or template["version"] not in {"creative-execution-template.v9", "creative-execution-template.v10"}:
         raise KernelError("CANON_QUOTE_LOCALIZATION_POLICY_INVALID", "Strict certification retains literal Provider evidence")
     localized, evidence = localize_provider_quotes(generated.output, text=candidate.content["text"], target_asset_version_id=candidate.asset_version_id)
     return replace(generated, output=localized), evidence

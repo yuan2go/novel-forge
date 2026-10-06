@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0168_canon_output_repair",
+  "migration_head": "20261007_0169_quality_correction_control",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -8897,6 +8897,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_canon_output_repair.py",
           "locator": "MIGRATION_ID = '20261007_0168_canon_output_repair'",
           "id": "20261007_0168_canon_output_repair"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0169_quality_correction_control.py",
+          "locator": "MIGRATION_ID = \"20261007_0169_quality_correction_control\"",
+          "id": "20261007_0169_quality_correction_control"
         }
       ],
       "external_effects": {
@@ -9405,7 +9410,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:529083565979244384ad2435e5283b3e6b6537ae39fd86a32fff8132c3ea2953"
+    "implementation_tree_sha": "sha256:92ca3fdd00e23b3e8460350f683e5b9d18c503fbc49563de75842f695b1c6c05"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -170,6 +170,7 @@ from . import (
     v20261007_0166_retained_graph_continuation,
     v20261007_0167_quality_review_namespace,
     v20261007_0168_canon_output_repair,
+    v20261007_0169_quality_correction_control,
 )
 
 VERSION_MODULES = [
@@ -342,6 +343,7 @@ VERSION_MODULES = [
     v20261007_0166_retained_graph_continuation,
     v20261007_0167_quality_review_namespace,
     v20261007_0168_canon_output_repair,
+    v20261007_0169_quality_correction_control,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -2404,7 +2404,7 @@ class _QualityHandler:
             evidence_reports=group_reports,
         )
         from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
-        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.definition_version=="3.9.11" else 1)
+        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.definition_version in {"3.9.11", "3.9.25"} else 1)
         if admission is not None:
             content["internal_admission"] = admission
         primary = _output(
@@ -2434,7 +2434,7 @@ class _QualityHandler:
         from novel_forge.modules.revision.domain import freeze_quality_edit_scope
 
         actions = content.get("required_actions", [])
-        if admission and request.definition_version == '3.9.11':
+        if admission and request.definition_version in {'3.9.11', '3.9.25'}:
             from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
             actions = internal_required_actions(admission=admission, evidence_reports=content['evidence_reports'], target=revision.asset_version_id)
             content['internal_required_actions'] = actions
@@ -2498,7 +2498,7 @@ class _QualityHandler:
                     actions, start=1
                 )
             )
-            if not any(item.asset_type == "revision_task" for item in request.inputs)
+            if (admission and request.definition_version == "3.9.25") or not any(item.asset_type == "revision_task" for item in request.inputs)
             else ()
         )
         manifest = dict(context.content.get("context_manifest") or {})

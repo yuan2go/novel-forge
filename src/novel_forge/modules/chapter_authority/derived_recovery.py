@@ -33,7 +33,7 @@ def recover_derived_frontier(authority, *, book_run_id, principal):
         c.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             WHERE o.root_operation_id=%s AND ((o.definition_name='chapter.quality.longform.evaluate' AND o.definition_version='3.9.9' AND o.status='SUCCEEDED')
               OR (o.definition_name='chapter.quality.evaluate' AND o.definition_version='3.9.0' AND o.status='SUCCEEDED')
-              OR (o.definition_name='chapter.publishing.prepare_release' AND o.definition_version='3.9.0'))
+              OR (o.definition_name='chapter.publishing.prepare_release' AND o.definition_version IN ('3.9.0','3.9.13')))
             ORDER BY CASE o.definition_name WHEN 'chapter.quality.longform.evaluate' THEN 1 WHEN 'chapter.quality.evaluate' THEN 2 ELSE 3 END""", [root_id])
         quality_source = None
         for (candidate,) in c.fetchall():
@@ -55,9 +55,9 @@ def recover_derived_frontier(authority, *, book_run_id, principal):
             [root_id],
         )
         row = c.fetchone()
-        if not row:
+        if not row and not quality_source:
             return False
-        canon = row[0]
+        canon = row[0] if row else None
         source = quality_source
         evidence = quality_evidence if quality_source else None
         if not source and canon["definition_version"] == "3.9.0" and canon["status"] == "SUCCEEDED":

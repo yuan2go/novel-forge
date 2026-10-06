@@ -23,7 +23,7 @@ CHAPTER_CANON_REDUCTION_DEFINITION_VERSION = "3.9.10"
 CHAPTER_CANON_DEFINITION_VERSION = "3.9.24"
 CHAPTER_SUPPORT_DEFINITION_VERSION = "3.9.23"
 CHAPTER_QUALITY_DEFINITION_VERSION = "3.9.9"
-CHAPTER_INTERNAL_QUALITY_DEFINITION_VERSION = "3.9.11"
+CHAPTER_INTERNAL_QUALITY_DEFINITION_VERSION = "3.9.25"
 CHAPTER_LONGFORM_QUALITY_DEFINITION_VERSION = "3.9.12"
 CHAPTER_INTERNAL_PUBLISH_DEFINITION_VERSION = "3.9.13"
 CHAPTER_INTERNAL_EXPORT_DEFINITION_VERSION = "3.9.14"
@@ -539,6 +539,7 @@ def _definition(
             **({"canon_support_reextraction": "canon-support-reextraction-feedback.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_CANON_DEFINITION_VERSION == "3.9.24" else {}),
             **({"support_coverage_contract": "canon-support-coverage.v1"} if model_effects_required and node is ChapterNode.CANON_PROPOSAL and CHAPTER_SUPPORT_DEFINITION_VERSION == "3.9.23" else {}),
             **({"canon_output_repair_projection": "canon-diagnostic-field-projection.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_CANON_DEFINITION_VERSION in {"3.9.22", "3.9.24"} else {}),
+            **({"quality_correction_actions": "quality-correction-actions.v2"} if model_effects_required and node is ChapterNode.QUALITY and CHAPTER_INTERNAL_QUALITY_DEFINITION_VERSION == "3.9.25" else {}),
             **({"canon_field_kind_contract": "canon-field-kinds.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_CANON_DEFINITION_VERSION in {"3.9.21", "3.9.22", "3.9.24"} else {}),
             **({"canon_wire_projection": "codex-canonical-json.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION in {"3.9.7", "3.9.21", "3.9.22", "3.9.24"} else {}),
             **({"canon_wire_projection": "codex-structured-schema.v4"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_CANON_DEFINITION_VERSION == "3.9.6" else {}),

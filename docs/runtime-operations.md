@@ -3213,3 +3213,14 @@ Canon 3.9.24 and support 3.9.23. Continue the same Formation with the explicit c
 policy: the new graph references completed prose/review/candidate work and retains the
 old extraction as repair evidence. It executes targeted Canon repair followed by full
 independent support with exact claim IDs, before ordinary Canon and Quality admission.
+
+For a creative chapter still blocked after a completed Quality correction, select
+template v10 with explicit `quality_corrections.maximum_passes` and
+`quality_corrections.maximum_unchanged_candidates`, apply migration 0169 with a verified
+backup, install the coherent validation Pack, and continue the same Formation. Only
+unexecuted work uses the new policy. Each subsequent pass binds the latest aggregate
+and selected candidate; a terminal failed call or unknown effect still requires its
+own recovery. Control exhaustion reports the current checkpoint and owning error,
+retains all outputs and never relabels a failed dimension or shortens the work.
+
+After a corrected candidate receives internal admission, native derived revalidation may rebind an unexecuted publication request that previously failed blocked-Quality admission. It binds the latest selected candidate, independent review, Canon and aggregate together, preserves the failed Attempt, and refuses existing publication effects or outputs. The Kernel journals the successor and renews only its permitted execution window.

@@ -2309,3 +2309,13 @@ the extractor to correct the located claim fields. It does not reuse the rejecte
 classification as accepted Canon, or suppress the review. A new full-set independent
 support call is mandatory for the changed extraction. The previous extraction and
 review receipts stay immutable; unknown IDs remain unassigned.
+
+Creative template v10 selects versioned Quality correction controls per chapter. Each
+pass consumes the latest blocked aggregate, its required revision tasks and its exact
+selected candidate, then performs revision, independent re-review, candidate selection,
+Canon and Quality again. Completed earlier passes remain immutable and resume skips
+them. A pass ceiling and repeated unchanged-candidate limit are execution controls,
+not Book budgets. A blocked latest aggregate cannot be published or accepted because
+an earlier pass finished. Strict production retains its frozen correction behavior.
+
+The v2 correction-action aggregate appends a pure command over the frozen legacy assessment inputs when a completed v1 aggregate omitted follow-up tasks. It retains the legacy disposition and receipts; only new task assets and the successor disposition are created, without another Provider assessment.

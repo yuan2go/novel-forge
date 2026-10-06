@@ -1,4 +1,5 @@
 from __future__ import annotations
+import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -315,18 +316,121 @@ class ChapterAuthorityScheduler:
         )
         if not tasks:
             return None
-        generation = 1
-        correction = self._correction_operations(
-            root_operation_id=str(root["operation_id"]),
-            project_id=request.project_id,
-            generation=generation,
-            root_idempotency_key=root_key,
+        from novel_forge.modules.production_execution.execution_template import (
+            selected_book_template,
+            selected_template,
         )
-        aggregate = correction.get(ChapterNode.QUALITY)
-        if aggregate is not None and aggregate["status"] == "SUCCEEDED":
-            children.update(correction)
-            return None
 
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            admission = selected_book_template(
+                uow.cursor, project_id=request.project_id, book_id=request.book_id
+            )
+            template = (
+                selected_template(
+                    admission["policy_snapshot"]["policy"], request.book_id
+                )
+                if admission
+                else None
+            )
+        control = (
+            template.get("quality_corrections")
+            if template and template["mode"] == "CREATIVE_VALIDATION"
+            else None
+        )
+        generation = 1
+        incumbent = self._initial_primary(root, request, ChapterNode.BEST_CANDIDATE)
+        candidate_hashes = [
+            hashlib.sha256(
+                self._asset_content(incumbent["asset_version_id"], request.project_id)[
+                    "text"
+                ].encode()
+            ).hexdigest()
+        ]
+        while True:
+            correction = self._correction_operations(
+                root_operation_id=str(root["operation_id"]),
+                project_id=request.project_id,
+                generation=generation,
+                root_idempotency_key=root_key,
+            )
+            aggregate = correction.get(ChapterNode.QUALITY)
+            if aggregate is None or aggregate["status"] != "SUCCEEDED":
+                break
+            next_tasks = self._operation_outputs(
+                str(aggregate["operation_id"]),
+                request.project_id,
+                role="required_action",
+            )
+            if control and not next_tasks:
+                report = self._asset_content(
+                    self._primary_output(
+                        str(aggregate["operation_id"]), request.project_id
+                    )["asset_version_id"],
+                    request.project_id,
+                )
+                if report.get("internal_admission", {}).get(
+                    "status"
+                ) == "BLOCKED" and report.get("internal_required_actions"):
+                    with AuthorityUnitOfWork(self.database_url) as uow:
+                        uow.cursor.execute(
+                            "SELECT input_asset_snapshot,definition_version FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+                            [aggregate["operation_id"], request.project_id],
+                        )
+                        frozen_inputs, version = uow.cursor.fetchone()
+                    if version != "3.9.11":
+                        raise KernelError(
+                            "QUALITY_CORRECTION_ACTIONS_MISSING",
+                            "Blocked aggregate must emit native correction tasks",
+                        )
+                    replacement = self._admit_node(
+                        request=request,
+                        root=root,
+                        saga_id=str(saga["saga_id"]),
+                        children=children,
+                        node=ChapterNode.QUALITY,
+                        idempotency_suffix=f":quality-correction:{generation}:action-revalidation",
+                        register_step=False,
+                        explicit_inputs=frozen_inputs,
+                        dependency_operation_ids=[str(aggregate["operation_id"])],
+                        timeline_step_key=f"quality-correction:{generation}:quality-actions",
+                        timeline_ordinal=2099 + (generation - 1) * 100,
+                        activate_immediately=True,
+                    )
+                    recovery = self._execute_node(
+                        request, ChapterNode.QUALITY, replacement
+                    )
+                    return self._generation_tick(
+                        root,
+                        saga,
+                        self._child(
+                            str(replacement["operation_id"]), request.project_id
+                        ),
+                        ChapterNode.QUALITY,
+                        "quality_actions_" + recovery,
+                    )
+            if not control or not next_tasks:
+                children.update(correction)
+                return None
+            incumbent = self._primary_output(
+                str(correction[ChapterNode.BEST_CANDIDATE]["operation_id"]),
+                request.project_id,
+            )
+            candidate_hashes.append(
+                hashlib.sha256(
+                    self._asset_content(
+                        incumbent["asset_version_id"], request.project_id
+                    )["text"].encode()
+                ).hexdigest()
+            )
+            from .quality_correction_control import require_next_pass
+
+            require_next_pass(
+                completed_passes=generation,
+                candidate_hashes=candidate_hashes,
+                control=control,
+            )
+            initial_quality, tasks = aggregate, next_tasks
+            generation += 1
         common = {
             ChapterNode.PLAN: self._initial_primary(root, request, ChapterNode.PLAN),
             ChapterNode.CONTEXT: self._initial_primary(
@@ -336,9 +440,7 @@ class ChapterAuthorityScheduler:
             ChapterNode.REVIEW: self._initial_primary(
                 root, request, ChapterNode.REVIEW
             ),
-            ChapterNode.BEST_CANDIDATE: self._initial_primary(
-                root, request, ChapterNode.BEST_CANDIDATE
-            ),
+            ChapterNode.BEST_CANDIDATE: incumbent,
         }
         sequence = (
             ChapterNode.REVISION,
@@ -416,12 +518,26 @@ class ChapterAuthorityScheduler:
                     explicit_inputs=inputs,
                     dependency_operation_ids=dependencies,
                     input_overrides=(
-                        {"correction_generation": generation}
+                        {
+                            "correction_generation": generation,
+                            **(
+                                {
+                                    "preparation_report": {
+                                        **(request.preparation_report or {}),
+                                        "maximum_correction_generations": control[
+                                            "maximum_passes"
+                                        ],
+                                    }
+                                }
+                                if control
+                                else {}
+                            ),
+                        }
                         if node is ChapterNode.BEST_CANDIDATE
                         else None
                     ),
                     timeline_step_key=f"quality-correction:{generation}:{node.value}",
-                    timeline_ordinal=2000 + ordinal,
+                    timeline_ordinal=2000 + (generation - 1) * 100 + ordinal,
                     activate_immediately=True,
                 )
                 correction[node] = operation
@@ -1037,6 +1153,9 @@ class ChapterAuthorityScheduler:
             f"{root_idempotency_key}:{node.value}:quality-correction:{generation}"
             for node in ChapterNode
         ]
+        expected_keys.append(
+            f"{root_idempotency_key}:{ChapterNode.QUALITY.value}:quality-correction:{generation}:action-revalidation"
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1050,7 +1169,13 @@ class ChapterAuthorityScheduler:
                     OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s AND ref.step_key LIKE %s))
                 ORDER BY created_at, operation_id
                 """,
-                [project_id, root_operation_id, expected_keys, root_operation_id, f"quality-correction:{generation}:%"],
+                [
+                    project_id,
+                    root_operation_id,
+                    expected_keys,
+                    root_operation_id,
+                    f"quality-correction:{generation}:%",
+                ],
             )
             rows = uow.cursor.fetchall()
         by_definition = {node.definition_name: node for node in ChapterNode}

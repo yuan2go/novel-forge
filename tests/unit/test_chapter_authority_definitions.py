@@ -188,7 +188,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
 
         self.assertEqual(
             {item["definition_version"] for item in definitions},
-            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.9.2", "3.9.19", "3.9.16", "3.9.18", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15"},
+            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.9.2", "3.9.19", "3.9.16", "3.9.18", "3.9.24", "3.9.23", "3.9.9", "3.9.10", "3.9.25", "3.9.12", "3.9.13", "3.9.14", "3.9.15"},
         )
         self.assertEqual(
             {item["handler_contract_version"] for item in definitions},

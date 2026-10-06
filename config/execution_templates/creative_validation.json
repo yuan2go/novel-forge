@@ -1,5 +1,5 @@
 {
-  "version": "creative-execution-template.v9",
+  "version": "creative-execution-template.v10",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
@@ -17,5 +17,10 @@
   "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
   "canon_validation_contract": "grounded-canon-validation.v2",
   "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
-  "canon_evidence_localization": "TYPOGRAPHIC_QUOTE_EQUIVALENCE_V1"
+  "canon_evidence_localization": "TYPOGRAPHIC_QUOTE_EQUIVALENCE_V1",
+  "quality_corrections": {
+    "version": "quality-correction-control.v1",
+    "maximum_passes": 3,
+    "maximum_unchanged_candidates": 2
+  }
 }
