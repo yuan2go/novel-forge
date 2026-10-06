@@ -1913,6 +1913,16 @@ class StoryPlanningGenerationApplication:
         maximum = min(MAXIMUM_RESULT_REPAIRS, GENERATOR_CATALOG[command.generator_operation_name].maximum_structural_regenerations)
         if command.repair_number >= maximum:
             raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+        repair_key = f"{command.idempotency_key}:result-repair:{command.repair_number + 1}"
+        admitted_repair = self.find_frozen_generation_command(project_id=command.project_id, idempotency_key=repair_key)
+        if admitted_repair is not None:
+            expected = replace(command, runtime_continuation_id="", repair_of_candidate_id="",
+                repair_of_operation_id=operation_id, repair_result_asset_version_id=admitted_repair.repair_result_asset_version_id,
+                repair_result_diagnostic=admitted_repair.repair_result_diagnostic, repair_reason=admitted_repair.repair_reason,
+                repair_number=command.repair_number + 1, parent_agent_session_operation_id="", idempotency_key=repair_key)
+            if admitted_repair != expected:
+                raise KernelError("PLANNING_RESULT_REPAIR_REPLAY_DRIFT", "admitted repair must retain the original parent, scope and frozen task")
+            return self.generate(admitted_repair, principal=principal, execution_probe=execution_probe)
         source = require_result_repair_source(self.database_url, command=command, operation_id=operation_id)
         diagnostic = source["diagnostic"]
         repaired = replace(
@@ -1925,7 +1935,7 @@ class StoryPlanningGenerationApplication:
             repair_reason=f"{diagnostic['error_code']}:{canonical_hash(diagnostic)}",
             repair_number=command.repair_number + 1,
             parent_agent_session_operation_id="",
-            idempotency_key=f"{command.idempotency_key}:result-repair:{command.repair_number + 1}",
+            idempotency_key=repair_key,
         )
         return self.generate(repaired, principal=principal, execution_probe=execution_probe)
 

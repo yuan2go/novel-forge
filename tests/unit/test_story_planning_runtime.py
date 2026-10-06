@@ -3014,6 +3014,7 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
     monkeypatch.setattr(result_recovery, "require_result_repair_source", lambda *args, **kwargs: source)
     application = object.__new__(StoryPlanningGenerationApplication)
     application.database_url = "isolated-test"
+    application.find_frozen_generation_command = lambda **kwargs: None
     calls = []
     application.generate = lambda command, **kwargs: calls.append(command) or command
     recovered = application._repair_unmaterialized_result(original, operation_id="failed:operation", principal=object())
@@ -3031,6 +3032,26 @@ def test_result_repair_command_keeps_historical_identity_and_bounded_new_causati
 def test_result_repair_cannot_mix_candidate_and_raw_result_causation():
     with pytest.raises(ValueError, match="without a source Candidate"):
         replace(_command("world.design.generate"), repair_of_operation_id="failed:operation", repair_of_candidate_id="candidate:other", repair_result_asset_version_id="result:failed", repair_result_diagnostic={"error_code": "bad"}, repair_reason="bad:hash", repair_number=1)
+
+
+@pytest.mark.parametrize("drift", [False, True])
+def test_historical_admitted_raw_repair_replays_without_recomputing_changed_diagnosis(monkeypatch, drift):
+    from novel_forge.modules.story_planning_runtime import result_recovery
+    original = replace(_command("chapter_plan.generate"), execution_contract_version="1.18.0")
+    repair = replace(original, repair_of_operation_id="failed:original", repair_result_asset_version_id="raw:original",
+        repair_result_diagnostic={"error_code": "old-specific-diagnostic"}, repair_reason="old-diagnostic-hash",
+        repair_number=1, idempotency_key=original.idempotency_key + ":result-repair:1")
+    if drift:
+        repair = replace(repair, logical_key="another-chapter")
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.find_frozen_generation_command = lambda **kwargs: repair
+    application.generate = lambda command, **kwargs: command
+    monkeypatch.setattr(result_recovery, "require_result_repair_source", lambda *args, **kwargs: pytest.fail("admitted repair already freezes its original diagnosis"))
+    if drift:
+        with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_REPLAY_DRIFT"):
+            application._repair_unmaterialized_result(original, operation_id="failed:original", principal=object())
+    else:
+        assert application._repair_unmaterialized_result(original, operation_id="failed:original", principal=object()) == repair
 
 
 def _planning_profile_binding(preparer, *, schema_ref, generator="creative.candidates.generate", project_id="project-1", book_id="book-1", operation_id="profile-operation", attempt_id="profile-attempt", release_sha="a" * 40):
