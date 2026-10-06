@@ -49,6 +49,10 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from .execution_recovery import recover_timeout
+        if recover_timeout(composition.authority, book_run_id=book_run_id,
+                           principal=composition.principal):
+            events({"kind": "CHAPTER_EXECUTION_SUCCESSOR", "book_run_id": book_run_id})
         schedule_book_coordination_jobs(composition.query, jobs, limit=1, book_run_id=book_run_id)
         claim = jobs.claim(runtime_group="book", worker_id=worker.principal_id, lease_seconds=30,
             job_kinds=("BOOK_COORDINATION_TICK",), subject_kind="BOOK_RUN", subject_id=book_run_id)

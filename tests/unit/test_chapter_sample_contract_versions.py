@@ -38,7 +38,7 @@ def test_sample_contract_versions_and_target_kind_are_exact(name, version, kind,
     assert chapter_sample_definition_supported('chapter.provider.sample.' + name, version, reference_samples=kind) is supported
 
 
-@pytest.mark.parametrize("reference,version", [(False, "2.2.0"), (True, "2.3.0")])
+@pytest.mark.parametrize("reference,version", [(False, "2.4.0"), (True, "2.5.0")])
 def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts(
     reference, version
 ):
@@ -50,7 +50,7 @@ def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_cont
     assert {item["definition_version"] for item in definitions} == {version}
     assert all(
         item["policy"]["source_definition_versions"]
-        == ["3.4.1", "3.8.0", "3.8.0-author-input.v2"]
+        == ["3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"]
         for item in definitions
     )
     if reference:
@@ -138,9 +138,9 @@ def test_api_replay_reads_published_definition_without_rebuilding_it(change):
 @pytest.mark.parametrize(
     "reference,samples,workflow",
     [
-        (False, False, "chapter_provider_sampling@2.2.0"),
-        (True, False, "chapter_reference_sampling@2.2.0"),
-        (True, True, "chapter_reference_sampling@2.3.0"),
+        (False, False, "chapter_provider_sampling@2.4.0"),
+        (True, False, "chapter_reference_sampling@2.4.0"),
+        (True, True, "chapter_reference_sampling@2.5.0"),
     ],
 )
 def test_new_derived_pack_has_an_immutable_exact_semver_identity(
@@ -389,3 +389,10 @@ def test_new_sample_adapter_uses_exact_source_semantics_without_changing_sample_
         assert requests[0].semantic_definition_version == source_version
     else:
         assert "source_definition_version" not in output.content
+
+
+def test_published_memo_sampling_contract_hash_is_preserved():
+    memo = next(d for d in chapter_provider_sample_definitions(application_build_id="historical",
+        commit_sha="e" * 40, definition_version="2.2.0") if d["name"] == "chapter.provider.sample.memo")
+    assert definition_hash(memo) == "sha256:20e0b1490350de377ab8ee4ee2b34f4335b45d189f92d0f664e2d9f44c234448"
+    assert memo["timeout_policy"]["operation_timeout_seconds"] == 60

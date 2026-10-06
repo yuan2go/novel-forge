@@ -132,6 +132,8 @@ class ChapterAuthorityScheduler:
 
     def tick(self, *, project_id: str, root_operation_id: str) -> ChapterSchedulerTick:
         root, saga, children = self._graph_state(project_id, root_operation_id)
+        from novel_forge.modules.book_authority.execution_recovery import require_dispatch
+        require_dispatch(self.database_url, command_payload=root["command_payload"], root_operation_id=root_operation_id)
         if (root["command_payload"].get("preparation_report") or {}).get("author_book_replacement"):
             from novel_forge.modules.book_authority.author_revision import (
                 require_author_replacement_dispatch,
@@ -639,7 +641,7 @@ class ChapterAuthorityScheduler:
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0"}
+                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0"}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )

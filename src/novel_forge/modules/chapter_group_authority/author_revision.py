@@ -1,8 +1,8 @@
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
-def replace_unaccepted_child_reference(uow, *, request, root_operation_id, delegation_id):
-    binding = request['command_payload']['preparation_report']['author_book_replacement']
+def replace_unaccepted_child_reference(uow, *, request, root_operation_id, delegation_id, binding_key="author_book_replacement"):
+    binding = request['command_payload']['preparation_report'][binding_key]
     uow.cursor.execute('''SELECT child.group_run_id,child.status,group_run.active_chapter_request_id
         FROM authority_chapter_group_chapter child JOIN authority_chapter_group_production group_run USING(group_run_id)
         WHERE child.chapter_request_id=%s FOR UPDATE OF child,group_run''', [binding['predecessor_request_id']])

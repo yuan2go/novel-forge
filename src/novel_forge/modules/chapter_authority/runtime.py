@@ -55,7 +55,7 @@ def _handler_definition_version(
             )
             row = uow.cursor.fetchone()
         recoverable = (
-            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2"}
+            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2", "3.8.0-author-input.v2"}
             if author_input and node is ChapterNode.DRAFT
             else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
         )
@@ -93,7 +93,7 @@ class _ChapterHandlerAdapter:
                         [request.project_id, payload["chapter_sampling"]["source_operation_id"]])
                     source = uow.cursor.fetchone()
                 validate_chapter_sample_origin(payload, source, project_id=request.project_id)
-                if source[1] not in {"3.4.1", "3.8.0", "3.8.0-author-input.v2"}:
+                if source[1] not in {"3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
                     raise KernelError("CHAPTER_SAMPLE_SOURCE_CONTRACT_INVALID", "New samples require an explicitly declared frozen source contract")
                 source_version = source[1]
         chapter_request = ChapterHandlerRequest(

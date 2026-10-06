@@ -222,6 +222,7 @@ def default_capability_registry() -> CapabilityRegistry:
         CapabilityId.PLANNING_ARC_GENERATE: ExecutionDomain.PLANNING,
         CapabilityId.PLANNING_CHAPTER_GROUP_GENERATE: ExecutionDomain.PLANNING,
         CapabilityId.PLANNING_CHAPTER_GENERATE: ExecutionDomain.PLANNING,
+        CapabilityId.PLANNING_CHAPTER_MEMO: ExecutionDomain.PLANNING,
         CapabilityId.PLANNING_STORY_CHAPTER_GENERATE: ExecutionDomain.PLANNING,
         CapabilityId.PROSE_CHAPTER_DRAFT: ExecutionDomain.PROSE,
         CapabilityId.REVIEW_CHAPTER_EVALUATE: ExecutionDomain.REVIEW,

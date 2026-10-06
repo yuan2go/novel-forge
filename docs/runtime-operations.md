@@ -963,7 +963,7 @@ with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idemp
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
 `chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
-definition version `3.8.0` or its frozen published predecessors `3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`.
+definition version `3.9.0` or its frozen published predecessors `3.8.0`/`3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`.
 The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
 use the returned book, command and input identities in the same campaign grant. Dry-run
 performs no admission or Provider call. Admit the identical request without `dry_run`.
@@ -1500,8 +1500,17 @@ The same command exercises Creative Memo, directed revision and grounded Canon o
 current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
 `NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
 routes; if omitted they inherit the explicitly configured Review route. They use the
-existing Provider admission, token and cost limits. Memo has the Planning capability's
-60-second operation bound; Canon support uses the Canon capability's frozen bound.
+existing Provider admission, token and cost limits. New Chapter 3.9 uses the distinct `planning.chapter.memo` capability and a 600-second
+single-operation bound; published 3.8 Memo requests retain their frozen 60-second bound.
+The Book worker can reserve a native execution successor after every frozen Memo attempt
+has a durable stopped timeout receipt and a settled membership reservation, with no
+successful output, UNKNOWN Effect, live lease, acceptance or creation cancellation.
+The successor preserves the original Book, chapter plan, inputs, authorization, predecessor
+and all consumption evidence. It neither extends old retry limits nor reports unknown
+remote usage as zero. Paid requests and unresolved Effects remain outside this recovery. New derived Chapter
+sampling contracts use 2.4/2.5 for the 3.9 source version and Memo timeout; published
+2.2/2.3 source sets and timeout hashes remain frozen.
+Canon support uses its frozen Canon bound.
 
 The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
 claim support, accepted state references, attempt errors and receipt/cost references.
@@ -3059,3 +3068,14 @@ exact native creative template, new per-call resource policy and zero-work evide
 The historical Opening, budget snapshot and failure remain immutable. An Opening with
 any dispatched Effect, reservation, output or completed node requires its ordinary
 reconciliation/recovery path; the zero-work successor cannot discard that evidence.
+
+For Memo execution-contract upgrades, run the focused Book execution-recovery, Chapter
+Definition, sample-contract, Pack validator and production-capability tests. Exercise the
+original checkpoint on a restored PostgreSQL database through the native Pack installer
+and Book successor reservation, prohibit dispatch during this preflight, then repeat
+recovery to prove the same request/root/delegation. Check all original timeout receipts
+and accounting, predecessor cancellation, generation increment, frozen plan/input identity,
+no new Effect and exact successor Pack before enabling the original workers. Native
+`authority-creation recover --project-id "$PROJECT_ID" --formation-run-id "$FORMATION_ID"
+--idempotency-key "$RECOVERY_KEY" --reason "$REASON"` wakes the existing creation owner;
+it neither creates another Book nor clears an UNKNOWN outcome.

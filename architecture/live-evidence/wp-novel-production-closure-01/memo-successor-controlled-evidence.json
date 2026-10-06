@@ -1,0 +1,44 @@
+{
+  "evidence_kind": "NATIVE_BOOK_MEMO_EXECUTION_SUCCESSOR",
+  "database": "novel_forge_closure_memo_successor_v3_test_20261007",
+  "contract": "book-preprose-timeout-successor.v2",
+  "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+  "predecessor_request_id": "chapter-request:b273f8d6067369c863a3ee95db52583a4c4f7f1593bcdb57a1d1700a24c9e7c3",
+  "successor_request_id": "chapter-request:chapter-timeout:a8dfa40fd1607b07403907e95a05816894bb269baa88601378bbb725a4595968",
+  "successor_root_operation_id": "fbb92e5f-2f0c-458a-8d4d-60e536174bb8",
+  "generation": 2,
+  "definition_version": "3.9.0",
+  "known_stopped_effects": [
+    "b8a63e74-70ee-415b-a67b-c165afd1ad1f",
+    "d9c82f83-e779-4b00-a9b0-f3868d00ff10"
+  ],
+  "effects_before": 54,
+  "effects_after": 54,
+  "provider_dispatches": 0,
+  "idempotent_recovery": true,
+  "pack_version": "2.13.0",
+  "pack_changed_surfaces": [
+    "identity",
+    "compatibility",
+    "workflow_template"
+  ],
+  "remote_usage": "UNKNOWN",
+  "real_continuous_production": "NOT_RUN",
+  "evidence_states": [
+    "CODE_EXISTS",
+    "WIRED",
+    "EXECUTABLE"
+  ],
+  "actual_runtime_code": "working tree based on 23b2fa555403a5c9df8ceb5b49028af7d53fb08a",
+  "unit_contracts": {
+    "memo_eligibility": 28,
+    "current_definitions_capabilities_and_pack": 44,
+    "sample_compatibility": 59
+  },
+  "postgres_focused": {
+    "passed": 6,
+    "controlled_provider": false
+  },
+  "production_proven": false,
+  "literary_quality": "NOT_PROVEN"
+}

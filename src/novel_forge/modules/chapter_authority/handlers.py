@@ -222,7 +222,7 @@ class _PlanHandler:
                 "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
                 "ChapterPlan command identity does not match the frozen AssetVersion",
             )
-        if (request.definition_version in {"3.8.0", "3.8.0-author-input.v2"}
+        if (request.definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
                 and source_plan.content.get("source_planning_candidate_asset_version_id")
                 and source_plan.content.get("runtime_projection_version") != "2.0.0"):
             raise KernelError("CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED",
@@ -278,7 +278,7 @@ class _PlanHandler:
                 "workspace_id": request.workspace_id,
                 **({"style_policy_version_id": next(
                     (item["asset_version_id"] for item in selected if item["asset_type"] == "style_policy"), ""
-                )} if request.definition_version == "3.8.0" else {}),
+                )} if request.definition_version in {"3.8.0", "3.9.0"} else {}),
                 "quality_profile_version_id": next(
                     (
                         item["asset_version_id"]
@@ -360,7 +360,7 @@ class _ExecutionIntentHandler:
             policies = [
                 item for item in request.inputs if item.asset_type == "style_policy"
             ]
-            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2"}:
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
                 if len(policies) != 1 or (
                     policies[0].content.get("contract_version") != "foundation-style-projection.v4"
                     or not any(fact.get("key") == "work_applicability"
@@ -2035,7 +2035,7 @@ class _QualityGroupHandler:
         context_content = dict(context.content)
         generated: ModelProviderResult | None = None
         reference_calibration = None
-        if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2"}:
+        if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
             raise KernelError("QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED",
                               "Frozen work-quality.v1 cannot safely continue under v2; retain receipts and admit an explicit replacement")
         quality_context = build_quality_context_view(

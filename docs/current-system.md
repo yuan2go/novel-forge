@@ -144,6 +144,16 @@ plan is an owner failure, never an author approval request. A corrected pure val
 can append a new result for the exact retained candidate without another Provider send;
 its original failed report, command and receipt remain unchanged.
 
+Memo is a model stage, not local plan materialization. Chapter 3.9 binds `planning.chapter.memo`
+to the bounded 600-second model-operation window; frozen 3.8
+requests retain their 60-second deadline. The native Book worker reserves a
+pre-prose execution successor on the same Book, plan and accepted frontier only after
+resolving the approved successor Pack. Eligibility binds every original Memo attempt
+and settled local timeout receipt; it requires the frozen retry bound to be exhausted. UNKNOWN, partial output, paid calls,
+changed authorization, author cancellation and an accepted frontier block succession.
+Local process termination proves a stopped local execution, not zero remote usage or
+a verified service model identity. Original receipts and accounting remain preserved.
+
 A capacity configuration checkpoint can resume only when its exact historical error and
 absence of every external Effect prove that no send occurred. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
