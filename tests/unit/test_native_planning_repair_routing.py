@@ -100,3 +100,16 @@ def test_repair_policy_requires_explicit_template_successor():
             "version": "native-repair-routing.v1", "max_same_route_repairs": 2})]})
     with pytest.raises(KernelError, match="REPAIR_VERSION_INVALID"):
         validate_templates({"execution_templates": [template(version="creative-execution-template.v2")]})
+
+
+def test_expanded_template_configuration_uses_successor_definition():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    from novel_forge.modules.command_kernel.service import _validate_json_schema
+    value = template(version="creative-execution-template.v2", repair_routing={
+        "version": "native-repair-routing.v1", "max_same_route_repairs": 2})
+    content = {"policy_version":"test", "task_overrides":[], "reason":"explicit successor", "execution_templates":[value]}
+    definition = owned_policy_definition(owner="PROVIDER_ROUTING", content=content,
+        application_build_id="test", commit_sha="e"*40)
+    assert definition["definition_version"] == "1.7.0"
+    assert definition["command_schema_version"].endswith(".v7")
+    _validate_json_schema(definition["command_schema"], {"project_id":"project", "owner":"PROVIDER_ROUTING", "policy":content})

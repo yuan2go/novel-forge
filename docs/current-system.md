@@ -102,7 +102,9 @@ not authorize self-qualification or early completion. Pause with a durable check
 only when the remaining work has no authorized executable path.
 
 The successor `creative-execution-template.v2` may enable `native-repair-routing.v1`
-for at most two same-route Planning repairs. Admission binds the persisted native repair,
+for at most two same-route Planning repairs through `provider.routing_policy.configure@1.7.0`.
+The compatible configuration schema accepts v1 and v2 templates while retaining the frozen
+1.6.0 definition and policy history. Admission binds the persisted native repair,
 exact parent result and input scope, unchanged authorized route and successful settled
 parent call. A candidate rejected by the actual contract remains rejected until a new
 repair passes that contract; schema/causality rejection does not permanently exclude its

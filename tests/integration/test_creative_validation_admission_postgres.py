@@ -11,6 +11,49 @@ from tests.integration.capability_pack_postgres_support import CapabilityPackPos
 from tests.unit.test_creative_execution_template import template
 
 
+def test_frozen_template_configuration_definition_survives_v2_successor(monkeypatch):
+    from copy import deepcopy
+    import novel_forge.modules.authority_handler_runtime.policy_commands as module
+    harness = CapabilityPackPostgresHarness("creative-definition-successor")
+    operator = replace(harness.compiler, permissions=harness.compiler.permissions | {"book.authority.execute"})
+    value = template(harness.book_ids[0])
+    arguments = dict(database_url=DATABASE_URL, owner="PROVIDER_ROUTING", project_id=harness.project_id,
+        workspace_id=harness.workspace_id, principal=operator, application_build_id=harness.application_build_id,
+        commit_sha=harness.release_sha, trace_id=harness.project_id, correlation_id=harness.project_id)
+    current_definition = module.owned_policy_definition
+
+    def frozen_definition(**kwargs):
+        definition = deepcopy(current_definition(**kwargs))
+        definition.update(definition_version="1.6.0", command_schema_version="provider.routing_policy.configure.command.v6",
+            result_schema_version="provider.routing_policy.configure.result.v6")
+        for key in ("command_schema", "result_schema", "input_contract"):
+            schema = definition[key]["properties"]["policy"]["properties"]["execution_templates"]["items"]
+            schema["$defs"].pop("RepairRoutingConfiguration", None)
+            schema["properties"].pop("repair_routing", None)
+            schema["properties"]["version"].pop("enum", None)
+            schema["properties"]["version"]["const"] = "creative-execution-template.v1"
+        return definition
+
+    with monkeypatch.context() as legacy:
+        legacy.setattr(module, "owned_policy_definition", frozen_definition)
+        old = module.configure_owned_policy(**arguments, idempotency_key=harness.project_id+":v1",
+            content={"policy_version":"v1", "reason":"frozen historical contract", "task_overrides":[], "execution_templates":[value]})
+        old = deepcopy(old)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT definition_hash FROM authority_operation_definition WHERE name='provider.routing_policy.configure' AND definition_version='1.6.0'")
+        digest = uow.cursor.fetchone()[0]
+    value.update(version="creative-execution-template.v2", repair_routing={"version":"native-repair-routing.v1", "max_same_route_repairs":2})
+    module.configure_owned_policy(**arguments, idempotency_key=harness.project_id+":v2",
+        content={"policy_version":"v2", "reason":"explicit bounded repair successor", "task_overrides":[], "execution_templates":[value]})
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT definition_hash FROM authority_operation_definition WHERE name='provider.routing_policy.configure' AND definition_version='1.6.0'")
+        assert uow.cursor.fetchone()[0] == digest
+        uow.cursor.execute("SELECT content FROM authority_runtime_policy_version WHERE project_id=%s AND owner='PROVIDER_ROUTING' AND policy_version='v1'", [harness.project_id])
+        assert uow.cursor.fetchone()[0] == old["policy"]
+        uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [harness.project_id])
+        assert uow.cursor.fetchone()[0] == 0
+
+
 def test_native_pack_template_admission_has_no_human_approval_and_cannot_enter_production():
     harness = CapabilityPackPostgresHarness("creative-admission")
     book = harness.book_ids[0]
