@@ -3066,3 +3066,11 @@ policies and live leases remain ineligible. Run
 `test_native_length_scope_successor_preserves_failed_revision_and_accepts` and
 `test_native_review_scope_successor_retains_rejected_review_and_accepts` in the native
 Formation integration module, plus `tests/unit/test_work_realization_contract.py`.
+
+A known settled `CHAPTER_LENGTH_REPAIR_INCOMPLETE` retry under creative v5 starts one
+`chapter-execution-window-renewal.v2` phase bound to its exact failed Attempt. This
+retains the original Root window duration and preserves any later existing deadline;
+it does not change an author deadline, the Attempt limit, receipts or accounting.
+The native creation driver continues the remaining accounted Attempt automatically
+with the latest rejected output and measured Han count, including after restart.
+An exhausted Attempt limit still saves the checkpoint and reports the real failure.

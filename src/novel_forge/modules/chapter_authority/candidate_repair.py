@@ -80,7 +80,7 @@ def candidate_repair_payload(request):
             JOIN authority_external_effect_dispatch d USING(external_effect_id)
             JOIN authority_external_receipt r USING(dispatch_id)
             WHERE a.operation_id=%s AND e.project_id=%s AND a.attempt_id<>%s
-                AND a.status='FAILED_RETRYABLE' AND a.result->>'error_code' LIKE 'REALIZATION_%%'
+                AND a.status='FAILED_RETRYABLE' AND (a.result->>'error_code' LIKE 'REALIZATION_%%' OR a.result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE')
                 AND e.status='SUCCEEDED' AND b.status='SETTLED'
             ORDER BY a.attempt_number DESC,r.received_at DESC LIMIT 1''',
             [request.operation_id,request.project_id,request.attempt_id])
@@ -88,9 +88,14 @@ def candidate_repair_payload(request):
         if recent:
             from .model_effects import ModelProviderResult
             result = ModelProviderResult.from_evidence(recent[3])
+            measured = {}
+            if request.definition_version == '3.9.4':
+                from .realization_composition import prose_from_output
+                from novel_forge.modules.revision.domain import han_characters
+                measured = {'length_observation':{'unit':'HAN_CHARACTERS_V1','observed':han_characters(prose_from_output(result.output))}}
             return {'candidate_repair': {'contract_version':'chapter-candidate-output-repair.v1',
                 'source_effect_id':recent[0], 'source_attempt_id':recent[1], 'diagnostic':recent[2],
-                'rejected_candidate':result.output,
+                'rejected_candidate':result.output, **measured,
                 'instruction':'Repair this latest rejected candidate under the exact current slots and original work requirements. No invented facts, future knowledge, padding or fabricated approval.'}}
         uow.cursor.execute("""SELECT policy_evidence FROM authority_saga_step_successor
             WHERE project_id=%s AND successor_operation_id=%s""", [request.project_id,request.operation_id])
@@ -197,3 +202,35 @@ def recover_length_frontier(authority, *, book_run_id, principal):
     return _recover_settled_output_frontier(authority, book_run_id=book_run_id, principal=principal,
         definition_name='chapter.revision.apply', target_version='3.9.4', contract_version='chapter-length-output-repair.v1',
         failure_codes=('REVISION_OUTSIDE_DIAGNOSIS_SCOPE',), statuses=('FAILED_RETRYABLE','CANCELLATION_REQUESTED'))
+
+
+def recover_length_retry_phase(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    principal.require('book.authority.execute',book['project_id'])
+    principal.require('chapter.authority.execute',book['project_id'])
+    if not book.get('active_chapter_request_id'):
+        return False
+    request = authority.require_chapter_request(book['active_chapter_request_id'])
+    if request['chapter_number'] != book['accepted_through_chapter']+1:
+        return False
+    from novel_forge.modules.production_execution.execution_template import selected_template
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        admission = selected_book_template(uow.cursor, project_id=book['project_id'], book_id=book['book_id'])
+        template = selected_template(admission['policy_snapshot']['policy'],book['book_id']) if admission else None
+        if not template or template.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
+            return False
+        uow.cursor.execute("""SELECT o.operation_id,o.actor_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int
+            FROM authority_operation o JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.revision.apply'
+            AND o.definition_version='3.9.4' AND o.status='FAILED_RETRYABLE'
+            AND a.result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE'
+            ORDER BY a.attempt_number DESC LIMIT 1""",[request['chapter_root_operation_id'],book['project_id']])
+        row = uow.cursor.fetchone()
+        if not row or row[2]>=row[3]:
+            return False
+        if row[1] != principal.principal_id:
+            raise KernelError('CHAPTER_LENGTH_RETRY_ACTOR_INVALID','Retry requires the original actor')
+    from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
+    continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
+        predecessor_id=row[0],target_version='3.9.4',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
+    return True

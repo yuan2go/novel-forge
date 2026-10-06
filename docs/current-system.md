@@ -2105,3 +2105,8 @@ retains exact candidate, Context and Platform versions; it does not authorize ch
 Scene coverage, facts, voice or quality requirements. Candidates already within bounds
 retain the ordinary located-diagnosis edit scope. Review, ReReview and Quality still
 assess the resulting complete prose.
+
+Known settled length retries retain the latest returned candidate, its diagnostic and
+host-measured count. Creative v5 may start one bounded execution phase for the exact
+failed Attempt and continue its remaining retry automatically from the native creation
+entry point; per-call timeouts, retry exhaustion and no-progress checks remain active.

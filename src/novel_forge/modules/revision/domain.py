@@ -399,4 +399,4 @@ def validate_chapter_length_scope(scope: dict[str, Any], source: dict[str, Any],
         or minimum <= han_characters(original) <= maximum):
         raise KernelError('CHAPTER_LENGTH_SCOPE_INVALID', 'Only an exact out-of-bounds frozen candidate authorizes whole-chapter length repair')
     if not minimum <= han_characters(text) <= maximum:
-        raise KernelError('CHAPTER_LENGTH_REPAIR_INCOMPLETE', 'The actual corrected prose must meet the original frozen length bounds')
+        raise KernelError('CHAPTER_LENGTH_REPAIR_INCOMPLETE', f'Actual HAN_CHARACTERS_V1 count {han_characters(text)} is outside frozen bounds {minimum}–{maximum}; repair the full candidate without padding')

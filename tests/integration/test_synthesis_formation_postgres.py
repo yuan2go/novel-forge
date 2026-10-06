@@ -565,10 +565,15 @@ def test_native_formation_generates_foundation_from_author_brief(
                 value['issues'][0]['evidence'] = {'quote':inputs['draft']['scene_artifacts'][-1]['text']}
             elif stage == 'revision':
                 length_revision_calls += 1
-                value['scene_artifacts'][0]['text'] += '乙丙丁'
+                value['scene_artifacts'][0]['text'] += '乙' if length_revision_calls == 2 else '乙丙丁'
                 if length_revision_calls == 2:
                     assert inputs['candidate_repair']['contract_version'] == 'chapter-length-output-repair.v1'
                     assert inputs['chapter_length_repair_scope']['source_han_characters'] == 1
+                elif length_revision_calls == 3:
+                    assert inputs['candidate_repair']['contract_version'] == 'chapter-candidate-output-repair.v1'
+                    assert inputs['candidate_repair']['diagnostic']['error_code'] == 'CHAPTER_LENGTH_REPAIR_INCOMPLETE'
+                    assert inputs['candidate_repair']['length_observation']['observed'] == 2
+                    assert '2' in inputs['candidate_repair']['diagnostic']['error_message']
             if stage in {'draft','revision'}:
                 from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
                 value['text'] = serialize_realization(value['scene_artifacts'])
@@ -1296,7 +1301,7 @@ def test_native_formation_generates_foundation_from_author_brief(
                     if review_knowledge_recovery:
                         assert review_scope_calls == 2
                     if length_scope_recovery:
-                        assert length_revision_calls == 2
+                        assert length_revision_calls == 3
             if memo_timeout_recovery:
                 with AuthorityUnitOfWork(DATABASE_URL) as uow:
                     uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])
