@@ -1406,9 +1406,11 @@ class ChapterAuthorityScheduler:
                     ),
                 )
                 self.fault_injector("after_domain_asset_materialized")
+                from .receipt_recovery import is_known_receipt_revalidation
                 if (
                     self.agent_binding_recorder is not None
                     and node.value in MODEL_CAPABILITY_STAGES
+                    and not is_known_receipt_revalidation(self.database_url, operation_id)
                 ):
                     self.agent_binding_recorder.finalize_domain_commit(
                         project_id=project_id,

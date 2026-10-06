@@ -1681,7 +1681,7 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.14.0 binds System v3, Prompt Template v9 and
+reconciliation chain. Chapter Pack 2.15.0 binds System v3, Prompt Template v9 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot
@@ -2055,3 +2055,10 @@ mappings carry volume scope and original chapter numbers separately from reading
 Older parser versions retain their frozen semantics. v5 reprocessing appends to the same
 Edition/acquisition; prior number/title conflicts close only when identical source units
 and content are distinguished by verified volume scopes. Other issues remain carried.
+
+Known successful Draft receipts retain their original Provider identity and consumption.
+A versioned `chapter-known-receipt.v1` same-Saga successor revalidates the exact candidate
+under Draft 3.9.2 after a terminal host failure, without another model call. Kernel
+completion recognizes only its immutable exact effect/hash and identical input binding.
+Host revalidation carries source execution provenance; it does not claim a new Agent
+turn or exempt the candidate from Review, Quality, comparison or Acceptance.

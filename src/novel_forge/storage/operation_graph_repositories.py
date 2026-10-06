@@ -554,8 +554,21 @@ class CompletionContractRepository:
 
     def effect_states(self, operation_id: str) -> list[tuple[str, str]]:
         self.cursor.execute(
-            "SELECT capability, status FROM authority_external_effect WHERE operation_id = %s",
-            [operation_id],
+            """SELECT capability,status FROM authority_external_effect WHERE operation_id=%s
+            UNION ALL SELECT e.capability,e.status FROM authority_saga_step_successor s
+            JOIN authority_operation target ON target.operation_id=s.successor_operation_id
+            JOIN authority_operation source ON source.operation_id=s.predecessor_operation_id
+            JOIN authority_external_effect e ON e.operation_id=source.operation_id
+            JOIN authority_budget_reservation b USING(external_effect_id)
+            WHERE s.successor_operation_id=%s AND s.project_id=target.project_id
+            AND source.project_id=target.project_id AND e.project_id=target.project_id
+            AND s.policy_evidence->>'contract_version'='chapter-known-receipt.v1'
+            AND target.definition_snapshot #>> '{policy,known_receipt_revalidation}'='chapter-known-receipt.v1'
+            AND target.command_payload=source.command_payload AND target.input_asset_snapshot=source.input_asset_snapshot
+            AND s.policy_evidence->>'source_effect_id'=e.external_effect_id
+            AND s.policy_evidence->>'source_request_hash'=e.request_hash
+            AND e.status='SUCCEEDED' AND b.status='SETTLED'""",
+            [operation_id,operation_id],
         )
         return self.cursor.fetchall()
 

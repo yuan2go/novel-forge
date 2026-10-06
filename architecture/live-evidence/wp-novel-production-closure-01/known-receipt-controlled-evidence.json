@@ -1,0 +1,14 @@
+{
+  "evidence_kind": "NATIVE_KNOWN_RECEIPT_DRAFT_REVALIDATION",
+  "effects_before": 56,
+  "effects_after": 56,
+  "provider_dispatches": 0,
+  "predecessor": "03ab8172-b293-41b7-8370-0f72d1edb8ce",
+  "successor": "9c7be2d5-ecaa-4d02-97d5-a0986636ba61",
+  "old_failure_preserved": true,
+  "definition_version": "3.9.2",
+  "pack_version": "2.15.0",
+  "draft_status": "SUCCEEDED",
+  "original_failed_injection": "NO_SIGKILL_DIAGNOSTIC_SQL_ERROR_PRESERVED",
+  "real_crash_recovery": "NOT_RUN"
+}

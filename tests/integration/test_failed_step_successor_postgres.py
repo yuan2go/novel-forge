@@ -244,3 +244,17 @@ def test_step_successor_rejects_unowned_cancelled_or_unproven_recovery(
             if boundary == "failure"
             else "LOCAL_CONTRACT_DEFECT",
         )
+
+
+def test_known_receipt_successor_rejects_unproven_effects(failed_graph):
+    project, root, child, saga, context = failed_graph
+    with pytest.raises(KernelError, match="STEP_SUCCESSOR_RECEIPT_UNSETTLED"):
+        replace_failed_step(
+            DATABASE_URL,
+            predecessor_id=child,
+            target_version="1.0.1",
+            context=context,
+            policy_evidence={"contract_version": "chapter-known-receipt.v1"},
+            expected_failure_code="LOCAL_CONTRACT_DEFECT",
+            known_receipt_effects=(("unproven-effect", "unproven-hash"),),
+        )

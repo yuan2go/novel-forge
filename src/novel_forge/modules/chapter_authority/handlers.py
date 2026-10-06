@@ -1501,13 +1501,16 @@ class _DraftHandler:
         plan_view = build_draft_plan_view(
             plan.content, work_requirements=request.work_requirements_enabled
         )
-        core_policy = "scene-core-slots.v1" if request.definition_version == "3.9.1" else "EXPLICIT_SKELETON_V1"
-        information_policy = "scene-information-flow.v1" if request.definition_version == "3.9.1" else "ENTRY_ONLY_V1"
+        core_policy = "scene-core-slots.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "EXPLICIT_SKELETON_V1"
+        information_policy = "scene-information-flow.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "ENTRY_ONLY_V1"
         realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy,
                                                             information_policy=information_policy)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
-        generated = self.provider.invoke(
+        from .receipt_recovery import consume_known_draft_receipt
+        generated = consume_known_draft_receipt(request)
+        known_receipt = generated is not None
+        generated = generated or self.provider.invoke(
             request,
             stage="draft",
             payload={
@@ -1529,6 +1532,8 @@ class _DraftHandler:
             core_policy=core_policy,
             information_policy=information_policy,
         )
+        if known_receipt:
+            content["known_receipt_revalidation"] = {"contract_version": "chapter-known-receipt.v1", "source": generated.execution_evidence, "provider_dispatches": 0}
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,
             "memo_content_hash": memo.content_hash,

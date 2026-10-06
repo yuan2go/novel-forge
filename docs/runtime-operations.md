@@ -3087,3 +3087,11 @@ reference with a new Definition version. It preserves successful siblings and fr
 exact input hashes. Creation cancellation and any changed Book frontier block recovery.
 Verify the forward migration on a fresh database and a restored original checkpoint,
 then demonstrate same-Saga recovery without resending Memo or Context.
+
+A terminal Draft host failure after a known successful Provider receipt can use
+`chapter-known-receipt.v1` through the existing Book worker. The native same-Saga
+successor freezes the original inputs, failure, exact effect/request hash and settled
+consumption. Draft 3.9.2 revalidates that receipt without dispatch; every existing
+content and completion check still applies. UNKNOWN, business outputs, dependent work,
+live leases, cancellation and changed Book frontiers forbid this recovery. Its host
+revalidation is not a new Agent generation or a literary revision.

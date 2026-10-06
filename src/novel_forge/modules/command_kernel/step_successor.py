@@ -30,6 +30,7 @@ def replace_failed_step(
     policy_evidence,
     expected_failure_code,
     transaction_guard=None,
+    known_receipt_effects=(),
 ):
     digest = hashlib.sha256(
         json.dumps(
@@ -38,6 +39,11 @@ def replace_failed_step(
                 "target": target_version,
                 "policy": policy_evidence,
                 "failure_code": expected_failure_code,
+                **(
+                    {"known_receipt_effects": known_receipt_effects}
+                    if known_receipt_effects
+                    else {}
+                ),
             },
             sort_keys=True,
             default=str,
@@ -144,7 +150,23 @@ def replace_failed_step(
                 WHERE a.operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())""",
             [predecessor_id] * 4,
         )
-        if any(cursor.fetchone()):
+        external, output, dependent, live_lease = cursor.fetchone()
+        if known_receipt_effects:
+            cursor.execute(
+                "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",
+                [predecessor_id],
+            )
+            if cursor.fetchall() != [
+                (effect, digest, "SUCCEEDED", "SETTLED", "model.invoke")
+                for effect, digest in sorted(known_receipt_effects)
+            ]:
+                raise KernelError(
+                    "STEP_SUCCESSOR_RECEIPT_UNSETTLED",
+                    "Exact succeeded settled receipts are required",
+                )
+            external = False
+            output = has_domain_outputs(cursor, predecessor_id)
+        if external or output or dependent or live_lease:
             raise KernelError(
                 "STEP_SUCCESSOR_EXTERNAL_OR_DEPENDENT_WORK",
                 "Effects, outputs, dependents or leases prevent step succession",
@@ -284,3 +306,46 @@ def replace_failed_step(
         )
         uow.commit()
     return {"operation_id": successor, "replayed": False}
+
+
+def has_domain_outputs(cursor, operation_id):
+    cursor.execute(
+        "SELECT a.asset_type,o.role FROM authority_operation_output_asset o JOIN authority_asset a USING(asset_id) WHERE o.operation_id=%s",
+        [operation_id],
+    )
+    contracts = {
+        "capability_materialization_manifest",
+        "execution_commit_policy",
+        "execution_context_policy",
+        "execution_source_policy",
+        "execution_validation_policy",
+        "fallback_policy",
+        "input_manifest",
+        "model_profile",
+        "prompt_bundle",
+        "provider_request_admission_manifest",
+        "route_policy",
+        "route_snapshot",
+        "skill_bundle",
+        "tool_permission_snapshot",
+    }
+    allowed = {(t, "execution_contract") for t in contracts}
+    allowed |= {
+        ("execution_evidence", r)
+        for r in (
+            "cost-receipt",
+            "normalized-output",
+            "output-manifest",
+            "process-receipt",
+            "raw-output",
+            "usage-receipt",
+            "validation-manifest",
+        )
+    }
+    allowed |= {
+        ("cost_ledger", "cost_evidence"),
+        ("execution_recovery_session", "execution_recovery_projection"),
+        ("model_call_log", "model_evidence"),
+        ("routing_decision", "routing_evidence"),
+    }
+    return any(tuple(row) not in allowed for row in cursor.fetchall())
