@@ -31,11 +31,29 @@ def scheduled_world_events(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
             )
         return [deepcopy(selected[0]["transition"])]
     if plan["disposition"] == "PREPARATION_REQUIRED":
-        return [
+        due = [
             deepcopy(step["transition"])
             for step in plan["preparation_schedule"]
             if step["chapter_number"] == plan["chapter_number"]
         ]
+        if plan.get("target_in_current_batch"):
+            selected = next(
+                item
+                for item in plan["candidate_futures"]
+                if item.get("candidate_id") == plan["selected_candidate_id"]
+            )
+            from novel_forge.modules.worldbuilding.working_state import (
+                validate_preparation_batch,
+            )
+
+            ordered, _ = validate_preparation_batch(
+                reality=binding["frozen_source"]["reality"],
+                transitions=[*due, selected["transition"]],
+                chapter_number=plan["chapter_number"],
+                path_id=plan["selected_path_id"],
+            )
+            return ordered
+        return due
     if plan["disposition"] not in {"NO_OP", "DEFER"}:
         raise KernelError(
             "WORLD_ACTION_BLOCKED", "blocked world search cannot enter production"
@@ -74,7 +92,9 @@ def public_world_direction(binding: Mapping[str, Any]) -> dict[str, Any]:
         from novel_forge.modules.worldbuilding.actor_execution import current_actor_step
 
         result["contract_version"] = "world-planning-direction.v2"
-        selected = {event["transition_id"]: event for event in scheduled_world_events(binding)}
+        selected = {
+            event["transition_id"]: event for event in scheduled_world_events(binding)
+        }
         for event in result["on_camera_events"]:
             target = current_actor_step(binding, selected[event["transition_id"]])
             event["action"] = target["action"]
@@ -115,8 +135,15 @@ def bind_world_execution(
         event["cause_refs"] = list(selected[event["transition_id"]]["cause_refs"])
     return {
         **public,
-        "contract_version": "world-scene-execution.v2" if public["contract_version"] == "world-planning-direction.v2" else "world-scene-execution.v1",
-        "observation_contract": "Observe only effects evidenced in the final prose within the assigned Scene. Emit the observed world_transition with its actual actor and action from prose, using the Observer-only modeled constraints for validation. Preserve exact identity, observed scalar changes, story_time and causal_batch local_id=transition_id with depends_on=cause_refs. Absent planned effects remain unexecuted; never invent fact_origin or preparation_lineage." + (" The action and actor_step identify the approved current action, not an observed occurrence or a future step. Write that action in its assigned Scene. The Observer must independently extract the action actually realized by final prose, retaining its evidence span; do not copy actor_step into world_transition. Authority binds the approved target for independent semantic support review before any completion." if public["contract_version"] == "world-planning-direction.v2" else ""),
+        "contract_version": "world-scene-execution.v2"
+        if public["contract_version"] == "world-planning-direction.v2"
+        else "world-scene-execution.v1",
+        "observation_contract": "Observe only effects evidenced in the final prose within the assigned Scene. Emit the observed world_transition with its actual actor and action from prose, using the Observer-only modeled constraints for validation. Preserve exact identity, observed scalar changes, story_time and causal_batch local_id=transition_id with depends_on=cause_refs. Absent planned effects remain unexecuted; never invent fact_origin or preparation_lineage."
+        + (
+            " The action and actor_step identify the approved current action, not an observed occurrence or a future step. Write that action in its assigned Scene. The Observer must independently extract the action actually realized by final prose, retaining its evidence span; do not copy actor_step into world_transition. Authority binds the approved target for independent semantic support review before any completion."
+            if public["contract_version"] == "world-planning-direction.v2"
+            else ""
+        ),
     }
 
 
@@ -158,7 +185,9 @@ def attach_background_proposals(
     result = bind_disclosure_policy(extraction, binding)
     for field in SEMANTIC_CHANGE_FIELDS:
         if any(
-            "fact_origin" in item or "preparation_lineage" in item or "actor_step_execution" in item
+            "fact_origin" in item
+            or "preparation_lineage" in item
+            or "actor_step_execution" in item
             for item in result.get(field, [])
         ):
             raise KernelError(
@@ -209,12 +238,19 @@ def attach_background_proposals(
                     )
                     item["preparation_lineage"] = expected_lineage
                     item["world_transition"] = observed
-                    from novel_forge.modules.worldbuilding.actor_execution import actor_execution_comparison
+                    from novel_forge.modules.worldbuilding.actor_execution import (
+                        actor_execution_comparison,
+                    )
 
                     comparison = actor_execution_comparison(binding, raw, observed)
                     if comparison is not None:
-                        if not item.get("grounded_claim_id") or not item.get("extraction_evidence", {}).get("quote"):
-                            raise KernelError("WORLD_ACTOR_EXECUTION_GROUNDING_REQUIRED", "current-step realization requires grounded final prose for independent semantic support review")
+                        if not item.get("grounded_claim_id") or not item.get(
+                            "extraction_evidence", {}
+                        ).get("quote"):
+                            raise KernelError(
+                                "WORLD_ACTOR_EXECUTION_GROUNDING_REQUIRED",
+                                "current-step realization requires grounded final prose for independent semantic support review",
+                            )
                         item["actor_step_execution"] = comparison
             continue
         kind = transition.state_kind.value

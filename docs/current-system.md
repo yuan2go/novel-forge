@@ -77,7 +77,13 @@ a located classification for every proposed transition. Local preparation stays
 unaccepted. Historical 1.18 keeps its frozen actor-knowledge contract; a reproduced
 blanket-agency failure can receive an accounted native contract successor retaining
 inputs, failed history, repair consumption and the original Book. It does not
-create chapter-zero acceptance. Book Design activation projects the bound cast into
+create chapter-zero acceptance. Host binding supplies identity from the typed actor,
+approved entity and exact proposition/source, while preserving generated content.
+The selected causal batch can realize preparation and its dependent target in one
+chapter. Candidate disclosure projects only validated local occurrences and remains
+`PLANNED_LOCAL_OCCURRENCE`. A bounded native host revalidation successor reuses known,
+settled generation and Director receipts, preserving the failed action and quota.
+Book Design activation projects the bound cast into
 its existing planning trajectory artifact. `chapter.style_policy.compile` derives a
 source-bound policy from the exact Creative Foundation and cast, including original
 voice examples. Its frozen policy enables `scene-realization-composition.v2`: one

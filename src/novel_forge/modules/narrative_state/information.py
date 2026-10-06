@@ -120,6 +120,66 @@ _DISCLOSURE_PRIVATE_FIELDS = frozenset(
 def project_disclosure(
     reality: Mapping[str, Any], disclosure: Mapping[str, Any]
 ) -> dict[str, Any]:
+    return _project_disclosure(reality, disclosure)
+
+
+def project_candidate_disclosure(
+    reality: Mapping[str, Any],
+    disclosure: Mapping[str, Any],
+    *,
+    transitions: list[dict[str, Any]],
+    chapter_number: int,
+    path_id: str,
+) -> dict[str, Any]:
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.worldbuilding.working_state import (
+        validate_preparation_batch,
+    )
+
+    if (
+        reality.get("epistemic_contract") != "world-agency.v2"
+        or chapter_number != reality["chapter_number"] + 1
+    ):
+        raise KernelError(
+            "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID",
+            "candidate disclosure must belong to the next chapter of the frozen agency contract",
+        )
+    _, preview = validate_preparation_batch(
+        reality=reality,
+        transitions=transitions,
+        chapter_number=chapter_number,
+        path_id=path_id,
+    )
+    event = next(
+        (
+            row
+            for row in preview["events"]
+            if row.get("event_id") == disclosure.get("event_id")
+            and row.get("coverage") == "PRIVATE_PREPARATION_SIMULATION"
+        ),
+        None,
+    )
+    if event is None:
+        raise KernelError(
+            "WORLD_DISCLOSURE_SOURCE_UNKNOWN",
+            "candidate disclosure must resolve an occurrence in the selected validated local path",
+        )
+    entry = {
+        "state": event["mutation"]["payload"],
+        "evidence_role": "PLANNED_LOCAL_OCCURRENCE",
+        "current_assertion": any(
+            row.get("source_event_id") == event["event_id"]
+            for row in preview["current_state"].get(event["state_kind"], [])
+        ),
+    }
+    return _project_disclosure(reality, disclosure, entry)
+
+
+def _project_disclosure(
+    reality: Mapping[str, Any],
+    disclosure: Mapping[str, Any],
+    entry: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.errors import KernelError
     from novel_forge.modules.worldbuilding.dynamics import (
         require_contract_fields,
@@ -175,7 +235,8 @@ def project_disclosure(
             "WORLD_DISCLOSURE_POLICY_INVALID",
             "disclosure requires an explicit mode, claim semantics and field scope",
         )
-    entry = accepted_event_projection(reality, disclosure["event_id"])
+    if entry is None:
+        entry = accepted_event_projection(reality, disclosure["event_id"])
     if (
         disclosure["claim_kind"] == "CURRENT_ASSERTION"
         and entry.get("current_assertion") is False

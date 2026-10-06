@@ -1,0 +1,20 @@
+{
+  "database": "novel_forge_closure_host_revalidation_v2_test_20261007",
+  "source_operation_id": "5323ae42-7a29-4519-88b6-7a82d334494b",
+  "child_operation_id": "cf445583-35fa-4cb2-8795-f5f0d5f7881a",
+  "status": "EXECUTING",
+  "repair_number": 2,
+  "input_snapshot_hash": "sha256:0001a9540797a7e4aa5082c2c7d67ded0ded6acbaaa98e54e2bbc1357aef53c7",
+  "parent_operation_id": "5323ae42-7a29-4519-88b6-7a82d334494b",
+  "external_effect_count": 0,
+  "plan_digest": "sha256:3bf692d32d46aad574c4e8a6ba066ee9ee2a2fa351479690357a720dd3711fc0",
+  "action_asset_version_id": "afae085c-4460-4214-9ffe-cc647ba78024",
+  "idempotent_action": true,
+  "known_world_stages_reused": 2,
+  "evidence_kind": "NATIVE_CLONED_POSTGRES_ZERO_PROVIDER",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "real_prose": "NOT_RUN",
+  "accepted_chapters": 0,
+  "quality_evidence": "NOT_PROVEN",
+  "preserved_failed_world_operation": "5323ae42-7a29-4519-88b6-7a82d334494b"
+}

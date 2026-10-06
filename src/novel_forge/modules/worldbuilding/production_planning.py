@@ -38,14 +38,43 @@ class WorldProductionPolicy:
             (self.max_paths_per_candidate, 8),
             (self.max_preparation_steps, 16),
             (self.planning_window_chapters, 32),
-            (self.context_token_budget, 512000 if self.version == "world-production-policy.v4" else 24000 if self.version == "world-production-policy.v3" else 16000),
+            (
+                self.context_token_budget,
+                512000
+                if self.version == "world-production-policy.v4"
+                else 24000
+                if self.version == "world-production-policy.v3"
+                else 16000,
+            ),
             (self.max_world_time_advance, 1_000_000),
         )
         if (
-            self.version not in {"world-production-policy.v1", "world-production-policy.v2", "world-production-policy.v3", "world-production-policy.v4"}
-            or (self.version == "world-production-policy.v1" and self.max_provider_stages != 2)
-            or (self.version in {"world-production-policy.v2", "world-production-policy.v3"} and (type(self.max_provider_stages) is not int or not 3 <= self.max_provider_stages <= 5))
-            or (self.version == "world-production-policy.v4" and (type(self.max_provider_stages) is not int or not 2 <= self.max_provider_stages <= 5))
+            self.version
+            not in {
+                "world-production-policy.v1",
+                "world-production-policy.v2",
+                "world-production-policy.v3",
+                "world-production-policy.v4",
+            }
+            or (
+                self.version == "world-production-policy.v1"
+                and self.max_provider_stages != 2
+            )
+            or (
+                self.version
+                in {"world-production-policy.v2", "world-production-policy.v3"}
+                and (
+                    type(self.max_provider_stages) is not int
+                    or not 3 <= self.max_provider_stages <= 5
+                )
+            )
+            or (
+                self.version == "world-production-policy.v4"
+                and (
+                    type(self.max_provider_stages) is not int
+                    or not 2 <= self.max_provider_stages <= 5
+                )
+            )
             or any(
                 isinstance(value, bool)
                 or not isinstance(value, int)
@@ -139,7 +168,10 @@ def validate_generated_candidates(
                     not isinstance(item, str) or not item.strip() for item in evidence
                 )
             ):
-                raise KernelError("WORLD_GENERATION_CANDIDATE_EVIDENCE_INVALID", f"$.candidates[{index}].{field}: expected nonempty consequence evidence array, actual {type(evidence).__name__}")
+                raise KernelError(
+                    "WORLD_GENERATION_CANDIDATE_EVIDENCE_INVALID",
+                    f"$.candidates[{index}].{field}: expected nonempty consequence evidence array, actual {type(evidence).__name__}",
+                )
         transition = WorldTransition.from_mapping(candidate["transition"])
         if transition.transition_id in identities:
             raise KernelError(
@@ -321,24 +353,51 @@ def compile_world_plan(
     chapter_number: int,
     intent_version_id: str,
 ) -> dict[str, Any]:
-    candidates = validate_generated_candidates(generated, policy)
     agency = reality.get("epistemic_contract") == "world-agency.v2"
-    require_contract_fields(evaluation, required={"evaluations", "action_classifications"} if agency else {"evaluations"})
+    if agency:
+        generated = _bind_candidate_identities(generated, reality)
+    candidates = validate_generated_candidates(generated, policy)
+    require_contract_fields(
+        evaluation,
+        required={"evaluations", "action_classifications"}
+        if agency
+        else {"evaluations"},
+    )
     if agency:
         from .production_schema import agency_transition_paths
+
         paths = agency_transition_paths(generated)
         checks = evaluation["action_classifications"]
-        if not isinstance(checks, list) or len(checks) != len(paths) or {row.get("field_path") for row in checks} != set(paths):
-            raise KernelError("WORLD_AGENCY_REVIEW_BINDING_INVALID", "Director must check every exact generated action classification")
+        if (
+            not isinstance(checks, list)
+            or len(checks) != len(paths)
+            or {row.get("field_path") for row in checks} != set(paths)
+        ):
+            raise KernelError(
+                "WORLD_AGENCY_REVIEW_BINDING_INVALID",
+                "Director must check every exact generated action classification",
+            )
         rejected = []
         for check in checks:
-            require_contract_fields(check, required={"field_path", "supported", "rationale"})
-            if type(check["supported"]) is not bool or not isinstance(check["rationale"], str) or not check["rationale"].strip():
-                raise KernelError("WORLD_AGENCY_REVIEW_INVALID", "action classification requires a located supported/unsupported judgment with reasons")
+            require_contract_fields(
+                check, required={"field_path", "supported", "rationale"}
+            )
+            if (
+                type(check["supported"]) is not bool
+                or not isinstance(check["rationale"], str)
+                or not check["rationale"].strip()
+            ):
+                raise KernelError(
+                    "WORLD_AGENCY_REVIEW_INVALID",
+                    "action classification requires a located supported/unsupported judgment with reasons",
+                )
             if not check["supported"]:
                 rejected.append(check)
         if rejected:
-            raise KernelError("WORLD_AGENCY_CLASSIFICATION_REJECTED", json.dumps({"diagnostics": rejected}, ensure_ascii=False))
+            raise KernelError(
+                "WORLD_AGENCY_CLASSIFICATION_REJECTED",
+                json.dumps({"diagnostics": rejected}, ensure_ascii=False),
+            )
     rows = evaluation["evaluations"]
     if not isinstance(rows, list):
         raise KernelError(
@@ -546,13 +605,41 @@ def compile_world_plan(
         for item in base["candidate_futures"]
         if item.get("candidate_id") == selected["candidate"]["candidate_id"]
     )
-    disclosure_projection = []
-    from novel_forge.modules.narrative_state.information import project_disclosure
-
-    disclosure_projection.extend(
-        project_disclosure(reality, row)
-        for row in selected_source["information_scope"].get("disclosures", [])
+    current_batch = bool(
+        agency
+        and paths
+        and all(
+            step["chapter_number"] == chapter_number for step in paths[0]["schedule"]
+        )
     )
+    disclosure_projection = []
+    from novel_forge.modules.narrative_state.information import (
+        project_disclosure,
+        project_candidate_disclosure,
+    )
+
+    for row in selected_source["information_scope"].get("disclosures", []):
+        if agency and row.get("event_id", "").startswith("local:"):
+            schedule = paths[0]["schedule"] if paths else []
+            if any(step["chapter_number"] != chapter_number for step in schedule):
+                raise KernelError(
+                    "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID",
+                    "a later chapter's preparation cannot support this chapter's disclosure",
+                )
+            disclosure_projection.append(
+                project_candidate_disclosure(
+                    reality,
+                    row,
+                    transitions=[
+                        *(step["transition"] for step in schedule),
+                        selected_source["transition"],
+                    ],
+                    chapter_number=chapter_number,
+                    path_id=paths[0]["path_id"] if paths else "direct",
+                )
+            )
+        else:
+            disclosure_projection.append(project_disclosure(reality, row))
     for event_id in selected_source["information_scope"].get("reveal_event_ids", []):
         from novel_forge.modules.narrative_state.information import (
             accepted_event_projection,
@@ -578,6 +665,7 @@ def compile_world_plan(
             "causal_debts": _renew_cancelled_preparation(selected["debts"], reality),
             "selected_path_id": paths[0]["path_id"] if paths else "",
             "preparation_schedule": paths[0]["schedule"] if paths else [],
+            **({"target_in_current_batch": True} if current_batch else {}),
             "alternative_paths": [
                 {
                     key: value
@@ -588,6 +676,92 @@ def compile_world_plan(
             ],
         }
     )
+
+
+def _bind_candidate_identities(generated, reality):
+    from novel_forge.modules.narrative_state.contracts import (
+        NarrativeStateKind,
+        _identity_for,
+    )
+
+    result = deepcopy(generated)
+    singles = {
+        "character_state": "character_id",
+        "world_state": "world_state_id",
+        "location_state": "location_id",
+        "faction_state": "faction_id",
+        "power_state": "character_id",
+    }
+    for candidate in result["candidates"]:
+        transitions = [
+            candidate["transition"],
+            *(
+                step["transition"]
+                for path in candidate["preparation_paths"]
+                for step in path["steps"]
+            ),
+        ]
+        aliases = {}
+        for raw in transitions:
+            transition = WorldTransition.from_mapping(raw)
+            changes = dict(transition.changes)
+            key = transition.entity_key
+            if "=" in key:
+                identity = dict(part.split("=", 1) for part in key.split("|"))
+                if any(
+                    field in changes and str(changes[field]) != value
+                    for field, value in identity.items()
+                ):
+                    raise KernelError(
+                        "WORLD_BACKGROUND_IDENTITY_MISMATCH",
+                        "World content cannot replace its typed entity identity",
+                    )
+                changes.update(identity)
+            elif transition.state_kind.value in singles:
+                field = singles[transition.state_kind.value]
+                if key not in reality.get("approved_entity_ids", []):
+                    raise KernelError(
+                        "WORLD_GENERATION_IDENTITY_UNKNOWN",
+                        "an opaque entity key must resolve to approved Foundation identity",
+                    )
+                if field in changes and changes[field] != key:
+                    raise KernelError(
+                        "WORLD_BACKGROUND_IDENTITY_MISMATCH",
+                        "World content cannot replace its approved entity identity",
+                    )
+                changes[field] = key
+            identity = _identity_for(
+                NarrativeStateKind(transition.state_kind),
+                changes,
+                ordinal=0,
+                source="",
+                allow_legacy_fallback=False,
+            )
+            alias = (raw["state_kind"], key)
+            if alias in aliases and aliases[alias] != identity.entity_key:
+                raise KernelError(
+                    "WORLD_GENERATION_IDENTITY_COLLISION",
+                    "one local entity alias cannot name different typed records",
+                )
+            aliases[alias] = identity.entity_key
+            raw.update(
+                json.loads(json.dumps(transition.to_dict())),
+                changes=changes,
+                entity_key=identity.entity_key,
+            )
+        for raw in transitions:
+            for predicate in [*raw["requirements"], *raw["epistemic_basis"]]:
+                predicate["entity_key"] = aliases.get(
+                    (predicate["state_kind"], predicate["entity_key"]),
+                    predicate["entity_key"],
+                )
+            observation = raw["changes"].get("observation_source")
+            if observation:
+                observation["entity_key"] = aliases.get(
+                    (observation["state_kind"], observation["entity_key"]),
+                    observation["entity_key"],
+                )
+    return result
 
 
 def _renew_cancelled_preparation(

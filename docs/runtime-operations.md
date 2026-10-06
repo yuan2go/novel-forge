@@ -2599,7 +2599,13 @@ repair count and accounted use. It does not expand the two-repair allowance. Unk
 or in-flight effects, unsettled reservations and cancellation block succession. Resume
 through `authority-creation recover` with the original Formation ID and project scope;
 ordinary replay follows the registered successor. Migration
-0160 adds a PostgreSQL insertion guard.
+0160 adds a PostgreSQL insertion guard. A subsequent first-perception host identity
+failure can append one `WORLD_HOST_REVALIDATION_SUCCESSOR` under migration 0161.
+It retains the same Pack and requires exact known, settled World generation and
+Director receipts, a current source and a fully viable recompiled causal plan.
+World stages are reused without a new dispatch; only the new Chapter Plan request
+continues. The chain bound and consumed repair count remain unchanged. Cancellation,
+unknown consumption, source drift or unresolved causal defects block revalidation.
 Back up the original database before applying this forward migration. Preserve old
 published migration bodies and the original receipts. `NO_OP` and `DEFER` retain their
 actual narrative meanings and cannot substitute for legal initialization.

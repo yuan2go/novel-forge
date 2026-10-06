@@ -275,6 +275,24 @@ class WorldTransition:
                 "world transition fields must match their typed contracts",
             )
         creator = WorldAgencyTransition if "action_mode" in value else cls
+        changes = dict(value["changes"])
+        if (
+            value.get("action_mode") == "PERCEPTION"
+            and value["state_kind"] == "character_knowledge"
+        ):
+            changes.setdefault("character_id", value["actor_id"])
+            if (
+                not (changes.get("fact_id") or changes.get("proposition_id"))
+                and isinstance(changes.get("proposition"), str)
+                and changes["proposition"].strip()
+            ):
+                changes["proposition_id"] = "observation:" + narrative_hash(
+                    {
+                        "actor_id": value["actor_id"],
+                        "proposition": changes["proposition"],
+                        "observation_source": changes.get("observation_source"),
+                    }
+                )
         return creator(
             str(value["transition_id"]),
             str(value["actor_id"]),
@@ -283,7 +301,7 @@ class WorldTransition:
             str(value["action"]),
             NarrativeStateKind(value["state_kind"]),
             str(value["entity_key"]),
-            dict(value["changes"]),
+            changes,
             tuple(
                 CausalRequirement.from_mapping(r) for r in value.get("requirements", [])
             ),

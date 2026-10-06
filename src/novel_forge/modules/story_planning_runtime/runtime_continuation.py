@@ -143,6 +143,14 @@ def require_source(
     if (
         row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
         and failure_code == "WORLD_PREPARATION_RESULT_INVALID"
+        and frozen.get("execution_contract_version") == "1.19.0"
+    ):
+        return _world_host_source(
+            uow, source_operation_id=source_operation_id, row=row, frozen=frozen
+        )
+    if (
+        row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
+        and failure_code == "WORLD_PREPARATION_RESULT_INVALID"
         and frozen.get("execution_contract_version") == "1.18.0"
     ):
         return _world_agency_source(
@@ -270,6 +278,56 @@ def require_source(
     }
 
 
+def _world_host_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .world_preparation import require_world_host_revalidation
+
+    command = _command_from_payload(frozen)
+    uow.cursor.execute(
+        "SELECT EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED') OR EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status NOT IN ('SETTLED','RELEASED'))",
+        [command.project_id, command.book_id, source_operation_id, source_operation_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "cancelled Book or unresolved original effects cannot acquire a known-result successor",
+        )
+    uow.cursor.execute(
+        "SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",
+        [source_operation_id],
+    )
+    prior = uow.cursor.fetchone()
+    if not prior or prior[0] != 1:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
+            "host revalidation permits one accounted successor after the original agency contract",
+        )
+    proof = require_world_host_revalidation(
+        uow.database_url, command=command, operation_id=source_operation_id
+    )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING",
+            "host revalidation requires the failed task's exact Pack snapshot",
+        )
+    return {
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": proof["generation"]["asset_version_id"],
+        "evidence_hash": proof["generation"]["content_hash"],
+        "snapshot": dict(snapshot[0]),
+        "depth": 2,
+        "mode": "WORLD_HOST_REVALIDATION",
+        "world_host_revalidation": proof,
+    }
+
+
 def _world_agency_source(uow, *, source_operation_id, row, frozen):
     from .application import _command_from_payload
     from .result_recovery import require_result_repair_source
@@ -281,7 +339,10 @@ def _world_agency_source(uow, *, source_operation_id, row, frozen):
         [command.project_id, command.book_id],
     )
     if uow.cursor.fetchone()[0]:
-        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CANCELLED", "cancelled Book cannot acquire an automatic contract successor")
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_CANCELLED",
+            "cancelled Book cannot acquire an automatic contract successor",
+        )
     if (
         command.generator_operation_name != "chapter_plan.generate"
         or not command.world_preparation_request
@@ -1023,6 +1084,7 @@ def register(
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     contract_change = source.get("mode") == "WORLD_AGENCY_CONTRACT"
+    host_revalidation = source.get("mode") == "WORLD_HOST_REVALIDATION"
     successor = replace(
         original,
         execution_contract_version="1.19.0"
@@ -1034,10 +1096,12 @@ def register(
                 "repair_result_asset_version_id": "",
                 "repair_result_diagnostic": None,
                 "repair_of_candidate_id": "",
-                "repair_reason": "WORLD_AGENCY_CONTRACT_SUCCESSOR",
+                "repair_reason": "WORLD_HOST_REVALIDATION_SUCCESSOR"
+                if host_revalidation
+                else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
                 "parent_agent_session_operation_id": "",
             }
-            if contract_change
+            if contract_change or host_revalidation
             else {}
         ),
         runtime_continuation_id=continuation_id,
@@ -1047,10 +1111,16 @@ def register(
     if contract_change:
         _ensure_world_agency_pack(application, source, original, successor, principal)
     target = resolve_target(application, successor)
+    if host_revalidation:
+        target = {
+            **target,
+            "world_host_revalidation": source["world_host_revalidation"],
+        }
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
     if (
         not capacity
         and not contract_change
+        and not host_revalidation
         and source["snapshot"]["release_sha"] == application.commit_sha
     ):
         raise KernelError(
@@ -1060,6 +1130,7 @@ def register(
     if (
         not capacity
         and not contract_change
+        and not host_revalidation
         and (
             (source["provider"], source["model_id"])
             != (
@@ -1074,7 +1145,22 @@ def register(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "runtime continuation cannot switch the frozen Provider model or routing policy",
         )
-    if contract_change:
+    if host_revalidation:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = _capacity_authorization(
+                uow,
+                source=source,
+                successor=successor,
+                principal=principal,
+                target=target,
+            )
+        route_evidence = {
+            **route_evidence,
+            "capacity_only": False,
+            "host_revalidation": "world-host-revalidation.v1",
+            "preserved_repair_number": original.repair_number,
+        }
+    elif contract_change:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(
                 uow,
@@ -1178,8 +1264,25 @@ def register(
                 != route_evidence
             )
             or (
+                host_revalidation
+                and _capacity_authorization(
+                    uow,
+                    source=current,
+                    successor=successor,
+                    principal=principal,
+                    target=target,
+                )
+                != {
+                    key: value
+                    for key, value in route_evidence.items()
+                    if key not in {"host_revalidation", "preserved_repair_number"}
+                }
+                | {"capacity_only": True}
+            )
+            or (
                 not capacity
                 and not contract_change
+                and not host_revalidation
                 and require_route_evidence(
                     uow,
                     source=current,
@@ -1348,7 +1451,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key != "planning_capacity"
+        if key not in {"planning_capacity", "world_host_revalidation"}
     }
     if (
         validate_runtime

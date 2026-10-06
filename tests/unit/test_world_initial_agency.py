@@ -16,6 +16,7 @@ def genesis():
     return {
         "project_id": "project:agency",
         "book_id": "book:agency",
+        "book_run_id": "book-run:agency",
         "chapter_number": 0,
         "revision_id": "foundation:sha256:" + "a" * 64,
         "baseline_kind": "APPROVED_FOUNDATION",
@@ -186,6 +187,22 @@ def test_reader_knowledge_cannot_support_first_perception():
         WorldTransition.from_mapping(observation)
 
 
+def test_host_binds_first_observation_owner_from_typed_actor_without_inventing_content():
+    transitions = chain()
+    transitions[1]["changes"].pop("character_id")
+    transitions[1]["changes"].pop("fact_id")
+    transitions[1]["changes"]["proposition"] = "The record is available for inspection."
+    frozen = deepcopy(transitions)
+    _, preview = validate_preparation_batch(
+        reality=genesis(), transitions=transitions, chapter_number=1, path_id="first"
+    )
+    acquired = preview["current_state"]["character_knowledge"][0]["state"]
+    assert acquired["character_id"] == transitions[1]["actor_id"]
+    assert acquired["proposition"] == "The record is available for inspection."
+    assert acquired["proposition_id"].startswith("observation:sha256:")
+    assert transitions == frozen
+
+
 def test_legacy_genesis_contract_is_preserved_and_cannot_take_new_modes():
     source = genesis()
     source.pop("epistemic_contract")
@@ -196,6 +213,69 @@ def test_legacy_genesis_contract_is_preserved_and_cannot_take_new_modes():
     assert json.loads(json.dumps(WorldTransition.from_mapping(raw).to_dict())) == raw
     with pytest.raises(KernelError, match="WORLD_CHARACTER_DECISION_BASIS_REQUIRED"):
         candidate_transition(WorldTransition.from_mapping(chain()[0]), source)
+
+
+@pytest.mark.parametrize(
+    "fault,code",
+    [
+        (None, None),
+        ("unknown", "WORLD_DISCLOSURE_SOURCE_UNKNOWN"),
+        ("private", "WORLD_DISCLOSURE_FIELDS_INVALID"),
+        ("future", "WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID"),
+        ("cycle", "WORLD_BATCH_CAUSAL_CYCLE"),
+    ],
+)
+def test_local_disclosure_requires_selected_causal_path_and_remains_unaccepted(
+    fault, code
+):
+    from novel_forge.modules.narrative_state.information import (
+        project_candidate_disclosure,
+        project_disclosure,
+    )
+
+    source = genesis()
+    frozen = deepcopy(source)
+    transitions = chain()
+    disclosure = {
+        "disclosure_id": "reader-copy",
+        "event_id": "local:choose",
+        "audience": "READER",
+        "mode": "PARTIAL",
+        "fields": ["request_copy"],
+        "presentation_channel": "ACTION",
+        "claim_kind": "CURRENT_ASSERTION",
+    }
+    chapter = 1
+    if fault == "unknown":
+        disclosure["event_id"] = "local:other-path"
+    elif fault == "private":
+        disclosure["fields"] = ["world_transition"]
+    elif fault == "future":
+        chapter = 2
+    elif fault == "cycle":
+        transitions[0]["cause_refs"] = ["local:choose"]
+    if code:
+        with pytest.raises(KernelError, match=code):
+            project_candidate_disclosure(
+                source,
+                disclosure,
+                transitions=transitions,
+                chapter_number=chapter,
+                path_id="first",
+            )
+    else:
+        result = project_candidate_disclosure(
+            source,
+            disclosure,
+            transitions=transitions,
+            chapter_number=chapter,
+            path_id="first",
+        )
+        assert result["source"]["evidence_role"] == "PLANNED_LOCAL_OCCURRENCE"
+        assert result["source"]["state"] == {"request_copy": True}
+        with pytest.raises(KernelError, match="WORLD_DISCLOSURE_SOURCE_UNKNOWN"):
+            project_disclosure(source, disclosure)
+    assert source == frozen
 
 
 def test_schema_diagnosis_collects_multiple_nested_defects_in_one_result():
@@ -220,3 +300,105 @@ def test_schema_diagnosis_collects_multiple_nested_defects_in_one_result():
         "$.candidates[0].transition.payload_json.epistemic_basis",
         "$.candidates[0].transition.payload_json.requirements[0].entity_key",
     }
+
+
+@pytest.mark.parametrize("fault", [None, "identity", "future"])
+def test_first_chapter_plan_binds_canon_identity_and_executes_only_due_causal_batch(
+    fault,
+):
+    from novel_forge.modules.worldbuilding.production_planning import (
+        compile_world_plan,
+        WorldProductionPolicy,
+    )
+    from novel_forge.modules.worldbuilding.production_schema import (
+        agency_transition_paths,
+    )
+    from novel_forge.modules.hierarchical_planning.causal_domain import (
+        DIRECTOR_DIMENSIONS,
+    )
+    from novel_forge.modules.canon_graph.background import scheduled_world_events
+
+    source = genesis()
+    transitions = chain()
+    candidate = {
+        "transition": transitions[-1],
+        "affected_entities": ["character:reader", "resource:record"],
+        "world_consequences": ["A grounded copying decision."],
+        "arc_refs": [],
+        "obligation_refs": [],
+        "risks": [],
+        "rationale": "Observe before choosing.",
+        "soft_assumptions": [],
+        "narrative_preferences": [],
+        "preparation_paths": [
+            {
+                "path_id": "first",
+                "steps": [
+                    {"transition": raw, "chapter_offset": 0} for raw in transitions[:-1]
+                ],
+                "rationale": "Make the record available before inspecting.",
+            }
+        ],
+    }
+    if fault == "identity":
+        transitions[0]["changes"]["world_state_id"] = "resource:invented"
+    elif fault == "future":
+        candidate["preparation_paths"][0]["steps"][1]["chapter_offset"] = 1
+    generated = {
+        "disposition": "CANDIDATES",
+        "reason": "First lawful encounter.",
+        "candidates": [candidate],
+    }
+    evaluation = {
+        "evaluations": [
+            {
+                "transition_id": "choose",
+                "dimensions": dict.fromkeys(DIRECTOR_DIMENSIONS, 0.8),
+                "rationale": "Located source supports action.",
+                "preferred_path_id": "first",
+            }
+        ],
+        "action_classifications": [
+            {
+                "field_path": path,
+                "supported": True,
+                "rationale": "The observation precedes its own dependent choice.",
+            }
+            for path in agency_transition_paths(generated)
+        ],
+    }
+    frozen = deepcopy((source, generated))
+    if fault == "identity":
+        with pytest.raises(KernelError, match="WORLD_BACKGROUND_IDENTITY_MISMATCH"):
+            compile_world_plan(
+                reality=source,
+                generated=generated,
+                evaluation=evaluation,
+                policy=WorldProductionPolicy(),
+                chapter_number=1,
+                intent_version_id="intent:approved",
+            )
+    else:
+        plan = compile_world_plan(
+            reality=source,
+            generated=generated,
+            evaluation=evaluation,
+            policy=WorldProductionPolicy(),
+            chapter_number=1,
+            intent_version_id="intent:approved",
+        )
+        binding = {
+            "action": {
+                "contract_version": "world-production-action.v2",
+                "world_plan": plan,
+            },
+            "frozen_source": {"reality": source},
+        }
+        due = scheduled_world_events(binding)
+        assert [item["transition_id"] for item in due] == (
+            ["open"] if fault == "future" else ["open", "read", "choose"]
+        )
+        assert all("=" in item["entity_key"] for item in due)
+        assert plan.get("target_in_current_batch", False) == (fault is None)
+        assert plan["fact_mutation_allowed"] is False
+    assert (source, generated) == frozen
