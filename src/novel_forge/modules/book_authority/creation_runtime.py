@@ -110,7 +110,7 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                         continue
                     if scheduler.has_ready_quality_work(project_id=book["project_id"], root_operation_id=active):
                         continue
-                    if error.code == "MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE":
+                    if error.code in {"MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE", "CHAPTER_LENGTH_REPAIR_INCOMPLETE", "CANON_QUOTE_LOCALIZATION_INVALID"}:
                         from .member_retry import wait_settled_member_retry
                         if wait_settled_member_retry(composition.authority, book_run_id=book_run_id,
                                 root_id=active, principal=composition.principal, deadline=deadline):

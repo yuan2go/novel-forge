@@ -2319,3 +2319,7 @@ not Book budgets. A blocked latest aggregate cannot be published or accepted bec
 an earlier pass finished. Strict production retains its frozen correction behavior.
 
 The v2 correction-action aggregate appends a pure command over the frozen legacy assessment inputs when a completed v1 aggregate omitted follow-up tasks. It retains the legacy disposition and receipts; only new task assets and the successor disposition are created, without another Provider assessment.
+
+Current creative quote-repair continuation preserves the complete pre-publication graph and every settled call. A failed extraction with a nonliteral quote remains failed. When its provisional candidate also violates the frozen Han-character bounds, the continuation retains the completed prior Quality pass and repairs the actual retained edit result under those original diagnoses and bounds; a fresh independent review and Canon extraction are required for the changed candidate. This does not rewrite successful Provider receipts or reopen accepted chapters.
+
+Quality revisions preserve the same frozen Platform length requirement as ordinary revisions. The new revision contract measures the composed candidate before materialization. An out-of-range response remains durable call evidence and enters bounded candidate repair instead of advancing to Canon. Strict admission and literary certification remain separate.

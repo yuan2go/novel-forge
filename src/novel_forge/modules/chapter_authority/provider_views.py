@@ -736,6 +736,7 @@ def build_provider_task_view(
         payload: dict[str, Any] = {
             **({"chapter_length_repair_scope": {**deepcopy(inputs["chapter_length_repair_scope"]), "planning_target_han_characters":(inputs["chapter_length_repair_scope"]["minimum"]+inputs["chapter_length_repair_scope"]["maximum"])//2, "objective":"Aim within the range with margin rather than estimating a boundary. Correct measured length across the frozen scenes to the original bounds through consequential actions, interaction and sensory feedback. Preserve facts, voice and scene coverage. No padding, repetition, new plot or fabricated resolution."}} if inputs.get("chapter_length_repair_scope") else {}),
             **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
+            **({"chapter_length_requirement": deepcopy(inputs["chapter_length_requirement"])} if inputs.get("chapter_length_requirement") else {}),
             "chapter": _prose(source),
             "creative_execution": deepcopy(source.get("creative_execution") or {}),
             "knowledge_checks": deepcopy(
@@ -1026,6 +1027,9 @@ def build_provider_task_view(
                 from .canon_repair_projection import project_canon_repair
                 task["contract_version"] = "provider-task-view-v3"
                 task["canon_output_repair"] = project_canon_repair(inputs["canon_output_repair"])
+            if inputs.get("canon_quote_repair"):
+                task["contract_version"] = "provider-task-view-v5"
+                task["canon_quote_repair"] = deepcopy(inputs["canon_quote_repair"])
             if inputs.get("canon_support_reextraction"):
                 task["contract_version"] = "provider-task-view-v4"
                 task["canon_support_reextraction"] = deepcopy(inputs["canon_support_reextraction"])

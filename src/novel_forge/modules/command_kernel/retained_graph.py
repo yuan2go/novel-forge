@@ -48,6 +48,15 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
             "RETAINED_GRAPH_SOURCE_INVALID", "Retain the original terminal Saga"
         )
     saga = row[0]
+    cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation o JOIN authority_attempt a USING(operation_id)
+        WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.24'
+        AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_QUOTE_LOCALIZATION_INVALID')""", [root_id])
+    if cursor.fetchone()[0]:
+        if (root["actor_id"] != actor_id or root["definition_name"] != "chapter.slice.run"
+                or root["root_operation_id"] != root_id or saga["project_id"] != project_id):
+            raise KernelError("RETAINED_GRAPH_SOURCE_INVALID", "Require the original authorized Chapter actor and project")
+        from novel_forge.modules.chapter_authority.current_quote_recovery import source_graph as current_quote_graph
+        return current_quote_graph(cursor, root=root, saga=saga)
     incomplete_completion = (root['status'] == 'SUCCEEDED' and saga['status'] == 'SUCCEEDED'
         and ((root.get('command_payload') or {}).get('preparation_report') or {}).get(BINDING, {}).get('retained_result', {}).get('contract_version') == 'chapter-canon-output-repair.v1')
     if (
@@ -271,7 +280,7 @@ def continue_graph_in_uow(uow, *, source, request, context):
         or template.get("chapter_graph_recovery")
         not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
         or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") not in {"RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
-        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
+        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1", "chapter-current-quote-repair.v1"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
         or admission != binding.get("admission")
         or template["member_authorization_ref"]
         != source["retained_result"]["cost_authorization_ref"]
@@ -434,14 +443,15 @@ def acknowledge_retained_result(cursor, effects, root_id):
     cursor.execute(
         """SELECT o.operation_id,v.content FROM authority_operation o JOIN authority_operation_output_asset output USING(operation_id)
         JOIN authority_asset_version v USING(asset_version_id) WHERE (o.root_operation_id=%s OR o.operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=(SELECT successor_saga_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s))) AND o.definition_version=%s
-        AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'""",
-        [root_id, root_id, "3.9.24" if proof["contract_version"] == "chapter-canon-support-reextraction.v1" else "3.9.23" if proof["contract_version"] == "chapter-canon-support-coverage-repair.v1" else "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17"],
+        AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
+        AND (%s='' OR o.idempotency_key LIKE %s)""",
+        [root_id, root_id, "3.9.29" if proof["contract_version"] == "chapter-current-quote-repair.v1" else "3.9.24" if proof["contract_version"] == "chapter-canon-support-reextraction.v1" else "3.9.23" if proof["contract_version"] == "chapter-canon-support-coverage-repair.v1" else "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17", "CURRENT" if proof["contract_version"] == "chapter-current-quote-repair.v1" else "", f"%%:canon_extraction:quality-correction:{proof.get('quality_generation', 0)}" if proof["contract_version"] == "chapter-current-quote-repair.v1" else ""],
     )
     successors = cursor.fetchall()
     if len(successors) != 1:
         return
     successor, content = successors[0]
-    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1"}
+    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1", "chapter-current-quote-repair.v1"}
     derived = content.get("retained_result_repair" if fresh_repair else "retained_result_derivation") or {}
     if (
         any(
@@ -475,7 +485,7 @@ def acknowledge_retained_result(cursor, effects, root_id):
 
     if fresh_repair:
         for effect in effects:
-            recorded = next((r for r in proof['known_failed_effects'] if r[0] == effect['external_effect_id']), None)
+            recorded = next((r for r in proof.get('known_failed_effects', []) if r[0] == effect['external_effect_id']), None)
             if not recorded or effect['operation_id'] != proof['source_operation_id'] or effect['status'] != 'FAILED_RETRYABLE' or effect['attempt_status'] != 'FAILED_RETRYABLE':
                 continue
             cursor.execute("SELECT e.request_hash,e.status,r.status,r.accounting_basis,r.evidence->>'cost_authorization_ref' FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.external_effect_id=%s", [effect['external_effect_id']])

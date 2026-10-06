@@ -1595,17 +1595,28 @@ class _RevisionHandler:
             if request.definition_version == "3.9.17":
                 from .quality_revision_recovery import materialize_retained_revision
                 return _output(ChapterNode.REVISION, materialize_retained_revision(request))
-            range_policy = "NAMED_DIAGNOSIS_UNION_V1" if request.definition_version == "3.9.16" and all(t.content.get("disposition_contract") == "creative-quality-disposition.v2" for t in quality_tasks) else "INTERSECTION_V1"
+            range_policy = "NAMED_DIAGNOSIS_UNION_V1" if request.definition_version in {"3.9.16", "3.9.26"} and all(t.content.get("disposition_contract") == "creative-quality-disposition.v2" for t in quality_tasks) else "INTERSECTION_V1"
             revision = request.require_input("best_draft_candidate")
             quality = request.require_input("quality_score_report")
             context = request.require_input("context_bundle")
             from novel_forge.modules.revision.domain import quality_edit_contract
             edit_contract = quality_edit_contract(revision=revision.content, revision_asset_version_id=revision.asset_version_id,
                                                   revision_tasks=tuple(item.content for item in quality_tasks), range_policy=range_policy)
+            length_requirement = None
+            repair_payload = {}
+            if request.definition_version == "3.9.26":
+                from .quality_length_requirement import freeze_requirement
+                from .candidate_repair import candidate_repair_payload
+                from .current_quote_recovery import repair_feedback as current_feedback
+                length_requirement = freeze_requirement(context.content, context_id=context.asset_version_id)
+                retained = current_feedback(request, stage="revision")
+                repair_payload = candidate_repair_payload(request) or ({"candidate_repair": retained} if retained else {})
             revised = self.provider.invoke(
                 request,
                 stage="revision",
                 payload={
+                    **({"chapter_length_requirement": length_requirement} if length_requirement else {}),
+                    **repair_payload,
                     **({"quality_edit_contract": edit_contract} if edit_contract is not None else {}),
                     "draft": revision.content,
                     "review": dict(revision.content.get("selected_review") or {}),
@@ -1613,9 +1624,7 @@ class _RevisionHandler:
                     "required_actions": [item.content for item in quality_tasks],
                 },
             )
-            return _model_output(
-                ChapterNode.REVISION,
-                apply_quality_revision_result(
+            candidate = apply_quality_revision_result(
                     project_id=request.project_id,
                     revision=revision.content,
                     revision_asset_version_id=revision.asset_version_id,
@@ -1629,16 +1638,18 @@ class _RevisionHandler:
                     result=revised.output,
                     range_policy=range_policy,
                     provider_evidence=_provider_evidence(revised),
-                ),
-                request=request,
-                generated=revised,
-            )
+                )
+            if length_requirement:
+                from .quality_length_requirement import require_length
+                require_length(length_requirement, candidate["text"])
+                candidate["quality_length_requirement"] = length_requirement
+            return _model_output(ChapterNode.REVISION, candidate, request=request, generated=revised)
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
         length_scope = None
         repair_payload = {}
-        if request.definition_version in {"3.9.4", "3.9.16"}:
+        if request.definition_version in {"3.9.4", "3.9.16", "3.9.26"}:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             from .candidate_repair import candidate_repair_payload
             length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
@@ -1983,13 +1994,17 @@ class _CanonExtractionHandler:
         localization = None
         repair = None
         semantic_repair = None
-        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24"}
+        quote_repair = None
+        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29"}
         if current_contract and request.database_url:
             from .canon_output_recovery import repair_feedback
             repair = repair_feedback(request)
             if request.definition_version == "3.9.24":
                 from .canon_support_coverage import reextraction_feedback
                 semantic_repair = reextraction_feedback(request)
+        if request.definition_version == "3.9.29" and request.database_url:
+            from .current_quote_recovery import repair_feedback as current_feedback, retry_feedback
+            quote_repair = retry_feedback(request) or current_feedback(request, stage="canon_extraction")
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -2001,6 +2016,7 @@ class _CanonExtractionHandler:
                     **({"canon_field_kind_contract": "canon-field-kinds.v1"} if current_contract else {}),
                     **({"canon_output_repair": repair} if repair else {}),
                     **({"canon_support_reextraction": semantic_repair} if semantic_repair else {}),
+                    **({"canon_quote_repair": quote_repair} if quote_repair else {}),
                     "execution_expectations": dict(
                         context.content.get("chapter_execution_expectations") or {}
                     ),
@@ -2028,7 +2044,7 @@ class _CanonExtractionHandler:
         )
         if localization:
             content["quote_localization"] = localization
-        if repair or semantic_repair:
+        if repair or semantic_repair or quote_repair and quote_repair.get("continuation_contract") == "chapter-current-quote-repair.v1":
             proof = request.command["preparation_report"]["retained_graph_continuation"]["retained_result"]
             content["retained_result_repair"] = {k: proof[k] for k in ("contract_version", "source_operation_id", "source_effect_id", "source_dispatch_id", "source_output_hash", "source_request_hash", "provider_invoked", "strict_certification_eligible")}
         if generated is None:

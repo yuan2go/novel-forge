@@ -1617,6 +1617,10 @@ class ChapterAuthorityScheduler:
             )
         except Exception as exc:
             classification = WorkerFailureClassifier.classify(exc)
+            if node is ChapterNode.CANON_EXTRACTION and isinstance(exc, KernelError) and exc.code == "CANON_QUOTE_LOCALIZATION_INVALID":
+                from .current_quote_recovery import known_quote_retry
+                if known_quote_retry(self.database_url, operation_id=operation_id, attempt_id=attempt_id):
+                    classification = WorkerFailureClass.RETRYABLE
             if (
                 self.agent_binding_recorder is not None
                 and isinstance(exc, KernelError)

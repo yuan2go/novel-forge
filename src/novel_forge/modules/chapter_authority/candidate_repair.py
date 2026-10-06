@@ -70,7 +70,7 @@ def recover_information_frontier(authority, *, book_run_id, principal):
 
 
 def candidate_repair_payload(request):
-    if request.definition_version not in {'3.9.2','3.9.3','3.9.4','3.9.16','3.9.19'} or not request.database_url:
+    if request.definition_version not in {'3.9.2','3.9.3','3.9.4','3.9.16','3.9.19','3.9.26'} or not request.database_url:
         return {}
     with AuthorityUnitOfWork(request.database_url) as uow:
         uow.cursor.execute('''SELECT e.external_effect_id,a.attempt_id,a.result,r.payload->'evidence'
@@ -89,7 +89,7 @@ def candidate_repair_payload(request):
             from .model_effects import ModelProviderResult
             result = ModelProviderResult.from_evidence(recent[3])
             measured = {}
-            if request.definition_version in {'3.9.4','3.9.16','3.9.19'}:
+            if request.definition_version in {'3.9.4','3.9.16','3.9.19','3.9.26'}:
                 from .realization_composition import prose_from_output
                 from novel_forge.modules.revision.domain import han_characters
                 measured = {'length_observation':{'unit':'HAN_CHARACTERS_V1','observed':han_characters(prose_from_output(result.output))}}
