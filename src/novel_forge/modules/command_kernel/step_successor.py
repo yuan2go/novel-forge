@@ -214,9 +214,9 @@ def replace_failed_step(
             if book[1] != policy_evidence.get('chapter_request_id') or cursor.fetchone() != (source['root_operation_id'],book[2]+1):
                 raise KernelError('STEP_SUCCESSOR_FRONTIER_INVALID', 'Canon succession cannot change an accepted or superseded frontier')
         if canon_protocol_repair:
-            if (source['definition_name']!='chapter.canon.extract' or source['definition_version']!='3.9.5' or target_version!='3.9.6'
+            if (source['definition_name']!='chapter.canon.extract' or source['definition_version'] not in {'3.9.5','3.9.6'} or target_version!='3.9.7'
                 or expected_failure_code!='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'
-                or target['policy'].get('canon_wire_projection')!='codex-structured-schema.v4'
+                or target['policy'].get('canon_wire_projection')!='codex-canonical-json.v1'
                 or target['retry_policy']!=old_definition['retry_policy']):
                 raise KernelError('STEP_SUCCESSOR_CONTRACT_CHANGED','Only the explicit terminal Canon Schema contract can adopt compiler v4')
             cursor.execute("""SELECT v.asset_version_id,v.content_hash,v.content FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id)
@@ -232,14 +232,14 @@ def replace_failed_step(
             def digest_wire(value):
                 return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
             if (evidence.get('output_schema_version')!='schema:chapter-provider-output:canon_extraction:v24'
-                or contract.get('version')!='codex-structured-schema.v3' or CODEX_SCHEMA_PROJECTION_VERSION!='codex-structured-schema.v4'
+                or contract.get('version') not in {'codex-structured-schema.v3','codex-structured-schema.v4'} or CODEX_SCHEMA_PROJECTION_VERSION!='codex-structured-schema.v5'
                 or digest_wire(evidence['output_schema'])!=contract.get('canonical_hash')
-                or digest_wire(codex_output_schema(evidence['output_schema']))==contract.get('provider_hash')):
+                or digest_wire(codex_output_schema(evidence['output_schema'],schema_ref='schema:chapter-provider-output:canon_extraction:v25'))==contract.get('provider_hash')):
                 raise KernelError('STEP_SUCCESSOR_PROTOCOL_CORRECTION_REQUIRED','An unchanged or unrelated wire contract cannot replenish a failed step')
         if canon_capacity_repair:
             if (source["definition_name"] != "chapter.canon.extract" or source["definition_version"] != "3.9.0"
                 or target["retry_policy"] != old_definition["retry_policy"]
-                or target_version not in {"3.9.5","3.9.6"} or expected_failure_code != "PROVIDER_ROUTING_BLOCKED"
+                or target_version not in {"3.9.5","3.9.6","3.9.7"} or expected_failure_code != "PROVIDER_ROUTING_BLOCKED"
                 or target["policy"].get("canon_schema_projection") != "canon-provider-shared-types.v1"
                 or any(a["status"] != "FAILED_RETRYABLE" or a["result"].get("error_code") != expected_failure_code for a in attempts)):
                 raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Canon correction requires exact no-send legacy capacity failures")

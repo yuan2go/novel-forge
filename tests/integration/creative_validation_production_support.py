@@ -163,6 +163,8 @@ else:
                         issue["evidence"] = {"quote": issue["evidence"]["quote"]}
         if payload.output_schema and payload.output_schema.get("additionalProperties") is False:
             result = {key: value for key, value in result.items() if key in payload.output_schema["properties"]}
+        if payload.output_schema_version == "schema:chapter-provider-output:canon_extraction:v25":
+            result = {"output_json": json.dumps(result, ensure_ascii=False, allow_nan=False)}
         layout = PersistentExecutionDirectory(values["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
         layout.result_path("fixture-response.json").write_text(json.dumps(result, ensure_ascii=False))
         return payload

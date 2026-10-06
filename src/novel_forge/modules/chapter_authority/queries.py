@@ -214,14 +214,19 @@ class ChapterAuthorityQuery:
                          AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'settled_candidate_effects') binding
                              WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash ) OR (succ.contract_version='kernel-failed-step-successor.v1'
                          AND succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
-                         AND source.status='FAILED_FINAL' AND source.definition_name='chapter.canon.extract' AND source.definition_version='3.9.5'
-                         AND replacement.definition_version='3.9.6' AND replacement.status='SUCCEEDED' AND active.operation_id IS NOT NULL
+                         AND source.status='FAILED_FINAL' AND source.definition_name='chapter.canon.extract' AND source.definition_version IN ('3.9.5','3.9.6')
+                         AND replacement.definition_version IN ('3.9.6','3.9.7')
+                         AND (replacement.status='SUCCEEDED' OR (replacement.status='FAILED_FINAL' AND replacement.definition_version='3.9.6'
+                           AND next_succ.contract_version='kernel-failed-step-successor.v1'
+                           AND next_succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
+                           AND next_replacement.status='SUCCEEDED' AND next_replacement.definition_version='3.9.7'))
+                         AND active.operation_id IS NOT NULL
                          AND effect.status IN ('FAILED_FINAL','FAILED_RETRYABLE') AND budget.status='SETTLED' AND budget.accounting_basis='ACCOUNT_ENTITLEMENT'
                          AND EXISTS(SELECT 1 FROM jsonb_array_elements(succ.policy_evidence->'known_failed_effects') binding
                              WHERE binding->>0=effect.external_effect_id AND binding->>1=effect.request_hash
                                AND binding->>2=effect.status AND binding->>3='SETTLED' AND binding->>4='ACCOUNT_ENTITLEMENT'
                                AND binding->>5=budget.evidence->>'cost_authorization_ref'))),FALSE),
-                       succ.successor_operation_id
+                       COALESCE(next_succ.successor_operation_id,succ.successor_operation_id)
                 FROM authority_external_effect AS effect
                 LEFT JOIN authority_attempt AS attempt
                   ON attempt.operation_id=effect.operation_id
@@ -232,7 +237,11 @@ class ChapterAuthorityQuery:
                 LEFT JOIN authority_saga_step_successor succ ON succ.predecessor_operation_id=effect.operation_id
                 LEFT JOIN authority_operation source ON source.operation_id=succ.predecessor_operation_id
                 LEFT JOIN authority_operation replacement ON replacement.operation_id=succ.successor_operation_id
-                LEFT JOIN authority_saga_step active ON active.operation_id=succ.successor_operation_id AND active.saga_id=succ.saga_id
+                LEFT JOIN authority_saga_step_successor next_succ ON next_succ.predecessor_operation_id=succ.successor_operation_id
+                  AND next_succ.saga_id=succ.saga_id AND next_succ.contract_version='kernel-failed-step-successor.v1'
+                  AND next_succ.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1'
+                LEFT JOIN authority_operation next_replacement ON next_replacement.operation_id=next_succ.successor_operation_id
+                LEFT JOIN authority_saga_step active ON active.operation_id=COALESCE(next_succ.successor_operation_id,succ.successor_operation_id) AND active.saga_id=succ.saga_id
                 LEFT JOIN authority_budget_reservation budget ON budget.external_effect_id=effect.external_effect_id
                 WHERE effect.operation_id = ANY(%s)
                   AND effect.effect_type = 'model.invoke'

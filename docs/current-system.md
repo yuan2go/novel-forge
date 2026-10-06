@@ -2119,13 +2119,13 @@ Book reconciliation records a mutation only when the referenced Chapter status o
 Book state changes. Its v2 key binds the expected Book version and observed child
 Operation/Saga versions; a recovery window or Saga tick cannot reuse a historical
 status-only key with a different request. Prior reconciliation receipts remain intact.
-Chapter Prompt v10 / Pack 2.20 uses `canon-provider-shared-types.v1` for the Canon
+Historical Chapter Prompt v10 / Pack 2.20 uses `canon-provider-shared-types.v1` for the Canon
 output Schema. Exact repeated Schema fragments become local `$defs` references;
 expansion restores the original Schema without removing fields, bounds or gates.
 Canon Provider v24 retains v23 domain semantics. Historical Prompt v9/v23 remains
 unchanged. Complete rendered-request admission still owns the physical capacity check.
 
-Canon 3.9.6 declares that shared Schema projection; historical 3.9.5 retains its original contract. For an unaccepted legacy
+Historical Canon 3.9.6 declares that shared Schema projection; historical 3.9.5 retains its original contract. For an unaccepted legacy
 Canon 3.9.0 step with only no-send capacity refusals, trusted creative v5 can
 admit a versioned native successor and bind the new Pack. Historical Attempts,
 materialization, route decisions and Pack snapshots stay intact. A dispatched,
@@ -2140,9 +2140,24 @@ constraint and does not certify service acceptance. Native retries retain the fr
 canonical Schema and original Attempt limit. Explicit CLI `invalid_json_schema`
 evidence is a protocol rejection even when the JSON event omits an HTTP status.
 
-The Codex v4 wire compiler uses explicit `anyOf` for nullable types and expresses
+The historical Codex v4 wire compiler uses explicit `anyOf` for nullable types and expresses
 null-only enums as the exact null type. Canon 3.9.6 / Pack 2.20 adopts this compiler
 while retaining the canonical v24 contract. A trusted creative protocol successor
 can replace a failed Canon 3.9.5 step with only settled membership failures and no
 produced candidate. Terminal failures, provider hashes, account authorization and
 usage availability remain historical facts; this does not certify model quality.
+
+Canon 3.9.7 / Pack 2.21 / Prompt v11 explicitly selects the
+`codex-canonical-json.v1` transport for canonical Canon v25. The host Schema and
+semantic checks retain v24 meaning. Codex receives a closed `output_json` string
+envelope; the host decodes exactly one JSON object, rejecting duplicate keys,
+non-finite numbers, extra envelope fields and malformed content before validating
+the complete frozen canonical Schema and domain semantics. Raw envelopes and
+normalized results retain separate hashes and receipt evidence. Other Provider
+transports retain their canonical object contract. This transport contract does
+not certify a result or weaken strict production gates.
+
+A creative protocol successor can explicitly adopt this codec from a settled,
+non-producing Canon 3.9.6 Schema rejection. Terminal histories and all prior
+account evidence remain unchanged. Acceptance follows the verified succession
+chain to the current successful Saga step; it cannot relabel any failure as success.

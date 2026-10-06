@@ -330,12 +330,12 @@ def recover_canon_capacity_frontier(authority, *, book_run_id, principal):
             trace_id=source['trace_id'],correlation_id=source['correlation_id']))
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
     continue_candidate_execution_window(authority.database_url, root_id=request['chapter_root_operation_id'],
-        predecessor_id=source['operation_id'],target_version='3.9.6',book_run_id=book_run_id,principal=principal)
+        predecessor_id=source['operation_id'],target_version='3.9.7',book_run_id=book_run_id,principal=principal)
     def guard(uow):
         uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
         if uow.cursor.fetchone() != (book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id']) != template:
             raise KernelError('CHAPTER_CANON_RECOVERY_CONFLICT', 'Reload the exact current Book frontier')
-    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.6',
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.7',
         context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
             authority.application_build_id,authority.commit_sha),policy_evidence=evidence,
         expected_failure_code='PROVIDER_ROUTING_BLOCKED',transaction_guard=guard)
@@ -351,7 +351,9 @@ def recover_canon_schema_retry_phase(authority, *, book_run_id, principal):
     request=authority.require_chapter_request(book['active_chapter_request_id'])
     if request['chapter_number'] != book['accepted_through_chapter']+1:
         return False
-    from novel_forge.modules.production_execution.codex_configuration import codex_wire_correction_evidence
+    from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION, codex_wire_correction_evidence
+    if CODEX_SCHEMA_PROJECTION_VERSION != "codex-structured-schema.v3":
+        return False
     from novel_forge.modules.production_execution.execution_template import selected_template
     with AuthorityUnitOfWork(authority.database_url) as uow:
         admission=selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id'])
@@ -395,7 +397,7 @@ def recover_canon_protocol_frontier(authority, *, book_run_id, principal):
             JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
             JOIN authority_operation_output_asset oa ON oa.operation_id=o.operation_id JOIN authority_asset x USING(asset_id) JOIN authority_asset_version v USING(asset_version_id)
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.canon.extract'
-            AND o.definition_version='3.9.5' AND o.status='FAILED_FINAL'
+            AND o.definition_version IN ('3.9.5','3.9.6') AND o.status='FAILED_FINAL'
             AND a.result->>'error_code'='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED' AND x.asset_type='model_call_log'
             AND v.content->>'attempt_id'=a.attempt_id AND v.content->>'failure_code'='PROVIDER_SCHEMA_REJECTED'
             AND v.content->'real_model_call'='false'::jsonb""",[request['chapter_root_operation_id'],book['project_id']])
@@ -415,12 +417,12 @@ def recover_canon_protocol_frontier(authority, *, book_run_id, principal):
         'known_failed_effects':effects,'source_operation':source,'completion_checks':'UNCHANGED','accepted_cursor':book['accepted_through_chapter']}
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
     continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
-        predecessor_id=source['operation_id'],target_version='3.9.6',book_run_id=book_run_id,principal=principal)
+        predecessor_id=source['operation_id'],target_version='3.9.7',book_run_id=book_run_id,principal=principal)
     def guard(uow):
         uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE',[book_run_id,book['project_id']])
         if uow.cursor.fetchone()!=(book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id'])!=template:
             raise KernelError('CHAPTER_CANON_PROTOCOL_CONFLICT','Reload the exact Book frontier')
-    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.6',
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.7',
         context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
             authority.application_build_id,authority.commit_sha),policy_evidence=evidence,
         expected_failure_code='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED',transaction_guard=guard)

@@ -383,8 +383,9 @@ def test_provider_process_timeout_preserves_external_effect_settlement_headroom(
 
 @pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])
 @pytest.mark.parametrize("local_crash", [False, True])
+@pytest.mark.parametrize("encoded_json", [False, True])
 def test_codex_backend_validates_schema_and_semantics_before_success(
-    accounting_basis: str, local_crash: bool,
+    accounting_basis: str, local_crash: bool, encoded_json: bool,
 ) -> None:
     contract_set = contracts(
         backend_id="codex-cli",
@@ -407,7 +408,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
     def validator(stage, schema, value, *, output_schema_ref):  # type: ignore[no-untyped-def]
         nonlocal validation_calls
         validation_calls += 1
-        assert output_schema_ref == "schema:chapter-provider-output:draft:v2"
+        assert output_schema_ref == ("schema:chapter-provider-output:canon_extraction:v25" if encoded_json else "schema:chapter-provider-output:draft:v2")
         if local_crash and validation_calls == 1:
             raise RuntimeError("local validator unavailable")
         validate_chapter_provider_output_against_schema(stage, schema, value)
@@ -435,9 +436,9 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
             sys.executable,
             "-c",
             (
-                "import json,sys; "
-                "json.dump({'text':'Validated chapter.','scene_artifacts':[]},open(sys.argv[1],'w')); "
-                "print(sys.argv[2])"
+                "import json,sys; " +
+                ("json.dump({'output_json':json.dumps({'text':'Validated chapter.','scene_artifacts':[]})},open(sys.argv[1],'w')); " if encoded_json else "json.dump({'text':'Validated chapter.','scene_artifacts':[]},open(sys.argv[1],'w')); ")
+                + "print(sys.argv[2])"
             ),
             str(result_path),
             stdout_event,
@@ -452,7 +453,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
                         input_text=input_text,
                         working_directory=tmp,
                         timeout_seconds=5,
-                        output_schema_version="schema:chapter-provider-output:draft:v2",
+                        output_schema_version=("schema:chapter-provider-output:canon_extraction:v25" if encoded_json else "schema:chapter-provider-output:draft:v2"),
                         command=command,
                         output_schema=chapter_provider_output_schema("draft", legacy_contract=True),
                         capability_evidence={
@@ -488,6 +489,9 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
     assert validation_calls == (2 if local_crash else 1)
     evidence = store.get_record(request.execution_id).raw_evidence
     assert evidence["result"] == {"text": "Validated chapter.", "scene_artifacts": []}
+    if encoded_json:
+        assert evidence['transport_decode']['contract_version']=='codex-canonical-json.v1'
+        assert evidence['transport_decode']['envelope_hash']!=evidence['transport_decode']['decoded_hash']
     assert evidence["usage"]["measurement"] == "MEASURED"
     if accounting_basis == "ACCOUNT_ENTITLEMENT":
         assert evidence["cost"]["availability"] == "UNAVAILABLE"
@@ -765,3 +769,22 @@ def test_nullable_wire_values_preserve_canonical_contract(field,valid,invalid):
         for contract in (schema,wire):
             with pytest.raises(KernelError):
                 validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})
+
+
+@pytest.mark.parametrize("value", [{"output_json":"[]"}, {"output_json":"{}","extra":True}, {"output_json":"{\"a\":1,\"a\":2}"}, {"output_json":"{\"a\":NaN}"}, {"output_json":"{\"a\":1e999}"}, {"output_json":3}])
+def test_canonical_transport_rejects_ambiguous_or_malformed_envelopes(value):
+    from novel_forge.modules.production_execution.codex_configuration import decode_codex_output,CODEX_CANONICAL_JSON_SCHEMA_REF
+    with pytest.raises(ValueError):
+        decode_codex_output(value,schema_ref=CODEX_CANONICAL_JSON_SCHEMA_REF)
+
+
+def test_canonical_transport_does_not_replace_the_host_schema():
+    from novel_forge.modules.production_execution.codex_configuration import decode_codex_output,codex_output_schema,CODEX_CANONICAL_JSON_SCHEMA_REF
+    from novel_forge.modules.command_kernel.errors import KernelError
+    schema=chapter_provider_output_schema("draft",legacy_contract=True)
+    wire=codex_output_schema(schema,schema_ref=CODEX_CANONICAL_JSON_SCHEMA_REF)
+    assert set(wire['properties'])=={'output_json'}
+    decoded,proof=decode_codex_output({'output_json':'{\"unexpected\":true}'},schema_ref=CODEX_CANONICAL_JSON_SCHEMA_REF)
+    assert proof['contract_version']=='codex-canonical-json.v1'
+    with pytest.raises(KernelError):
+        validate_chapter_provider_output_against_schema('draft',schema,decoded)

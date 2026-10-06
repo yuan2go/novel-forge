@@ -30,7 +30,7 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 )
 
 
-CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v4"
+CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v5"
 CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v2"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
@@ -79,8 +79,41 @@ def codex_account_binding_evidence(backend: object) -> dict:
     return evidence
 
 
-def codex_output_schema(schema: dict) -> dict:
+CODEX_CANONICAL_JSON_SCHEMA_REF = "schema:chapter-provider-output:canon_extraction:v25"
+CODEX_CANONICAL_JSON_CODEC = "codex-canonical-json.v1"
+
+
+def codex_output_schema(schema: dict, *, schema_ref: str = "") -> dict:
+    if schema_ref == CODEX_CANONICAL_JSON_SCHEMA_REF:
+        return {"type":"object","properties":{"output_json":{"type":"string"}},
+            "required":["output_json"],"additionalProperties":False}
     return _codex_output_schema(schema, all_nullable=True)
+
+
+def strict_codex_json_loads(text: str):
+    def pairs(items):
+        result={}
+        for key,item in items:
+            if key in result:
+                raise ValueError("canonical JSON transport rejects duplicate keys")
+            result[key]=item
+        return result
+    def reject_constant(value):
+        raise ValueError("canonical JSON transport rejects non-finite numbers")
+    return json.loads(text,object_pairs_hook=pairs,parse_constant=reject_constant)
+
+
+def decode_codex_output(value, *, schema_ref: str):
+    if schema_ref != CODEX_CANONICAL_JSON_SCHEMA_REF:
+        return value, None
+    if not isinstance(value, dict) or set(value)!={"output_json"} or not isinstance(value['output_json'],str):
+        raise ValueError("canonical JSON transport requires exactly one output_json string")
+    decoded=strict_codex_json_loads(value['output_json'])
+    if not isinstance(decoded,dict):
+        raise ValueError("canonical JSON transport requires an object result")
+    def digest(item):
+        return 'sha256:'+hashlib.sha256(json.dumps(item,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+    return decoded, {'contract_version':CODEX_CANONICAL_JSON_CODEC,'envelope_hash':digest(value),'decoded_hash':digest(decoded)}
 
 
 def _codex_output_schema(schema: dict, *, all_nullable: bool) -> dict:

@@ -53,8 +53,8 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.revision.apply','CANCELLATION_REQUESTED','REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
             ('chapter.revision.apply','FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
-            ('chapter.canon.extract','FAILED_FINAL','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'):('3.9.6','canon_wire_projection','codex-structured-schema.v4'),
-            ('chapter.canon.extract','CANCELLATION_REQUESTED','PROVIDER_ROUTING_BLOCKED'):('3.9.6','canon_schema_projection','canon-provider-shared-types.v1'),
+            ('chapter.canon.extract','FAILED_FINAL','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'):('3.9.7','canon_wire_projection','codex-canonical-json.v1'),
+            ('chapter.canon.extract','CANCELLATION_REQUESTED','PROVIDER_ROUTING_BLOCKED'):('3.9.7','canon_schema_projection','canon-provider-shared-types.v1'),
             ('chapter.canon.extract','FAILED_RETRYABLE','MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE'):('3.9.5','canon_schema_projection','canon-provider-shared-types.v1'),
             ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
@@ -69,7 +69,9 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         canon_schema_retry = source[3]=='chapter.canon.extract' and source[1]=='MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE'
         wire_correction = None
         if canon_schema_retry:
-            from novel_forge.modules.production_execution.codex_configuration import codex_wire_correction_evidence
+            from novel_forge.modules.production_execution.codex_configuration import CODEX_SCHEMA_PROJECTION_VERSION, codex_wire_correction_evidence
+            if CODEX_SCHEMA_PROJECTION_VERSION != "codex-structured-schema.v3":
+                raise KernelError("EXECUTION_PHASE_WIRE_CORRECTION_REQUIRED", "Historical compiler-v3 phases cannot authorize a different current wire contract")
             cursor.execute("""SELECT v.asset_version_id,v.content_hash,v.content,e.external_effect_id,r.evidence->>'cost_authorization_ref'
                 FROM authority_operation_output_asset oa JOIN authority_asset x USING(asset_id) JOIN authority_asset_version v USING(asset_version_id)
                 JOIN authority_external_effect e ON e.external_effect_id=v.content->>'external_effect_id'
@@ -97,6 +99,16 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             if not effects or any(r[1] not in {'FAILED_FINAL','FAILED_RETRYABLE'} or r[2:]!=('SETTLED','ACCOUNT_ENTITLEMENT') for r in effects):
                 raise KernelError('EXECUTION_WINDOW_PROTOCOL_UNSETTLED','Only exact settled membership failures can precede a protocol successor')
             protocol_effect_ids=[r[0] for r in effects]
+            cursor.execute("""WITH RECURSIVE ancestors(operation_id) AS (SELECT %s::text UNION ALL
+                SELECT s.predecessor_operation_id FROM authority_saga_step_successor s JOIN ancestors a ON s.successor_operation_id=a.operation_id
+                WHERE s.contract_version='kernel-failed-step-successor.v1' AND s.policy_evidence->>'contract_version'='chapter-provider-schema-contract-repair.v1')
+                SELECT e.external_effect_id,e.status,r.status,r.accounting_basis FROM ancestors a
+                JOIN authority_external_effect e USING(operation_id) LEFT JOIN authority_budget_reservation r USING(external_effect_id)
+                WHERE a.operation_id<>%s""",[predecessor_id,predecessor_id])
+            ancestor_effects=cursor.fetchall()
+            if any(r[1] not in {'FAILED_FINAL','FAILED_RETRYABLE'} or r[2:]!=('SETTLED','ACCOUNT_ENTITLEMENT') for r in ancestor_effects):
+                raise KernelError('EXECUTION_WINDOW_PROTOCOL_UNSETTLED','Historical protocol predecessors must retain settled membership failures')
+            protocol_effect_ids.extend(r[0] for r in ancestor_effects)
         cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id
             JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s
             AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED') AND e.external_effect_id IS DISTINCT FROM %s AND NOT (e.external_effect_id=ANY(%s::text[]))),

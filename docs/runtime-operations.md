@@ -3084,7 +3084,7 @@ remain ineligible. Verify an expired child and an already recorded no-send timeo
 through the native length-scope integration before resuming such a checkpoint.
 For an unaccepted Canon extraction stopped before dispatch by rendered context
 capacity, creative v5 can replace an unexecuted legacy Canon step with the
-explicit `chapter-canon-capacity-repair.v1` successor, Canon 3.9.6 / Pack 2.20.
+explicit `chapter-canon-capacity-repair.v1` successor, Canon 3.9.7 / Pack 2.21.
 The predecessor must have only recorded capacity refusals and no ExternalEffect,
 domain output, dependent or live lease. Its Attempts and operation-bound Pack remain
 immutable; the successor binds the current Pack and receives full physical admission.
@@ -3115,7 +3115,16 @@ A terminal Canon 3.9.5 `PROVIDER_SCHEMA_REJECTED` can use the native
 `chapter-provider-schema-contract-repair.v1` successor under creative v5. It requires
 exact failed process/Schema evidence, settled membership accounting, unchanged input
 and domain contracts, and no candidate, dependent, live lease or uncertain effect.
-The predecessor remains terminal and its receipts remain failed; the new Canon 3.9.6
-step binds Pack 2.20 and compiler v4. Book acceptance recognizes only the verified
+The predecessor remains terminal and its receipts remain failed. Historical Canon 3.9.6
+used Pack 2.20 and compiler v4; the current successor is Canon 3.9.7 / Pack 2.21. Book acceptance recognizes only the verified
 non-producing predecessor once its current Saga successor succeeds. Strict mode
 cannot admit this creative recovery.
+
+For Canon's encoded transport, install Pack 2.21 and register Canon 3.9.7 before
+continuing the original Book. Prompt v11 freezes the conditional transport
+instruction and the full canonical v25 Schema before complete-request admission.
+Codex compiler v5 encodes only this explicit Schema identity; other stages retain
+their existing representation. Native creative recovery admits the exact known
+3.9.6 rejection as a new contract successor. Both earlier 3.9.5 and 3.9.6 failures
+remain terminal; unsettled or producing calls cannot use this path. Host decoding,
+Schema validation, semantic validation and grounded acceptance remain mandatory.
