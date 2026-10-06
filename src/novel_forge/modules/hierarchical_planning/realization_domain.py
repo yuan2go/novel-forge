@@ -722,24 +722,28 @@ def _validate_event_chain(
         if index and event.required and not event.causes and not work_requirements:
             raise KernelError(
                 "REALIZATION_CAUSALITY_INVALID",
-                "every non-root required event needs an earlier cause",
+                f"every non-root required event needs an earlier cause; event={event.event_id}",
             )
         for cause in event.causes:
             if cause not in positions or positions[cause] >= index:
                 raise KernelError(
                     "REALIZATION_CAUSALITY_INVALID",
-                    "event causes must identify earlier planned events",
+                    "event causes must identify earlier planned events; "
+                    f"event={event.event_id}, cause={cause}",
                 )
             if event.event_id not in events[positions[cause]].next_event_ids:
                 raise KernelError(
                     "REALIZATION_CAUSALITY_INVALID",
-                    "cause/next-event references must agree in both directions",
+                    "cause/next-event references must agree in both directions; "
+                    f"event={event.event_id} lists cause={cause}, "
+                    f"but {cause}.next_event_ids omits {event.event_id}",
                 )
         for following in event.next_event_ids:
             if following not in positions or positions[following] <= index:
                 raise KernelError(
                     "REALIZATION_CAUSALITY_INVALID",
-                    "next-event references must identify later planned events",
+                    "next-event references must identify later planned events; "
+                    f"event={event.event_id}, next_event_id={following}",
                 )
 
 
