@@ -26,7 +26,7 @@ def _strings() -> dict[str, Any]:
     }
 
 
-def world_transition_schema() -> dict[str, Any]:
+def world_transition_schema(*, agency: bool = False) -> dict[str, Any]:
     from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
     from .dynamics import RequirementOperator
 
@@ -56,7 +56,10 @@ def world_transition_schema() -> dict[str, Any]:
     )
     result = _object(
         {
-            "transition_id": {**text, "description": "Use a batch-local name matching [A-Za-z][A-Za-z0-9_-]{0,63}, without a local: prefix. In cause_refs, refer to a preparation event as local:<name>; other references must be exact supplied foundation or accepted event identities."},
+            "transition_id": {
+                **text,
+                "description": "Use a batch-local name matching [A-Za-z][A-Za-z0-9_-]{0,63}, without a local: prefix. In cause_refs, refer to a preparation event as local:<name>; other references must be exact supplied foundation or accepted event identities.",
+            },
             "actor_id": text,
             "camera": {
                 "type": "string",
@@ -112,7 +115,7 @@ def world_transition_schema() -> dict[str, Any]:
             },
             "epistemic_basis": {
                 "type": "array",
-                "description": "Every approved character action requires a nonempty basis referring to that actor's supplied character_knowledge or character_belief state and satisfying its exact predicate. An approved character definition or foundation cause is not acquired knowledge. Do not invent a basis when the accepted initial state is empty; return NO_OP or DEFER with the missing support explained instead of an executable character action.",
+                "description": "Information-dependent decisions require the actor's own supplied knowledge/belief predicates. Under world-agency.v2 classify action_mode explicitly. ROUTINE cannot grant epistemic state; PERCEPTION needs objective source predicates and cause refs. Own-character knowledge acquisition binds changes.observation_source {state_kind,entity_key,field,value} to an EQUALS source predicate. Sources precede perception, and a later information-dependent decision depends on that actor's acquisition. No borrowed, reader, future or self-supporting knowledge. Proposed steps remain unaccepted. NO_OP/DEFER only when actually appropriate to the story.",
                 "items": {
                     **deepcopy(predicate),
                     "properties": {
@@ -126,6 +129,20 @@ def world_transition_schema() -> dict[str, Any]:
             },
         }
     )
+    if not agency:
+        result["properties"]["epistemic_basis"]["description"] = (
+            "Every approved character action requires a nonempty basis referring to that actor's supplied character_knowledge or character_belief state and satisfying its exact predicate. An approved character definition or foundation cause is not acquired knowledge. Do not invent a basis when the accepted initial state is empty; return NO_OP or DEFER with the missing support explained instead of an executable character action."
+        )
+    if agency:
+        result["properties"]["action_mode"] = {
+            "type": "string",
+            "enum": ["ROUTINE", "PERCEPTION", "INFORMATION_DEPENDENT"],
+            "description": "ROUTINE: ordinary non-epistemic agency supported by supplied Foundation or accepted causes, never hidden-information decisions. PERCEPTION: observe an available objective source. INFORMATION_DEPENDENT: act on this character's own knowledge/belief. Director checks the classification against action and effects.",
+        }
+        result["required"].append("action_mode")
+        result["properties"]["changes"]["description"] = (
+            "Use state-kind semantics: resource_state is quantitative inventory/balance (initial balance or reconciled balance_before/delta/balance_after). Nonquantitative availability/access/status belongs to world_state for the exact approved entity. character_knowledge is one own character/proposition with status KNOWN and observation_source for PERCEPTION. Changes are proposals, not accepted facts. Never invent a numeric balance for a document's access status."
+        )
     result["description"] = (
         "Serialized WorldTransition, not prose. Copy approved actor/entity identities and exact frozen foundation or accepted causal references. story_time is an ordered object, never a chapter label string; end_ordinal must be at least start_ordinal. No invented prerequisites or inferred accepted facts."
     )
@@ -133,7 +150,10 @@ def world_transition_schema() -> dict[str, Any]:
 
 
 def world_generation_schema(
-    policy: WorldProductionPolicy, *, audience_scoped: bool = False
+    policy: WorldProductionPolicy,
+    *,
+    audience_scoped: bool = False,
+    agency: bool = False,
 ) -> dict[str, Any]:
     transition = _object(
         {
@@ -143,7 +163,9 @@ def world_generation_schema(
                 "maxLength": 16384,
                 "description": "JSON serialization of this typed contract: "
                 + json.dumps(
-                    world_transition_schema(), ensure_ascii=False, sort_keys=True
+                    world_transition_schema(agency=agency),
+                    ensure_ascii=False,
+                    sort_keys=True,
                 ),
             }
         }
@@ -261,12 +283,14 @@ def world_generation_schema(
     )
 
 
-def world_evaluation_schema(generated: Mapping[str, Any]) -> dict[str, Any]:
+def world_evaluation_schema(
+    generated: Mapping[str, Any], *, agency: bool = False
+) -> dict[str, Any]:
     ids = [
         candidate["transition"]["transition_id"]
         for candidate in generated["candidates"]
     ]
-    return _object(
+    result = _object(
         {
             "evaluations": {
                 "type": "array",
@@ -291,26 +315,85 @@ def world_evaluation_schema(generated: Mapping[str, Any]) -> dict[str, Any]:
             }
         }
     )
+    if agency:
+        paths = list(agency_transition_paths(generated))
+        result["properties"]["action_classifications"] = {
+            "type": "array",
+            "minItems": len(paths),
+            "maxItems": len(paths),
+            "items": _object(
+                {
+                    "field_path": {"type": "string", "enum": paths or ["NO_CANDIDATE"]},
+                    "supported": {"type": "boolean"},
+                    "rationale": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Check actual action and effects: ordinary agency cannot conceal a decision using unacquired/private information; perception needs an available source and correctly ordered actor scope. Report unsupported classifications separately from soft literary scores.",
+                    },
+                }
+            ),
+        }
+        result["required"].append("action_classifications")
+    return result
+
+
+def agency_transition_paths(generated):
+    result = {}
+    for index, candidate in enumerate(generated["candidates"]):
+        result[f"$.candidates[{index}].transition"] = candidate["transition"]
+        for path_index, path in enumerate(candidate["preparation_paths"]):
+            for step_index, step in enumerate(path["steps"]):
+                result[
+                    f"$.candidates[{index}].preparation_paths[{path_index}].steps[{step_index}].transition"
+                ] = step["transition"]
+    return result
 
 
 def decode_world_generation(raw: Mapping[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.chapter_authority.provider_output_contracts import (
+        collect_native_world_schema_diagnostics,
+    )
+
     result = deepcopy(dict(raw))
-    location = "$.candidates"
-    try:
-        for index, candidate in enumerate(result["candidates"]):
-            location = f"$.candidates[{index}].transition.payload_json"
-            candidate["transition"] = json.loads(
-                candidate["transition"]["payload_json"]
+    diagnostics = []
+    for index, candidate in enumerate(result.get("candidates", [])):
+        slots = [
+            (candidate, "transition", f"$.candidates[{index}].transition.payload_json")
+        ]
+        for path_index, path in enumerate(candidate.get("preparation_paths", [])):
+            for step_index, step in enumerate(path.get("steps", [])):
+                slots.append(
+                    (
+                        step,
+                        "transition",
+                        f"$.candidates[{index}].preparation_paths[{path_index}].steps[{step_index}].transition.payload_json",
+                    )
+                )
+        for owner, key, location in slots:
+            try:
+                value = json.loads(owner[key]["payload_json"])
+            except (KeyError, TypeError, ValueError) as error:
+                diagnostics.append({"field_path": location, "constraint": str(error)})
+                continue
+            owner[key] = value
+            defects = collect_native_world_schema_diagnostics(
+                world_transition_schema(
+                    agency=isinstance(value, dict) and "action_mode" in value
+                ),
+                value,
+                path=location,
             )
-            WorldTransition.from_mapping(candidate["transition"])
-            for path_index, path in enumerate(candidate["preparation_paths"]):
-                for step_index, step in enumerate(path["steps"]):
-                    location = f"$.candidates[{index}].preparation_paths[{path_index}].steps[{step_index}].transition.payload_json"
-                    step["transition"] = json.loads(step["transition"]["payload_json"])
-                    WorldTransition.from_mapping(step["transition"])
-    except (KeyError, TypeError, ValueError) as exc:
+            diagnostics.extend(defects)
+            if not defects:
+                try:
+                    WorldTransition.from_mapping(value)
+                except (KernelError, TypeError, ValueError) as error:
+                    diagnostics.append(
+                        {"field_path": location, "constraint": str(error)}
+                    )
+    if diagnostics:
         raise KernelError(
             "WORLD_PROVIDER_TRANSITION_INVALID",
-            f"{location}: generated world transitions must decode to the declared typed contract; {exc}",
-        ) from exc
+            json.dumps({"diagnostics": diagnostics}, ensure_ascii=False),
+        )
     return result

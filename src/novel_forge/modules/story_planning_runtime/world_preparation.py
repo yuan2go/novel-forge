@@ -7,7 +7,6 @@ from novel_forge.modules.context_builder.reality_projection import ROLE_STATE_KI
 from novel_forge.modules.narrative_state.contracts import NarrativeStateKind
 from novel_forge.modules.worldbuilding.dynamics import (
     RequirementOperator,
-    WorldTransition,
 )
 from novel_forge.modules.worldbuilding.production_planning import (
     WorldProductionPolicy,
@@ -35,6 +34,8 @@ class PlanningProviderStage:
     @property
     def output_schema_ref(self) -> str:
         version = {"world-actor-task.v2": "v2", "world-actor-task.v3": "v3"}.get(self.task.get("contract_version"), "v1")
+        if self.task.get("epistemic_contract") == "world-agency.v2":
+            version = "v2"
         suffix = ":actor-isolation-v1" if self.task.get("actor_proposals") else ""
         return f"schema:{self.name}:{version}{suffix}"
 
@@ -191,6 +192,7 @@ class PlanningWorldPreparation:
                     contract_version="world-preparation-source.v1"
                     if command.execution_contract_version == "1.12.0"
                     else "world-preparation-source.v2",
+                    epistemic_contract="world-agency.v2" if command.execution_contract_version == "1.19.0" else "world-agency.v1",
                 )
             source_document = self._store(
                 command,
@@ -418,6 +420,7 @@ class PlanningWorldPreparation:
         schema = add_translation_contract(world_generation_schema(
             WorldProductionPolicy(**source["policy"]),
             audience_scoped=source["contract_version"] == "world-preparation-source.v2",
+            agency=source["reality"].get("epistemic_contract") == "world-agency.v2",
         ), knowledge_selection)
         if actor_proposals:
             from novel_forge.modules.worldbuilding.actor_isolation import actor_judge_schema
@@ -450,7 +453,7 @@ class PlanningWorldPreparation:
              "generation_ref": generation_ref, "narrative_intelligence": knowledge_selection,
              "knowledge_translations": generation["output"].get("knowledge_translations", []),
              **({"actor_proposals": actor_proposals, "actor_adjudications": generation["output"]["actor_adjudications"]} if actor_proposals else {})},
-            world_evaluation_schema(decoded),
+            world_evaluation_schema(decoded, agency=source["reality"].get("epistemic_contract") == "world-agency.v2"),
         )
 
     @staticmethod
@@ -468,6 +471,7 @@ class PlanningWorldPreparation:
         )
         return {
             "contract_version": "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
+            **({"epistemic_contract": "world-agency.v2"} if source["reality"].get("epistemic_contract") == "world-agency.v2" else {}),
             "role": role,
             "source_ref": dict(source_ref),
             "baseline_id": source["reality"]["revision_id"],
@@ -522,8 +526,8 @@ class PlanningWorldPreparation:
                 else {}
             ),
             "transition_contract": {
-                "fields": list(WorldTransition.__dataclass_fields__),
-                "schema": world_transition_schema(),
+                "fields": list(world_transition_schema(agency=source["reality"].get("epistemic_contract") == "world-agency.v2")["properties"]),
+                "schema": world_transition_schema(agency=source["reality"].get("epistemic_contract") == "world-agency.v2"),
                 "state_kinds": [kind.value for kind in NarrativeStateKind],
                 "requirement_operators": [
                     operator.value for operator in RequirementOperator

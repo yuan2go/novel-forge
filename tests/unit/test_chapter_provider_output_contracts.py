@@ -52,6 +52,17 @@ CANON_FIELDS = (
 )
 
 
+def test_nullable_scalar_contract_retains_type_boundaries():
+    schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object",
+        "properties": {"value": {"anyOf": [{"type": "number"}, {"type": "null"}]}},
+        "required": ["value"], "additionalProperties": False}
+    for value in (None, 0, 1.5):
+        assert validate_chapter_provider_output_against_schema("world_candidates.generate", schema, {"value": value}) == {"value": value}
+    for value in (False, "0", [], {}):
+        with pytest.raises(KernelError, match="CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"):
+            validate_chapter_provider_output_against_schema("world_candidates.generate", schema, {"value": value})
+
+
 def test_agent_turn_contract_requires_exactly_one_action() -> None:
     schema = chapter_provider_output_schema("agent_session")
     assert schema["properties"]["action"]["enum"] == ["TOOL_CALL", "FINAL"]

@@ -213,7 +213,7 @@ def _simulate_preparation(
     known.discard("")
     nodes = []
     by_name = {step["transition"]["transition_id"]: step for step in steps}
-    for raw in [*(step["transition"] for step in steps), asdict(target)]:
+    for raw in [*(step["transition"] for step in steps), target.to_dict()]:
         refs = list(raw["cause_refs"])
         if raw["transition_id"] == target.transition_id:
             refs = list(
@@ -279,7 +279,7 @@ def _simulate_preparation(
         )
         schedule.append(
             {
-                "transition": json.loads(json.dumps(asdict(transition))),
+                "transition": json.loads(json.dumps(transition.to_dict())),
                 "chapter_number": chapter_number + step["chapter_offset"],
                 "depends_on": list(transition.cause_refs),
                 "expected_effect": dict(transition.changes),
@@ -322,7 +322,23 @@ def compile_world_plan(
     intent_version_id: str,
 ) -> dict[str, Any]:
     candidates = validate_generated_candidates(generated, policy)
-    require_contract_fields(evaluation, required={"evaluations"})
+    agency = reality.get("epistemic_contract") == "world-agency.v2"
+    require_contract_fields(evaluation, required={"evaluations", "action_classifications"} if agency else {"evaluations"})
+    if agency:
+        from .production_schema import agency_transition_paths
+        paths = agency_transition_paths(generated)
+        checks = evaluation["action_classifications"]
+        if not isinstance(checks, list) or len(checks) != len(paths) or {row.get("field_path") for row in checks} != set(paths):
+            raise KernelError("WORLD_AGENCY_REVIEW_BINDING_INVALID", "Director must check every exact generated action classification")
+        rejected = []
+        for check in checks:
+            require_contract_fields(check, required={"field_path", "supported", "rationale"})
+            if type(check["supported"]) is not bool or not isinstance(check["rationale"], str) or not check["rationale"].strip():
+                raise KernelError("WORLD_AGENCY_REVIEW_INVALID", "action classification requires a located supported/unsupported judgment with reasons")
+            if not check["supported"]:
+                rejected.append(check)
+        if rejected:
+            raise KernelError("WORLD_AGENCY_CLASSIFICATION_REJECTED", json.dumps({"diagnostics": rejected}, ensure_ascii=False))
     rows = evaluation["evaluations"]
     if not isinstance(rows, list):
         raise KernelError(

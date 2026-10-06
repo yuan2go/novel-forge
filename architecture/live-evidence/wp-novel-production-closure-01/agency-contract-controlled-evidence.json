@@ -1,0 +1,42 @@
+{
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "evidence_state": "EXECUTABLE",
+  "evidence_class": "CONTROLLED_NATIVE_POSTGRESQL_ADMISSION",
+  "real_provider_new_execution": "NOT_RUN",
+  "original_project_id": "closure-original-20261006",
+  "original_book_id": "closure-original-book",
+  "source_operation_id": "7ef22c8b-bbcd-4723-8185-527a2e0bbbd2",
+  "isolated_clone": "novel_forge_closure_agency_contract_test_20261007",
+  "migration_head": "20261007_0160_world_agency_contract_successor",
+  "registration_operation_id": "94be50ed-1993-4f03-aa60-b0fe0dc92632",
+  "successor_operation_id": "62454152-974c-4219-82b0-2d814c91df2a",
+  "checks": {
+    "same_frozen_input_snapshot_hash": true,
+    "original_repair_number": 2,
+    "successor_repair_number": 2,
+    "causation_is_original_source": true,
+    "successor_status": "READY",
+    "successor_external_effects": 0,
+    "registration_replay_same_identity": true,
+    "pack_version": "1.2.0",
+    "original_pack_version": "1.1.0",
+    "frozen_artifact_catalog_preserved": true,
+    "source_failure_replayed": true
+  },
+  "method": "Native register and generate on a restored isolated clone. Controlled execution probe stopped after durable successor admission and before any Provider intent. No scripted or real Provider response used.",
+  "literary_quality": "NOT_PROVEN",
+  "book_target": 12,
+  "accepted_chapters": 0,
+  "focused_tests": {
+    "agency_causal_schema_and_continuation": {
+      "passed": 205,
+      "failed": 0
+    },
+    "planning_and_provider_boundaries": {
+      "passed": 269,
+      "failed": 0,
+      "deselected_baseline_failure": "test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation; code mismatch BOOK_TOPOLOGY_DRIFT vs expected EXCEEDED is unchanged from baseline"
+    },
+    "whole_repository": "NOT_RUN"
+  }
+}

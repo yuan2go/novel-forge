@@ -6,7 +6,49 @@ import pytest
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_planning_runtime.runtime_continuation import (
     require_source,
+    _world_agency_pack_profile,
 )
+
+
+def test_agency_pack_successor_changes_only_contract_identity_and_keeps_frozen_catalog():
+    version = {
+        "manifest": {
+            "identity": {"pack_id": "planning", "version": "1.1.0"},
+            "workflow_template": {
+                "workflow_id": "planning",
+                "workflow_version": "1.12.0",
+                "nodes": [
+                    {
+                        "node_id": "chapter_plan.generate",
+                        "operation_definition_ref": "story_planning.generate@1.18.0",
+                        "operation_definition_hash": "old",
+                        "policy": {"no_paid_switch": True},
+                    },
+                ],
+            },
+            "skill_binding": {"skills": [{"skill_ref": "long-outline"}]},
+            "prompt_binding": {"hash": "frozen"},
+        },
+        "artifact_catalog": {
+            "artifacts": [{"ref": "frozen", "content": {"text": "author intent"}}]
+        },
+    }
+    frozen = deepcopy(version)
+    profile, generation = _world_agency_pack_profile(version, "new")
+    assert version == frozen and generation == 1
+    expected = deepcopy(frozen["manifest"])
+    expected["identity"]["version"] = "1.2.0"
+    expected["workflow_template"]["nodes"][0].update(
+        operation_definition_ref="story_planning.generate@1.19.0",
+        operation_definition_hash="new",
+    )
+    assert profile.manifest == expected
+    assert profile.artifact_catalog == frozen["artifact_catalog"]
+    version["manifest"]["workflow_template"]["nodes"][0]["operation_definition_ref"] = (
+        "chapter.generate@1.18.0"
+    )
+    with pytest.raises(KernelError, match="PLANNING_WORLD_CONTRACT_PACK_INVALID"):
+        _world_agency_pack_profile(version, "new")
 
 
 def source_uow(

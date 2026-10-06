@@ -2578,17 +2578,31 @@ author-intent change uses the existing approved future input path. An implementa
 or execution-contract defect requires an accounted native contract successor; it is
 not an author decision and cannot be fixed by increasing the old repair allowance.
 
-The initial creation Story State is empty and is not chapter-zero acceptance. Current
-World validation requires a knowledge/belief predicate for every approved character
-actor, including ordinary actions and first perception. This is an
-`UNRESOLVED_DESIGN_CONSTRAINT`: the original isolated Book is blocked before Chapter 1
-because the requirement cannot distinguish information-dependent decisions from
-initial actions. Missing structured knowledge is not evidence of an ignorant character.
-Foundation approval alone does not supply an acquired fact. `NO_OP` and `DEFER` remain
-actual narrative dispositions; they are not an initialization workaround. The retained
-failed proposals, receipts and original two-repair bound must remain immutable while
-this contract is repaired. No author approval is required to correct this engineering
-classification within the already authorized original work.
+The initial creation Story State is empty and is not chapter-zero acceptance.
+Planning 1.19 classifies World actions as `ROUTINE`, `PERCEPTION` or
+`INFORMATION_DEPENDENT`. Ordinary action cannot grant knowledge. Perception needs an
+objective source predicate and causal reference, and any knowledge acquisition belongs
+to the observing character. An information-dependent decision requires its own prior
+knowledge/belief, actor identity and causal dependency. The Director must judge every
+exact transition's classification. Candidate-local dependencies remain unaccepted.
+The outer Provider contracts and embedded transition schema are versioned and exact
+hash-bound; nested structural diagnostics are collected together.
+
+A terminal 1.18 ChapterPlan rejection caused by the blanket character-agency contract
+can register a `WORLD_AGENCY_CONTRACT_SUCCESSOR` through native Planning continuation.
+The original continuous creation template authorizes this engineering correction.
+Capability Pack Authority registers and activates a new version derived from the
+original frozen Manifest and Artifact Catalog; only Planning contract/hash and version
+identities may change. Prompt, Skill, Context, route, source and tool policies remain
+frozen. The successor retains the original inputs, Book, logical task, failed lineage,
+repair count and accounted use. It does not expand the two-repair allowance. Unknown
+or in-flight effects, unsettled reservations and cancellation block succession. Resume
+through `authority-creation recover` with the original Formation ID and project scope;
+ordinary replay follows the registered successor. Migration
+0160 adds a PostgreSQL insertion guard.
+Back up the original database before applying this forward migration. Preserve old
+published migration bodies and the original receipts. `NO_OP` and `DEFER` retain their
+actual narrative meanings and cannot substitute for legal initialization.
 
 `pilot_stop_after_chapter` is independent of the full Book target. Frozen
 `reading_checkpoints: [3,6,9,12]` makes the official driver pause after closed native

@@ -1053,7 +1053,7 @@ def validate_native_world_schema_fragment(
     stage: str, schema: Mapping[str, Any], value: object, *, output_schema_ref: str
 ) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.routing_bootstrap import WORLD_SAMPLE_TASKS
-    if (stage not in WORLD_SAMPLE_TASKS or output_schema_ref != f"schema:{stage}:v1"
+    if (stage not in WORLD_SAMPLE_TASKS or output_schema_ref not in {f"schema:{stage}:v1", f"schema:{stage}:v2"}
             or "$schema" in schema or schema.get("type") != "object"
             or schema.get("additionalProperties") is not False or not schema.get("required")):
         raise KernelError("WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED", output_schema_ref)
@@ -1062,6 +1062,37 @@ def validate_native_world_schema_fragment(
     except ValueError as exc:
         raise KernelError("WORLD_PROVIDER_OUTPUT_SCHEMA_INVALID", f"{stage}: {exc}") from exc
     return json.loads(json.dumps(value, ensure_ascii=False))
+
+
+
+def collect_native_world_schema_diagnostics(schema, value, *, path="$"):
+    diagnostics = []
+    def visit(shape, item, location):
+        children = []
+        local = dict(shape)
+        if shape.get("type") == "object" and isinstance(item, dict):
+            properties = shape.get("properties", {})
+            children = [(child, item[key], f"{location}.{key}") for key, child in properties.items() if key in item]
+            for key in shape.get("required", []):
+                if key not in item:
+                    diagnostics.append({"field_path": f"{location}.{key}", "constraint": "required field missing", "actual_type": "missing"})
+            if shape.get("additionalProperties") is False:
+                for key in sorted(set(item) - set(properties)):
+                    diagnostics.append({"field_path": f"{location}.{key}", "constraint": "undeclared field", "actual_type": type(item[key]).__name__})
+            local["required"] = []
+            local["properties"] = {}
+            local["additionalProperties"] = True
+        elif shape.get("type") == "array" and isinstance(item, list):
+            children = [(shape["items"], child, f"{location}[{index}]") for index, child in enumerate(item)] if "items" in shape else []
+            local.pop("items", None)
+        try:
+            _validate(local, item, path=location)
+        except ValueError as error:
+            diagnostics.append({"field_path": location, "constraint": str(error), "actual_type": type(item).__name__})
+        for child, raw, child_path in children:
+            visit(child, raw, child_path)
+    visit(schema, value, path)
+    return diagnostics
 
 
 def validate_chapter_provider_output_semantics(
@@ -1421,6 +1452,9 @@ def _validate(
             raise ValueError(f"{path} must be at least {minimum}")
         if maximum is not None and value > maximum:
             raise ValueError(f"{path} must be at most {maximum}")
+    elif expected == "null":
+        if value is not None:
+            raise ValueError(f"{path} must be null")
     elif expected == "boolean":
         if not isinstance(value, bool):
             raise ValueError(f"{path} must be a boolean")

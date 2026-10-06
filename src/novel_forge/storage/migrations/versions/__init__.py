@@ -161,6 +161,7 @@ from . import (
     v20261006_0157_creation_continuation_control,
     v20261006_0158_planning_capacity_causation,
     v20261007_0159_planning_dead_letter_result_recovery,
+    v20261007_0160_world_agency_contract_successor,
 )
 
 VERSION_MODULES = [
@@ -324,6 +325,7 @@ VERSION_MODULES = [
     v20261006_0157_creation_continuation_control,
     v20261006_0158_planning_capacity_causation,
     v20261007_0159_planning_dead_letter_result_recovery,
+    v20261007_0160_world_agency_contract_successor,
 ]
 
 __all__ = ["VERSION_MODULES"]

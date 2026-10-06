@@ -291,8 +291,8 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-            aligned_methods=command.execution_contract_version == "1.18.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
         )
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
@@ -449,6 +449,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.15.0",
             "1.16.0",
             "1.17.0",
+            "1.18.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -1794,7 +1795,14 @@ class StoryPlanningGenerationApplication:
                     [row[0]],
                 )
                 source_version = int(uow.cursor.fetchone()[0])
-            if failure and failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+                uow.cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM authority_operation_output_asset output JOIN authority_asset_version version USING(asset_version_id) WHERE output.operation_id=%s AND version.content#>>'{contract,world_plan,disposition}'='BLOCKED' AND (version.content#>'{contract,world_plan,candidate_futures}' @> '[{\"rejection\":{\"code\":\"WORLD_CHARACTER_DECISION_BASIS_REQUIRED\"}}]'::jsonb OR version.content#>'{contract,world_plan,rejected_paths}' @> '[{\"rejection\":{\"code\":\"WORLD_CHARACTER_DECISION_BASIS_REQUIRED\"}}]'::jsonb))",
+                    [row[0]],
+                )
+                agency_failure = bool(uow.cursor.fetchone()[0])
+            if failure and (failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
+                failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.18.0" and agency_failure
+            )):
                 register(
                     self,
                     str(row[0]),
@@ -1803,7 +1811,7 @@ class StoryPlanningGenerationApplication:
                     expected_source_version=source_version,
                     decision_evidence={
                         "authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                        "reason": "Pre-send capacity allocation after exact frozen failure; no external intent exists",
+                        "reason": "Native accounted contract/capacity successor after exact frozen terminal failure",
                     },
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
@@ -1844,6 +1852,7 @@ class StoryPlanningGenerationApplication:
                     "1.16.0",
                     "1.17.0",
                     "1.18.0",
+            "1.19.0",
                 }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
@@ -2986,7 +2995,11 @@ class StoryPlanningGenerationApplication:
             if command.repair_of_operation_id else ()
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
-            if command.repair_of_operation_id:
+            inherited_input_operation = command.repair_of_operation_id
+            if command.runtime_continuation_id and command.execution_contract_version == "1.19.0":
+                from .runtime_continuation import require_binding
+                inherited_input_operation = require_binding(self.database_url, command.runtime_continuation_id)["source_operation_id"]
+            if inherited_input_operation:
                 uow.cursor.execute(
                     """
                     SELECT input_snapshot, input_snapshot_hash
@@ -2994,7 +3007,7 @@ class StoryPlanningGenerationApplication:
                     WHERE operation_id=%s AND project_id=%s AND workspace_id=%s
                       AND book_id=%s AND generator_operation_name=%s AND logical_key=%s
                     """,
-                    [command.repair_of_operation_id, command.project_id,
+                    [inherited_input_operation, command.project_id,
                      command.workspace_id, command.book_id,
                      command.generator_operation_name, command.logical_key],
                 )
@@ -3624,7 +3637,7 @@ def story_planning_generation_definition(
             "repair_candidate_asset_input_allowed": True,
             **(
                 {"repair_result_evidence_input_allowed": True}
-                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0"}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
                 else {}
             ),
             "capability_pack_attempt_snapshot_required": True,

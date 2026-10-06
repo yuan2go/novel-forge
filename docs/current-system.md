@@ -69,10 +69,14 @@ the generation inputs.
 The creation-input coordinator invokes existing Content commands for explicit runtime
 policies and empty genesis, then the existing Book Opening command. Empty genesis
 contains no accepted events and does not imply that characters lack ordinary agency.
-The blanket World actor-knowledge requirement is an unresolved contract constraint at
-this baseline: ordinary actions and first perception currently share the same check as
-information-dependent decisions. Correcting that scope must retain actor-specific
-knowledge, causal order, exact source binding and candidate/accepted isolation. It does not
+Planning 1.19 uses `world-agency.v2`: ordinary non-epistemic actions, objective
+perception and information-dependent decisions have distinct contracts. Perception
+binds an available objective predicate to the observing character; a later decision
+requires that character's prior knowledge and causal dependency. The Director records
+a located classification for every proposed transition. Local preparation stays
+unaccepted. Historical 1.18 keeps its frozen actor-knowledge contract; a reproduced
+blanket-agency failure can receive an accounted native contract successor retaining
+inputs, failed history, repair consumption and the original Book. It does not
 create chapter-zero acceptance. Book Design activation projects the bound cast into
 its existing planning trajectory artifact. `chapter.style_policy.compile` derives a
 source-bound policy from the exact Creative Foundation and cast, including original
