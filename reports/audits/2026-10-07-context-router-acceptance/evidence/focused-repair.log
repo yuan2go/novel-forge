@@ -1,0 +1,265 @@
+........................................................................ [ 50%]
+..........FF...................................................FFF....   [100%]
+=================================== FAILURES ===================================
+_ test_context_retried_failures_remain_in_the_qualification_denominator[context_compress] _
+
+stage = 'context_compress'
+
+    @pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+    def test_context_retried_failures_remain_in_the_qualification_denominator(stage):
+        from tests.unit.test_cost_aware_routing import NOW
+    
+        observations = [
+            replace(row, sample_identity="success:" + row.evidence_ref)
+            for row in samples(n=150, domain_gate_accepted=True)
+        ] + [
+            replace(row, evidence_ref="failed:" + row.evidence_ref,
+                    sample_identity="failed:" + row.evidence_ref, accepted=False)
+>           for row in samples(n=25, domain_gate_accepted=False, retried=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+
+tests/unit/test_context_compression_routing.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+score = 0.99, n = 25, cached = 0
+overrides = {'domain_gate_accepted': False, 'retried': True}
+
+    def samples(score=0.99, n=30, cached=0, **overrides):
+        return [
+>           BenchmarkObservation(
+                str(i),
+                NOW.isoformat(),
+                score,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                2,
+                1000,
+                100,
+                cached,
+                ".001",
+                **overrides,
+            )
+            for i in range(n)
+        ]
+E       TypeError: BenchmarkObservation.__init__() got multiple values for argument 'retried'
+
+tests/unit/test_cost_aware_routing.py:61: TypeError
+_ test_context_retried_failures_remain_in_the_qualification_denominator[context_fidelity] _
+
+stage = 'context_fidelity'
+
+    @pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+    def test_context_retried_failures_remain_in_the_qualification_denominator(stage):
+        from tests.unit.test_cost_aware_routing import NOW
+    
+        observations = [
+            replace(row, sample_identity="success:" + row.evidence_ref)
+            for row in samples(n=150, domain_gate_accepted=True)
+        ] + [
+            replace(row, evidence_ref="failed:" + row.evidence_ref,
+                    sample_identity="failed:" + row.evidence_ref, accepted=False)
+>           for row in samples(n=25, domain_gate_accepted=False, retried=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+
+tests/unit/test_context_compression_routing.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+score = 0.99, n = 25, cached = 0
+overrides = {'domain_gate_accepted': False, 'retried': True}
+
+    def samples(score=0.99, n=30, cached=0, **overrides):
+        return [
+>           BenchmarkObservation(
+                str(i),
+                NOW.isoformat(),
+                score,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                2,
+                1000,
+                100,
+                cached,
+                ".001",
+                **overrides,
+            )
+            for i in range(n)
+        ]
+E       TypeError: BenchmarkObservation.__init__() got multiple values for argument 'retried'
+
+tests/unit/test_cost_aware_routing.py:61: TypeError
+_____ test_native_feedback_identity_drift_cannot_qualify_context[project] ______
+
+scope = ('router-project-0914fc82-a9d9-4124-9e61-2c8b7bdcba7c', 'router-operation-698540c4-76c2-40c3-8c06-b01c137adad2')
+drift = 'project'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+        ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+        identity = ids[-1]
+        with transaction() as connection, connection.cursor() as cursor:
+            if drift == "dispatch_hash":
+                cursor.execute("UPDATE authority_external_effect_dispatch SET payload_hash='sha256:drift' WHERE external_effect_id=%s", [identity])
+            elif drift == "receipt_hash":
+                cursor.execute("UPDATE authority_external_receipt SET payload_hash='sha256:drift' WHERE dispatch_id=%s", [identity])
+            elif drift in {"project", "operation", "effect"}:
+                cursor.execute("SELECT evidence FROM authority_external_effect_dispatch WHERE dispatch_id=%s", [identity])
+                evidence = cursor.fetchone()[0]
+                evidence["production_execution"]["execution_request"][drift + "_id" if drift != "effect" else "external_effect_id"] = "other-identity"
+                cursor.execute("UPDATE authority_external_effect_dispatch SET evidence=%s,payload_hash=%s WHERE dispatch_id=%s", [Jsonb(evidence), _hash(evidence), identity])
+                cursor.execute("UPDATE authority_external_receipt SET payload=%s,payload_hash=%s WHERE dispatch_id=%s", [Jsonb({"evidence": evidence}), _hash(evidence), identity])
+>               cursor.execute("""UPDATE authority_asset_version SET content=jsonb_set(content,'{provider_evidence}',%s)
+                    WHERE content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=%s""", [Jsonb(evidence), identity])
+
+tests/integration/test_context_feedback_postgres.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x10a0c7350>
+query = "UPDATE authority_asset_version SET content=jsonb_set(content,'{provider_evidence}',%s)\n                WHERE content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=%s"
+params = [Jsonb({'result': {'supported': True, 'mis ... (596 chars)), 'synthetic-feedback-effect-8bb453ad-122b-4df8-8e00-0d3438a80b1e']
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.CheckViolation: ACTIVE asset version content is immutable
+E           CONTEXT:  PL/pgSQL function authority_guard_asset_version_mutation() line 10 at RAISE
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: CheckViolation
+____ test_native_feedback_identity_drift_cannot_qualify_context[operation] _____
+
+scope = ('router-project-d48eeb44-4acb-4c5e-9b79-6872fc1ed6e5', 'router-operation-31946b42-9336-4055-8616-6c278f3babdf')
+drift = 'operation'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+        ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+        identity = ids[-1]
+        with transaction() as connection, connection.cursor() as cursor:
+            if drift == "dispatch_hash":
+                cursor.execute("UPDATE authority_external_effect_dispatch SET payload_hash='sha256:drift' WHERE external_effect_id=%s", [identity])
+            elif drift == "receipt_hash":
+                cursor.execute("UPDATE authority_external_receipt SET payload_hash='sha256:drift' WHERE dispatch_id=%s", [identity])
+            elif drift in {"project", "operation", "effect"}:
+                cursor.execute("SELECT evidence FROM authority_external_effect_dispatch WHERE dispatch_id=%s", [identity])
+                evidence = cursor.fetchone()[0]
+                evidence["production_execution"]["execution_request"][drift + "_id" if drift != "effect" else "external_effect_id"] = "other-identity"
+                cursor.execute("UPDATE authority_external_effect_dispatch SET evidence=%s,payload_hash=%s WHERE dispatch_id=%s", [Jsonb(evidence), _hash(evidence), identity])
+                cursor.execute("UPDATE authority_external_receipt SET payload=%s,payload_hash=%s WHERE dispatch_id=%s", [Jsonb({"evidence": evidence}), _hash(evidence), identity])
+>               cursor.execute("""UPDATE authority_asset_version SET content=jsonb_set(content,'{provider_evidence}',%s)
+                    WHERE content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=%s""", [Jsonb(evidence), identity])
+
+tests/integration/test_context_feedback_postgres.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x109dce8d0>
+query = "UPDATE authority_asset_version SET content=jsonb_set(content,'{provider_evidence}',%s)\n                WHERE content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=%s"
+params = [Jsonb({'result': {'supported': True, 'mis ... (594 chars)), 'synthetic-feedback-effect-2c4c556e-372c-46e5-aeb9-9ead3f03980e']
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.CheckViolation: ACTIVE asset version content is immutable
+E           CONTEXT:  PL/pgSQL function authority_guard_asset_version_mutation() line 10 at RAISE
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: CheckViolation
+______ test_native_feedback_identity_drift_cannot_qualify_context[effect] ______
+
+scope = ('router-project-5b54d6e0-5cf0-4f1e-9c84-df7cd59e7c5b', 'router-operation-4d76ea43-f211-4f30-94ab-2ebf9a025f87')
+drift = 'effect'
+
+    @pytest.mark.parametrize("drift", ["dispatch_hash", "receipt_hash", "project", "operation", "effect", "source_version", "source_hash", "selected_units"])
+    def test_native_feedback_identity_drift_cannot_qualify_context(scope, drift):
+        ids = _assert_native_feedback_chain(scope, "SUCCEEDED", True, "failure_first")
+        identity = ids[-1]
+        with transaction() as connection, connection.cursor() as cursor:
+            if drift == "dispatch_hash":
+                cursor.execute("UPDATE authority_external_effect_dispatch SET payload_hash='sha256:drift' WHERE external_effect_id=%s", [identity])
+            elif drift == "receipt_hash":
+                cursor.execute("UPDATE authority_external_receipt SET payload_hash='sha256:drift' WHERE dispatch_id=%s", [identity])
+            elif drift in {"project", "operation", "effect"}:
+                cursor.execute("SELECT evidence FROM authority_external_effect_dispatch WHERE dispatch_id=%s", [identity])
+                evidence = cursor.fetchone()[0]
+                evidence["production_execution"]["execution_request"][drift + "_id" if drift != "effect" else "external_effect_id"] = "other-identity"
+                cursor.execute("UPDATE authority_external_effect_dispatch SET evidence=%s,payload_hash=%s WHERE dispatch_id=%s", [Jsonb(evidence), _hash(evidence), identity])
+                cursor.execute("UPDATE authority_external_receipt SET payload=%s,payload_hash=%s WHERE dispatch_id=%s", [Jsonb({"evidence": evidence}), _hash(evidence), identity])
+>               cursor.execute("""UPDATE authority_asset_version SET content=jsonb_set(content,'{provider_evidence}',%s)
+                    WHERE content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=%s""", [Jsonb(evidence), identity])
+
+tests/integration/test_context_feedback_postgres.py:241: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [BAD] at 0x109dcf590>
+query = "UPDATE authority_asset_version SET content=jsonb_set(content,'{provider_evidence}',%s)\n                WHERE content #>> '{provider_evidence,production_execution,execution_request,external_effect_id}'=%s"
+params = [Jsonb({'result': {'supported': True, 'mis ... (585 chars)), 'synthetic-feedback-effect-2a5ad9dc-2742-468d-bb4c-2999536f5aa9']
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.CheckViolation: ACTIVE asset version content is immutable
+E           CONTEXT:  PL/pgSQL function authority_guard_asset_version_mutation() line 10 at RAISE
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: CheckViolation
+=========================== short test summary info ============================
+FAILED tests/unit/test_context_compression_routing.py::test_context_retried_failures_remain_in_the_qualification_denominator[context_compress]
+FAILED tests/unit/test_context_compression_routing.py::test_context_retried_failures_remain_in_the_qualification_denominator[context_fidelity]
+FAILED tests/integration/test_context_feedback_postgres.py::test_native_feedback_identity_drift_cannot_qualify_context[project]
+FAILED tests/integration/test_context_feedback_postgres.py::test_native_feedback_identity_drift_cannot_qualify_context[operation]
+FAILED tests/integration/test_context_feedback_postgres.py::test_native_feedback_identity_drift_cannot_qualify_context[effect]
+5 failed, 137 passed in 35.61s

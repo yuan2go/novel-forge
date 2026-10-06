@@ -1,0 +1,6 @@
+{
+  "test_native_chain_probe.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-retried]": true,
+  "test_native_chain_probe.py::test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-retried]": true,
+  "test_native_chain_probe.py::test_unknown_generation_cannot_reuse_old_positive_gate": true,
+  "test_native_chain_probe.py::test_dispatch_hash_drift_cannot_reuse_positive_gate": true
+}

@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_dispatch_hash_drift_cannot_reuse_positive_gate ______________
+
+scope = ('router-project-881db692-bcb0-4720-83d4-c374dc72508e', 'router-operation-8a88ca5a-5e11-48fd-acdf-03151fcd7698')
+
+    def test_dispatch_hash_drift_cannot_reuse_positive_gate(scope):
+        test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator(scope, 'SUCCEEDED', True, 'failure_first')
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT external_effect_id FROM authority_external_effect WHERE project_id=%s AND request_payload #> '{input,context_compression_task,selected_unit_ids}'='[\"u0\",\"u1\"]'::jsonb", [scope[0]])
+            identity = cursor.fetchone()[0]
+            cursor.execute("UPDATE authority_external_effect_dispatch SET payload_hash='sha256:drift' WHERE external_effect_id=%s", [identity])
+            outcomes = context_gate_outcomes(cursor, project_id=scope[0], effect_ids=[identity])
+>       assert outcomes.get(identity, {}).get('accepted') is not True, outcomes
+E       AssertionError: {'synthetic-feedback-effect-86211560-8e7f-412c-9662-bea6af7aaa0d': {'accepted': True, 'metric': 'CONTEXT_EXTRACT_GATE....94343a5fc0ce'], 'context_source_hash': 'sha256:6f160a7ed568f03854bce9a57a9b667c0560b1da4293e985400b157121581c2d', ...}}
+E       assert True is not True
+E        +  where True = <built-in method get of dict object at 0x10dd9ee00>('accepted')
+E        +    where <built-in method get of dict object at 0x10dd9ee00> = {'accepted': True, 'metric': 'CONTEXT_EXTRACT_GATE.v1', 'evidence_refs': ['asset-version:c7ea823c-8252-4508-9601-ba15d...-94343a5fc0ce'], 'context_source_hash': 'sha256:6f160a7ed568f03854bce9a57a9b667c0560b1da4293e985400b157121581c2d', ...}.get
+E        +      where {'accepted': True, 'metric': 'CONTEXT_EXTRACT_GATE.v1', 'evidence_refs': ['asset-version:c7ea823c-8252-4508-9601-ba15d...-94343a5fc0ce'], 'context_source_hash': 'sha256:6f160a7ed568f03854bce9a57a9b667c0560b1da4293e985400b157121581c2d', ...} = <built-in method get of dict object at 0x10dd9ed40>('synthetic-feedback-effect-86211560-8e7f-412c-9662-bea6af7aaa0d', {})
+E        +        where <built-in method get of dict object at 0x10dd9ed40> = {'synthetic-feedback-effect-86211560-8e7f-412c-9662-bea6af7aaa0d': {'accepted': True, 'metric': 'CONTEXT_EXTRACT_GATE....94343a5fc0ce'], 'context_source_hash': 'sha256:6f160a7ed568f03854bce9a57a9b667c0560b1da4293e985400b157121581c2d', ...}}.get
+
+/tmp/nf-context-router-2cb74ed-evidence/test_native_chain_probe.py:209: AssertionError
+=========================== short test summary info ============================
+FAILED ../../../../../../tmp/nf-context-router-2cb74ed-evidence/test_native_chain_probe.py::test_dispatch_hash_drift_cannot_reuse_positive_gate
+1 failed in 0.99s

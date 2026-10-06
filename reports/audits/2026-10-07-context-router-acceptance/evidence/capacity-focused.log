@@ -1,0 +1,102 @@
+..........................................FF                             [100%]
+=================================== FAILURES ===================================
+_ test_context_retried_failures_remain_in_the_qualification_denominator[context_compress] _
+
+stage = 'context_compress'
+
+    @pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+    def test_context_retried_failures_remain_in_the_qualification_denominator(stage):
+        from tests.unit.test_cost_aware_routing import NOW
+    
+        observations = [
+            replace(row, sample_identity="success:" + row.evidence_ref)
+            for row in samples(n=150, domain_gate_accepted=True)
+        ] + [
+            replace(row, evidence_ref="failed:" + row.evidence_ref,
+                    sample_identity="failed:" + row.evidence_ref, accepted=False)
+>           for row in samples(n=25, domain_gate_accepted=False, retried=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+
+tests/unit/test_context_compression_routing.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+score = 0.99, n = 25, cached = 0
+overrides = {'domain_gate_accepted': False, 'retried': True}
+
+    def samples(score=0.99, n=30, cached=0, **overrides):
+        return [
+>           BenchmarkObservation(
+                str(i),
+                NOW.isoformat(),
+                score,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                2,
+                1000,
+                100,
+                cached,
+                ".001",
+                **overrides,
+            )
+            for i in range(n)
+        ]
+E       TypeError: BenchmarkObservation.__init__() got multiple values for argument 'retried'
+
+tests/unit/test_cost_aware_routing.py:61: TypeError
+_ test_context_retried_failures_remain_in_the_qualification_denominator[context_fidelity] _
+
+stage = 'context_fidelity'
+
+    @pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+    def test_context_retried_failures_remain_in_the_qualification_denominator(stage):
+        from tests.unit.test_cost_aware_routing import NOW
+    
+        observations = [
+            replace(row, sample_identity="success:" + row.evidence_ref)
+            for row in samples(n=150, domain_gate_accepted=True)
+        ] + [
+            replace(row, evidence_ref="failed:" + row.evidence_ref,
+                    sample_identity="failed:" + row.evidence_ref, accepted=False)
+>           for row in samples(n=25, domain_gate_accepted=False, retried=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ]
+
+tests/unit/test_context_compression_routing.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+score = 0.99, n = 25, cached = 0
+overrides = {'domain_gate_accepted': False, 'retried': True}
+
+    def samples(score=0.99, n=30, cached=0, **overrides):
+        return [
+>           BenchmarkObservation(
+                str(i),
+                NOW.isoformat(),
+                score,
+                True,
+                True,
+                False,
+                False,
+                False,
+                False,
+                2,
+                1000,
+                100,
+                cached,
+                ".001",
+                **overrides,
+            )
+            for i in range(n)
+        ]
+E       TypeError: BenchmarkObservation.__init__() got multiple values for argument 'retried'
+
+tests/unit/test_cost_aware_routing.py:61: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/test_context_compression_routing.py::test_context_retried_failures_remain_in_the_qualification_denominator[context_compress]
+FAILED tests/unit/test_context_compression_routing.py::test_context_retried_failures_remain_in_the_qualification_denominator[context_fidelity]
+2 failed, 42 passed in 0.69s

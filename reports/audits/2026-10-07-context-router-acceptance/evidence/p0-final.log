@@ -1,0 +1,2 @@
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/run_p0_backend_qualification.py --profile local --output "/tmp/nf-context-router-2cb74ed-evidence/p0-final/p0-backend-qualification-$(git rev-parse HEAD).json"
+make: *** [p0-backend-qualification] Error 1
