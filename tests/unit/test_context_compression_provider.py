@@ -145,6 +145,47 @@ def test_final_openai_sdk_request_carries_high_and_admitted_output_reserve() -> 
     assert seen[0]["extra_headers"]["Idempotency-Key"] == envelope.stable_idempotency_key
 
 
+@pytest.mark.parametrize("stage", ["context_compress", "context_fidelity"])
+@pytest.mark.parametrize("failure", ["overflow", "unknown_meter", "route_drift", "incomplete_coverage", "serialization_drift"])
+def test_context_complete_request_rejects_before_transport(stage, failure):
+    from dataclasses import replace
+    from novel_forge.modules.production_execution.provider_admission import prepare_provider_admission
+    from novel_forge.modules.provider_control.contracts import ProviderInvocationRequest
+    from novel_forge.modules.provider_control.openai_v2 import OpenAISdkTransport
+    from tests.unit.test_provider_token_admission import COMPLETE_COVERAGE, _contract, _envelope
+
+    envelope = _envelope("System, Prompt, Skill, tool and output schemas. " * 2)
+    contract = _contract(limit=2048)
+    coverage = COMPLETE_COVERAGE
+    if failure == "overflow":
+        contract = replace(contract, model_context_limit=180)
+    elif failure == "unknown_meter":
+        contract = replace(contract, precision="UNPROVEN", evidence_ref="")
+    elif failure == "route_drift":
+        contract = replace(contract, model="other-model")
+    elif failure == "incomplete_coverage":
+        coverage = ("context_bundle", "output_reserve")
+    admission = prepare_provider_admission(envelope, contract, context_bundle_tokens=80,
+                                          complete_request_coverage=coverage)
+    if failure == "serialization_drift":
+        assert admission.status == "ADMITTED"
+        envelope = replace(envelope, input_text=envelope.input_text + "Changed Skill.")
+    else:
+        assert admission.context_bundle_status == "VALID"
+        assert admission.status == "REJECTED"
+    calls = []
+    client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kwargs: calls.append(kwargs)))
+    request = ProviderInvocationRequest(provider=envelope.provider, model=envelope.model,
+        capability="model." + stage, stage=stage, stable_idempotency_key=envelope.stable_idempotency_key,
+        request_payload=envelope.to_dict(), request_hash=envelope.envelope_hash,
+        timeout_seconds=envelope.timeout_seconds, trace_id="trace", correlation_id="correlation",
+        operation_id="operation", external_effect_id="effect", budget_reservation_id="reservation",
+        provider_admission=admission.to_dict())
+    with pytest.raises(ValueError):
+        OpenAISdkTransport(client).execute(request)
+    assert calls == []
+
+
 def test_final_deepseek_request_carries_high_thinking_and_exact_effect_identity() -> None:
     from dataclasses import replace
     from io import BytesIO

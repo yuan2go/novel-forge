@@ -413,20 +413,21 @@ def test_v1_calibration_is_not_a_current_content_authority() -> None:
     )
 
 
-def test_new_quality_call_requires_its_qualified_reference_route_and_unchanged_served_model():
+@pytest.mark.parametrize("stage", ["quality_structural", "canon_support"])
+def test_new_quality_call_requires_its_qualified_reference_route_and_unchanged_served_model(stage):
     from copy import deepcopy
-    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash, task_policy
     from novel_forge.modules.chapter_quality_authority.reference_sampling import reference_decision_qualifies
     from tests.unit.test_cost_aware_routing import candidate, samples, task, route
 
-    current = task(task_type="quality_structural", producer_contract={"fixture": "exact-producer-v1"},
+    current = task(task_type=stage, producer_contract={"fixture": "exact-producer-v1"},
         producer_contract_hash=snapshot_hash({"fixture": "exact-producer-v1"}))
     model = candidate(model_revision="revision-1")
     observations = [replace(row, evidence_class="REFERENCE_EVALUATION", production_eligible=False,
         quality_score=None, accepted=None, reference_agreed=True, reference_label_classes=("PASS" if i % 2 else "FAIL",),
-        reference_risk="MEDIUM", reference_context_tokens=1000, reference_protocol_hash="sha256:" + "d" * 64,
+        reference_risk=task_policy(stage).risk, reference_context_tokens=1000, reference_protocol_hash="sha256:" + "d" * 64,
         served_model_identity_hash="sha256:" + "e" * 64, outcome_refs=("asset-version:reference:" + str(i),))
-        for i, row in enumerate(samples(n=80))]
+        for i, row in enumerate(samples(n=160))]
     frozen = route(current, [model], {"flash": observations})
     evidence = {"real_model_call": True, "provider_id": model.provider, "model_id": model.model,
         "production_execution": {"execution_request": {key: frozen["task"][key] for key in ("project_id", "operation_id", "attempt_id")},
@@ -434,7 +435,15 @@ def test_new_quality_call_requires_its_qualified_reference_route_and_unchanged_s
             "process_evidence": {"model_revision": model.model_revision, "served_model_identity_hash": "sha256:" + "e" * 64}}}
     assert reference_decision_qualifies(frozen, evidence=evidence, stage=current.task_type)
     legacy = {**frozen, "schema_version": "quality-constrained-routing.v10", "policy_version": "quality-constrained-routing.v10"}
-    assert reference_decision_qualifies(legacy, evidence=evidence, stage=current.task_type)
+    assert reference_decision_qualifies(legacy, evidence=evidence, stage=current.task_type) is (stage != "canon_support")
+    previous = deepcopy(frozen)
+    previous.update(schema_version="quality-constrained-routing.v12", policy_version="quality-constrained-routing.v12")
+    previous["policy"].pop("retain_failed_domain_samples")
+    unchanged = deepcopy(previous)
+    assert reference_decision_qualifies(previous, evidence=evidence, stage=stage)
+    assert previous == unchanged
+    previous["schema_version"] = "quality-constrained-routing.v120"
+    assert not reference_decision_qualifies(previous, evidence=evidence, stage=stage)
     for mutation in ("sampling", "missing-protocol", "missing-stratum", "wrong-task", "changed-producer", "lowered-policy"):
         invalid = deepcopy(frozen)
         if mutation == "sampling":

@@ -83,7 +83,9 @@ def context_gate_outcomes(
     cursor.execute(
         """SELECT e.external_effect_id,e.operation_id,e.request_payload,
         o.status,d.generation,d.status,d.evidence,r.payload_hash,r.payload,r.external_receipt_id,
-        v.asset_version_id,v.content
+        v.asset_version_id,v.content,d.payload_hash,e.status,
+        (SELECT max(latest.generation) FROM authority_external_effect_dispatch latest
+          WHERE latest.external_effect_id=e.external_effect_id)
         FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
         JOIN authority_external_effect_dispatch d USING(external_effect_id)
         JOIN authority_external_receipt r USING(dispatch_id)
@@ -101,6 +103,7 @@ def context_gate_outcomes(
     )
     native = {}
     history = {}
+    current_success = set()
     for (
         identity,
         operation,
@@ -114,6 +117,9 @@ def context_gate_outcomes(
         receipt_id,
         log_id,
         content,
+        dispatch_hash,
+        effect_status,
+        latest_generation,
     ) in cursor.fetchall():
         from .routing_feedback import _real_evidence
         from novel_forge.modules.command_kernel.external_effect_runtime import _hash
@@ -123,6 +129,7 @@ def context_gate_outcomes(
             evidence is None
             or receipt.get("evidence") != dispatch_evidence
             or _hash(dispatch_evidence) != receipt_hash
+            or dispatch_hash != receipt_hash
             or evidence != dispatch_evidence
         ):
             continue
@@ -144,6 +151,12 @@ def context_gate_outcomes(
             ],
         }
         native[identity] = (operation, payload, evidence, status)
+        if (
+            effect_status == "SUCCEEDED"
+            and dispatch_status == "SUCCEEDED"
+            and generation == latest_generation
+        ):
+            current_success.add(identity)
     result = {}
     for bundle_id, bundle, operation, trace, assessment in assessments:
         comp = _effect_id(assessment.get("compressor_evidence", {}))
@@ -167,6 +180,8 @@ def context_gate_outcomes(
             continue
         passed = assess_extract(assessment, compressor=c_input, fidelity=f_input)
         if passed is None:
+            continue
+        if passed and not {comp, fid}.issubset(current_success):
             continue
         refs = [
             "asset-version:" + bundle_id,

@@ -77,6 +77,7 @@ class TaskPolicy:
     max_attempts: int = 4
     max_escalations: int = 1
     quality_metric: str = "CALIBRATED_SCORE"
+    retain_failed_domain_samples: bool = False
 
     def __post_init__(self) -> None:
         if self.risk not in {"LOW", "MEDIUM", "HIGH"}:
@@ -185,7 +186,7 @@ TASK_TAXONOMY = {
 REFERENCE_TASKS = frozenset({"canon_support", "review", "rereview", "quality_structural", "quality_commercial",
     "quality_source_originality", "quality_longform", "quality_platform", "world_candidates.evaluate", "narrative_semantic_evaluation"})
 GENERATOR_TASKS = frozenset({name for name in TASK_TAXONOMY if name.endswith(".generate")} | {"memo", "draft", "revision", "canon_extraction", "screenplay_generate", "screenplay_revision", *{f"world_candidates.actor_{index}" for index in range(3)}})
-POLICY_VERSION = "quality-constrained-routing.v12"
+POLICY_VERSION = "quality-constrained-routing.v13"
 
 
 def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> TaskPolicy:
@@ -208,6 +209,7 @@ def task_policy(task_type: str, risk: str = "", quality_floor: float = 0) -> Tas
         if task_type.endswith(".generate")
         or task_type == "source.deconstruction.observe"
         else "CALIBRATED_SCORE",
+        retain_failed_domain_samples=task_type in {"context_compress", "context_fidelity"},
     )
 
 
@@ -509,7 +511,11 @@ def benchmark_snapshot(
         else [row.generator_quality_score for row in generator_rows] if policy.quality_metric == "GENERATOR_SCORE"
         else [row.quality_score for row in scored_samples if row.quality_score is not None])
     domain_outcomes = [
-        row.domain_gate_accepted for row in scored_samples if row.domain_gate_accepted is not None
+        row.domain_gate_accepted for row in samples
+        if row.domain_gate_accepted is not None and (
+            row.retried is not True
+            or (policy.retain_failed_domain_samples and row.domain_gate_accepted is False)
+        )
     ]
     reference_rows = [row for row in scored_samples if row.reference_agreed is not None
         and row.reference_risk == policy.risk
