@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261006_0161_gateway_result_revalidation",
+  "head": "20261006_0162_stage_repair_policy",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -164,6 +164,7 @@
     "20261006_0158_planning_capacity_lineage",
     "20261006_0159_planning_input_order_recovery",
     "20261006_0160_optional_world_continuation",
-    "20261006_0161_gateway_result_revalidation"
+    "20261006_0161_gateway_result_revalidation",
+    "20261006_0162_stage_repair_policy"
   ]
 }

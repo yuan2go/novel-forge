@@ -152,6 +152,15 @@ failed Effect, Attempt, original rejected-output hash and settled usage. A versi
 recovery candidate still enters the ordinary Planning/Story Design and acceptance
 checks; this does not certify a failed Provider contract or permit unknown-call replay.
 
+Creative template v4 uses native repair routing v2: repair limits belong to the actual
+Provider stage, while the original monotonic Planning repair counter, full lineage,
+accepted frontier and settled ledger remain unchanged. Speculative World repairs cannot
+exhaust the first ChapterPlan repair allowance. Each stage has at most two repairs;
+unknown outcomes, independent-task requirements and strict-production bounds remain closed.
+Historical v1-v3 templates retain their whole-lineage repair semantics. A scoped v4
+successor can repair an already rejected creative candidate only from its retained failure
+report and exact inputs; the original rejected candidate and Operation remain rejected.
+
 The following sections describe existing strict and historical campaign contracts;
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes

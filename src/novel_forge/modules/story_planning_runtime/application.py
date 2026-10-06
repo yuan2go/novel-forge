@@ -1784,6 +1784,12 @@ class StoryPlanningGenerationApplication:
             if revalidated is not None:
                 return self.generate(command, principal=principal)
             return self._repair_unmaterialized_result(command, operation_id=str(row[0]), principal=principal)
+        if row[4] and row[3] in {"REJECTED","REPAIR_REQUIRED"}:
+            from .stage_repairs import follow_rejected
+            stage_successor = follow_rejected(self,command=command,operation_id=str(row[0]),
+                candidate_asset_version_id=str(row[4]),principal=principal)
+            if stage_successor is not None:
+                return stage_successor
         if row[2] == "FAILED_FINAL" and row[4]:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_planning_result_admission r
@@ -1889,7 +1895,10 @@ class StoryPlanningGenerationApplication:
                 "invalid bootstrap output is retained; a new challenger requires explicit authorization",
             )
         maximum = min(MAXIMUM_RESULT_REPAIRS, GENERATOR_CATALOG[command.generator_operation_name].maximum_structural_regenerations)
-        if command.repair_number >= maximum:
+        from .stage_repairs import repair_bound
+        bound=repair_bound(self,command=command,operation_id=operation_id,maximum=maximum)
+        exhausted=(bound['stage_repair_number']>=bound['maximum_repairs']) if bound else command.repair_number>=maximum
+        if exhausted:
             raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
         source = require_result_repair_source(self.database_url, command=command, operation_id=operation_id)
         diagnostic = source["diagnostic"]
@@ -2540,6 +2549,9 @@ class StoryPlanningGenerationApplication:
             "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED",
         }
         validation_kind = "SEMANTIC" if semantic else "STRUCTURAL"
+        maximum = definition.maximum_semantic_repairs if semantic else definition.maximum_structural_regenerations
+        from .stage_repairs import repair_bound
+        bound = repair_bound(self, command=command, operation_id=operation_id, maximum=maximum)
         report = {
             "status": "FAIL",
             "validation_kind": validation_kind,
@@ -2547,6 +2559,8 @@ class StoryPlanningGenerationApplication:
             "message": error.message,
             "candidate_asset_version_id": candidate_asset_version_id,
         }
+        if bound is not None:
+            report["stage_repair_bound"] = bound
         if error.code.startswith(("SCENE_", "BEAT_", "REALIZATION_")):
             report["directed_rejection"] = {
                 "contract_version": "planning-directed-rejection.v1",
@@ -2597,7 +2611,8 @@ class StoryPlanningGenerationApplication:
             expected_version=int(state["version"]),
             evidence={"passed": False, "validation_report_hash": report_hash},
         )
-        if command.repair_number >= maximum:
+        exhausted=(bound['stage_repair_number']>=bound['maximum_repairs']) if bound else command.repair_number>=maximum
+        if exhausted:
             self._update_generation_status(operation_id, "REJECTED")
             return PlanningGenerationResult(
                 operation_id,

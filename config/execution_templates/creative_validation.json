@@ -1,5 +1,5 @@
 {
-  "version": "creative-execution-template.v3",
+  "version": "creative-execution-template.v4",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
@@ -11,7 +11,7 @@
   "require_independent_review": false,
   "require_pack_human_approval": false,
   "repair_routing": {
-    "version": "native-repair-routing.v1",
+    "version": "native-repair-routing.v2",
     "max_same_route_repairs": 2
   }
 }

@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from .cost_routing import RoutingDecision, snapshot_hash
 
 
-VERSION = "creative-execution-template.v3"
+VERSION = "creative-execution-template.v4"
 MODE = "CREATIVE_VALIDATION"
 RESOURCE_VERSION = "billing-channel-resources.v1"
 BOOK_USAGE_SQL = """(e.request_payload #>> '{_production_execution,book_id}'=%s
@@ -31,13 +31,13 @@ class PaidResourceConfiguration(BaseModel):
 
 class RepairRoutingConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    version: Literal["native-repair-routing.v1"]
+    version: Literal["native-repair-routing.v1", "native-repair-routing.v2"]
     max_same_route_repairs: Annotated[int, Field(ge=0, le=2)]
 
 
 class ExecutionTemplateConfiguration(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    version: Literal["creative-execution-template.v1", "creative-execution-template.v2", "creative-execution-template.v3"]
+    version: Literal["creative-execution-template.v1", "creative-execution-template.v2", "creative-execution-template.v3", "creative-execution-template.v4"]
     book_id: _Identity
     mode: Literal["CREATIVE_VALIDATION", "STRICT_PRODUCTION"]
     allowed_candidates: Annotated[list[_Identity], Field(min_length=1, json_schema_extra={"uniqueItems": True})]
@@ -87,11 +87,13 @@ def validate_templates(content: Mapping[str, Any]) -> None:
         if value["mode"] == "STRICT_PRODUCTION" and not value["require_literary_qualification"]:
             raise KernelError("STRICT_TEMPLATE_QUALIFICATION_REQUIRED", value["book_id"])
         if (value["version"] == "creative-execution-template.v1" and value.get("repair_routing") is not None
-                or value["version"] in {"creative-execution-template.v2", VERSION} and value.get("repair_routing") is None):
+                or value["version"] in {"creative-execution-template.v2", "creative-execution-template.v3", VERSION} and value.get("repair_routing") is None):
             raise KernelError("EXECUTION_TEMPLATE_REPAIR_VERSION_INVALID", value["book_id"])
-        if ((value['version'] == VERSION) != (value.get('world_future_preparation') is not None)
+        if ((value['version'] in {'creative-execution-template.v3',VERSION}) != (value.get('world_future_preparation') is not None)
                 or value['mode'] == 'STRICT_PRODUCTION' and value.get('world_future_preparation', 'REQUIRED') != 'REQUIRED'):
             raise KernelError('EXECUTION_TEMPLATE_WORLD_POLICY_INVALID', value['book_id'])
+        if value.get("repair_routing") and ((value['version'] == VERSION) != (value['repair_routing']['version'] == 'native-repair-routing.v2')):
+            raise KernelError('EXECUTION_TEMPLATE_STAGE_REPAIR_VERSION_INVALID',value['book_id'])
         paid = value["deepseek"]
         if paid is not None and Decimal(paid["maximum_amount"]) <= 0:
             raise KernelError("PAID_TEMPLATE_AMOUNT_INVALID", value["book_id"])

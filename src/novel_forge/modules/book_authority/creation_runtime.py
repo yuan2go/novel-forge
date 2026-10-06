@@ -40,6 +40,9 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "COMPLETED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.story_planning_runtime.stage_repairs import resume_rejected_book_plan
+        if resume_rejected_book_plan(composition,book,worker=worker):
+            book=composition.authority.require(book_run_id)
         schedule_book_coordination_jobs(composition.query, jobs, limit=1, book_run_id=book_run_id)
         claim = jobs.claim(runtime_group="book", worker_id=worker.principal_id, lease_seconds=30,
             job_kinds=("BOOK_COORDINATION_TICK",), subject_kind="BOOK_RUN", subject_id=book_run_id)

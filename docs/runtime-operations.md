@@ -509,7 +509,7 @@ are frozen together as `formation-generation.v4`; continue uses that snapshot ev
 template file later changes. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
-The shipped creative template is the explicit v2 successor. Its bounded native repair
+The shipped creative template is the explicit v4 successor. Its bounded native repair
 policy permits the same authorized generator to repair contract/causality rejections;
 it does not accept rejected content or certify unperformed model qualification. Old v1
 routing snapshots remain immutable. An undispatched native Planning repair blocked solely
@@ -674,6 +674,10 @@ and `test_native_settled_optional_world_failure_continues_without_repeating_call
 plus `tests/unit/test_creative_execution_template.py`. For local Schema result recovery also run
 `test_native_rejected_null_schema_result_revalidates_without_resend_then_accepts` there
 and `tests/unit/test_chapter_provider_output_contracts.py`.
+For v4 stage repair admission also run
+`test_native_world_repairs_do_not_exhaust_rejected_chapter_plan_stage` there and
+`tests/unit/test_native_stage_repair_bound.py`, retaining the older schema-recovery and
+world-result regressions.
 Run integration modules serially in a disposable database because their cleanup shares Authority tables. The controlled
 process supplies synthetic auth and responses, exercising the real entry, renderer,
 process protocol, state owners and recovery; it proves no real membership entitlement,
@@ -699,7 +703,7 @@ The owner verifies the original completed receipt, settlement, checkpoint diagno
 released lease before using Kernel completed-effect recovery. It makes no remote resend.
 Reference validation remains strict; a rejected result consumes the existing repair bound.
 
-The default creative v3 template disables speculative world futures while retaining World
+The default creative v4 template disables speculative world futures while retaining World
 Foundation, accepted state, source isolation and all actual acceptance constraints. To
 exercise simulation, select `OPTIONAL` or `REQUIRED` explicitly. Infeasible optional
 futures remain rejected and contribute no facts. A historical settled, blocked world search
@@ -2974,3 +2978,12 @@ exact native creative template, new per-call resource policy and zero-work evide
 The historical Opening, budget snapshot and failure remain immutable. An Opening with
 any dispatched Effect, reservation, output or completed node requires its ordinary
 reconciliation/recovery path; the zero-work successor cannot discard that evidence.
+
+For a creative candidate rejected after repairs in another execution stage, adopt the
+versioned v4 template through the ordinary owned policy command, refresh Pack admission
+for unexecuted work and continue the same Formation. Native stage repair admission retains
+the historical global counter and verifies the per-stage ordinal from dispatched lineage.
+It creates a new candidate from the original failed report and current authorized route,
+without relabeling the rejected result or resending completed calls. A Book waiting on
+that rejected plan may continue only when the new stage policy authorizes this native
+repair; real author approvals and strict certification remain separate.

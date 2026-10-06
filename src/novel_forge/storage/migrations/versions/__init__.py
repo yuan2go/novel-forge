@@ -163,6 +163,7 @@ from . import (
     v20261006_0159_planning_input_order_recovery,
     v20261006_0160_optional_world_continuation,
     v20261006_0161_gateway_result_revalidation,
+    v20261006_0162_stage_repair_policy,
 )
 
 VERSION_MODULES = [
@@ -328,6 +329,7 @@ VERSION_MODULES = [
     v20261006_0159_planning_input_order_recovery,
     v20261006_0160_optional_world_continuation,
     v20261006_0161_gateway_result_revalidation,
+    v20261006_0162_stage_repair_policy,
 ]
 
 __all__ = ["VERSION_MODULES"]
