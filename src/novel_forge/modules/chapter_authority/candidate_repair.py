@@ -70,7 +70,7 @@ def recover_information_frontier(authority, *, book_run_id, principal):
 
 
 def candidate_repair_payload(request):
-    if request.definition_version not in {'3.9.2','3.9.3'} or not request.database_url:
+    if request.definition_version not in {'3.9.2','3.9.3','3.9.4'} or not request.database_url:
         return {}
     with AuthorityUnitOfWork(request.database_url) as uow:
         uow.cursor.execute('''SELECT e.external_effect_id,a.attempt_id,a.result,r.payload->'evidence'
@@ -95,7 +95,7 @@ def candidate_repair_payload(request):
         uow.cursor.execute("""SELECT policy_evidence FROM authority_saga_step_successor
             WHERE project_id=%s AND successor_operation_id=%s""", [request.project_id,request.operation_id])
         row = uow.cursor.fetchone()
-        if not row or row[0].get('contract_version') not in {'chapter-candidate-contract-repair.v1','chapter-review-output-repair.v1'}:
+        if not row or row[0].get('contract_version') not in {'chapter-candidate-contract-repair.v1','chapter-review-output-repair.v1','chapter-length-output-repair.v1'}:
             return {}
         binding = row[0]
         effect_id = binding['settled_candidate_effects'][-1][0]
@@ -112,10 +112,10 @@ def candidate_repair_payload(request):
     return {'candidate_repair': {'contract_version':binding['contract_version'],
         'source_effect_id':effect_id,'source_attempt_id':binding['source_failure']['attempt_id'],
         'diagnostic':binding['source_failure']['result'], 'rejected_candidate':result.output,
-        'instruction':('Repair the actual review against the exact delivered knowledge_review_targets; an empty target list requires knowledge_checks=[]. Retain valid evidenced prose diagnoses; do not fabricate verification, approval or resolution.' if binding['contract_version']=='chapter-review-output-repair.v1' else 'Repair the actual candidate using the new exact slot scopes. Meet the original work length without repetition or padding. Do not invent fact ids, future knowledge, approval or acceptance.')}}
+        'instruction':('Repair the actual review against the exact delivered knowledge_review_targets; an empty target list requires knowledge_checks=[]. Retain valid evidenced prose diagnoses; do not fabricate verification, approval or resolution.' if binding['contract_version']=='chapter-review-output-repair.v1' else 'Repair the actual retained revision under the exact chapter_length_repair_scope and supplied review; preserve scene coverage, facts, information boundaries and voice. Never claim acceptance or literary proof.' if binding['contract_version']=='chapter-length-output-repair.v1' else 'Repair the actual candidate using the new exact slot scopes. Meet the original work length without repetition or padding. Do not invent fact ids, future knowledge, approval or acceptance.')}}
 
 
-def recover_review_frontier(authority, *, book_run_id, principal):
+def _recover_settled_output_frontier(authority, *, book_run_id, principal, definition_name, target_version, contract_version, failure_codes, statuses):
     book = authority.require(book_run_id)
     principal.require('book.authority.execute', book['project_id'])
     principal.require('chapter.authority.execute', book['project_id'])
@@ -132,10 +132,10 @@ def recover_review_frontier(authority, *, book_run_id, principal):
             return False
         uow.cursor.execute("""SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o
             JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
-            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.review.evaluate'
-            AND o.definition_version='3.9.0' AND o.status='FAILED_FINAL'
-            AND a.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED')
-            ORDER BY a.attempt_number DESC LIMIT 1""", [request['chapter_root_operation_id'], book['project_id']])
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name=%s
+            AND o.definition_version='3.9.0' AND o.status=ANY(%s)
+            AND a.result->>'error_code'=ANY(%s)
+            ORDER BY a.attempt_number DESC LIMIT 1""", [request['chapter_root_operation_id'], book['project_id'],definition_name,list(statuses),list(failure_codes)])
         row = uow.cursor.fetchone()
         if not row:
             return False
@@ -147,18 +147,53 @@ def recover_review_frontier(authority, *, book_run_id, principal):
         effects = uow.cursor.fetchall()
         if not effects or any(r[2:] != ('SUCCEEDED','SETTLED') for r in effects):
             raise KernelError('CHAPTER_REVIEW_RECOVERY_UNSETTLED', 'Reconcile original review effects before recovery')
-    evidence = {'contract_version':'chapter-review-output-repair.v1', 'book_run_id':book_run_id,
+    length_scope = None
+    if contract_version == 'chapter-length-output-repair.v1':
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.revision.domain import freeze_chapter_length_scope
+        query = AuthorityAssetQuery(authority.database_url)
+        inputs = [query.require(project_id=book['project_id'],asset_version_id=a['asset_version_id']) for a in source['input_asset_snapshot']]
+        if any(asset.content_hash != binding['content_hash'] for asset,binding in zip(inputs,source['input_asset_snapshot'],strict=True)):
+            raise KernelError('CHAPTER_LENGTH_RECOVERY_INPUT_DRIFT', 'Length recovery requires its exact frozen inputs')
+        draft = next(asset for asset in inputs if asset.asset_type=='draft_chapter')
+        context = next(asset for asset in inputs if asset.asset_type=='context_bundle')
+        length_scope = freeze_chapter_length_scope(draft.content,source_asset_version_id=draft.asset_version_id,
+            context=context.content,context_asset_version_id=context.asset_version_id)
+        if length_scope is None:
+            raise KernelError('CHAPTER_LENGTH_RECOVERY_SCOPE_REQUIRED', 'A local edit violation without measured length deficiency retains its original recovery path')
+    evidence = {'contract_version':contract_version, 'book_run_id':book_run_id,
         'chapter_request_id':request['chapter_request_id'], 'policy_admission':template,
         'input_snapshot':source['input_asset_snapshot'], 'source_failure':attempt,
         'source_operation':source, 'settled_candidate_effects':effects,
+        **({'length_scope':length_scope} if length_scope is not None else {}),
         'completion_checks':'UNCHANGED', 'accepted_cursor':book['accepted_through_chapter']}
     def guard(uow):
         uow.cursor.execute('SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s AND project_id=%s FOR UPDATE', [book_run_id,book['project_id']])
         if uow.cursor.fetchone() != (book['version'],book['active_chapter_request_id'],book['accepted_through_chapter']) or selected_book_template(uow.cursor,project_id=book['project_id'],book_id=book['book_id']) != template:
             raise KernelError('CHAPTER_REVIEW_RECOVERY_CONFLICT', 'Reload the exact current Book frontier')
-    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version='3.9.3',
+    if source['status'] not in {'FAILED_FINAL','CANCELLATION_REQUESTED'}:
+        request_cancellation(authority.database_url, CancelCommand(operation_id=source['operation_id'], project_id=book['project_id'],
+            actor_id=principal.principal_id,reason='Known settled output requires its explicit versioned correction contract',
+            expected_version=source['version'],idempotency_key='output-repair:'+source['operation_id'],
+            trace_id=source['trace_id'],correlation_id=source['correlation_id']))
+    from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
+    continue_candidate_execution_window(authority.database_url, root_id=request['chapter_root_operation_id'],
+        predecessor_id=source['operation_id'],target_version=target_version,book_run_id=book_run_id,principal=principal)
+    replace_failed_step(authority.database_url,predecessor_id=source['operation_id'],target_version=target_version,
         context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
             authority.application_build_id,authority.commit_sha), policy_evidence=evidence,
         expected_failure_code=attempt['result']['error_code'],
         settled_candidate_effects=tuple((r[0],r[1]) for r in effects),transaction_guard=guard)
     return True
+
+
+def recover_review_frontier(authority, *, book_run_id, principal):
+    return _recover_settled_output_frontier(authority, book_run_id=book_run_id, principal=principal,
+        definition_name='chapter.review.evaluate', target_version='3.9.3', contract_version='chapter-review-output-repair.v1',
+        failure_codes=('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED'), statuses=('FAILED_FINAL',))
+
+
+def recover_length_frontier(authority, *, book_run_id, principal):
+    return _recover_settled_output_frontier(authority, book_run_id=book_run_id, principal=principal,
+        definition_name='chapter.revision.apply', target_version='3.9.4', contract_version='chapter-length-output-repair.v1',
+        failure_codes=('REVISION_OUTSIDE_DIAGNOSIS_SCOPE',), statuses=('FAILED_RETRYABLE','CANCELLATION_REQUESTED'))

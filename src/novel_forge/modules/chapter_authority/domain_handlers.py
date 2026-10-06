@@ -688,6 +688,7 @@ def normalize_revision_result(
     provider_evidence: dict[str, Any],
     project_id: str = "local-system",
     context_bundle_version_id: str = "legacy-context-bundle",
+    length_scope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return apply_revision_result(
         project_id=project_id,
@@ -698,6 +699,7 @@ def normalize_revision_result(
         context_bundle_version_id=context_bundle_version_id,
         result=result,
         provider_evidence=provider_evidence,
+        length_scope=length_scope,
     )
 
 

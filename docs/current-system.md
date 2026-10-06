@@ -2097,3 +2097,11 @@ availability does not establish Context delivery. A known, settled review reject
 contract may receive one native versioned successor under creative template v5. The failed
 Operation, Attempt, receipt and settlement remain unchanged; the successor repairs the actual
 returned review and must pass the same knowledge, prose-location and downstream gates.
+
+Revision 3.9.4 binds whole-chapter length correction to `chapter-length-repair.v1`.
+Only an actual count outside the frozen Platform `HAN_CHARACTERS_V1` bounds authorizes
+that scope, and the corrected count must satisfy the original bounds. The native scope
+retains exact candidate, Context and Platform versions; it does not authorize changed
+Scene coverage, facts, voice or quality requirements. Candidates already within bounds
+retain the ordinary located-diagnosis edit scope. Review, ReReview and Quality still
+assess the resulting complete prose.

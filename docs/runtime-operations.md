@@ -3050,3 +3050,19 @@ it cannot turn an invented knowledge check into a passed check. Run
 `test_native_information_flow_repairs_settled_candidate_and_preserves_usage` in
 `tests/integration/test_synthesis_formation_postgres.py`, plus the focused Chapter
 Provider output, definition, Pack and template unit contracts.
+
+For a known settled historical Revision 3.9.0 rejected with
+`REVISION_OUTSIDE_DIAGNOSIS_SCOPE`, install Revision 3.9.4 and Chapter Pack 2.17.0
+and continue the same Formation under creative v5. Native cancellation/succession retains
+its failed Attempt and exact result/usage; successful Draft/Review/Memo/Context inputs
+remain unchanged. The successor receives the actual rejected revision. Whole-chapter
+length scope is derived from frozen typed Platform bounds and measured source prose,
+never from an issue name, an invented approval or a model's claimed word count.
+
+The v5 bounded execution-window continuation also covers the exact recorded Review scope
+and Revision length-scope successors. Each Root/source/version/policy continuation is
+idempotent and records the previous deadline. Author deadlines, uncertain effects, strict
+policies and live leases remain ineligible. Run
+`test_native_length_scope_successor_preserves_failed_revision_and_accepts` and
+`test_native_review_scope_successor_retains_rejected_review_and_accepts` in the native
+Formation integration module, plus `tests/unit/test_work_realization_contract.py`.

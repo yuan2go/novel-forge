@@ -1629,12 +1629,22 @@ class _RevisionHandler:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
+        length_scope = None
+        repair_payload = {}
+        if request.definition_version == "3.9.4":
+            from novel_forge.modules.revision.domain import freeze_chapter_length_scope
+            from .candidate_repair import candidate_repair_payload
+            length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
+                context=context.content, context_asset_version_id=context.asset_version_id)
+            repair_payload = candidate_repair_payload(request)
         revised = self.provider.invoke(
             request,
             stage="revision",
             payload={
                 "draft": draft.content,
                 "review": review.content,
+                **({"chapter_length_repair_scope": length_scope} if length_scope else {}),
+                **repair_payload,
             },
         )
         return _model_output(
@@ -1648,6 +1658,7 @@ class _RevisionHandler:
                 provider_evidence=_provider_evidence(revised),
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
+                length_scope=length_scope,
             ),
             request=request,
             generated=revised,

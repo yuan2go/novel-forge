@@ -44,11 +44,19 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             raise KernelError('EXECUTION_WINDOW_POLICY_REQUIRED','An explicit trusted creative continuation policy is required')
         if any(key in root['command_payload'] for key in ('business_deadline_at','author_deadline_at')):
             raise KernelError('EXECUTION_WINDOW_AUTHOR_DEADLINE','An author deadline cannot be extended by execution recovery')
-        cursor.execute("SELECT o.status,a.result->>'error_code',o.actor_id FROM authority_operation o JOIN authority_attempt a USING(operation_id) JOIN authority_saga_step s USING(operation_id) WHERE o.operation_id=%s AND o.root_operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1", [predecessor_id,root_id])
-        if cursor.fetchone() != ('CANCELLATION_REQUESTED','REALIZATION_EPISTEMIC_SCOPE_VIOLATION',principal.principal_id) or has_candidate_domain_outputs(cursor,predecessor_id):
-            raise KernelError('EXECUTION_WINDOW_CANDIDATE_INVALID','Only the recorded failed candidate contract can authorize a window')
-        target = uow.repositories.definitions.get('chapter.draft.generate',target_version)
-        if not target or target['policy'].get('scene_information_flow') != 'scene-information-flow.v1':
+        cursor.execute("SELECT o.status,a.result->>'error_code',o.actor_id,o.definition_name FROM authority_operation o JOIN authority_attempt a USING(operation_id) JOIN authority_saga_step s USING(operation_id) WHERE o.operation_id=%s AND o.root_operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1", [predecessor_id,root_id])
+        source = cursor.fetchone()
+        corrections = {
+            ('chapter.draft.generate','CANCELLATION_REQUESTED','REALIZATION_EPISTEMIC_SCOPE_VIOLATION'):('3.9.2','scene_information_flow','scene-information-flow.v1'),
+            ('chapter.review.evaluate','FAILED_FINAL','REVIEW_KNOWLEDGE_CHECK_INVALID'):('3.9.3','review_knowledge_scope','delivered-card-scope.v1'),
+            ('chapter.review.evaluate','FAILED_FINAL','REVIEW_KNOWLEDGE_CHECK_REQUIRED'):('3.9.3','review_knowledge_scope','delivered-card-scope.v1'),
+            ('chapter.revision.apply','CANCELLATION_REQUESTED','REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):('3.9.4','chapter_length_scope','chapter-length-repair.v1'),
+        }
+        correction = corrections.get((source[3],source[0],source[1])) if source else None
+        if not correction or source[2] != principal.principal_id or correction[0] != target_version or has_candidate_domain_outputs(cursor,predecessor_id):
+            raise KernelError('EXECUTION_WINDOW_CANDIDATE_INVALID','Only the recorded failed contract and exact correction can authorize a window')
+        target = uow.repositories.definitions.get(source[3],target_version)
+        if not target or target['policy'].get(correction[1]) != correction[2]:
             raise KernelError('EXECUTION_WINDOW_TARGET_INVALID','The unexecuted successor requires the declared correction')
         cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_external_effect e LEFT JOIN authority_budget_reservation r ON r.external_effect_id=e.external_effect_id JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s AND (e.status<>'SUCCEEDED' OR r.status IS DISTINCT FROM 'SETTLED')), EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND l.released_at IS NULL AND l.expires_at>NOW())", [root_id,root_id])
         if any(cursor.fetchone()):

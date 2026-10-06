@@ -204,7 +204,10 @@ class ChapterAuthorityQuery:
                              AND attempt.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION')
                            OR (succ.policy_evidence->>'contract_version'='chapter-review-output-repair.v1' AND source.status='FAILED_FINAL'
                              AND source.definition_name='chapter.review.evaluate' AND replacement.definition_version='3.9.3'
-                             AND attempt.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED')))
+                             AND attempt.result->>'error_code' IN ('REVIEW_KNOWLEDGE_CHECK_INVALID','REVIEW_KNOWLEDGE_CHECK_REQUIRED'))
+                           OR (succ.policy_evidence->>'contract_version'='chapter-length-output-repair.v1' AND source.status='CANCELLED'
+                             AND source.definition_name='chapter.revision.apply' AND replacement.definition_version='3.9.4'
+                             AND attempt.result->>'error_code'='REVISION_OUTSIDE_DIAGNOSIS_SCOPE'))
                          AND replacement.status='SUCCEEDED'
                          AND active.operation_id IS NOT NULL AND effect.status='SUCCEEDED' AND budget.status='SETTLED'
                          AND succ.policy_evidence #>> '{source_failure,attempt_id}'=attempt.attempt_id

@@ -192,6 +192,8 @@ def replace_failed_step(
             )
         if final_review_repair and target["policy"].get("review_knowledge_scope") != "delivered-card-scope.v1":
             raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Review recovery requires its versioned delivered scope")
+        if policy_evidence.get("contract_version") == "chapter-length-output-repair.v1" and (target["policy"].get("chapter_length_scope") != "chapter-length-repair.v1" or source["definition_name"] != "chapter.revision.apply" or expected_failure_code != "REVISION_OUTSIDE_DIAGNOSIS_SCOPE"):
+            raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Length recovery requires its exact versioned correction scope")
         if settled_candidate_effects and not final_review_repair:
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
             transition_operation_in_uow(uow, OperationTransitionCommand(operation_id=predecessor_id,

@@ -32,6 +32,7 @@ def apply_revision_result(
     context_bundle_version_id: str,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    length_scope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not all((project_id, draft_asset_version_id, review_asset_version_id, context_bundle_version_id)):
         raise KernelError("REVISION_INPUT_INVALID", "versioned revision lineage is required")
@@ -67,9 +68,12 @@ def apply_revision_result(
     if review.get("cross_chapter_window") or review.get("craft_targets"):
         result, targeted = _materialize_targeted_result(draft, review, result)
     text = prose_from_output(result, separators=draft.get("scene_separators"))
+    if length_scope is not None:
+        validate_chapter_length_scope(length_scope, draft, text, source_asset_version_id=draft_asset_version_id,
+            context_asset_version_id=context_bundle_version_id)
     if "creative_baseline" in draft:
         from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
-        validate_prose_repair_scope(draft, repair_diagnoses, text)
+        validate_prose_repair_scope(draft, repair_diagnoses, text, length_scope=length_scope)
     if review.get("craft_targets"):
         from novel_forge.modules.review.craft import craft_revision_contract
         targeted["craft_revision_contract"] = craft_revision_contract(draft, review)
@@ -128,6 +132,7 @@ def apply_revision_result(
         "issue_resolutions": resolutions,
         "canon_assertions": assertions,
         "provider_evidence": dict(provider_evidence),
+        **({"chapter_length_repair_scope": {**length_scope, "revised_han_characters": han_characters(text)}} if length_scope is not None else {}),
         "revision_contract_version": "revision-domain-v4" if "creative_baseline" in draft else "revision-domain-v3",
     }
 
@@ -342,3 +347,56 @@ def validate_quality_resolution_checks(*, revision: dict[str, Any], revision_ass
             "source_quality_asset_version_id": revision["source_quality_asset_version_id"],
             "evidence_class": "MODEL_REVIEW_PROPOSAL_REQUIRES_QUALITY_REEVALUATION"})
     return normalized
+
+
+def han_characters(text: str) -> int:
+    import unicodedata
+    return sum(unicodedata.name(char, '').startswith(('CJK UNIFIED IDEOGRAPH-', 'CJK COMPATIBILITY IDEOGRAPH-')) for char in text)
+
+
+def freeze_chapter_length_scope(source: dict[str, Any], *, source_asset_version_id: str,
+                                context: dict[str, Any], context_asset_version_id: str) -> dict[str, Any] | None:
+    from novel_forge.modules.chapter_quality_authority.context_views import compile_platform_policy
+    from novel_forge.modules.review.diagnostics import prose_hash
+    profiles = []
+    for segment in context.get('context_segments', []):
+        if segment.get('asset_type') != 'platform_profile':
+            continue
+        profile_id = segment['asset_version_id']
+        rules = compile_platform_policy(profile_asset_version_id=profile_id, segment=segment).chapter_length_rules
+        if rules.get('unit') == 'HAN_CHARACTERS_V1':
+            profiles.append((segment, rules))
+    if not profiles:
+        return None
+    if len(profiles) != 1:
+        raise KernelError('CHAPTER_LENGTH_SCOPE_PROFILE_CONFLICT', 'Length correction requires one exact frozen Platform profile')
+    segment, rules = profiles[0]
+    minimum, maximum = rules.get('minimum'), rules.get('maximum')
+    if type(minimum) is not int or type(maximum) is not int or not 0 < minimum <= maximum:
+        raise KernelError('CHAPTER_LENGTH_POLICY_INVALID', 'Frozen length bounds must be positive ordered integers')
+    text = str(source.get('text') or '')
+    observed = han_characters(text)
+    if minimum <= observed <= maximum:
+        return None
+    return {'contract_version':'chapter-length-repair.v1', 'scope':'WHOLE_CHAPTER_LENGTH_CORRECTION',
+        'source_asset_version_id':source_asset_version_id, 'source_text_hash':prose_hash(text),
+        'context_asset_version_id':context_asset_version_id, 'platform_profile_asset_version_id':segment['asset_version_id'],
+        'platform_profile_content_hash':segment.get('content_digest'), 'unit':'HAN_CHARACTERS_V1',
+        'minimum':minimum, 'maximum':maximum, 'source_han_characters':observed,
+        'preservation':'FROZEN_SCENES_FACTS_VOICE_QUALITY_AND_REVIEW_REQUIRED'}
+
+
+def validate_chapter_length_scope(scope: dict[str, Any], source: dict[str, Any], text: str, *,
+                                  source_asset_version_id: str, context_asset_version_id: str) -> None:
+    from novel_forge.modules.review.diagnostics import prose_hash
+    original = str(source.get('text') or '')
+    minimum, maximum = scope.get('minimum'), scope.get('maximum')
+    if (scope.get('contract_version') != 'chapter-length-repair.v1' or scope.get('unit') != 'HAN_CHARACTERS_V1'
+        or scope.get('scope') != 'WHOLE_CHAPTER_LENGTH_CORRECTION'
+        or scope.get('source_asset_version_id') != source_asset_version_id or scope.get('context_asset_version_id') != context_asset_version_id
+        or scope.get('source_text_hash') != prose_hash(original) or scope.get('source_han_characters') != han_characters(original)
+        or type(minimum) is not int or type(maximum) is not int or not 0 < minimum <= maximum
+        or minimum <= han_characters(original) <= maximum):
+        raise KernelError('CHAPTER_LENGTH_SCOPE_INVALID', 'Only an exact out-of-bounds frozen candidate authorizes whole-chapter length repair')
+    if not minimum <= han_characters(text) <= maximum:
+        raise KernelError('CHAPTER_LENGTH_REPAIR_INCOMPLETE', 'The actual corrected prose must meet the original frozen length bounds')

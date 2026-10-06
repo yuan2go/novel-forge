@@ -2087,6 +2087,7 @@ class PostgresChapterExecutionContractBinder:
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
         )
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) == "3.9.3")
+        compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) == "3.9.4")
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(
                 "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",

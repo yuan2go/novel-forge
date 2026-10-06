@@ -271,3 +271,32 @@ def test_scene_information_flow_keeps_future_actor_and_withheld_scopes():
     plan['knowledge_boundaries'][0]['available_from_chapter'] = 2
     current = compile_realization_contract(plan,{},information_policy='scene-information-flow.v1')
     assert current['slots'][1]['accessible_knowledge'] == []
+
+
+def test_measured_frozen_length_scope_does_not_promote_local_advice():
+    import pytest
+    from novel_forge.modules.revision.domain import freeze_chapter_length_scope, validate_chapter_length_scope
+    from novel_forge.modules.review.diagnostics import validate_prose_repair_scope
+    from novel_forge.modules.command_kernel.errors import KernelError
+    artifacts = [{'text':'First choice 甲.'}, {'text':'Second choice preserved.'}]
+    source = {'text':'\n\n'.join(a['text'] for a in artifacts), 'scene_artifacts':artifacts}
+    profile = {'asset_type':'platform_profile','asset_version_id':'platform:v1','content_digest':'sha256:'+'a'*64,
+        'structured_facts':[{'key':'platform_rules','value':{'chapter_length':{'unit':'HAN_CHARACTERS_V1','minimum':3,'maximum':4}}}]}
+    context = {'context_segments':[profile]}
+    scope = freeze_chapter_length_scope(source,source_asset_version_id='draft:v1',context=context,context_asset_version_id='context:v1')
+    assert scope['source_han_characters'] == 1 and scope['platform_profile_asset_version_id'] == 'platform:v1'
+    revised = source['text'].replace('甲','甲乙丙丁')
+    diagnoses = [{'evidence_locator':{'quote':'Second choice preserved.'}}]
+    with pytest.raises(KernelError,match='REVISION_OUTSIDE_DIAGNOSIS_SCOPE'):
+        validate_prose_repair_scope(source,diagnoses,revised)
+    validate_prose_repair_scope(source,diagnoses,revised,length_scope=scope)
+    with pytest.raises(KernelError,match='CHAPTER_LENGTH_REPAIR_INCOMPLETE'):
+        validate_prose_repair_scope(source,diagnoses,source['text'],length_scope=scope)
+    with pytest.raises(KernelError,match='CHAPTER_LENGTH_SCOPE_INVALID'):
+        validate_chapter_length_scope(scope,source,revised,source_asset_version_id='different:draft',context_asset_version_id='context:v1')
+    already_in_bounds = {**source,'text':revised}
+    assert freeze_chapter_length_scope(already_in_bounds,source_asset_version_id='draft:v2',context=context,context_asset_version_id='context:v1') is None
+    with pytest.raises(KernelError,match='CHAPTER_LENGTH_SCOPE_INVALID'):
+        validate_prose_repair_scope(already_in_bounds,diagnoses,revised+'戊',length_scope=scope)
+    with pytest.raises(KernelError,match='CHAPTER_LENGTH_SCOPE_PROFILE_CONFLICT'):
+        freeze_chapter_length_scope(source,source_asset_version_id='draft:v1',context={'context_segments':[profile,profile]},context_asset_version_id='context:v1')
