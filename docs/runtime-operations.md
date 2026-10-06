@@ -610,8 +610,10 @@ novel-forge authority-creation continue \
 ```
 
 The start result supplies the original Formation identity. Preserve it and the same
-creation key; repeat start with identical input or use continue. Existing workers may
-continue queued native jobs under the same deployment, and repeated CLI windows use the
+creation key; repeat start with identical input or use continue. Existing workers
+continue already queued Formation, Opening and Book jobs under the same deployment.
+The CLI currently owns the handoff between these stages; a returned technical wait
+requires another invocation. Repeated CLI windows use the
 same durable jobs, effects, exports and accepted cursor. `COMPLETED` requires the native
 Book completion state; `YIELDED_CHECKPOINT` and dependency/reconciliation reasons do not
 claim completion. Independent review remains required when selected: an exhausted paid
@@ -2852,7 +2854,8 @@ advances existing Formation and Opening RuntimeJobs, then starts the resolved Bo
 once and drives its existing coordination and Chapter workers. Continuation looks up
 the same Formation-derived Opening and Book identity before creating any genesis
 inputs. Bounded worker ticks save an existing checkpoint; the CLI renews its execution window
-and continues by default until completion or a real dependency/failure. Use
+and continues by default until completion or a dependency/failure. Technical waits
+also return to the caller; this is not durable end-to-end execution ownership. Use
 `--yield-after-window` for an external scheduler that owns subsequent invocation. Three
 windows without durable Formation/Provider/accepted-cursor progress return
 `CREATION_NO_PROGRESS`. Windows are execution controls, never Book resource budgets.
