@@ -38,6 +38,10 @@ A Book waiting for its durable Recap source must wake on followup operation prog
 a missing source is a technical dependency, not an author approval. Historical
 realization deviations and accepted prose remain immutable during future-only replan.
 Focused checks cover this wakeup, exact Reader lineage and future-only Recap requests.
+Reader Context projection and Provider View must both recognize the selected candidate
+asset type. A terminal contract failure is retained; recovery admits a versioned native
+followup successor with the original frozen assets, accepted frontier and Book budget.
+Unknown Effects require reconciliation before any such successor admission.
 
 Stop processes without deleting persistent data:
 
