@@ -616,6 +616,8 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
         uow.cursor.execute("SELECT book_run_id,state,accepted_through_chapter,target_chapter_count,version,current_chapter FROM authority_book_production WHERE project_id=%s AND stable_idempotency_key=%s", [project_id, formation_run_id + ":production"])
         production_row = uow.cursor.fetchone()
         production = dict(zip(("book_run_id", "state", "accepted_chapters", "target_chapters", "version", "saved_chapters"), production_row, strict=True)) if production_row else None
+        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+        formation_unresolved = unresolved_cli_outcomes(uow.cursor, project_id, book_id=run["book_id"]) if not production else []
         candidates = []
         candidate_ids = run["recovery_instruction"].get("candidate_asset_version_ids") or StoryFormationRepository(uow.cursor).approval_wait(formation_run_id, "CREATIVE_SEARCH").get("candidate_asset_version_ids", [])
         for ordinal, identity in enumerate(candidate_ids, 1):
@@ -633,7 +635,7 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
             state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "MANUSCRIPT_READY" if production and production["saved_chapters"] >= production["target_chapters"] else "OWNER_RECOVERY_REQUIRED"
     from .queries import PostgresBookProductionQuery
 
-    unresolved = PostgresBookProductionQuery(database_url).unresolved_chapter_effects(book_run_id=production["book_run_id"]) if production and not cancellation else []
+    unresolved = PostgresBookProductionQuery(database_url).unresolved_chapter_effects(book_run_id=production["book_run_id"]) if production else formation_unresolved
     if unresolved:
         state = "RECONCILIATION_REQUIRED"
     return {

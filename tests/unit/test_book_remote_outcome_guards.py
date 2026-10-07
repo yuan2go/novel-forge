@@ -74,8 +74,9 @@ def test_supervisor_original_unknown_wait_precedes_group_or_planning_mutation():
     supervisor._active_group_run.assert_not_called()
 
 
+@pytest.mark.parametrize("production_row", [("book-run", "CHAPTER_RUNNING", 0, 3, 1, 0), None])
 def test_author_status_projects_original_unknown_receipt_as_runtime_reconciliation(
-    monkeypatch,
+    monkeypatch, production_row,
 ):
     from novel_forge.modules.book_authority import creation_runtime
     from novel_forge.storage import story_formation_repositories
@@ -83,10 +84,10 @@ def test_author_status_projects_original_unknown_receipt_as_runtime_reconciliati
     monkeypatch.setattr(
         creation_runtime, "creation_progress", lambda *args, **kwargs: ()
     )
-    rows = iter([None, ("book-run", "CHAPTER_RUNNING", 0, 3, 1, 0)])
+    rows = iter([None, production_row])
     cursor = SimpleNamespace(execute=Mock(), fetchone=lambda: next(rows))
     run = {
-        "project_id": "project",
+        "project_id": "project", "book_id": "original-book",
         "lifecycle": "WAITING_APPROVAL",
         "recovery_instruction": {},
         "current_stage": "PLAN",
@@ -118,6 +119,7 @@ def test_author_status_projects_original_unknown_receipt_as_runtime_reconciliati
         "PostgresBookProductionQuery",
         lambda _: SimpleNamespace(unresolved_chapter_effects=read),
     )
+    monkeypatch.setattr(budget_runtime, "unresolved_cli_outcomes", read)
     status = creation_runtime.creation_status(
         "unused",
         project_id="project",
@@ -128,7 +130,10 @@ def test_author_status_projects_original_unknown_receipt_as_runtime_reconciliati
     assert status["author_state"] == "RECONCILIATION_REQUIRED"
     assert status["responsible_party"] == "RUNTIME_OWNER"
     assert status["next_action"] == "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS"
-    read.assert_called_once_with(book_run_id="book-run")
+    if production_row:
+        read.assert_called_once_with(book_run_id="book-run")
+    else:
+        read.assert_called_once_with(cursor, "project", book_id="original-book")
 
 
 def test_current_v7_creation_binding_retains_original_actor_digest_and_scope(
