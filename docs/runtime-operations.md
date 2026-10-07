@@ -42,6 +42,10 @@ Reader Context projection and Provider View must both recognize the selected can
 asset type. A terminal contract failure is retained; recovery admits a versioned native
 followup successor with the original frozen assets, accepted frontier and Book budget.
 Unknown Effects require reconciliation before any such successor admission.
+Reader output reservation must bind the configured single-call model output capacity;
+the remaining total Context allowance is not an output allowance. A rejected oversized
+output request with no external dispatch retains its routing decisions and is eligible
+only for a contract successor that corrects that exact capacity error.
 
 Stop processes without deleting persistent data:
 
