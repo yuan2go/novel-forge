@@ -480,23 +480,30 @@ class CapabilityPackBackedPlanningExecutionBinder:
         )
         from .result_recovery import PlanningResultValidationError, validate_raw_result
 
+        original_provider_result = execution.raw_output
+        candidate_payload = execution.raw_output
         try:
+            catalog = getattr(bundle.execution_port, "realization_selector_catalog", None)
+            if catalog is not None and command.execution_contract_version == "1.21.0":
+                from .execution import bind_provider_realization_selectors
+                candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
             validate_raw_result(
                 command.generator_operation_name,
-                execution.raw_output,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-                rfc6901_paths=command.execution_contract_version == "1.19.0",
-                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"} else None,
+                candidate_payload,
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+                rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
+                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"} else None,
             )
         except KernelError as error:
-            raise PlanningResultValidationError(error, raw_result=execution.raw_output, execution_evidence=planning_evidence.to_dict()) from error
+            raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
         return PlanningGenerationCandidate(
             generator_operation_name=command.generator_operation_name,
             planning_scope=command.planning_scope,
             logical_key=command.logical_key,
-            candidate_payload=dict(execution.raw_output),
-            raw_provider_result=dict(execution.raw_output),
+            candidate_payload=dict(candidate_payload),
+            raw_provider_result=dict(original_provider_result),
             frozen_inputs=inputs,
             evidence=planning_evidence,
         )

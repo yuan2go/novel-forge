@@ -194,7 +194,7 @@ class DeterministicFixtureChapterProvider:
         text = str(output["text"])
         if stage == "draft":
             artifacts = [
-                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": []}
+                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": [], **({"character_source_uses": []} if (payload.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3" else {})}
                 for index, slot in enumerate((payload.get("realization_contract") or {}).get("slots", []))
             ]
         else:
@@ -224,12 +224,12 @@ class _PlanHandler:
                 "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
                 "ChapterPlan command identity does not match the frozen AssetVersion",
             )
-        if (request.definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
+        if (request.effective_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
                 and source_plan.content.get("source_planning_candidate_asset_version_id")
                 and source_plan.content.get("runtime_projection_version") != "2.0.0"):
             raise KernelError("CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED",
                 "Current production cannot select a legacy projection with fabricated work methods")
-        if (request.definition_version == '3.9.16'
+        if (request.effective_definition_version in {'3.9.16','3.10.0'}
                 and source_plan.content.get('source_planning_candidate_asset_version_id')
                 and ((source_plan.content.get('runtime_projection_version'), source_plan.content.get('chapter_contract_schema_version'))
                      not in {('2.0.0','chapter-mission-scene.v3'), ('3.0.0','chapter-mission-scene.v4')})):
@@ -238,6 +238,8 @@ class _PlanHandler:
         plan, qualification = normalize_authoritative_chapter_plan(
             project_id=request.project_id,
             expected_chapter=chapter,
+            expected_book_id=str(request.command.get("book_id") or ""),
+            include_book_identity=request.effective_definition_version == "3.10.0",
             content=source_plan.content,
             asset_version_id=source_plan.asset_version_id,
             content_hash=source_plan.content_hash,
@@ -545,7 +547,7 @@ class _RetrievalHandler:
             semantic_enabled = query_plan.get("semantic_policy") != "DISABLED"
             deterministic_coverage = deterministic_retrieval_coverage_fast_path(
                 project_id=request.project_id,
-                book_id=str(plan.content.get("book_id") or f"book:{request.project_id}"),
+                book_id=_book_identity(request, plan.content),
                 intent_asset_version_id=intent.asset_version_id,
                 memo_asset_version_id=memo.asset_version_id,
                 query_plan=query_plan,
@@ -607,9 +609,7 @@ class _RetrievalHandler:
             frozen_union = freeze_retrieval_candidate_union(
                 request.database_url,
                 project_id=request.project_id,
-                book_id=str(
-                    plan.content.get("book_id") or f"book:{request.project_id}"
-                ),
+                book_id=_book_identity(request, plan.content),
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
                 fencing_token=request.fencing_token,
@@ -648,7 +648,7 @@ class _RetrievalHandler:
         frozen_union: Any,
         discovery_rejections: tuple[dict[str, Any], ...],
     ) -> dict[str, Any]:
-        book_id = str(plan.content.get("book_id") or f"book:{request.project_id}")
+        book_id = _book_identity(request, plan.content)
         policy = RetrievalCampaignPolicy(
             **dict(query_plan.get("campaign_policy") or {})
         )
@@ -1345,11 +1345,7 @@ class _ContextHandler:
             context_profile_version=stage_context_profile,
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
-            book_id=str(
-                request.command.get("book_id")
-                or plan.content.get("book_id")
-                or f"book:{request.project_id}"
-            ),
+            book_id=_book_identity(request, plan.content),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(
                 request.command.get("capability_pack_snapshot_ref") or ""
@@ -1510,12 +1506,18 @@ class _DraftHandler:
         plan_view = build_draft_plan_view(
             plan.content, work_requirements=request.work_requirements_enabled
         )
-        core_policy = "scene-core-slots.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "EXPLICIT_SKELETON_V1"
-        information_policy = "scene-information-flow.v1" if request.definition_version == "3.9.2" else "ENTRY_ONLY_V1"
-        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy)
+        core_policy = "scene-core-slots.v1" if request.effective_definition_version in {"3.9.1", "3.9.2", "3.10.0"} else "EXPLICIT_SKELETON_V1"
+        information_policy = "scene-information-flow.v1" if request.effective_definition_version in {"3.9.2", "3.10.0"} else "ENTRY_ONLY_V1"
+        source_arguments = {}
+        if request.effective_definition_version == "3.10.0":
+            from .realization_composition import resolve_accepted_realization_sources
+            core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
+            source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                "world_preparation": context.content.get("chapter_execution_expectations", {}).get("world_preparation", {})}
+        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy, **source_arguments)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
-        generated = self.provider.invoke(
+        generated = _invoke_with_known_receipt(self.provider,
             request,
             stage="draft",
             payload={
@@ -1537,6 +1539,7 @@ class _DraftHandler:
             work_requirements=request.work_requirements_enabled,
             core_policy=core_policy,
             information_policy=information_policy,
+            realization_contract=realization_contract if request.effective_definition_version == "3.10.0" else None,
         )
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,
@@ -1566,7 +1569,7 @@ class _ReviewHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         from .review_window import prepare_native_review, require_review_frontier
         draft, context, targets, window, payload = prepare_native_review(request, stage="review")
-        reviewed = self.provider.invoke(
+        reviewed = _invoke_with_known_receipt(self.provider,
             request,
             stage="review",
             payload=payload,
@@ -1598,12 +1601,24 @@ class _RevisionHandler:
             item for item in request.inputs if item.asset_type == "revision_task"
         )
         if quality_tasks:
+            proof = _retained_result_proof(request)
+            if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-quality-range-revalidation.v1":
+                from .quality_revision_recovery import materialize_retained_revision
+                content = materialize_retained_revision(request)
+                return _revision_decision_output(ChapterNode.REVISION, _output(ChapterNode.REVISION, content), {
+                    "contract_version": "revision-execution-decision.v1", "decision": "RETAINED_RESULT_DERIVATION",
+                    "retained_result_derivation": content["retained_result_derivation"], "provider_dispatches": 0})
             revision = request.require_input("best_draft_candidate")
             quality = request.require_input("quality_score_report")
             context = request.require_input("context_bundle")
             from novel_forge.modules.revision.domain import quality_edit_contract
             edit_contract = quality_edit_contract(revision=revision.content, revision_asset_version_id=revision.asset_version_id,
-                                                  revision_tasks=tuple(item.content for item in quality_tasks))
+                                                  revision_tasks=tuple(item.content for item in quality_tasks),
+                                                  range_policy="NAMED_DIAGNOSIS_UNION_V1" if request.effective_definition_version == "3.10.0" else "INTERSECTION_V1")
+            length_requirement = None
+            if request.effective_definition_version == "3.10.0":
+                from .quality_length_requirement import freeze_requirement
+                length_requirement = freeze_requirement(context.content, context_id=context.asset_version_id)
             revised = self.provider.invoke(
                 request,
                 stage="revision",
@@ -1612,12 +1627,11 @@ class _RevisionHandler:
                     "draft": revision.content,
                     "review": dict(revision.content.get("selected_review") or {}),
                     "quality": quality.content,
+                    **({"quality_length_requirement": length_requirement} if length_requirement else {}),
                     "required_actions": [item.content for item in quality_tasks],
                 },
             )
-            return _model_output(
-                ChapterNode.REVISION,
-                apply_quality_revision_result(
+            corrected = apply_quality_revision_result(
                     project_id=request.project_id,
                     revision=revision.content,
                     revision_asset_version_id=revision.asset_version_id,
@@ -1630,16 +1644,29 @@ class _RevisionHandler:
                     context_bundle_version_id=context.asset_version_id,
                     result=revised.output,
                     provider_evidence=_provider_evidence(revised),
-                ),
-                request=request,
-                generated=revised,
-            )
+                    range_policy="NAMED_DIAGNOSIS_UNION_V1" if request.effective_definition_version == "3.10.0" else "INTERSECTION_V1",
+                )
+            if request.effective_definition_version == "3.10.0":
+                from .quality_length_requirement import require_length
+                require_length(length_requirement, corrected["text"])
+                if length_requirement:
+                    corrected["quality_length_requirement"] = length_requirement
+            return _model_output(ChapterNode.REVISION, corrected, request=request, generated=revised)
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
+        if request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
+            from novel_forge.modules.revision.domain import retain_reviewed_draft
+            retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id,
+                draft_hash=draft.content_hash, review=review.content, review_id=review.asset_version_id,
+                review_hash=review.content_hash, context_id=context.asset_version_id, context_hash=context.content_hash)
+            if retained is not None:
+                from .review_window import require_review_frontier
+                require_review_frontier(request)
+                return _revision_decision_output(ChapterNode.REVISION, _output(ChapterNode.REVISION, retained), retained["revision_execution_decision"])
         length_scope = None
         repair_payload = {}
-        if request.definition_version == "3.9.4":
+        if request.effective_definition_version in {"3.9.4", "3.10.0"}:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             from .candidate_repair import candidate_repair_payload
             length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
@@ -1678,6 +1705,13 @@ class _ReReviewHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-quality-review-revalidation.v1":
+            from .quality_review_recovery import materialize_retained_rereview
+            content = materialize_retained_rereview(request)
+            return _revision_decision_output(ChapterNode.REREVIEW, _output(ChapterNode.REREVIEW, content), {
+                "contract_version": "revision-execution-decision.v1", "decision": "RETAINED_RESULT_DERIVATION",
+                "retained_result_derivation": content["retained_result_derivation"], "provider_dispatches": 0})
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         incumbent = next((item for item in request.inputs if item.asset_type == "best_draft_candidate"), None)
@@ -1689,22 +1723,35 @@ class _ReReviewHandler:
             review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
         from .review_window import prepare_native_review, require_review_frontier
         revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
+        if request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
+            from novel_forge.modules.revision.domain import reuse_unchanged_review
+            reused = reuse_unchanged_review(draft=draft.content, draft_id=draft.asset_version_id,
+                draft_hash=draft.content_hash, review=review.content, review_id=review.asset_version_id,
+                review_hash=review.content_hash, revision=revision.content, revision_id=revision.asset_version_id,
+                context_id=context.asset_version_id, context_hash=context.content_hash)
+            if reused is not None:
+                require_review_frontier(request)
+                return _revision_decision_output(ChapterNode.REREVIEW, _output(ChapterNode.REREVIEW, reused), reused["review_reuse_evidence"])
         reviewed = self.provider.invoke(
             request,
             stage="rereview",
             payload=payload,
         )
         require_review_frontier(request)
+        rereview_result = reviewed.output
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.review.quality_namespace import separate_quality_checks
+            rereview_result = separate_quality_checks(reviewed.output, review.content, revision.content)
         return _model_output(
             ChapterNode.REREVIEW,
-            normalize_rereview_result(
+            _normalize_rereview_with_quality_namespace(
                 draft_asset_version_id=draft.asset_version_id,
                 review=review.content,
                 review_asset_version_id=review.asset_version_id,
                 revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id,
                 context_bundle_version_id=context.asset_version_id,
-                result=reviewed.output,
+                result=rereview_result,
                 provider_evidence=_provider_evidence(reviewed),
                 project_id=request.project_id,
                 knowledge_targets=targets,
@@ -1890,7 +1937,7 @@ class _CanonHandler:
         context = request.require_input("context_bundle")
         validation_contract = 'LEGACY_V1'
         policy_binding = None
-        if request.definition_version == '3.9.10' and request.database_url:
+        if request.effective_definition_version in {'3.9.10', '3.10.0'} and request.database_url:
             from novel_forge.modules.canon_graph.validation_recovery import selected_validation_policy
             with AuthorityUnitOfWork(request.database_url) as uow:
                 uow.cursor.execute('SELECT root_operation_id FROM authority_operation WHERE operation_id=%s AND project_id=%s', [request.operation_id,request.project_id])
@@ -1906,6 +1953,7 @@ class _CanonHandler:
             extraction=resolved_extraction,
             context_bundle=context.content,
             validation_contract=validation_contract,
+            reader_observation_lineage=request.effective_definition_version == "3.10.0",
         )
         continuity_report = {
             **dict(content["deterministic_validation"]),
@@ -1970,24 +2018,58 @@ class _CanonExtractionHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-canon-reference-resolution-revalidation.v1":
+            from .canon_reference_recovery import materialize
+            return _output(ChapterNode.CANON_EXTRACTION, materialize(request))
         revision = request.require_input("best_draft_candidate")
         context = request.require_input("context_bundle")
+        span_inputs = {}
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.canon_graph.source_spans import source_spans
+            from .domain_handlers import canon_history
+            baselines, _ = canon_history(context.content)
+            from novel_forge.modules.canon_graph.background import scheduled_world_events
+            from novel_forge.modules.worldbuilding.production_schema import world_transition_schema
+            world_binding = (context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}
+            world_events = scheduled_world_events(world_binding) if world_binding else []
+            recovery_feedback = _canon_recovery_feedback(request)
+            span_inputs = {**recovery_feedback, "source_span_table": source_spans(revision.content["text"]),
+                "source_span_schema_contract": "typed-extraction-json.v2",
+                "world_transition_contract": world_transition_schema(agency=any(event.get("action_mode") for event in world_events)),
+                "observer_transition_constraints": [{key: value for key, value in event.items() if key != "action"}
+                    for event in world_events if event["camera"] == "ON_CAMERA"],
+                "transition_precondition_contract": "accepted-cas.v1", "accepted_transition_baselines": baselines,
+                "transition_result_contract": "canonical-plan-results.v1",
+                "canonical_transition_results": (context.content.get("chapter_execution_expectations") or {}).get("required_state_transitions") or []}
         provider_extraction = None
         generated: ModelProviderResult | None = None
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.canon_graph.source_spans import project_transition_preconditions
+            span_inputs["accepted_transition_baselines"] = project_transition_preconditions(span_inputs["accepted_transition_baselines"])
+            span_inputs["canon_context_projection"] = "canon-source-context.v1"
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
-            generated = self.provider.invoke(
+            generated = _invoke_with_known_receipt(self.provider,
                 request,
                 stage="canon_extraction",
                 payload={
                     "revision": revision.content,
+                    **span_inputs,
                     "execution_expectations": dict(
                         context.content.get("chapter_execution_expectations") or {}
                     ),
                 },
             )
             provider_extraction = _canon_provider_extraction(generated)
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.source_spans import bind_source_spans
+                from .receipt_recovery import known_receipt_proof, known_canon_extraction, known_receipt_source_span_contract
+                if request.database_url and known_receipt_proof(request):
+                    provider_extraction = known_canon_extraction(generated, revision.content["text"], source_span_contract=known_receipt_source_span_contract(request))
+                else:
+                    provider_extraction = bind_source_spans(provider_extraction, revision.content["text"])
         from novel_forge.modules.canon_graph.grounding import extract_grounded_candidates
         extractor = extract_grounded_candidates if generated is not None else build_canon_extraction
         content = extractor(
@@ -2003,6 +2085,9 @@ class _CanonExtractionHandler:
             extraction=content,
             binding=dict((context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}),
         )
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof and recovery_feedback:
+            content["retained_result_repair"] = _result_evidence_fields(proof)
         if generated is None:
             return _output(ChapterNode.CANON_EXTRACTION, content)
         return _model_output(
@@ -2025,23 +2110,42 @@ class _CanonProposalHandler:
             extraction_asset_version_id=extraction.asset_version_id,
         )
         generated = None
+        comparison = None
         if extraction.content.get("grounding"):
             from novel_forge.modules.canon_graph.grounding import grounded_claims, validate_support_review
             revision = request.require_input("best_draft_candidate")
+            retained = None
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.realization_comparison import comparison_input
+                context = request.require_input("context_bundle")
+                comparison = comparison_input(planned=(context.content.get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
+                    extraction=extraction.content, text=str(revision.content.get("text") or ""))
+            if request.effective_definition_version == "3.10.0" and request.database_url:
+                from .canon_support_coverage import retained_review
+                retained = retained_review(request)
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
-                "claims": grounded_claims(extraction.content),
-                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.definition_version)=="3.9.8" else {}),
+                **({"realization_comparison": comparison} if comparison is not None else {}),
+                "claims": retained[0]["unresolved_claims"] if retained else grounded_claims(extraction.content),
+                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.effective_definition_version) in {"3.9.8", "3.10.0"} else {}),
             })
             if request.command.get("chapter_sampling"):
                 from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result
                 validate_sample_result(extraction.content, revision.content, revision.asset_version_id, generated.output)
                 return replace(_model_output(ChapterNode.CANON_PROPOSAL, dict(generated.output),
                     request=request, generated=generated), asset_type="canon_support_review")
+            support = generated.output
+            if retained:
+                from .canon_support_coverage import combine_review
+                support = combine_review(extraction.content, retained[1], support)
+                proposal["retained_result_repair"] = _result_evidence_fields(retained[0])
             proposal["grounding"] = validate_support_review(
                 extraction=extraction.content, revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id, result=generated.output,
+                revision_asset_version_id=revision.asset_version_id, result=support, realization_comparison=comparison,
             )
+        if comparison is not None:
+            for item in proposal["grounding"]["realization_comparisons"]:
+                item["support_operation_id"] = request.operation_id
         generation = int(request.command.get("canon_reextraction_generation") or 1)
         proposal["generation"] = generation
         proposal["supersedes_asset_version_id"] = str(
@@ -2077,7 +2181,7 @@ class _QualityGroupHandler:
             raise KernelError("QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED",
                               "Frozen work-quality.v1 cannot safely continue under v2; retain receipts and admit an explicit replacement")
         world_projection = None
-        if self.group == 'longform' and request.definition_version == '3.9.12' and request.database_url:
+        if self.group == 'longform' and request.effective_definition_version in {'3.9.12', '3.10.0'} and request.database_url:
             from novel_forge.modules.chapter_quality_authority.foundation_context import request_world_projection
             world_projection = request_world_projection(request)
         quality_context = build_quality_context_view(
@@ -2100,14 +2204,20 @@ class _QualityGroupHandler:
             getattr(self.provider, "external_effect_backed", False)
             or getattr(self.provider, "supports_quality_evaluation", False)
         ):
+            quality_span_inputs = {}
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.source_spans import source_spans
+                quality_span_inputs = {"source_span_table": source_spans(revision.content["text"]),
+                    "quality_span_contract": "literal-source-spans.v1"}
             generated = self.provider.invoke(
                 request,
                 stage=f"quality_{self.group}",
                 payload={
                     "revision": revision.content,
                     "quality_context": quality_context,
-                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.definition_version in {"3.9.9", "3.9.12"} else {}),
+                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.effective_definition_version in {"3.9.9", "3.9.12", "3.10.0"} else {}),
                     "dimensions": list(QUALITY_GROUPS[self.group]),
+                    **quality_span_inputs,
                 },
             )
             from novel_forge.modules.chapter_quality_authority.reference_sampling import (
@@ -2129,10 +2239,17 @@ class _QualityGroupHandler:
                     f"schema:chapter-provider-output:quality_{self.group}:v3",
                     f"schema:chapter-provider-output:quality_{self.group}:v4",
                     f"schema:chapter-provider-output:quality_{self.group}:v5",
+                    f"schema:chapter-provider-output:quality_{self.group}:v6",
                 )
             )
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.source_spans import require_quality_dimensions
+                require_quality_dimensions(generated.output.get("dimensions", []), QUALITY_GROUPS[self.group])
             for item in generated.output.get("dimensions", []):
                 located = list(item.get("evidence_locations") or [])
+                if schema_ref == f"schema:chapter-provider-output:quality_{self.group}:v6":
+                    from novel_forge.modules.canon_graph.source_spans import bind_quality_spans
+                    located = bind_quality_spans(located, revision.content["text"])
                 if current_quality_contract:
                     located = bind_quality_prose_evidence(
                         located,
@@ -2365,7 +2482,21 @@ class _QualityHandler:
             evidence_reports=group_reports,
         )
         from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
-        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.definition_version=="3.9.11" else 1)
+        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.effective_definition_version in {"3.9.11", "3.10.0"} else 1)
+        if admission is not None and request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.chapter_quality_authority.creative_validation import (
+                receipt_work_constraints, assess_coordinated_internal_quality, apply_work_constraint_actions,
+                internal_required_actions,
+            )
+            constraints = receipt_work_constraints(request.database_url, project_id=request.project_id,
+                receipts=admission["receipts"], target=revision.asset_version_id)
+            admission = assess_coordinated_internal_quality(groups=[group.content for group in groups],
+                target=revision.asset_version_id, work_constraints=constraints)
+            content["required_actions"] = internal_required_actions(admission=admission,
+                evidence_reports=content["evidence_reports"], target=revision.asset_version_id)
+            content = apply_work_constraint_actions(content, admission=admission, revision=revision.content,
+                target=revision.asset_version_id, canon=canon.content,
+                bounded_single_scene=request.effective_definition_version == "3.10.0")
         if admission is not None:
             content["internal_admission"] = admission
         primary = _output(
@@ -2395,7 +2526,7 @@ class _QualityHandler:
         from novel_forge.modules.revision.domain import freeze_quality_edit_scope
 
         actions = content.get("required_actions", [])
-        if admission and request.definition_version == '3.9.11':
+        if admission and request.effective_definition_version == '3.9.11':
             from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
             actions = internal_required_actions(admission=admission, evidence_reports=content['evidence_reports'], target=revision.asset_version_id)
             content['internal_required_actions'] = actions
@@ -2740,6 +2871,7 @@ class _PublishGateHandler:
                 context_bundle=context.content,
                 context_bundle_version_id=context.asset_version_id,
                 project_id=request.project_id,
+                work_admission=request.effective_definition_version == "3.10.0",
             ),
         )
 
@@ -2749,7 +2881,12 @@ class _ExportHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("best_draft_candidate")
         publish_gate = request.require_input("publish_gate_report")
-        return _output(
+        restored = None
+        if request.definition_version == "3.10.0" and publish_gate.content.get("gate") == "PUBLISH_GATE_BLOCKED":
+            from .publication_recovery import revalidate_frozen_publication
+            restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
+            publish_gate = restored
+        output = _output(
             ChapterNode.EXPORT,
             build_export_package(
                 revision=revision.content,
@@ -2758,6 +2895,11 @@ class _ExportHandler:
                 quality_asset_version_id=publish_gate.asset_version_id,
             ),
         )
+        if restored is not None:
+            output = replace(output, auxiliary_outputs=(ChapterAuxiliaryOutput(
+                "publish_gate_report", "chapter.export.revalidated_publish_gate", "completion_evidence", restored.content,
+                reference_asset_version_ids=(request.require_input("publish_gate_report").asset_version_id, revision.asset_version_id)),))
+        return output
 
 
 @dataclass(frozen=True, slots=True)
@@ -2773,6 +2915,7 @@ class _FinalReleaseGateHandler:
             ChapterNode.FINAL_RELEASE_GATE,
             build_final_release_gate(
                 project_id=request.project_id,
+                work_admission=request.effective_definition_version == "3.10.0",
                 export_package=export.content,
                 export_asset_version_id=export.asset_version_id,
                 export_blobs=export.blobs,
@@ -2903,6 +3046,7 @@ def build_chapter_handler_registry(
         model_effects_required=bool(getattr(provider, "external_effect_backed", False)),
         semantic_retrieval_available=semantic_provider_bound,
         agentic_retrieval_available=expansion_provider_bound,
+        coordinated_contract=bool(getattr(provider, "external_effect_backed", False)),
     )
     registry.register(ChapterNode.PLAN, _PlanHandler())
     registry.register(ChapterNode.EXECUTION_INTENT, _ExecutionIntentHandler())
@@ -2968,18 +3112,32 @@ def _model_output(
     request: ChapterHandlerRequest,
     generated: ModelProviderResult,
 ) -> ChapterHandlerOutput:
+    from dataclasses import replace
+    known = None
+    if request.effective_definition_version == "3.10.0" and request.database_url and node in {ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CANON_EXTRACTION}:
+        from .receipt_recovery import known_receipt_proof
+        known = known_receipt_proof(request)
+    if known is not None:
+        content = {**content, "known_receipt_revalidation": known}
     primary = _output(node, content)
-    commit = _execution_commit_auxiliary(node, request, generated)
-    if commit is None:
-        return primary
-    return ChapterHandlerOutput(
-        asset_type=primary.asset_type,
-        output_key=primary.output_key,
-        role=primary.role,
-        content=primary.content,
-        qualification_policy=primary.qualification_policy,
-        auxiliary_outputs=(commit,),
-    )
+    commit = None if known else _execution_commit_auxiliary(node, request, generated)
+    if commit is not None:
+        primary = replace(primary, auxiliary_outputs=(commit,))
+    if request.effective_definition_version == "3.10.0" and node in {ChapterNode.REVISION, ChapterNode.REREVIEW}:
+        primary = _revision_decision_output(node, primary, {
+            "contract_version": "revision-execution-decision.v1",
+            "decision": "PROVIDER_REVISION" if node is ChapterNode.REVISION else "PROVIDER_REREVIEW",
+            "operation_id": request.operation_id,
+            "provider_evidence": _provider_evidence(generated),
+        })
+    return primary
+
+
+def _revision_decision_output(node, output, evidence):
+    from dataclasses import replace
+    return replace(output, auxiliary_outputs=(*output.auxiliary_outputs, ChapterAuxiliaryOutput(
+        asset_type="revision_execution_decision", output_key=node.output_key + ".execution_decision",
+        role="completion_evidence", content=evidence)))
 
 
 def _execution_commit_auxiliary(
@@ -3049,3 +3207,57 @@ def _canon_provider_extraction(result: ModelProviderResult) -> dict[str, Any]:
         for field, values in result.output.items()
         if isinstance(values, list)},
     }
+
+
+def _normalize_rereview_with_quality_namespace(**arguments):
+    content = normalize_rereview_result(**arguments)
+    namespace = arguments["result"].get("quality_range_reassessment")
+    if namespace is not None:
+        content["quality_range_reassessment"] = namespace
+    return content
+
+
+def _retained_result_proof(request):
+    if request.command.get("chapter_sampling"):
+        return {}
+    return ((request.command.get("preparation_report") or {}).get("retained_graph_continuation") or {}).get("retained_result") or {}
+
+
+def _result_evidence_fields(proof):
+    return {key: proof[key] for key in ("contract_version", "source_operation_id", "source_effect_id", "source_dispatch_id", "source_output_hash", "source_request_hash", "provider_invoked", "strict_certification_eligible")}
+
+
+def _canon_recovery_feedback(request):
+    if request.effective_definition_version != "3.10.0" or not request.database_url:
+        return {}
+    proof = _retained_result_proof(request)
+    contract = proof.get("contract_version")
+    if contract in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2"}:
+        from .canon_output_recovery import repair_feedback
+        return {"canon_repair_feedback": repair_feedback(request)}
+    if contract == "chapter-canon-support-reextraction.v1":
+        from .canon_support_coverage import reextraction_feedback
+        return {"canon_repair_feedback": reextraction_feedback(request)}
+    if contract in {"chapter-current-semantic-repair.v1", "chapter-current-semantic-repair.v2"}:
+        from .current_semantic_recovery import repair_feedback
+        return {"canon_repair_feedback": repair_feedback(request)}
+    if contract in {"chapter-current-quote-repair.v1", "chapter-canon-reference-contract-repair.v1"}:
+        from .current_quote_recovery import repair_feedback
+        return {"canon_repair_feedback": repair_feedback(request, stage="canon_extraction")}
+    return {}
+
+
+def _invoke_with_known_receipt(provider, request, *, stage, payload):
+    retained = None
+    if request.effective_definition_version == "3.10.0" and request.database_url:
+        from .receipt_recovery import consume_known_draft_receipt
+        retained = consume_known_draft_receipt(request)
+    return retained if retained is not None else provider.invoke(request, stage=stage, payload=payload)
+
+
+def _book_identity(request, plan):
+    if request.effective_definition_version == "3.10.0":
+        from .chapter_plan_views import resolve_chapter_plan_book_id
+        return resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan,
+            host_book_id=str(request.command.get("book_id") or ""))
+    return str(request.command.get("book_id") or plan.get("book_id") or f"book:{request.project_id}")

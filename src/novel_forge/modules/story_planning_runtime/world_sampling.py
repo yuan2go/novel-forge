@@ -104,6 +104,9 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
     source_ref = _binding(source)
     selection = dict(context.content.get("narrative_intelligence") or {})
     source_contract = source.content.get("contract") or {}
+    if row[1] == "1.21.0" and (source_contract.get("contract_version") != "world-preparation-source.v2"
+        or (source_contract.get("reality") or {}).get("epistemic_contract") != "world-agency.v2"):
+        raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "Current World samples retain the native scoped agency contract")
     if source_contract.get("request") != source_payload["world_preparation_request"]:
         raise KernelError("WORLD_SAMPLE_SOURCE_DRIFT", "World Context must retain its original Book frontier")
     native_documents = [context, source]

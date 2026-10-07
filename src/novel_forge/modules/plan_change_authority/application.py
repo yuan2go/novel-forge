@@ -55,6 +55,7 @@ from .semantic_impact import (
 
 
 VERSION = "1.0.4"
+COORDINATED_VERSION = "1.0.6"
 DEFINITIONS = {
     "plan_change.propose": (
         "plan_change_proposal",
@@ -129,9 +130,9 @@ class _Registry:
     def __init__(self) -> None:
         handler = _Handler()
         self.items = {
-            (name, VERSION): AuthorityHandlerRegistration(
+            (name, version): AuthorityHandlerRegistration(
                 definition_name=name,
-                definition_version=VERSION,
+                definition_version=version,
                 handler_key=f"{HANDLER_PREFIX}.{name}",
                 handler_contract_version="plan-change-handler-v1",
                 output_asset_type=asset_type,
@@ -141,6 +142,7 @@ class _Registry:
                 handler=handler,
             )
             for name, (asset_type, output_key) in DEFINITIONS.items()
+            for version in (VERSION, COORDINATED_VERSION)
         }
 
     @property
@@ -164,6 +166,7 @@ class PostgresPlanChangeAuthority:
         commit_sha: str,
         worker_id: str = "plan-change-authority-worker",
         failure_injector: Callable[[str], None] | None = None,
+        coordinated_contract: bool = False,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError(
@@ -177,6 +180,7 @@ class PostgresPlanChangeAuthority:
         self.worker_id = worker_id
         self.failure_injector = failure_injector
         self.registry = _Registry()
+        self.coordinated_contract = coordinated_contract
 
     def propose(
         self, command: PlanChangeProposalCommand, *, principal: Principal
@@ -376,6 +380,11 @@ class PostgresPlanChangeAuthority:
             principal=principal,
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
+            if evidence.get("contract_version") == "book-authorized-future-correction.v2":
+                if not self.coordinated_contract:
+                    raise KernelError("BOOK_AUTO_REPLAN_CONTRACT_INVALID", "Auto approval requires the explicit current owner")
+                from novel_forge.modules.book_replan.auto_authorization import require_auto_replan_proof
+                require_auto_replan_proof(uow.cursor,project_id=proposal["project_id"],proposal_id=proposal_id,actor_id=principal.principal_id,evidence=evidence)
             uow.repositories.plan_change.decide(
                 proposal_id=proposal_id,
                 project_id=proposal["project_id"],
@@ -504,6 +513,12 @@ class PostgresPlanChangeAuthority:
             )
         else:
             self._require_story_design_active(proposal)
+        if getattr(self,"coordinated_contract",False):
+            from novel_forge.modules.story_design_authority.creative_validation import validation_state,project_approved_validation_eligibility
+            if validation_state(proposed_state):
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    project_approved_validation_eligibility(uow.cursor,project_id=proposal["project_id"],book_id=proposal["book_id"],asset_version_id=proposal["proposed_asset_version_id"])
+                    uow.commit()
         self._probe("after_plan_activation_before_binding")
         target = self._target_binding(
             proposal["project_id"],
@@ -732,16 +747,40 @@ class PostgresPlanChangeAuthority:
         principal: Principal,
     ) -> str:
         self._register_definitions()
+        current = getattr(self, "coordinated_contract", False)
+        if current:
+            from novel_forge.modules.book_authority.reader_pack import require_current_reader_template
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                book_id = str(payload.get("book_id") or "")
+                if not book_id:
+                    uow.cursor.execute("SELECT book_id FROM authority_plan_change_proposal WHERE proposal_id=%s AND project_id=%s", [payload.get("proposal_id"),project_id])
+                    row = uow.cursor.fetchone()
+                    book_id = str(row[0]) if row else ""
+                require_current_reader_template(uow.cursor,project_id=project_id,book_id=book_id)
+        predecessor = self._proposal_contract_predecessor(definition=definition, project_id=project_id,workspace_id=workspace_id,
+            actor_id=actor_id,idempotency_key=idempotency_key,payload=payload,input_assets=input_assets) if current else ""
+        definition_version = COORDINATED_VERSION if current else VERSION
+        if current and not predecessor:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("""SELECT definition_version FROM authority_operation
+                    WHERE project_id=%s AND definition_name=%s AND idempotency_scope='project:plan-change'
+                      AND idempotency_key=%s""", [project_id,definition,idempotency_key])
+                frozen = uow.cursor.fetchone()
+            if frozen:
+                if frozen[0] not in {VERSION, COORDINATED_VERSION}:
+                    raise KernelError("IDEMPOTENCY_CONFLICT", "Unsupported frozen PlanChange identity")
+                definition_version = str(frozen[0])
         admitted = admit_command(
             self.database_url,
             {
                 "definition_name": definition,
-                "definition_version": VERSION,
+                "definition_version": definition_version,
                 "project_id": project_id,
                 "workspace_id": workspace_id,
                 "actor_id": actor_id,
                 "idempotency_scope": "project:plan-change",
-                "idempotency_key": idempotency_key,
+                "idempotency_key": idempotency_key + ":contract-successor:" + COORDINATED_VERSION if predecessor else idempotency_key,
+                **({"parent_operation_id":predecessor,"causation_operation_id":predecessor} if predecessor else {}),
                 "trace_id": trace_id,
                 "span_id": str(uuid4()),
                 "correlation_id": correlation_id,
@@ -798,6 +837,88 @@ class PostgresPlanChangeAuthority:
             project_id=project_id,
         )
         return operation_id
+
+    def _proposal_contract_predecessor(
+        self,
+        *,
+        definition,
+        project_id,
+        workspace_id,
+        actor_id,
+        idempotency_key,
+        payload,
+        input_assets,
+    ):
+        if definition != "plan_change.propose":
+            return ""
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT operation_id,definition_version,status,project_id,workspace_id,actor_id,
+                command_payload,input_asset_snapshot FROM authority_operation
+                WHERE idempotency_scope='project:plan-change' AND idempotency_key=%s AND project_id=%s FOR UPDATE""",
+                [idempotency_key,project_id],
+            )
+            row = uow.cursor.fetchone()
+            if (
+                not row
+                or row[1] != VERSION
+                or row[2] not in {"FAILED_FINAL", "DEAD_LETTER"}
+            ):
+                return ""
+            uow.cursor.execute(
+                "SELECT result,error FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                [row[0]],
+            )
+            attempt = uow.cursor.fetchone()
+            failure = (
+                (attempt[0] or {}).get("error_code")
+                or (attempt[1] or {}).get("error_code")
+                if attempt
+                else ""
+            )
+            uow.cursor.execute(
+                """SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+                OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt owned USING(attempt_id) WHERE owned.operation_id=%s AND lease.released_at IS NULL AND lease.expires_at>NOW())
+                OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state IN ('ABORTED','CANCELLED'))
+                OR EXISTS(SELECT 1 FROM authority_story_formation_run formation JOIN authority_story_creation_cancellation cancel USING(formation_run_id)
+                  WHERE formation.project_id=%s AND formation.book_id=%s)""",
+                [
+                    row[0],
+                    row[0],
+                    row[0],
+                    row[0],
+                    project_id,
+                    payload["book_id"],
+                    project_id,
+                    payload["book_id"],
+                ],
+            )
+            unsafe = uow.cursor.fetchone()[0]
+            if (
+                failure != "AUTHORITY_INPUT_NOT_ELIGIBLE"
+                or unsafe
+                or row[3:6] != (project_id, workspace_id, actor_id)
+                or row[6].get("payload") != payload
+                or row[7]
+                != [{"project_id": project_id, **item} for item in input_assets]
+            ):
+                raise KernelError(
+                    "PLAN_CHANGE_CONTRACT_SUCCESSOR_UNSAFE",
+                    "Only the exact zero-effect pending-input contract failure may continue",
+                )
+            candidate = require_validation_plan_change_input(
+                uow.cursor, project_id=project_id, payload=payload
+            )
+            if not candidate:
+                raise KernelError(
+                    "PLAN_CHANGE_CONTRACT_SUCCESSOR_UNSAFE",
+                    "Source candidate requires its original creative-validation admission",
+                )
+            from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+            require_known_cli_lineage(uow.cursor,project_id=project_id,operation_id=str(row[0]))
+            return str(row[0])
 
     def _target_binding(
         self,
@@ -1016,6 +1137,9 @@ class PostgresPlanChangeAuthority:
                         commit_sha=self.commit_sha,
                     )
                 )
+                if self.coordinated_contract:
+                    uow.repositories.definitions.register(_definition(name,asset_type,output_key,
+                        application_build_id=self.application_build_id,commit_sha=self.commit_sha,definition_version=COORDINATED_VERSION))
             uow.commit()
 
     def _probe(self, point: str) -> None:
@@ -1030,14 +1154,15 @@ def _definition(
     *,
     application_build_id: str,
     commit_sha: str,
+    definition_version: str = VERSION,
 ) -> dict[str, Any]:
     schema = {"type": "object"}
     return {
         "name": name,
-        "definition_version": VERSION,
+        "definition_version": definition_version,
         "family": "plan_change_authority",
         "enabled": True,
-        "definition_status": "integration_proven",
+        "definition_status": "implemented_validation_pending" if definition_version == COORDINATED_VERSION else "integration_proven",
         "command_schema_version": f"{name}.command.v1",
         "result_schema_version": f"{name}.result.v1",
         "command_schema": schema,
@@ -1073,6 +1198,7 @@ def _definition(
             "plan_change_candidate_asset_input_allowed": (
                 name in {"plan_change.propose", "plan_change.activate"}
             ),
+            **({"plan_change_validation_candidate_asset_input_allowed":name in {"plan_change.propose","plan_change.activate"}} if definition_version == COORDINATED_VERSION else {}),
             "semantic_revalidation_target_input_allowed": (
                 name == "plan_change.revalidate"
             ),
@@ -1096,3 +1222,64 @@ def _definition(
 
 
 __all__ = ["PlanChangeProposalCommand", "PostgresPlanChangeAuthority"]
+
+
+def require_validation_plan_change_input(cursor, *, project_id, payload):
+    from novel_forge.modules.story_design_authority.creative_validation import (
+        candidate_validation,
+    )
+
+    identity = str(payload.get("proposed_asset_version_id") or "")
+    book_id = payload.get("book_id")
+    if not book_id and payload.get("proposal_id"):
+        cursor.execute(
+            "SELECT book_id,proposed_asset_version_id FROM authority_plan_change_proposal WHERE proposal_id=%s AND project_id=%s AND status IN ('APPROVED','ACTIVATION_PENDING','ACTIVE')",
+            [payload["proposal_id"], project_id],
+        )
+        proposal = cursor.fetchone()
+        if not proposal or proposal[1] != identity:
+            raise KernelError(
+                "PLAN_CHANGE_VALIDATION_INPUT_INVALID",
+                "Activation requires the exact approved same-Book proposal",
+            )
+        book_id = proposal[0]
+    validation = candidate_validation(
+        cursor, project_id=project_id, asset_version_id=identity
+    )
+    if validation is None:
+        return ""
+    cursor.execute(
+        """SELECT state.qualification,state.approval,state.lifecycle,state.freshness,
+        state.execution_evidence,version.content->>'book_id' FROM authority_story_design_version_state state
+        JOIN authority_asset_version version USING(asset_version_id)
+        WHERE state.project_id=%s AND state.asset_version_id=%s""",
+        [project_id, identity],
+    )
+    row = cursor.fetchone()
+    if (
+        not row
+        or row[0] != "STRUCTURALLY_VALID"
+        or row[1] not in {"PENDING", "APPROVED"}
+        or row[2] not in {"MATERIALIZED", "ACTIVE"}
+        or row[3] != "CURRENT"
+        or row[4].get("creative_validation") != validation
+        or validation["book_id"] != book_id
+        or row[5] != validation["book_id"]
+    ):
+        raise KernelError(
+            "PLAN_CHANGE_VALIDATION_INPUT_INVALID",
+            "Exact current same-Book structural admission required for pending proposal input",
+        )
+    from novel_forge.modules.book_authority.reader_pack import require_current_reader_template
+    from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+    require_current_reader_template(cursor,project_id=project_id,book_id=book_id)
+    require_known_cli_lineage(cursor,project_id=project_id,operation_id=validation["generation_operation_id"])
+    cursor.execute("SELECT definition_name,definition_version,status,command_payload #>> '{payload,book_id}',command_payload #>> '{payload,execution_contract_version}' FROM authority_operation WHERE operation_id=%s AND project_id=%s",[validation["generation_operation_id"],project_id])
+    owner=cursor.fetchone()
+    if (not owner or owner[:2] != ("story_planning.generate","1.21.0")
+        or owner[2] not in {"WAITING_GATE","SUCCEEDED"} or owner[3:] != (book_id,"1.21.0")):
+        raise KernelError("PLAN_CHANGE_VALIDATION_INPUT_INVALID","Pending input requires its exact native current same-Book Planning owner")
+    cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status<>'SETTLED') OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt owned USING(attempt_id) WHERE owned.operation_id=%s AND lease.released_at IS NULL AND lease.expires_at>NOW())",[validation["generation_operation_id"],validation["generation_operation_id"]])
+    if cursor.fetchone()[0]:
+        raise KernelError("PLAN_CHANGE_VALIDATION_INPUT_INVALID","Original candidate accounting and leases must settle")
+    return identity

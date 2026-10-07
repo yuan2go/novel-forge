@@ -180,5 +180,9 @@
       "sha256": "fec4a85e5ee53d9d6cb623f6b2cd75103818a481c7c79f68fd57e4cc779acd04",
       "disposition": "EXPIRED_AUTHORIZATION"
     }
+  },
+  "immutable_coding_tool_examples": {
+    "skills/improve-codebase-architecture/SKILL.md": "552240a5ab5cec6b67c15dd1ad6e9f6962b1bca6ce870059a8c2713760c20392",
+    "skills/setup-matt-pocock-skills/domain.md": "593a7042218689f1d24df89df14eaf0a20e19e0d0a7d479a01947ac78f0784b9"
   }
 }

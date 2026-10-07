@@ -279,6 +279,7 @@ def build_canon_update(
     planned_execution: dict[str, Any] | None = None,
     identity_profiles: Iterable[dict[str, Any]] = (),
     validation_contract: str = "LEGACY_V1",
+    reader_observation_lineage: bool = False,
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError("CANON_INPUT_INVALID", "versioned canon lineage is required")
@@ -320,6 +321,7 @@ def build_canon_update(
         revision_text=str((revision or {}).get("text") or ""),
         identity_profiles=identity_profiles,
         validation_contract=validation_contract,
+        reader_observation_lineage=reader_observation_lineage,
     )
     expected_realization_ids = {
         str(item.get("event_id") or "")
@@ -358,7 +360,7 @@ def build_canon_update(
         )
     state_changes = _narrative_state_changes(extraction, facts)
     if not any(item["severity"] == "blocking" for item in conflicts):
-        bind_world_event_lineage(state_changes)
+        bind_world_event_lineage(state_changes, reader_observation_lineage=reader_observation_lineage)
     _bind_narrative_entity_versions(state_changes, state)
     return {
         "project_id": project_id,
@@ -386,11 +388,7 @@ def build_canon_update(
             for item in extraction.get("arc_evidence") or ()
             if isinstance(item, dict)
         ],
-        "realization_evidence": [
-            dict(item)
-            for item in extraction.get("realization_evidence") or ()
-            if isinstance(item, dict)
-        ],
+        "realization_evidence": _supported_realization_evidence(extraction),
         "rebuildable": True,
         "rollback_aware": True,
         "canon_contract_version": "canon-update-domain-v7",
@@ -636,6 +634,7 @@ def validate_deterministic_continuity(
     revision_text: str = "",
     identity_profiles: Iterable[dict[str, Any]] = (),
     validation_contract: str = "LEGACY_V1",
+    reader_observation_lineage: bool = False,
 ) -> dict[str, Any]:
 
     if chapter <= 0:
@@ -646,6 +645,7 @@ def validate_deterministic_continuity(
     conflicts: list[dict[str, Any]] = validate_observed_world_changes(
         extraction=extraction, historical_state=historical_state,
         frozen_reality=frozen_world,
+        reader_observation_lineage=reader_observation_lineage,
     )
     profiles = tuple(dict(item) for item in identity_profiles)
     if validation_contract not in {"LEGACY_V1","grounded-canon-validation.v2"}:
@@ -1607,3 +1607,10 @@ __all__ = [
     "validate_deterministic_continuity",
     "CanonSemanticProviderPort",
 ]
+
+
+def _supported_realization_evidence(extraction):
+    if (extraction.get("grounding") or {}).get("realization_comparisons") is not None:
+        from .realization_comparison import bind_comparisons
+        return bind_comparisons(extraction)
+    return [dict(item) for item in extraction.get("realization_evidence") or () if isinstance(item, dict)]

@@ -19,7 +19,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 CONTRACT = "kernel-derived-step-successor.v1"
 
 
-def _settled_graph(cursor, root_id):
+def _settled_graph(cursor, root_id, *, verified_nonproducing_effects=()):
     cursor.execute(
         """SELECT e.external_effect_id,e.request_hash,e.status,r.status,r.accounting_basis,
         r.evidence->>'cost_authorization_ref' FROM authority_external_effect e
@@ -35,6 +35,8 @@ def _settled_graph(cursor, root_id):
                 "Reconcile all membership effects before revalidation",
             )
         if effect[2] == "SUCCEEDED":
+            continue
+        if list(effect) in verified_nonproducing_effects and effect[2] == "FAILED_RETRYABLE":
             continue
         if effect[2] not in {"FAILED_FINAL", "FAILED_RETRYABLE"}:
             raise KernelError(
@@ -68,7 +70,15 @@ def _settled_graph(cursor, root_id):
               AND failed.status='FAILED_RETRYABLE' AND a.status='FAILED_RETRYABLE'
               AND success.status='SUCCEEDED' AND r.status='SETTLED'
               AND r.accounting_basis='ACCOUNT_ENTITLEMENT' AND r.evidence->>'cost_authorization_ref'=%s)''', [effect[0],effect[5]])
-        if not authorized_schema_failure and not cursor.fetchone()[0]:
+        recovered_in_place = cursor.fetchone()[0]
+        current_successor = False
+        if not authorized_schema_failure and not recovered_in_place:
+            from .settled_successor_evidence import verified_successor_effects
+            cursor.execute("SELECT operation_id FROM authority_external_effect WHERE external_effect_id=%s", [effect[0]])
+            owner = cursor.fetchone()
+            proof = verified_successor_effects(cursor, [owner[0]]) if owner and isinstance(owner[0], str) else {}
+            current_successor = proof.get(effect[0], {}).get("effect") == list(effect)
+        if not authorized_schema_failure and not recovered_in_place and not current_successor:
             raise KernelError(
                 "DERIVED_STEP_UNRESOLVED_FAILURE",
                 "Preserve unrelated failure recovery ownership",

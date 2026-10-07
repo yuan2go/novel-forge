@@ -41,13 +41,14 @@ def validate_observed_world_changes(
     extraction: Mapping[str, Any],
     historical_state: Mapping[str, list[dict[str, Any]]],
     frozen_reality: Mapping[str, Any] | None = None,
+    reader_observation_lineage: bool = False,
 ) -> list[dict[str, Any]]:
     if frozen_reality is not None:
         from .domain import _narrative_state_changes, _bind_narrative_entity_versions
         from novel_forge.modules.narrative_state.contracts import events_from_canon_patch
         changes = _narrative_state_changes(dict(extraction), [])
         try:
-            bind_world_event_lineage(changes)
+            bind_world_event_lineage(changes, reader_observation_lineage=reader_observation_lineage)
             _bind_narrative_entity_versions(changes, dict(historical_state))
             events = events_from_canon_patch(
                 project_id=str(extraction["project_id"]), book_id=str(frozen_reality["book_id"]),
@@ -131,10 +132,20 @@ def validate_observed_world_changes(
     return violations
 
 
-def bind_world_event_lineage(changes: dict[str, list[dict[str, Any]]]) -> None:
+def bind_world_event_lineage(changes: dict[str, list[dict[str, Any]]], *, reader_observation_lineage: bool = False) -> None:
     for kind, items in changes.items():
         for change in items:
             if not change.get("world_transition") and kind not in {value[0] for value in WORLD_CHANGE_IDENTITIES.values()}:
+                if reader_observation_lineage and kind == "disclosure_event" and change.get("story_time") and not change.get("causal_batch"):
+                    evidence = change.get("extraction_evidence") or {}
+                    span = evidence.get("span") or {}
+                    source = evidence.get("source_revision_asset_version_id")
+                    if not source or not evidence.get("excerpt_digest") or type(span.get("start")) is not int or type(span.get("end")) is not int or not 0 <= span["start"] < span["end"]:
+                        raise KernelError("READER_DISCLOSURE_SOURCE_REQUIRED", "Timed disclosure must bind its exact supported candidate span")
+                    change["reader_observation_lineage"] = {"contract_version": "reader-disclosure-observation.v1", "source_revision_asset_version_id": source}
+                    change["causality"] = {"cause_refs": [f"observed:{source}:{span['start']}:{span['end']}"],
+                        "participant_ids": [change["character_id"]] if change.get("character_id") else [],
+                        "precondition_refs": [], "effect_kinds": ["DISCLOSURE"]}
                 if change.get("causal_batch"):
                     evidence = change.get("extraction_evidence") or {}
                     span = evidence.get("span") or {}
@@ -242,7 +253,10 @@ def _validate_world_actual(
     known_causes: set[str],
 ) -> None:
     payload = dict((event.get("mutation") or {}).get("payload") or {})
-    if payload.get("causal_batch"):
+    observed_disclosure = payload.get("reader_observation_lineage")
+    if observed_disclosure and (event.get("state_kind") != "disclosure_event" or observed_disclosure.get("contract_version") != "reader-disclosure-observation.v1"):
+        raise KernelError("READER_DISCLOSURE_SCOPE_INVALID", "Reader observation cannot authorize character or world actions")
+    if payload.get("causal_batch") or observed_disclosure:
         evidence = event.get("evidence") or {}
         span = evidence.get("span") or {}
         draft = (event.get("provenance") or {}).get("accepted_draft_asset_version_id")
@@ -251,7 +265,7 @@ def _validate_world_actual(
             if cause.startswith("observed:"):
                 if cause != expected_observation or evidence.get("source_revision_asset_version_id") != draft or not evidence.get("excerpt_digest") or type(span.get("start")) is not int or type(span.get("end")) is not int or not 0 <= span["start"] < span["end"]:
                     raise KernelError("WORLD_OBSERVED_ROOT_UNVERIFIED", "an observed root must bind its exact accepted draft and validated evidence span")
-            elif cause not in known_causes:
+            elif observed_disclosure or cause not in known_causes:
                 raise KernelError("WORLD_ACTUAL_CAUSE_UNRESOLVED", "batch causes must resolve to accepted evidence or verified ancestors")
     if event.get("state_kind") not in {
         kind for kind, _ in WORLD_CHANGE_IDENTITIES.values()

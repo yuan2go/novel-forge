@@ -170,11 +170,12 @@ def admit_single_chapter_saga(
     request = _bind_context_candidate_scope(request)
     _validate_request(request)
     plan_input = _chapter_plan_input(request)
-    definition_version = chapter_definition_version(registry.model_effects_required)
+    definition_version = chapter_definition_version(registry.model_effects_required, coordinated_contract=registry.coordinated_contract)
     definitions = chapter_operation_definitions(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
+        coordinated_contract=registry.coordinated_contract,
         semantic_retrieval_available=registry.semantic_retrieval_available,
         author_input=bool((request.preparation_report or {}).get("author_draft_adoption")),
     )
@@ -182,6 +183,7 @@ def admit_single_chapter_saga(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
+        coordinated_contract=registry.coordinated_contract,
     )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(root_definition)
@@ -267,17 +269,19 @@ def run_single_chapter_slice(
 ) -> ChapterSliceResult:
     request = _bind_context_candidate_scope(request)
     _validate_request(request)
-    definition_version = chapter_definition_version(registry.model_effects_required)
+    definition_version = chapter_definition_version(registry.model_effects_required, coordinated_contract=registry.coordinated_contract)
     definitions = chapter_operation_definitions(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
+        coordinated_contract=registry.coordinated_contract,
         author_input=bool((request.preparation_report or {}).get("author_draft_adoption")),
     )
     root_definition = chapter_root_operation_definition(
         application_build_id=request.application_build_id,
         commit_sha=request.commit_sha,
         model_effects_required=registry.model_effects_required,
+        coordinated_contract=registry.coordinated_contract,
     )
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(root_definition)
@@ -719,7 +723,7 @@ def _command(
         definition_version = CHAPTER_REVISION_DEFINITION_VERSION
     if definition_name == ChapterNode.DRAFT.definition_name and (request.preparation_report or {}).get("author_draft_adoption"):
         from .definitions import CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
-        definition_version = (definition_version + "-author-input.v2" if definition_version in {"3.6.0", "3.7.0", "3.8.0"} else CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
+        definition_version = ("3.10.0-author-input.v3" if definition_version == "3.10.0" else definition_version + "-author-input.v2" if definition_version in {"3.6.0", "3.7.0", "3.8.0"} else CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION if definition_version in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION)
     return {
         "definition_name": definition_name,
         "definition_version": definition_version,

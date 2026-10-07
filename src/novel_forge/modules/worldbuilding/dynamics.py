@@ -176,6 +176,10 @@ class WorldTransition:
     cause_refs: tuple[str, ...]
     epistemic_basis: tuple[CausalRequirement, ...] = ()
 
+    @property
+    def action_mode(self) -> str:
+        return ""
+
     def __post_init__(self) -> None:
         if (
             not all((self.transition_id, self.actor_id, self.action, self.entity_key))
@@ -184,6 +188,8 @@ class WorldTransition:
             or self.story_time.precision == "UNSPECIFIED"
             or not self.changes
             or not self.cause_refs
+            or self.action_mode
+            not in {"", "ROUTINE", "PERCEPTION", "INFORMATION_DEPENDENT"}
             or len(set(self.cause_refs)) != len(self.cause_refs)
             or len({r.requirement_id for r in self.requirements})
             != len(self.requirements)
@@ -219,6 +225,12 @@ class WorldTransition:
                 "reader knowledge and narrative obligations cannot satisfy objective world conditions",
             )
 
+    def to_dict(self) -> dict[str, Any]:
+        result = asdict(self)
+        if not self.action_mode:
+            result.pop("action_mode", None)
+        return result
+
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> WorldTransition:
         require_contract_fields(
@@ -235,7 +247,7 @@ class WorldTransition:
                 "requirements",
                 "cause_refs",
             },
-            optional={"epistemic_basis"},
+            optional={"epistemic_basis", "action_mode"},
         )
         require_text_fields(
             value,
@@ -262,7 +274,26 @@ class WorldTransition:
                 "WORLD_TRANSITION_INVALID",
                 "world transition fields must match their typed contracts",
             )
-        return cls(
+        creator = WorldAgencyTransition if "action_mode" in value else cls
+        changes = dict(value["changes"])
+        if (
+            value.get("action_mode") == "PERCEPTION"
+            and value["state_kind"] == "character_knowledge"
+        ):
+            changes.setdefault("character_id", value["actor_id"])
+            if (
+                not (changes.get("fact_id") or changes.get("proposition_id"))
+                and isinstance(changes.get("proposition"), str)
+                and changes["proposition"].strip()
+            ):
+                changes["proposition_id"] = "observation:" + narrative_hash(
+                    {
+                        "actor_id": value["actor_id"],
+                        "proposition": changes["proposition"],
+                        "observation_source": changes.get("observation_source"),
+                    }
+                )
+        return creator(
             str(value["transition_id"]),
             str(value["actor_id"]),
             str(value["camera"]),
@@ -270,7 +301,7 @@ class WorldTransition:
             str(value["action"]),
             NarrativeStateKind(value["state_kind"]),
             str(value["entity_key"]),
-            dict(value["changes"]),
+            changes,
             tuple(
                 CausalRequirement.from_mapping(r) for r in value.get("requirements", [])
             ),
@@ -279,21 +310,29 @@ class WorldTransition:
                 CausalRequirement.from_mapping(r)
                 for r in value.get("epistemic_basis", [])
             ),
+            **({"action_mode": value["action_mode"]} if "action_mode" in value else {}),
         )
 
 
+@dataclass(frozen=True, slots=True)
+class WorldAgencyTransition(WorldTransition):
+    action_mode: str = "INFORMATION_DEPENDENT"
+
+
 def validate_world_state_rules(
-    *, reality: Mapping[str, Any], state: Mapping[tuple[str, str], Mapping[str, Any]],
+    *,
+    reality: Mapping[str, Any],
+    state: Mapping[tuple[str, str], Mapping[str, Any]],
     affected_kinds: set[str],
 ) -> None:
     for rule_source in reality.get("world_rule_constraints", []):
         from .foundation import WorldRule
 
         rule = WorldRule.from_mapping(rule_source["rule"])
-        if (
-            rule.enforcement in {"SOFT_CAUSAL", "MECHANISM"}
-            or not affected_kinds.intersection(rule.applicability)
-        ):
+        if rule.enforcement in {
+            "SOFT_CAUSAL",
+            "MECHANISM",
+        } or not affected_kinds.intersection(rule.applicability):
             continue
         if (
             rule.predicate is None
@@ -309,8 +348,17 @@ def validate_world_transition(
     transition: WorldTransition, reality: Mapping[str, Any]
 ) -> tuple[dict[str, Any], ...]:
     state = state_index(reality)
-    if "approved_entity_ids" in reality and transition.actor_id not in set(reality["approved_entity_ids"]) | {entry["state"].get("character_id") for (kind, _), entry in state.items() if kind == "character_state"}:
-        raise KernelError("WORLD_ACTOR_UNKNOWN", "transition actors must resolve to approved Foundation or accepted character identities")
+    if "approved_entity_ids" in reality and transition.actor_id not in set(
+        reality["approved_entity_ids"]
+    ) | {
+        entry["state"].get("character_id")
+        for (kind, _), entry in state.items()
+        if kind == "character_state"
+    }:
+        raise KernelError(
+            "WORLD_ACTOR_UNKNOWN",
+            "transition actors must resolve to approved Foundation or accepted character identities",
+        )
     old = dict(
         (state.get((transition.state_kind.value, transition.entity_key)) or {}).get(
             "state"
@@ -318,13 +366,24 @@ def validate_world_transition(
         or {}
     )
     changes = dict(transition.changes)
+    if (
+        reality.get("epistemic_contract") == "world-agency.v2"
+        and not transition.action_mode
+    ):
+        raise KernelError(
+            "WORLD_ACTION_MODE_REQUIRED",
+            "classify ordinary agency, observation and information-dependent decisions explicitly",
+        )
     from .mechanisms import require_world_mechanism
+
     mechanism = require_world_mechanism(transition, reality, state)
     post_state = dict(state)
     post_state[(transition.state_kind.value, transition.entity_key)] = {
         "state": {**old, **changes}
     }
-    validate_world_state_rules(reality=reality, state=post_state, affected_kinds={transition.state_kind.value})
+    validate_world_state_rules(
+        reality=reality, state=post_state, affected_kinds={transition.state_kind.value}
+    )
     for (kind, _), entry in state.items():
         payload = dict(entry.get("state") or {})
         if (
@@ -338,17 +397,26 @@ def validate_world_transition(
                 "WORLD_DEAD_ACTOR", "a canonically dead actor cannot perform an action"
             )
     if (
-        (transition.actor_id in reality.get("approved_character_ids", []) or any(
-            kind == "character_state"
-            and entry.get("state", {}).get("character_id") == transition.actor_id
-            for (kind, _), entry in state.items()
-        ))
+        (
+            transition.actor_id in reality.get("approved_character_ids", [])
+            or any(
+                kind == "character_state"
+                and entry.get("state", {}).get("character_id") == transition.actor_id
+                for (kind, _), entry in state.items()
+            )
+        )
         and not transition.epistemic_basis
+        and not (
+            reality.get("epistemic_contract") == "world-agency.v2"
+            and transition.action_mode in {"ROUTINE", "PERCEPTION"}
+        )
     ):
         raise KernelError(
             "WORLD_CHARACTER_DECISION_BASIS_REQUIRED",
             "a known character's action requires its own accepted knowledge or belief basis",
         )
+    if transition.action_mode in {"ROUTINE", "PERCEPTION"}:
+        validate_initial_agency(transition, reality, state)
     previous_times = [
         StoryTime.from_dict(event["story_time"])
         for event in reality.get("events", [])
@@ -410,22 +478,44 @@ def validate_world_transition(
         if reality.get("world_dynamics_contract") == "world-dynamics.v2":
             clock_key = f"{transition.state_kind.value}|{transition.entity_key}|{transition.story_time.timeline_id}"
             departure_ordinal = reality.get("entity_clocks", {}).get(clock_key)
-            entry_time = (state.get((transition.state_kind.value, transition.entity_key)) or {}).get("story_time")
+            entry_time = (
+                state.get((transition.state_kind.value, transition.entity_key)) or {}
+            ).get("story_time")
             if isinstance(entry_time, Mapping):
                 time = StoryTime.from_dict(dict(entry_time))
-                if time.timeline_id == transition.story_time.timeline_id and time.precision != "UNSPECIFIED":
+                if (
+                    time.timeline_id == transition.story_time.timeline_id
+                    and time.precision != "UNSPECIFIED"
+                ):
                     departure_ordinal = max(departure_ordinal or 0, time.end_ordinal)
-            if not isinstance(departure_ordinal, int) or isinstance(departure_ordinal, bool) or departure_ordinal < 0:
-                raise KernelError("WORLD_ENTITY_TIME_REQUIRED", "travel requires this entity's frozen location time")
+            if (
+                not isinstance(departure_ordinal, int)
+                or isinstance(departure_ordinal, bool)
+                or departure_ordinal < 0
+            ):
+                raise KernelError(
+                    "WORLD_ENTITY_TIME_REQUIRED",
+                    "travel requires this entity's frozen location time",
+                )
             if departure_ordinal > transition.story_time.start_ordinal:
-                raise KernelError("WORLD_TIME_REGRESSION", "travel cannot begin before this entity's preceding event")
+                raise KernelError(
+                    "WORLD_TIME_REGRESSION",
+                    "travel cannot begin before this entity's preceding event",
+                )
         if distance > speed * (transition.story_time.start_ordinal - departure_ordinal):
             raise KernelError(
                 "WORLD_TRAVEL_IMPOSSIBLE",
                 "travel distance exceeds elapsed time and canonical speed",
             )
-    if str(old.get("life_status") or "").upper() == "DEAD" and changes.get("life_status") == "ALIVE" and mechanism != "REVIVAL":
-        raise KernelError("WORLD_REVIVAL_RULE_REQUIRED", "revival requires an explicit approved world mechanism")
+    if (
+        str(old.get("life_status") or "").upper() == "DEAD"
+        and changes.get("life_status") == "ALIVE"
+        and mechanism != "REVIVAL"
+    ):
+        raise KernelError(
+            "WORLD_REVIVAL_RULE_REQUIRED",
+            "revival requires an explicit approved world mechanism",
+        )
     for field in (
         "balance",
         "balance_after",
@@ -444,22 +534,162 @@ def validate_world_transition(
                 "resource and temporal quantities must remain finite and nonnegative",
             )
     if "power_level" in changes and changes["power_level"] != old.get("power_level"):
-        if changes["power_level"] not in old.get("allowed_power_transitions", []) and mechanism != "POWER_TRANSITION":
+        if (
+            changes["power_level"] not in old.get("allowed_power_transitions", [])
+            and mechanism != "POWER_TRANSITION"
+        ):
             raise KernelError(
                 "WORLD_POWER_TRANSITION_FORBIDDEN",
                 "power transitions require an explicit canonical rule",
             )
-    for requirement in transition.epistemic_basis:
+    epistemic_requirements = (
+        tuple(
+            r
+            for r in transition.requirements
+            if r.state_kind
+            in {
+                NarrativeStateKind.CHARACTER_KNOWLEDGE,
+                NarrativeStateKind.CHARACTER_BELIEF,
+            }
+        )
+        if reality.get("epistemic_contract") == "world-agency.v2"
+        else ()
+    )
+    for requirement in (*transition.epistemic_basis, *epistemic_requirements):
         entry = state.get((requirement.state_kind.value, requirement.entity_key))
         if (entry or {}).get("state", {}).get("character_id") != transition.actor_id:
             raise KernelError(
                 "WORLD_EPISTEMIC_ACTOR_MISMATCH",
                 "one actor cannot borrow another actor's knowledge",
             )
+        if reality.get("epistemic_contract") == "world-agency.v2":
+            origin = (entry or {}).get("source_event_id")
+            if origin and origin not in transition.cause_refs:
+                raise KernelError(
+                    "WORLD_EPISTEMIC_CAUSE_REQUIRED",
+                    "information-dependent action must reference its own acquisition",
+                )
+            timestamp = (entry or {}).get("story_time")
+            if timestamp:
+                acquired = StoryTime.from_dict(timestamp)
+                if (
+                    acquired.timeline_id != transition.story_time.timeline_id
+                    or acquired.end_ordinal >= transition.story_time.start_ordinal
+                ):
+                    raise KernelError(
+                        "WORLD_EPISTEMIC_ORDER_INVALID",
+                        "knowledge acquisition must precede the dependent action",
+                    )
     return tuple(
         evaluate_requirement(r, state)
         for r in (*transition.requirements, *transition.epistemic_basis)
     )
+
+
+def validate_initial_agency(transition, reality, state):
+    if reality.get("epistemic_contract") != "world-agency.v2":
+        raise KernelError(
+            "WORLD_AGENCY_CONTRACT_REQUIRED",
+            "historical transitions retain their frozen knowledge requirement",
+        )
+    epistemic = transition.state_kind in {
+        NarrativeStateKind.CHARACTER_KNOWLEDGE,
+        NarrativeStateKind.CHARACTER_BELIEF,
+        NarrativeStateKind.READER_KNOWLEDGE,
+        NarrativeStateKind.DISCLOSURE_EVENT,
+    }
+    if transition.action_mode == "ROUTINE":
+        if epistemic:
+            raise KernelError(
+                "WORLD_ROUTINE_CANNOT_GRANT_KNOWLEDGE",
+                "ordinary agency cannot assert knowledge, belief or reader disclosure",
+            )
+        return
+    if not transition.requirements:
+        raise KernelError(
+            "WORLD_PERCEPTION_SOURCE_REQUIRED",
+            "perception requires an exact available objective source predicate",
+        )
+    sources = [
+        requirement
+        for requirement in transition.requirements
+        if requirement.state_kind
+        not in {
+            NarrativeStateKind.CHARACTER_KNOWLEDGE,
+            NarrativeStateKind.CHARACTER_BELIEF,
+            NarrativeStateKind.READER_KNOWLEDGE,
+            NarrativeStateKind.DISCLOSURE_EVENT,
+            NarrativeStateKind.READER_PROMISE,
+            NarrativeStateKind.NARRATIVE_OBLIGATION,
+        }
+    ]
+    if not sources:
+        raise KernelError(
+            "WORLD_PERCEPTION_SOURCE_REQUIRED",
+            "reader knowledge or another character's private knowledge cannot be an observation source",
+        )
+    for requirement in sources:
+        entry = state.get((requirement.state_kind.value, requirement.entity_key)) or {}
+        origin = str(entry.get("source_event_id") or "")
+        if origin and origin not in transition.cause_refs:
+            raise KernelError(
+                "WORLD_PERCEPTION_CAUSE_REQUIRED",
+                "perception must depend on its exact source event",
+            )
+        timestamp = entry.get("story_time")
+        if timestamp:
+            time = StoryTime.from_dict(timestamp)
+            if (
+                time.timeline_id != transition.story_time.timeline_id
+                or time.end_ordinal >= transition.story_time.start_ordinal
+            ):
+                raise KernelError(
+                    "WORLD_PERCEPTION_ORDER_INVALID",
+                    "observation must follow source availability on its timeline",
+                )
+    if epistemic:
+        changes = transition.changes
+        if (
+            transition.state_kind != NarrativeStateKind.CHARACTER_KNOWLEDGE
+            or changes.get("character_id") != transition.actor_id
+        ):
+            raise KernelError(
+                "WORLD_PERCEPTION_ACTOR_INVALID",
+                "perception grants only its observer's character knowledge",
+            )
+        if changes.get("status") != "KNOWN" or not (
+            changes.get("fact_id") or changes.get("proposition_id")
+        ):
+            raise KernelError(
+                "WORLD_PERCEPTION_KNOWLEDGE_INVALID",
+                "observation requires one typed known proposition",
+            )
+        source = changes.get("observation_source")
+        if not isinstance(source, Mapping) or set(source) != {
+            "state_kind",
+            "entity_key",
+            "field",
+            "value",
+        }:
+            raise KernelError(
+                "WORLD_PERCEPTION_EVIDENCE_REQUIRED",
+                "knowledge acquisition binds an exact objective field and observed value",
+            )
+        matched = [
+            r
+            for r in sources
+            if r.state_kind.value == source["state_kind"]
+            and r.entity_key == source["entity_key"]
+            and r.field == source["field"]
+            and r.operator == RequirementOperator.EQUALS
+            and type(r.value) is type(source["value"])
+            and r.value == source["value"]
+        ]
+        if not matched:
+            raise KernelError(
+                "WORLD_PERCEPTION_EVIDENCE_MISMATCH",
+                "observed proposition must match its own objective source predicate",
+            )
 
 
 def candidate_transition(
@@ -472,7 +702,9 @@ def candidate_transition(
         and reality.get("chapter_number") == 0
         and bool(reality.get("foundation_cause_refs"))
     )
-    if not approved_foundation and not str(reality.get("revision_id") or "").startswith("reality:sha256:"):
+    if not approved_foundation and not str(reality.get("revision_id") or "").startswith(
+        "reality:sha256:"
+    ):
         raise KernelError(
             "WORLD_REALITY_REQUIRED",
             "World Dynamics requires an exact accepted Reality revision",
@@ -496,13 +728,13 @@ def candidate_transition(
     return {
         "contract_version": "world-transition-candidate.v1",
         "reality_revision_id": reality["revision_id"],
-        "transition": asdict(transition),
+        "transition": transition.to_dict(),
         "requirements": list(receipts),
         "eligible": all(receipt["satisfied"] for receipt in receipts),
         "candidate_id": "candidate-future:"
         + narrative_hash(
             {
-                "transition": asdict(transition),
+                "transition": transition.to_dict(),
                 "reality_revision_id": reality["revision_id"],
             }
         ),

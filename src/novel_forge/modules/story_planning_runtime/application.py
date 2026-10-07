@@ -295,10 +295,13 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-            rfc6901_paths=command.execution_contract_version == "1.19.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
         )
+        if command.generator_operation_name in FOUNDATION_GENERATORS and command.narrative_search_id and command.execution_contract_version == "1.21.0":
+            envelope["contract_version"] = "foundation-generation.v5"
+            envelope["narrative_search"] = command.narrative_search_snapshot
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
             envelope["author_design_projection"] = author_projection
@@ -455,6 +458,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.16.0",
             "1.17.0",
             "1.18.0",
+            "1.19.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -1440,6 +1444,7 @@ class StoryPlanningGenerationApplication:
                     supplied.get("chapter_group_plan_version_id") or ""
                 ),
                 chapter_number=int(supplied.get("chapter_number") or 0),
+                coordinated_contract=command.execution_contract_version == "1.21.0",
             )
         if current != supplied:
             raise KernelError(
@@ -1883,6 +1888,7 @@ class StoryPlanningGenerationApplication:
                     "1.17.0",
                     "1.18.0",
                     "1.19.0",
+            "1.21.0",
                 }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
@@ -3012,6 +3018,9 @@ class StoryPlanningGenerationApplication:
             if asset_type == "longform_prose_review_report":
                 from novel_forge.modules.book_followup_authority.prose_change_evidence import require_prose_planning_evidence
                 require_prose_planning_evidence(self.database_url, command=command, asset_version_id=asset_version_id, commit_sha=self.commit_sha)
+            elif asset_type == "arc_revision_candidate" and command.execution_contract_version == "1.21.0":
+                from .recap_sources import require_arc_recap_change_evidence
+                require_arc_recap_change_evidence(self.database_url, command, asset_version_id, content)
             elif asset_type not in {"longform_recap", "replan_request"}:
                 raise KernelError(
                     "PLANNING_GENERATION_CHANGE_EVIDENCE_TYPE_INVALID",
@@ -3079,6 +3088,9 @@ class StoryPlanningGenerationApplication:
                     )
                 snapshot = _replay_generation_input_snapshot(snapshot, source[0], source[1])
             snapshot_hash = canonical_hash(snapshot)
+            if command.runtime_continuation_id:
+                from .runtime_continuation import attach_successor
+                attach_successor(uow, command, operation_id)
             uow.cursor.execute(
                 sql.SQL("""
                 INSERT INTO authority_story_planning_generation(
@@ -3120,9 +3132,6 @@ class StoryPlanningGenerationApplication:
                     command.narrative_search_branch_key,
                 ] + [getattr(command, field) for field in repair_fields],
             )
-            if command.runtime_continuation_id:
-                from .runtime_continuation import attach_successor
-                attach_successor(uow, command, operation_id)
             uow.commit()
 
     def _record_candidate(
@@ -3694,12 +3703,13 @@ def story_planning_generation_definition(
         "approval_policy": {"required": False},
         "policy": {
             "candidate_only": True,
+            **({"realization_source_selectors": "planning-host-source-selectors.v2", "typed_arc_context_projection": "typed-arc-context-projection.v2", "foundation_direction_search": "foundation-generation.v5"} if definition_version == "1.21.0" else {}),
             "story_design_activation_separate": True,
             "semantic_evaluation_operation_separate": True,
             "repair_candidate_asset_input_allowed": True,
             **(
                 {"repair_result_evidence_input_allowed": True}
-                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}
                 else {}
             ),
             "capability_pack_attempt_snapshot_required": True,
@@ -4156,7 +4166,16 @@ def _validate_frozen_arc_references(
             for arc_id in event.get("arc_contributions") or ()
             if str(arc_id)
         }
-        if event_arc_ids != frozen:
+        required_event_arcs = {
+            str(arc) for arc in content.get("required_arc_contributions") or ()
+        } | {
+            str(item.get("arc_plan_version_id") or "")
+            for row in content.get("chapter_function_matrix") or ()
+            for item in row.get("arc_cadence") or ()
+            if item.get("action") != "HOLD"
+        }
+        invalid_scope = (not required_event_arcs <= event_arc_ids <= frozen) if command.execution_contract_version == "1.21.0" else event_arc_ids != frozen
+        if invalid_scope:
             raise KernelError(
                 "NARRATIVE_REALIZATION_ARC_SCOPE_INVALID",
                 "causal realization events must cover only and all frozen Working Set Arcs",

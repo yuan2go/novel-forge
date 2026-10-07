@@ -138,6 +138,9 @@ class PostgresBookProductionSupervisor:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
         semantics = book_production_state_semantics(before)
+        if (semantics.state_class is not BookProductionStateClass.TERMINAL
+                and self.query.unresolved_chapter_effects(book_run_id=book_run_id)):
+            return self._result(book_run_id, before, SupervisorAction.WAIT_EXTERNAL_RECONCILIATION)
         group_run = self._active_group_run(book)
         if (
             group_run is not None
@@ -154,11 +157,7 @@ class PostgresBookProductionSupervisor:
         if semantics.state_class is BookProductionStateClass.TERMINAL:
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if before == BookProductionState.PLAN_APPROVAL_PENDING.value:
-            return self._result(
-                book_run_id,
-                before,
-                SupervisorAction.WAIT_PLAN_APPROVAL,
-            )
+            return self._resume_pending_plan(book)
         if before == BookProductionState.CHECKPOINT_PENDING.value:
             checkpoint = self._checkpoint_if_needed(book)
             if checkpoint is not None:
@@ -343,6 +342,7 @@ class PostgresBookProductionSupervisor:
             result = self._generate_plan(
                 book, "chapter_group_plan.generate", next_chapter
             )
+            self._require_approval_or_active(result)
             target = (
                 BookProductionState.CHAPTER_PLAN_REQUIRED
                 if result.status is PlanningGenerationStatus.ACTIVE
@@ -462,6 +462,7 @@ class PostgresBookProductionSupervisor:
         chapter_plan = self._active_plan(book, "CHAPTER", next_chapter)
         if chapter_plan is None:
             result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+            self._require_approval_or_active(result)
             target = (
                 BookProductionState.READY
                 if result.status is PlanningGenerationStatus.ACTIVE
@@ -650,6 +651,55 @@ class PostgresBookProductionSupervisor:
             str(dispatched.get("chapter_root_operation_id") or ""),
             str(dispatched["chapter_request_id"]),
         )
+
+    @staticmethod
+    def _require_approval_or_active(result: Any) -> None:
+        if result.status not in {
+            PlanningGenerationStatus.ACTIVE,
+            PlanningGenerationStatus.APPROVAL_PENDING,
+        }:
+            raise KernelError(
+                "BOOK_PLANNING_OWNER_RECOVERY_REQUIRED",
+                f"Retained planning generation {getattr(result, 'generation_operation_id', 'unknown')} is {result.status.value}; inspect its exact validation evidence",
+            )
+
+    def _resume_pending_plan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
+        from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
+
+        chapter = int(book["accepted_through_chapter"]) + 1
+        group = self._active_plan(book, "CHAPTER_GROUP", chapter)
+        active = self._active_plan(book, "CHAPTER", chapter) if group else None
+        if active or group is None:
+            target = BookProductionState.READY if active else None
+        else:
+            target = BookProductionState.CHAPTER_PLAN_REQUIRED
+        if target is None or active is None:
+            pending = self.query.pending_plan_generation(project_id=book["project_id"], book_id=book["book_id"],
+                logical_key=f"chapter:{chapter}" if group else f"chapter-group:containing:{chapter}")
+            if pending and pending["status"] == "REJECTED":
+                if ((pending["lifecycle"],pending["qualification"],pending["approval"]) != ("MATERIALIZED", "PENDING", "NOT_REQUESTED")
+                        or not uses_work_requirements(pending["content"])
+                        or (pending["validation_report"] or {}).get("error_code") != "PLANNING_OPERATIONAL_COMMITMENT_OPEN"):
+                    raise KernelError("BOOK_PLANNING_OWNER_RECOVERY_REQUIRED", "Rejected planning cannot request author approval")
+                result = self._generate_plan(book, "chapter_plan.generate" if group else "chapter_group_plan.generate", chapter)
+                self._require_approval_or_active(result)
+                if result.status is PlanningGenerationStatus.ACTIVE:
+                    target = BookProductionState.READY if group else BookProductionState.CHAPTER_PLAN_REQUIRED
+                else:
+                    target = None
+            elif pending and pending["status"] == "ACTIVE":
+                raise KernelError("BOOK_PLANNING_OWNER_RECOVERY_REQUIRED", "Active generation must retain its current typed plan binding")
+            elif pending is None and group:
+                target = BookProductionState.CHAPTER_PLAN_REQUIRED
+            elif pending is None or pending["status"] not in {"APPROVAL_PENDING", "APPROVED"}:
+                raise KernelError("BOOK_PLANNING_OWNER_RECOVERY_REQUIRED", "Retain the missing or unfinished planning evidence; no author decision exists")
+            else:
+                target = None
+        if target is None:
+            return self._result(str(book["book_run_id"]), str(book["state"]), SupervisorAction.WAIT_PLAN_APPROVAL)
+        operation = self.authority.advance_supervisor_checkpoint(str(book["book_run_id"]),
+            expected_version=int(book["version"]), expected_state=str(book["state"]), target_state=target, principal=self.principal)
+        return self._result(str(book["book_run_id"]), str(book["state"]), SupervisorAction.NO_ACTION, operation)
 
     def _require_chapter_execution_plan(
         self, book: dict[str, Any], chapter_plan: dict[str, Any]

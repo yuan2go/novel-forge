@@ -49,7 +49,7 @@ def stage_ordinal(cursor, *, lineage, stage):
 def routing_repair_bound(cursor, *, command, lineage, stage, maximum):
     admission = selected_book_template(cursor, project_id=command.project_id, book_id=command.book_id)
     template = decision_template({"task": {"work_id": command.book_id, "policy_snapshot": admission["policy_snapshot"]}}) if admission else None
-    if (not template or template["version"] not in {"creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6"}
+    if (not template or template["version"] not in {"creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8", "creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11"}
             or template["mode"] != "CREATIVE_VALIDATION" or template["require_literary_qualification"]):
         return None
     source = command.repair_of_operation_id
@@ -91,7 +91,7 @@ def repair_bound(application, *, command, operation_id, maximum):
             if admission
             else None
         )
-        if not template or template["version"] not in {"creative-execution-template.v4", "creative-execution-template.v5","creative-execution-template.v6"}:
+        if not template or template["version"] not in {"creative-execution-template.v4", "creative-execution-template.v5","creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8", "creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11"}:
             return None
         from .execution import _planning_repair_routing_lineage
 

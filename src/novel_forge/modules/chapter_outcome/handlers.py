@@ -8,7 +8,7 @@ from novel_forge.modules.authority_handler_runtime import (
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import materialize_canon_snapshot_v2
 
-from .contracts import CHAPTER_OUTCOME_DEFINITION_VERSION
+from .contracts import CHAPTER_OUTCOME_DEFINITION_VERSION, CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION
 from .domain import build_chapter_outcome, reduce_story_state
 
 
@@ -38,20 +38,37 @@ class ChapterOutcomeCommitHandler:
         release = inputs["release_package"].content
         canon = inputs["canon_patch"].content
         chapter_plan = inputs["chapter_plan"].content
+        coordinated = request.definition_version == CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION
         validation = quality.get("internal_admission")
         internal = (isinstance(validation, dict) and validation.get("status") == "INTERNAL_ADMITTED"
-            and validation.get("version") in {"creative-quality-admission.v1", "creative-quality-admission.v2"}
+            and validation.get("version") in ({"creative-quality-admission.v3"} if coordinated else {"creative-quality-admission.v1", "creative-quality-admission.v2"})
             and validation.get("book_id") == payload["book_id"]
             and validation.get("target_asset_version_id") == inputs["best_draft_candidate"].asset_version_id
             and validation == final_gate.get("internal_admission")
             and final_gate.get("final_gate_contract_version") == "creative-internal-finalize.v1"
             and final_gate.get("gate") == "INTERNAL_ADMITTED"
             and final_gate.get("release_status") == "INTERNAL_VALIDATION_FINALIZED")
+        review_admitted = rereview.get("decision") == "PASSED"
+        if coordinated:
+            from novel_forge.modules.publishing.domain import reviewed_work_admission
+            from novel_forge.modules.chapter_quality_authority.creative_validation import verify_internal_quality
+            proof = final_gate.get("review_admission") or {}
+            expected = {"contract_version": "reviewed-work-admission.v2",
+                "review_asset_version_id": inputs["re_review_report"].asset_version_id,
+                "quality_asset_version_id": inputs["quality_score_report"].asset_version_id,
+                "candidate_asset_version_id": inputs["best_draft_candidate"].asset_version_id,
+                "source_review_decision": rereview.get("decision"), "host_admission": "PASSED", "literary_quality_proven": False}
+            if not internal or proof != expected or payload.get("chapter_acceptance_contract") != "coordinated-chapter-acceptance.v1":
+                raise KernelError("CHAPTER_ACCEPTANCE_EVIDENCE_BLOCKED", "Current acceptance requires exact independently verified work-admission proof")
+            verify_internal_quality(request.database_url, validation, project_id=request.project_id, book_id=payload["book_id"])
+            candidate = inputs["best_draft_candidate"].content
+            review_admitted = reviewed_work_admission(review=rereview, quality=quality, text=str(candidate.get("text") or ""),
+                source_id=str(candidate.get("selected_source_asset_version_id") or ""))
         if (
             not internal and (final_gate.get("gate") != "PASSED"
                 or final_gate.get("release_status") != "INTERNAL_RELEASE_FINALIZED"
                 or quality.get("gate") not in {"PASSED", "PASSED_WITH_UNCALIBRATED"})
-            or rereview.get("decision") != "PASSED"
+            or not review_admitted
             or int(rereview.get("blocking_issue_count", 0)) != 0
             or release.get("release_status") != "READY_FOR_BLOB_VERIFICATION"
         ):
@@ -59,7 +76,7 @@ class ChapterOutcomeCommitHandler:
                 "CHAPTER_ACCEPTANCE_EVIDENCE_BLOCKED",
                 "Chapter release, review, or quality evidence is incomplete",
             )
-        if canon.get("grounding"):
+        if coordinated or canon.get("grounding"):
             from novel_forge.modules.chapter_outcome.acceptance_contract import require_grounded_acceptance
             require_grounded_acceptance(project_id=request.project_id, selected={
                 key: {"asset_version_id": item.asset_version_id, "content": item.content}
@@ -84,7 +101,7 @@ class ChapterOutcomeCommitHandler:
             cost_receipt_refs=tuple(payload.get("cost_receipt_refs") or ()),
             created_by_operation_id=request.operation_id,
             trace_id=request.trace_id,
-            work_requirements=request.definition_version == CHAPTER_OUTCOME_DEFINITION_VERSION,
+            work_requirements=request.definition_version in {CHAPTER_OUTCOME_DEFINITION_VERSION, CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION},
             expected_arc_contributions=tuple(
                 dict(item)
                 for item in (
@@ -144,7 +161,7 @@ class ChapterOutcomeCommitHandler:
             output_key="chapter.outcome",
             role="primary",
             content=outcome,
-            qualification_policy="chapter-outcome-acceptance-v4" if request.definition_version == CHAPTER_OUTCOME_DEFINITION_VERSION else "chapter-outcome-acceptance-v3",
+            qualification_policy="chapter-outcome-acceptance-v5" if coordinated else "chapter-outcome-acceptance-v4" if request.definition_version == CHAPTER_OUTCOME_DEFINITION_VERSION else "chapter-outcome-acceptance-v3",
             reference_asset_version_ids=source_refs,
             evidence=evidence,
             auxiliary_outputs=(

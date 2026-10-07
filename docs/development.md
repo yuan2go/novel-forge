@@ -132,6 +132,12 @@ the root Skills directory; the corresponding Codex discovery directory links to 
 and `make sync-skills` generates the Claude Code copies. Upstream invocation flags
 remain intact; installing a Skill does not run it or configure its external services.
 
+Generic decision-reference examples in pinned coding tools are advisory text. The
+historical-reality policy binds the two upstream files by full content digest and
+coding-only instruction classification, including identical generated copies. Changed
+bytes or a runtime consumer fail the exception; retired ontology and machine-field
+checks still apply. These examples create no additional canonical documents.
+
 Installation requires Python and GitHub download access, with no npm packages needed.
 On invocation, tracker workflows can use authenticated `gh` or `glab`, research can
 use network retrieval, and `claude-handoff` can launch Claude CLI sessions. Package

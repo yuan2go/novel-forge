@@ -262,7 +262,7 @@ def _artifact(
 
 
 def default_chapter_artifact_resolver(
-    repository_root: str | Path,
+    repository_root: str | Path, *, include_current_contracts: bool = True,
 ) -> ExplicitArtifactResolver:
 
     root = Path(repository_root).resolve()
@@ -403,6 +403,12 @@ def default_chapter_artifact_resolver(
             "config/capability_packs/artifacts/chapter_generation_template_v11.md",
         ),
         (
+            ArtifactKind.PROMPT_TEMPLATE,
+            "prompt-template:chapter-generation-pack",
+            "v12",
+            "config/capability_packs/artifacts/chapter_generation_template_v12.md",
+        ),
+        (
             ArtifactKind.PROMPT_SYSTEM_INSTRUCTION,
             "prompt-system:model-reference-creation",
             "v1",
@@ -415,6 +421,8 @@ def default_chapter_artifact_resolver(
             "config/capability_packs/artifacts/model_reference_template_v1.md",
         ),
     ):
+        if not include_current_contracts and ref == "prompt-template:chapter-generation-pack" and version == "v12":
+            continue
         text = (root / source).read_bytes().decode("utf-8", errors="strict")
         artifacts.append(
             _artifact(kind, ref, version, {"text": text.replace("\r\n", "\n")}, source)

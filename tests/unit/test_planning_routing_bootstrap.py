@@ -130,11 +130,12 @@ def _native_world_sample_source(monkeypatch, version, *, reference=False, stage=
     inputs = [{"role": "chapter_group_plan", "asset_version_id": dependency.asset_version_id,
                "content_hash": dependency.content_hash, "asset_type": dependency.asset_type}]
     source = document("world_preparation/source-op/source", "world_preparation_source", {"contract": {
-        "contract_version": "world-preparation-source.v1", "request": request,
+        "contract_version": "world-preparation-source.v2", "request": request,
         "policy": asdict(WorldProductionPolicy()), "intent": {}, "world_foundation": {},
         "character_definitions": [], "planning_window": {}, "entity_ids": [],
         "reality": {"project_id": command.project_id, "book_id": command.book_id, "revision_id": "reality",
-                    "baseline_kind": "CANON", "chapter_number": 0, "current_state": {}, "foundation_cause_refs": []},
+                    "baseline_kind": "CANON", "chapter_number": 0, "current_state": {}, "foundation_cause_refs": [],
+                    **({"epistemic_contract": "world-agency.v2"} if version == "1.21.0" else {})},
     }})
     source_ref = {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}
     generated = {"disposition": "NO_CANDIDATE", "reason": "No legal action", "candidates": []}
@@ -168,7 +169,7 @@ def _native_world_sample_source(monkeypatch, version, *, reference=False, stage=
     return cursor, row, binding, query
 
 
-@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]])
+@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0", "1.19.0", STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]])
 @pytest.mark.parametrize("stage,reference", [
     ("world_candidates.generate", False), ("world_candidates.evaluate", False), ("world_candidates.evaluate", True),
 ])
@@ -186,14 +187,14 @@ def test_world_sampling_accepts_current_and_frozen_adjacent_sources(monkeypatch,
     assert row == frozen_row
 
 
-@pytest.mark.parametrize("damage", ["old_version", "future_version", "definition", "generator", "book", "repair", "bootstrap", "hash"])
+@pytest.mark.parametrize("damage", ["old_version", "source_branch_version", "future_version", "definition", "generator", "book", "repair", "bootstrap", "hash"])
 def test_world_sampling_version_compatibility_preserves_source_admission_checks(monkeypatch, damage):
     from novel_forge.modules.story_planning_runtime.world_sampling import _require_world_sample_source
     version = STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
     cursor, row, _, query = _native_world_sample_source(monkeypatch, version)
     changed = list(row)
-    if damage in {"old_version", "future_version"}:
-        changed[1] = "1.15.0" if damage == "old_version" else "1.20.0"
+    if damage in {"old_version", "source_branch_version", "future_version"}:
+        changed[1] = {"old_version": "1.15.0", "source_branch_version": "1.20.0", "future_version": "1.22.0"}[damage]
     elif damage == "definition":
         changed[0] = "other.generate"
     elif damage == "hash":
@@ -412,3 +413,23 @@ def test_story_design_owner_rejects_bootstrap_promotion(monkeypatch, transition)
     )
     with pytest.raises(KernelError, match="PLANNING_BENCHMARK_ONLY"):
         application.prepare_transition(command, principal=_principal())
+
+
+@pytest.mark.parametrize("field,value", [("contract_version", "world-preparation-source.v1"), ("epistemic_contract", "world-agency.v1")])
+def test_current_world_sampling_cannot_reinterpret_historical_source_contract(monkeypatch, field, value):
+    from novel_forge.modules.story_planning_runtime.world_sampling import _require_world_sample_source
+    cursor, _, _, query = _native_world_sample_source(monkeypatch, "1.21.0")
+    original = query.require.side_effect
+    def changed(**kwargs):
+        document = original(**kwargs)
+        if document.asset_type == "world_preparation_source":
+            contract = dict(document.content["contract"])
+            if field == "epistemic_contract":
+                contract["reality"] = {**contract["reality"], field: value}
+            else:
+                contract[field] = value
+            return replace(document, content={"contract": contract})
+        return document
+    query.require.side_effect = changed
+    with pytest.raises(KernelError, match="WORLD_SAMPLE_SOURCE_DRIFT"):
+        _require_world_sample_source(cursor, project_id="project-1", book_id="book-1", source_operation_id="source-op", stage="world_candidates.generate")

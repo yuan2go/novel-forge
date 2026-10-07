@@ -1,0 +1,152 @@
+from __future__ import annotations
+
+from copy import deepcopy
+
+from novel_forge.modules.story_planning_runtime.narrative_search import (
+    CREATIVE_INTELLIGENCE_DIMENSIONS,
+    NARRATIVE_SEARCH_PROJECTION_VERSION,
+)
+
+
+def current_planning_wire_result(result, inputs):
+    command = inputs.get("planning_command") or {}
+    if command.get("execution_contract_version") != "1.21.0":
+        return result
+    value = deepcopy(result)
+    if inputs.get("stage") in {"book_plan.generate", "arc_plan.generate"}:
+        value.pop("parent_version_id", None)
+    if inputs.get("stage") == "chapter_plan.generate":
+        value.pop("actual_arc_contributions", None)
+        from novel_forge.modules.story_planning_runtime.domain import CHAPTER_SCHEDULE_FIELDS, CHAPTER_READER_SCHEDULE_FIELDS, require_chapter_schedule_row
+
+        rows = [segment["content"] for segment in inputs.get("controlled_frozen_segments", []) if segment.get("role") == "chapter_function_matrix_row"]
+        if len(rows) != 1:
+            raise ValueError("current Chapter fixture requires its exact frozen Scheduling row")
+        source = rows[0]
+        if source.get("contract_version") == "planning-chapter-matrix-reference.v1":
+            group_index = int(source["json_pointer"].split("/")[2])
+            source = inputs["controlled_frozen_segments"][group_index]["content"]
+        row = require_chapter_schedule_row(source, chapter_number=value["chapter_number"])
+        for field in CHAPTER_SCHEDULE_FIELDS:
+            value[field] = deepcopy(row[field])
+        for field in CHAPTER_READER_SCHEDULE_FIELDS:
+            value["reader_experience"][field] = deepcopy(row["reader_experience"][field])
+    fields = {
+        "world_realization": {"invariant_refs": "WORLD_INVARIANT", "structure_refs": "WORLD_STRUCTURE", "state_ref": "WORLD_STATE"},
+        "character_realization": {"identity_ref": "CHARACTER_IDENTITY", "state_ref": "CHARACTER_STATE", "trajectory_ref": "CHARACTER_TRAJECTORY"},
+    }
+    catalog = (inputs.get("realization_reference_contract") or {}).get("references_by_domain", {})
+    for manifest, domains in fields.items():
+        for entity in value.get(manifest, []):
+            for field, domain in domains.items():
+                raw = entity[field]
+                selected = []
+                for reference in raw if isinstance(raw, list) else [raw]:
+                    candidates = catalog.get(domain, [])
+                    matches = [item for item in candidates if item["asset_version_id"] == reference["asset_version_id"]]
+                    if len(matches) != 1:
+                        if len(candidates) != 1:
+                            raise ValueError(f"current fixture has no unambiguous frozen {domain} source")
+                        matches = candidates
+                    selected.append({"asset_version_id": matches[0]["asset_version_id"]})
+                entity[field] = selected if isinstance(raw, list) else selected[0]
+    return value
+
+
+def current_foundation_search_result(result, inputs):
+    task = inputs.get("foundation_task") or {}
+    if task.get("contract_version") != "foundation-generation.v5":
+        return result
+    command = inputs["planning_command"]
+    if command.get("execution_contract_version") != "1.21.0" or not command.get("narrative_search_id"):
+        raise ValueError("Foundation search fixture requires the current frozen search command")
+    branch = command["narrative_search_branch_key"]
+    directive = command["narrative_search_strategy_directive"]
+    if not branch or not directive:
+        raise ValueError("Foundation search fixture requires its frozen branch strategy")
+    value = deepcopy(result)
+    value["constraints"].append(f"Candidate direction: {directive}")
+    value["narrative_search_projection"] = {
+        "contract_version": NARRATIVE_SEARCH_PROJECTION_VERSION,
+        "strategy_fingerprint": f"controlled-foundation:{branch}:{directive}",
+        "assumptions": ["No accepted story state exists at this Foundation comparison boundary"],
+        "projected_consequences": [f"Explore a candidate direction under {directive}"],
+        "narrative_opportunities": [f"Keep a distinct future option under {directive}"],
+        "narrative_risks": [f"The {directive} direction could compress later choices"],
+        "irreversible_decisions": [],
+        "future_options": [f"Compare {directive} before approving a Foundation"],
+        "repetition_keys": [f"controlled-foundation:{branch}"],
+        "creative_intelligence": {dimension: 0.7 for dimension in CREATIVE_INTELLIGENCE_DIMENSIONS},
+        "selection_summary": f"Scripted candidate estimate for {directive}; literary quality is unproven",
+    }
+    return value
+
+
+def current_world_disclosure_result(result, task):
+    import json
+
+    if task.get("epistemic_contract") != "world-agency.v2":
+        return result
+    value = deepcopy(result)
+    for candidate in value.get("candidates", []):
+        raw = json.loads(candidate["transition"]["payload_json"])
+        if raw.get("state_kind") != "disclosure_event" or raw.get("transition_id") != "reveal-accepted-notice":
+            continue
+        event_id = raw["changes"]["fact_id"]
+        sources = [entry for entry in task["context_projection"]["selection"]
+                   if entry["source_event_id"] == event_id and entry["state_kind"] == "world_state"
+                   and isinstance(entry["state"].get("status"), str)]
+        characters = task.get("character_definitions") or []
+        if len(sources) != 1 or not characters:
+            raise ValueError("current disclosure fixture requires a frozen objective status and an approved character")
+        disclosure = [row for row in candidate.get("information_scope", {}).get("disclosures", []) if row["event_id"] == event_id]
+        if len(disclosure) != 1 or not disclosure[0].get("presentation_channel"):
+            raise ValueError("current disclosure fixture requires an exact declared presentation channel")
+        source = sources[0]
+        actor = characters[0]["character_id"]
+        knowledge_key = f"character_id={actor}&fact_id={event_id}"
+        predicate = {"requirement_id": "observe-accepted-notice-status", "state_kind": "world_state",
+                     "entity_key": source["entity_key"], "field": "status", "operator": "EQUALS", "value": source["state"]["status"]}
+        observe = {
+            "transition_id": "observe-accepted-notice", "actor_id": actor, "camera": "ON_CAMERA",
+            "story_time": deepcopy(raw["story_time"]), "action": "Observe the supplied notice status before disclosing it",
+            "action_mode": "PERCEPTION", "state_kind": "character_knowledge", "entity_key": knowledge_key,
+            "changes": {"character_id": actor, "fact_id": event_id, "status": "KNOWN",
+                        "observation_source": {key: predicate[key] for key in ("state_kind", "entity_key", "field", "value")}},
+            "requirements": [predicate], "epistemic_basis": [], "cause_refs": [event_id],
+        }
+        raw.update(actor_id=actor, action="Disclose the notice status after personally observing it", action_mode="INFORMATION_DEPENDENT",
+                   cause_refs=["local:observe-accepted-notice"], requirements=[],
+                   epistemic_basis=[{"requirement_id": "own-observed-notice", "state_kind": "character_knowledge",
+                                     "entity_key": knowledge_key, "field": "status", "operator": "EQUALS", "value": "KNOWN"}])
+        raw["changes"]["presentation_channel"] = disclosure[0]["presentation_channel"]
+        raw["story_time"]["start_ordinal"] += 1
+        raw["story_time"]["end_ordinal"] += 1
+        candidate["transition"]["payload_json"] = json.dumps(raw)
+        candidate["affected_entities"] = list(dict.fromkeys([*candidate["affected_entities"], actor]))
+        candidate["preparation_paths"] = [{"path_id": "observe-notice-before-disclosure", "rationale": "The actor observes an exact frozen objective source before choosing disclosure; this is an unaccepted preparation proposal.",
+                                             "steps": [{"chapter_offset": 0, "transition": {"payload_json": json.dumps(observe)}}]}]
+    return value
+
+
+def current_world_fixture_classification(transition):
+    if transition.get("action_mode") == "ROUTINE":
+        return transition.get("action") == "act on the approved faction pressure" and transition.get("state_kind") not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"}
+    if transition.get("transition_id") == "observe-accepted-notice":
+        return transition.get("action_mode") == "PERCEPTION" and transition.get("state_kind") == "character_knowledge" and transition.get("changes", {}).get("character_id") == transition.get("actor_id") and bool(transition.get("requirements")) and bool(transition.get("changes", {}).get("observation_source"))
+    if transition.get("transition_id") == "reveal-accepted-notice":
+        return transition.get("action_mode") == "INFORMATION_DEPENDENT" and transition.get("state_kind") == "disclosure_event" and transition.get("cause_refs") == ["local:observe-accepted-notice"] and len(transition.get("epistemic_basis", [])) == 1
+    return False
+
+
+def current_planning_fixture_inputs(inputs, database_url):
+    command = inputs.get("planning_command") or {}
+    if command.get("execution_contract_version") != "1.21.0" or "realization_reference_contract" in inputs:
+        return inputs
+    if not database_url:
+        raise ValueError("current fixture requires its actual frozen Context view")
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    document = AuthorityAssetQuery(database_url).require(project_id=command["project_id"], logical_ref=f"planning/context_bundles/{command['generation_operation_id']}.json")
+    view = document.content["context_manifest"]["provider_context_view"]["compiled_view"]
+    return {**inputs, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}

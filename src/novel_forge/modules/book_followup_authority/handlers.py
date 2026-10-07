@@ -410,6 +410,7 @@ class LongformRecapHandler:
             chapter_range=(chapter_range[0], chapter_range[1]),
             checkpoint_type=checkpoint_type,
             observations=dict(payload.get("observations") or {}),
+            coordinated_contract=request.definition_version == "1.2.0",
             reader_policy=policy_from_snapshot(
                 dict(payload.get("reader_proxy_policy_snapshot") or {})
             ),

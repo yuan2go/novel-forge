@@ -27,6 +27,7 @@ from .narrative_search import (
     NarrativeSearchProjection,
     NarrativeSearchStatus,
     compare_narrative_futures,
+    validate_search_selection_policy,
 )
 
 
@@ -82,6 +83,10 @@ class NarrativeSearchRequest:
             raise ValueError("search candidates cannot auto-activate before comparison")
         if self.replacement_approved and not self.replacement_decision_evidence:
             raise ValueError("approved search replacement requires decision evidence")
+        if "selection_policy" in self.desired_transformation:
+            validate_search_selection_policy(
+                self.desired_transformation["selection_policy"]
+            )
         if not self.planning_horizon or not self.desired_transformation:
             raise ValueError("search horizon and desired transformation are required")
         if (
@@ -534,7 +539,10 @@ class PostgresNarrativeSearchApplication:
             search_id,
             allow_reconciled_branches=allow_reconciled_branches,
         )
-        comparison = compare_narrative_futures(candidates)
+        comparison = compare_narrative_futures(
+            candidates,
+            selection_policy=request.desired_transformation.get("selection_policy"),
+        )
         comparison_payload = comparison.to_dict()
         candidate_set_hash = canonical_hash(
             [
@@ -1729,7 +1737,20 @@ class PostgresNarrativeSearchApplication:
         *,
         allow_reconciled_branches: bool = False,
     ) -> tuple[NarrativeSearchComparison, bool]:
-        comparison = compare_narrative_futures(candidates)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT desired_transformation FROM authority_story_narrative_search WHERE search_id=%s",
+                [search_id],
+            )
+            frozen = uow.cursor.fetchone()
+        if not frozen:
+            raise KernelError(
+                "NARRATIVE_SEARCH_SELECTION_SOURCE_MISSING",
+                "Selection requires the persisted work and stage goals",
+            )
+        comparison = compare_narrative_futures(
+            candidates, selection_policy=dict(frozen[0]).get("selection_policy")
+        )
         evidence = comparison.to_dict()
         candidate_set_hash = canonical_hash(
             [

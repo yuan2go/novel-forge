@@ -1111,7 +1111,13 @@ def validate_native_world_schema_fragment(
     stage: str, schema: Mapping[str, Any], value: object, *, output_schema_ref: str
 ) -> dict[str, Any]:
     from novel_forge.modules.command_kernel.routing_bootstrap import WORLD_SAMPLE_TASKS
-    if (stage not in WORLD_SAMPLE_TASKS or output_schema_ref != f"schema:{stage}:v1"
+    allowed_refs = {f"schema:{stage}:v1"}
+    if stage in {"world_candidates.generate", "world_candidates.evaluate"}:
+        allowed_refs.add(f"schema:{stage}:v2")
+        actor_field = "actor_adjudications" if stage == "world_candidates.generate" else "action_classifications"
+        if actor_field in schema.get("properties", {}) and actor_field in schema.get("required", ()):
+            allowed_refs.add(f"schema:{stage}:v2:actor-isolation-v1")
+    if (stage not in WORLD_SAMPLE_TASKS or output_schema_ref not in allowed_refs
             or "$schema" in schema or schema.get("type") != "object"
             or schema.get("additionalProperties") is not False or not schema.get("required")):
         raise KernelError("WORLD_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED", output_schema_ref)
@@ -1131,7 +1137,7 @@ def validate_chapter_provider_output_semantics(
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
-    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25"))
+    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25", ":v30"))
     if stage == "canon_extraction":
         if output_schema_ref:
             if output_schema_ref not in {
@@ -1143,13 +1149,14 @@ def validate_chapter_provider_output_semantics(
                 "schema:chapter-provider-output:canon_extraction:v23",
                 "schema:chapter-provider-output:canon_extraction:v24",
                 "schema:chapter-provider-output:canon_extraction:v25",
+                "schema:chapter-provider-output:canon_extraction:v30",
             }:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED",
                     "unknown frozen Canon output contract",
                 )
             host_bind_known_metadata = output_schema_ref.endswith(
-                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25")
+                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25", ":v30")
             )
         original_realization = {item.get("planned_event_id"): item for item in normalized.get("realization_evidence", [])}
         normalized = _without_null_object_properties(normalized)
@@ -1519,3 +1526,33 @@ def bind_delivered_knowledge_scope(schema: dict[str, Any], targets: list[dict[st
     if identities:
         checks['items']['properties']['knowledge_card_asset_version_id'] = {'type':'string','enum':sorted(identities)}
     return result
+
+
+def collect_native_world_schema_diagnostics(schema, value, *, path="$"):
+    diagnostics = []
+    def visit(shape, item, location):
+        children = []
+        local = dict(shape)
+        if shape.get("type") == "object" and isinstance(item, dict):
+            properties = shape.get("properties", {})
+            children = [(child, item[key], f"{location}.{key}") for key, child in properties.items() if key in item]
+            for key in shape.get("required", []):
+                if key not in item:
+                    diagnostics.append({"field_path": f"{location}.{key}", "constraint": "required field missing", "actual_type": "missing"})
+            if shape.get("additionalProperties") is False:
+                for key in sorted(set(item) - set(properties)):
+                    diagnostics.append({"field_path": f"{location}.{key}", "constraint": "undeclared field", "actual_type": type(item[key]).__name__})
+            local["required"] = []
+            local["properties"] = {}
+            local["additionalProperties"] = True
+        elif shape.get("type") == "array" and isinstance(item, list):
+            children = [(shape["items"], child, f"{location}[{index}]") for index, child in enumerate(item)] if "items" in shape else []
+            local.pop("items", None)
+        try:
+            _validate(local, item, path=location)
+        except ValueError as error:
+            diagnostics.append({"field_path": location, "constraint": str(error), "actual_type": type(item).__name__})
+        for child, raw, child_path in children:
+            visit(child, raw, child_path)
+    visit(schema, value, path)
+    return diagnostics

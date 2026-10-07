@@ -1260,7 +1260,10 @@ class PostgresBookAuthority:
                 idempotency_key=stable_key,
                 payload={
                     "book_id": book["book_id"],
-                    **({"creative_requirements_contract": "work-requirements.v1"} if selected_acceptance_outputs["best_draft_candidate"]["content"].get("creative_baseline") else {}),
+                    **({"creative_requirements_contract": "work-requirements.v1",
+                        **({"chapter_acceptance_contract": "coordinated-chapter-acceptance.v1"}
+                            if isinstance(internal, dict) and internal.get("version") == "creative-quality-admission.v3" else {})}
+                        if selected_acceptance_outputs["best_draft_candidate"]["content"].get("creative_baseline") else {}),
                     "chapter_number": int(request["chapter_number"]),
                     "parent_group_version_id": str(
                         request.get("parent_group_version_id") or ""
@@ -2117,6 +2120,9 @@ class PostgresBookAuthority:
         if request["chapter_root_operation_id"]:
             return self.reconcile_chapter(chapter_request_id)
         payload = dict(request["command_payload"])
+        if payload.get("execution_replacement_chapter_command_v2"):
+            from .execution_recovery_v2 import resume_successor
+            return resume_successor(self, chapter_request_id=chapter_request_id, principal=principal)
         if payload.get("execution_replacement_chapter_command"):
             from .execution_recovery import resume_successor
             return resume_successor(self, chapter_request_id=chapter_request_id, principal=principal)
@@ -2826,6 +2832,65 @@ class PostgresBookAuthority:
             {"asset_version_id": item, "content_hash": found[item]}
             for item in asset_version_ids
         )
+
+    def recover_reader_contract(self, chapter_request_id: str, *, principal: Principal) -> bool:
+        from novel_forge.modules.chapter_authority.contract_recovery import _cancelled
+        from novel_forge.modules.book_followup_authority.contracts import READER_OUTCOME_DEFINITION_VERSION
+
+        from novel_forge.modules.book_followup_authority.reader_recovery import require_reader_book_scope
+        request = self.require_chapter_request(chapter_request_id)
+        book = self.require(request["book_run_id"])
+        principal.require("book.authority.execute", request["project_id"])
+        principal.require("book.followup:reader_outcome.evaluate", request["project_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
+            admission = selected_book_template(uow.cursor, project_id=book["project_id"], book_id=book["book_id"], allow_literary_required=True)
+            template = selected_template(admission["policy_snapshot"]["policy"], book["book_id"]) if admission else None
+            if _cancelled(uow.cursor, book) or not template or template["version"] != "creative-execution-template.v11":
+                return False
+            from novel_forge.modules.book_followup_authority.reader_recovery import read_reader_recovery_source
+            uow.cursor.execute("""SELECT followup.operation_id FROM authority_book_followup_operation followup
+                JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
+                WHERE followup.chapter_request_id=%s AND followup.followup_type='READER_OUTCOME'
+                  AND acceptance.status='COMMITTED'""", [chapter_request_id])
+            row = uow.cursor.fetchone()
+            source = read_reader_recovery_source(uow.cursor, str(row[0]), request["project_id"]) if row else None
+        if source is None:
+            return False
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_reader_book_scope(uow.cursor, project_id=book["project_id"], workspace_id=book["workspace_id"],
+                actor_id=principal.principal_id, payload=source["command_payload"]["payload"], source_operation_id=source["operation_id"])
+        stable_key = source["idempotency_key"] + ":contract-successor:" + READER_OUTCOME_DEFINITION_VERSION
+        admission = self.followup.admit(BookFollowupCommand(
+            definition_name=source["definition_name"], project_id=source["project_id"], workspace_id=source["workspace_id"],
+            actor_id=principal.principal_id, trace_id=source["trace_id"], correlation_id=source["correlation_id"],
+            idempotency_key=stable_key, payload=dict(source["command_payload"]["payload"]),
+            input_assets=tuple(dict(item) for item in source["input_asset_snapshot"]),
+            causation_operation_id=source["operation_id"],
+        ), principal=principal, recovery_source_operation_id=source["operation_id"])
+        def commit_successor(uow, _operation_id, checkpoint):
+            uow.cursor.execute("SELECT state FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
+            if uow.cursor.fetchone()[0] in {"ABORTED", "CANCELLED"} or _cancelled(uow.cursor, book):
+                raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_CANCELLED", "Cancelled creation cannot resume a followup")
+            current_source = read_reader_recovery_source(uow.cursor, source["operation_id"], book["project_id"])
+            if current_source != source:
+                raise KernelError("READER_SUCCESSOR_SOURCE_DRIFT", "Revalidate exact no-intent source inside the link mutation")
+            require_reader_book_scope(uow.cursor, project_id=book["project_id"], workspace_id=book["workspace_id"],
+                actor_id=principal.principal_id, payload=source["command_payload"]["payload"], source_operation_id=source["operation_id"])
+            uow.cursor.execute("UPDATE authority_book_followup_operation SET operation_id=%s WHERE chapter_request_id=%s AND followup_type='READER_OUTCOME' AND operation_id=%s", [admission.operation_id, chapter_request_id, source["operation_id"]])
+            if uow.cursor.rowcount != 1:
+                uow.cursor.execute("SELECT operation_id FROM authority_book_followup_operation WHERE chapter_request_id=%s AND followup_type='READER_OUTCOME'", [chapter_request_id])
+                if uow.cursor.fetchone()[0] != admission.operation_id:
+                    raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_CONFLICT", "Reader successor binding changed concurrently")
+            checkpoint("after_followup_successor_link")
+            return {"predecessor_operation_id": source["operation_id"], "followup_operation_id": admission.operation_id,
+                    "chapter_request_id": chapter_request_id, "contract_version": "reader-contract-successor.v2"}
+        self._execute_mutation(book=book, action="followup_link", event_type="book.followup.contract_successor_admitted",
+            idempotency_key=stable_key + ":book-link", actor_id=principal.principal_id,
+            trace_id=source["trace_id"], correlation_id=source["correlation_id"], causation_id=source["operation_id"],
+            payload={"chapter_request_id": chapter_request_id, "predecessor_operation_id": source["operation_id"],
+                     "successor_operation_id": admission.operation_id}, handler=commit_successor)
+        return True
 
     def _schedule_followup(
         self,
@@ -3561,6 +3626,17 @@ def _validate_chapter_acceptance_evidence(
         and final_gate.get("internal_admission") == quality.get("internal_admission")
         and (quality.get("internal_admission") or {}).get("status") == "INTERNAL_ADMITTED"
         and (quality.get("internal_admission") or {}).get("target_asset_version_id") == selected["best_draft_candidate"]["asset_version_id"])
+    review_admitted = rereview.get("decision") == "PASSED" and int(rereview.get("blocking_issue_count",0)) == 0
+    if (quality.get("internal_admission") or {}).get("version") == "creative-quality-admission.v3":
+        from novel_forge.modules.publishing.domain import reviewed_work_admission
+        expected_review_proof={"contract_version":"reviewed-work-admission.v2",
+            "review_asset_version_id":selected["re_review_report"]["asset_version_id"],
+            "quality_asset_version_id":selected["quality_score_report"]["asset_version_id"],
+            "candidate_asset_version_id":selected["best_draft_candidate"]["asset_version_id"],
+            "source_review_decision":rereview.get("decision"),"host_admission":"PASSED","literary_quality_proven":False}
+        review_admitted=(internal and final_gate.get("review_admission")==expected_review_proof
+            and reviewed_work_admission(review=rereview,quality=quality,text=str(candidate.get("text") or ""),
+                source_id=str(candidate.get("selected_source_asset_version_id") or "")))
     checks = {
         "final_release": internal and bool(final_gate.get("blob_receipt", {}).get("receipt_id")) or (
             final_gate.get("gate") == "PASSED"
@@ -3568,10 +3644,7 @@ def _validate_chapter_acceptance_evidence(
             and bool(final_gate.get("blob_receipt", {}).get("receipt_id"))
         ),
         "quality": internal or quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
-        "review": (
-            rereview.get("decision") == "PASSED"
-            and int(rereview.get("blocking_issue_count", 0)) == 0
-        ),
+        "review": review_admitted,
         "canon": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
         "export": release.get("release_status") == "READY_FOR_BLOB_VERIFICATION",
         "plan_binding": (

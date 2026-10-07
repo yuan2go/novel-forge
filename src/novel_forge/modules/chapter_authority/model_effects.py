@@ -444,7 +444,8 @@ class ExternalEffectChapterModelPort:
             dict(business_payload.get("preparation_report") or {}).get("stage_context_profile_versions", {}).get("draft")
             or business_payload.get("draft_profile_version") or ""
         )
-        task_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0")
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
         if task_scoped and existing_intent is not None:
@@ -606,7 +607,7 @@ class ExternalEffectChapterModelPort:
         )
         provider_admission_required = bool(
             getattr(self.adapter, "production_execution_gateway_backed", False)
-            and (route_provider != "scripted_provider_v2" or task_scoped)
+            and (route_provider != "scripted_provider_v2" or task_admission_scoped)
         )
         if self.agent_binding_required and binder is None and existing_intent is None:
             raise KernelError(
@@ -884,7 +885,9 @@ class ExternalEffectChapterModelPort:
             recorder = self.agent_binding_recorder
             if recorder is not None:
                 recorder.record_compatibility_usage(request, stage=stage)
-        completed = self.completed_effect_result(external_effect_id, request.project_id)
+        completed = (self.completed_effect_result(external_effect_id, request.project_id, coordinated_reader=True)
+            if stage == "reader_outcome" and request.definition_version == "1.4.0"
+            else self.completed_effect_result(external_effect_id, request.project_id))
         if completed is not None:
             if bool(effect.get("replayed")):
                 authorize = getattr(self.adapter, "for_recovery", None)
@@ -1315,9 +1318,15 @@ class ExternalEffectChapterModelPort:
         )
 
     def completed_effect_result(
-        self, external_effect_id: str, project_id: str
+        self, external_effect_id: str, project_id: str, *, coordinated_reader: bool = False
     ) -> ModelProviderResult | None:
 
+        if coordinated_reader:
+            from novel_forge.modules.book_followup_authority.completed_reader import completed_reader_result
+            current_reader, result = completed_reader_result(self.database_url, effect_id=external_effect_id, project_id=project_id)
+            if not current_reader:
+                raise KernelError("READER_RESULT_OWNER_INVALID", "Current Reader receipt must retain the exact contract owner")
+            return result
         runtime = get_database_runtime(self.database_url)
         with runtime.connection() as connection:
             with connection.cursor() as cursor:

@@ -56,6 +56,7 @@ class AuthorityHandlerRepository:
         repair_candidate_asset_version_id: str = "",
         repair_result_asset_version_id: str = "",
         plan_change_candidate_asset_version_id: str = "",
+        validation_plan_change_candidate_asset_version_id: str = "",
         semantic_revalidation_target_asset_version_id: str = "",
         reference_sample_asset_version_id: str = "",
     ) -> list[dict[str, Any]]:
@@ -157,7 +158,7 @@ class AuthorityHandlerRepository:
                 asset_version_id == plan_change_candidate_asset_version_id
                 and row[1] == "planning_generation_candidate"
                 and row[4] == "CANDIDATE"
-                and row[5] == "ELIGIBLE"
+                and (row[5] == "ELIGIBLE" or asset_version_id == validation_plan_change_candidate_asset_version_id and row[5] == "INELIGIBLE")
                 and row[6] == "CLEAR"
             )
             if (

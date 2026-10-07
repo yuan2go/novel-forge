@@ -170,6 +170,18 @@ from . import (
     v20261007_0166_failed_step_successor,
     v20261007_0167_execution_contract_continuation,
     v20261007_0168_derived_step_revalidation,
+    v20261007_0169_world_agency_contract_successor,
+    v20261007_0170_world_host_revalidation,
+    v20261007_0171_world_projection_successor,
+    v20261007_0172_failed_step_successor_v2,
+    v20261007_0173_retained_graph_continuation,
+    v20261007_0174_quality_review_namespace,
+    v20261007_0175_canon_output_repair,
+    v20261007_0176_quality_correction_control,
+    v20261007_0177_realization_comparison_uncertainty,
+    v20261007_0178_planning_reference_contract_successor,
+    v20261007_0179_planning_arc_scope_revalidation,
+    v20261007_0180_foundation_direction_search,
 )
 
 VERSION_MODULES = [
@@ -342,6 +354,18 @@ VERSION_MODULES = [
     v20261007_0166_failed_step_successor,
     v20261007_0167_execution_contract_continuation,
     v20261007_0168_derived_step_revalidation,
+    v20261007_0169_world_agency_contract_successor,
+    v20261007_0170_world_host_revalidation,
+    v20261007_0171_world_projection_successor,
+    v20261007_0172_failed_step_successor_v2,
+    v20261007_0173_retained_graph_continuation,
+    v20261007_0174_quality_review_namespace,
+    v20261007_0175_canon_output_repair,
+    v20261007_0176_quality_correction_control,
+    v20261007_0177_realization_comparison_uncertainty,
+    v20261007_0178_planning_reference_contract_successor,
+    v20261007_0179_planning_arc_scope_revalidation,
+    v20261007_0180_foundation_direction_search,
 ]
 
 __all__ = ["VERSION_MODULES"]

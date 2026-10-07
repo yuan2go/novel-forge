@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Mapping
@@ -45,6 +46,7 @@ IMMUTABLE_NARRATIVE_EVIDENCE_TYPES = frozenset(
         "reader_issue_set",
         "longform_recap",
         "replan_request",
+        "arc_revision_candidate",
     }
 )
 IMMUTABLE_HISTORY_TYPES = ACCEPTED_HISTORY_TYPES | IMMUTABLE_NARRATIVE_EVIDENCE_TYPES
@@ -175,88 +177,67 @@ class PostgresArtifactLineageRepository:
         semantic_diff: SemanticDiff,
         reason: str,
         created_by_operation_id: str,
+        maximum_edges: int = 50_000,
     ) -> tuple[dict[str, Any], ...]:
 
+        if maximum_edges <= 0:
+            raise ValueError("semantic invalidation requires a positive finite edge budget")
         if not reason.strip() or not created_by_operation_id.strip():
             raise ValueError("semantic invalidation command is incomplete")
         self.cursor.execute(
             """
-            WITH RECURSIVE impact AS (
-                SELECT edge.downstream_asset_version_id AS target_id,
-                       edge.invalidation_policy, edge.semantic_dimensions, 1 AS depth,
-                       ARRAY[edge.upstream_asset_version_id,
-                             edge.downstream_asset_version_id]::TEXT[] AS path
-                FROM authority_artifact_lineage_edge AS edge
-                WHERE edge.project_id=%s
-                  AND edge.upstream_asset_version_id=%s
-                  AND edge.invalidation_policy<>'INFORMATIONAL'
-                  AND edge.semantic_dimensions ?| %s::TEXT[]
-                UNION ALL
-                SELECT edge.downstream_asset_version_id,
-                       edge.invalidation_policy, edge.semantic_dimensions,
-                       impact.depth + 1,
-                       impact.path || edge.downstream_asset_version_id
-                FROM impact
-                JOIN authority_artifact_lineage_edge AS edge
-                  ON edge.project_id=%s
-                 AND edge.upstream_asset_version_id=impact.target_id
-                WHERE edge.invalidation_policy<>'INFORMATIONAL'
-                  AND edge.semantic_dimensions ?| %s::TEXT[]
-                  AND impact.invalidation_policy<>'IMMUNE_ACCEPTED_HISTORY'
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM authority_asset_version AS boundary_version
-                      JOIN authority_asset AS boundary_asset
-                        ON boundary_asset.asset_id=boundary_version.asset_id
-                      WHERE boundary_version.asset_version_id=impact.target_id
-                        AND boundary_asset.asset_type=ANY(%s::TEXT[])
-                  )
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM story_plan_binding AS boundary_binding
-                      WHERE boundary_binding.project_id=%s
-                        AND boundary_binding.asset_version_id=impact.target_id
-                        AND boundary_binding.execution_scope='EXECUTED'
-                  )
-                  AND NOT edge.downstream_asset_version_id=ANY(impact.path)
+            WITH accepted_history AS (
+                SELECT unnest(ARRAY[accepted.chapter_outcome_asset_version_id,
+                       accepted.story_state_asset_version_id, accepted.canon_snapshot_asset_version_id,
+                       outcome.content->>'accepted_draft_asset_version_id']) AS asset_version_id
+                FROM authority_book_chapter_acceptance accepted
+                JOIN authority_asset_version outcome ON outcome.asset_version_id=accepted.chapter_outcome_asset_version_id
+                WHERE accepted.project_id=%s AND accepted.status='COMMITTED'
+                UNION
+                SELECT output.asset_version_id FROM authority_book_chapter_acceptance accepted
+                JOIN authority_operation_output_asset output ON output.operation_id=accepted.acceptance_operation_id
+                WHERE accepted.project_id=%s AND accepted.status='COMMITTED'
             )
-            SELECT DISTINCT ON (impact.target_id)
-                   impact.target_id, impact.invalidation_policy,
-                   asset.asset_type, impact.depth,
-                   COALESCE(binding.execution_scope, '')
-            FROM impact
+            SELECT edge.upstream_asset_version_id, edge.downstream_asset_version_id,
+                   edge.invalidation_policy, asset.asset_type,
+                   EXISTS (
+                       SELECT 1 FROM story_plan_binding AS binding
+                       WHERE binding.project_id=edge.project_id
+                         AND binding.asset_version_id=edge.downstream_asset_version_id
+                         AND binding.execution_scope='EXECUTED'
+                   ) OR accepted.asset_version_id IS NOT NULL AS immutable_binding
+            FROM authority_artifact_lineage_edge AS edge
             JOIN authority_asset_version AS version
-              ON version.asset_version_id=impact.target_id
+              ON version.asset_version_id=edge.downstream_asset_version_id
             JOIN authority_asset AS asset ON asset.asset_id=version.asset_id
-            LEFT JOIN story_plan_binding AS binding
-              ON binding.project_id=%s
-             AND binding.asset_version_id=impact.target_id
-            ORDER BY impact.target_id, impact.depth
+            LEFT JOIN accepted_history accepted ON accepted.asset_version_id=edge.downstream_asset_version_id
+            WHERE edge.project_id=%s
+              AND (edge.book_id=%s OR edge.book_id IS NULL)
+              AND edge.invalidation_policy<>'INFORMATIONAL'
+              AND edge.semantic_dimensions ?| %s::TEXT[]
+            ORDER BY edge.upstream_asset_version_id, edge.downstream_asset_version_id,
+                     edge.invalidation_policy LIMIT %s
             """,
-            [
-                project_id,
-                semantic_diff.source_asset_version_id,
-                list(semantic_diff.dimensions),
-                project_id,
-                list(semantic_diff.dimensions),
-                list(IMMUTABLE_HISTORY_TYPES),
-                project_id,
-                project_id,
-            ],
+            [project_id, project_id, project_id, book_id, list(semantic_diff.dimensions), maximum_edges + 1],
         )
+        edges = self.cursor.fetchall()
+        if len(edges) > maximum_edges:
+            from novel_forge.modules.command_kernel.errors import KernelError
+            raise KernelError("ARTIFACT_LINEAGE_BUDGET_EXCEEDED", "Replan must fit its finite transaction edge budget")
+        impacts = _lineage_impacts(semantic_diff.source_asset_version_id, edges)
         affected: list[dict[str, Any]] = []
         for (
             target_id,
             raw_policy,
             asset_type,
             depth,
-            execution_scope,
-        ) in self.cursor.fetchall():
+            executed,
+        ) in impacts:
             policy = InvalidationPolicy(str(raw_policy))
             immutable = (
                 policy is InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
                 or str(asset_type) in IMMUTABLE_HISTORY_TYPES
-                or str(execution_scope) == "EXECUTED"
+                or executed
             )
             status = InvalidationStatus.IMMUNE if immutable else InvalidationStatus.OPEN
             invalidation_id = str(
@@ -351,6 +332,47 @@ class PostgresArtifactLineageRepository:
                 "ARTIFACT_INVALIDATION_CAS_CONFLICT",
                 "invalidation changed concurrently",
             )
+
+
+def _lineage_impacts(source_id: str, rows: Any) -> tuple[tuple[Any, ...], ...]:
+    graph = defaultdict(list)
+    for upstream, target, policy, asset_type, executed in rows:
+        graph[str(upstream)].append(
+            (str(target), str(policy), str(asset_type), bool(executed))
+        )
+    pending = deque([(source_id, 0)])
+    expanded = {source_id}
+    impacts: dict[str, tuple[Any, ...]] = {}
+    while pending:
+        upstream, distance = pending.popleft()
+        for target, policy, asset_type, executed in graph[upstream]:
+            if target == source_id:
+                continue
+            immune = (
+                policy == InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+                or asset_type in IMMUTABLE_HISTORY_TYPES
+                or executed
+            )
+            depth = distance + 1
+            prior = impacts.get(target)
+            prior_immune = prior is not None and (
+                prior[1] == InvalidationPolicy.IMMUNE_ACCEPTED_HISTORY
+                or prior[2] in IMMUTABLE_HISTORY_TYPES
+                or prior[4]
+            )
+            if prior is None or (prior_immune and not immune):
+                impacts[target] = (
+                    target,
+                    policy,
+                    asset_type,
+                    min(depth, prior[3]) if prior else depth,
+                    executed,
+                )
+            if not immune and target not in expanded:
+                expanded.add(target)
+                pending.append((target, depth))
+    return tuple(impacts[key] for key in sorted(impacts))
+
 
 
 def lineage_policy_for(asset_type: str) -> InvalidationPolicy:

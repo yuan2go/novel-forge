@@ -1,0 +1,33 @@
+{
+  "source_sha": "c621e08689ccd42a20f36a6f3e09a6f43f35b493",
+  "definitions": {
+    "none": {
+      "hash": "sha256:eeaf509aba574d2f0ebb82fc4a2f9efe01a1131a2c090aec2fd87dce56bc53ae",
+      "definition_version": "1.2.0"
+    },
+    "v1": {
+      "hash": "sha256:5daaf344f55ec2d95e8da2adab7e980f2521c3b2f7777438261c4d0152dcc785",
+      "definition_version": "1.7.0"
+    },
+    "v2": {
+      "hash": "sha256:5daaf344f55ec2d95e8da2adab7e980f2521c3b2f7777438261c4d0152dcc785",
+      "definition_version": "1.7.0"
+    },
+    "v3": {
+      "hash": "sha256:f61051094891c65738f5e3d9090171fb9add735f2f30623bd2835fbc33c0e829",
+      "definition_version": "1.8.0"
+    },
+    "v4": {
+      "hash": "sha256:89a5d69b75a14eefaaae11017468f258448d4b69966b99bacb3c2aae9c5d7579",
+      "definition_version": "1.9.0"
+    },
+    "v5": {
+      "hash": "sha256:29c239d52f82879f66ba0e2744bedb447eeec80fa07aae4ce9260742d82e0f2b",
+      "definition_version": "1.10.0"
+    },
+    "v6": {
+      "hash": "sha256:c7b5681f19217c0c952ecbb911be51f29df75891d8745b82ff8ea9eb5ab72695",
+      "definition_version": "1.11.0"
+    }
+  }
+}

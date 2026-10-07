@@ -1,0 +1,53 @@
+{
+  "source_sha": "c621e08689ccd42a20f36a6f3e09a6f43f35b493",
+  "contracts": {
+    "1.17.0": {
+      "definition": "038a8f82db412d5d75ae25a6924054a245dc58171e35b4f2b783d9a64c15f5e7",
+      "manifest": "2c321daee423b79b34e702606646848fe89f7c19b1558d546573d8b16cf0927e",
+      "catalog": "2bcc60c7eae712014b5421e505d09962afd07bbbcd3d71af9e0c27eeaaecc897"
+    },
+    "1.18.0": {
+      "definition": "4823c715f635ca0a73a727ce77a96ebcb5bb9be530bdae4df45f5477242ea6cb",
+      "manifest": "c60192655029f2ebc210641d4953d250dc1ccd98fd6c2fb16da8f644ab28f17e",
+      "catalog": "a59e26a12721c6af8c88742e978b64fb33d6a10dea3c3c3d1bd796804d2f7624"
+    },
+    "1.19.0": {
+      "definition": "51580b883ebf1b96215b421c07bc95dc6404b44757433eac4f9746327be139a6",
+      "manifest": "3302faee3985ad6b681a32feacdf8e748f3b530ab0938730626a1e4dc4d019fd",
+      "catalog": "2ba44ac971f1899d5d49e644b2c0420f0b7e675aa8f7c1dbeb9adfe101881d3f"
+    },
+    "world": {
+      "transition": "41ba1e119801fac8110b84446aee19a75cf7c341f2b8a618f90b0dfcef5dda9f",
+      "generation": "d82c1ff470c4d668d8212963668ecfaec1bfe1056cecfd46268e43c01d8a9666",
+      "scoped_generation": "ad69935a5bd190ee985249136335e969272f63e9746de7804d991bf3e5836a97",
+      "evaluation": "a114f55183c257be609042f7b33cc077fcc81f638e4b2f50e035b219f67a0f27"
+    }
+  },
+  "foundation": {
+    "1.17.0": {
+      "creative.candidates.generate": "671b35a9ef5158dc77a655dbab390369a9d1c5dd80d9585933baba07dbeae84d",
+      "theme.candidates.generate": "0f93626df2180d88911e5bc37f4c5f564c20140a3d3c50efa049509997dbba26",
+      "ending.intent.generate": "2bc8dadca6f873db906ab8b94db2aea76900dfe798aeff432d584ee8fbffb1c3",
+      "reader.promise.generate": "204b9abcdc48b8c568d05027f074f90dd14906f12a7c98d3aa1a957294568749",
+      "world.design.generate": "7cfdaf29699c4d9dae919c43ed8912b163de0172fea5e79e2435106427a0d345",
+      "character.cast.generate": "fb91cf083cb1c3ac4eb6c7971b9aa9111a6d2fb9794678caf916a284db45e546"
+    },
+    "1.18.0": {
+      "creative.candidates.generate": "671b35a9ef5158dc77a655dbab390369a9d1c5dd80d9585933baba07dbeae84d",
+      "theme.candidates.generate": "0f93626df2180d88911e5bc37f4c5f564c20140a3d3c50efa049509997dbba26",
+      "ending.intent.generate": "2bc8dadca6f873db906ab8b94db2aea76900dfe798aeff432d584ee8fbffb1c3",
+      "reader.promise.generate": "204b9abcdc48b8c568d05027f074f90dd14906f12a7c98d3aa1a957294568749",
+      "world.design.generate": "7cfdaf29699c4d9dae919c43ed8912b163de0172fea5e79e2435106427a0d345",
+      "character.cast.generate": "fb91cf083cb1c3ac4eb6c7971b9aa9111a6d2fb9794678caf916a284db45e546"
+    },
+    "1.19.0": {
+      "creative.candidates.generate": "4a010a46f528fdbd3c381cbbbce72282847947ca0b556250da28fef08b2c30c1",
+      "theme.candidates.generate": "6165f0e58bed1241b21fc180c167381112e1344e6dd328d577ffc6d29596c110",
+      "ending.intent.generate": "c10cb015c6f0a559cdd0f748b21bcacd28f0ca9f71f710b9e5867598bb44d3ee",
+      "reader.promise.generate": "9dfc835b204349f3cd91c688bda52d9aff2c65329758062f74659a0eaa671431",
+      "world.design.generate": "ff8fc28ea95d054a053f1648c2d336d483c42d2839d57fb310c3b91c48442a1a",
+      "character.cast.generate": "77060d9ef4ca5d70a20b9984c37770c4c1f91438f99c03de7b2520604a596313"
+    },
+    "runtime_continuation": "d9a5b0654e9fdf3bae8b1150ffabec85f32b297df3488ab1d12cdf7b7eb95ac1"
+  }
+}

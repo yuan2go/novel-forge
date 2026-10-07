@@ -290,6 +290,8 @@ class ChapterAuthorityQuery:
             ]
             from novel_forge.modules.command_kernel.derived_step_revalidation import acknowledge_revalidated_effects
             acknowledge_revalidated_effects(cursor, model_effects, operation_ids)
+            from novel_forge.modules.command_kernel.settled_successor_evidence import acknowledge_successor_effects
+            acknowledge_successor_effects(cursor, model_effects, operation_ids)
             cursor.execute(
                 """
                 SELECT saga_id, status, coordinator_owner,

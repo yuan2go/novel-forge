@@ -99,17 +99,21 @@ def recover(application, *, source_operation_id, project_id, source_asset_versio
         if document.content_hash != item.content_hash or document.asset_type != item.asset_type:
             raise KernelError("PLANNING_RESULT_ADMISSION_INPUT_DRIFT", item.asset_version_id)
         contents[item.role] = document.content
+    candidate_result = retained.get("candidate_result", retained["raw_result"])
     selection = context["narrative_intelligence"]
     if selection.get("policy_version") == "knowledge-grounded-selection-v2":
         from .knowledge_translation import validate_knowledge_translations
-        validate_knowledge_translations(retained["raw_result"], selection)
+        validate_knowledge_translations(candidate_result, selection)
     candidate = PlanningGenerationCandidate(command.generator_operation_name, command.planning_scope, command.logical_key,
-        retained["raw_result"], inputs, pep)
+        candidate_result, inputs, pep)
     envelope = build_planning_constraint_envelope(project_id=project_id, book_id=command.book_id,
         generation_operation_id=source_operation_id, generator_operation_name=command.generator_operation_name,
         frozen_inputs=inputs, input_contents=contents, candidate_payload=candidate.candidate_payload,
-        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"}, aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"}, aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
         rfc6901_paths=True)
+    if command.execution_contract_version == "1.21.0" and command.narrative_search_id:
+        envelope["contract_version"] = "foundation-generation.v5"
+        envelope["narrative_search"] = command.narrative_search_snapshot
     if envelope.get("author_design"):
         envelope["author_design_projection"] = context["author_design_projection"]
     content = candidate.authority_content(project_id=project_id, book_id=command.book_id, constraint_envelope=envelope)
@@ -124,7 +128,7 @@ def recover(application, *, source_operation_id, project_id, source_asset_versio
         "source_pack_snapshot_id": snapshot.snapshot_id, "source_pack_snapshot_hash": snapshot.snapshot_hash,
         "source_release_sha": frozen.release_sha, "target_release_sha": application.commit_sha,
         "original_failure": retained["diagnostic"], "current_result_validation": "VALID",
-        "result_validation_contract_version": "1.19.0", "provider_invoked": False,
+        "result_validation_contract_version": "1.21.0" if command.execution_contract_version == "1.21.0" else "1.19.0", "provider_invoked": False,
         "literary_qualification": "NOT_RUN", "reason": reason, "operator_id": principal.principal_id}
     content["result_admission_recovery"] = provenance
     definition = result_admission_definition(application_build_id=application.application_build_id, commit_sha=application.commit_sha)
@@ -133,6 +137,8 @@ def recover(application, *, source_operation_id, project_id, source_asset_versio
         uow.commit()
 
     def materialize(uow, operation_id, checkpoint):
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+        require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=source_operation_id)
         uow.cursor.execute("SELECT candidate_asset_version_id,version FROM authority_story_planning_generation WHERE operation_id=%s FOR UPDATE", [source_operation_id])
         current = uow.cursor.fetchone()
         if current != (None, row[2]):

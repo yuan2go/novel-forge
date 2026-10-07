@@ -103,6 +103,8 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
             lambda **values: {"formation_run_id": values["formation_run_id"], "stop_reason": "YIELDED_CHECKPOINT"})
     settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="validation")
+    if transport is not None:
+        transport.database_url = settings.database_url
     first = run_creation_command(settings, args)
     if full_creation:
         assert first["stop_reason"] == "FORMATION_FAILED", first
@@ -450,6 +452,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         args.execution_template_file = tmp_path / "required-world-execution-template.json"
         args.execution_template_file.write_text(json.dumps(execution_template))
     settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="validation")
+    transport.database_url = settings.database_url
     first = run_creation_command(settings, args)
     identity = first["formation_run_id"]
     assert first["stop_reason"] == "WORKER_OWNS_CONTINUATION"

@@ -30,8 +30,8 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_VERSION,
 )
 
-_BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
-STORY_PLANNING_PROMPT_VERSION = "v9"
+_BASE_PACK = "config/capability_packs/historical/chapter_generation_pack_2_26_0.json"
+STORY_PLANNING_PROMPT_VERSION = "v11"
 NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
@@ -95,7 +95,7 @@ def build_story_planning_pack_profile(
     planning_task_token_budget: int | None = None,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
-    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}:
+    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"}:
         raise ValueError("Unsupported Planning execution contract")
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
@@ -147,7 +147,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version="2.13.0" if version == "1.21.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -193,19 +193,19 @@ def build_story_planning_pack_profile(
         manifest,
         artifacts,
         skill_ref="long-outline",
-        skill_version="long-outline-v3" if version in {"1.18.0", "1.19.0"} else "long-outline-v2",
-        skill_path="skills/long-outline/SKILL.md" if version in {"1.18.0", "1.19.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
+        skill_version="long-outline-v3" if version in {"1.18.0", "1.19.0", "1.21.0"} else "long-outline-v2",
+        skill_path="skills/long-outline/SKILL.md" if version in {"1.18.0", "1.19.0", "1.21.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
-            "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
+            "config/capability_packs/artifacts/story_planning_system_instruction_v11.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
         ),
         template_ref="prompt-template:story-planning-pack",
         template_path=("config/capability_packs/artifacts/story_planning_template.md"),
         input_schema_ref="schema:story-planning-pack-input:v1",
         output_schema_ref="schema:story-planning-pack-output:v1",
-        system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.19.0" else "v8",
+        system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.21.0" else "v9" if version == "1.19.0" else "v8",
     )
-    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0"})
+    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.21.0"})
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)
@@ -238,10 +238,14 @@ def build_reader_outcome_pack_profile(
     *,
     operation_definition_hash: str,
     pack_id: str = "reader_outcome_pack",
+    coordinated_contract: bool = False,
 ) -> LongformCapabilityPackProfile:
+    from novel_forge.modules.book_followup_authority.contracts import READER_OUTCOME_DEFINITION_VERSION
+
+    version = READER_OUTCOME_DEFINITION_VERSION if coordinated_contract else BOOK_FOLLOWUP_DEFINITION_VERSION
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.2.0"
+    manifest["identity"]["version"] = "1.6.0" if coordinated_contract else "1.2.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -252,13 +256,13 @@ def build_reader_outcome_pack_profile(
         node_id="reader_outcome",
         operation_name="reader_outcome.evaluate",
         operation_definition_ref=(
-            f"reader_outcome.evaluate@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+            f"reader_outcome.evaluate@{version}"
         ),
         operation_definition_hash=operation_definition_hash,
         handler_key=("novel_forge.book_followup_authority.reader_outcome.evaluate"),
         stage="reader_outcome",
         capability_id="quality.reader_outcome.judge",
-        input_asset_types=["draft_version", "canon_snapshot"],
+        input_asset_types=["best_draft_candidate" if coordinated_contract else "draft_version", "canon_snapshot"],
         output_asset_types=["reader_outcome_report"],
         depends_on=[],
         commit_authority="BOOK_FOLLOWUP_AUTHORITY",
@@ -275,7 +279,7 @@ def build_reader_outcome_pack_profile(
     ]
     manifest["workflow_template"].update(
         workflow_id="book_followup_reader_outcome",
-        workflow_version=BOOK_FOLLOWUP_DEFINITION_VERSION,
+        workflow_version=version,
         nodes=[node],
         completion={
             "required_terminal_nodes": ["reader_outcome"],
@@ -288,6 +292,8 @@ def build_reader_outcome_pack_profile(
         "canon_snapshot",
         "context_bundle",
     ]
+    if coordinated_contract:
+        manifest["context_sources"]["allowed_asset_types"].append("best_draft_candidate")
     manifest["tool_permissions"]["tools"] = [
         {
             **manifest["tool_permissions"]["tools"][0],
@@ -333,14 +339,14 @@ def build_reader_outcome_pack_profile(
             "operation_timeout_seconds": 180,
             "timeout_action": "FAIL_ATTEMPT",
             "authority_binding": (
-                f"reader_outcome.evaluate@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+                f"reader_outcome.evaluate@{version}"
             ),
         },
         "generated:reader-outcome-pack-profile",
     )
     return LongformCapabilityPackProfile(
         pack_id,
-        f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}",
+        f"book_followup_reader_outcome@{version}",
         manifest,
         _catalog(artifacts),
         "reader-feedback",
@@ -607,7 +613,7 @@ def _base(
     manifest = json.loads((root / _BASE_PACK).read_text(encoding="utf-8"))
     manifest["identity"]["pack_id"] = pack_id
     artifacts = [
-        item.to_dict() for item in default_chapter_artifact_resolver(root).artifacts()
+        item.to_dict() for item in default_chapter_artifact_resolver(root, include_current_contracts=False).artifacts()
     ]
     return root, manifest, artifacts
 

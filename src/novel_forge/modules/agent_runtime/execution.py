@@ -586,10 +586,9 @@ class _ExternalEffectPepAgentPort:
                 "AGENT_PEP_CAPABILITY_DRIFT",
                 "Domain execution capability differs from frozen PEP request",
             )
-        result = self.evidence_writer.completed_effect_result(
-            self.external_effect_id,
-            self.effect_context.project_id,
-        )
+        result = (self.evidence_writer.completed_effect_result(self.external_effect_id, self.effect_context.project_id, coordinated_reader=True)
+            if self.operation["definition_name"] == "reader_outcome.evaluate" and self.operation["definition_version"] == "1.4.0"
+            else self.evidence_writer.completed_effect_result(self.external_effect_id, self.effect_context.project_id))
         recovered_completed_effect = result is not None
         if result is None:
             try:

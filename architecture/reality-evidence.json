@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0168_derived_step_revalidation",
+  "migration_head": "20261007_0180_foundation_direction_search",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9335,6 +9335,30 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
           "symbol": "build_provider_task_view"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/execution_recovery_v2.py",
+          "symbol": "recover_timeout"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/receipt_recovery.py",
+          "symbol": "recover_known_draft_receipt"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/canon_contract_recovery.py",
+          "symbol": "recover_canon_contract"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/reader_pack.py",
+          "symbol": "ensure_creation_reader_pack"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/reader_recovery.py",
+          "symbol": "read_reader_recovery_source"
+        },
+        {
+          "path": "src/novel_forge/modules/book_replan/auto_authorization.py",
+          "symbol": "require_auto_replan_proof"
         }
       ],
       "domain_symbols": [
@@ -9373,6 +9397,18 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
           "symbol": "foundation_task"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/retained_completion.py",
+          "symbol": "retained_completion_evidence"
+        },
+        {
+          "path": "src/novel_forge/modules/production_execution/contracts.py",
+          "symbol": "local_cli_remote_outcome_unknown"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/retained_draft_validation.py",
+          "symbol": "require_current_completed_draft"
         }
       ],
       "commands_operations": [
@@ -9391,6 +9427,18 @@
         {
           "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
           "symbol": "replace_derived_step"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/step_successor_v2.py",
+          "symbol": "replace_failed_step"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/retained_graph.py",
+          "symbol": "continue_graph_in_uow"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+          "symbol": "read_completed_operation_success"
         }
       ],
       "state_ownership": {
@@ -9435,6 +9483,14 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
           "symbol": "require_settled_failed_lineage"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/budget_runtime.py",
+          "symbol": "require_known_cli_lineage"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/operation_graph.py",
+          "symbol": "transition_saga_gate_in_uow"
         }
       ],
       "persistence": [
@@ -9496,6 +9552,66 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py",
           "locator": "MIGRATION_ID = '20261007_0168_derived_step_revalidation'",
           "id": "20261007_0168_derived_step_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0169_world_agency_contract_successor.py",
+          "locator": "MIGRATION_ID = '20261007_0169_world_agency_contract_successor'",
+          "id": "20261007_0169_world_agency_contract_successor"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0170_world_host_revalidation.py",
+          "locator": "MIGRATION_ID = '20261007_0170_world_host_revalidation'",
+          "id": "20261007_0170_world_host_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0171_world_projection_successor.py",
+          "locator": "MIGRATION_ID = '20261007_0171_world_projection_successor'",
+          "id": "20261007_0171_world_projection_successor"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0172_failed_step_successor_v2.py",
+          "locator": "MIGRATION_ID = '20261007_0172_failed_step_successor_v2'",
+          "id": "20261007_0172_failed_step_successor_v2"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0173_retained_graph_continuation.py",
+          "locator": "MIGRATION_ID = '20261007_0173_retained_graph_continuation'",
+          "id": "20261007_0173_retained_graph_continuation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0174_quality_review_namespace.py",
+          "locator": "MIGRATION_ID = '20261007_0174_quality_review_namespace'",
+          "id": "20261007_0174_quality_review_namespace"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0175_canon_output_repair.py",
+          "locator": "MIGRATION_ID = '20261007_0175_canon_output_repair'",
+          "id": "20261007_0175_canon_output_repair"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0176_quality_correction_control.py",
+          "locator": "MIGRATION_ID = '20261007_0176_quality_correction_control'",
+          "id": "20261007_0176_quality_correction_control"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0177_realization_comparison_uncertainty.py",
+          "locator": "MIGRATION_ID = '20261007_0177_realization_comparison_uncertainty'",
+          "id": "20261007_0177_realization_comparison_uncertainty"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0178_planning_reference_contract_successor.py",
+          "locator": "MIGRATION_ID = '20261007_0178_planning_reference_contract_successor'",
+          "id": "20261007_0178_planning_reference_contract_successor"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0179_planning_arc_scope_revalidation.py",
+          "locator": "MIGRATION_ID = '20261007_0179_planning_arc_scope_revalidation'",
+          "id": "20261007_0179_planning_arc_scope_revalidation"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0180_foundation_direction_search.py",
+          "locator": "MIGRATION_ID = '20261007_0180_foundation_direction_search'",
+          "id": "20261007_0180_foundation_direction_search"
         }
       ],
       "external_effects": {
@@ -9583,6 +9699,58 @@
         {
           "path": "tests/unit/test_planning_result_context_identity.py",
           "symbol": "test_primary_failure_rejects_other_stage_context_or_changed_frozen_hash"
+        },
+        {
+          "path": "tests/unit/test_retained_completion_guards.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_provider_policy_historical_identity.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_coordinated_migration_identity.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/integration/test_world_contract_migration_guards_postgres.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_local_cli_remote_outcome_guards.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_historical_current_receipt_boundary.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_latest135_planning_contracts.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_reader_forward_contract.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_book_future_contract_guards.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_saga_gate_atomic_owner.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_formation_automatic_comparison.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_synthesis_current_planning_wire.py",
+          "locator": "def test_"
+        },
+        {
+          "path": "tests/integration/test_provider_budget_runtime_postgres.py",
+          "locator": "def test_"
         }
       ],
       "qualification_state": "WIRED",
@@ -9730,7 +9898,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:af01e85f5d356e41a2206c0ad75442186e1355d29a23470aeed574fbf200019f"
+    "implementation_tree_sha": "sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

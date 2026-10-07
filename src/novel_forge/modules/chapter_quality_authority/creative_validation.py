@@ -85,7 +85,7 @@ def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str, dis
 
 
 def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, project_id: str, book_id: str | None = None) -> None:
-    if (admission.get("version") not in {"creative-quality-admission.v1", "creative-quality-admission.v2"} or admission.get("mode") != MODE
+    if (admission.get("version") not in {"creative-quality-admission.v1", "creative-quality-admission.v2", "creative-quality-admission.v3"} or admission.get("mode") != MODE
             or admission.get("status") != "INTERNAL_ADMITTED" or not admission.get("receipts")
             or admission.get("blocked_dimensions") or admission.get("strict_certification_eligible") is not False
             or book_id is not None and admission.get("book_id") != book_id):
@@ -105,6 +105,11 @@ def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, 
                 raise KernelError("VALIDATION_QUALITY_GROUP_REQUIRED", receipt["external_effect_id"])
             groups.append(rows[0][0])
         expected = assess_internal_quality(groups=groups, target=admission["target_asset_version_id"], disposition_version=2 if admission["version"].endswith("v2") else 1)
+        if admission["version"] == "creative-quality-admission.v3":
+            constraints = receipt_work_constraints(database_url, project_id=project_id,
+                receipts=admission["receipts"], target=admission["target_asset_version_id"])
+            expected = assess_coordinated_internal_quality(groups=groups,
+                target=admission["target_asset_version_id"], work_constraints=constraints)
         if expected != dict(admission):
             raise KernelError("VALIDATION_QUALITY_ADMISSION_TAMPERED", admission["target_asset_version_id"])
 
@@ -128,3 +133,134 @@ def internal_required_actions(*, admission, evidence_reports, target):
             'reevaluation_gate': report.get('gate_type', ''), 'disposition_contract': 'creative-quality-disposition.v2',
             'strict_certification_eligible': False})
     return actions
+
+
+def receipt_work_constraints(database_url, *, project_id, receipts, target):
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    receipt = next(row for row in receipts if row["stage"] == "quality_platform")
+    with AuthorityUnitOfWork(database_url) as u:
+        if quality_receipt(u.cursor, project_id=project_id, effect_id=receipt["external_effect_id"], target=target) != receipt:
+            raise KernelError("VALIDATION_QUALITY_SCOPE_MISMATCH", target)
+        u.cursor.execute("SELECT request_payload->'input'->'quality_context'->'compiled_platform_policy' FROM authority_external_effect WHERE external_effect_id=%s", [receipt["external_effect_id"]])
+        policy = u.cursor.fetchone()[0] or {}
+    rules = policy.get("chapter_length_rules") or {}
+    if not rules or rules.get("status") == "INSUFFICIENT_EVIDENCE":
+        return ()
+    minimum, maximum = rules.get("minimum"), rules.get("maximum")
+    if type(minimum) is not int or type(maximum) is not int or not 0 < minimum <= maximum:
+        raise KernelError("CHAPTER_LENGTH_POLICY_INVALID", "Frozen bounds must be positive ordered integers")
+    unit = rules.get("unit", "UNICODE_CODE_POINTS_V1")
+    if unit not in {"UNICODE_CODE_POINTS_V1", "HAN_CHARACTERS_V1"}:
+        raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", unit)
+    text = AuthorityAssetQuery(database_url).require(project_id=project_id, asset_version_id=target).content["text"]
+    observed = measure_length(text, unit)
+    return ({"dimension": "chapter_length", "status": "PASSED" if minimum <= observed <= maximum else "FAILED",
+        "source_policy": policy["source_asset_version_id"], "policy_digest": policy["policy_digest"],
+        "target_asset_version_id": target, "unit": unit, "minimum": minimum, "maximum": maximum, "observed": observed,
+        "compatibility": "EXPLICIT_UNIT" if "unit" in rules else "LEGACY_CHARACTER_BOUNDS_UNICODE"},)
+
+
+def apply_work_constraint_actions(content, *, admission, revision, target, canon, bounded_single_scene=False):
+    from novel_forge.modules.review.diagnostics import prose_hash
+    content["required_actions"] = [action for action in content["required_actions"]
+        if action["observation"] in admission["blocked_dimensions"] and action["observation"] != "chapter_length"]
+    conflicts = canon.get("conflicts") or []
+    interface_codes = {"NARRATIVE_TRANSITION_PRECONDITION_FAILED", "NARRATIVE_TRANSITION_BASELINE_MISSING", "PLANNED_STATE_TRANSITION_MISMATCH"}
+    if conflicts and all(row.get("conflict_code") in interface_codes for row in conflicts):
+        for action in content["required_actions"]:
+            if action["observation"] == "canon_consistency":
+                action.update(required_action="EVIDENCE_REASSESSMENT", required_authority="CANON_GRAPH_AUTHORITY",
+                    permitted_change_scope="EVIDENCE_ONLY", repair_diagnostics=[{"code": row["conflict_code"], "message": row.get("evidence", {}).get("message", ""), "recommended_resolution": row.get("recommended_resolution", "")} for row in conflicts],
+                    reassessment_reason="Typed extraction preconditions must reconcile accepted history and the active plan; no prose location establishes these interface conflicts.")
+    for constraint in admission.get("work_constraints", ()):
+        if constraint["status"] != "FAILED":
+            continue
+        text = revision["text"]
+        scenes = [item["text"] for item in revision.get("scene_artifacts", ()) if item.get("text") and item["text"] in text]
+        if not scenes:
+            raise KernelError("QUALITY_REVISION_LOCATION_REQUIRED", "A length repair requires a preserved Scene boundary")
+        scene = max(scenes, key=len)
+        start = text.index(scene)
+        end = start + len(scene)
+        if bounded_single_scene and start == 0 and end == len(text):
+            from novel_forge.modules.canon_graph.source_spans import source_spans
+            spans = [s for s in source_spans(text)["spans"] if 0 < s["end"] - s["start"] < len(text)]
+            if not spans:
+                import re
+                spans = [{"start": m.start(1), "end": m.end(1), "quote": m.group(1)}
+                    for m in re.finditer(r"(?:^|(?<=[.!?])\s+)(.+?[.!?])(?=\s|$)", text)
+                    if m.end(1) - m.start(1) < len(text)]
+            if not spans:
+                raise KernelError("QUALITY_REVISION_LOCATION_REQUIRED", "Single-Scene length repair needs a bounded paragraph or sentence; preserve the original prose")
+            location = max(spans, key=lambda s: (s["end"] - s["start"], s["start"]))
+            start, end, scene = location["start"], location["end"], location["quote"]
+        report = {"dimension": constraint["dimension"], "target_asset_version_id": target,
+            "gate_status": "FAILED", "calibration_status": "DETERMINISTIC", "measurement": constraint,
+            "evidence_locations": [{"start": start, "end": end, "quote": scene}],
+            "source": constraint["source_policy"]}
+        content["evidence_reports"] = [row for row in content["evidence_reports"] if row["dimension"] != constraint["dimension"]] + [report]
+        content["required_actions"].append({"observation": constraint["dimension"], "required_action": "LOCAL_REPAIR",
+            "required_authority": "CHAPTER_AUTHORITY", "permitted_change_scope": "CHAPTER",
+            "reevaluation_gate": "platform_quality_gate", "preserved_invariants": ["accepted_canon", "executed_chapter_history", "active_parent_plan_identity"],
+            "issue": {"code": "QUALITY_CHAPTER_LENGTH_FAILED", "status": "OPEN", "severity": "BLOCKING"},
+            "evidence_asset_version_ids": [constraint["source_policy"]], "work_constraint": constraint,
+            "repair_goal": "Meet the frozen author length range through a developed action or dialogue within the located Scene; preserve all outside text, facts, voices and causality. Avoid padding and explanatory summaries.",
+            "source_text_hash": prose_hash(text)})
+    content["decision_chain"] = {**content["decision_chain"], "required_actions": content["required_actions"],
+        "mode": MODE, "literary_qualification": "NOT_RUN"}
+    return content
+
+
+def measure_length(text, unit):
+    import unicodedata
+    if unit == "UNICODE_CODE_POINTS_V1":
+        return len(text)
+    if unit == "HAN_CHARACTERS_V1":
+        return sum(unicodedata.name(char, "").startswith(("CJK UNIFIED IDEOGRAPH-", "CJK COMPATIBILITY IDEOGRAPH-")) for char in text)
+    raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", unit)
+
+
+def candidate_work_constraint_checks(*, revision, target, quality, checks):
+    from copy import deepcopy
+    rows = deepcopy(checks)
+    for constraint in quality.get("internal_admission", {}).get("work_constraints", ()):
+        if constraint["dimension"] not in revision.get("quality_action_observations", ()):
+            continue
+        if constraint["target_asset_version_id"] != revision.get("source_revision_asset_version_id"):
+            raise KernelError("QUALITY_REVISION_LINEAGE_CONFLICT", "Objective constraint must bind the frozen revision source")
+        if constraint["dimension"] != "chapter_length":
+            continue
+        observed = measure_length(revision["text"], constraint["unit"])
+        passing = constraint["minimum"] <= observed <= constraint["maximum"]
+        for check in rows:
+            if check["observation"] == constraint["dimension"]:
+                if check["target_asset_version_id"] != target:
+                    raise KernelError("QUALITY_REREVIEW_CHECKS_INVALID", "Measurement requires the reviewed exact candidate")
+                check.update(model_status=check["status"], status="SATISFIED" if passing else "UNRESOLVED",
+                    evidence_class="OBJECTIVE_WORK_CONSTRAINT_WITH_MODEL_PRESERVATION",
+                    objective_verification={**constraint, "target_asset_version_id": target, "observed": observed,
+                        "status": "PASSED" if passing else "FAILED"})
+    return rows
+
+
+def assess_coordinated_internal_quality(*, groups, target, work_constraints):
+    admission = assess_internal_quality(groups=groups, target=target, disposition_version=2)
+    if admission is None:
+        return None
+    constraints = tuple(work_constraints)
+    if len({item["dimension"] for item in constraints}) != len(constraints):
+        raise KernelError("VALIDATION_QUALITY_COVERAGE_REQUIRED", target)
+    for constraint in constraints:
+        if constraint["dimension"] != "chapter_length" or constraint["target_asset_version_id"] != target:
+            raise KernelError("VALIDATION_QUALITY_SCOPE_MISMATCH", target)
+        if constraint["status"] not in {"PASSED", "FAILED"}:
+            raise KernelError("VALIDATION_QUALITY_SCOPE_MISMATCH", target)
+        dimension = constraint["dimension"]
+        admission["blocked_dimensions"] = [item for item in admission["blocked_dimensions"] if item != dimension]
+        if constraint["status"] == "FAILED":
+            admission["blocked_dimensions"].append(dimension)
+        admission["observations"] = [item for item in admission["observations"] if item["dimension"] != dimension]
+        admission["observations"].append({"dimension": dimension, "status": "OBSERVED" if constraint["status"] == "PASSED" else "BLOCKED", "work_constraint": constraint})
+    admission.update(version="creative-quality-admission.v3", work_constraints=list(constraints),
+        status="BLOCKED" if admission["blocked_dimensions"] else "INTERNAL_ADMITTED")
+    return admission

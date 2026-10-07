@@ -81,13 +81,39 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The current forward segment is 0160–0168, ending at derived step revalidation after
-the unchanged published 0159 Planning DEAD_LETTER result recovery. Resolve each full
+The published chain through 0168 is immutable. The current forward segment is
+0169–0180, ending at Foundation direction search. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
 ledger; never delete, rewrite or fabricate applied IDs to make it match. Conversion
 of such a database is a separate governed operation.
+
+For coordinated recovery, verify all twelve new heads against the published 0168
+upgrade boundary and a fresh database. Targeted regressions cover migration identity
+and append-only journals, World known-receipt versus zero-effect paths, Planning
+capacity/DEAD_LETTER/OPTIONAL admission, governed route drift, actor/scope/input drift,
+UNKNOWN outcomes, held leases, unsettled budgets and cancellation. Chapter checks
+cover literal spans and historical readers, unchanged-review reuse, bounded Quality
+correction, retained graph dependencies and exact original receipt/cost completion.
+Book checks cover exhausted Memo prefix replacement, serialized reservation, active
+frontier and immutable accepted history; creation checks cover deadline, cancellation,
+lease and finite action bounds around every recovery hook. These focused checks do
+not substitute for the complete same-revision P0 chain. Run that chain again from
+the actual merge SHA with a new run identity and disposable resources.
+
+Include every dispatch generation when checking local-CLI remote outcomes. A started
+timeout, cancellation or orphan without a usage receipt remains UNKNOWN even when
+the local Operation is terminal or its reservation is SETTLED. Only an exact later
+manual reconciliation can resolve that generation; a later unsent generation cannot.
+Verify immutable raw Planning results separately from host binding, current Draft
+actor-source proof before retained-prefix reuse, measured-length admission, atomic
+Root/Saga gate transitions, Reader activation replay and future PlanChange scope.
+Old paid Draft output cannot satisfy the current mandatory actor-source contract.
+The explicit-null Memo timeout reader is compatibility code, not evidence that the
+native backend produces a never-started timeout. Historical Arc host replay has no
+imported qualified source and remains unreachable; do not fabricate a receipt to
+turn it into a positive native test.
 
 The offline snapshot importer is the separate `novel-forge-migrate` entry. Imported
 records remain governed candidates; import does not infer approval or production
@@ -518,8 +544,14 @@ The shipped files are `config/execution_templates/creative_validation.json` and
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
 state and quality floors. `creation-request.v1` supplies the current work's brief, title,
 target chapter count, required language and optional chapter-length bounds. These inputs
-are frozen together as `formation-generation.v5`; continue uses that snapshot even if the
-template file later changes. `creative_candidates` optionally selects two to four direction
+are frozen together as `formation-generation.v5` for author comparison or
+`formation-generation.v7` for explicitly authorized automatic comparison; continue
+uses that snapshot even if the template file later changes. Automatic comparison
+freezes two to four strategy directives and a typed selection policy, then verifies
+the durable candidate set, comparison hash, original grant and cancellation before
+approval or activation. Uncertainty retains the candidates without selecting one.
+The published four-action Formation grant does not authorize future PlanChange
+approval. `creative_candidates` optionally selects two to four direction
 alternatives (default two); it does not multiply every lower planning layer or chapter.
 An optional `author_creative_foundation` binds the exact asset version/hash of an already
 approved original author direction. Native validation verifies its active receipt; no
@@ -1967,14 +1999,15 @@ configured capability profile disables callbacks.
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
-identities; current Chapter Pack 2.26.0 binds Chapter 3.9, Plan materialization 3.9.16 and
-Template v11.
-Current Planning Pack 2.11.0 binds Operation 1.19.0, System v9,
+identities; current Chapter Pack 3.0.0 binds Chapter 3.10.0, Plan materialization 3.9.16 and
+Template v12. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
+Current Planning Pack 2.12.0 binds Operation 1.20.0, System v10,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
-retaining qualification-v2 identities. Planning 1.19.0 requires Mission/Scene v4,
+retaining qualification-v2 identities. Planning 1.20.0 requires Mission/Scene v4,
 activated-chapter-plan.v3 and runtime projection 3.0.0; its Provider output uses
 work-v4. Current Chapter Plan materialization preserves that serialization through
 authoritative-chapter-plan-v5 and draft-plan-view-v4 in the ExecutionIntent.
+Frozen Planning 1.19.0 retains Pack 2.11.0 and System v9 with its v4 schema hashes.
 Frozen Planning 1.18.0 retains Pack 2.10.0, System v8, Mission/Scene v3
 and work-v3. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;

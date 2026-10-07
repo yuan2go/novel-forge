@@ -65,7 +65,7 @@ def retained_primary_source(monkeypatch, *, damage=None):
 
     monkeypatch.setattr(result_recovery, "validate_raw_result", reject_raw)
     command = SimpleNamespace(project_id="project", workspace_id="workspace", book_id="book", actor_id="author",
-        trace_id="trace", correlation_id="correlation", generator_operation_name="chapter_plan.generate", execution_contract_version="1.19.0")
+        trace_id="trace", correlation_id="correlation", generator_operation_name="chapter_plan.generate", execution_contract_version="1.19.0", narrative_search_id="")
     return command
 
 

@@ -62,6 +62,23 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
         correction = corrections.get((source[3],source[0],source[1])) if source else None
+        current_length = False
+        if target_version == '3.10.0':
+            cursor.execute('SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s', [predecessor_id])
+            declared = cursor.fetchone()
+            current_length = bool(declared and _current_length_source(root, declared[0], source, start_repair_phase))
+            if current_length:
+                correction = ('3.10.0', 'quality_range_policy', 'NAMED_DIAGNOSIS_UNION_V1')
+                from .step_successor_v2 import _require_reconciled_graph
+                _require_reconciled_graph(cursor, root_id=root_id, predecessor_id=predecessor_id)
+                from .derived_step_revalidation import _settled_graph
+                _settled_graph(cursor, root_id)
+
+        if correction and correction[0]=='3.9.4' and target_version=='3.9.16':
+            cursor.execute("SELECT definition_version,definition_snapshot #>> '{policy,quality_range_policy}' FROM authority_operation WHERE operation_id=%s",[predecessor_id])
+            declared=cursor.fetchone()
+            if declared==('3.9.16','NAMED_DIAGNOSIS_UNION_V1'):
+                correction=('3.9.16',correction[1],correction[2])
         if source and source[1] == 'OPERATION_BUSINESS_TIMEOUT' and not start_repair_phase:
             raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','A known no-send timeout requires its explicit bounded control recovery')
         if not correction or source[2] != principal.principal_id or correction[0] != target_version or has_candidate_domain_outputs(cursor,predecessor_id):
@@ -95,6 +112,10 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                 raise KernelError('EXECUTION_PHASE_WIRE_CORRECTION_REQUIRED','Only an exact reversible wire correction of a known settled membership failure may continue')
         protocol_succession = source[3]=='chapter.canon.extract' and source[1]=='MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED'
         protocol_effect_ids=[]
+        if current_length:
+            protocol_effect_ids = [effect[0] for effect in _settled_graph(cursor, root_id)
+                if effect[2] in {'FAILED_FINAL', 'FAILED_RETRYABLE'}]
+
         if protocol_succession:
             cursor.execute("""SELECT e.external_effect_id,e.status,r.status,r.accounting_basis FROM authority_external_effect e
                 LEFT JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.operation_id=%s""",[predecessor_id])
@@ -171,7 +192,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                 raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Only a known settled bounded length retry may start a new phase')
             cursor.execute('SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s FOR UPDATE',[predecessor_id])
             child,child_deadline = cursor.fetchone()
-            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.5' if canon_schema_retry else '3.9.4') or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
+            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.5' if canon_schema_retry else target_version) or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
                 raise KernelError('EXECUTION_PHASE_CHILD_INVALID','Only the exact derived length retry window can continue')
             cursor.execute("SELECT a.attempt_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int FROM authority_attempt a JOIN authority_operation o USING(operation_id) WHERE o.operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1",[predecessor_id])
             failed_attempt,number,maximum = cursor.fetchone()
@@ -195,7 +216,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                 control_recovery_limit = maximum+1
             elif number>=maximum:
                 raise KernelError('EXECUTION_PHASE_RETRY_EXHAUSTED','A new execution phase cannot reset retry exhaustion')
-            key_parts.extend(['chapter-execution-window-renewal.v5' if canon_schema_retry else 'chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3',failed_attempt])
+            key_parts.extend(['chapter-execution-window-renewal.v6' if current_length else 'chapter-execution-window-renewal.v5' if canon_schema_retry else 'chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3',failed_attempt])
             if wire_correction:
                 key_parts.append(wire_correction)
         key = hashlib.sha256(json.dumps(key_parts,sort_keys=True).encode()).hexdigest()
@@ -221,7 +242,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
         if cursor.rowcount != 1:
             raise KernelError('EXECUTION_WINDOW_VERSION_CONFLICT','Reload the current Root fence')
         _record(uow.repositories.operation_graph,GraphCommandContext(root['project_id'],principal.principal_id,root['trace_id'],root['correlation_id'],predecessor_id), root_id,EVENT,
-                {'contract_version':('chapter-execution-window-renewal.v5' if canon_schema_retry else 'chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3') if start_repair_phase else 'chapter-execution-window-renewal.v1','continuation_key':key,'source_root':root,
+                {'contract_version':('chapter-execution-window-renewal.v6' if current_length else 'chapter-execution-window-renewal.v5' if canon_schema_retry else 'chapter-execution-window-renewal.v4' if canon_capacity else 'chapter-execution-window-renewal.v3') if start_repair_phase else 'chapter-execution-window-renewal.v1','continuation_key':key,'source_root':root,
                  'predecessor_operation_id':predecessor_id,'target_definition_version':target_version,
                  'policy_admission':admission,**({'wire_correction':wire_correction} if wire_correction else {}),'original_deadline':deadline.isoformat(),'new_deadline':renewed.isoformat(),
                  **({'source_child':child,'continued_child':child_after[0],'failed_attempt_id':failed_attempt,
@@ -232,10 +253,13 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
 
 
 def continued_attempt_limit(cursor, *, operation_id, project_id, original_limit):
+    current = _current_continued_attempt_limit(cursor, operation_id, project_id, original_limit)
+    if current is not None:
+        return current
     cursor.execute("""SELECT j.payload FROM audit_log j JOIN authority_operation o ON o.root_operation_id=j.operation_id
         JOIN authority_attempt a ON a.operation_id=o.operation_id
         WHERE o.operation_id=%s AND o.project_id=%s AND o.status IN ('READY','FAILED_RETRYABLE')
-        AND o.definition_name='chapter.revision.apply' AND o.definition_version='3.9.4'
+        AND o.definition_name='chapter.revision.apply' AND o.definition_version IN ('3.9.4','3.9.16')
         AND j.action=%s AND j.payload->>'contract_version'='chapter-execution-window-renewal.v3'
         AND j.payload->>'predecessor_operation_id'=o.operation_id
         AND j.payload->>'failed_attempt_id'=a.attempt_id AND a.status='FAILED_RETRYABLE'
@@ -250,3 +274,63 @@ def continued_attempt_limit(cursor, *, operation_id, project_id, original_limit)
     if evidence.get('original_attempt_limit') != original_limit or evidence.get('control_recovery_attempt_limit') != original_limit+1:
         return original_limit
     return original_limit+1
+
+
+def _current_length_source(root, child, source, start_repair_phase):
+    policy = child.get('definition_snapshot', {}).get('policy', {})
+    if (root.get('definition_version') != '3.10.0' or child.get('definition_version') != '3.10.0'
+        or child.get('definition_name') != 'chapter.revision.apply' or not source
+        or source[0] != 'FAILED_RETRYABLE' or source[3] != 'chapter.revision.apply'
+        or source[1] not in {'CHAPTER_LENGTH_REPAIR_INCOMPLETE', 'OPERATION_BUSINESS_TIMEOUT'}
+        or not start_repair_phase or policy.get('quality_range_policy') != 'NAMED_DIAGNOSIS_UNION_V1'
+        or policy.get('candidate_retry_feedback') != 'chapter-candidate-retry-feedback.v2'
+        or policy.get('chapter_length_scope') != 'chapter-length-repair.v1'
+        or any(child.get(k) != root.get(k) for k in ('project_id', 'workspace_id', 'actor_id'))
+        or child.get('root_operation_id') != root.get('operation_id')):
+        return False
+    if any(k in root.get('command_payload', {}) or k in child.get('command_payload', {})
+        for k in ('business_deadline_at', 'author_deadline_at')):
+        raise KernelError('EXECUTION_WINDOW_AUTHOR_DEADLINE', 'Frozen author deadlines cannot be extended')
+    return True
+
+
+def _current_continued_attempt_limit(cursor, operation_id, project_id, original_limit):
+    cursor.execute("""SELECT j.payload,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int,o.root_operation_id
+        FROM audit_log j JOIN authority_operation o ON o.root_operation_id=j.operation_id
+        JOIN authority_operation root ON root.operation_id=o.root_operation_id
+        JOIN authority_attempt a ON a.operation_id=o.operation_id
+        WHERE o.operation_id=%s AND o.project_id=%s AND o.status IN ('READY','FAILED_RETRYABLE')
+        AND o.definition_name='chapter.revision.apply' AND o.definition_version='3.10.0'
+        AND root.definition_version='3.10.0' AND root.project_id=o.project_id AND root.workspace_id=o.workspace_id
+        AND root.actor_id=o.actor_id AND root.status='WAITING_CHILDREN'
+        AND o.definition_snapshot #>> '{policy,quality_range_policy}'='NAMED_DIAGNOSIS_UNION_V1'
+        AND o.definition_snapshot #>> '{policy,candidate_retry_feedback}'='chapter-candidate-retry-feedback.v2'
+        AND o.definition_snapshot #>> '{policy,chapter_length_scope}'='chapter-length-repair.v1'
+        AND j.action=%s AND j.payload->>'contract_version'='chapter-execution-window-renewal.v6'
+        AND j.payload->>'target_definition_version'='3.10.0'
+        AND j.payload->>'predecessor_operation_id'=o.operation_id
+        AND j.payload #>> '{source_child,operation_id}'=o.operation_id
+        AND j.payload #> '{source_child,definition_snapshot}'=o.definition_snapshot
+        AND j.payload #> '{source_child,command_payload}'=o.command_payload
+        AND j.payload #> '{source_child,input_asset_snapshot}'=o.input_asset_snapshot
+        AND j.payload->>'failed_attempt_id'=a.attempt_id AND a.status='FAILED_RETRYABLE'
+        AND a.result->>'error_code'='OPERATION_BUSINESS_TIMEOUT'
+        AND a.attempt_number=(SELECT max(attempt_number) FROM authority_attempt WHERE operation_id=o.operation_id)
+        AND (SELECT count(*) FROM authority_attempt WHERE operation_id=o.operation_id AND result->>'error_code'='OPERATION_BUSINESS_TIMEOUT')=1
+        AND NOT EXISTS(SELECT 1 FROM authority_external_effect e WHERE e.operation_id=o.operation_id AND e.request_payload #>> '{_production_execution,attempt_id}'=a.attempt_id)
+        AND NOT o.command_payload ?| ARRAY['business_deadline_at','author_deadline_at']
+        AND NOT root.command_payload ?| ARRAY['business_deadline_at','author_deadline_at']
+        ORDER BY j.created_at DESC LIMIT 1""", [operation_id, project_id, EVENT])
+    row = cursor.fetchone()
+    if not row:
+        return None
+    evidence, frozen_limit, root_id = row
+    if (frozen_limit != original_limit or evidence.get('original_attempt_limit') != original_limit
+        or evidence.get('control_recovery_attempt_limit') != original_limit + 1):
+        return original_limit
+    require_live_chapter_frontier(cursor, root_id=root_id, project_id=project_id)
+    from .step_successor_v2 import _require_reconciled_graph
+    _require_reconciled_graph(cursor, root_id=root_id, predecessor_id=operation_id)
+    from .derived_step_revalidation import _settled_graph
+    _settled_graph(cursor, root_id)
+    return original_limit + 1

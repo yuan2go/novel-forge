@@ -180,3 +180,30 @@ def book_followup_operation_definitions(
 
 
 __all__ = ["book_followup_operation_definitions"]
+
+
+def reader_outcome_definition(*, application_build_id: str, commit_sha: str) -> dict[str, Any]:
+    from copy import deepcopy
+    from .contracts import READER_OUTCOME_DEFINITION_VERSION
+
+    definition = deepcopy(next(item for item in book_followup_operation_definitions(
+        application_build_id=application_build_id, commit_sha=commit_sha,
+    ) if item["name"] == READER_OUTCOME_DEFINITION))
+    definition["definition_version"] = READER_OUTCOME_DEFINITION_VERSION
+    definition["definition_status"] = "implemented_validation_pending"
+    definition["policy"] = {**definition["policy"], "reader_context_contract": "reader-accepted-context.v3",
+                            "reader_output_capacity_contract": "reader-output-capacity.v2"}
+    definition["evidence_status"] = {**definition["evidence_status"], "integration_proven": False}
+    return definition
+
+
+def longform_recap_definition(*, application_build_id: str, commit_sha: str) -> dict[str, Any]:
+    from copy import deepcopy
+    from .contracts import LONGFORM_RECAP_DEFINITION_VERSION
+    definition=deepcopy(next(item for item in book_followup_operation_definitions(
+        application_build_id=application_build_id,commit_sha=commit_sha) if item["name"]==LONGFORM_RECAP_DEFINITION))
+    definition["definition_version"]=LONGFORM_RECAP_DEFINITION_VERSION
+    definition["definition_status"]="implemented_validation_pending"
+    definition["policy"]={**definition["policy"],"accepted_realization_contract":"accepted-realization-deviations.v2"}
+    definition["evidence_status"]={**definition["evidence_status"],"integration_proven":False}
+    return definition

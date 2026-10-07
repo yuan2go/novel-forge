@@ -95,6 +95,7 @@ class CapabilityPackP1ATests(unittest.TestCase):
                 application_build_id="novel-forge-capability-compiler",
                 commit_sha=FIXTURE_RELEASE_SHA,
                 model_effects_required=True,
+                coordinated_contract=True,
             )
         ]
 

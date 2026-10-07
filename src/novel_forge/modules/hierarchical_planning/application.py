@@ -390,6 +390,24 @@ class PostgresHierarchicalPlanningAuthority:
                 NarrativeRealizationRepository,
             )
 
+            uow.cursor.execute(
+                """SELECT EXISTS (
+                    SELECT 1 FROM authority_story_planning_generation generation
+                    JOIN authority_operation native ON native.operation_id=generation.operation_id
+                    WHERE generation.project_id=%s AND generation.workspace_id=%s
+                      AND generation.book_id=%s AND generation.candidate_asset_version_id=%s
+                      AND generation.generator_operation_name='chapter_plan.generate'
+                      AND native.project_id=generation.project_id
+                      AND native.workspace_id=generation.workspace_id
+                      AND native.definition_name='story_planning.generate'
+                      AND native.definition_version='1.21.0'
+                      AND native.command_payload #>> '{payload,execution_contract_version}'='1.21.0'
+                      AND native.operation_id=%s
+                )""",
+                [project_id, str(payload["workspace_id"]), book_id, asset_version_id,
+                 str((content.get("constraint_envelope") or {}).get("generation_operation_id") or "")],
+            )
+            coordinated_contract = bool(uow.cursor.fetchone()[0])
             realization = NarrativeRealizationRepository(
                 uow.cursor
             ).require_current_for_chapter(
@@ -397,6 +415,7 @@ class PostgresHierarchicalPlanningAuthority:
                 book_id=book_id,
                 chapter_group_plan_version_id=parent_version_id,
                 chapter_number=int(content.get("chapter_number") or 0),
+                coordinated_contract=coordinated_contract,
             )
             if dict(content.get("narrative_realization_slice") or {}) != realization:
                 raise KernelError(

@@ -73,6 +73,11 @@ class PostgresBookFollowupCoordinator:
             authority.database_url
         )
 
+    def recover_reader_contracts(self, *, limit: int) -> None:
+        projects = () if "*" in self.principal.project_scope else tuple(sorted(self.principal.project_scope))
+        for request in self.query.reader_contract_recovery_candidates(limit=limit, project_ids=projects):
+            self.authority.recover_reader_contract(request, principal=self.principal)
+
     def admission_candidates(
         self, *, limit: int
     ) -> tuple[BookFollowupAdmissionCandidate, ...]:
@@ -144,12 +149,18 @@ class PostgresBookFollowupCoordinator:
             book_run_id=candidate.book_run_id,
             chapter_number=candidate.chapter_number,
         )
+        realization = None
+        if getattr(self.authority.followup,"coordinated_reader",False):
+            book = self.authority.require(candidate.book_run_id)
+            realization = self.query.accepted_realization_deviations(project_id=candidate.project_id,
+                workspace_id=book["workspace_id"],book_id=book["book_id"],chapter_request_id=candidate.chapter_request_id,
+                actor_id=self.principal.principal_id)
         trigger = should_trigger_longform_recap(
             chapter_number=candidate.chapter_number,
             light_cadence=int(snapshot["light_recap_cadence"]),
             formal_cadence=int(snapshot["formal_recap_cadence"]),
             chapter_group_complete=self._chapter_group_complete(snapshot),
-            authority_requested=bool(ending_reachability.get("replan_required")),
+            authority_requested=bool(ending_reachability.get("replan_required") or (realization or {}).get("deviations")),
             arc_checkpoint=arc_checkpoint is not None,
             reader_outcome_declining=bool(reader_evidence["trend"]["declining"]),
             canon_risk=bool(canon["content"].get("conflicts")),
@@ -172,6 +183,7 @@ class PostgresBookFollowupCoordinator:
             reader_evidence=reader_evidence,
             quality_trend=quality_trend,
             canon=canon,
+            **({"realization":realization} if realization is not None else {}),
         )
         if arc_checkpoint is not None:
             self._bind_arc_checkpoint_followup(
@@ -185,7 +197,7 @@ class PostgresBookFollowupCoordinator:
             project_id=str(snapshot["project_id"]),
             root_operation_id=str(snapshot["chapter_root_operation_id"]),
         )
-        draft = self._evidence_output(evidence, "draft_version")
+        draft = self._evidence_output(evidence, "best_draft_candidate" if getattr(self.authority.followup, "coordinated_reader", False) else "draft_version")
         quality = self._evidence_output(evidence, "quality_score_report")
         manifest = self._evidence_output(evidence, "production_input_manifest")
         canon = self.authority.resolve_asset_refs(
@@ -274,6 +286,7 @@ class PostgresBookFollowupCoordinator:
         reader_evidence: dict[str, Any],
         quality_trend: dict[str, Any],
         canon: dict[str, Any],
+        realization: dict[str, Any] | None = None,
     ) -> BookFollowupAdmission:
         chapter = int(snapshot["chapter_number"])
         arc_plan_versions = tuple(str(item) for item in snapshot["arc_plan_versions"])
@@ -347,6 +360,7 @@ class PostgresBookFollowupCoordinator:
                     "quality_trend": dict(quality_trend["content"]),
                     "ending_reachability": ending_reachability,
                     "accepted_arc_checkpoint": dict(arc_checkpoint or {}),
+                    **({"accepted_realization_deviations":realization} if realization is not None else {}),
                 },
             },
             input_assets=input_assets,

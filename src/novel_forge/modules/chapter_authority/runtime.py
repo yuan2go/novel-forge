@@ -68,9 +68,9 @@ def _handler_definition_version(
             )
             row = uow.cursor.fetchone()
         recoverable = (
-            {CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2", "3.8.0-author-input.v2"}
+            {"3.10.0-author-input.v3", CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2", "3.8.0-author-input.v2"}
             if author_input and node is ChapterNode.DRAFT
-            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}
+            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.10.0", "3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}
         )
         if row is not None and str(row[0]) in recoverable:
             return str(row[0])
@@ -97,7 +97,7 @@ class _ChapterHandlerAdapter:
                                                        operation_id=request.operation_id, check_expiry=False)
             if snapshot is None:
                 raise KernelError("CHAPTER_SAMPLE_AUTHORIZATION_REQUIRED", "sample materialization requires its frozen authorization")
-            if request.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0"}:
+            if request.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0"}:
                 from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
                 payload = request.command["payload"]
                 with AuthorityUnitOfWork(self.database_url) as uow:
@@ -106,7 +106,10 @@ class _ChapterHandlerAdapter:
                         [request.project_id, payload["chapter_sampling"]["source_operation_id"]])
                     source = uow.cursor.fetchone()
                 validate_chapter_sample_origin(payload, source, project_id=request.project_id)
-                if source[1] not in {"3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+                allowed_sources = {"3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
+                if request.definition_version in {"2.6.0", "2.7.0"}:
+                    allowed_sources |= {"3.10.0", "3.10.0-author-input.v3"}
+                if source[1] not in allowed_sources:
                     raise KernelError("CHAPTER_SAMPLE_SOURCE_CONTRACT_INVALID", "New samples require an explicitly declared frozen source contract")
                 source_version = source[1]
         chapter_request = ChapterHandlerRequest(

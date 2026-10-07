@@ -52,7 +52,7 @@ def prepare_native_review(request: ChapterHandlerRequest, *, stage: str) -> tupl
     if review is not None:
         payload.update(original_draft=draft.content, original_draft_asset_version_id=draft.asset_version_id,
                        target_candidate_asset_version_id=target.asset_version_id, review=review.content, revision=target.content)
-    if request.definition_version == "3.9.3":
+    if request.effective_definition_version in {"3.9.3", "3.10.0"}:
         from .candidate_repair import candidate_repair_payload
         payload.update(review_knowledge_scope_contract="delivered-card-scope.v1", **candidate_repair_payload(request))
     return target, context, targets, window, payload

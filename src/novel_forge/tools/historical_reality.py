@@ -172,6 +172,25 @@ def _walk_machine_fields(value: object) -> Iterable[str]:
             yield from _walk_machine_fields(child)
 
 
+def _immutable_coding_tool_examples(root, policy, instruction_report):
+    sources = {item['path']: item for item in instruction_report.get('sources', [])}
+    accepted, errors = set(), []
+    for relative, digest in policy.get('immutable_coding_tool_examples', {}).items():
+        item = sources.get(relative, {})
+        path = root / relative
+        if (not relative.startswith('skills/') or not path.resolve().is_relative_to(root)
+                or item.get('kind') != 'CODING_AGENT_SKILL_SOURCE'
+                or item.get('consumer') != 'coding-agent' or not path.is_file()
+                or sha256(path.read_bytes()).hexdigest() != digest):
+            errors.append(f'invalid immutable coding-tool example: {relative}')
+            continue
+        accepted.add(path)
+        generated = root / '.claude' / relative
+        if generated.is_file() and generated.read_bytes() == path.read_bytes():
+            accepted.add(generated)
+    return accepted, errors
+
+
 def _machine_field_violations(
     root: Path, files: Iterable[Path], *, forbidden: set[str]
 ) -> list[str]:
@@ -264,6 +283,8 @@ def check_historical_reality(repo_root: str | Path) -> dict[str, Any]:
             "errors": [f"cannot load historical reality policy: {exc}"],
         }
     historical_evidence, historical_errors = _historical_authorization_evidence(root, policy)
+    instruction_report = check_instruction_surface(root)
+    advisory_examples, example_errors = _immutable_coding_tool_examples(root, policy, instruction_report)
     files = tuple(path for path in _surface_files(root, policy) if path not in historical_evidence)
     retired_tokens = tuple(str(value) for value in policy["retired_current_ontology"])
     token_violations: list[str] = []
@@ -282,10 +303,11 @@ def check_historical_reality(repo_root: str | Path) -> dict[str, Any]:
             token_violations.extend(f"{relative}: retired ontology {token}" for _ in range(count))
             if token == "EIGHT_CHAPTER":
                 eight_references.extend(relative for _ in range(count))
-        stale_delivery.extend(
-            f"{relative}: stale delivery reference {match.group(0)}"
-            for match in STALE_DELIVERY_REFERENCE.finditer(text)
-        )
+        if file_path not in advisory_examples:
+            stale_delivery.extend(
+                f"{relative}: stale delivery reference {match.group(0)}"
+                for match in STALE_DELIVERY_REFERENCE.finditer(text)
+            )
     field_violations = _machine_field_violations(
         root,
         files,
@@ -296,12 +318,13 @@ def check_historical_reality(repo_root: str | Path) -> dict[str, Any]:
         for relative in policy["retired_paths"]
         if (root / str(relative)).exists()
     ]
-    instruction_report = check_instruction_surface(root)
     instruction_violations: list[str] = []
     for item in instruction_report.get("sources", []):
         relative = str(item.get("path") or "")
         text = text_by_path.get(relative, "")
-        if any(token in text for token in retired_tokens) or STALE_DELIVERY_REFERENCE.search(text):
+        if any(token in text for token in retired_tokens) or (
+            root / relative not in advisory_examples and STALE_DELIVERY_REFERENCE.search(text)
+        ):
             instruction_violations.append(relative)
     test_report = check_test_reality(root)
     retired_test_paths = set(
@@ -330,6 +353,7 @@ def check_historical_reality(repo_root: str | Path) -> dict[str, Any]:
             + [f"historical instruction remains: {value}" for value in instruction_violations]
             + projection_errors
             + historical_errors
+            + example_errors
         )
     )
     return {

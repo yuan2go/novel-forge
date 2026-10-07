@@ -77,3 +77,25 @@ def approved_validation_design(cursor: Any, *, project_id: str, book_id: str, as
             or row[8] != "SUCCEEDED"):
         raise KernelError("CREATIVE_DESIGN_APPROVAL_REQUIRED", asset_version_id)
     return {**receipt, "lifecycle": row[0], "decision_asset_version_id": row[5], "decision_content_hash": row[6]}
+
+
+def project_approved_validation_eligibility(cursor: Any, *, project_id: str, book_id: str, asset_version_id: str) -> None:
+    from psycopg.types.json import Jsonb
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+
+    receipt = approved_validation_design(cursor, project_id=project_id, book_id=book_id, asset_version_id=asset_version_id)
+    if receipt is None:
+        raise KernelError("PLANNING_VALIDATION_ELIGIBILITY_INVALID", "Eligibility projection requires the original native validation approval")
+    validation = {key: value for key, value in receipt.items() if key not in {"lifecycle", "decision_asset_version_id", "decision_content_hash"}}
+    cursor.execute("""UPDATE authority_asset_version version SET eligibility='ELIGIBLE'
+        FROM authority_asset asset WHERE version.asset_version_id=%s AND version.content_hash=%s
+        AND version.asset_id=asset.asset_id AND asset.project_id=%s
+        AND ((version.lifecycle='CANDIDATE' AND version.eligibility IN ('INELIGIBLE','ELIGIBLE'))
+          OR (version.lifecycle='ACTIVE' AND version.eligibility='ELIGIBLE' AND %s='ACTIVE'))
+        AND version.governance='CLEAR'""", [asset_version_id,validation['content_hash'],project_id,receipt['lifecycle']])
+    if cursor.rowcount != 1:
+        raise KernelError("PLANNING_CANDIDATE_ELIGIBILITY_CONFLICT", "Approved validation candidate cannot override a revoked or changed asset")
+    identity = canonical_hash({"asset_version_id":asset_version_id,"validation":validation,"decision":"ELIGIBLE"})
+    cursor.execute("""INSERT INTO authority_asset_qualification(qualification_id,asset_version_id,policy_version,decision,evidence)
+        VALUES (%s,%s,'creative-validation-eligibility.v2','ELIGIBLE',%s) ON CONFLICT (qualification_id) DO NOTHING""",
+        [identity,asset_version_id,Jsonb(validation)])

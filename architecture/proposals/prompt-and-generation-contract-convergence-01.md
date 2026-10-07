@@ -14,7 +14,7 @@
 | 目标仓库 | `yuan2go/novel-forge` |
 | 规格形成核验日期 | 2026-10-01，UTC+8 |
 | 规格形成核验分支 | `codex/wp-task-context-512k-01` |
-| 当前生命周期代码基线 | `578d59b08ef79fdd51836dd9e214913125f38b9d` |
+| 当前生命周期代码基线 | `2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42` |
 | 规格形成 Git tree | `d21d5d8ba1b152bfb43ea93bb3053b67e434a1a9` |
 | 当前事实核验 | 源代码、冻结合同、正式装配及定向单测/PostgreSQL 回归；现有持久库仅只读核验，未调用真实 Provider |
 | 实现及效果状态 | 规格形成时仅交付需求；后续工程实现已进入正式主链，真实 Provider 与文学收益仍未验证。当前状态以代码、冻结合同和当次验收为准 |
@@ -24,6 +24,8 @@
 This checkpoint review is implementation evidence, not final backend qualification,
 real-Provider qualification or literary quality.
 
+Source baseline refreshed for the coordinated forward-contract integration. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
+
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
@@ -32,8 +34,8 @@ real-Provider qualification or literary quality.
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-30",
   "reality_baseline": {
-    "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
-    "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
+    "sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+    "implementation_tree_sha": "sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87"
   },
   "scope": [
     "src/novel_forge/modules/chapter_authority",
