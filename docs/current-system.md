@@ -1238,7 +1238,12 @@ The existing lineage owner traverses affected vertices in breadth-first order, r
 than enumerating every dependency path. Converging paths and cycles must terminate
 without removing source, semantic-dimension or immutable-history checks. An immune
 edge stops its own route; a separately reachable mutable route retains its impact.
-Traversal depth is the shortest affected distance. This correction addresses the
+Traversal depth is the shortest affected distance.
+An initial Book snapshot can precede Opening and therefore contain no ChapterGroup.
+Future regeneration resolves that group from the same Book Run's durable coordination
+window and accepted cursor. A binding removed by this proposal's recorded invalidation
+is regenerated with no active predecessor, while retaining the invalidated source and
+original approval evidence. An unrelated active replacement remains a conflict. This correction addresses the
 observed activation timeout; successful activation and downstream regeneration still
 require PostgreSQL and real-run evidence.
 
