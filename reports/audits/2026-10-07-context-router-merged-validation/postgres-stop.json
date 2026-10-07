@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/opt/homebrew/Cellar/postgresql@16/16.15/bin/pg_ctl",
+    "-D",
+    "/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/isolated-pg-72469b5cfd644dbfa18da9d646e76be9/data",
+    "-m",
+    "fast",
+    "stop"
+  ],
+  "exit_code": 0,
+  "stdout": "waiting for server to shut down.... done\nserver stopped\n",
+  "stderr": "",
+  "retained": "both database dumps and original cluster; no historical failure deleted"
+}

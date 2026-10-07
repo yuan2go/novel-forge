@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="20" time="6.247" timestamp="2026-10-07T22:01:48.350228+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_first]" time="2.889" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-failure_last]" time="0.075" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-True-retried]" time="0.077" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_first]" time="0.061" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-failure_last]" time="0.060" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[FAILED_FINAL-True-retried]" time="0.070" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_first]" time="0.052" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-failure_last]" time="0.055" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_every_native_fidelity_attempt_and_failed_context_retains_its_denominator[SUCCEEDED-False-retried]" time="0.068" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_unknown_generation_cannot_reuse_old_positive_gate[SUCCEEDED]" time="0.080" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_unknown_generation_cannot_reuse_old_positive_gate[UNKNOWN]" time="0.089" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[dispatch_hash]" time="0.083" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[receipt_hash]" time="0.085" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[project]" time="0.087" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[operation]" time="0.088" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[effect]" time="0.087" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[source_version]" time="0.085" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[source_hash]" time="0.085" /><testcase classname="tests.integration.test_context_feedback_postgres" name="test_native_feedback_identity_drift_cannot_qualify_context[selected_units]" time="0.085" /><testcase classname="tests.integration.test_quality_context_formal_e2e_postgres" name="test_native_overflow_compression_fidelity_draft_review_and_frozen_resume" time="0.731"><failure message="KeyError: 'operation definition not found: chapter.candidate.select_best@3.10.0'">def test_native_overflow_compression_fidelity_draft_review_and_frozen_resume():
+        from tests.integration.test_chapter_model_effects_postgres import (
+            ChapterModelEffectsPostgresTests,
+        )
+    
+        case = ChapterModelEffectsPostgresTests()
+&gt;       case.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(
+            routed=True
+        )
+
+tests/integration/test_quality_context_formal_e2e_postgres.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_model_effects_postgres.py:1268: in test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+    approved = harness.register_compile_approve(
+tests/integration/capability_pack_postgres_support.py:276: in register_compile_approve
+    compilation = self.execute(
+tests/integration/capability_pack_postgres_support.py:434: in execute
+    return self.application.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:496: in execute
+    prepared = self._prepare(command)
+               ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:567: in _prepare
+    return self._prepare_compilation(command)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:608: in _prepare_compilation
+    ).load(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.modules.capability_packs.operation_catalog.RepositoryOperationDefinitionLoader object at 0x10c14c920&gt;
+identities = [('chapter.plan.materialize', '3.10.0'), ('chapter.execution_intent.prepare', '3.10.0'), ('chapter.memo.generate', '3....('chapter.context.retrieve', '3.10.0'), ('chapter.context.build', '3.10.0'), ('chapter.draft.generate', '3.10.0'), ...]
+commit_sha = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+
+    def load(
+        self,
+        identities: Iterable[tuple[str, str]],
+        *,
+        commit_sha: str = "",
+    ) -&gt; InMemoryOperationDefinitionCatalog:
+        rows: list[Mapping[str, Any]] = []
+        for definition_name, definition_version in sorted(set(identities)):
+            row = (
+                self._repository.get_release(
+                    definition_name,
+                    definition_version,
+                    commit_sha=commit_sha,
+                )
+                if commit_sha
+                else self._repository.get(definition_name, definition_version)
+            )
+            if row is None:
+&gt;               raise KeyError(
+                    f"operation definition not found: {definition_name}@{definition_version}"
+                )
+E               KeyError: 'operation definition not found: chapter.candidate.select_best@3.10.0'
+
+src/novel_forge/modules/capability_packs/operation_catalog.py:229: KeyError</failure></testcase></testsuite></testsuites>

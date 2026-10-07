@@ -1,0 +1,17 @@
+{
+  "checked": 10,
+  "items": [
+    "agent-authority",
+    "chapter-authority",
+    "content-authority",
+    "source-authority",
+    "source-import",
+    "mkaos-authority",
+    "book-authority",
+    "book-followup-authority",
+    "outbox-authority",
+    "maintenance-runtime-group"
+  ],
+  "kind": "workers",
+  "status": "PASS"
+}

@@ -1,0 +1,47 @@
+........................................................................ [ 56%]
+......................................................F                  [100%]
+=================================== FAILURES ===================================
+___ test_native_overflow_compression_fidelity_draft_review_and_frozen_resume ___
+
+    def test_native_overflow_compression_fidelity_draft_review_and_frozen_resume():
+        from tests.integration.test_chapter_model_effects_postgres import (
+            ChapterModelEffectsPostgresTests,
+        )
+    
+        case = ChapterModelEffectsPostgresTests()
+>       case.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(
+            routed=True, native_through_review=True
+        )
+
+tests/integration/test_quality_context_formal_e2e_postgres.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_model_effects_postgres.py:1486: in test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+    self.assertEqual(draft_request["input"]["chapter_memo"]["accepted_boundary"], context["context_manifest"]["accepted_boundary"])
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py:885: in assertEqual
+    assertion_func(first, second, msg=msg)
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py:1184: in assertDictEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests testMethod=runTest>
+msg = "{'accepted_through_chapter': 0, 'story_stat[190 chars]sis'} != {'canon_snapshot_version': 'project-3bec834[181 chars]...snapshot_version': 'project-3bec8346ffff4fcfab3495b6b67706be:story_state_snapshot:genesis'}\n?               ++ + ^^\n"
+
+    def fail(self, msg=None):
+        """Fail immediately, with the given message."""
+>       raise self.failureException(msg)
+E       AssertionError: {'accepted_through_chapter': 0, 'story_stat[190 chars]sis'} != {'canon_snapshot_version': 'project-3bec834[181 chars]sis'}
+E         {'accepted_through_chapter': 0,
+E       -  'canon_snapshot_asset_version_id': 'project-3bec8346ffff4fcfab3495b6b67706be:canon_snapshot:genesis',
+E       ?                  ------       ---
+E       
+E       +  'canon_snapshot_version': 'project-3bec8346ffff4fcfab3495b6b67706be:canon_snapshot:genesis',
+E       -  'story_state_asset_version_id': 'project-3bec8346ffff4fcfab3495b6b67706be:story_state_snapshot:genesis'}
+E       ?                 ^^         ---
+E       
+E       +  'story_state_snapshot_version': 'project-3bec8346ffff4fcfab3495b6b67706be:story_state_snapshot:genesis'}
+E       ?               ++ + ^^
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py:715: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume
+1 failed, 126 passed in 4.01s

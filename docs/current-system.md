@@ -499,9 +499,51 @@ historically used the budget lifecycle with finite call and token ceilings; obse
 usage settles after execution while unavailable monetary cost remains `UNKNOWN`. These
 controls do not turn post-call usage into an exact pre-call remote token hard limit and do
 not permit silent rerouting to another model, account or billing method. New diagnostic
-requests may explicitly freeze `codex-no-transport-retry.v1`, which disables CLI HTTP and
-stream retries on the same authenticated OpenAI route. The policy participates in the
-local binding hash and receipt; old bindings retain their former retry semantics.
+requests may explicitly freeze `codex-no-transport-retry.v1`, which configures a custom
+Responses Provider with OpenAI authentication and zero HTTP/stream retries. The policy
+participates in the local binding hash and receipt; old bindings retain their former
+retry semantics. Local configuration parsing alone does not prove the effective endpoint
+or remote execution. The CLI process is local; model inference is external to that process.
+
+Provider identity, configurable destination and observed deployment are separate facts.
+DeepSeek's default urllib transport posts to the official HTTPS chat-completions URL
+(the Beta URL for strict tools), rejects redirects and sets `stream=false`; inherited
+HTTP/HTTPS proxy settings can still affect transport. The optional OpenAI SDK adapter
+uses Responses, not Chat Completions. Its constructor passes a credential and zero
+SDK retries but no explicit base URL; the SDK can inherit `OPENAI_BASE_URL` from process
+environment. Neither an adapter name nor protocol compatibility identifies the server
+operator or inference engine. The current production Router candidate selection admits
+DeepSeek and/or Codex CLI; a configured `openai` adapter is not thereby a Router candidate.
+
+Membership Codex invocations force ChatGPT login, ignore user configuration/rules and
+use an ephemeral session. Initial and explicitly authorized recovered submission share
+the same command builder; reconciliation reads existing process/receipt evidence.
+The default child environment excludes `OPENAI_BASE_URL` and API-key variables but
+inherits allowlisted HTTP/HTTPS proxies. This limits environment inheritance, not all
+possible managed configuration or network intermediaries. Endpoint attribution requires
+the exact CLI version, effective configuration and request/receipt or service evidence.
+
+### Chunked Prefill selection
+
+Chunked Prefill schedules smaller prefill portions of one request alongside other work;
+it is separate from Context compression and application-level prompt splitting. The
+complete prompt still requires processing, while execution overhead, GPU utilization
+and wall-clock time can change. In [vLLM V1 v0.10.2](https://github.com/vllm-project/vllm/blob/v0.10.2/docs/configuration/optimization.md#chunked-prefill),
+the feature is enabled by default and `max_num_batched_tokens` is the total token budget
+per scheduling iteration, not a fixed chunk size per request. Smaller budgets tend to
+help ITL and larger budgets tend to help TTFT; workload measurement must establish the
+actual tradeoff. Whole-response timing cannot reconstruct ITL. Non-streaming tasks can
+still benefit from server scheduling and throughput changes.
+
+The current adoption decision is to defer tuning and adding vLLM (`CONFIGURABLE_POLICY`):
+no controllable inference-service tuning surface with a demonstrated applicable need
+has been confirmed in the inspected deployment scope. This does not establish that all
+environments lack vLLM or that the technique is ineffective. Reconsider when an explicit
+controllable service candidate, representative workload and performance targets exist;
+an isolated benchmark may precede formal production integration. The narrow design is
+in [runtime operations](runtime-operations.md#isolated-chunked-prefill-benchmark-design).
+Performance benefit remains unproven; benchmarking is not a new novel-production gate.
+Frozen selection evidence is in [the endpoint audit](../reports/audits/2026-10-07-chunked-prefill-provider-boundary.md).
 
 Historical creative-provider campaigns select an immutable allocation plan and append explicit
 operator phase grants through the existing versioned runtime policy mechanism. Command

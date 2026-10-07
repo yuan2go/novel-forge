@@ -1,0 +1,178 @@
+{
+  "baseline_sha": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+  "final_sha": "8d8f0b21fa945d8cbe3db559adc5edb0fc5f597c",
+  "worktree": "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge",
+  "final_test_command": "NOVEL_FORGE_DATABASE_URL=postgresql://nf_context_validator@127.0.0.1:56579/nf_context_router_final_5b7bc08a00274092a772f5fe0b246fa7_test PYTHONPATH=src:. /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m pytest -q tests/unit/test_context_compression_routing.py tests/unit/test_context_compression_provider.py tests/unit/test_task_context_admission.py tests/unit/test_task_scoped_context.py tests/unit/test_chapter_legacy_contract_recovery.py tests/integration/test_context_feedback_postgres.py tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume --junitxml='/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/final-focused.xml'",
+  "precommit_checks": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "static",
+        "command": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff check src/novel_forge/modules/chapter_authority/execution_gateway.py src/novel_forge/modules/chapter_authority/orchestrator.py tests/integration/capability_pack_postgres_support.py tests/integration/test_chapter_model_effects_postgres.py tests/integration/test_quality_context_formal_e2e_postgres.py tests/unit/test_chapter_legacy_contract_recovery.py",
+        "result": {
+          "chunk_id": "51bbb2",
+          "wall_time_seconds": 0.000008667,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "documentation-reality",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .",
+        "result": {
+          "chunk_id": "df105f",
+          "wall_time_seconds": 0.000008125,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "instruction-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.instruction_surface --repo-root .",
+        "result": {
+          "chunk_id": "b84943",
+          "wall_time_seconds": 0.000018917,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "required-test-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_required_test_manifest.py",
+        "result": {
+          "chunk_id": "9f9c74",
+          "wall_time_seconds": 0.000008375,
+          "exit_code": 1,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "worker-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_worker_manifest.py",
+        "result": {
+          "chunk_id": "f879c8",
+          "wall_time_seconds": 0.581489875,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "migration-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_migration_manifest.py",
+        "result": {
+          "chunk_id": "a37a9d",
+          "wall_time_seconds": 0.000014917,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    }
+  ],
+  "final_checks": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "static",
+        "command": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff check src/novel_forge/modules/chapter_authority/execution_gateway.py src/novel_forge/modules/chapter_authority/orchestrator.py tests/integration/capability_pack_postgres_support.py tests/integration/test_chapter_model_effects_postgres.py tests/integration/test_quality_context_formal_e2e_postgres.py tests/unit/test_chapter_legacy_contract_recovery.py",
+        "result": {
+          "chunk_id": "161f76",
+          "wall_time_seconds": 0.000013667,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "documentation-reality",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .",
+        "result": {
+          "chunk_id": "908eb2",
+          "wall_time_seconds": 0.000015083,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "instruction-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.instruction_surface --repo-root .",
+        "result": {
+          "chunk_id": "51aa7c",
+          "wall_time_seconds": 0.000008291,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "required-test-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_required_test_manifest.py",
+        "result": {
+          "chunk_id": "e69453",
+          "wall_time_seconds": 0.000013792,
+          "exit_code": 1,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "worker-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_worker_manifest.py",
+        "result": {
+          "chunk_id": "d51011",
+          "wall_time_seconds": 0.49696775,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "name": "migration-manifest",
+        "command": "PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_migration_manifest.py",
+        "result": {
+          "chunk_id": "e0aec6",
+          "wall_time_seconds": 0.000014625,
+          "exit_code": 0,
+          "original_token_count": 0,
+          "output": ""
+        }
+      }
+    }
+  ]
+}

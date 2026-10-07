@@ -11,9 +11,11 @@ uv pip install -e '.[api,postgres,provider-openai,test,object,ingestion,industri
 npm --prefix web/admin ci
 ```
 
-Configuration is read by `IndustrialSettings.from_env` from the environment and local
-`.env` files. Start from `.env.example`. Never commit or print Provider, PostgreSQL or
-object-store credentials.
+`IndustrialSettings.from_env` reads its settings from the environment and local `.env`
+files. Provider composition separately reads process environment (or its explicit `env`
+mapping); settings-file parsing does not export Provider keys into that environment.
+Start from `.env.example` and verify the actual launcher/container environment. Never
+commit or print Provider, PostgreSQL or object-store credentials.
 
 ## Start and inspect the stack
 
@@ -39,6 +41,62 @@ make authority-down
 ```
 
 Volume deletion is not part of normal reset or test cleanup.
+
+### Provider endpoint inspection
+
+Inspect the intended launcher/private environment, release identity and registered
+service before attributing an endpoint. Keep three findings separate: code permits a
+destination; configuration selects it; a matching live request/receipt or service proves
+its use. An unavailable Docker socket or unregistered remote installation is an explicit
+coverage limit. Do not start services, resend requests or read unrelated credential stores
+to complete a selection audit. Record only safe configuration presence, redacted destination
+classification and authenticated identity checks; never export auth files or credentialed URLs.
+
+DeepSeek sends non-streaming HTTPS POST requests through urllib to its fixed official
+URL, with redirects disabled; proxy inheritance still needs inspection. Its recorded
+`latency_seconds` covers transport/read/parse completion, not TTFT or ITL. For the optional
+OpenAI SDK route, verify the installed `provider-openai` extra/version and effective process
+`OPENAI_BASE_URL`. Passing an explicit composition `env` mapping does not isolate the
+SDK's ambient environment. The repository constructor sets `max_retries=0` and sends
+Responses requests. A replacement server must match create/retrieve/cancel behavior,
+input and reasoning/output-limit fields, response/usage shape and claimed idempotency;
+an OpenAI-compatible Chat Completions endpoint alone is insufficient.
+
+For Codex membership, inspect the configured executable/version/digest, explicit
+`CODEX_HOME`, effective configuration and login identity without exposing tokens.
+The default process allowlist excludes OpenAI base-URL/API-key variables and permits
+HTTP/HTTPS proxy settings. `--ignore-user-config`, `--ignore-rules` and `--ephemeral`
+isolate user instruction/session inputs; they do not attest server ownership.
+`codex-no-transport-retry.v1` selects a custom Responses Provider requiring OpenAI auth
+and zero HTTP/stream retries. Existing bindings keep their prior retry policy.
+Initial/recovered submissions use the same command construction; receipt reconciliation
+does not start a new model request. Resolve unknown external outcomes through the existing
+Kernel recovery owner before any authorized successor. Local CLI execution is not evidence
+of local model inference.
+
+### Isolated Chunked Prefill benchmark design
+
+This is a deferred experiment design, not an executable procedure or production gate.
+An explicit controllable service candidate, representative load and performance targets
+are enough to reopen selection before production integration. First bind the instance's
+engine/version, deployment/configuration and actual Chunked Prefill enablement; do not
+assume it is disabled (vLLM V1 v0.10.2 defaults to enabled).
+
+Freeze model/revision, tokenizer, hardware, generation settings, request-set hashes,
+input/output length distributions, arrival pattern, concurrency and prefix-cache/warmup
+policy. Compare the current configuration with only a few valid token budgets, for example
+two values around the baseline within that instance's constraints. Hold other variables
+constant and use repeated balanced runs; preserve failures/timeouts in the denominator.
+Record TTFT and per-token ITL p50/p95, full request latency, successful valid task throughput,
+timeouts and failure rates. Obtain token timestamps from a suitable streaming diagnostic
+or server instrumentation; whole-response timers or multi-token SSE events alone cannot
+recover per-token ITL. Missing measurements remain `NOT_OBSERVED`.
+
+Choose on complete Novel Forge task delivery: valid schema/domain result, end-to-end
+completion including review/repair where applicable, effective throughput and reliability
+against predeclared targets. Keep task quality and cost/resource observations alongside
+latency. A single TTFT/ITL improvement is insufficient. Authorize any actual benchmark
+separately; this design adds no Provider, service, dependency, flag or qualification gate.
 
 Before starting Provider-capable processes against an existing installation, resolve the
 actual launcher/private configuration, container or service, persistent volume, database

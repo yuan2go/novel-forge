@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/opt/homebrew/Cellar/postgresql@16/16.15/bin/pg_dump",
+    "--format=custom",
+    "--file=/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/final-frozen-verification.dump",
+    "postgresql://nf_context_validator@127.0.0.1:56579/nf_context_router_final_5b7bc08a00274092a772f5fe0b246fa7_test"
+  ],
+  "exit_code": 0,
+  "stderr": ""
+}

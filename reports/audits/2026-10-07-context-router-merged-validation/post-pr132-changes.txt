@@ -1,0 +1,16 @@
+3c4d6dc5 Merge pull request #138: coordinated PR133/135 recovery integration
+d4382d36 Bind proposal source baselines without claiming runtime qualification
+2e4db4ec Integrate forward recovery contracts with native production closure
+9fc34231 Checkpoint coordinated recovery integration before source refreeze
+9d393208 Merge pull request #137 from yuan2go/codex/skills-main-publication-20261007
+1708ea95 Publish pinned coding-agent Skills and production delivery artifacts
+c621e086 Merge pull request #136 from yuan2go/codex/execution-results-publication-20261007
+33847c18 Publish append-only integration execution report update
+c3b05575 Merge pull request #134 from yuan2go/codex/integrated-production-publication-20261007
+b5a23d94 Retain sanitized integration and paired-review execution evidence
+f66144b2 Publish paired-review pressure regression on remapped native integration
+e1bd3aa8 Bind proposal review to the completed migration index scope
+b484551d Complete successor foreign-key indexes and historical migration fixtures
+042f4467 Restore current classifier at the retained dead-letter boundary
+cc85a91b Retain historical World checkpoints and review current proposal scope
+578d59b0 Integrate bounded creative recovery on native production closure

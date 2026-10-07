@@ -1,0 +1,5 @@
+{
+  "error": "test reality inventory failed: test reality pattern matches no test files: coordinated-current-planning-controlled-wire:tests/integration/current_planning_wire_support.py",
+  "kind": "tests",
+  "status": "FAIL"
+}

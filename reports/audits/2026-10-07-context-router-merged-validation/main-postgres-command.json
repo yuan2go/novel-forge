@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/integration/test_context_feedback_postgres.py",
+    "tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume",
+    "--junitxml=/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/main-postgres.xml"
+  ],
+  "cwd": "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge",
+  "database_url": "postgresql://nf_context_validator@127.0.0.1:56579/nf_context_router_72469b5cfd644dbfa18da9d646e76be9_test",
+  "baseline_sha": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+  "real_provider_calls": 0
+}
