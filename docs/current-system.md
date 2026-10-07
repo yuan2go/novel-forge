@@ -1506,7 +1506,9 @@ Earlier consumption retains its historical literal comparison contract. Its reco
 remain immutable and require a future-only replan. A semantic comparison must bind
 the exact frozen planned event and adopted prose, with independent Canon Support
 evidence for causality, required end state and knowledge boundaries. New perceptions
-may support later same-chapter actions; unknown comparisons cannot certify coverage.
+may support later same-chapter actions; unknown comparisons cannot certify coverage. Native Recap `ArcRevisionCandidate` is
+future-only planning evidence when bound to the same successful Recap and Book; its
+proposal role does not make its intended changes accepted facts.
 
 `NarrativeRealityRevision` references the exact Book acceptance, ChapterOutcome,
 Narrative State, Canon and long-form projection set. Its immutable identity includes
