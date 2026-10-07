@@ -15,6 +15,7 @@ from novel_forge.api.authority_dependencies import (
     build_content_authority_application,
     build_content_authority_query,
     build_book_production_composition,
+    build_book_followup_authority_application,
     build_trusted_principal_resolver,
     build_book_design_authority_application,
     build_book_design_authority_query,
@@ -38,7 +39,8 @@ from novel_forge.modules.content_authority import (
     ContentAuthorityApplication,
     ContentAuthorityQuery,
 )
-from novel_forge.modules.book_authority.production import PostgresBookAuthority
+from novel_forge.modules.book_authority.production import PostgresBookAuthority, ChapterAuthorityCommandAdapter
+from novel_forge.infrastructure.environment import RuntimeEnvironment
 from novel_forge.modules.book_authority.completion import PostgresBookCompletionAuthority
 from novel_forge.modules.book_authority.composition import BookProductionComposition
 from novel_forge.modules.book_design_authority import (
@@ -224,9 +226,17 @@ def create_authority_app(settings: IndustrialSettings):
     ))
     book_production = _DeferredService(lambda: build_book_production_composition(
         settings, principal=build_trusted_principal_resolver().resolve_api_principal(),
-        execution=production_execution.resolve(), chapter_application=application.resolve(),
+        execution=production_execution.resolve(), chapter_application=application.resolve(), authority=book_authority,
     ))
     build_id, commit_sha = authority_release_identity()
+    book_authority = PostgresBookAuthority(
+        settings.database_url, application_build_id=build_id, commit_sha=commit_sha,
+        chapter_port=_DeferredService(lambda: ChapterAuthorityCommandAdapter(
+            application.resolve(), external_effect_adapters=production_execution.resolve().external_effect_adapters)),
+        followup_application=_DeferredService(lambda: build_book_followup_authority_application(
+            settings, execution=production_execution.resolve())),
+        legacy_fixture_input_allowed=RuntimeEnvironment.parse(settings.environment).fixture_allowed,
+    )
     services = AuthorityApiServices(
         production_execution=production_execution,
         chapter_application=application,
@@ -237,7 +247,7 @@ def create_authority_app(settings: IndustrialSettings):
         provider_callback_service=ProviderCallbackAuthorityService(
             settings.database_url or "", provider_registry
         ),
-        book_authority_application=_DeferredService(lambda: book_production.authority),
+        book_authority_application=book_authority,
         book_completion_authority=PostgresBookCompletionAuthority(
             settings.database_url, application_build_id=build_id, commit_sha=commit_sha,
         ),

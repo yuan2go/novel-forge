@@ -57,7 +57,9 @@ A completed writing target has no runnable Book coordination tick until new work
 
 `/product/editor/manuscripts` reads saved selected versions without a Provider call.
 The API assembles Provider-dependent services on the first related operation, under one
-process lock, while database queries and author edits remain available after restart with
+process lock. Control endpoints and generation composition reuse the same Book Authority;
+Chapter and followup ports resolve only when used. Database queries, author edits and
+pause/resume remain available after restart with
 unavailable Provider or Source Import configuration. Failed assembly is not cached as a
 usable service. Readiness reports the unavailable route separately and does not qualify it.
 `/product/editor/manuscripts/export` binds an exact version list and optional chapter range;
