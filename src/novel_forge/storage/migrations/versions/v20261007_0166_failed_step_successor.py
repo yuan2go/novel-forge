@@ -22,5 +22,6 @@ UPGRADE_STATEMENTS = [
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         CHECK (predecessor_operation_id<>successor_operation_id)
     )""",
+    "CREATE INDEX authority_saga_step_successor_saga_fk_idx ON authority_saga_step_successor(saga_id)",
 ]
 DOWNGRADE_STATEMENTS: list[str] = []
