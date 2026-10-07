@@ -2303,3 +2303,10 @@ Accepted Narrative Checkpoints resolve the input snapshot frozen by the accepted
 Chapter request. Later future-only replan bindings cannot reinterpret its historical
 Arc portfolio or accepted projection. Historical requests lacking the explicit reference
 may use only their Book binding recorded no later than request admission.
+
+Narrative Search replay consumes the exact native admitted branch command. If an
+unstarted default 1.19 request was admitted under the deployed 1.20 contract, replay
+retains that admitted execution version. Every creative input, horizon, strategy and
+search identity must still match; this compatibility cannot change a frozen story
+choice. Capacity preflight builds its proposed Context before a successor registration
+exists and does not read an unregistered continuation.
