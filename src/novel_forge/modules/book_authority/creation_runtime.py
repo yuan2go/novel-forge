@@ -307,11 +307,43 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
     return ""
 
 
+
+def ensure_creation_reader_pack(settings: Any, *, formation_run_id: str, principal: Any,
+                                repository_root: Any, values: dict[str, str],
+                                application_build_id: str, commit_sha: str) -> None:
+    from novel_forge.modules.capability_packs.validation_deployment import (
+        install_longform_validation_pack, register_validation_runtime_definitions,
+    )
+    from novel_forge.modules.capability_packs.longform_profiles import build_reader_outcome_pack_profile
+
+    pack_id = values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"]
+    with AuthorityUnitOfWork(settings.database_url) as uow:
+        uow.cursor.execute("SELECT project_id,workspace_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s", [formation_run_id])
+        scope = uow.cursor.fetchone()
+        if scope is None:
+            raise KernelError("CREATION_CHECKPOINT_NOT_FOUND", formation_run_id)
+        uow.cursor.execute("SELECT 1 FROM authority_capability_pack_activation WHERE project_id=%s AND workspace_id=%s AND book_id=%s AND pack_id=%s AND environment=%s", [*scope, pack_id, settings.environment])
+        if uow.cursor.fetchone() is not None:
+            return
+    principal.require("book.authority.execute", str(scope[0]))
+    hashes = register_validation_runtime_definitions(settings.database_url,
+        application_build_id=application_build_id, commit_sha=commit_sha)
+    profile = build_reader_outcome_pack_profile(repository_root,
+        operation_definition_hash=hashes["reader_proxy"], pack_id=pack_id)
+    install_longform_validation_pack(settings.database_url, profile=profile,
+        pack_version=str(profile.manifest["identity"]["version"]), agent_generation=1,
+        expected_activation_version=0, project_id=str(scope[0]), workspace_id=str(scope[1]),
+        book_id=str(scope[2]), application_build_id=application_build_id, commit_sha=commit_sha,
+        compiler=principal, approver=principal, agent_admin=principal,
+        agent_domain="book_followup", agent_scope_type="BOOK", runtime_environment=settings.environment)
+
+
 def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None) -> dict[str, str]:
     result = dict(os.environ if values is None else values)
     scope = hashlib.sha256(project_id.encode()).hexdigest()[:24]
     result.setdefault("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", "chapter_generation_pack.creative." + scope)
     result.setdefault("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "story_planning_pack.creative." + scope)
+    result.setdefault("NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID", "reader_outcome_pack.creative." + scope)
     return result
 
 
@@ -780,6 +812,9 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             schedule_creation_jobs(settings.database_url, limit=1, formation_run_id=formation_id)
             return {"stop_reason": "CANCELLED", **creation_status(settings.database_url,
                 project_id=args.project_id, formation_run_id=formation_id, principal=principal)}
+        ensure_creation_reader_pack(settings, formation_run_id=formation_id, principal=principal,
+            repository_root=args.repository_root.resolve(), values=runtime_values,
+            application_build_id=build_id, commit_sha=sha)
         if args.action == "recover":
             if not args.reason.strip():
                 raise ValueError("Recovery requires a reason describing the resolved blocker")

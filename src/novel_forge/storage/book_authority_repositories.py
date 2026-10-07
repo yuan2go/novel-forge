@@ -411,6 +411,11 @@ class BookAuthorityRepository:
             },
         )
         inserted = self.cursor.rowcount == 1
+        self.cursor.execute(
+            "UPDATE authority_book_chapter_request SET status_reference='SUCCEEDED', updated_at=NOW() "
+            "WHERE chapter_request_id=%s AND status_reference<>'SUCCEEDED'",
+            [chapter_request_id],
+        )
         self.commit_longform_projection_set(longform_projection_set)
         NarrativeRealityRepository(self.cursor).project_acceptance(acceptance_id)
         if before_cursor_advance is not None:

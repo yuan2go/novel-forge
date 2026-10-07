@@ -1951,7 +1951,7 @@ def project_reader_outcome_context_input(
     bounded view of current reader-facing state.  Empty projections preserve the
     immutable input reference without sending that asset to the Provider.
     """
-    if asset_type == "draft_version":
+    if asset_type in {"draft_version", "best_draft_candidate"}:
         return _prose(content)
     if asset_type == "reader_contract":
         return _pick(content, "contract_id", "safe_summary")

@@ -2127,19 +2127,13 @@ class PostgresBookAuthority:
 
     def reconcile_chapter(self, chapter_request_id: str) -> dict[str, Any]:
         request = self.require_chapter_request(chapter_request_id)
-        if (
-            self._find_chapter_acceptance(
-                chapter_request_id=chapter_request_id,
-                project_id=request["project_id"],
-            )
-            is not None
-        ):
-            # INVARIANT: Acceptance and the Book narrative cursor commit atomically. A
-            # ChapterGroup replay may still need to consume that acceptance,
-            # but reconciliation must never regress the accepted Book state.
+        accepted = self._find_chapter_acceptance(
+            chapter_request_id=chapter_request_id, project_id=request["project_id"],
+        ) is not None
+        if accepted and request["status_reference"] == "SUCCEEDED":
             return request
         book = self.require(request["book_run_id"])
-        if book["active_chapter_request_id"] != chapter_request_id:
+        if not accepted and book["active_chapter_request_id"] != chapter_request_id:
             return request
         root = request["chapter_root_operation_id"]
         if not root:
@@ -2169,6 +2163,10 @@ class PostgresBookAuthority:
         else:
             request_status, book_state = "RUNNING", BookProductionState.CHAPTER_RUNNING
         book = self.require(request["book_run_id"])
+        if accepted:
+            if operation_status != "SUCCEEDED" or saga_status != "SUCCEEDED":
+                raise KernelError("BOOK_ACCEPTED_CHILD_STATUS_CONFLICT", "Accepted Chapter requires successful native Root and Saga")
+            book_state = BookProductionState(str(book["state"]))
         if request["status_reference"] == request_status and book["state"] == book_state.value:
             return request
         with AuthorityUnitOfWork(self.database_url) as uow:

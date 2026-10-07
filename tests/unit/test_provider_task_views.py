@@ -401,6 +401,16 @@ def test_reader_outcome_uses_its_own_bounded_task_and_context_views() -> None:
     assert len(serialized) < 65_536
 
 
+def test_reader_outcome_reads_selected_accepted_prose_without_comparison_envelope() -> None:
+    content = {"text": "The adopted revision keeps her unanswered question.",
+               "selected_source_asset_version_id": "revision:chosen",
+               "comparison_evidence": {"operator_detail": "omit"}}
+    selected = project_reader_outcome_context_input("best_draft_candidate", content)
+    assert selected == project_reader_outcome_context_input("draft_version", content)
+    assert selected["text"] == content["text"]
+    assert "comparison_evidence" not in selected
+
+
 def test_reader_outcome_state_projection_does_not_grow_with_unrelated_history() -> None:
     def state(extra: int) -> dict:
         return {

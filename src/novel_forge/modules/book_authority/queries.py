@@ -106,7 +106,9 @@ class PostgresBookProductionQuery:
                 """WITH RECURSIVE subjects(subject_id,depth,path) AS (
                 (SELECT %s::text,0,ARRAY[%s::text]
                  UNION ALL SELECT request.book_run_id,0,ARRAY[request.book_run_id]
-                 FROM authority_book_chapter_request request WHERE request.project_id=%s AND request.chapter_root_operation_id=%s)
+                 FROM authority_book_chapter_request request WHERE request.project_id=%s AND request.chapter_root_operation_id=%s
+                 UNION ALL SELECT followup.book_run_id,0,ARRAY[followup.book_run_id]
+                 FROM authority_book_followup_operation followup WHERE followup.project_id=%s AND followup.operation_id=%s)
                 UNION ALL
                 SELECT edition.source_book_run_id,subjects.depth+1,subjects.path || edition.source_book_run_id
                 FROM subjects JOIN authority_book_edition_run binding ON binding.book_run_id=subjects.subject_id AND binding.role='VALIDATION'
@@ -126,6 +128,8 @@ class PostgresBookProductionQuery:
                           AND production.stable_idempotency_key=run.formation_run_id || ':production'))""",
                 [
                     subject_id,
+                    subject_id,
+                    project_id,
                     subject_id,
                     project_id,
                     subject_id,
@@ -281,7 +285,10 @@ class PostgresBookProductionQuery:
                     FROM authority_operation op WHERE op.project_id=book.project_id
                       AND (op.correlation_id IN (book.book_run_id,book.root_operation_id) OR op.operation_id=(
                         SELECT request.chapter_root_operation_id FROM authority_book_chapter_request request
-                        WHERE request.chapter_request_id=book.active_chapter_request_id))
+                        WHERE request.chapter_request_id=book.active_chapter_request_id)
+                        OR EXISTS (SELECT 1 FROM authority_book_followup_operation followup
+                                   WHERE followup.book_run_id=book.book_run_id
+                                     AND followup.operation_id=op.operation_id))
                 ) dependencies
                 WHERE (
                       book.state = ANY(%s)
@@ -339,6 +346,16 @@ class PostgresBookProductionQuery:
                         AND job.input_snapshot->>'observed_state'=book.state
                         AND (NOT job.input_snapshot ? 'coordination_dependencies' OR job.input_snapshot->'coordination_dependencies'=dependencies.snapshot)
                   ))
+                  AND NOT EXISTS (
+                      SELECT 1 FROM authority_runtime_job job
+                      JOIN authority_runtime_job_result receipt USING(runtime_job_id)
+                      WHERE job.job_kind='BOOK_COORDINATION_TICK' AND job.runtime_group='book'
+                        AND job.subject_id=book.book_run_id AND job.project_id=book.project_id
+                        AND job.status='SUCCEEDED' AND receipt.result->>'action'='WAIT_REPLAN_SOURCE'
+                        AND job.input_snapshot->>'observed_version'=book.version::text
+                        AND job.input_snapshot->>'observed_state'=book.state
+                        AND job.input_snapshot->'coordination_dependencies'=dependencies.snapshot
+                  )
                   AND NOT EXISTS (
                       SELECT 1
                       FROM authority_book_projection_repair AS repair
@@ -525,7 +542,9 @@ class PostgresBookProductionQuery:
                   ON production.book_run_id=acceptance.book_run_id
                 WHERE acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.status='COMMITTED'
                   AND (
-                    MOD(
+                    EXISTS (SELECT 1 FROM authority_narrative_realization_deviation deviation
+                            WHERE deviation.acceptance_id=acceptance.acceptance_id)
+                    OR MOD(
                         acceptance.chapter_number,
                         COALESCE(
                             NULLIF(
@@ -752,7 +771,9 @@ class PostgresBookProductionQuery:
                           reader_operation.status='SUCCEEDED'
                           AND recap.operation_id IS NULL
                           AND (
-                              MOD(
+                              EXISTS (SELECT 1 FROM authority_narrative_realization_deviation deviation
+                                      WHERE deviation.acceptance_id=acceptance.acceptance_id)
+                              OR MOD(
                                   acceptance.chapter_number,
                                   COALESCE(
                                       NULLIF(
@@ -824,6 +845,27 @@ class PostgresBookProductionQuery:
             )
             for row in rows
         )
+
+    def accepted_realization_deviations(self, *, chapter_request_id: str) -> dict[str, Any]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""
+                SELECT acceptance.acceptance_id, acceptance.chapter_number,
+                       deviation.deviation_id, deviation.deviation_kind,
+                       deviation.realization_id, deviation.evidence_hash,
+                       deviation.affected_future_from_chapter, deviation.evidence
+                FROM authority_book_chapter_acceptance acceptance
+                JOIN authority_narrative_realization_deviation deviation
+                  ON deviation.acceptance_id=acceptance.acceptance_id
+                WHERE acceptance.chapter_request_id=%s AND acceptance.status='COMMITTED'
+                ORDER BY deviation.deviation_kind, deviation.deviation_id
+            """, [chapter_request_id])
+            rows = uow.cursor.fetchall()
+        return {"contract_version": "accepted-realization-deviations.v1",
+                "chapter_request_id": chapter_request_id,
+                "deviations": [dict(zip(("acceptance_id", "chapter_number", "deviation_id",
+                    "deviation_kind", "realization_id", "evidence_hash",
+                    "future_from_chapter", "evidence"), row, strict=True)) for row in rows],
+                "accepted_history_mutation_allowed": False}
 
     def arc_checkpoint_followup(
         self, *, book_run_id: str, chapter_number: int

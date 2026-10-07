@@ -123,6 +123,23 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
         self.assertEqual(cadence["level"], "FORMAL")
         self.assertEqual(risk["reasons"], ["READER_OUTCOME_CONTINUOUS_DECLINE"])
 
+    def test_accepted_realization_deviation_requests_future_group_replan(self) -> None:
+        evidence = {"contract_version": "accepted-realization-deviations.v1",
+                    "deviations": [{"deviation_id": "deviation:1", "future_from_chapter": 2}],
+                    "accepted_history_mutation_allowed": False}
+        outputs = build_longform_recap_outputs(
+            project_id="project:1", book_id="book:1", chapter_range=(1, 1),
+            checkpoint_type=LongformCheckpointType.BOOK_AUTHORITY_REQUEST,
+            observations={"accepted_realization_deviations": evidence},
+        )
+        request = outputs["replan_request"]
+        self.assertEqual(request["reason_refs"], ["ACCEPTED_REALIZATION_DEVIATION"])
+        self.assertEqual(request["affected_scope"], "CHAPTER_GROUP")
+        self.assertTrue(request["impact_scope"]["future_only"])
+        self.assertEqual(request["decision_evidence"][0]["evidence"], evidence)
+        self.assertFalse(outputs["recap"]["plan_mutation_allowed"])
+        self.assertIn("executed_chapter_history", request["preserved_invariants"])
+
     def test_recap_emits_proposals_and_never_plan_mutation(self) -> None:
         outputs = build_longform_recap_outputs(
             project_id="project:1",

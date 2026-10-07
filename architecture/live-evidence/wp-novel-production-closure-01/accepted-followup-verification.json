@@ -1,0 +1,29 @@
+{
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "original_runtime_sha": "2c6e8e483dfcd6bf91fdc052201d0f6030773510",
+  "native_postgresql_clone": "PASS followup-preflight-309.log",
+  "boundaries": [
+    "accepted Book cursor not regressed during request projection reconciliation",
+    "ChapterGroup replays original acceptance",
+    "wait stops until exact operation dependency changes",
+    "Reader selected adopted revision",
+    "accepted deviations drive future-only Recap proposal",
+    "Creation scoped Pack installed idempotently"
+  ],
+  "focused_tests": [
+    "30 PASS followup-matrix-308.log",
+    "80 PASS followup-boundaries-310.log",
+    "1 PASS native admission boundary followup-creation-boundary-311.log"
+  ],
+  "prior_preflight_failures_retained": [
+    "303",
+    "304",
+    "306",
+    "307"
+  ],
+  "model_dispatches": 0,
+  "real_continuation": "NOT_RUN for these changes",
+  "accepted_chapters": 1,
+  "target_chapters": 12,
+  "literary_quality": "NOT_PROVEN"
+}

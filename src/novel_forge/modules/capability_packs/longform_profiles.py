@@ -236,7 +236,7 @@ def build_reader_outcome_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.2.0"
+    manifest["identity"]["version"] = "1.3.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -253,7 +253,7 @@ def build_reader_outcome_pack_profile(
         handler_key=("novel_forge.book_followup_authority.reader_outcome.evaluate"),
         stage="reader_outcome",
         capability_id="quality.reader_outcome.judge",
-        input_asset_types=["draft_version", "canon_snapshot"],
+        input_asset_types=["best_draft_candidate", "canon_snapshot"],
         output_asset_types=["reader_outcome_report"],
         depends_on=[],
         commit_authority="BOOK_FOLLOWUP_AUTHORITY",
@@ -280,6 +280,7 @@ def build_reader_outcome_pack_profile(
     )
     manifest["context_sources"]["allowed_asset_types"] = [
         "draft_version",
+        "best_draft_candidate",
         "canon_snapshot",
         "context_bundle",
     ]

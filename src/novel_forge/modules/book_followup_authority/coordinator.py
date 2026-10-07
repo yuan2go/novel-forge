@@ -144,12 +144,15 @@ class PostgresBookFollowupCoordinator:
             book_run_id=candidate.book_run_id,
             chapter_number=candidate.chapter_number,
         )
+        realization = self.query.accepted_realization_deviations(
+            chapter_request_id=candidate.chapter_request_id
+        )
         trigger = should_trigger_longform_recap(
             chapter_number=candidate.chapter_number,
             light_cadence=int(snapshot["light_recap_cadence"]),
             formal_cadence=int(snapshot["formal_recap_cadence"]),
             chapter_group_complete=self._chapter_group_complete(snapshot),
-            authority_requested=bool(ending_reachability.get("replan_required")),
+            authority_requested=bool(ending_reachability.get("replan_required") or realization["deviations"]),
             arc_checkpoint=arc_checkpoint is not None,
             reader_outcome_declining=bool(reader_evidence["trend"]["declining"]),
             canon_risk=bool(canon["content"].get("conflicts")),
@@ -172,6 +175,7 @@ class PostgresBookFollowupCoordinator:
             reader_evidence=reader_evidence,
             quality_trend=quality_trend,
             canon=canon,
+            realization=realization,
         )
         if arc_checkpoint is not None:
             self._bind_arc_checkpoint_followup(
@@ -185,7 +189,7 @@ class PostgresBookFollowupCoordinator:
             project_id=str(snapshot["project_id"]),
             root_operation_id=str(snapshot["chapter_root_operation_id"]),
         )
-        draft = self._evidence_output(evidence, "draft_version")
+        draft = self._evidence_output(evidence, "best_draft_candidate")
         quality = self._evidence_output(evidence, "quality_score_report")
         manifest = self._evidence_output(evidence, "production_input_manifest")
         canon = self.authority.resolve_asset_refs(
@@ -274,6 +278,7 @@ class PostgresBookFollowupCoordinator:
         reader_evidence: dict[str, Any],
         quality_trend: dict[str, Any],
         canon: dict[str, Any],
+        realization: dict[str, Any],
     ) -> BookFollowupAdmission:
         chapter = int(snapshot["chapter_number"])
         arc_plan_versions = tuple(str(item) for item in snapshot["arc_plan_versions"])
@@ -347,6 +352,7 @@ class PostgresBookFollowupCoordinator:
                     "quality_trend": dict(quality_trend["content"]),
                     "ending_reachability": ending_reachability,
                     "accepted_arc_checkpoint": dict(arc_checkpoint or {}),
+                    "accepted_realization_deviations": realization,
                 },
             },
             input_assets=input_assets,

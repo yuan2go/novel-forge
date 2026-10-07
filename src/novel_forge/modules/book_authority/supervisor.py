@@ -1304,7 +1304,16 @@ class PostgresBookProductionSupervisor:
     def _start_replan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
         from novel_forge.modules.book_replan import CoordinateBookReplanCommand
 
-        source = self.query.require_replan_source(book_run_id=str(book["book_run_id"]))
+        try:
+            source = self.query.require_replan_source(book_run_id=str(book["book_run_id"]))
+        except KernelError as error:
+            if error.code != "BOOK_REPLAN_SOURCE_UNAVAILABLE":
+                raise
+            return self._result(
+                str(book["book_run_id"]), str(book["state"]),
+                SupervisorAction.WAIT_REPLAN_SOURCE,
+                evidence_ref="book_followup:LONGFORM_RECAP",
+            )
         accepted_chapter = int(book["accepted_through_chapter"])
         result = self.replan.start(
             CoordinateBookReplanCommand(

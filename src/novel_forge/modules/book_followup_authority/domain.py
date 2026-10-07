@@ -274,6 +274,11 @@ def build_longform_recap_outputs(
         "BLOCKING",
         ending_reachability,
     )
+    realization = _mapping(observations.get("accepted_realization_deviations"))
+    _add_if(
+        deviations, bool(realization.get("deviations")),
+        "ACCEPTED_REALIZATION_DEVIATION", "BLOCKING", realization,
+    )
     checkpoint_decision = str(arc_checkpoint.get("decision") or "")
     _add_if(
         deviations,
@@ -488,6 +493,7 @@ def _required_action_for_deviation(
     scope = {
         "READER_CONFUSION_RISE": "CHAPTER",
         "REPETITION_FATIGUE": "CHAPTER_GROUP",
+        "ACCEPTED_REALIZATION_DEVIATION": "CHAPTER_GROUP",
         "QUALITY_TREND_DECLINE": "CHAPTER_GROUP",
         "REWARD_CADENCE_FAILURE": "ARC",
         "PROMISE_DEBT": "ARC",

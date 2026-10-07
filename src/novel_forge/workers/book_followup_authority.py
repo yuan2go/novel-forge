@@ -129,6 +129,25 @@ def execute_book_followup_admission_claim(
         raise
 
 
+
+def execute_followup_with_creation_scope(settings, scheduler, principal, *, operation_id, project_id):
+    from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
+
+    query = PostgresBookProductionQuery(settings.database_url)
+    if not query.uses_creation_scope(project_id=project_id, subject_id=operation_id):
+        return scheduler.run_or_recover(operation_id=operation_id, project_id=project_id)
+    values = creation_runtime_environment(project_id)
+    execution = build_production_execution_composition(settings, env=values)
+    try:
+        chapter = build_chapter_authority_application(settings, execution=execution, env=values)
+        book = build_book_authority_application(settings, execution=execution, chapter_application=chapter, env=values)
+        scoped = ContentAuthorityScheduler(settings.database_url, registry=book.followup.registry,
+            worker_id=principal.principal_id, lease_seconds=scheduler.lease_seconds)
+        return scoped.run_or_recover(operation_id=operation_id, project_id=project_id)
+    finally:
+        execution.close()
+
+
 def main() -> int:
     settings = IndustrialSettings.from_env()
     if settings.storage_authority != "postgresql" or not settings.database_url:
@@ -270,9 +289,9 @@ def main() -> int:
                 def execute(item: tuple[str, str]) -> object:
                     operation_id, project_id = item
                     principal.require("book.authority.execute", project_id)
-                    result = scheduler.run_or_recover(
-                        operation_id=operation_id,
-                        project_id=project_id,
+                    result = execute_followup_with_creation_scope(
+                        settings, scheduler, principal,
+                        operation_id=operation_id, project_id=project_id,
                     )
                     coordinator.reconcile_arc_checkpoint_followup(operation_id)
                     return result
