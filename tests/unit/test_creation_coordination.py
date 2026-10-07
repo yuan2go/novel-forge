@@ -80,3 +80,31 @@ def test_author_fixed_direction_reuses_one_exact_approved_input_with_continuous_
         replace(frozen,generation_policy={**policy,"creative_candidates":2})
     with pytest.raises(ValueError):
         replace(frozen,generation_policy={**policy,"creative_selection":"AUTHOR_COMPARISON"})
+
+
+@pytest.mark.parametrize("damage", [None, "sole", "duplicate", "unauthorized", "policy"])
+def test_formation_v6_freezes_bounded_native_comparison(damage):
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.story_planning_runtime.narrative_search import CREATIVE_INTELLIGENCE_DIMENSIONS
+    original = _input()
+    policy = {**original.generation_policy, "contract_version": "formation-generation.v6", "creative_selection": "AUTO_COMPARISON",
+              "selection_policy": {"contract_version": "narrative-search-comparison.v2", "dimension_weights": {name: 1 for name in CREATIVE_INTELLIGENCE_DIMENSIONS},
+                                   "uncertainty_margin": 0.05, "tie_break": "STABLE_ID"},
+              "strategy_directives": ["author promise", "character motivation"],
+              "creation_input_policy": json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())}
+    policy["creation_input_policy"]["profiles"]["production_profile"]["content"]["language_contract"] = {"required_language": "zh-CN"}
+    if damage == "sole":
+        policy.update(creative_candidates=1, strategy_directives=["author promise"])
+    elif damage == "duplicate":
+        policy["strategy_directives"] = ["author promise", "author promise"]
+    elif damage == "unauthorized":
+        policy.pop("auto_authorization")
+    elif damage == "policy":
+        policy["selection_policy"]["tie_break"] = "FIRST"
+    if damage:
+        with pytest.raises((ValueError, KernelError)):
+            replace(original, generation_policy=policy)
+    else:
+        frozen = replace(original, generation_policy=policy)
+        assert StoryFormationInput.from_mapping(frozen.to_dict()).digest == frozen.digest
+        assert original.generation_policy["contract_version"] == "formation-generation.v2"

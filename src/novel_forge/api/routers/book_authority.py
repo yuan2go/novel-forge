@@ -1068,11 +1068,12 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 if current_book["workspace_id"] != request.workspace_id or expected != request.expected_book_version:
                     raise KernelError("CREATION_BOOK_VERSION_CONFLICT", "The selected Book or saved creation version changed")
                 intent = request.production_intent.model_dump(exclude_none=True)
+                creative_selection = intent.pop("creative_selection")
                 arguments = SimpleNamespace(action="start", project_id=request.project_id, workspace_id=request.workspace_id,
                     book_id=book_id, input_file=None, formation_run_id="", idempotency_key=request.idempotency_key,
                     creation_policy_file=None, execution_template_file=ctx.app_settings.root / "config/execution_templates/creative_validation.json",
                     repository_root=Path(ctx.app_settings.root), maximum_ticks=100, work_window_seconds=300,
-                    yield_after_window=False, foreground=False, creative_selection="AUTHOR_COMPARISON", candidate_number=None,
+                    yield_after_window=False, foreground=False, creative_selection=creative_selection, candidate_number=None,
                     candidate_version="", candidate_hash="", reason="")
                 return execute_creation_command(ctx.app_settings, arguments,
                     request_input={"version": "creation-request.v1", "brief": brief.content, **intent},
@@ -1125,7 +1126,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 )
             principal = build_trusted_principal_resolver().resolve_api_principal()
             reviewed = composition.formation.review_candidates(formation_run_id, principal=principal)
-            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") in {"formation-generation.v5", "formation-generation.v6"}:
                 from novel_forge.modules.book_authority.creation_runtime import creation_status
                 reviewed["creation"] = creation_status(composition.authority.database_url, project_id=reviewed["project_id"],
                     formation_run_id=formation_run_id, principal=principal)
@@ -1168,7 +1169,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 claimed_actor_id=request.actor_id
             )
             run = composition.formation.require(formation_run_id)
-            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") in {"formation-generation.v5", "formation-generation.v6"}:
                 from novel_forge.modules.book_authority.creation_runtime import schedule_creation_jobs, creation_status, creation_recovery_record
                 principal.require("book.authority.execute", run["project_id"])
                 composition.formation.require_continuation_live(formation_run_id)
@@ -1238,7 +1239,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             principal = build_trusted_principal_resolver().resolve_api_principal(
                 claimed_actor_id=request.actor_id
             )
-            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+            if (composition.formation.frozen_input(formation_run_id).generation_policy or {}).get("contract_version") in {"formation-generation.v5", "formation-generation.v6"}:
                 from novel_forge.modules.book_authority.creation_runtime import reconcile_creation_cancellation, creation_status
                 run = composition.formation.require(formation_run_id)
                 if request.expected_version > run["version"]:

@@ -127,6 +127,33 @@ class ChapterGroupAuthorityDomainTests(unittest.TestCase):
                 principal=principal,
             )
 
+    def test_replan_retirement_requires_exact_approved_impact_without_stale_draft_input(self):
+        authority = object.__new__(PostgresChapterGroupAuthority)
+        authority.database_url = "unused"
+        group = {"group_run_id": "group", "project_id": "project", "book_run_id": "book-run",
+                 "group_plan_version_id": "old", "active_chapter_request_id": None,
+                 "state": "READY", "version": 4}
+        authority.require = lambda identity: dict(group)
+        steps, cancelled = [], []
+        authority._run_step = lambda value, **options: steps.append(options)
+        authority._request_root_cancellation = lambda value, **options: cancelled.append(options)
+        uow = MagicMock()
+        uow.__enter__.return_value = uow
+        principal = SimpleNamespace(require=lambda *args: None)
+        with patch("novel_forge.modules.chapter_group_authority.application.AuthorityUnitOfWork", return_value=uow):
+            uow.cursor.fetchone.return_value = None
+            with self.assertRaisesRegex(KernelError, "CHAPTER_GROUP_REPLAN_IMPACT_REQUIRED"):
+                authority.supersede_for_approved_replan("group", replan_id="replan", target_group_plan_version_id="old", principal=principal)
+            self.assertEqual(steps, [])
+            self.assertEqual(cancelled, [])
+            uow.cursor.fetchone.return_value = ("impact", "proposal", "approval", "activation")
+            authority.supersede_for_approved_replan("group", replan_id="replan", target_group_plan_version_id="old", principal=principal)
+        self.assertEqual(steps[0]["input_assets"], ())
+        self.assertEqual(steps[0]["payload"]["plan_change_impact_id"], "impact")
+        self.assertEqual(steps[0]["payload"]["retired_group_plan_version_id"], "old")
+        self.assertEqual(len(cancelled), 1)
+        uow.repositories.chapter_group.set_state.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

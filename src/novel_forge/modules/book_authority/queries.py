@@ -119,7 +119,7 @@ class PostgresBookProductionQuery:
             ) SELECT run.formation_run_id,run.frozen_input_digest,
                 run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}'
                 FROM authority_story_formation_run run
-                WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}'='formation-generation.v5'
+                WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v6')
                   AND (run.formation_run_id IN (SELECT subject_id FROM subjects) OR EXISTS(SELECT 1 FROM authority_book_opening_run opening
                         WHERE opening.opening_run_id IN (SELECT subject_id FROM subjects) AND opening.project_id=run.project_id
                           AND opening.stable_idempotency_key=run.formation_run_id || ':opening')

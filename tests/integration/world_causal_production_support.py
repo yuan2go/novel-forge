@@ -497,6 +497,16 @@ class AutonomousWorldTransport:
                 if raw["state_kind"] in {"world_state", "resource_state"} and not raw["epistemic_basis"]:
                     raw["action_mode"] = "ROUTINE"
                     transition["payload_json"] = json.dumps(raw)
+                elif raw["state_kind"] == "disclosure_event" and raw["changes"].get("audience") == "READER":
+                    source = next(entry for entry in inputs["world_preparation"]["context_projection"]["selection"]
+                                  if entry["source_event_id"] == raw["changes"]["fact_id"])
+                    field = next(field for field in source["state"] if field != "fact_origin")
+                    raw["action_mode"] = "PERCEPTION"
+                    raw["state_kind"], raw["entity_key"] = source["state_kind"], source["entity_key"]
+                    raw["changes"] = {"public_notice_displayed": True}
+                    raw["requirements"] = [{"requirement_id": "available-disclosure-source", "state_kind": source["state_kind"],
+                        "entity_key": source["entity_key"], "field": field, "operator": "EQUALS", "value": source["state"][field]}]
+                    transition["payload_json"] = json.dumps(raw)
         self.calls[-1]["output"] = result
         return result
 

@@ -2168,6 +2168,7 @@ def build_book_production_composition(
             commit_sha=authority.commit_sha,
             generation=FormationGeneration(
                 planning,
+                narrative_search=narrative_search,
                 book_design=build_book_design_authority_application(
                     settings, execution=execution, env=values
                 ),

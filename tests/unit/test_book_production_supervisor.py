@@ -217,7 +217,7 @@ def test_supervisor_reports_planning_generation_operation_identity(
     )
     supervisor._checkpoint_if_needed = lambda _book: None
     supervisor._active_group_run = lambda _book, *_args: (
-        {"group_run_id": "group-run:1", "state": "RUNNING"}
+        {"group_run_id": "group-run:1", "state": "RUNNING", "group_plan_version_id": "chapter-group:v1"}
         if generated_contract == "CHAPTER"
         else None
     )

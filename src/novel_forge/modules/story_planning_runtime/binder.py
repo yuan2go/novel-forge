@@ -439,6 +439,7 @@ class CapabilityPackBackedPlanningExecutionBinder:
             validate_raw_result(
                 command.generator_operation_name,
                 execution.raw_output,
+                narrative_search=bool(command.narrative_search_id),
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
                 compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"} else None,

@@ -154,3 +154,22 @@ def test_admitted_runtime_continuation_retains_frozen_pack_after_activation_chan
     monkeypatch.setattr(runtime, "resolve_target", lambda *_: {"pack": "new"})
     with pytest.raises(KernelError, match="PLANNING_RUNTIME_CONTINUATION_RUNTIME_DRIFT"):
         runtime.require_successor(application, command)
+
+
+def test_foundation_search_projection_is_optional_and_bound_through_raw_and_host_validation():
+    from novel_forge.modules.story_planning_runtime.foundation_generation import foundation_output_schema
+    from novel_forge.modules.story_planning_runtime.result_recovery import validate_raw_result
+    from tests.integration.synthesis_production_support import SynthesisTransport
+    from tests.unit.test_narrative_search_branch_registration import _projection
+    generator = "creative.candidates.generate"
+    raw = SynthesisTransport().planning(generator, {"foundation_task": {"contract_version": "foundation-generation.v3"}})
+    raw["narrative_search_projection"] = _projection("character-motivation", 0.8)
+    assert "narrative_search_projection" not in foundation_output_schema(generator)["properties"]
+    normalized = validate_raw_result(generator, raw, work_requirements=True, aligned_methods=True, narrative_search=True)
+    payload = {**normalized, "foundation_parent_bindings": {}, "constraint_envelope": {
+        "contract_version": "foundation-generation.v3", "foundation_parent_bindings": {}, "narrative_search": {"search_id": "native-search"}}}
+    validate_foundation_payload(generator, {"candidate_payload": payload})
+    with pytest.raises(KernelError, match="OUTPUT_SCHEMA_INVALID"):
+        validate_raw_result(generator, raw, work_requirements=True, aligned_methods=True)
+    with pytest.raises(ValueError, match="direction selection"):
+        foundation_output_schema("character.cast.generate", narrative_search=True)

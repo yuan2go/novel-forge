@@ -1,0 +1,59 @@
+{
+  "schema_version": "wp-novel-production-closure-01.focused-evidence.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tested_parent_sha": "a9e39b0fdc2457bf59bddb198b8563b5c20e8d35",
+  "implementation_tree_sha": "sha256:6d46a62aebeaf6b2f3f5b11673b39f7c55accb3245b6edfaee9cb03850839b98",
+  "evidence_state": "EXECUTABLE",
+  "checks": [
+    {
+      "check": "focused Foundation, Creation, Group and realization contracts",
+      "result": "PASS",
+      "tests": 92,
+      "private_evidence": "unit-483.log"
+    },
+    {
+      "check": "native PostgreSQL automatic direction comparison and Formation activation",
+      "result": "PASS",
+      "tests": 1,
+      "private_evidence": "controlled-cli-484.log",
+      "provider": "CONTROLLED",
+      "selected_branch": "future-2",
+      "literary_superiority": "NOT_PROVEN"
+    },
+    {
+      "check": "original Book restored-copy Group retirement and next Chapter contract admission",
+      "result": "PASS",
+      "private_evidence": "chapter-slice-preflight-483.log",
+      "provider_dispatch": "FORBIDDEN",
+      "accepted_cursor": 1
+    },
+    {
+      "check": "two-Chapter controlled complete author chain",
+      "result": "FAIL",
+      "private_evidence": "controlled-cli-482.log",
+      "cause": "legacy fixture reader disclosure incompatible with current World agency; subsequent fixture correction pending rerun"
+    }
+  ],
+  "contracts": {
+    "formation": "formation-generation.v6",
+    "comparison": "narrative-search-comparison.v2",
+    "migration": "20261007_0167_foundation_direction_search",
+    "realization": "host exact ordered Chapter projection; original event-local labels retained",
+    "group_retirement": "same-run ACTIVE approved PlanChange exact IMPACTED/STALE Group proof; no active child; original cursor retained"
+  },
+  "original_real_book": {
+    "book_id": "closure-original-book",
+    "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "accepted_chapters": 1,
+    "target_chapters": 12,
+    "remaining_production": "NOT_RUN_AFTER_THIS_FIX",
+    "served_model_identity": "UNKNOWN",
+    "literary_quality": "NOT_PROVEN"
+  },
+  "fixture_compatibility": {
+    "controlled_sample_minimum": 300,
+    "controlled_sample_length": 360,
+    "original_real_book_minimum": 1200,
+    "scope": "controlled sample contract only; objective length gate and real Book scope unchanged"
+  }
+}

@@ -117,11 +117,22 @@ else:
         else:
             result = transport.chapter(stage, inputs) if stage not in {"agent_session", "retrieval", "retrieval_query_expansion"} else default_chapter_fixture_response(stage, inputs)
         if stage.startswith("quality_"):
+            spans = inputs.get("source_span_table", {}).get("spans", [])
+            contracts = payload.output_schema["properties"]["dimensions"]["items"].get("anyOf", [])
             for dimension in result.get("dimensions", []):
+                contract = next((contract for contract in contracts if contract["properties"]["dimension"].get("const") == dimension["dimension"]), None)
+                if contract and contract["properties"]["score"].get("type") == "null":
+                    dimension["gate_status"] = contract["properties"]["gate_status"]["enum"][0]
+                    dimension["score"] = None
+                    dimension["evidence_locations"] = []
                 for location in dimension.get("evidence_locations", []):
-                    quote = inputs["revision"]["text"][location["start"]:location["end"]]
+                    start, end = location["start"], location["end"]
+                    span = min((span for span in spans if span["start"] <= start and end <= span["end"]),
+                               key=lambda span: span["end"] - span["start"], default=None)
+                    if span is None:
+                        raise AssertionError("Controlled observation lacks an exact supplied source span")
                     location.clear()
-                    location["quote"] = quote
+                    location["span_id"] = span["span_id"]
                     location["claim"] = "Controlled fixture observation: " + dimension["dimension"]
         if stage == "canon_extraction":
             for fact in result["canon_facts"]:
@@ -131,9 +142,18 @@ else:
                 for evidence in realization.get("accepted_prose_evidence", []):
                     evidence["quote"] = inputs["revision"]["text"][:100]
             def nullable(schema):
+                schema = resolve_schema(schema)
                 kind = schema.get("type", [])
                 return "null" in (kind if isinstance(kind, list) else [kind]) or any(nullable(child) for child in schema.get("anyOf", []))
+            def resolve_schema(contract):
+                if contract.get("$ref", "").startswith("#/"):
+                    node = schema
+                    for part in contract["$ref"][2:].split("/"):
+                        node = node[part]
+                    return node
+                return contract
             def project_schema(value, schema):
+                schema = resolve_schema(schema)
                 if isinstance(value, dict):
                     properties = schema.get("properties", {})
                     if schema.get("additionalProperties") is False:
@@ -145,7 +165,37 @@ else:
                 if isinstance(value, list):
                     return [project_schema(item, schema.get("items", {})) for item in value]
                 return value
-            result = project_schema(result, payload.output_schema)
+            schema = payload.output_schema.get("x-host-payload-schema", payload.output_schema)
+            spans = inputs.get("source_span_table", {}).get("spans", [])
+            def select_spans(value, contract):
+                contract = resolve_schema(contract)
+                if isinstance(value, dict):
+                    fields = contract.get("properties", {})
+                    if "evidence_span_id" in fields:
+                        start, end = value.get("evidence_start"), value.get("evidence_end")
+                        selected = [span for span in spans if isinstance(start, int) and isinstance(end, int)
+                            and span["start"] <= start and span["end"] >= end]
+                        if selected:
+                            value["evidence_span_id"] = min(selected, key=lambda span: span["end"]-span["start"])["span_id"]
+                    if "span_id" in fields and value.get("quote"):
+                        selected = [span for span in spans if value["quote"] in span["quote"]]
+                        if selected:
+                            value["span_id"] = min(selected, key=lambda span: len(span["quote"]))["span_id"]
+                    for key, child in value.items():
+                        select_spans(child, fields.get(key, {}))
+                elif isinstance(value, list):
+                    for child in value:
+                        select_spans(child, contract.get("items", {}))
+            select_spans(result, schema)
+            result = project_schema(result, schema)
+            from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+            try:
+                validate_chapter_provider_output_against_schema(stage, schema, result)
+            except Exception as error:
+                (root / "fixture-validation-error.json").write_text(json.dumps({"stage": stage, "error": str(error)}, ensure_ascii=False))
+                raise
+            if "x-host-payload-schema" in payload.output_schema:
+                result = {"payload_json": json.dumps(result, ensure_ascii=False)}
         if stage in {"review", "rereview"}:
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):

@@ -456,6 +456,19 @@ class PostgresBookProductionSupervisor:
                 str(frozen["operation_id"]),
                 str(frozen["realization_id"]),
             )
+        previous_group = self._active_group_run(book)
+        if previous_group is not None and str(previous_group["group_plan_version_id"]) != str(group["asset_version_id"]):
+            replan = self.replan.latest_for_book(book_run_id)
+            if replan is None or replan["status"] not in {"ACTIVE", "REGENERATING", "RESUMED"}:
+                raise KernelError("CHAPTER_GROUP_REPLAN_IMPACT_REQUIRED", "a different active Group requires its approved Replan")
+            retired = self.chapter_groups.supersede_for_approved_replan(
+                str(previous_group["group_run_id"]),
+                replan_id=str(replan["replan_id"]),
+                target_group_plan_version_id=str(previous_group["group_plan_version_id"]),
+                principal=self.principal,
+            )
+            return self._result(book_run_id, before, SupervisorAction.RETIRE_SUPERSEDED_CHAPTER_GROUP,
+                                evidence_ref=str(retired["group_run_id"]))
         group_run = self._active_group_run(book, str(group["asset_version_id"]))
         if group_run is None:
             started = self.chapter_groups.start(

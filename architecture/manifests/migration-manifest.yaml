@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261007_0166_planning_arc_scope_revalidation",
+  "head": "20261007_0167_foundation_direction_search",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -169,6 +169,7 @@
     "20261007_0163_failed_step_successor",
     "20261007_0164_realization_comparison_uncertainty",
     "20261007_0165_planning_reference_contract_successor",
-    "20261007_0166_planning_arc_scope_revalidation"
+    "20261007_0166_planning_arc_scope_revalidation",
+    "20261007_0167_foundation_direction_search"
   ]
 }

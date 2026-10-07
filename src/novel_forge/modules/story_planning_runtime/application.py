@@ -299,6 +299,8 @@ class _PlanningGenerationHandler:
             work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
             aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
         )
+        if command.generator_operation_name in FOUNDATION_GENERATORS and command.narrative_search_id:
+            envelope["narrative_search"] = command.narrative_search_snapshot
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
             envelope["author_design_projection"] = author_projection

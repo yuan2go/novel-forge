@@ -2315,3 +2315,18 @@ A native pre-send capacity successor with zero content repairs retains its sourc
 lineage and single-call admission. Its source must have no external intent or
 reservation; it therefore does not masquerade as a consumed content repair.
 Contract-changing successors still require their settled result and exact diagnosis.
+
+Formation preauthorization requires a frozen bounded comparison rather than the
+first admitted direction. Formation v6 extends the existing Narrative Search
+source identity and decision to Creative Foundation, with stage and author
+goals retained, explicit uncertainty, and exact candidate hashes before activation.
+Original author-approved directions and historical first-admitted contracts retain
+their own selection evidence; they are not retroactively relabelled comparisons.
+
+Chapter execution consumes all ordered frozen realization events assigned to its
+chapter number. Event-local slice labels are preserved as source metadata; they
+cannot accidentally split a Chapter request. The host binds a deterministic chapter
+slice identity to the exact realization contract and ordered event roster. Existing
+one-label chapter bindings retain their historical identity.
+
+已批准的祖先计划变更若明确将旧 ChapterGroup 标为 IMPACTED/STALE，Book supervisor 在新的冻结组启动前调用原有 Group supersede 生命周期。退役绑定同作品、同 BookRun 的精确 PlanChange impact、批准与激活操作；存在活动 Chapter 时拒绝退役。旧计划身份保留在控制回执，失效计划不再作为生成输入；已接纳章节和 Book cursor 保持原生事实。

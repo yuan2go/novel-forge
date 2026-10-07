@@ -828,8 +828,48 @@ class PostgresChapterGroupAuthority:
                 "CHAPTER_GROUP_REPLAN_ACTIVE_CHILD",
                 "approved Replan cannot supersede a ChapterGroup with an active child",
             )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT impact.impact_id, proposal.proposal_id,
+                       proposal.approval_operation_id, proposal.activation_operation_id
+                FROM authority_book_replan replan
+                JOIN authority_plan_change_proposal proposal
+                  ON proposal.proposal_id=replan.plan_change_proposal_id
+                JOIN authority_plan_change_impact impact
+                  ON impact.proposal_id=proposal.proposal_id
+                JOIN story_plan_binding binding
+                  ON binding.project_id=impact.project_id
+                 AND binding.asset_version_id=impact.impacted_asset_version_id
+                WHERE replan.replan_id=%s AND replan.project_id=%s
+                  AND replan.book_run_id=%s AND proposal.status='ACTIVE'
+                  AND proposal.approval_operation_id IS NOT NULL
+                  AND proposal.activation_operation_id IS NOT NULL
+                  AND impact.impacted_asset_version_id=%s
+                  AND impact.target_freshness IN ('IMPACTED','STALE')
+                  AND binding.freshness IN ('IMPACTED','STALE')
+                  AND binding.execution_scope<>'EXECUTED'""",
+                [replan_id, group["project_id"], group["book_run_id"],
+                 target_group_plan_version_id],
+            )
+            impact = uow.cursor.fetchone()
+            if impact is None:
+                raise KernelError(
+                    "CHAPTER_GROUP_REPLAN_IMPACT_REQUIRED",
+                    "retirement requires this same-run approved PlanChange's exact Group impact",
+                )
         reason = f"superseded by approved Book Replan {replan_id}"
-        self._control_step(group, "supersede", reason, principal)
+        self._run_step(
+            group, definition="chapter_group.production.supersede",
+            suffix=f"version:{group['version']}:approved-impact:{impact[0]}",
+            ordinal=10000 + int(group["version"]),
+            payload={"reason": reason, "replan_id": replan_id,
+                     "retired_group_plan_version_id": target_group_plan_version_id,
+                     "plan_change_impact_id": str(impact[0]),
+                     "plan_change_proposal_id": str(impact[1]),
+                     "approval_operation_id": str(impact[2]),
+                     "activation_operation_id": str(impact[3])},
+            input_assets=(), principal=principal,
+        )
         self._request_root_cancellation(group, reason=reason, principal=principal)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.chapter_group.set_state(

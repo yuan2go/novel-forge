@@ -79,7 +79,7 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
     monkeypatch.setenv("NOVEL_FORGE_ROUTER_PROVIDERS", "codex-cli,deepseek")
     monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "missing-paid-template.json"))
     inputs = {"version": "creation-request.v1", "title": "Current author work", "target_chapters": 1 if full_creation else 17,
-        "chapter_length": {"minimum": 800, "maximum": 4000},
+        "chapter_length": {"minimum": 300, "maximum": 4000},
         "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist confronts contradictory accounts of a flood.",
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve the author's intended scope."],
@@ -175,6 +175,7 @@ def replace_args(args, **changes):
     "mode",
     [
         "complete",
+        "automatic-comparison",
         "partial-alternative",
         "cancel",
         "no-progress",
@@ -378,6 +379,10 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                 ]
         if stage == "creative.candidates.generate":
             creative_calls.append(stage)
+            if mode == "automatic-comparison":
+                from tests.unit.test_narrative_search_branch_registration import _projection
+                result["narrative_search_projection"] = _projection("direction-" + str(len(creative_calls)), 0.4 if len(creative_calls) == 1 else 0.9)
+                result["differentiation"] += " distinct causal option " + str(len(creative_calls))
             result["serialization_potential"] = None
             for declaration in result.get("applicability", []):
                 if declaration["field_path"] == "$.serialization_potential":
@@ -409,7 +414,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     inputs = {"version": "creation-request.v1", "title": "Durable original work", "target_chapters": 2 if mode == "complete" else 1,
-        "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+        "chapter_length": {"minimum": 300, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates conflicting flood accounts.",
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve cause and knowledge boundaries."],
             "source_boundaries": ["Original expression only."]}}
@@ -419,6 +424,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
         "--idempotency-key", "durable", "--repository-root", str(root)])
+    if mode == "automatic-comparison":
+        args.creative_selection = "AUTO_COMPARISON"
     settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="validation")
     first = run_creation_command(settings, args)
     identity = first["formation_run_id"]
@@ -505,6 +512,22 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         return
     current = claim()
     result = execute_creation_worker_claim(settings, current)
+    if mode == "automatic-comparison":
+        assert result["stop_reason"] in {"YIELDED_CHECKPOINT", "COMPLETED"}, result
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("""SELECT search.search_id, decision.selected_candidate_asset_version_id,decision.comparison
+                FROM authority_story_narrative_search search JOIN authority_story_narrative_search_decision decision USING(search_id)
+                WHERE search.project_id=%s AND search.generator_operation_name='creative.candidates.generate'""", [project])
+            decision = uow.cursor.fetchone()
+            assert decision and decision[2]["policy_version"] == "narrative-search-comparison.v2"
+            assert decision[2]["selection_evidence"]["literary_superiority"] == "NOT_PROVEN"
+            uow.cursor.execute("SELECT candidate_asset_version_id FROM authority_story_narrative_search_candidate WHERE search_id=%s AND branch_key='future-2'", [decision[0]])
+            assert decision[1] == uow.cursor.fetchone()[0]
+            uow.cursor.execute("SELECT binding FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage='CREATIVE_SEARCH'", [identity])
+            evidence = uow.cursor.fetchone()[0]
+            assert evidence["selected_asset_version_id"] == decision[1]
+        assert len(creative_calls) == 2
+        return
     assert result["wait_class"] == "AUTHOR_DECISION"
     assert len(transport.calls) == 2
     assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()

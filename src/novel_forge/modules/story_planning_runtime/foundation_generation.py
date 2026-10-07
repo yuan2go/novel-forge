@@ -139,9 +139,11 @@ def validate_foundation_applicability(
 
 
 def foundation_output_schema(
-    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True
+    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True, narrative_search: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
+    if narrative_search and role is not FoundationRole.CREATIVE_FOUNDATION:
+        raise ValueError("Foundation Search is limited to direction selection")
     properties: dict[str, Any] = {
         "objective": _text(),
         "constraints": _texts(),
@@ -239,6 +241,9 @@ def foundation_output_schema(
         )
     if work_requirements:
         _apply_work_schema(properties, role, provider_path_constraints=provider_path_constraints)
+    if narrative_search:
+        from .narrative_search import narrative_search_projection_schema
+        properties["narrative_search_projection"] = narrative_search_projection_schema()
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         **_object(properties),
@@ -354,7 +359,7 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
             world, ensure_ascii=False, separators=(",", ":")
         )
     work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3"}
-    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False)
+    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False, narrative_search=bool(envelope.get("narrative_search")))
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
         projection = frozen_author_projection({"constraint_envelope": envelope}, generator=generator, logical_key=str(content.get("logical_key") or ""))

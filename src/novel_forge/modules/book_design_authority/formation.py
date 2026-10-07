@@ -340,7 +340,7 @@ class StoryFormationApplication:
         run = self.require(formation_run_id)
         principal.require("book.authority.execute", str(run["project_id"]))
         principal.require("book.authority.query", str(run["project_id"]))
-        if (self._frozen_input(formation_run_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+        if (self._frozen_input(formation_run_id).generation_policy or {}).get("contract_version") in {"formation-generation.v5", "formation-generation.v6"}:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("SELECT 1 FROM authority_operation WHERE idempotency_scope='book:story-formation' AND idempotency_key=%s AND command_payload->>'formation_run_id'=%s", [idempotency_key,formation_run_id])
                 compatible = uow.cursor.fetchone()

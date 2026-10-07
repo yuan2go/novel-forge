@@ -738,6 +738,18 @@ no author-intent replacement or accepted-history mutation is authorized by this 
 Other replans retain the existing author decision workflow. Existing decisions replay their original
 comparison policy and remain immutable. A small model-score gap is uncertain evidence.
 
+To preauthorize direction selection, use `authority-creation start --creative-selection AUTO_COMPARISON`
+or select automatic comparison in the existing creation UI. Formation v6 freezes two
+to four strategy directives, the exact author brief, stage and length goals, and the
+work-scoped comparison policy. The request may supply `comparison_policy` with the
+existing Narrative Search v2 schema; the default balanced policy records a 0.05
+uncertainty margin and an authorized stable tie-break. All branches must be admitted;
+a sole survivor cannot be labelled an automatic comparison. The original worker
+continues after the native decision and activation, while retaining candidates,
+comparison hash, reasons and uncertainty. Migration 0167 permits only Creative
+Foundation at NOT_APPLICABLE Search scope, in addition to the existing typed scopes.
+It adds no qualification or author approval prerequisite.
+
 Historical Formation v4 freezes first-admitted selection. Repeating an existing v4/v5
 start validates the original work request and consumes its saved profiles, without
 installing new Packs or changing its selection policy. `--creative-selection FIRST_ADMITTED`

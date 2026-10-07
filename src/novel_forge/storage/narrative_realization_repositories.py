@@ -493,18 +493,23 @@ class NarrativeRealizationRepository:
             chapter_number=chapter_number,
         )
         slice_ids = {str(row[9]) for row in rows}
-        if len(slice_ids) != 1:
-            raise KernelError(
-                "REALIZATION_SLICE_INVALID",
-                "one Chapter may consume only one realization slice",
-            )
         events = [dict(row[11]) for row in rows]
+        slice_id = next(iter(slice_ids)) if len(slice_ids) == 1 else (
+            "realization-chapter-slice:"
+            + realization_hash({
+                "realization_id": identity[0],
+                "contract_digest": identity[1],
+                "chapter_number": chapter_number,
+                "event_ids": [str(row[10]) for row in rows],
+                "source_slice_ids": sorted(slice_ids),
+            }).split(":", 1)[1]
+        )
         return {
             "realization_id": str(rows[0][0]),
             "contract_digest": str(rows[0][1]),
             "chapter_group_plan_version_id": chapter_group_plan_version_id,
             "chapter_group_content_hash": str(rows[0][2]),
-            "slice_id": slice_ids.pop(),
+            "slice_id": slice_id,
             "chapter_number": chapter_number,
             "event_ids": [str(row[10]) for row in rows],
             "events": events,

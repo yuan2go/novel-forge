@@ -46,7 +46,7 @@ class PlanningResultValidationError(KernelError):
 
 
 def validate_raw_result(
-    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, narrative_search: bool = False
 ) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise KernelError(
@@ -73,6 +73,8 @@ def validate_raw_result(
             if key not in {"author_design_decisions", "knowledge_translations"}
         }
         envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
+        if narrative_search:
+            envelope["narrative_search"] = {"projection_required": True}
         if compiled_scope and generator == "world.design.generate":
             envelope["world_compilation"] = {"compiled_scope": compiled_scope}
         structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
@@ -278,6 +280,7 @@ def require_result_repair_source(
             validate_raw_result(
                 command.generator_operation_name,
                 raw,
+                narrative_search=bool(command.narrative_search_id),
                 work_requirements=command.execution_contract_version
                 in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},

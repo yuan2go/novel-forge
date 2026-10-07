@@ -94,7 +94,7 @@ class FormationLayerInput:
             or not self.selection_reason
         ):
             raise ValueError("Formation selection evidence is incomplete")
-        if self.selection_basis not in {"INDEPENDENT_COMPARISON", "AUTHOR_COMPARISON", "AUTHOR_DIRECTION", "TEMPLATE_VALIDATION", "AUTHOR_AVAILABLE_ALTERNATIVE"}:
+        if self.selection_basis not in {"INDEPENDENT_COMPARISON", "AUTHOR_COMPARISON", "AUTHOR_DIRECTION", "TEMPLATE_VALIDATION", "AUTHOR_AVAILABLE_ALTERNATIVE", "AUTO_COMPARISON"}:
             raise ValueError("Formation selection basis is undeclared")
         if self.role is FoundationRole.CREATIVE_FOUNDATION and self.selection_basis not in {"AUTHOR_DIRECTION", "AUTHOR_AVAILABLE_ALTERNATIVE"} and len(
             self.candidate_asset_version_ids
@@ -173,7 +173,7 @@ class StoryFormationInput:
                 "title",
             }
             contract_version = str(policy.get("contract_version") or "")
-            if contract_version in {"formation-generation.v4", "formation-generation.v5"}:
+            if contract_version in {"formation-generation.v4", "formation-generation.v5", "formation-generation.v6"}:
                 creation = policy.get("creation_input_policy")
                 if (not isinstance(creation, dict) or creation.get("contract_version") != "creation-input-policy.v1"
                         or not isinstance(creation.get("profiles"), dict)
@@ -184,6 +184,16 @@ class StoryFormationInput:
                 if policy.get("creative_selection") not in {"AUTHOR_COMPARISON", "AUTHOR_DIRECTION"} or policy.get("approval_mode") != "AUTO":
                     raise ValueError("Creation must freeze its author comparison boundary")
                 base_fields.add("creative_selection")
+            if contract_version == "formation-generation.v6":
+                from novel_forge.modules.story_planning_runtime.narrative_search import validate_search_selection_policy
+                if policy.get("creative_selection") != "AUTO_COMPARISON" or policy.get("approval_mode") != "AUTO":
+                    raise ValueError("Automatic direction comparison requires explicit scoped preauthorization")
+                validate_search_selection_policy(policy.get("selection_policy"))
+                directives = policy.get("strategy_directives")
+                if (not isinstance(directives, list) or len(directives) != policy.get("creative_candidates")
+                        or any(not isinstance(value, str) or not value.strip() for value in directives) or len(set(directives)) != len(directives)):
+                    raise ValueError("Automatic comparison requires exact distinct bounded strategies")
+                base_fields.update({"creative_selection", "selection_policy", "strategy_directives"})
             author_direction = contract_version == "formation-generation.v5" and policy.get("creative_selection") == "AUTHOR_DIRECTION"
             if contract_version == "formation-generation.v3" or author_direction:
                 selected = policy.get("author_creative_foundation")
@@ -194,14 +204,14 @@ class StoryFormationInput:
                 base_fields.add("author_creative_foundation")
             expected_fields = (
                 base_fields | {"auto_authorization"}
-                if contract_version in {"formation-generation.v2", "formation-generation.v4", "formation-generation.v5"}
+                if contract_version in {"formation-generation.v2", "formation-generation.v4", "formation-generation.v5", "formation-generation.v6"}
                 and policy.get("approval_mode") == "AUTO"
                 else base_fields
             )
             if (
                 set(policy) != expected_fields
                 or contract_version
-                not in {"formation-generation.v1", "formation-generation.v2", "formation-generation.v3", "formation-generation.v4", "formation-generation.v5"}
+                not in {"formation-generation.v1", "formation-generation.v2", "formation-generation.v3", "formation-generation.v4", "formation-generation.v5", "formation-generation.v6"}
                 or policy["approval_mode"] not in {"AUTO", "REVIEW_PLAN"}
                 or not isinstance(policy["creative_candidates"], int)
                 or isinstance(policy["creative_candidates"], bool)
@@ -281,7 +291,7 @@ class StoryFormationInput:
         policy = dict(self.generation_policy or {})
         if policy.get("approval_mode") != "AUTO":
             return
-        if policy.get("contract_version") not in {"formation-generation.v2", "formation-generation.v4", "formation-generation.v5"}:
+        if policy.get("contract_version") not in {"formation-generation.v2", "formation-generation.v4", "formation-generation.v5", "formation-generation.v6"}:
             raise ValueError(
                 "AUTO Formation requires a frozen scoped authorization contract"
             )

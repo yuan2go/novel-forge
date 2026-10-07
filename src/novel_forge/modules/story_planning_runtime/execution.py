@@ -2856,7 +2856,7 @@ def planning_provider_output_schema(
                 "items": _strict_object(
                     {
                         "event_id": string,
-                        "slice_id": string,
+                        "slice_id": {"type": "string", "minLength": 1, "description": "Local event grouping label. The host binds the complete ordered event set for each chapter to one immutable Chapter slice; this label does not create a separate Chapter request."},
                         "chapter_number": (
                             {"type": "integer", "enum": exact_group_chapters}
                             if exact_group_chapters
@@ -4314,6 +4314,7 @@ class PostgresPlanningExecutionPreparer:
         output_schema = (
             foundation_output_schema(
                 command.generator_operation_name,
+                narrative_search=bool(command.narrative_search_id),
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
             )
             if command.generator_operation_name in FOUNDATION_GENERATORS

@@ -375,3 +375,32 @@ def test_accepted_realization_evidence_detects_material_causal_drift() -> None:
         "KNOWLEDGE_BOUNDARY_DRIFT",
         "STATE_DELTA_DRIFT",
     }
+
+
+@pytest.mark.parametrize("labels", [("chapter-2", "chapter-2"), ("observation", "conversation")])
+def test_chapter_projection_preserves_all_frozen_events_with_one_host_identity(labels):
+    from unittest.mock import Mock
+    from novel_forge.storage.narrative_realization_repositories import NarrativeRealizationRepository
+    cursor = Mock()
+    prefix = ("realization", "sha256:contract", "sha256:group", "sha256:foundation", 1, "sha256:arcs", "proof", "sha256:proof", "FROZEN")
+    rows = [(*prefix, label, f"event-{number}", {"event_id": f"event-{number}", "slice_id": label, "chapter_number": 2}, "sha256:event")
+            for number, label in enumerate(labels)]
+    cursor.fetchall.return_value = rows
+    repository = NarrativeRealizationRepository(cursor)
+    repository._require_current_evidence = Mock()
+    frozen = deepcopy(rows)
+    def projection():
+        return repository.require_current_for_chapter(project_id="project", book_id="book", chapter_group_plan_version_id="group", chapter_number=2)
+    value = projection()
+    assert value["event_ids"] == ["event-0", "event-1"]
+    assert value["events"] == [row[11] for row in rows] and rows == frozen
+    assert projection() == value
+    if len(set(labels)) == 1:
+        assert value["slice_id"] == labels[0]
+    else:
+        assert value["slice_id"].startswith("realization-chapter-slice:")
+        cursor.fetchall.return_value = list(reversed(rows))
+        assert projection()["slice_id"] != value["slice_id"]
+    cursor.fetchall.return_value = [rows[0], (*("foreign-realization", *prefix[1:]), *rows[1][9:])]
+    with pytest.raises(KernelError, match="MIXED_LINEAGE"):
+        projection()
