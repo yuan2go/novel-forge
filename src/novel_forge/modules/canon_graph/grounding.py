@@ -155,6 +155,7 @@ def extract_grounded_candidates(
         "schema:chapter-provider-output:canon_extraction:v22",
         "schema:chapter-provider-output:canon_extraction:v23",
         "schema:chapter-provider-output:canon_extraction:v24",
+        "schema:chapter-provider-output:canon_extraction:v25",
     }
     if "facts" in source:
         if "canon_facts" in source:

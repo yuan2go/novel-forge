@@ -2085,7 +2085,10 @@ and paragraph spans once. Provider output selects text-hash-bound span identitie
 host binds quotes and Unicode locations. Matching evidence still requires independent
 semantic support review. The current Observer input includes the selected on-camera
 transition's agency classification and causal constraints, without treating a plan as
-an occurrence. Historical quote contracts retain their original validation.
+an occurrence. Historical quote contracts retain their original validation. The current span Schema
+shares its exact allowed identities through local `$defs` references; this preserves
+all evidence choices while avoiding repeated enums in the rendered request. Full
+request admission still enforces the authorized model capacity.
 
 A corrected failed-step contract can append one `kernel-corrected-contract-window.v1`
 continuation in the immutable Saga successor record. It preserves the prior Root

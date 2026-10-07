@@ -27,9 +27,12 @@ def source_spans(text: str) -> dict:
     }
 
 
-def span_output_schema(schema: dict, table: dict) -> dict:
+def span_output_schema(schema: dict, table: dict, *, compact: bool = False) -> dict:
     result = deepcopy(schema)
     identity = {"type": "string", "enum": [s["span_id"] for s in table["spans"]]}
+    if compact:
+        result["$defs"] = {"candidateEvidenceSpan": identity}
+        identity = {"$ref": "#/$defs/candidateEvidenceSpan"}
     for array in result["properties"].values():
         if array.get("type") != "array":
             continue
@@ -49,6 +52,44 @@ def span_output_schema(schema: dict, table: dict) -> dict:
             location["properties"].pop("quote")
             location["properties"]["span_id"] = deepcopy(identity)
             location["required"] = ["span_id" if k == "quote" else k for k in location["required"]]
+    return _share_schema_nodes(result) if compact else result
+
+
+def _share_schema_nodes(schema):
+    from collections import Counter
+    counts = Counter()
+    def children(node):
+        yield from node.get("properties", {}).values()
+        if isinstance(node.get("items"), dict):
+            yield node["items"]
+        for key in ("anyOf", "oneOf", "allOf"):
+            yield from node.get(key, [])
+    def signature(node):
+        return json.dumps(node, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    def count(node):
+        counts[signature(node)] += 1
+        for child in children(node):
+            count(child)
+    for child in children(schema):
+        count(child)
+    names = {key: f"sharedSchema{index}" for index, key in enumerate(sorted(key for key, count in counts.items() if count > 1 and len(key) >= 120))}
+    definitions = deepcopy(schema.get("$defs", {}))
+    def project(node, *, define=False):
+        key = signature(node)
+        if key in names and not define:
+            return {"$ref": "#/$defs/" + names[key]}
+        result = deepcopy(node)
+        if "properties" in node:
+            result["properties"] = {name: project(value) for name, value in node["properties"].items()}
+        if isinstance(node.get("items"), dict):
+            result["items"] = project(node["items"])
+        for name in ("anyOf", "oneOf", "allOf"):
+            if name in node:
+                result[name] = [project(value) for value in node[name]]
+        return result
+    result = project(schema, define=True)
+    definitions.update({name: project(json.loads(key), define=True) for key, name in names.items()})
+    result["$defs"] = definitions
     return result
 
 

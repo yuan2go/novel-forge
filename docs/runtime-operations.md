@@ -3111,3 +3111,8 @@ never by editing a terminal task or increasing a paid limit. The focused matrix 
 `tests/unit/test_canon_source_spans.py` and
 `tests/integration/test_failed_step_successor_postgres.py`, alongside existing Canon
 grounding, world reconciliation, Pack binding and Kernel graph tests.
+
+A recorded source-span request rejected before dispatch for exact context capacity
+can receive a same-Saga compact-Schema successor after verifying its routing evidence,
+zero effects and unchanged candidate/context. Preserve the refused contract outputs and
+Attempts. This successor does not renew the execution window or relax capacity.

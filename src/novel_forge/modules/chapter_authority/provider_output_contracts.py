@@ -1104,7 +1104,7 @@ def validate_chapter_provider_output_semantics(
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
-    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24"))
+    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25"))
     if stage == "canon_extraction":
         if output_schema_ref:
             if output_schema_ref not in {
@@ -1115,13 +1115,14 @@ def validate_chapter_provider_output_semantics(
                 "schema:chapter-provider-output:canon_extraction:v22",
                 "schema:chapter-provider-output:canon_extraction:v23",
                 "schema:chapter-provider-output:canon_extraction:v24",
+                "schema:chapter-provider-output:canon_extraction:v25",
             }:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED",
                     "unknown frozen Canon output contract",
                 )
             host_bind_known_metadata = output_schema_ref.endswith(
-                (":v20", ":v21", ":v22", ":v23", ":v24")
+                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25")
             )
         original_realization = {item.get("planned_event_id"): item for item in normalized.get("realization_evidence", [])}
         normalized = _without_null_object_properties(normalized)
@@ -1374,13 +1375,26 @@ def _validate(
     *,
     path: str,
     enforce_dialect: bool = False,
+    root_schema: dict[str, Any] | None = None,
+    reference_chain: tuple[str, ...] = (),
 ) -> None:
+    if root_schema is None:
+        root_schema = schema
     if enforce_dialect and schema.get("$schema") != _SCHEMA_DIALECT:
         raise ValueError("unsupported JSON Schema dialect")
+    if "$ref" in schema:
+        reference = schema["$ref"]
+        if (not isinstance(reference, str) or not re.fullmatch(r"#/\$defs/[A-Za-z][A-Za-z0-9_-]*", reference)
+            or reference in reference_chain or len(reference_chain) >= 16):
+            raise ValueError(f"{path} uses an unsupported or cyclic Schema reference")
+        target = root_schema.get("$defs", {}).get(reference.rsplit("/", 1)[1])
+        if not isinstance(target, dict):
+            raise ValueError(f"{path} references a missing local Schema definition")
+        _validate(target, value, path=path, root_schema=root_schema, reference_chain=(*reference_chain, reference))
     if "anyOf" in schema:
         for choice in schema["anyOf"]:
             try:
-                _validate(choice, value, path=path)
+                _validate(choice, value, path=path, root_schema=root_schema, reference_chain=reference_chain)
                 break
             except ValueError:
                 continue
@@ -1394,7 +1408,7 @@ def _validate(
         concrete = tuple(item for item in allowed if item != "null")
         if len(concrete) != 1:
             raise ValueError(f"{path} uses unsupported schema type union {expected}")
-        _validate({**schema, "type": concrete[0]}, value, path=path)
+        _validate({**schema, "type": concrete[0]}, value, path=path, root_schema=root_schema, reference_chain=reference_chain)
         return
     if expected == "object":
         if not isinstance(value, dict):
@@ -1413,7 +1427,7 @@ def _validate(
                 raise ValueError(f"{path}.{unexpected[0]} is not allowed")
         for key, child in properties.items():
             if key in value:
-                _validate(child, value[key], path=f"{path}.{key}")
+                _validate(child, value[key], path=f"{path}.{key}", root_schema=root_schema, reference_chain=reference_chain)
     elif expected == "array":
         if not isinstance(value, list):
             raise ValueError(f"{path} must be an array")
@@ -1426,7 +1440,7 @@ def _validate(
         item_schema = schema.get("items")
         if isinstance(item_schema, dict):
             for index, item in enumerate(value):
-                _validate(item_schema, item, path=f"{path}[{index}]")
+                _validate(item_schema, item, path=f"{path}[{index}]", root_schema=root_schema, reference_chain=reference_chain)
     elif expected == "string":
         if not isinstance(value, str):
             raise ValueError(f"{path} must be a string")

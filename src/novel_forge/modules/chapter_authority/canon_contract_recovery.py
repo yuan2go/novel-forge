@@ -30,7 +30,8 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
             AND o.definition_name='chapter.canon.extract'
             AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_INVALID')
-              OR (o.definition_version='3.9.1' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED'))""",
+              OR (o.definition_version='3.9.1' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED')
+              OR (o.definition_version='3.9.2' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED'))""",
             [request["chapter_root_operation_id"], book["project_id"]])
         row = u.cursor.fetchone()
         if not row:
@@ -38,7 +39,15 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         source = row[0]
         u.cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'", [source["operation_id"]])
         effects = u.cursor.fetchall()
-        predispatch = source["definition_version"] == "3.9.1"
+        predispatch = source["definition_version"] in {"3.9.1", "3.9.2"}
+        capacity_evidence = []
+        if source["definition_version"] == "3.9.2":
+            u.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+                JOIN authority_asset a USING(asset_id) JOIN authority_asset_version v ON v.asset_version_id=o.asset_version_id
+                WHERE o.operation_id=%s AND a.asset_type='routing_decision' AND o.role='routing_evidence'""", [source["operation_id"]])
+            capacity_evidence = [row[0] for row in u.cursor.fetchall()]
+            if not capacity_evidence or not all(capacity_rejection(row, source["operation_id"]) for row in capacity_evidence):
+                return False
         previous_evidence = None
         if predispatch:
             u.cursor.execute("SELECT policy_evidence,source_failure_snapshot FROM authority_saga_step_successor WHERE successor_operation_id=%s", [source["operation_id"]])
@@ -66,7 +75,8 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         "source_request_hash": previous_evidence["source_request_hash"] if predispatch else effects[0][1],
         "repair_diagnostics": diagnostics, "completion_checks": "UNCHANGED",
         "source_candidate_asset_version_id": revision.asset_version_id,
-        "source_candidate_content_hash": revision.content_hash}
+        "source_candidate_content_hash": revision.content_hash,
+        **({"capacity_rejection_decision_ids": [row["decision_id"] for row in capacity_evidence]} if capacity_evidence else {})}
 
     def guard(u):
         u.cursor.execute("SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book_run_id])
@@ -75,10 +85,10 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
             raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload the original Book frontier and authorization")
 
-    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.2",
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.3",
         context=AdmissionContext(principal.principal_id, principal.permissions,
             authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
-        policy_evidence=evidence, expected_failure_code="CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED" if predispatch else "CANON_GROUNDING_INVALID", transaction_guard=guard,
+        policy_evidence=evidence, expected_failure_code=("PROVIDER_ROUTING_BLOCKED" if capacity_evidence else "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED" if predispatch else "CANON_GROUNDING_INVALID"), transaction_guard=guard,
         known_receipt_effects=tuple(effects),
         window_successor=None if predispatch else {"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_evidence_span", "policy_value": "literal-source-spans.v1"})
     return True
@@ -91,3 +101,16 @@ def repair_diagnostics(request):
         u.cursor.execute("SELECT policy_evidence FROM authority_saga_step_successor WHERE successor_operation_id=%s AND project_id=%s", [request.operation_id, request.project_id])
         row = u.cursor.fetchone()
     return row[0].get("repair_diagnostics", []) if row and row[0].get("contract_version") == CONTRACT else []
+
+
+def capacity_rejection(decision, operation_id):
+    task = decision.get("task") or {}
+    candidates = decision.get("candidates") or []
+    return bool(decision.get("status") == "BLOCKED" and decision.get("selected") is None
+        and task.get("operation_id") == operation_id and task.get("task_type") == "canon_extraction"
+        and candidates and all(
+            "CONTEXT_CAPACITY_EXCEEDED" in row.get("rejected_reasons", [])
+            and set(row["rejected_reasons"]) <= {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
+            and task.get("input_tokens", 0) + task.get("output_tokens", 0) > row["candidate"].get("context_limit", 0)
+            and (task.get("producer_contract") or {}).get("output_schema", {}).get("ref") == "schema:chapter-provider-output:canon_extraction:v24"
+            for row in candidates))

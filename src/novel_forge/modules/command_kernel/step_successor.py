@@ -155,6 +155,8 @@ def replace_failed_step(
             [predecessor_id] * 4,
         )
         external, output, dependent, live_lease = cursor.fetchone()
+        if output:
+            output = has_domain_outputs(cursor, predecessor_id)
         if known_receipt_effects:
             cursor.execute(
                 "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",

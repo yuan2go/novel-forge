@@ -232,7 +232,7 @@ def test_current_contract_binds_prose_payoff_identity_after_semantic_extraction(
     assert accepted["grounded_claim_id"] == bound["grounded_claim_id"]
 
 
-@pytest.mark.parametrize("version", ["v18", "v19", "v25", "v200", "v210", "v22:unknown", ""])
+@pytest.mark.parametrize("version", ["v18", "v19", "v26", "v200", "v210", "v22:unknown", ""])
 def test_other_canon_contracts_do_not_acquire_null_payoff_binding(version):
     text = "她归还了借来的钱。"
     schema_ref = "schema:chapter-provider-output:canon_extraction:" + version if version else ""

@@ -71,3 +71,58 @@ def test_current_scoped_review_does_not_turn_low_score_into_forced_revision(sche
     result = normalize_model_output("review", {"score": 60, "issues": [], "knowledge_checks": []}, output_schema_ref=schema_ref)
     assert result["decision"] == "PASSED"
     assert result["review_decision_contract"] == "work-review-decision.v1"
+
+
+def test_compact_schema_shares_exact_identity_enum_with_native_validation():
+    import json
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    table = source_spans("周澄看见名字。\n🚪门关上了。")
+    legacy, _ = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": {"source_span_table": table}}, prompt_contract_version="v9")
+    compact, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": {"source_span_table": table, "source_span_schema_contract": "local-evidence-ref.v1"}}, prompt_contract_version="v9")
+    assert ref.endswith(":v25")
+    assert len(json.dumps(compact)) < len(json.dumps(legacy))
+    def expand(node):
+        if isinstance(node, list):
+            return [expand(value) for value in node]
+        if not isinstance(node, dict):
+            return node
+        if "$ref" in node:
+            return expand(compact["$defs"][node["$ref"].rsplit("/", 1)[1]])
+        return {key: expand(value) for key, value in node.items() if key != "$defs"}
+    assert expand(compact) == legacy
+    projected = codex_output_schema(compact)
+    assert projected["$defs"]["candidateEvidenceSpan"]["enum"] == [s["span_id"] for s in table["spans"]]
+    field = compact["properties"]["canon_facts"]["items"]["properties"]["evidence_span_id"]
+    _validate(field, table["spans"][0]["span_id"], path="$", root_schema=compact)
+    for invalid in ("foreign-span", None, 1):
+        with pytest.raises(ValueError):
+            _validate(field, invalid, path="$", root_schema=compact)
+    value = {key: [] for key, field in legacy["properties"].items() if field.get("type") == "array"}
+    value.update(extraction_status="NO_CHANGE", no_change_reason="Nothing happened.")
+    validate_chapter_provider_output_against_schema("canon_extraction", compact, value)
+
+
+@pytest.mark.parametrize("schema", [
+    {"$ref": "https://example.com/schema"},
+    {"$ref": "#/$defs/missing"},
+    {"$ref": "#/$defs/cycle", "$defs": {"cycle": {"$ref": "#/$defs/cycle"}}},
+])
+def test_native_schema_rejects_external_missing_and_cyclic_references(schema):
+    with pytest.raises(KernelError):
+        validate_chapter_provider_output_against_schema("canon_extraction", schema, "value")
+
+
+def test_capacity_successor_does_not_admit_other_routing_blocks():
+    from novel_forge.modules.chapter_authority.canon_contract_recovery import capacity_rejection
+    decision = {"status": "BLOCKED", "selected": None,
+        "task": {"operation_id": "op", "task_type": "canon_extraction", "input_tokens": 200, "output_tokens": 50,
+            "producer_contract": {"output_schema": {"ref": "schema:chapter-provider-output:canon_extraction:v24"}}},
+        "candidates": [{"candidate": {"context_limit": 240}, "rejected_reasons": ["CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"]}]}
+    assert capacity_rejection(decision, "op")
+    assert not capacity_rejection(decision, "other")
+    for reason in ("TEMPLATE_MODEL_UNAUTHORIZED", "PROVIDER_UNAVAILABLE", "QUALITY_FLOOR_NOT_MET"):
+        blocked = deepcopy(decision);blocked["candidates"][0]["rejected_reasons"].append(reason)
+        assert not capacity_rejection(blocked, "op")
