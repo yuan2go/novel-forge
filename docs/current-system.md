@@ -1239,6 +1239,10 @@ than enumerating every dependency path. Converging paths and cycles must termina
 without removing source, semantic-dimension or immutable-history checks. An immune
 edge stops its own route; a separately reachable mutable route retains its impact.
 Traversal depth is the shortest affected distance.
+Accepted-history immunity is resolved from committed Book acceptance and its exact
+output/prose versions, rather than inferred from generic state or Canon asset names.
+Recap revision proposals are immutable observations of that historical boundary,
+not accepted future events.
 An initial Book snapshot can precede Opening and therefore contain no ChapterGroup.
 Future regeneration resolves that group from the same Book Run's durable coordination
 window and accepted cursor. A binding removed by this proposal's recorded invalidation
