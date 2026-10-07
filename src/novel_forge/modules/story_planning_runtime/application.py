@@ -291,8 +291,8 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
         )
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
@@ -450,6 +450,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.16.0",
             "1.17.0",
             "1.18.0",
+            "1.20.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -540,6 +541,18 @@ class StoryPlanningGenerationApplication:
             return replay
         if continuation is not None:
             continuation = require_successor(self, command)
+        if not command.runtime_continuation_id and command.execution_contract_version=='1.19.0' and getattr(self.execution_binder,'resolver',None):
+            frozen_command=self.find_frozen_generation_command(project_id=command.project_id,idempotency_key=command.idempotency_key)
+            if frozen_command is None:
+                from .runtime_continuation import resolve_target
+                self._register_definitions(command.execution_contract_version)
+                try:resolve_target(self,command)
+                except KernelError as error:
+                    if error.code!='CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT':raise
+                    current=replace(command,execution_contract_version='1.20.0')
+                    self._register_definitions(current.execution_contract_version)
+                    resolve_target(self,current)
+                    command=current
         definition = GENERATOR_CATALOG[command.generator_operation_name]
         self._register_definitions(command.execution_contract_version)
         frozen_inputs = self._resolve_inputs(command)
@@ -1805,11 +1818,11 @@ class StoryPlanningGenerationApplication:
             if failure and (failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
                 failure[0] == 'PROVIDER_ROUTING_BLOCKED' and command.generator_operation_name in {'chapter_group_plan.generate','chapter_plan.generate'}
             ) or (
-                failure[0] == "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID" and command.execution_contract_version == "1.19.0"
+                failure[0] == "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID" and command.execution_contract_version in {"1.19.0", "1.20.0"}
             ) or (
                 failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.18.0" and agency_failure
             ) or (
-                failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.19.0" and host_failure
+                failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version in {"1.19.0", "1.20.0"} and host_failure
             ) or (
                 failure[0] == "PROGRAMMING_BUG" and failure[1] == "'frozen_source'" and command.repair_reason == "WORLD_HOST_REVALIDATION_SUCCESSOR"
             )):
@@ -1862,7 +1875,7 @@ class StoryPlanningGenerationApplication:
                     "1.16.0",
                     "1.17.0",
                     "1.18.0",
-            "1.19.0",
+            "1.19.0", "1.20.0",
                 }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
@@ -1894,6 +1907,18 @@ class StoryPlanningGenerationApplication:
                     state,
                     replayed=True,
                 )
+        if state['lifecycle']=='REJECTED' and command.runtime_continuation_id and command.execution_contract_version=='1.19.0':
+            from .runtime_continuation import require_binding,register,follow
+            target=require_binding(self.database_url,command.runtime_continuation_id)['target_runtime']
+            if target.get('planning_capacity',{}).get('context_revalidation'):
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute('SELECT version FROM authority_operation WHERE operation_id=%s',[row[0]])
+                    source_version=uow.cursor.fetchone()[0]
+                register(self,str(row[0]),project_id=command.project_id,principal=principal,expected_source_version=source_version,
+                    decision_evidence={'authorization_ref':'NATIVE_CONTINUOUS_CREATION_TEMPLATE',
+                        'reason':'Frozen host identity and masked Arc coverage defect require source-selector contract; retain repair count and consumption'},
+                    trace_id=command.trace_id,correlation_id=command.correlation_id)
+                return follow(self,str(row[0]),command,principal=principal)
         if state["lifecycle"] not in {"ACTIVE", "REJECTED"}:
             return None
         binding = (
@@ -3026,7 +3051,7 @@ class StoryPlanningGenerationApplication:
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             inherited_input_operation = command.repair_of_operation_id
-            if command.runtime_continuation_id and command.execution_contract_version == "1.19.0":
+            if command.runtime_continuation_id and command.execution_contract_version in {"1.19.0", "1.20.0"}:
                 from .runtime_continuation import require_binding
                 inherited_input_operation = require_binding(self.database_url, command.runtime_continuation_id)["source_operation_id"]
             if inherited_input_operation:
@@ -3049,6 +3074,9 @@ class StoryPlanningGenerationApplication:
                     )
                 snapshot = _replay_generation_input_snapshot(snapshot, source[0], source[1])
             snapshot_hash = canonical_hash(snapshot)
+            if command.runtime_continuation_id:
+                from .runtime_continuation import attach_successor
+                attach_successor(uow, command, operation_id)
             uow.cursor.execute(
                 sql.SQL("""
                 INSERT INTO authority_story_planning_generation(
@@ -3090,9 +3118,6 @@ class StoryPlanningGenerationApplication:
                     command.narrative_search_branch_key,
                 ] + [getattr(command, field) for field in repair_fields],
             )
-            if command.runtime_continuation_id:
-                from .runtime_continuation import attach_successor
-                attach_successor(uow, command, operation_id)
             uow.commit()
 
     def _record_candidate(
@@ -3665,7 +3690,7 @@ def story_planning_generation_definition(
             "repair_candidate_asset_input_allowed": True,
             **(
                 {"repair_result_evidence_input_allowed": True}
-                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
                 else {}
             ),
             "capability_pack_attempt_snapshot_required": True,

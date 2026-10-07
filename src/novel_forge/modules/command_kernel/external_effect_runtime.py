@@ -150,6 +150,26 @@ def read_failed_operation_success(
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
+def read_completed_operation_success(
+    database_url: str, context: EffectCommandContext, *, effect_id: str
+) -> dict[str, Any] | None:
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            "SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+            [context.operation_id, context.project_id],
+        )
+        row = uow.cursor.fetchone()
+        if row is None or row[0] != "SUCCEEDED":
+            raise KernelError(
+                "EFFECT_RETAINED_RESULT_OWNER_INVALID",
+                "Completed receipt read requires an immutable succeeded owner",
+            )
+        return _read_verified_success(
+            uow, uow.repositories.external_effects, context, effect_id
+        )
+
+
 def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
     effect = repository.get_for_update(effect_id)
     _require_project(effect, context.project_id)
@@ -201,7 +221,7 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
         )
     uow.cursor.execute(
         """
-        SELECT reservation_id,status,reserved_amount,estimated_tokens,version
+        SELECT reservation_id,status,reserved_amount,estimated_tokens,version,accounting_basis
         FROM authority_budget_reservation
         WHERE external_effect_id=%s AND project_id=%s
           AND status IN ('SETTLED','RESERVED','HELD_UNKNOWN')
@@ -223,7 +243,8 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
         "provider_capability_profile": frozen_capability_profile,
         "budget_reservation_id": str(budget[0]),
         "budget_reservation_status": str(budget[1]),
-        "budget_reserved_amount": str(budget[2]),
+        "budget_reserved_amount": None if budget[5] == "ACCOUNT_ENTITLEMENT" else str(budget[2]),
+        "budget_accounting_basis": str(budget[5]),
         "budget_estimated_tokens": int(budget[3]),
         "budget_reservation_version": int(budget[4]),
         "recovered": True,

@@ -356,7 +356,7 @@ class PlanningWorldPreparation:
                     if command.execution_contract_version == "1.12.0"
                     else "world-preparation-source.v2",
                     epistemic_contract="world-agency.v2"
-                    if command.execution_contract_version == "1.19.0"
+                    if command.execution_contract_version in {"1.19.0", "1.20.0"}
                     else "world-agency.v1",
                 )
             source_document = self._store(

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0164_realization_comparison_uncertainty",
+  "migration_head": "20261007_0165_planning_reference_contract_successor",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -6435,6 +6435,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
           "locator": "MIGRATION_ID = \"20261006_0151_creative_design_admission\"",
           "id": "20261006_0151_creative_design_admission"
+        },
+        {
+          "id": "20261007_0165_planning_reference_contract_successor",
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_planning_reference_contract_successor.py",
+          "locator": "MIGRATION_ID = \"20261007_0165_planning_reference_contract_successor\""
         }
       ],
       "external_effects": {
@@ -9362,7 +9367,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:62b6133ba24f7e0f413c0ed4da2dc61a4355ee3d828c34f8ac88ea3be97123ea"
+    "implementation_tree_sha": "sha256:5e54f5e857786c7baf846912b370ba45eccba4125ea7905db705b17b26c990e3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

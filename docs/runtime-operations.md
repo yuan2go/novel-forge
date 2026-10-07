@@ -45,6 +45,16 @@ Reader Context projection and Provider View must both recognize the selected can
 asset type. A terminal contract failure is retained; recovery admits a versioned native
 followup successor with the original frozen assets, accepted frontier and Book budget.
 Unknown Effects require reconciliation before any such successor admission.
+Planning 1.20 exposes source selectors in the Provider Schema and binds their exact
+scope, type, hash and current Operation in the host. ChapterGroup outputs classify
+all frozen Arc references once; classification does not force movement of every Arc.
+A known rejected Arc Context successor can change the execution contract only after
+full native validation diagnoses the identity and portfolio defects and its original
+Effect consumption is settled. The native successor retains its two spent content
+repairs, accepted frontier, original input snapshot and resource lineage. This is a
+contract correction, not an additional content repair or author approval.
+Fresh unstarted Planning commands may use the exact deployed 1.20 Pack; previously
+admitted 1.19 commands keep their immutable identity and replay contract.
 Plan Change may read an exact pending structural candidate as a proposal input only
 when its original creative-validation admission and same-Book current state are
 verified. This does not qualify or activate the candidate. After a native approval, eligibility

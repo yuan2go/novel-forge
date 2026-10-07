@@ -223,11 +223,10 @@ This mode requires native Search membership, comparison and exact selected-candi
 readback before Formation activation; qualification is independent of comparison.
 A frozen Context reused by a native successor must rebind its host-owned realization
 reference catalogue to that successor Operation while retaining exact source versions.
-An already settled output rejected solely because this catalogue retained its parent's
-Operation identity requires a linked host-only materialization successor. It reuses the
-original receipt and consumption, preserves the rejected candidate and report, and
-validates the whole corrected candidate before registration. This does not authorize
-new content, another Provider attempt, a larger repair allowance or reopening rejection.
+A host-only retained-output successor is permitted only after the full native structural
+validation proves there is no content defect. A masked Arc coverage defect requires a
+changed, versioned Provider contract and a native successor retaining the original repair
+count, source identities and cumulative consumption. Neither path reopens rejection.
 Embedding execution retains its typed index/model/dimension compatibility contract;
 generative routing cannot substitute another vector space.
 

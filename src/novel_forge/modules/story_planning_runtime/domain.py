@@ -284,7 +284,7 @@ class StoryPlanningGenerationCommand:
     def __post_init__(self) -> None:
         if self.edition_execution:
             if (
-                self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
                 or self.generator_operation_name
                 not in {"chapter_plan.generate", "chapter_group_plan.generate"}
                 or self.edition_execution.get("contract_version")
@@ -303,7 +303,7 @@ class StoryPlanningGenerationCommand:
             and (
                 not self.routing_bootstrap_authorization_id.strip()
                 or self.auto_approve_low_risk
-                or self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                or self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
             )
         ):
             raise ValueError(
@@ -318,7 +318,7 @@ class StoryPlanningGenerationCommand:
             "1.16.0",
             "1.17.0",
             "1.18.0",
-            "1.19.0",
+            "1.19.0", "1.20.0",
         } or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request
@@ -329,7 +329,7 @@ class StoryPlanningGenerationCommand:
         if (
             self.generator_operation_name in FOUNDATION_GENERATORS
             and self.execution_contract_version
-            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
         ):
             raise ValueError(
                 "Foundation generation requires its current frozen execution contract"
@@ -474,7 +474,7 @@ class StoryPlanningGenerationCommand:
             "1.16.0",
             "1.17.0",
             "1.18.0",
-            "1.19.0",
+            "1.19.0", "1.20.0",
         }:
             raise ValueError(
                 "runtime continuation requires its current registered contract"
@@ -490,7 +490,7 @@ class StoryPlanningGenerationCommand:
             )
         if self.repair_result_diagnostic:
             object.__setattr__(self, "repair_result_diagnostic", _json_object_snapshot(self.repair_result_diagnostic, "repair_result_diagnostic"))
-        contract_successor = bool(self.runtime_continuation_id) and self.execution_contract_version == "1.19.0" and not (self.repair_of_candidate_id or self.repair_of_operation_id)
+        contract_successor = bool(self.runtime_continuation_id) and self.execution_contract_version in {"1.19.0", "1.20.0"} and not (self.repair_of_candidate_id or self.repair_of_operation_id)
         if not contract_successor and bool(self.repair_of_candidate_id or self.repair_of_operation_id) != bool(self.repair_reason):
             raise ValueError("Planning repair identity and reason must be paired")
         if self.repair_number < 0 or (not contract_successor and bool(self.repair_number) != bool(

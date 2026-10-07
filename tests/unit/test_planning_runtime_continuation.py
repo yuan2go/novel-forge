@@ -571,3 +571,70 @@ def test_arc_context_cannot_borrow_unknown_or_reserved_external_outcome(has_exte
     uow.cursor.fetchone.side_effect = [(has_external_intent,), None]
     with pytest.raises(KernelError, match='DISPATCH_UNSAFE' if has_external_intent else 'SNAPSHOT_MISSING'):
         _pre_send_capacity_source(uow, source_operation_id='source', row=None, frozen={}, attempt=None, allow_frozen_context=True)
+
+@pytest.mark.parametrize('status', ['SUCCEEDED','EXECUTING','FAILED_FINAL','CANCELLED','DEAD_LETTER',None])
+def test_completed_owner_receipt_read_cannot_reopen_an_execution(monkeypatch,status):
+    from unittest.mock import Mock, MagicMock
+    from novel_forge.modules.command_kernel import external_effect_runtime as module
+    context=module.EffectCommandContext(operation_id='owner',project_id='project',actor_id='actor',trace_id='trace',correlation_id='correlation')
+    uow=Mock();uow.cursor.fetchone.return_value=(status,) if status else None
+    factory=MagicMock();factory.return_value.__enter__.return_value=uow
+    read=Mock(return_value={'recovered':True})
+    monkeypatch.setattr(module,'AuthorityUnitOfWork',factory)
+    monkeypatch.setattr(module,'_read_verified_success',read)
+    if status=='SUCCEEDED':
+        assert module.read_completed_operation_success('database',context,effect_id='effect')=={'recovered':True}
+        read.assert_called_once()
+    else:
+        with pytest.raises(KernelError,match='EFFECT_RETAINED_RESULT_OWNER_INVALID'):
+            module.read_completed_operation_success('database',context,effect_id='effect')
+        read.assert_not_called()
+
+
+def test_frozen_context_successor_rebinds_only_host_catalog_and_preserves_original():
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    from unittest.mock import Mock
+    source={'token_budget':10,'input_versions':[{'role':'story_state','content_hash':'accepted-hash'}],
+        'narrative_intelligence':{'selection_digest':'frozen'},'repair_context':{'repair_number':2},
+        'realization_reference_contract':{'references_by_domain':{'WORLD_STATE':[{'asset_version_id':'state:1','frozen_by_operation_id':'parent'}]}},
+        'context_manifest':{'provider_context_view':'original'}}
+    frozen=deepcopy(source)
+    preparer=SimpleNamespace(_planning_context_manifest=Mock(return_value={'token_accounting':{'accepted_tokens':12}}))
+    value=PostgresPlanningExecutionPreparer._reproject_frozen_context(preparer,source,command=SimpleNamespace(execution_contract_version='1.20.0'),task_tokens=20,operation_id='successor')
+    assert source==frozen
+    assert value['input_versions']==source['input_versions']
+    assert value['narrative_intelligence']==source['narrative_intelligence']
+    assert value['repair_context']=={'repair_number':2}
+    assert value['realization_reference_contract']['references_by_domain']['WORLD_STATE'][0]['frozen_by_operation_id']=='successor'
+    assert value['estimated_tokens']==12
+
+
+def test_source_selector_contract_binds_host_identity_and_rejects_foreign_or_metadata_input():
+    from novel_forge.modules.story_planning_runtime.execution import bind_provider_realization_selectors,bind_realization_selector_schema
+    domains=['WORLD_INVARIANT','WORLD_STRUCTURE','WORLD_STATE','CHARACTER_IDENTITY','CHARACTER_STATE','CHARACTER_TRAJECTORY']
+    catalog={'references_by_domain':{domain:[{'asset_version_id':domain.lower(), 'domain_type':domain,
+        'project_id':'project','book_id':'book','content_hash':'sha256:'+'a'*64,'frozen_by_operation_id':'current'}] for domain in domains}}
+    raw={'objective':'Preserve silence and a future choice.',
+        'world_realization':[{'world_id':'city','invariant_refs':[{'asset_version_id':'world_invariant'}],
+            'structure_refs':[{'asset_version_id':'world_structure'}],'state_ref':{'asset_version_id':'world_state'}}],
+        'character_realization':[{'character_id':'witness','identity_ref':{'asset_version_id':'character_identity'},
+            'state_ref':{'asset_version_id':'character_state'},'trajectory_ref':{'asset_version_id':'character_trajectory'}}]}
+    frozen=deepcopy(raw)
+    bound=bind_provider_realization_selectors(raw,catalog)
+    assert raw==frozen and bound['objective']==raw['objective']
+    assert bound['world_realization'][0]['state_ref']==catalog['references_by_domain']['WORLD_STATE'][0]
+    for selector in [{'asset_version_id':'future-version'},{'asset_version_id':'world_state','frozen_by_operation_id':'forged'}]:
+        invalid=deepcopy(raw);invalid['world_realization'][0]['state_ref']=selector
+        with pytest.raises(KernelError,match='PLANNING_REALIZATION_SELECTOR_INVALID'):
+            bind_provider_realization_selectors(invalid,catalog)
+    schema={'properties':{'world_realization':{'items':{'properties':{'invariant_refs':{},'structure_refs':{},'state_ref':{}}}},
+        'character_realization':{'items':{'properties':{'identity_ref':{},'state_ref':{},'trajectory_ref':{}}}},
+        'primary_arc_ids':{},'secondary_arc_ids':{}}}
+    original=deepcopy(schema)
+    value=bind_realization_selector_schema(schema,catalog,primary_arc_id='main-arc',related_arc_ids=('witness-arc','cost-arc'))
+    assert schema==original
+    reference=value['properties']['world_realization']['items']['properties']['state_ref']
+    assert reference['required']==['asset_version_id'] and reference['additionalProperties'] is False
+    assert value['properties']['secondary_arc_ids']['minItems']==2
+    assert value['properties']['secondary_arc_ids']['maxItems']==2
+    assert value['properties']['secondary_arc_ids']['uniqueItems'] is True

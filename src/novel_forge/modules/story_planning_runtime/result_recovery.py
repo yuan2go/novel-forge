@@ -279,8 +279,8 @@ def require_result_repair_source(
                 command.generator_operation_name,
                 raw,
                 work_requirements=command.execution_contract_version
-                in {"1.17.0", "1.18.0", "1.19.0"},
-                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+                in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
                 compiled_scope="BOOK"
                 if command.generator_operation_name == "world.design.generate"
                 else None,

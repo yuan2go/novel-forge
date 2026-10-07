@@ -490,6 +490,13 @@ class AutonomousWorldTransport:
                             "available_from_chapter": result["chapter_number"],
                         }
                     )
+        if stage == "world_candidates.generate" and inputs["world_preparation"]["contract_version"] == "world-provider-task.v2":
+            from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
+            for transition in agency_transition_paths(result).values():
+                raw = json.loads(transition["payload_json"])
+                if raw["state_kind"] in {"world_state", "resource_state"} and not raw["epistemic_basis"]:
+                    raw["action_mode"] = "ROUTINE"
+                    transition["payload_json"] = json.dumps(raw)
         self.calls[-1]["output"] = result
         return result
 
