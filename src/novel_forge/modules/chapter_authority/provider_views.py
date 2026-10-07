@@ -1059,6 +1059,12 @@ def build_provider_task_view(
                     "source_text_hash": references["source_text_hash"],
                     "semantic_assessments_reused_as_pass": False,
                 }
+            if feedback:
+                original_feedback = inputs["canon_quote_repair"]
+                for key in ("source_effect_id", "source_request_hash", "source_output_hash", "target_asset_version_id", "continuation_contract"):
+                    feedback.pop(key, None)
+                feedback["original_feedback_hash"] = _projection_hash(original_feedback)
+                feedback["instruction"] = "Select current reference IDs for all quotes and regenerate all Canon fields. Full independent semantic support remains required."
             task["evidence_contract"] = "Quote fields and resolution_evidence must contain current host reference IDs, never copied or paraphrased prose. Native source intervals are resolved after validation; classify actual prose independently."
         return task
     if stage.startswith("quality_"):
