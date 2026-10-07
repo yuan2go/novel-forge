@@ -213,6 +213,14 @@ proof of an optimal literary direction. Search retains the current work's frozen
 stage transformation, assumptions, risks and rejected branches; exact-score ties use its
 deterministic asset identity rule. A tie does not establish superiority. New v5 Formation
 uses an explicit reasoned author direction decision for the important opening choice.
+Preauthorized automatic direction selection must use the existing Narrative Search
+candidate set and versioned comparison rather than the historical first-admitted rule.
+The new Formation contract freezes the author brief, bounded alternative strategies,
+work-specific selection policy and uncertainty disposition; generator scores remain soft
+judgments. Ties may use the authorized stable identity policy without claiming superiority.
+Author comparison and exact previously approved directions retain their original contracts.
+This mode requires native Search membership, comparison and exact selected-candidate
+readback before Formation activation; qualification is independent of comparison.
 Embedding execution retains its typed index/model/dimension compatibility contract;
 generative routing cannot substitute another vector space.
 
