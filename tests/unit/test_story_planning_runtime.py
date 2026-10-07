@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.hierarchical_planning import (
     PlanContractType,
@@ -3284,3 +3285,26 @@ def test_changed_static_candidate_configuration_can_restore_original_active_plan
     assert receipt == before
     assert read == list(documents)
     assert recovered.model_context_limit == recovered.model_output_limit == 0
+
+
+def test_arc_change_evidence_retains_same_book_recap_and_future_only_scope(monkeypatch):
+    class FakeUow:
+        cursor = SimpleNamespace(execute=lambda *args: None, fetchone=lambda: ({"book_id": "book-1", "chapter_range": [1, 4]},))
+        def __init__(self, database_url):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return None
+    monkeypatch.setattr(planning_application, "AuthorityUnitOfWork", FakeUow)
+    application = object.__new__(StoryPlanningGenerationApplication)
+    application.database_url = "postgresql://unused"
+    command = SimpleNamespace(book_id="book-1", project_id="project-1", change_evidence_version_ids=("recap:v1", "arc-proposal:v1"))
+    content = {"type": "ArcRevisionCandidate", "contract_version": "arc-revision-candidate-v1",
+               "candidate_only": True, "plan_mutation_allowed": False, "affected_scope": "ARC",
+               "impact_scope": {"future_only": True}, "future_from_chapter": 5}
+    application._require_arc_recap_change_evidence(command, "arc-proposal:v1", content)
+    for invalid in ({**content, "future_from_chapter": 4}, {**content, "plan_mutation_allowed": True},
+                    {**content, "impact_scope": {"future_only": False}}):
+        with pytest.raises(KernelError, match="PLANNING_GENERATION_CHANGE_EVIDENCE_INVALID"):
+            application._require_arc_recap_change_evidence(command, "arc-proposal:v1", invalid)

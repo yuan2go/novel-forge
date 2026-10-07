@@ -2980,6 +2980,8 @@ class StoryPlanningGenerationApplication:
             if asset_type == "longform_prose_review_report":
                 from novel_forge.modules.book_followup_authority.prose_change_evidence import require_prose_planning_evidence
                 require_prose_planning_evidence(self.database_url, command=command, asset_version_id=asset_version_id, commit_sha=self.commit_sha)
+            elif asset_type == "arc_revision_candidate":
+                self._require_arc_recap_change_evidence(command, asset_version_id, content)
             elif asset_type not in {"longform_recap", "replan_request"}:
                 raise KernelError(
                     "PLANNING_GENERATION_CHANGE_EVIDENCE_TYPE_INVALID",
@@ -3000,6 +3002,27 @@ class StoryPlanningGenerationApplication:
                 )
             )
         return tuple(result)
+
+    def _require_arc_recap_change_evidence(self, command: StoryPlanningGenerationCommand,
+                                         asset_version_id: str, content: dict[str, Any]) -> None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT recap_version.content FROM authority_operation_output_asset request
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_operation_output_asset recap ON recap.operation_id=operation.operation_id
+                JOIN authority_asset_version recap_version ON recap_version.asset_version_id=recap.asset_version_id
+                WHERE request.asset_version_id=%s AND request.output_key='longform.recap.replan_request'
+                  AND recap.output_key='longform.recap.report' AND recap.asset_version_id=ANY(%s)
+                  AND operation.definition_name='longform.recap' AND operation.status='SUCCEEDED'
+                  AND operation.project_id=%s""", [asset_version_id, list(command.change_evidence_version_ids), command.project_id])
+            row = uow.cursor.fetchone()
+        recap = dict(row[0]) if row else {}
+        chapter_range = recap.get("chapter_range") or []
+        if (not row or recap.get("book_id") != command.book_id
+            or content.get("type") != "ArcRevisionCandidate" or content.get("contract_version") != "arc-revision-candidate-v1"
+            or content.get("candidate_only") is not True or content.get("plan_mutation_allowed") is not False
+            or content.get("affected_scope") != "ARC" or content.get("impact_scope", {}).get("future_only") is not True
+            or len(chapter_range) != 2 or content.get("future_from_chapter") != int(chapter_range[1]) + 1):
+            raise KernelError("PLANNING_GENERATION_CHANGE_EVIDENCE_INVALID", "Arc proposal requires its exact successful same-Book Recap and future-only scope")
 
     def _record_generation(
         self,
