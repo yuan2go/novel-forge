@@ -527,3 +527,47 @@ def test_recap_context_successor_cannot_revive_cancelled_or_dispatched_source(mo
 def test_recap_context_successor_is_exact_historical_contract_recovery(wrong_contract):
     with pytest.raises(KernelError, match="SOURCE_INVALID"):
         require_source(source_uow(status="FAILED_FINAL", error="PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID", command={"execution_contract_version": wrong_contract}), source_operation_id="source", project_id="project")
+
+
+@pytest.mark.parametrize('fault', [None, 'unrelated-route', 'identity', 'missing-input', 'typed-context'])
+def test_arc_context_continuation_requires_exact_capacity_failure_and_frozen_semantics(monkeypatch, fault):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as module
+    from novel_forge.modules.chapter_authority import provider_views
+
+    segment = {'role': 'related_arc:1', 'asset_version_id': 'arc-version', 'content_hash': 'arc-hash',
+        'content': {'generator_operation_name': 'arc_plan.generate', 'narrative_search_projection': {}}}
+    if fault == 'typed-context':
+        segment['content'].pop('narrative_search_projection')
+    monkeypatch.setattr(provider_views, 'compile_planning_provider_context', lambda *args: ({'segments': [segment]}, {}))
+    inputs = [{'role': 'arc_plans', 'asset_version_id': 'arc-version', 'content_hash': 'arc-hash'}]
+    context = {'input_versions': [] if fault == 'missing-input' else inputs}
+    decision = {'status': 'BLOCKED', 'mode': 'CREATIVE_VALIDATION',
+        'task': {'operation_id': 'other' if fault == 'identity' else 'source'},
+        'candidates': [{'rejected_reasons': ['PROVIDER_UNAVAILABLE'] if fault == 'unrelated-route' else ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT']}]}
+    uow = SimpleNamespace(cursor=Mock())
+    uow.cursor.fetchone.side_effect = [('context-version', 'context-hash', context), ('route-version', 'route-hash', decision)]
+    capacity = Mock(return_value={'inputs': inputs, 'depth': 2})
+    monkeypatch.setattr(module, '_pre_send_capacity_source', capacity)
+    def run():
+        return module._arc_role_context_source(uow, source_operation_id='source', row=None,
+            frozen={'generator_operation_name': 'chapter_group_plan.generate'}, attempt=None)
+    if fault:
+        with pytest.raises(KernelError, match='PLANNING_ARC_CONTEXT_SOURCE_INVALID'):
+            run()
+    else:
+        result = run()
+        assert result['mode'] == 'ARC_ROLE_CONTEXT_REVALIDATION'
+        assert result['depth'] == 2
+        assert result['arc_context_proof']['context_content_hash'] == 'context-hash'
+        assert capacity.call_args.kwargs['allow_frozen_context'] is True
+
+
+@pytest.mark.parametrize('has_external_intent', [True, False])
+def test_arc_context_cannot_borrow_unknown_or_reserved_external_outcome(has_external_intent):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import _pre_send_capacity_source
+    uow = SimpleNamespace(cursor=Mock())
+    uow.cursor.fetchone.side_effect = [(has_external_intent,), None]
+    with pytest.raises(KernelError, match='DISPATCH_UNSAFE' if has_external_intent else 'SNAPSHOT_MISSING'):
+        _pre_send_capacity_source(uow, source_operation_id='source', row=None, frozen={}, attempt=None, allow_frozen_context=True)

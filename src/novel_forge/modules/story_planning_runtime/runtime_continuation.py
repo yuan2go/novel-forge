@@ -138,6 +138,8 @@ def require_source(
         return _world_projection_source(
             uow, source_operation_id=source_operation_id, row=row, frozen=frozen
         )
+    if row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED":
+        return _arc_role_context_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
     if (
         row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
         and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
@@ -588,12 +590,14 @@ def _pre_send_capacity_source(
     row: Any,
     frozen: dict[str, Any],
     attempt: Any,
+    allow_frozen_context: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
     uow.cursor.execute(
-        "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle')",
-        [source_operation_id] * 3,
+        "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)"
+        + ("" if allow_frozen_context else " OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle')"),
+        [source_operation_id] * (2 if allow_frozen_context else 3),
     )
     if uow.cursor.fetchone()[0]:
         raise KernelError(
@@ -651,6 +655,113 @@ def _pre_send_capacity_source(
         "inputs": inputs,
         "failure": dict(attempt[2] or attempt[1] or {}),
         "depth": depth + 1,
+    }
+
+
+def _arc_role_context_source(uow, *, source_operation_id, row, frozen, attempt):
+    from novel_forge.modules.chapter_authority.provider_views import (
+        compile_planning_provider_context,
+    )
+
+    if frozen.get("generator_operation_name") not in {
+        "chapter_group_plan.generate",
+        "chapter_plan.generate",
+    }:
+        raise KernelError(
+            "PLANNING_ARC_CONTEXT_SOURCE_INVALID",
+            "Only near-term Planning may correct historical Arc role projection",
+        )
+    uow.cursor.execute(
+        """SELECT version.asset_version_id,version.content_hash,version.content FROM authority_operation_output_asset output
+        JOIN authority_asset_version version USING(asset_version_id)
+        WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""",
+        [source_operation_id],
+    )
+    context = uow.cursor.fetchone()
+    if context is None:
+        raise KernelError(
+            "PLANNING_ARC_CONTEXT_SOURCE_INVALID",
+            "The rejected request requires its exact frozen Context",
+        )
+    view, _ = compile_planning_provider_context(
+        frozen["generator_operation_name"], context[2]
+    )
+    affected = [
+        segment
+        for segment in view.get("segments", [])
+        if segment.get("role", "").startswith(("related_arc:", "dependent_arc:"))
+        and segment.get("content", {}).get("generator_operation_name")
+        == "arc_plan.generate"
+        and "narrative_search_projection" in segment.get("content", {})
+    ]
+    if not affected:
+        raise KernelError(
+            "PLANNING_ARC_CONTEXT_SOURCE_INVALID",
+            "Frozen Context must reproduce the untyped Arc Search projection",
+        )
+    uow.cursor.execute(
+        """SELECT version.asset_version_id,version.content_hash,version.content FROM authority_operation_output_asset output
+        JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE output.operation_id=%s AND asset.asset_type='routing_decision' ORDER BY version.created_at DESC LIMIT 1""",
+        [source_operation_id],
+    )
+    decision = uow.cursor.fetchone()
+    candidates = decision[2].get("candidates", []) if decision else []
+    if (
+        not decision
+        or decision[2].get("status") != "BLOCKED"
+        or decision[2].get("mode") != "CREATIVE_VALIDATION"
+        or decision[2].get("task", {}).get("operation_id") != source_operation_id
+        or not candidates
+        or any(
+            "CONTEXT_CAPACITY_EXCEEDED" not in candidate.get("rejected_reasons", [])
+            or not set(candidate["rejected_reasons"])
+            <= {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
+            for candidate in candidates
+        )
+    ):
+        raise KernelError(
+            "PLANNING_ARC_CONTEXT_SOURCE_INVALID",
+            "A different routing failure cannot borrow a Context-contract continuation",
+        )
+    source = _pre_send_capacity_source(
+        uow,
+        source_operation_id=source_operation_id,
+        row=row,
+        frozen=frozen,
+        attempt=attempt,
+        allow_frozen_context=True,
+    )
+    expected = {
+        (item["role"], item["asset_version_id"], item["content_hash"])
+        for item in source["inputs"]
+    }
+    actual = {
+        (item["role"], item["asset_version_id"], item["content_hash"])
+        for item in context[2]["input_versions"]
+    }
+    if not expected <= actual:
+        raise KernelError(
+            "PLANNING_ARC_CONTEXT_SOURCE_INVALID",
+            "Context no longer binds all frozen semantic inputs",
+        )
+    return {
+        **source,
+        "mode": "ARC_ROLE_CONTEXT_REVALIDATION",
+        "arc_context_proof": {
+            "contract_version": "typed-arc-context-revalidation.v1",
+            "context_asset_version_id": context[0],
+            "context_content_hash": context[1],
+            "routing_decision_asset_version_id": decision[0],
+            "routing_decision_content_hash": decision[1],
+            "affected_sources": [
+                {
+                    key: segment[key]
+                    for key in ("role", "asset_version_id", "content_hash")
+                }
+                for segment in affected
+            ],
+        },
     }
 
 
@@ -922,8 +1033,9 @@ def _capacity_target(
         - route.token_safety_margin
         - route.token_framing_overhead,
     )
-    allocated = min(baseline * 2, ceiling)
-    if allocated <= baseline:
+    arc_context = source.get('mode') == 'ARC_ROLE_CONTEXT_REVALIDATION'
+    allocated = min(baseline if arc_context else baseline * 2, ceiling)
+    if allocated <= baseline and not arc_context:
         raise KernelError(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
@@ -954,6 +1066,8 @@ def _capacity_target(
             planning_task_token_budget=allocated,
             preflight_only=True,
         )
+    if arc_context:
+        context = preparer._reproject_frozen_context(context.content, command=successor, task_tokens=allocated)
     allocation = {
         "version": "planning-capacity-allocation.v1",
         "prior_task_tokens": baseline,
@@ -964,6 +1078,7 @@ def _capacity_target(
         ),
         "source_failure": source["failure"],
         "external_intents_at_source": 0,
+        **({'context_revalidation':source['arc_context_proof']} if arc_context else {}),
     }
     return {**target, "planning_capacity": allocation}, authorization
 
@@ -1296,7 +1411,7 @@ def register(
     if recap_revalidation:
         target = {**target, "recap_context_revalidation": {"contract_version": "recap-context-revalidation.v1",
                   "source_operation_id": source_operation_id, "source_evidence_hash": source["evidence_hash"]}}
-    capacity = source.get("mode") == "PRE_SEND_CAPACITY"
+    capacity = source.get("mode") in {"PRE_SEND_CAPACITY", "ARC_ROLE_CONTEXT_REVALIDATION"}
     if (
         not capacity
         and not contract_change

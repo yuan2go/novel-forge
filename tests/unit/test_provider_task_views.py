@@ -1890,3 +1890,34 @@ def test_matrix_alias_never_references_a_different_frozen_group(field):
     view, _ = compile_planning_provider_context('chapter_plan.generate', context)
     assert 'json_pointer' not in view['segments'][1]['content']
     assert view['segments'][1]['content']['hard_constraints'] == alias['content']['hard_constraints']
+
+
+def test_related_arc_projection_retains_semantic_constraints_and_audits_host_fields():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.provider_views import compile_planning_provider_context
+
+    semantic = {'thread_id': 'arc:truth', 'required_events': ['witness must choose'],
+        'world_realization': {'knowledge_boundary': 'private oath remains private'},
+        'character_realization': {'motivation': 'protect witness'},
+        'commitment_contract': {'payoff': 'future only'},
+        'canon_dependencies': ['accepted:oath'], 'hard_constraints': ['no omniscience'],
+        'soft_constraints': ['preserve silence']}
+    source = {**semantic, 'generator_operation_name': 'arc_plan.generate',
+        'narrative_search_projection': {'scores': {'style': .99}},
+        'operation_id': 'host-operation'}
+    context = {'schema_version': 'novelos.planning_context_bundle.v1',
+        'logical_key': 'chapter:2', 'planning_scope': 'CHAPTER', 'input_versions': [
+            {'role': role, 'asset_type': 'arc_plan', 'asset_version_id': role,
+             'content_hash': 'sha256:' + 'a' * 64, 'content': deepcopy(source)}
+            for role in ['arc_plans', 'related_arc:1', 'dependent_arc:1']]}
+    frozen = deepcopy(context)
+    view, audit = compile_planning_provider_context('chapter_plan.generate', context)
+    assert context == frozen
+    contents = [segment['content'] for segment in view['segments']]
+    assert contents[0] == contents[1] == contents[2]
+    for content in contents:
+        for key, value in semantic.items():
+            assert content[key] == value
+        assert 'narrative_search_projection' not in content
+        assert 'operation_id' not in content
+    assert 'narrative_search_projection' in json.dumps(audit)

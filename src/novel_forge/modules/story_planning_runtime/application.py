@@ -1803,6 +1803,8 @@ class StoryPlanningGenerationApplication:
                 uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_operation_output_asset output JOIN authority_asset_version version USING(asset_version_id) WHERE output.operation_id=%s AND version.content#>>'{contract,world_plan,disposition}'='BLOCKED' AND version.content#>'{contract,world_plan,rejected_paths}' @> '[{\"rejection\":{\"code\":\"WORLD_PERCEPTION_ACTOR_INVALID\"}}]'::jsonb)", [row[0]])
                 host_failure = bool(uow.cursor.fetchone()[0])
             if failure and (failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
+                failure[0] == 'PROVIDER_ROUTING_BLOCKED' and command.generator_operation_name in {'chapter_group_plan.generate','chapter_plan.generate'}
+            ) or (
                 failure[0] == "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID" and command.execution_contract_version == "1.19.0"
             ) or (
                 failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.18.0" and agency_failure

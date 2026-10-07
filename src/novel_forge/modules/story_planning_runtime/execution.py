@@ -2775,7 +2775,8 @@ def planning_provider_output_schema(
                             if exact_group_chapters
                             else {"type": "integer", "minimum": 1}
                         ),
-                        "causes": {"type": "array", "items": string},
+                        "causes": {"type": "array", "items": string,
+                            "description": "event_id values of earlier events in this same narrative_event_chain, never prose descriptions or accepted history. Use an empty array for a root. Accepted historical support belongs in preconditions. Each referenced earlier event must list this event_id in next_event_ids."},
                         "actor_ref": string,
                         "motivation": string,
                         "preconditions": {
@@ -2834,7 +2835,8 @@ def planning_provider_output_schema(
                             "items": arc_ref,
                         },
                         "irreversible_change": string,
-                        "next_event_ids": {"type": "array", "items": string},
+                        "next_event_ids": {"type": "array", "items": string,
+                            "description": "event_id values of later events in this same narrative_event_chain. Each later event must reference this event_id in causes; use an empty array for a leaf."},
                         "required": {"type": "boolean"},
                     }
                 ),
@@ -5577,6 +5579,20 @@ class PostgresPlanningExecutionPreparer:
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
+            if command.runtime_continuation_id:
+                from .runtime_continuation import require_binding
+                capacity = require_binding(self.database_url, command.runtime_continuation_id)['target_runtime'].get('planning_capacity', {})
+                proof = capacity.get('context_revalidation')
+                if proof:
+                    source_context = self.query.require(project_id=command.project_id, asset_version_id=proof['context_asset_version_id'])
+                    if source_context.content_hash != proof['context_content_hash']:
+                        raise KernelError('PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT', 'Original Context must retain its exact frozen content')
+                    self._validate_frozen_context_retry(context=source_context,command=command,selected_inputs=selected,context_policy_ref=context_policy_ref)
+                    selection = source_context.content['narrative_intelligence']
+                    self._append_narrative_intelligence_documents(command=command,selection=selection,documents=documents,knowledge_access_policy=knowledge_access_policy)
+                    content = self._reproject_frozen_context(source_context.content, command=command, task_tokens=capacity['allocated_task_tokens'])
+                    return (content if preflight_only else self._materialize_planning_context(operation_id=operation_id,command=command,
+                        logical_ref=logical_ref,documents=documents,content=content)), tuple(documents)
         else:
             self._validate_frozen_context_retry(
                 context=frozen_context,
@@ -5812,7 +5828,27 @@ class PostgresPlanningExecutionPreparer:
         )
         if preflight_only:
             return content, tuple(documents)
-        context = self.writer.materialize_output(
+        return self._materialize_planning_context(operation_id=operation_id,command=command,
+            logical_ref=logical_ref,documents=documents,content=content), tuple(documents)
+
+    def _reproject_frozen_context(self, source, *, command, task_tokens):
+        from copy import deepcopy
+
+        content = deepcopy(dict(source))
+        content["token_budget"] = task_tokens
+        content.pop("context_manifest", None)
+        content["context_manifest"] = self._planning_context_manifest(
+            command=command, selected_inputs=content["input_versions"], content=content
+        )
+        content["estimated_tokens"] = int(
+            content["context_manifest"]["token_accounting"]["accepted_tokens"]
+        )
+        return content
+
+    def _materialize_planning_context(
+        self, *, operation_id, command, logical_ref, documents, content
+    ):
+        return self.writer.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=operation_id,
                 project_id=command.project_id,
@@ -5830,7 +5866,6 @@ class PostgresPlanningExecutionPreparer:
                 reference_asset_ids=tuple(document.asset_id for document in documents),
             )
         )
-        return context, tuple(documents)
 
     def _world_context_bundle(self, *, operation_id, command, base, stage, calibration_sample=False):
         source = self.query.require(

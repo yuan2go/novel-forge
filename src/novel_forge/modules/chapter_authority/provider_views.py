@@ -128,6 +128,10 @@ _PLANNING_ROLE_FIELDS: dict[str, tuple[str, ...]] = {
         "dependencies",
         "closure_conditions",
         "cross_volume_scope",
+        "entry_state_ref", "exit_state_spec", "world_deltas", "character_deltas",
+        "relationship_deltas", "required_events", "world_realization", "character_realization",
+        "commitment_contract", "canon_dependencies", "planning_horizon", "arc_contributions",
+        "realization_level", "narrative_architecture_version", "soft_constraints",
         "arc_segments",
         "arc_relations",
         "hard_constraints",
@@ -2756,7 +2760,8 @@ def _project_planning_content(
         if loss_records is not None:
             loss_records.append(_loss_record(source or {"role": role}, path="/" + field, value=value, reason=reason))
 
-    allowed_fields = _PLANNING_ROLE_FIELDS.get(role)
+    typed_role = "arc_plans" if role.startswith(("related_arc:", "dependent_arc:")) else role
+    allowed_fields = _PLANNING_ROLE_FIELDS.get(typed_role)
     if allowed_fields is not None:
         admitted_fields = {*allowed_fields, *_REQUIRED_PLANNING_FIELDS, *_OPTIONAL_PLANNING_FIELDS}
         for field, value in compacted.items():

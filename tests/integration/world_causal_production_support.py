@@ -437,6 +437,13 @@ class AutonomousWorldTransport:
                     ]
                 ]
             }
+            if inputs["world_preparation"]["contract_version"] == "world-provider-task.v2":
+                from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
+                result["action_classifications"] = [
+                    {"field_path": path, "supported": True,
+                     "rationale": "Controlled generated action retains the fixture's own actor and ordered source boundary."}
+                    for path in agency_transition_paths(inputs["world_preparation"]["generated_portfolio"])
+                ]
         else:
             result = planning_fixture_response(stage, inputs)
             if stage == "chapter_plan.generate":
