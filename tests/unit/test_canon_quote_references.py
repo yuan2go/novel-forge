@@ -105,3 +105,30 @@ def test_provider_view_retains_all_prose_without_duplicating_host_interval_direc
     assert "references" not in view["canon_quote_references"]
     assert view["canon_quote_references"]["reference_corpus_hash"] == snapshot_hash(corpus)
     assert view["canon_quote_references"]["reference_count"] == 2
+
+
+def test_reference_negative_projection_retains_semantic_rejection_and_original_evidence():
+    from copy import deepcopy
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    from novel_forge.modules.production_execution.cost_routing import snapshot_hash
+    negative = [{"field": "disclosure_events", "claim": {
+        "summary": "核对照料单", "audience": "character:lu",
+        "claim_kind": "READER_DISCLOSURE", "evidence_quote": "核对照料单。",
+        "evidence_start": 0, "evidence_end": 6, "grounded_claim_id": "claim-1",
+        "model_id": "real-model", "extraction_evidence": {"quote": "核对照料单。"}},
+        "assessment": {"observed_kind": "KNOWLEDGE_ACQUISITION", "assessment": "SUPPORTED",
+                       "claim_id": "claim-1", "reason": "角色本人阅读"}}]
+    original = deepcopy(negative)
+    corpus = build_references("核对照料单。", target_asset_version_id="candidate-v1")
+    view = build_provider_task_view("canon_extraction", {
+        "revision": {"text": "核对照料单。"}, "canon_field_kind_contract": "canon-field-kinds.v1",
+        "canon_quote_references": corpus,
+        "canon_quote_repair": {"independent_negative_assessments": negative}})
+    feedback = view["canon_quote_repair"]
+    projected = feedback["independent_negative_assessments"][0]
+    assert projected["assessment"] == original[0]["assessment"]
+    assert projected["claim"] == {key: value for key, value in original[0]["claim"].items()
+                                   if key not in {"model_id", "extraction_evidence"}}
+    assert negative == original
+    assert feedback["negative_assessment_projection"]["full_assessments_hash"] == snapshot_hash(original)
+    assert feedback["negative_assessment_projection"]["semantic_assessments_reused_as_pass"] is False

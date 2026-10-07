@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from base64 import urlsafe_b64encode
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.production_execution.cost_routing import snapshot_hash
@@ -14,12 +15,13 @@ def build_references(text, *, target_asset_version_id):
     identity = snapshot_hash(
         {"target": target_asset_version_id, "text_hash": prose_hash(text)}
     )
+    token = urlsafe_b64encode(bytes.fromhex(identity.removeprefix("sha256:"))[:8]).decode().rstrip("=")
     rows, rendered, position = [], [], 0
     for line in text.splitlines(keepends=True):
         body = line.rstrip("\r\n")
         if body.strip():
             reference = (
-                f"canon-ref:{identity.removeprefix('sha256:')[:16]}:{len(rows) + 1}"
+                f"r:{token}:{len(rows) + 1}"
             )
             rows.append(
                 {

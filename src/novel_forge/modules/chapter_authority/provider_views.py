@@ -1043,6 +1043,22 @@ def build_provider_task_view(
                 "reference_corpus_hash": _projection_hash(references),
                 "interval_owner": "HOST_FROZEN_CANDIDATE",
             }
+            feedback = task.get("canon_quote_repair") or {}
+            negative = feedback.get("independent_negative_assessments")
+            if negative:
+                metadata = {"model_id", "provider_id", "prompt_version", "extractor_type", "source_revision_asset_version_id", "extraction_evidence"}
+                feedback["independent_negative_assessments"] = [
+                    {**item, "claim": {key: value for key, value in item["claim"].items() if key not in metadata}}
+                    for item in negative
+                ]
+                feedback["negative_assessment_projection"] = {
+                    "contract_version": "canon-reference-negative-projection.v1",
+                    "full_assessments_hash": _projection_hash(negative),
+                    "omitted_claim_fields": sorted(metadata),
+                    "source_candidate": references["target_asset_version_id"],
+                    "source_text_hash": references["source_text_hash"],
+                    "semantic_assessments_reused_as_pass": False,
+                }
             task["evidence_contract"] = "Quote fields and resolution_evidence must contain current host reference IDs, never copied or paraphrased prose. Native source intervals are resolved after validation; classify actual prose independently."
         return task
     if stage.startswith("quality_"):
