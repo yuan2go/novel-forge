@@ -249,6 +249,16 @@ literary qualification; production snapshots distinguish `AUTHOR_SUPERVISED_DESI
 `LONGFORM_DESIGN_QUALIFIED`. Native Book control requires author decision boundaries.
 
 Supervised model reviews use the existing semantic Evaluation and Chapter review paths.
+The separate offline pressure diagnostic entry is
+`novel_forge.tools.review_pressure_regression`: paired synthetic probes reuse the
+model-reference status/score-range/findings shape without changing the native panel or
+quality policy. Corpus, transcript, result and independent findings-annotation hashes bind
+its descriptive metrics. It writes caller-owned diagnostic files exclusively, performs no
+Provider or PostgreSQL mutation, and retains a scripted/reconstructed evidence ceiling.
+Current exact native creation grants reject the additional pressure/history inputs;
+real pressure runs and model stability remain NOT_RUN/NOT_PROVEN. Procedures and
+denominator rules are in `docs/runtime-operations.md`.
+
 The Router binds the exact target hash and successful generator Effect: Codex-generated
 targets require DeepSeek review, and DeepSeek-generated targets require Codex review.
 Different accounts or role prompts do not satisfy this policy. Semantic review purpose

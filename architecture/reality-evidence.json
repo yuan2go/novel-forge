@@ -7691,6 +7691,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/contracts.py",
           "locator": "\"final_release_gate\""
+        },
+        {
+          "path": "src/novel_forge/tools/review_pressure_regression.py",
+          "symbol": "main"
         }
       ],
       "application": [
@@ -7709,6 +7713,14 @@
         {
           "path": "src/novel_forge/modules/content_authority/reference_review.py",
           "symbol": "reference_evaluation_request"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+          "symbol": "plan"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+          "symbol": "score"
         }
       ],
       "domain_symbols": [
@@ -7767,6 +7779,22 @@
         {
           "path": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
           "symbol": "verify_internal_quality"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+          "symbol": "Corpus"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+          "symbol": "Result"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+          "symbol": "FindingsAnnotation"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+          "symbol": "build_request"
         }
       ],
       "commands_operations": [
@@ -7886,6 +7914,14 @@
         {
           "path": "tests/integration/test_cross_model_source_postgres.py",
           "symbol": "test_native_author_draft_without_generator_effect_enters_exact_review"
+        },
+        {
+          "path": "tests/unit/test_review_pressure_regression.py",
+          "symbol": "test_zero_drift_does_not_claim_real_model_stability_or_observed_error_correction"
+        },
+        {
+          "path": "tests/unit/test_review_pressure_regression.py",
+          "symbol": "test_native_reference_inputs_still_reject_pressure_and_offline_records"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9694,7 +9730,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+    "implementation_tree_sha": "sha256:5ba0380cfdc359f3032a7506c95a4ff27e099844317ca0babe77fac046da2353"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

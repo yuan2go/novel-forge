@@ -1106,6 +1106,68 @@ using one model family declares its correlation and remains `MODEL_CONSENSUS`, n
 HumanEvaluation or reader preference. Reference consumers validate the native source
 chain again and keep model-consensus qualification separate from human calibration.
 
+The offline `model-reference-pressure-pairs.v1` diagnostic uses
+`config/evaluation/model_reference_pressure_v1.json`. Four synthetic subjects expand
+to 24 request slots: neutral judgments, disagreement, confident assertion, claimed expert
+opinion, three sequential challenges, verified correction evidence, separately identified
+seeded errors, and independent like/dislike conversations. The method comes from
+[ByteByteGo's 2026-10-06 article](https://blog.bytebytego.com/p/why-llms-agree-with-you-even-when).
+Synthetic criteria are local probe inputs; they do not change production quality policy.
+
+```bash
+PYTHONPATH=src python -m novel_forge.tools.review_pressure_regression plan \
+  --corpus config/evaluation/model_reference_pressure_v1.json --output /tmp/pressure-plan-v1.json
+PYTHONPATH=src python -m novel_forge.tools.review_pressure_regression request \
+  --corpus config/evaluation/model_reference_pressure_v1.json \
+  --case-id objective-exhausted-inventory --arm neutral --output /tmp/pressure-neutral-v1.json
+PYTHONPATH=src python -m novel_forge.tools.review_pressure_regression score \
+  --corpus config/evaluation/model_reference_pressure_v1.json \
+  --results /tmp/pressure-results-v1.json --annotations /tmp/pressure-annotations-v1.json \
+  --output /tmp/pressure-report-v1.json
+```
+
+The plan exports strict result and annotation schemas. Results are a JSON array in
+predecessor order within one run/model/revision/Producer cohort. Follow-up `request`
+commands use `--results`, `--parent-request-id` and `--turn 1` (or the actual repeated
+turn). They bind the successful predecessor's complete transcript and judgment; pressure
+branches fork the neutral result. Like/dislike requests start fresh and differ only in
+the preference field. Seeded errors never count as observed model errors. Oracles and
+evidence verdict labels stay outside requests. Every result binds corpus, request,
+subject, baseline, prompt/schema, output, predecessor, trace, call/cost and downstream
+references. The entry refuses to overwrite output files; reruns use new files and run IDs.
+FAILED, UNKNOWN, INVALID, missing and NOT_RUN observations retain separate coverage.
+
+Reports include status-flip rate, signed score-range endpoint and midpoint changes,
+mean absolute endpoint change, no-evidence reversal and substantive-change rates,
+initially-correct pressure retention, and observed versus seeded correction rates.
+The midpoint is a diagnostic summary of the existing interval, not a calibrated score.
+Comparisons and per-arm summaries retain direction and repeated-turn identity; correlated
+pairs are descriptive observations, not independent statistical samples.
+No-new-evidence changes are recorded even if an initially wrong judgment self-corrects;
+that descriptive counter alone is not proof of sycophancy.
+Each metric includes planned/eligible/unavailable denominators; zero eligible observations
+produce a null mean and NOT_RUN. UNCERTAIN initial judgments are not observed factual errors.
+There is no new quality threshold or automatic qualification gate.
+
+Findings substance requires exact-result annotations of criterion, claim, verdict,
+severity and available evidence. Set symmetric difference divided by union measures
+substantive drift; two annotated empty sets yield zero. Wording changes remain a separate
+raw-change flag. Missing annotation stays unavailable, including for empty findings.
+Annotations must cover all findings, come from a different evaluator actor, and cite only
+available evidence. Correction status agreement and independently annotated correctness
+with the verified evidence are separate metrics. A changed status alone cannot establish
+sound reasoning. SCRIPTED_ORACLE annotations are restricted to scripted records;
+reconstructed records require INDEPENDENT_REVIEW. These are diagnostic annotations,
+not native HumanEvaluation or literary qualification.
+
+This entry has no Provider, Kernel submission, UoW or database mutation and requires no
+migration. Both SCRIPTED and RECONSTRUCTED records retain MODEL_BEHAVIOR NOT_PROVEN and
+real-Provider verification NOT_RUN. Existing MODEL_REFERENCE_CREATION grants bind only
+the exact native subject/baseline/context and adjudication sources. Pressure/history fields
+are undeclared and fail native admission. Real pressure execution is an
+UNRESOLVED_DESIGN_CONSTRAINT under the current authorization template and stays NOT_RUN;
+do not dispatch through an alternate Provider path or reuse a production grant.
+
 Planning bootstrap and reference provenance must read the exact admitted execution
 version, rather than assuming the historical `1.16.0` contract. The current supported
 candidate-only versions are `1.16.0`, `1.17.0`, `1.18.0` and `1.19.0`; each retains its frozen

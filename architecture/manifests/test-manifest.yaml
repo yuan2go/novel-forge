@@ -84,6 +84,18 @@
       "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
     },
     {
+      "id": "review-pressure-paired-regression",
+      "patterns": [
+        "tests/unit/test_review_pressure_regression.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-quality-authority",
+      "capability": "review-revision-quality",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+      "qualification_role": "SYNTHETIC_ENGINEERING_BENCHMARK_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
       "id": "creation-durable-coordination",
       "patterns": [
         "tests/unit/test_creation_coordination.py"
