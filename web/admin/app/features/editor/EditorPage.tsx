@@ -191,7 +191,7 @@ export function EditorPage() {
     </section>
     <section className="panel"><PanelHeader title="修改对照与决定" icon={<GitPullRequest size={18} />} />
       {candidate?.content.edits.map((edit, index) => <div key={index}><p>基准位置 [{edit.start}, {edit.end})</p><del>{edit.before || "（插入位置）"}</del><ins>{edit.after || "（删除）"}</ins></div>)}
-      <p>诊断与语义影响：新候选尚需独立复核。作者采用不代表连续性、Craft 或正文质量已通过。</p>
+      <p>诊断与语义影响：新候选可按需复核。作者采用不代表连续性或正文质量已验证。</p>
       <textarea aria-label="决定理由" value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="可选：说明采用或拒绝本候选的理由" rows={3} />
       <div className="studioActions">
         <button className="primaryButton" disabled={busy || !!pending || dirty || state?.session?.status !== "SAVED_CANDIDATE"} onClick={() => decide("accept")}>{EDITOR_COMMANDS[1]}</button>
@@ -200,7 +200,7 @@ export function EditorPage() {
       </div>
     </section>
     <section className="panel">
-      <p>提交章节复核会登记模型工作，沿用项目现有的 Provider 资格、授权与预算门控。</p>
+      <p>按需复核会使用作品已授权的执行模板；当前稿件仍可阅读、修改和导出。</p>
       {reviewStatus ? <>
         <h3>章节复核进度</h3><p style={{overflowWrap: "anywhere"}}>{reviewStatus.root_operation_id} · {reviewStatus.run.status}</p>
         <button className="secondaryButton" disabled={busy} onClick={() => state && loadAuthorReview(state.project_id, reviewStatus.root_operation_id).then(setReviewStatus).catch(showError)}>刷新章节复核状态</button>
