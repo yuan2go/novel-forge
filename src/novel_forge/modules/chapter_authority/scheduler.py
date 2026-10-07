@@ -883,6 +883,12 @@ class ChapterAuthorityScheduler:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.repositories.definitions.register(retained_rereview_definition(application_build_id=admission.application_build_id,commit_sha=admission.commit_sha))
                 uow.commit()
+        if retained and retained["retained_result"]["contract_version"] == "chapter-canon-reference-resolution-revalidation.v1" and node is ChapterNode.CANON_EXTRACTION and idempotency_suffix == f":quality-correction:{retained['retained_result']['quality_generation']}":
+            command["definition_version"] = "3.9.33"
+            from .definitions import retained_canon_reference_definition
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.repositories.definitions.register(retained_canon_reference_definition(application_build_id=admission.application_build_id, commit_sha=admission.commit_sha))
+                uow.commit()
         admitted = admit_command(self.database_url, command, context=admission)
         operation_id = str(admitted["operation_id"])
         graph_context = GraphCommandContext(

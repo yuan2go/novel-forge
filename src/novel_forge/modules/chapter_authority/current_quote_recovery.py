@@ -106,6 +106,7 @@ def source_graph(cursor, *, root, saga):
     ) not in {
         ("chapter.canon.extract", "3.9.24"),
         ("chapter.canon.extract", "3.9.30"),
+        ("chapter.canon.extract", "3.9.31"),
         ("chapter.canon.propose_changes", "3.9.23"),
     }:
         raise KernelError(
@@ -134,6 +135,7 @@ def source_graph(cursor, *, root, saga):
         )
     generation = int(match[1])
     semantic_proof = None
+    derivation = None
     excluded_operations = {source["operation_id"]}
     if semantic:
         from .current_semantic_recovery import semantic_source
@@ -185,6 +187,9 @@ def source_graph(cursor, *, root, saga):
                 "CURRENT_QUOTE_RECOVERY_NOT_APPLICABLE",
                 "Do not regenerate a valid retained quote result",
             )
+    if source["definition_version"] == "3.9.31":
+        from .canon_reference_recovery import derive_source
+        derivation, _ = derive_source(cursor, source, raw=raw, inputs=inputs, evidence=evidence)
     from .quality_length_requirement import freeze_requirement, require_length
 
     requirement = freeze_requirement(
@@ -401,7 +406,7 @@ def source_graph(cursor, *, root, saga):
                 "Retain every completed preceding correction pass",
             )
     proof = semantic_proof or {
-        "contract_version": "chapter-canon-reference-contract-repair.v1" if source["definition_version"] == "3.9.30" else CONTRACT,
+        "contract_version": "chapter-canon-reference-resolution-revalidation.v1" if derivation else "chapter-canon-reference-contract-repair.v1" if source["definition_version"] == "3.9.30" else CONTRACT,
         "source_operation_id": source["operation_id"],
         "source_attempt": attempts[0],
         **evidence,
@@ -411,10 +416,12 @@ def source_graph(cursor, *, root, saga):
         "remaining_diagnostic": diagnostic,
         "quality_generation": generation,
         "length_repair": rewind,
-        "provider_invoked": True,
+        "provider_invoked": derivation is None,
         "strict_certification_eligible": False,
         "completed_work_repeated": False,
     }
+    if derivation:
+        proof.update(derivation)
     if semantic_proof:
         proof.update(quality_generation=generation, length_repair=None)
     return {

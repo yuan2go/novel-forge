@@ -142,7 +142,7 @@ def resolve_references(document, *, text, target_asset_version_id, corpus):
                         value[prefix + "end"] = spans[reference]["end"]
             if isinstance(value.get("resolution_evidence"), list):
                 value["resolution_evidence"] = [
-                    f"chars:{spans[reference]['start']}:{spans[reference]['end']}:"
+                    f"chars:{spans[reference]['start']}-{spans[reference]['end']}:"
                     + resolve(reference, path + f".resolution_evidence[{index}]")
                     for index, reference in enumerate(value["resolution_evidence"])
                 ]

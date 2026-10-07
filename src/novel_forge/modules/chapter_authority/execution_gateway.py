@@ -939,7 +939,7 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_TOOL_UNAUTHORIZED",
                 "Capability Pack does not authorize model.provider.invoke for this stage",
             )
-        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6", "3.9.7", "3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31"} and materialization.prompt_template.version != ("v12" if graph["definition_version"] == "3.9.31" else "v11" if graph["definition_version"] in {"3.9.7", "3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31"} else "v10"):
+        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6", "3.9.7", "3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31", "3.9.32"} and materialization.prompt_template.version != ("v12" if graph["definition_version"] in {"3.9.31", "3.9.32"} else "v11" if graph["definition_version"] in {"3.9.7", "3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31", "3.9.32"} else "v10"):
             raise KernelError("CHAPTER_CANON_SCHEMA_PROJECTION_REQUIRED", "Canon requires its exact versioned Schema and transport Prompt binding")
         provider_schema, provider_schema_ref = self._provider_output_contract(
             stage=stage,
@@ -947,7 +947,7 @@ class PostgresChapterExecutionContractBinder:
             legacy_contract=materialization.prompt_template.version == "v2",
             prompt_contract_version=materialization.prompt_template.version,
         )
-        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31"} and provider_schema_ref != ("schema:chapter-provider-output:canon_extraction:v27" if graph["definition_version"] == "3.9.31" else "schema:chapter-provider-output:canon_extraction:v26"):
+        if stage == "canon_extraction" and graph["definition_version"] in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31", "3.9.32"} and provider_schema_ref != ("schema:chapter-provider-output:canon_extraction:v27" if graph["definition_version"] in {"3.9.31", "3.9.32"} else "schema:chapter-provider-output:canon_extraction:v26"):
             raise KernelError("CHAPTER_CANON_FIELD_KIND_CONTRACT_REQUIRED", "Canon requires its exact native field taxonomy Schema")
         if stage == "canon_support" and graph["definition_version"]=="3.9.8" and provider_schema_ref!="schema:chapter-provider-output:canon_support:v2":
             raise KernelError("CHAPTER_CANON_SUPPORT_CONTRACT_REQUIRED", "Support requires its exact finite taxonomy Schema binding")
@@ -2132,7 +2132,7 @@ class PostgresChapterExecutionContractBinder:
         compatible = compatible or (str(row[0]) in {ChapterNode.REVIEW.definition_name, ChapterNode.REREVIEW.definition_name} and str(row[1]) in {"3.9.3", "3.9.19"})
         compatible = compatible or (str(row[0]) in {n.definition_name for n in (ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM)} and str(row[1]) in {"3.9.9", "3.9.12"})
         compatible = compatible or (str(row[0]) == ChapterNode.CANON_PROPOSAL.definition_name and str(row[1]) in {"3.9.8", "3.9.23"})
-        compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7", "3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31"})
+        compatible = compatible or (str(row[0]) == ChapterNode.CANON_EXTRACTION.definition_name and str(row[1]) in {"3.9.5", "3.9.6", "3.9.7", "3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31", "3.9.32"})
         compatible = compatible or (str(row[0]) == ChapterNode.REVISION.definition_name and str(row[1]) in {"3.9.4", "3.9.16", "3.9.26"})
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(

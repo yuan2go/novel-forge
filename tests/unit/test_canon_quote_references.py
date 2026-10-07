@@ -132,3 +132,17 @@ def test_reference_negative_projection_retains_semantic_rejection_and_original_e
     assert negative == original
     assert feedback["negative_assessment_projection"]["full_assessments_hash"] == snapshot_hash(original)
     assert feedback["negative_assessment_projection"]["semantic_assessments_reused_as_pass"] is False
+
+
+def test_resolution_references_use_the_native_canon_interval_contract():
+    from novel_forge.modules.canon_graph.evidence_localization import localize_provider_quotes
+    text = "第一段正文。\n\n结局证据。"
+    corpus = build_references(text, target_asset_version_id="candidate-v1")
+    reference = corpus["references"][1]
+    raw = {"arc_evidence": [{"resolution_evidence": [reference["reference_id"]]}]}
+    resolved, _ = resolve_references(raw, text=text, target_asset_version_id="candidate-v1", corpus=corpus)
+    localized, _ = localize_provider_quotes(resolved, text=text, target_asset_version_id="candidate-v1")
+    assert localized == resolved
+    assert resolved["arc_evidence"][0]["resolution_evidence"] == [f"chars:{reference['start']}-{reference['end']}:结局证据。"]
+    with pytest.raises(KernelError, match="CANON_QUOTE_LOCALIZATION_INVALID"):
+        localize_provider_quotes({"resolution_evidence": [f"chars:{reference['start']}:{reference['end']}:结局证据。"]}, text=text, target_asset_version_id="candidate-v1")

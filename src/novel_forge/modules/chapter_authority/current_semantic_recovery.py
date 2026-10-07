@@ -107,7 +107,7 @@ def semantic_source(cursor, source):
     canonical = rows[0][0]
     if (
         canonical["definition_name"] != "chapter.canon.extract"
-        or canonical["definition_version"] not in {"3.9.29", "3.9.30", "3.9.31"}
+        or canonical["definition_version"] not in {"3.9.29", "3.9.30", "3.9.31", "3.9.32"}
         or canonical["status"] != "SUCCEEDED"
         or canonical["root_operation_id"] != source["root_operation_id"]
         or canonical["actor_id"] != source["actor_id"]

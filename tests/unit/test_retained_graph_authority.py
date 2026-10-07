@@ -89,18 +89,19 @@ def test_semantic_successor_acknowledges_only_the_preserved_known_failed_attempt
     assert effect['attempt_status'] == attempt_status
 
 
+@pytest.mark.parametrize("pair,version", [( ("chapter-current-semantic-repair.v1", "chapter-canon-reference-contract-repair.v1"), "3.9.30"), (("chapter-canon-reference-contract-repair.v1", "chapter-canon-reference-resolution-revalidation.v1"), "3.9.31")])
 @pytest.mark.parametrize("source_status", ["FAILED_FINAL", "UNKNOWN"])
-def test_reference_descendant_preserves_semantic_failure_without_claiming_old_extraction_success(source_status):
+def test_reference_descendant_preserves_semantic_failure_without_claiming_old_extraction_success(source_status, pair, version):
     from novel_forge.modules.command_kernel.retained_graph import _reference_descendant
-    proof = {"contract_version": "chapter-current-semantic-repair.v1",
+    proof = {"contract_version": pair[0],
              "target_asset_version_id": "candidate", "quality_generation": 2,
              "source_operation_id": "negative-review"}
-    repair = {"contract_version": "chapter-canon-reference-contract-repair.v1",
+    repair = {"contract_version": pair[1],
               "source_operation_id": "failed-extraction",
               "target_asset_version_id": "candidate", "quality_generation": 2}
     cursor = Mock()
     cursor.fetchone.return_value = ({"preparation_report": {"retained_graph_continuation": {"retained_result": proof}}},
-                                   "3.9.30", source_status, "previous-root")
+                                   version, source_status, "previous-root")
     result = _reference_descendant(cursor, "previous-root", proof, ("new-extraction", repair))
     assert result == ("new-extraction" if source_status == "FAILED_FINAL" else None)
     if source_status == "FAILED_FINAL":

@@ -1987,6 +1987,9 @@ class _CanonExtractionHandler:
     provider: ChapterModelPort
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        if request.definition_version == "3.9.33":
+            from .canon_reference_recovery import materialize
+            return _output(ChapterNode.CANON_EXTRACTION, materialize(request))
         revision = request.require_input("best_draft_candidate")
         context = request.require_input("context_bundle")
         provider_extraction = None
@@ -1996,7 +1999,7 @@ class _CanonExtractionHandler:
         semantic_repair = None
         quote_repair = None
         references = None
-        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31"}
+        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31", "3.9.32"}
         if current_contract and request.database_url:
             from .canon_output_recovery import repair_feedback
             repair = repair_feedback(request)
@@ -2009,7 +2012,7 @@ class _CanonExtractionHandler:
             if request.definition_version == "3.9.30":
                 from .current_semantic_recovery import repair_feedback as semantic_feedback
                 semantic_repair = semantic_feedback(request)
-        if request.definition_version == "3.9.31":
+        if request.definition_version in {"3.9.31", "3.9.32"}:
             from .canon_quote_references import build_references, require_successor_send
             references = build_references(revision.content["text"], target_asset_version_id=revision.asset_version_id)
             quote_repair = require_successor_send(request)
