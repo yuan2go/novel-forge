@@ -9,13 +9,15 @@
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: bounded native ingestion, governed abstraction, exact knowledge consumption,
 Codex account-entitlement execution, and four-arm creative validation
-Reality baseline: `b484551d1d128075b67784c2b4bed489d1119397`
+Reality baseline: `2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42`
 Baseline implementation identity:
-`sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de`
+`sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87`
 
 2026-10-07 scope review: Current Formation and Planning add exact source/Pack/Context recovery, versioned Foundation v4 and bounded native successors. These change the campaign execution contract; they do not supply G3 twenty-work consumption or G4 four-arm real comparison.
 This checkpoint review is implementation evidence, not final backend qualification,
 real-Provider qualification or literary quality.
+
+Source baseline refreshed for the coordinated forward-contract integration. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
 
 <!-- proposal-lifecycle
 {
@@ -25,8 +27,8 @@ real-Provider qualification or literary quality.
   "review_due": "2026-10-30",
   "decision_free_since": "2026-09-08",
   "reality_baseline": {
-    "sha": "b484551d1d128075b67784c2b4bed489d1119397",
-    "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+    "sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+    "implementation_tree_sha": "sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87"
   },
   "scope": [
     "src/novel_forge/api/authority_dependencies.py",
