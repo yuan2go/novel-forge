@@ -2110,3 +2110,10 @@ structured-output Provider counts enum choices after reference expansion. The ho
 still resolves only IDs present in the exact candidate table. A recorded service Schema
 rejection can receive a corrected contract successor while retaining failed effects,
 receipts and their original membership consumption; unknown paid outcomes cannot.
+
+The current Canon transport uses a typed JSON envelope. Its frozen host Schema retains
+the complete extraction contract in `x-host-payload-schema`; the Codex transport
+projection sends only the envelope shape, while the prompt delivers the exact inner
+contract. The production validator parses and validates that inner object before
+semantic checks, normalization, grounding or support review. This is a transport
+adapter, with no alternate Canon authority or acceptance path.

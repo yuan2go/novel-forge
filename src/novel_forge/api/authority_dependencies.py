@@ -352,6 +352,18 @@ def validate_production_structured_result(
         validated = validate_native_world_schema_fragment(stage, output_schema, value, output_schema_ref=output_schema_ref)
     else:
         validated = validate_chapter_provider_output_against_schema(stage, output_schema, value)
+    if output_schema_ref == "schema:chapter-provider-output:canon_extraction:v27":
+        from novel_forge.modules.command_kernel.errors import KernelError
+        import json
+        inner = output_schema.get("x-host-payload-schema")
+        if stage != "canon_extraction" or not isinstance(inner, Mapping):
+            raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "The exact frozen Canon inner Schema is required")
+        try:
+            decoded = json.loads(validated["payload_json"])
+        except (ValueError, TypeError, KeyError) as error:
+            raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "Canon payload_json must contain the complete typed extraction") from error
+        validated = validate_chapter_provider_output_against_schema(stage, inner, decoded)
+        output_schema_ref = "schema:chapter-provider-output:canon_extraction:v26"
     if stage in {
         *FOUNDATION_GENERATORS,
         "book_plan.generate", "volume_plan.generate", "arc_plan.generate",

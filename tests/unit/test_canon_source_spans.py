@@ -143,3 +143,29 @@ def test_exact_span_pattern_accepts_only_current_table_and_avoids_expanded_enum_
     for invalid in ("foreign", table["spans"][0]["span_id"] + "suffix"):
         with pytest.raises(ValueError):
             _validate(identity, invalid, path="$")
+
+
+def test_typed_envelope_retains_full_host_contract_and_validates_before_normalization():
+    import json
+    from novel_forge.api.authority_dependencies import validate_production_structured_result
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    table = source_spans("周澄看见名字。")
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": {"source_span_table": table, "source_span_schema_contract": "typed-extraction-json.v1"}}, prompt_contract_version="v9")
+    transport = codex_output_schema(schema)
+    assert ref.endswith(":v27")
+    assert set(transport["properties"]) == {"payload_json"}
+    assert "x-host-payload-schema" not in transport
+    from novel_forge.modules.chapter_authority.provider_output_contracts import canon_provider_array_fields
+    value = {key: [] for key in canon_provider_array_fields()}
+    value.update(extraction_status="NO_CHANGE", no_change_reason="No observed changes.")
+    validated = validate_production_structured_result("canon_extraction", schema, {"payload_json": json.dumps(value)}, output_schema_ref=ref)
+    assert validated["extraction_status"] == "NO_CHANGE"
+    assert "payload_json" not in validated
+    for invalid in ("not JSON", json.dumps({}), json.dumps({**value, "canon_facts": "[]"})):
+        with pytest.raises(KernelError, match="CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"):
+            validate_production_structured_result("canon_extraction", schema, {"payload_json": invalid}, output_schema_ref=ref)
+    foreign = {**value, "canon_facts": [{"subject": "door", "predicate": "status", "object": "closed", "effective_from_chapter": 1,
+        "supersedes_event_id": None, "evidence_span_id": "foreign-span", "claim_kind": "OBJECTIVE_EVENT", "confidence": 0.9, "impact_type": "world_fact"}]}
+    with pytest.raises(KernelError, match="CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"):
+        validate_production_structured_result("canon_extraction", schema, {"payload_json": json.dumps(foreign)}, output_schema_ref=ref)

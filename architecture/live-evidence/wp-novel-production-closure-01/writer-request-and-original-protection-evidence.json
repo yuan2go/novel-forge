@@ -1,0 +1,22 @@
+{
+  "evidence_kind": "EXACT_REAL_WRITER_REQUEST_RECONSTRUCTION",
+  "actual_effect_id": "3f9082fa-f393-4c44-a036-761bb7796de5",
+  "actual_stdin_hash": "sha256:327e2c421de1887cfa32c9a4350001657b6cd0bb8bd1d14fe05a46071daf7748",
+  "frozen_pack_version": "2.14.0",
+  "exact_hash_match": true,
+  "original_book": "closure-original-book",
+  "input_capacity_units": 145342,
+  "output_reserve": 32768,
+  "actual_served_model_identity": "UNKNOWN",
+  "requested_model": "codex-cli:gpt-6-sol:high",
+  "candidate_comparison": {
+    "original_score": 97,
+    "challenger_score": 96,
+    "actual_prose_changed": false,
+    "original_retained": true,
+    "improvement": false,
+    "literary_quality_proven": false
+  },
+  "accepted_chapters": 0,
+  "delivery": "NOT_RUN"
+}

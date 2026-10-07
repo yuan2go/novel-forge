@@ -1,0 +1,46 @@
+{
+  "evidence_kind": "NATIVE_CANON_SOURCE_SPAN_CONTRACT_SUCCESSOR",
+  "database": "novel_forge_closure_canon_envelope_20261007_test",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "definition_version": "3.9.5",
+  "source_saga_status": "MANUAL_INTERVENTION",
+  "failure_status": "FAILED_FINAL_PRESERVED",
+  "successful_siblings": [
+    [
+      "chapter.context.build",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ]
+  ],
+  "effects_before": 63,
+  "effects_after": 63,
+  "provider_dispatches": 0,
+  "exact_inputs_preserved": true,
+  "idempotent_recovery": true,
+  "book_noop_reconciliation": true,
+  "pack_version": "2.22.0",
+  "migration_fresh_and_restore": "PASS",
+  "real_writer": "NOT_RUN",
+  "evidence_state": "EXECUTABLE",
+  "actual_runtime_parent_sha": "1a082e0bd80bf74ec2aa9b79178a095ee6466ac1",
+  "real_execution": "NOT_RUN",
+  "literary_effect": "NOT_PROVEN",
+  "full_rendered_admission": {
+    "status": "SELECTED",
+    "input_capacity_units": 216060,
+    "output_reserve": 32768,
+    "context_capacity": 272000,
+    "input_hash": "sha256:06fc94143260669de07cd57d9c311e5baccb0b1e452c7807c38dfb01d0ccbf78",
+    "output_schema_ref": "schema:chapter-provider-output:canon_extraction:v27",
+    "measurement": "APPLICATION_UTF8_BYTES_UPPER_BOUND"
+  },
+  "predecessor_extraction": "be081a5f-822a-44df-8bb9-edfa2ddc6366",
+  "successor_extraction": "6ec313e6-1363-43be-8d1c-71a8756e5c36"
+}

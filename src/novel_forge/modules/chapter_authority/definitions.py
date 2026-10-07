@@ -512,7 +512,7 @@ def _definition(
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",
-            **({"canon_evidence_span": "literal-source-spans.v1", "canon_gateway_contract": "chapter-node-contracts.v1", "canon_schema_compaction": "local-evidence-pattern.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
+            **({"canon_evidence_span": "literal-source-spans.v1", "canon_gateway_contract": "chapter-node-contracts.v1", "canon_schema_compaction": "typed-extraction-json.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"known_receipt_revalidation": "chapter-known-receipt.v1", "knowledge_check_scope": "review-target-scope.v1"} if model_effects_required and node in {ChapterNode.REVIEW,ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"known_receipt_revalidation": "chapter-known-receipt.v1"} if node is ChapterNode.DRAFT and model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.2" else {}),
             **({"scene_core_projection": "scene-core-slots.v1", "scene_information_flow": "scene-information-flow.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION in {"3.9.1", "3.9.2"} else {}),
@@ -544,7 +544,7 @@ def chapter_node_definition_version(node: ChapterNode, model_effects_required: b
     if model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0":
         return {ChapterNode.DRAFT: CHAPTER_DRAFT_DEFINITION_VERSION,
             ChapterNode.REVIEW: "3.9.1", ChapterNode.REREVIEW: "3.9.2",
-            ChapterNode.CANON_EXTRACTION: "3.9.4"}.get(node, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION)
+            ChapterNode.CANON_EXTRACTION: "3.9.5"}.get(node, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION)
     return chapter_definition_version(model_effects_required)
 
 

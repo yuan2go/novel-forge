@@ -79,7 +79,7 @@ def codex_account_binding_evidence(backend: object) -> dict:
 
 
 def codex_output_schema(schema: dict) -> dict:
-    result = {k: v for k, v in schema.items() if k != "uniqueItems"}
+    result = {k: v for k, v in schema.items() if k not in {"uniqueItems", "x-host-payload-schema"}}
     if set(result.get("properties", {})) == {"finding_code", "statement", "evidence_span_ids", "input_observation_asset_version_ids"}:
         properties = result["properties"]
         for key in ("anyOf", "oneOf"):

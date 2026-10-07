@@ -32,7 +32,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_INVALID')
               OR (o.definition_version='3.9.1' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED')
               OR (o.definition_version='3.9.2' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED')
-              OR (o.definition_version='3.9.3' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code' IN ('MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED')))""",
+              OR (o.definition_version IN ('3.9.3','3.9.4') AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code' IN ('MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED')))""",
             [request["chapter_root_operation_id"], book["project_id"]])
         row = u.cursor.fetchone()
         if not row:
@@ -40,7 +40,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         source = row[0]
         u.cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'", [source["operation_id"]])
         effects = u.cursor.fetchall()
-        predispatch = source["definition_version"] in {"3.9.1", "3.9.2", "3.9.3"}
+        predispatch = source["definition_version"] in {"3.9.1", "3.9.2", "3.9.3", "3.9.4"}
         capacity_evidence = []
         if source["definition_version"] == "3.9.2":
             u.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
@@ -60,7 +60,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         elif len(effects) != 1:
             raise KernelError("CANON_CONTRACT_RECONCILIATION_REQUIRED", "One exact succeeded source receipt is required")
         result = _receipt(u.cursor, (previous_evidence["source_effect_id"] if predispatch else effects[0][0]), book["project_id"])
-    rejected_effects, rejection_proof = schema_rejection_receipts(authority.database_url, source) if source["definition_version"] == "3.9.3" else ((), [])
+    rejected_effects, rejection_proof = schema_rejection_receipts(authority.database_url, source) if source["definition_version"] in {"3.9.3", "3.9.4"} else ((), [])
     inputs = [AuthorityAssetQuery(authority.database_url).require(project_id=book["project_id"], asset_version_id=a["asset_version_id"]) for a in source["input_asset_snapshot"]]
     revision = next(a for a in inputs if a.asset_type == "best_draft_candidate")
     context = next(a for a in inputs if a.asset_type == "context_bundle")
@@ -88,7 +88,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
             raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload the original Book frontier and authorization")
 
-    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.4",
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.5",
         context=AdmissionContext(principal.principal_id, principal.permissions,
             authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
         policy_evidence=evidence, expected_failure_code=(latest_failure_code(authority.database_url, source["operation_id"]) if rejection_proof else "PROVIDER_ROUTING_BLOCKED" if capacity_evidence else "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED" if predispatch else "CANON_GROUNDING_INVALID"), transaction_guard=guard,

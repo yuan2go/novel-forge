@@ -1271,7 +1271,8 @@ class PostgresChapterExecutionContractBinder:
         )
         if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
             from novel_forge.modules.canon_graph.source_spans import span_output_schema
-            span_pattern = inputs.get("source_span_schema_contract") == "local-evidence-pattern.v1"
+            json_envelope = inputs.get("source_span_schema_contract") == "typed-extraction-json.v1"
+            span_pattern = json_envelope or inputs.get("source_span_schema_contract") == "local-evidence-pattern.v1"
             compact = span_pattern or inputs.get("source_span_schema_contract") == "local-evidence-ref.v1"
             schema = span_output_schema(schema, inputs["source_span_table"], compact=compact, span_pattern=span_pattern)
             schema_ref = "schema:chapter-provider-output:canon_extraction:" + ("v26" if span_pattern else "v25" if compact else "v24")
@@ -1279,6 +1280,11 @@ class PostgresChapterExecutionContractBinder:
                 from novel_forge.modules.canon_graph.source_spans import expanded_enum_choices
                 if expanded_enum_choices(schema) > 1000:
                     raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "The current Codex structured-output contract permits at most 1000 expanded enum choices")
+            if json_envelope:
+                schema = {"$schema": schema["$schema"], "type": "object", "additionalProperties": False,
+                    "properties": {"payload_json": {"type": "string", "minLength": 2}}, "required": ["payload_json"],
+                    "x-host-payload-schema": schema}
+                schema_ref = "schema:chapter-provider-output:canon_extraction:v27"
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -4598,6 +4604,8 @@ def _materialize_production_codex_prompt(
             "Do not invent a change, omit an observed required effect, or claim that extraction accepts the chapter.",
             required_language,
         )
+    if stage == "canon_extraction" and inputs.get("source_span_schema_contract") == "typed-extraction-json.v1":
+        stage_semantic_contract += " Return the complete extraction object encoded in payload_json. The x-host-payload-schema is the exact inner JSON contract, including its local definitions. It is not an output property. Include every required array, using [] only for absent changes; the host validates the inner object before semantic review."
     if targeted_edits_only:
         stage_semantic_contract = _bind_language_contract(
             "Return only ordered non-overlapping edits with exact old quotes, replacement prose and linked issue codes. "

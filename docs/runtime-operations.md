@@ -3122,3 +3122,8 @@ A missing HTTP status does not make `invalid_request_error` with `invalid_json_s
 Keep the original failed dispatches and conservative usage; never resend the refused
 Schema or change an unknown paid reservation. Validate expanded enum limits before
 new contract dispatch, even when the serialized Schema uses shared definitions.
+
+A generic service Schema refusal does not establish its specific cause. Preserve that
+uncertainty. For the typed Canon envelope, compare canonical and Provider Schema hashes,
+inspect the full rendered inner contract, and verify inner validation rejects malformed
+JSON, foreign span identities, missing arrays and semantic defects before domain commit.
