@@ -1899,8 +1899,8 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.12.0 requires System v3,
-Template v9 and prose-generation-v4 identities; new Planning Pack 2.10.0 binds Operation 1.18.0, System v8,
+materialization before an authorized run. The current Chapter Pack manifest requires System v3,
+Template v9 and prose-generation-v4 identities. Historical Planning Pack 2.10.0 binds Operation 1.18.0, System v8,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
 retaining qualification-v2 identities. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
@@ -3100,3 +3100,14 @@ For `REVIEW_KNOWLEDGE_CHECK_INVALID` after a successful historical Review receip
 inspect the exact frozen target set and Pack rule hashes. The native successor retains
 the raw judgment, validates literal evidence, separates only delivered advisory rules,
 and reruns required checks. Do not drop unknown checks or replay the Provider call.
+
+Known Canon grounding failures under the historical quote contract retain their raw
+Provider receipt. The Book worker admits a versioned source-span extraction successor
+on the same Saga after reconciling consumption and verifying the current Book frontier.
+This performs a new authorized extraction against the original selected prose; it does
+not repair the prose, accept the failed extraction, or resend the old effect. A derived
+expired execution window continues only with immutable contract-successor evidence,
+never by editing a terminal task or increasing a paid limit. The focused matrix includes
+`tests/unit/test_canon_source_spans.py` and
+`tests/integration/test_failed_step_successor_postgres.py`, alongside existing Canon
+grounding, world reconciliation, Pack binding and Kernel graph tests.

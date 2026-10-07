@@ -1943,6 +1943,24 @@ class _CanonExtractionHandler:
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
+        span_contract = request.definition_version == "3.9.1"
+        span_inputs = {}
+        if span_contract:
+            from novel_forge.modules.canon_graph.source_spans import source_spans
+            from novel_forge.modules.canon_graph.background import scheduled_world_events
+            from novel_forge.modules.worldbuilding.production_schema import world_transition_schema
+            from .canon_contract_recovery import repair_diagnostics
+            binding = (context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}
+            events = scheduled_world_events(binding) if binding else []
+            span_inputs = {
+                "source_span_table": source_spans(revision.content["text"]),
+                "world_transition_contract": world_transition_schema(agency=any(event.get("action_mode") for event in events)),
+                "repair_diagnostics": repair_diagnostics(request),
+                "observer_transition_constraints": [
+                    {key: value for key, value in event.items() if key != "action"}
+                    for event in events if event["camera"] == "ON_CAMERA"
+                ],
+            }
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -1951,12 +1969,16 @@ class _CanonExtractionHandler:
                 stage="canon_extraction",
                 payload={
                     "revision": revision.content,
+                    **span_inputs,
                     "execution_expectations": dict(
                         context.content.get("chapter_execution_expectations") or {}
                     ),
                 },
             )
             provider_extraction = _canon_provider_extraction(generated)
+            if span_contract:
+                from novel_forge.modules.canon_graph.source_spans import bind_source_spans
+                provider_extraction = bind_source_spans(provider_extraction, revision.content["text"])
         from novel_forge.modules.canon_graph.grounding import extract_grounded_candidates
         extractor = extract_grounded_candidates if generated is not None else build_canon_extraction
         content = extractor(

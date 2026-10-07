@@ -50,6 +50,8 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
+        from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract
+        recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         recover_known_draft_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier
         recover_realization_frontier(composition.authority, book_run_id=book_run_id,

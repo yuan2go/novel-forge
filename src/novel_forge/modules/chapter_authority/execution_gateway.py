@@ -1269,6 +1269,10 @@ class PostgresChapterExecutionContractBinder:
             work_requirements=prompt_contract_version in {"v8", "v9"},
             allow_noop_revision=prompt_contract_version == "v9" and not bool(inputs.get("quality_edit_contract")),
         )
+        if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
+            from novel_forge.modules.canon_graph.source_spans import span_output_schema
+            schema = span_output_schema(schema, inputs["source_span_table"])
+            schema_ref = "schema:chapter-provider-output:canon_extraction:v24"
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -4568,6 +4572,27 @@ def _materialize_production_codex_prompt(
             else None
         ),
     )
+    if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
+        stage_semantic_contract = _bind_language_contract(
+            "Extract only events and epistemic changes evidenced in this exact selected prose. "
+            "Select evidence_span_id, resolution_evidence IDs and accepted_prose_evidence.span_id from source_span_table; "
+            "the host binds literal text, locations and source identity. Never rewrite a quote or invent an ID. "
+            "A matching span is evidence for independent support review, not automatic truth. "
+            "Preserve exact approved entity IDs, transition states, story time and scoped disclosure IDs. "
+            "Keep objective events, character knowledge, belief and reader presentation separate. "
+            "Observer constraints describe the selected current action's modeled boundaries, not an occurrence. "
+            "Extract its actual action from prose only when observed; preserve its agency classification, "
+            "causal predicates and references. Serialize world_transition using world_transition_contract. "
+            "ROUTINE does not grant knowledge. PERCEPTION requires an available objective source; "
+            "subsequent information-dependent action requires that actor's own earlier acquisition. "
+            "Local causal references must precede their dependents; future plans and other characters' knowledge are unavailable. "
+            "Report every expected Arc and realization as observed or unobserved according to actual prose. "
+            "Unobserved contributions carry no evidence or progress. Non-CAUSAL_DEBT prose payoffs use null "
+            "for host binding; causal debt requires an exact accepted prerequisite. Quantitative resources require "
+            "actual numeric balances. NO_CHANGE requires a supported coverage explanation. "
+            "Do not invent a change, omit an observed required effect, or claim that extraction accepts the chapter.",
+            required_language,
+        )
     if targeted_edits_only:
         stage_semantic_contract = _bind_language_contract(
             "Return only ordered non-overlapping edits with exact old quotes, replacement prose and linked issue codes. "

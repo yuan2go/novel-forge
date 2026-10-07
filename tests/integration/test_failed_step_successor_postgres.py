@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 
 import psycopg
 import pytest
@@ -193,6 +194,58 @@ def test_native_step_successor_preserves_failure_and_manual_saga_history(failed_
                 [child],
             )
             uow.commit()
+
+
+def _window_options(failed_graph):
+    project, root, child, saga, context = failed_graph
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("SELECT definition_snapshot FROM authority_operation WHERE operation_id=%s", [child])
+        target = deepcopy(u.cursor.fetchone()[0])
+        target["definition_version"] = "1.0.2"
+        target["policy"]["source_span_contract"] = "controlled-span.v1"
+        u.repositories.definitions.register(target)
+        u.cursor.execute("UPDATE authority_operation SET business_deadline_at=%s WHERE operation_id=%s", [datetime.now(timezone.utc)-timedelta(seconds=1), root])
+        u.commit()
+    return dict(predecessor_id=child, target_version="1.0.2", context=context,
+        policy_evidence={"contract": "controlled-interface-correction"}, expected_failure_code="LOCAL_CONTRACT_DEFECT",
+        window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "source_span_contract", "policy_value": "controlled-span.v1"})
+
+
+def test_corrected_window_preserves_original_root_and_deadline_idempotently(failed_graph):
+    project, root, child, saga, context = failed_graph
+    options = _window_options(failed_graph)
+    first = replace_failed_step(DATABASE_URL, **options)
+    assert replace_failed_step(DATABASE_URL, **options)["replayed"]
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("SELECT source_failure_snapshot FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [child])
+        record = u.cursor.fetchone()[0]
+        u.cursor.execute("SELECT status,business_deadline_at,command_payload FROM authority_operation WHERE operation_id=%s", [root])
+        status, deadline, payload = u.cursor.fetchone()
+        assert status == "WAITING_CHILDREN"
+        assert deadline > datetime.now(timezone.utc)
+        assert record["root"]["command_payload"] == payload
+        assert record["execution_window"]["duration_seconds"] == 300
+        assert record["execution_window"]["original_deadline"] != deadline.isoformat()
+        assert record["operation"]["status"] == "FAILED_FINAL"
+        assert first["operation_id"] != child
+
+
+@pytest.mark.parametrize("boundary", ["unchanged-policy", "author-deadline", "cancelled-root"])
+def test_contract_window_cannot_bypass_author_deadline_cancel_or_unchanged_contract(failed_graph, boundary):
+    project, root, child, saga, context = failed_graph
+    options = _window_options(failed_graph)
+    if boundary == "unchanged-policy":
+        options["target_version"] = "1.0.1"
+    else:
+        with AuthorityUnitOfWork(DATABASE_URL) as u:
+            if boundary == "author-deadline":
+                u.cursor.execute("UPDATE authority_operation SET command_payload=command_payload || '{\"author_deadline_at\":\"2026-01-01\"}'::jsonb WHERE operation_id=%s", [root])
+            else:
+                u.cursor.execute("UPDATE authority_operation SET status='CANCELLED' WHERE operation_id=%s", [root])
+            u.commit()
+    with pytest.raises(KernelError) as failure:
+        replace_failed_step(DATABASE_URL, **options)
+    assert failure.value.code in {"STEP_SUCCESSOR_WINDOW_INVALID", "STEP_SUCCESSOR_SOURCE_INVALID"}
 
 
 @pytest.mark.parametrize("boundary", ["failure", "permissions", "cancelled-root"])

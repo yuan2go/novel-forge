@@ -1681,7 +1681,7 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.17.0 binds System v3, Prompt Template v9 and
+reconciliation chain. Chapter Pack 2.18.0 binds System v3, Prompt Template v9 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot
@@ -2079,3 +2079,19 @@ Saga dependency mutations acquire the same Saga row lock as coordination before
 locking child Operations, preventing reverse child-lock ordering during concurrent
 admission. PostgreSQL deadlock and serialization aborts are retryable transaction
 conflicts; uncertain connection or commit outcomes retain reconciliation handling.
+
+Canon extraction's `literal-source-spans.v1` interface supplies exact candidate sentence
+and paragraph spans once. Provider output selects text-hash-bound span identities; the
+host binds quotes and Unicode locations. Matching evidence still requires independent
+semantic support review. The current Observer input includes the selected on-camera
+transition's agency classification and causal constraints, without treating a plan as
+an occurrence. Historical quote contracts retain their original validation.
+
+A corrected failed-step contract can append one `kernel-corrected-contract-window.v1`
+continuation in the immutable Saga successor record. It preserves the prior Root
+snapshot and deadline, terminal child and Attempt history, frozen inputs and resource
+authorization. The unfinished Root retains its identity with a new fenced runtime
+window of its original bounded duration. Explicit author deadlines, cancellation,
+unknown consumption and live leases prevent continuation; unchanged contracts and
+ordinary retries cannot renew it. Book recovery binds the exact current frontier and
+authorized template before invoking this Kernel boundary.

@@ -44,6 +44,7 @@ def _handler_definition_version(
     expected = (
         CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
         if author_input and node is ChapterNode.DRAFT
+        else "3.9.1" if registry.model_effects_required and node is ChapterNode.CANON_EXTRACTION
         else "3.9.2" if registry.model_effects_required and node is ChapterNode.REREVIEW
         else "3.9.1" if registry.model_effects_required and node is ChapterNode.REVIEW
         else "3.9.2" if registry.model_effects_required and node is ChapterNode.DRAFT

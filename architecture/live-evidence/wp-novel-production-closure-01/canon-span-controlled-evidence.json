@@ -1,0 +1,37 @@
+{
+  "evidence_kind": "NATIVE_CANON_SOURCE_SPAN_CONTRACT_SUCCESSOR",
+  "database": "novel_forge_closure_canon_span_20261007_test",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "definition_version": "3.9.1",
+  "source_saga_status": "RUNNING",
+  "failure_status": "FAILED_FINAL_PRESERVED",
+  "successful_siblings": [
+    [
+      "chapter.context.build",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ]
+  ],
+  "effects_before": 60,
+  "effects_after": 60,
+  "provider_dispatches": 0,
+  "exact_inputs_preserved": true,
+  "idempotent_recovery": true,
+  "book_noop_reconciliation": true,
+  "pack_version": "2.18.0",
+  "migration_fresh_and_restore": "PASS",
+  "real_writer": "NOT_RUN",
+  "predecessor_extraction": "75f98f53-4f7a-4011-8bc4-c5fa7ab776aa",
+  "successor_extraction": "9d90074e-b329-46e7-864f-a2cb3722320e",
+  "evidence_state": "EXECUTABLE",
+  "real_provider_successor": "NOT_RUN",
+  "literary_improvement": "NOT_PROVEN",
+  "test_log": "canon-span-tests-168.log"
+}

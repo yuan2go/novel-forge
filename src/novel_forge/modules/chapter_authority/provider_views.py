@@ -999,6 +999,8 @@ def build_provider_task_view(
             stage,
             final_candidate=_prose(inputs.get("revision")),
             execution_expectations=_compact(without_private_world(inputs.get("execution_expectations"))),
+            **({key: inputs[key] for key in ("source_span_table", "world_transition_contract", "observer_transition_constraints", "repair_diagnostics")}
+               if (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1" else {}),
         )
     if stage.startswith("quality_"):
         return _task(

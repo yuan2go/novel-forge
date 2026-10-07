@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -31,6 +31,7 @@ def replace_failed_step(
     expected_failure_code,
     transaction_guard=None,
     known_receipt_effects=(),
+    window_successor=None,
 ):
     digest = hashlib.sha256(
         json.dumps(
@@ -39,6 +40,7 @@ def replace_failed_step(
                 "target": target_version,
                 "policy": policy_evidence,
                 "failure_code": expected_failure_code,
+                **({"window_successor": window_successor} if window_successor else {}),
                 **(
                     {"known_receipt_effects": known_receipt_effects}
                     if known_receipt_effects
@@ -52,7 +54,7 @@ def replace_failed_step(
     with AuthorityUnitOfWork(database_url) as uow:
         cursor = uow.cursor
         cursor.execute(
-            "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s FOR UPDATE",
+            "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
             [predecessor_id],
         )
         row = cursor.fetchone()
@@ -62,6 +64,10 @@ def replace_failed_step(
             )
         source = row[0]
         project = source["project_id"]
+        repo = uow.repositories.operation_graph
+        saga = repo.saga_for_update(source["saga_id"], project)
+        cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s FOR UPDATE", [predecessor_id])
+        source = cursor.fetchone()[0]
         if source["actor_id"] != context.actor_id:
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID", "Recovery requires the original actor"
@@ -86,8 +92,6 @@ def replace_failed_step(
             return {"operation_id": existing[1], "replayed": True}
         if transaction_guard is not None:
             transaction_guard(uow)
-        repo = uow.repositories.operation_graph
-        saga = repo.saga_for_update(source["saga_id"], project)
         repo.operation(source["root_operation_id"], project, lock=True)
         cursor.execute(
             "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
@@ -137,7 +141,7 @@ def replace_failed_step(
             [root["operation_id"]],
         )
         deadline = cursor.fetchone()[0]
-        if deadline and deadline <= datetime.now(timezone.utc):
+        if deadline and deadline <= datetime.now(timezone.utc) and not window_successor:
             raise KernelError(
                 "OPERATION_BUSINESS_TIMEOUT",
                 "The frozen Root deadline remains authoritative",
@@ -202,6 +206,12 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
+        window = None
+        if window_successor:
+            window = _corrected_contract_window(cursor, root, source, target, deadline, window_successor)
+            cursor.execute("UPDATE authority_operation SET business_deadline_at=%s WHERE operation_id=%s AND version=%s AND status='WAITING_CHILDREN'", [window["new_deadline"], root["operation_id"], root["version"]])
+            if cursor.rowcount != 1:
+                raise KernelError("STEP_SUCCESSOR_ROOT_CHANGED", "The execution window fence changed")
         graph_context = GraphCommandContext(
             project,
             context.actor_id,
@@ -255,7 +265,7 @@ def replace_failed_step(
                 digest,
                 Jsonb(saga),
                 Jsonb(step),
-                Jsonb({"operation": source, "attempts": attempts}),
+                Jsonb({"operation": source, "attempts": attempts, **({"root": root, "execution_window": window} if window else {})}),
                 Jsonb(policy_evidence),
             ],
         )
@@ -297,6 +307,7 @@ def replace_failed_step(
                 "target_saga_status": "RUNNING",
                 "policy_evidence": policy_evidence,
                 "provider_invoked": False,
+                **({"execution_window": window} if window else {}),
             },
             aggregate_type="authority_saga",
             aggregate_id=saga["saga_id"],
@@ -306,6 +317,28 @@ def replace_failed_step(
         )
         uow.commit()
     return {"operation_id": successor, "replayed": False}
+
+
+def _corrected_contract_window(cursor, root, source, target, deadline, policy):
+    key, value = policy.get("policy_key"), policy.get("policy_value")
+    duration = int(root["definition_snapshot"]["timeout_policy"]["operation_timeout_seconds"])
+    if (policy.get("contract_version") != "kernel-corrected-contract-window.v1"
+        or not key or not value or target["policy"].get(key) != value
+        or source["definition_snapshot"]["policy"].get(key) == value
+        or not deadline or not 0 < duration <= 3600
+        or any(k in root["command_payload"] for k in ("business_deadline_at", "author_deadline_at"))):
+        raise KernelError("STEP_SUCCESSOR_WINDOW_INVALID", "Only a changed execution contract may continue a derived bounded window")
+    cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
+        LEFT JOIN authority_budget_reservation b USING(external_effect_id) WHERE o.root_operation_id=%s
+        AND (e.status<>'SUCCEEDED' OR b.status IS DISTINCT FROM 'SETTLED')),
+        EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+        JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s
+        AND l.released_at IS NULL AND l.expires_at>NOW())""", [root["operation_id"]]*2)
+    if any(cursor.fetchone()):
+        raise KernelError("STEP_SUCCESSOR_WINDOW_UNSETTLED", "Reconcile every effect and release every lease before continuing")
+    return {**policy, "original_deadline": deadline.isoformat(),
+        "new_deadline": max(deadline, datetime.now(timezone.utc)+timedelta(seconds=duration)).isoformat(),
+        "duration_seconds": duration, "terminal_history": "PRESERVED", "resource_authorization": "UNCHANGED"}
 
 
 def has_domain_outputs(cursor, operation_id):
