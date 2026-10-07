@@ -242,3 +242,83 @@ class PlanChangeAuthorityDomainTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PendingPlanChangeInputTests(unittest.TestCase):
+    def test_exact_validation_candidate_retains_pending_state(self):
+        from unittest.mock import Mock, patch
+        from novel_forge.modules.plan_change_authority.application import (
+            require_validation_plan_change_input,
+        )
+
+        receipt = {
+            "book_id": "book",
+            "content_hash": "hash",
+            "mode": "CREATIVE_VALIDATION",
+        }
+        cursor = Mock()
+        cursor.fetchone.return_value = (
+            "STRUCTURALLY_VALID",
+            "PENDING",
+            "MATERIALIZED",
+            "CURRENT",
+            {"creative_validation": receipt},
+            "book",
+        )
+        with patch(
+            "novel_forge.modules.story_design_authority.creative_validation.candidate_validation",
+            return_value=receipt,
+        ):
+            self.assertEqual(
+                require_validation_plan_change_input(
+                    cursor,
+                    project_id="project",
+                    payload={
+                        "book_id": "book",
+                        "proposed_asset_version_id": "candidate:v1",
+                    },
+                ),
+                "candidate:v1",
+            )
+            for index, value in (
+                (0, "SEMANTICALLY_VALID"),
+                (1, "REJECTED"),
+                (2, "ARCHIVED"),
+                (3, "STALE"),
+                (4, {}),
+                (5, "other"),
+            ):
+                with self.subTest(index=index):
+                    row = list(cursor.fetchone.return_value)
+                    row[index] = value
+                    cursor.fetchone.return_value = tuple(row)
+                    with self.assertRaisesRegex(
+                        KernelError, "PLAN_CHANGE_VALIDATION_INPUT_INVALID"
+                    ):
+                        require_validation_plan_change_input(
+                            cursor,
+                            project_id="project",
+                            payload={
+                                "book_id": "book",
+                                "proposed_asset_version_id": "candidate:v1",
+                            },
+                        )
+                    cursor.fetchone.return_value = (
+                        "STRUCTURALLY_VALID",
+                        "PENDING",
+                        "MATERIALIZED",
+                        "CURRENT",
+                        {"creative_validation": receipt},
+                        "book",
+                    )
+            with self.assertRaisesRegex(
+                KernelError, "PLAN_CHANGE_VALIDATION_INPUT_INVALID"
+            ):
+                require_validation_plan_change_input(
+                    cursor,
+                    project_id="project",
+                    payload={
+                        "book_id": "other",
+                        "proposed_asset_version_id": "candidate:v1",
+                    },
+                )

@@ -123,3 +123,47 @@ def test_continuing_search_requires_exact_book_run_identity() -> None:
             accepted_through_chapter=1,
             parent_state_asset_version_id="story-state:v1",
         )
+
+
+def test_work_selection_does_not_call_a_small_score_difference_best() -> None:
+    policy = {
+        "contract_version": "narrative-search-comparison.v2",
+        "dimension_weights": {key: 1 for key in CREATIVE_INTELLIGENCE_DIMENSIONS},
+        "uncertainty_margin": 0.03,
+        "tie_break": "STABLE_ID",
+    }
+    a, b = _candidate("a", "agency", 0.8), _candidate("b", "consequence", 0.81)
+    comparison = compare_narrative_futures((b, a), selection_policy=policy)
+    assert comparison.selected_candidate_asset_version_id == "a"
+    assert (
+        comparison.selection_evidence["selection_basis"]
+        == "AUTHORIZED_STABLE_TIE_BREAK"
+    )
+    assert comparison.selection_evidence["literary_superiority"] == "NOT_PROVEN"
+    assert (
+        comparison.to_dict()
+        == compare_narrative_futures((a, b), selection_policy=policy).to_dict()
+    )
+    assert "selection_evidence" not in compare_narrative_futures((a, b)).to_dict()
+
+
+def test_work_selection_rejects_nonfinite_weights_and_unapproved_tie_policy() -> None:
+    policy = {
+        "contract_version": "narrative-search-comparison.v2",
+        "dimension_weights": {key: 1 for key in CREATIVE_INTELLIGENCE_DIMENSIONS},
+        "uncertainty_margin": 0.03,
+        "tie_break": "STABLE_ID",
+    }
+    candidates = (_candidate("a", "agency", 0.8), _candidate("b", "consequence", 0.81))
+    for invalid in (
+        {**policy, "tie_break": "FIRST"},
+        {**policy, "uncertainty_margin": float("nan")},
+        {
+            **policy,
+            "dimension_weights": {key: 0 for key in CREATIVE_INTELLIGENCE_DIMENSIONS},
+        },
+    ):
+        with pytest.raises(
+            KernelError, match="NARRATIVE_SEARCH_SELECTION_POLICY_INVALID"
+        ):
+            compare_narrative_futures(candidates, selection_policy=invalid)

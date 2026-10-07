@@ -93,6 +93,12 @@ class _Cursor:
         ]
 
     def execute(self, statement: str, parameters: list[Any]) -> None:
+        if "SELECT v.content FROM authority_asset_version v" in statement:
+            self._row = ({"narrative_search_projection": _projection("agency", 0.82)},)
+            return
+        if "JOIN authority_external_effect e" in statement:
+            self._rows = []
+            return
         if "FROM authority_story_narrative_search\n" in statement:
             assert "FOR UPDATE" in statement
             self.read_order.append("search")
@@ -182,10 +188,7 @@ class _Cursor:
             else:
                 self._row = None
             return
-        if (
-            "FROM authority_story_narrative_branch_reconciliation_evidence"
-            in statement
-        ):
+        if "FROM authority_story_narrative_branch_reconciliation_evidence" in statement:
             assert "FOR SHARE" in statement
             self.read_order.append("reconciliation")
             self._row = self.reconciliation

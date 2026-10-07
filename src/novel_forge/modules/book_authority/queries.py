@@ -292,6 +292,15 @@ class PostgresBookProductionQuery:
                 ) dependencies
                 WHERE (
                       book.state = ANY(%s)
+                      OR (book.state='REPLAN_APPROVAL_PENDING' AND EXISTS (
+                          SELECT 1 FROM authority_story_formation_run formation
+                          WHERE formation.project_id=book.project_id AND formation.book_id=book.book_id
+                            AND book.stable_idempotency_key=formation.formation_run_id || ':production'
+                            AND formation.lifecycle='READY'
+                            AND formation.frozen_stage_inputs #>> '{generation_policy,approval_mode}'='AUTO'
+                            AND NOT EXISTS (SELECT 1 FROM authority_story_creation_cancellation cancel
+                                            WHERE cancel.formation_run_id=formation.formation_run_id)
+                      ))
                       OR (
                           book.state='PLAN_APPROVAL_PENDING'
                           AND EXISTS (
@@ -351,7 +360,7 @@ class PostgresBookProductionQuery:
                       JOIN authority_runtime_job_result receipt USING(runtime_job_id)
                       WHERE job.job_kind='BOOK_COORDINATION_TICK' AND job.runtime_group='book'
                         AND job.subject_id=book.book_run_id AND job.project_id=book.project_id
-                        AND job.status='SUCCEEDED' AND receipt.result->>'action'='WAIT_REPLAN_SOURCE'
+                        AND job.status='SUCCEEDED' AND receipt.result->>'action' IN ('WAIT_REPLAN_SOURCE','WAIT_REPLAN_APPROVAL')
                         AND job.input_snapshot->>'observed_version'=book.version::text
                         AND job.input_snapshot->>'observed_state'=book.state
                         AND job.input_snapshot->'coordination_dependencies'=dependencies.snapshot

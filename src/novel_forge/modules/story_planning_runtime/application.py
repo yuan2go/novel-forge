@@ -3301,10 +3301,13 @@ class StoryPlanningGenerationApplication:
             from novel_forge.modules.story_design_authority.creative_validation import candidate_validation
             validation = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
             if validation is not None:
-                uow.cursor.execute("SELECT qualification,execution_evidence FROM authority_story_design_version_state WHERE project_id=%s AND asset_version_id=%s FOR UPDATE", [project_id, candidate_asset_version_id])
-                state = uow.cursor.fetchone()
-                if not state or state[0] != "STRUCTURALLY_VALID" or state[1].get("creative_validation") != validation:
-                    raise KernelError("PLANNING_VALIDATION_ELIGIBILITY_INVALID", candidate_asset_version_id)
+                from novel_forge.modules.story_design_authority.creative_validation import project_approved_validation_eligibility
+                if eligibility != "ELIGIBLE":
+                    raise KernelError("PLANNING_VALIDATION_ELIGIBILITY_INVALID", "Validation approval cannot authorize another eligibility disposition")
+                project_approved_validation_eligibility(uow.cursor, project_id=project_id,
+                    book_id=validation["book_id"], asset_version_id=candidate_asset_version_id)
+                uow.commit()
+                return
             uow.cursor.execute(
                 """
                 UPDATE authority_asset_version AS version
@@ -3328,11 +3331,6 @@ class StoryPlanningGenerationApplication:
                     "PLANNING_CANDIDATE_ELIGIBILITY_CONFLICT",
                     "Planning candidate eligibility changed outside qualification",
                 )
-            if validation is not None:
-                identity = canonical_hash({"asset_version_id": candidate_asset_version_id, "validation": validation, "decision": eligibility})
-                uow.cursor.execute("INSERT INTO authority_asset_qualification(qualification_id,asset_version_id,policy_version,decision,evidence) VALUES (%s,%s,'creative-validation-eligibility.v1',%s,%s) ON CONFLICT (qualification_id) DO NOTHING", [identity, candidate_asset_version_id, eligibility, Jsonb(validation)])
-                uow.commit()
-                return
             uow.cursor.execute(
                 """
                 SELECT evaluation_operation_id, qualification_hash

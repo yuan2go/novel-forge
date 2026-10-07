@@ -399,6 +399,13 @@ def _load_request(
             semantic_revalidation_target_id = str(
                 payload.get("asset_version_id") or ""
             )
+        validation_plan_change_candidate_id = ""
+        if policy.get("plan_change_validation_candidate_asset_input_allowed") is True:
+            from novel_forge.modules.plan_change_authority.application import require_validation_plan_change_input
+            if operation["definition_name"] not in {"plan_change.propose", "plan_change.activate"} or operation["definition_version"] != "1.0.5":
+                raise KernelError("PLAN_CHANGE_VALIDATION_INPUT_INVALID", "Pending validation input requires its versioned Plan Change contract")
+            validation_plan_change_candidate_id = require_validation_plan_change_input(
+                uow.cursor, project_id=operation["project_id"], payload=payload)
         frozen = uow.repositories.chapter_authority.frozen_inputs(
             command.project_id,
             list(operation["input_asset_snapshot"] or []),
@@ -408,6 +415,7 @@ def _load_request(
             repair_candidate_asset_version_id=repair_candidate_id,
             repair_result_asset_version_id=repair_result_id,
             plan_change_candidate_asset_version_id=plan_change_candidate_id,
+            validation_plan_change_candidate_asset_version_id=validation_plan_change_candidate_id,
             semantic_revalidation_target_asset_version_id=(
                 semantic_revalidation_target_id
             ),

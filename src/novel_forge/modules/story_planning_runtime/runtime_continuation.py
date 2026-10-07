@@ -928,15 +928,32 @@ def _capacity_target(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
         )
-    context, _ = preparer._context_bundle(
-        operation_id=source["source_operation_id"],
-        attempt_id=source["attempt_id"],
-        command=successor,
-        inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
-        context_policy_ref=source["snapshot"]["context_policy_ref"],
-        planning_task_token_budget=allocated,
-        preflight_only=True,
-    )
+    try:
+        context, _ = preparer._context_bundle(
+            operation_id=source["source_operation_id"],
+            attempt_id=source["attempt_id"],
+            command=successor,
+            inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
+            context_policy_ref=source["snapshot"]["context_policy_ref"],
+            planning_task_token_budget=allocated,
+            preflight_only=True,
+        )
+    except KernelError as exc:
+        if (
+            exc.code != "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+            or allocated >= ceiling
+        ):
+            raise
+        allocated = ceiling
+        context, _ = preparer._context_bundle(
+            operation_id=source["source_operation_id"],
+            attempt_id=source["attempt_id"],
+            command=successor,
+            inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
+            context_policy_ref=source["snapshot"]["context_policy_ref"],
+            planning_task_token_budget=allocated,
+            preflight_only=True,
+        )
     allocation = {
         "version": "planning-capacity-allocation.v1",
         "prior_task_tokens": baseline,

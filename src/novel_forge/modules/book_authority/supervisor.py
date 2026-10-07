@@ -142,9 +142,12 @@ class PostgresBookProductionSupervisor:
         if (
             group_run is not None
             and group_run.get("active_chapter_request_id")
-            and int(group_run["accepted_through_chapter"]) < int(book["accepted_through_chapter"])
+            and int(group_run["accepted_through_chapter"])
+            < int(book["accepted_through_chapter"])
         ):
-            self.chapter_groups.reconcile_and_accept(str(group_run["group_run_id"]), principal=self.principal)
+            self.chapter_groups.reconcile_and_accept(
+                str(group_run["group_run_id"]), principal=self.principal
+            )
             return self._result(book_run_id, before, SupervisorAction.ACCEPT_CHAPTER)
         if book["input_mode"] != "RESOLVED_AUTHORITY_INPUT":
             raise KernelError(
@@ -172,6 +175,16 @@ class PostgresBookProductionSupervisor:
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if before == BookProductionState.REPLAN_APPROVAL_PENDING.value:
             replan = self._latest_replan(book_run_id)
+            automatic = getattr(self.replan, "try_auto_approve", None)
+            approved = automatic(str(replan["replan_id"])) if automatic else None
+            if approved is not None:
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.APPROVE_REPLAN,
+                    operation_id=str(approved["plan_change"]["approval_operation_id"]),
+                    evidence_ref=str(replan["replan_id"]),
+                )
             return self._result(
                 book_run_id,
                 before,
@@ -242,12 +255,25 @@ class PostgresBookProductionSupervisor:
                     str(closed.get("root_operation_id") or ""),
                     str(closed["group_run_id"]),
                 )
-            if (group_run is not None and group_run["state"] == ChapterGroupState.READY.value
-                and not group_run.get("active_chapter_request_id") and book.get("active_chapter_request_id")):
-                recovered = self.chapter_groups.recover_dispatch(str(group_run["group_run_id"]), principal=self.principal)
-                request = self.authority.require_chapter_request(str(recovered["active_chapter_request_id"]))
-                return self._result(book_run_id, before, SupervisorAction.DISPATCH_CHAPTER,
-                    str(request["chapter_root_operation_id"]), str(recovered["group_run_id"]))
+            if (
+                group_run is not None
+                and group_run["state"] == ChapterGroupState.READY.value
+                and not group_run.get("active_chapter_request_id")
+                and book.get("active_chapter_request_id")
+            ):
+                recovered = self.chapter_groups.recover_dispatch(
+                    str(group_run["group_run_id"]), principal=self.principal
+                )
+                request = self.authority.require_chapter_request(
+                    str(recovered["active_chapter_request_id"])
+                )
+                return self._result(
+                    book_run_id,
+                    before,
+                    SupervisorAction.DISPATCH_CHAPTER,
+                    str(request["chapter_root_operation_id"]),
+                    str(recovered["group_run_id"]),
+                )
             if (
                 group_run is not None
                 and group_run["active_chapter_request_id"] is not None
@@ -610,7 +636,9 @@ class PostgresBookProductionSupervisor:
             ],
             "chapter_production_admission_hash": chapter_admission["admission_hash"],
         }
-        preparation_report = self._stage_budgeted_preparation_report(prepared, book=book)
+        preparation_report = self._stage_budgeted_preparation_report(
+            prepared, book=book
+        )
         preparation_report["chapter_production_admission"] = chapter_admission
         dispatched_group = self.chapter_groups.dispatch(
             str(group_run["group_run_id"]),

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field
 from enum import StrEnum
+import math
 from typing import Any, Mapping, Sequence
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -253,11 +254,17 @@ class NarrativeSearchComparison:
     selection_reasons: tuple[str, ...]
     rejected_candidate_asset_version_ids: tuple[str, ...]
     policy_version: str = NARRATIVE_SEARCH_POLICY_VERSION
+    selection_evidence: Mapping[str, Any] = dataclass_field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "contract_version": NARRATIVE_SEARCH_CONTRACT_VERSION,
             "policy_version": self.policy_version,
+            **(
+                {"selection_evidence": dict(self.selection_evidence)}
+                if self.selection_evidence
+                else {}
+            ),
             "selected_candidate_asset_version_id": (
                 self.selected_candidate_asset_version_id
             ),
@@ -271,6 +278,8 @@ class NarrativeSearchComparison:
 
 def compare_narrative_futures(
     candidates: Sequence[NarrativeSearchCandidate],
+    *,
+    selection_policy: Mapping[str, Any] | None = None,
 ) -> NarrativeSearchComparison:
     if len(candidates) < 2:
         raise KernelError(
@@ -290,6 +299,8 @@ def compare_narrative_futures(
             "NARRATIVE_SEARCH_NOT_DIVERGENT",
             "search futures differ only superficially",
         )
+    if selection_policy is not None:
+        return _compare_work_futures(candidates, selection_policy)
     ranked = sorted(
         candidates,
         key=lambda item: (-item.score, item.candidate_asset_version_id),
@@ -328,6 +339,120 @@ def compare_narrative_futures(
         rejected_candidate_asset_version_ids=tuple(
             item.candidate_asset_version_id for item in ranked[1:]
         ),
+    )
+
+
+def validate_search_selection_policy(value: Mapping[str, Any]) -> dict[str, Any]:
+    weights = value.get("dimension_weights") if isinstance(value, Mapping) else None
+    margin = value.get("uncertainty_margin") if isinstance(value, Mapping) else None
+    if (
+        not isinstance(value, Mapping)
+        or set(value)
+        != {"contract_version", "dimension_weights", "uncertainty_margin", "tie_break"}
+        or value.get("contract_version") != "narrative-search-comparison.v2"
+        or not isinstance(weights, Mapping)
+        or set(weights) != set(CREATIVE_INTELLIGENCE_DIMENSIONS)
+        or any(
+            type(weight) not in {int, float}
+            or not math.isfinite(weight)
+            or not 0 <= weight <= 10
+            for weight in weights.values()
+        )
+        or not any(weights.values())
+        or type(margin) not in {int, float}
+        or not math.isfinite(margin)
+        or not 0 <= margin <= 1
+        or value.get("tie_break") != "STABLE_ID"
+    ):
+        raise KernelError(
+            "NARRATIVE_SEARCH_SELECTION_POLICY_INVALID",
+            "Comparison requires frozen bounded work weights, uncertainty and authorized tie-breaking",
+        )
+    return {
+        "contract_version": value["contract_version"],
+        "dimension_weights": dict(weights),
+        "uncertainty_margin": margin,
+        "tie_break": value["tie_break"],
+    }
+
+
+def _compare_work_futures(
+    candidates: Sequence[NarrativeSearchCandidate], policy: Mapping[str, Any]
+) -> NarrativeSearchComparison:
+    policy = validate_search_selection_policy(policy)
+    weights = policy["dimension_weights"]
+    scores = {
+        item.candidate_asset_version_id: sum(
+            item.projection.creative_intelligence[key] * weight
+            for key, weight in weights.items()
+        )
+        / sum(weights.values())
+        for item in candidates
+    }
+    ranked = sorted(
+        candidates,
+        key=lambda item: (
+            -scores[item.candidate_asset_version_id],
+            item.candidate_asset_version_id,
+        ),
+    )
+    top = scores[ranked[0].candidate_asset_version_id]
+    gap = top - scores[ranked[1].candidate_asset_version_id]
+    tied = [
+        item
+        for item in ranked
+        if top - scores[item.candidate_asset_version_id] <= policy["uncertainty_margin"]
+    ]
+    selected = (
+        min(tied, key=lambda item: item.candidate_asset_version_id)
+        if len(tied) > 1
+        else ranked[0]
+    )
+    evidence = {
+        "policy": policy,
+        "evidence_class": "MODEL_ESTIMATES_AND_CANDIDATE_PROJECTIONS",
+        "literary_superiority": "NOT_PROVEN",
+        "score_gap": gap,
+        "uncertainty": "INSUFFICIENT_MARGIN"
+        if len(tied) > 1
+        else "MODEL_ESTIMATED_PREFERENCE",
+        "selection_basis": "AUTHORIZED_STABLE_TIE_BREAK"
+        if len(tied) > 1
+        else "WORK_WEIGHTED_PREFERENCE",
+        "indistinguishable_candidate_asset_version_ids": [
+            item.candidate_asset_version_id for item in tied
+        ]
+        if len(tied) > 1
+        else [],
+    }
+    return NarrativeSearchComparison(
+        selected_candidate_asset_version_id=selected.candidate_asset_version_id,
+        ranked_candidates=tuple(
+            {
+                "rank": ordinal,
+                "candidate_asset_version_id": item.candidate_asset_version_id,
+                "generation_operation_id": item.generation_operation_id,
+                "branch_key": item.branch_key,
+                "strategy_fingerprint": item.projection.strategy_fingerprint,
+                "score": scores[item.candidate_asset_version_id],
+                "qualification_hash": item.qualification_hash,
+                "selection_summary": item.projection.selection_summary,
+                "assumptions": list(item.projection.assumptions),
+                "risks": list(item.projection.narrative_risks),
+                "future_options": list(item.projection.future_options),
+            }
+            for ordinal, item in enumerate(ranked, 1)
+        ),
+        selection_reasons=(
+            evidence["selection_basis"],
+            selected.projection.selection_summary,
+            "Model judgment is uncertain evidence; this selection does not prove literary superiority.",
+        ),
+        rejected_candidate_asset_version_ids=tuple(
+            item.candidate_asset_version_id for item in ranked if item is not selected
+        ),
+        policy_version=policy["contract_version"],
+        selection_evidence=evidence,
     )
 
 

@@ -67,3 +67,47 @@ def test_semantic_diff_requires_explicit_dimensions_and_evidence() -> None:
             summary="changed",
             evidence={},
         )
+
+
+def test_convergent_lineage_is_vertex_bounded_and_history_stops_its_route() -> None:
+    from novel_forge.modules.artifact_lineage import _lineage_impacts
+
+    rows = []
+    prior = ["root"]
+    for level in range(24):
+        current = [f"{level}:a", f"{level}:b"]
+        rows.extend(
+            (source, target, "PROPAGATE", "context_bundle", False)
+            for source in prior
+            for target in current
+        )
+        prior = current
+    rows.extend(
+        [
+            ("23:a", "root", "PROPAGATE", "context_bundle", False),
+            ("root", "accepted", "PROPAGATE", "story_state_snapshot", True),
+            ("accepted", "future-from-history", "PROPAGATE", "context_bundle", False),
+            (
+                "root",
+                "immune-route",
+                "IMMUNE_ACCEPTED_HISTORY",
+                "context_bundle",
+                False,
+            ),
+            (
+                "immune-route",
+                "future-from-immune",
+                "PROPAGATE",
+                "context_bundle",
+                False,
+            ),
+            ("0:a", "immune-route", "PROPAGATE", "context_bundle", False),
+        ]
+    )
+    impacts = {row[0]: row for row in _lineage_impacts("root", rows)}
+    assert len(impacts) == 51
+    assert impacts["23:b"][3] == 24
+    assert "root" not in impacts and "future-from-history" not in impacts
+    assert impacts["accepted"][4] is True
+    assert impacts["immune-route"][1] == "PROPAGATE"
+    assert "future-from-immune" in impacts
