@@ -121,6 +121,34 @@ make test-reality-check
 Skills cannot bypass schema validation, Authority ownership, source isolation, Provider
 controls, permissions, trace/cost evidence or quality gates.
 
+The 38 vendored Skills from [mattpocock/skills](https://github.com/mattpocock/skills/tree/6fd947921b935b7e1e69293a200400f0fdd5c15f)
+are pinned to commit `6fd947921b935b7e1e69293a200400f0fdd5c15f` (upstream package
+version `1.3.1`). Each directory retains the upstream MIT `LICENSE`, references,
+agent metadata and templates; `skills/pr/CREDITS.md` retains its additional attribution.
+The instruction manifest classifies these as coding-agent tools. Existing Novel OS
+Skills own production workflows; these additions do not alter Capability Pack bindings.
+The seven upstream `in-progress` Skills remain experimental. Files are flattened into
+the root Skills directory; the corresponding Codex discovery directory links to that source,
+and `make sync-skills` generates the Claude Code copies. Upstream invocation flags
+remain intact; installing a Skill does not run it or configure its external services.
+
+Installation requires Python and GitHub download access, with no npm packages needed.
+On invocation, tracker workflows can use authenticated `gh` or `glab`, research can
+use network retrieval, and `claude-handoff` can launch Claude CLI sessions. Package
+setup Skills can install Husky, lint-staged, Prettier, dependency-cruiser or
+the @total-typescript/shoehorn package through the project's package manager. These are optional
+workflow dependencies, not installed dependencies of Novel Forge. Provider calls,
+external writes and credentials remain subject to the user's task and repository rules.
+
+Bundled executable material is limited to `skills/diagnosing-bugs/scripts/hitl-loop.template.sh`
+(Bash prompts), `skills/git-guardrails-claude-code/scripts/block-dangerous-git.sh` (Bash and
+`jq`, rejects matching Git commands), `skills/wizard/template.sh` (Bash, browser opening,
+`.env` writes and optional GitHub secret/variable writes via `gh`), and
+`skills/setup-ts-deep-modules/dependency-cruiser.config.cjs` (Node configuration). Installation
+does not execute these files or install hooks. Verify intake with frontmatter and
+upstream byte comparisons, `make sync-skills-dry-run`, `make sync-skills`,
+`make check-skills`, `make instruction-reality-check` and `git diff --check`.
+
 ## Adding or changing a capability
 
 1. Add or change executable behavior in the owning module.

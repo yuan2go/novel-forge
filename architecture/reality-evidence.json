@@ -9730,7 +9730,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:5ba0380cfdc359f3032a7506c95a4ff27e099844317ca0babe77fac046da2353"
+    "implementation_tree_sha": "sha256:af01e85f5d356e41a2206c0ad75442186e1355d29a23470aeed574fbf200019f"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
