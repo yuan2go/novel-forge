@@ -1,0 +1,14 @@
+{
+  "evidence_kind": "NATIVE_KNOWN_RECEIPT_CANON_REVALIDATION",
+  "effects_before": 65,
+  "effects_after": 65,
+  "provider_dispatches": 0,
+  "predecessor": "ddcdd4b1-2802-4766-83f0-440ccaa84dea",
+  "successor": "8564eb58-0201-4445-b25e-e278257f3275",
+  "old_failure_preserved": true,
+  "definition_version": "3.9.6",
+  "pack_version": "2.23.0",
+  "canonical_observation_status": "SUCCEEDED",
+  "evidence_ceiling": "EXECUTABLE",
+  "real_acceptance": "NOT_RUN"
+}

@@ -1943,7 +1943,7 @@ class _CanonExtractionHandler:
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
-        span_contract = request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5"}
+        span_contract = request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6"}
         span_inputs = {}
         if span_contract:
             from novel_forge.modules.canon_graph.source_spans import source_spans
@@ -1954,7 +1954,7 @@ class _CanonExtractionHandler:
             events = scheduled_world_events(binding) if binding else []
             span_inputs = {
                 "source_span_table": source_spans(revision.content["text"]),
-                **({"source_span_schema_contract": "typed-extraction-json.v1" if request.definition_version == "3.9.5" else "local-evidence-pattern.v1" if request.definition_version == "3.9.4" else "local-evidence-ref.v1"} if request.definition_version in {"3.9.3", "3.9.4", "3.9.5"} else {}),
+                **({"source_span_schema_contract": "typed-extraction-json.v1" if request.definition_version in {"3.9.5", "3.9.6"} else "local-evidence-pattern.v1" if request.definition_version == "3.9.4" else "local-evidence-ref.v1"} if request.definition_version in {"3.9.3", "3.9.4", "3.9.5", "3.9.6"} else {}),
                 "world_transition_contract": world_transition_schema(agency=any(event.get("action_mode") for event in events)),
                 "repair_diagnostics": repair_diagnostics(request),
                 "observer_transition_constraints": [
@@ -1965,7 +1965,8 @@ class _CanonExtractionHandler:
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
-            generated = self.provider.invoke(
+            from .receipt_recovery import consume_known_draft_receipt
+            generated = consume_known_draft_receipt(request) or self.provider.invoke(
                 request,
                 stage="canon_extraction",
                 payload={

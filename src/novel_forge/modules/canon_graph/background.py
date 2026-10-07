@@ -205,16 +205,20 @@ def attach_background_proposals(
                         "local_id"
                     ) != transition.transition_id:
                         continue
-                    identity = dict(
-                        part.split("=", 1) for part in transition.entity_key.split("|")
+                    observed = require_observed_transition(
+                        expected=raw, actual=item.get("world_transition")
                     )
-                    if any(
-                        item.get(key) != value
-                        for key, value in {**identity, **transition.changes}.items()
-                    ):
+                    actual = json.loads(observed["payload_json"])
+                    identity = dict(
+                        part.split("=", 1) for part in actual["entity_key"].split("|")
+                    )
+                    values = {**identity, **actual["changes"]}
+                    conflicts = [key for key, value in values.items()
+                        if item.get(key) is not None and item[key] != value]
+                    if conflicts:
                         raise KernelError(
                             "WORLD_PREPARATION_OBSERVED_EFFECT_MISMATCH",
-                            "an observed preparation must match its exact scheduled identity and effects",
+                            "observed summary conflicts with typed effects: " + ", ".join(sorted(conflicts)),
                         )
                     if item["causal_batch"].get("depends_on") != list(
                         transition.cause_refs
@@ -223,9 +227,7 @@ def attach_background_proposals(
                             "WORLD_PREPARATION_OBSERVED_CAUSE_MISMATCH",
                             "the observed local event must preserve the scheduled prerequisites",
                         )
-                    observed = require_observed_transition(
-                        expected=raw, actual=item.get("world_transition")
-                    )
+                    item.update(deepcopy(values))
                     item["preparation_lineage"] = expected_lineage
                     item["world_transition"] = observed
                     from novel_forge.modules.worldbuilding.actor_execution import (

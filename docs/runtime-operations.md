@@ -3127,3 +3127,9 @@ A generic service Schema refusal does not establish its specific cause. Preserve
 uncertainty. For the typed Canon envelope, compare canonical and Provider Schema hashes,
 inspect the full rendered inner contract, and verify inner validation rejects malformed
 JSON, foreign span identities, missing arrays and semantic defects before domain commit.
+
+Canon observed-state recovery revalidates the original successful Provider receipt through
+the existing failed-step successor. The typed transition must match its frozen identity,
+causes, knowledge constraints and effects before dynamic state is projected. A later
+completed malformed envelope is retained with exact process/output evidence and settled
+membership usage. Recovery never repairs that output or treats it as an accepted candidate.

@@ -614,3 +614,28 @@ def test_observed_transition_resolves_optional_epistemic_default_without_key_err
         expected=raw, actual={"payload_json": json.dumps(observed)}
     )
     assert json.loads(result["payload_json"]) == observed
+
+
+def test_observed_dynamic_state_projects_only_validated_actual_payload():
+    from novel_forge.modules.canon_graph.background import attach_background_proposals
+    frozen = binding()
+    frozen["action"]["contract_version"] = "world-production-action.v2"
+    frozen["action"]["world_plan"].update(selected_path_id="path:selected", causal_debts=[])
+    frozen["frozen_source"] = {"reality": {"current_state": {}}}
+    transition = frozen["action"]["world_plan"]["candidate_futures"][0]["transition"]
+    transition.update(camera="ON_CAMERA", changes={"status": "MOBILISED", "source_register": "register:two"})
+    source = extraction()
+    source["faction_state_changes"] = [{"faction_id": "council", "status": "MOBILISED",
+        "causal_batch": {"local_id": "council-moves", "depends_on": ["foundation:world"]},
+        "world_transition": {"payload_json": json.dumps(transition)}}]
+    result = attach_background_proposals(extraction=source, binding=frozen)
+    assert result["faction_state_changes"][0]["source_register"] == "register:two"
+    assert "source_register" not in source["faction_state_changes"][0]
+    source["faction_state_changes"][0]["source_register"] = "register:future"
+    with pytest.raises(KernelError, match="WORLD_PREPARATION_OBSERVED_EFFECT_MISMATCH"):
+        attach_background_proposals(extraction=source, binding=frozen)
+    source["faction_state_changes"][0].pop("source_register")
+    actual = {**transition, "changes": {**transition["changes"], "source_register": "register:future"}}
+    source["faction_state_changes"][0]["world_transition"] = {"payload_json": json.dumps(actual)}
+    with pytest.raises(KernelError, match="WORLD_PREPARATION_OBSERVATION_DRIFT"):
+        attach_background_proposals(extraction=source, binding=frozen)

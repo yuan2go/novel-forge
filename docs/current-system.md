@@ -2117,3 +2117,9 @@ projection sends only the envelope shape, while the prompt delivers the exact in
 contract. The production validator parses and validates that inner object before
 semantic checks, normalization, grounding or support review. This is a transport
 adapter, with no alternate Canon authority or acceptance path.
+
+Observed on-camera state is represented by the typed transition payload. Authority validates
+that payload against the frozen constraints before projecting its actual identity and changes
+into Canon candidates. The Provider summary Schema cannot carry arbitrary state fields;
+missing transport fields are not evidence that the observed state is absent. Conflicting
+explicit summary values still fail closed, and independent grounding review remains required.

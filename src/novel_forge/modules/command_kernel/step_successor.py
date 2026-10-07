@@ -164,7 +164,7 @@ def replace_failed_step(
                 "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",
                 [predecessor_id],
             )
-            if cursor.fetchall() != [
+            if [row for row in cursor.fetchall() if row[0] not in {e[0] for e in known_rejected_effects}] != [
                 (effect, digest, "SUCCEEDED", "SETTLED", "model.invoke")
                 for effect, digest in sorted(known_receipt_effects)
             ]:
@@ -179,13 +179,13 @@ def replace_failed_step(
                 e.last_error->'production_execution'->'execution_result'->>'process_receipt_ref'
                 FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id)
                 WHERE e.operation_id=%s ORDER BY e.external_effect_id""", [predecessor_id])
-            rejected = cursor.fetchall()
+            rejected = [row for row in cursor.fetchall() if row[0] not in {e[0] for e in known_receipt_effects}]
             proofs = policy_evidence.get("schema_rejection_receipts", [])
-            if (len(proofs) != len(known_rejected_effects) or any(proof.get("outcome") != "PROVIDER_SCHEMA_REJECTED" for proof in proofs)
+            if (len(proofs) != len(known_rejected_effects) or any(proof.get("outcome") not in {"PROVIDER_SCHEMA_REJECTED", "COMPLETED_OUTPUT_SCHEMA_FAILURE"} for proof in proofs)
                 or {(proof.get("external_effect_id"), proof.get("process_receipt_asset_version_id"), proof.get("process_receipt_hash")) for proof in proofs}
                 != {(effect, receipt, receipt_hash) for effect, digest, receipt, receipt_hash in known_rejected_effects}):
                 raise KernelError("STEP_SUCCESSOR_REJECTION_UNRECONCILED", "Domain reconciliation must bind each typed Schema rejection")
-            if (known_receipt_effects or len(rejected) != len(known_rejected_effects)
+            if (len(rejected) != len(known_rejected_effects)
                 or any((row[0], row[1], row[5]) != (effect, digest, "authority-asset-version:" + receipt)
                     or row[2] not in {"FAILED_RETRYABLE", "FAILED_FINAL"} or row[3:5] != ("SETTLED", "ACCOUNT_ENTITLEMENT")
                     for row, (effect, digest, receipt, receipt_hash) in zip(rejected, sorted(known_rejected_effects)))):
@@ -397,6 +397,7 @@ def has_domain_outputs(cursor, operation_id):
             "output-manifest",
             "process-receipt",
             "raw-output",
+            "rejected-output",
             "usage-receipt",
             "validation-manifest",
         )
