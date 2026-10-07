@@ -46,6 +46,10 @@ Reader Context projection and Provider View must both recognize the selected can
 asset type. A terminal contract failure is retained; recovery admits a versioned native
 followup successor with the original frozen assets, accepted frontier and Book budget.
 Unknown Effects require reconciliation before any such successor admission.
+A native Arc Recap Context type failure before any Effect or reservation may use one
+Planning runtime continuation. It reuses the exact frozen input snapshot, preserves
+content repair consumption and terminal history, and rechecks existing creation
+authorization; an unknown or dispatched result cannot use this path.
 Reader output reservation must bind the configured single-call model output capacity;
 the remaining total Context allowance is not an output allowance. A rejected oversized
 output request with no external dispatch retains its routing decisions and is eligible
