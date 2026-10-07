@@ -2132,6 +2132,30 @@ completion recognizes only its immutable exact effect/hash and identical input b
 Host revalidation carries source execution provenance; it does not claim a new Agent
 turn or exempt the candidate from Review, Quality, comparison or Acceptance.
 
+The historical `scene-information-flow.v1` projection intersects actor knowledge with
+plan references. It is not a complete continuing-chapter knowledge contract: absent
+plan references cannot erase an actor's accepted knowledge. The original second-chapter
+receipts exposed that mismatch, including references to accepted private material and
+own on-camera statements. Draft 3.9.3 / Pack 2.33 binds the exact frozen accepted State,
+retains actor ownership and source versions, and distinguishes accepted entry knowledge,
+own material evidence, planned observations, reader disclosures and future proposals.
+`actor-source-scope.v1` is a candidate reference contract, not knowledge or occurrence
+proof. Typed actor uses share the permitted identities in the Provider Schema and host
+validation; Review receives the same source classifications and actual prose.
+`continuous-scene.v1` serializes one continuous prose unit per Scene. Selected techniques
+remain craft guidance inside that prose. Historical 3.9.1/3.9.2 inputs and receipts retain
+their original fragment and knowledge semantics. A same-Saga failed-step successor can
+replace the rejected contract only after every receipt and consumption is reconciled;
+the source drafts remain rejected history. This engineering correction is not a prose
+revision benefit or proof of twelve-chapter literary quality.
+
+Author adoption retains the selected candidate's Scene contract. Edition planning
+freezes the core projection with exact source draft versions and hashes before it
+validates the replacement plan's Scene slots; continuous Scene manuscripts cannot
+be reinterpreted as historical capability fragments. A mixed source contract needs
+structural planning rather than an implicit conversion. Edition validation still
+binds current accepted-prefix sources and reviews the exact submitted prose.
+
 Review 3.9.1 and ReReview 3.9.2 bind knowledge checks to the exact Context review targets.
 Their Provider Schema v7 fixes the target count and permitted identities; an empty
 target set requires an empty check array. Historical receipt revalidation preserves

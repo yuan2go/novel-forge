@@ -9377,7 +9377,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:53c3d2196d5904ddd7ea709f06c35befb4559f0f420c1c0089b8841d97cf5ea0"
+    "implementation_tree_sha": "sha256:28a9bff63b0f92eea4cf3da66542071d967d196368dfcb0359149883beaad259"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -9822,6 +9822,26 @@
         {
           "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
           "symbol": "PlanningWorldPreparation.prepare"
+        }
+      ]
+    },
+    {
+      "id": "continuing-actor-source-and-scene-prose",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Draft 3.9.3 binds selected accepted State version/hash and generation permission, actor-owned entry knowledge/state evidence, ordered own planned actions and declared Scene acquisitions. Continuous Scene units replace mandatory per-technique fragments. Provider Schema and host attribute candidate references; Review checks actual prose. References do not accept facts or prove literary quality. Historical receipts and same-Saga successor retain inputs, failures and settled consumption.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+          "symbol": "resolve_accepted_realization_sources"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contract_recovery.py",
+          "symbol": "recover_realization_frontier"
+        },
+        {
+          "path": "tests/unit/test_actor_realization_sources.py",
+          "symbol": "test_foreign_private_future_or_invented_actor_sources_are_rejected"
         }
       ]
     }

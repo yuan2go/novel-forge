@@ -104,6 +104,10 @@ def edition_adopted_draft(request, adoption: dict[str, Any]):
              "scene_artifacts": deepcopy(unit["scene_artifacts"])}
     if unit.get("scene_separators") is not None:
         draft["scene_separators"] = deepcopy(unit["scene_separators"])
+    corrected = None
+    if any("character_source_uses" in row for row in unit["scene_artifacts"]):
+        from novel_forge.modules.chapter_authority.realization_composition import compile_continuing_realization
+        corrected = compile_continuing_realization(request)
     content = normalize_draft_result(
         plan=plan.content,
         context_asset_version_id=context.asset_version_id,
@@ -115,6 +119,7 @@ def edition_adopted_draft(request, adoption: dict[str, Any]):
             "model_call": "NOT_APPLICABLE",
         },
         work_requirements=request.work_requirements_enabled,
+        realization_contract=corrected,
     )
     if content["text"] != unit["text"]:
         raise KernelError("EDITION_TEXT_DRIFT", "Edition validation cannot silently replace submitted prose")

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from copy import deepcopy
+import json
 from enum import StrEnum
 from typing import Any, Mapping
 
@@ -47,12 +49,14 @@ def compile_realization_contract(
     *,
     core_policy: str = "EXPLICIT_SKELETON_V1",
     information_policy: str = "ENTRY_ONLY_V1",
+    accepted_sources: Mapping[str, Any] | None = None,
+    world_preparation: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    if core_policy not in {"EXPLICIT_SKELETON_V1", "scene-core-slots.v1"}:
+    if core_policy not in {"EXPLICIT_SKELETON_V1", "scene-core-slots.v1", "continuous-scene.v1"}:
         raise KernelError(
             "REALIZATION_CORE_POLICY_INVALID", "Unknown frozen core slot interpretation"
         )
-    if information_policy not in {"ENTRY_ONLY_V1", "scene-information-flow.v1"}:
+    if information_policy not in {"ENTRY_ONLY_V1", "scene-information-flow.v1", "actor-source-scope.v1"}:
         raise KernelError(
             "REALIZATION_INFORMATION_POLICY_INVALID",
             "Unknown frozen information interpretation",
@@ -96,7 +100,9 @@ def compile_realization_contract(
                 "REALIZATION_CAPABILITY_INVALID",
                 "Scene capability selection must be unique, typed and include its narrative skeleton",
             )
-        if core_policy == "scene-core-slots.v1":
+        if core_policy == "continuous-scene.v1":
+            capabilities = ["SKELETON"]
+        elif core_policy == "scene-core-slots.v1":
             capabilities = ["SKELETON", *(c for c in capabilities if c != "SKELETON")]
         known = {
             item["character_id"]: set(item.get("known_fact_ids", []))
@@ -162,6 +168,14 @@ def compile_realization_contract(
                     accessible_knowledge=tuple(sorted(accessible)),
                 )
                 slots.append(slot.to_dict())
+    scoped_sources = None
+    if information_policy == "actor-source-scope.v1":
+        if accepted_sources is None or core_policy != "continuous-scene.v1":
+            raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Actor source scope requires frozen accepted input and continuous Scenes")
+        scoped_sources = _actor_source_scopes(plan, accepted_sources, world_preparation or {})
+        for slot, scope in zip(slots, scoped_sources, strict=True):
+            slot["accessible_knowledge"] = scope["scene_source_refs"]
+            slot["character_source_scopes"] = scope["character_source_scopes"]
     voices = []
     voice_identities = set()
     for policy in style.get("policies", []):
@@ -261,7 +275,107 @@ def compile_realization_contract(
         body = bind_craft_realization(
             body, plan["craft_strategy"], scenes=scenes, plan=plan
         )
+    if scoped_sources is not None:
+        body["contract_version"] = "scene-realization-composition.v3"
+        body["accepted_sources"] = deepcopy(dict(accepted_sources))
+        body["core_projection"] = {"contract_version": core_policy, "source_capabilities": {
+            s["scene_id"]: s.get("realization_capabilities", ["SKELETON"]) for s in scenes},
+            "authority": "CRAFT_GUIDANCE_NOT_ADDITIONAL_PROSE_FRAGMENTS"}
+        body["information_flow"] = {"contract_version": information_policy, "scene_scopes": scoped_sources,
+            "presentation_requirement": "Accepted entry knowledge belongs only to its actor. Own material is evidence, not omniscience. Planned actions and disclosures remain candidates: present the observation, communication or own action before dependent use, respecting Scene and event order. Reader evidence is not actor knowledge; testimony is not objective history. Never invent a source ID or transfer another actor's private information.",
+            "authority": "CANDIDATE_REFERENCE_SCOPE_ONLY_REVIEW_AND_CANON_REQUIRED"}
+        body["composition_method"] = "Write continuous narrative, one complete prose unit per Scene in order. Dialogue, action, interiority, description and transitions are choices within that prose, not additional fragments. Preserve character voice, subtext and silence without explaining every implication. used_fact_ids names Scene evidence; character_source_uses attributes actual actor uses to permitted sources. Neither is proof of knowledge or occurrence."
     return {**body, "contract_digest": narrative_hash(body)}
+
+
+def compile_continuing_realization(request):
+    from .chapter_plan_views import build_draft_style_view
+    context = request.require_input("context_bundle").content
+    return compile_realization_contract(request.require_input("chapter_plan").content,
+        build_draft_style_view(context, work_requirements=request.work_requirements_enabled),
+        core_policy="continuous-scene.v1", information_policy="actor-source-scope.v1",
+        accepted_sources=resolve_accepted_realization_sources(request),
+        world_preparation=context.get("chapter_execution_expectations", {}).get("world_preparation", {}))
+
+
+def resolve_accepted_realization_sources(request) -> dict[str, Any]:
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+    from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+
+    context = request.require_input("context_bundle").content
+    boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+    version = boundary.get("story_state_snapshot_version")
+    rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+    matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+    permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+    if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+        raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+    asset = AuthorityAssetQuery(request.database_url).require(project_id=request.project_id, asset_version_id=version)
+    snapshot = asset.content
+    chapter = request.require_input("chapter_plan").content["chapter"]
+    if (asset.content_hash != matches[0].get("content_hash") or asset.asset_type != "story_state_snapshot"
+        or snapshot.get("project_id") != request.project_id or snapshot.get("book_id") != request.command.get("book_id")
+        or snapshot.get("accepted_state_only") is not True
+        or snapshot.get("accepted_through_chapter") != chapter - 1
+        or boundary.get("accepted_through_chapter") != chapter - 1
+        or permissions[0].get("content_digest") != asset.content_hash
+        or asset.lifecycle not in {"ACTIVE", "SUPERSEDED"} or asset.eligibility != "ELIGIBLE" or asset.governance != "CLEAR"):
+        raise KernelError("REALIZATION_ACCEPTED_SOURCE_INVALID", "Accepted State hash, ownership, permission or temporal boundary changed")
+    actors = {a["character_id"] for a in request.require_input("chapter_plan").content.get("character_participation", [])}
+    facts = []
+    for raw in compact_current_state_facts(snapshot):
+        fact = disclosed_fact_projection(raw)
+        state = fact["state"]
+        actor = state.get("character_id", "")
+        kind = fact["state_kind"]
+        if actor not in actors or kind not in {"character_knowledge", "character_state"}:
+            continue
+        if kind == "character_knowledge" and state.get("status") != "KNOWN":
+            continue
+        ref = (state.get("proposition_id") or state.get("fact_id")) if kind == "character_knowledge" else state.get("fact_id") or fact.get("source_event_id")
+        if ref:
+            facts.append({"source_ref": ref, "actor_id": actor, "source_class": "ACCEPTED_ENTRY_KNOWLEDGE" if kind == "character_knowledge" else "ACCEPTED_OWN_STATE_EVIDENCE", "fact": fact})
+    return {"asset_version_id": version, "content_hash": asset.content_hash,
+        "accepted_through_chapter": chapter - 1, "facts": facts, "authority": "EXACT_ACCEPTED_SOURCE_PROJECTION"}
+
+
+def _actor_source_scopes(plan, accepted, preparation):
+    sources = accepted.get("facts", [])
+    schedule = preparation.get("action", {}).get("world_plan", {}).get("preparation_schedule", [])
+    disclosures = plan.get("disclosures", [])
+    result = []
+    carried = {}
+    for scene in plan.get("scene_plan", []):
+        actors = scene.get("participants", [])
+        refs = set(scene.get("accessible_knowledge", [])) | set(scene.get("information_gain", []))
+        scope = {}
+        for actor in actors:
+            entry = {s["source_ref"] for s in sources if s["actor_id"] == actor}
+            gained = {b["fact_id"] for b in plan.get("knowledge_boundaries", [])
+                if b["layer"] == "CHARACTER_KNOWLEDGE" and b["subject_id"] == actor
+                and b["status"] == "KNOWN" and b["available_from_chapter"] <= plan["chapter"]} & refs
+            gained |= {d["fact_id"] for d in disclosures if d["audience"] == actor
+                and d["mode"] in {"PARTIAL", "CONFIRM"} and d["earliest_chapter"] <= plan["chapter"]} & refs
+            own = set()
+            for row in schedule:
+                t = row.get("transition", {})
+                st, et = scene.get("story_time", {}), t.get("story_time", {})
+                if (t.get("actor_id") == actor and t.get("camera") == "ON_CAMERA"
+                    and row.get("chapter_number") == plan["chapter"] and st.get("precision") == et.get("precision") == "ORDERED"
+                    and st.get("timeline_id") == et.get("timeline_id")
+                    and st["start_ordinal"] <= et["start_ordinal"] <= et["end_ordinal"] <= st["end_ordinal"]):
+                    own.add("local:" + t["transition_id"])
+            withheld = {d["fact_id"] for d in disclosures if d["mode"] == "WITHHOLD" and d["audience"] in {actor, "ALL"}}
+            available = (entry | gained | own | carried.get(actor, set())) - withheld
+            scope[actor] = {"source_refs": sorted(available), "accepted_entry_refs": sorted(entry - withheld),
+                "planned_acquisition_refs": sorted(gained - withheld), "own_planned_action_refs": sorted(own - withheld),
+                "prior_scene_source_refs": sorted(carried.get(actor, set()) - withheld)}
+            carried[actor] = (carried.get(actor, set()) | gained | own) - withheld
+        reader_withheld = {d["fact_id"] for d in disclosures if d["mode"] == "WITHHOLD" and d["audience"] in {"READER", "ALL"}}
+        result.append({"scene_id": scene["scene_id"], "scene_source_refs": sorted(refs | {ref for s in scope.values() for ref in s["source_refs"]}),
+            "reader_withheld_refs": sorted(reader_withheld), "character_source_scopes": scope})
+    return result
 
 
 def realization_separators(
@@ -374,31 +488,49 @@ def integrate_realization(
             "REALIZATION_SLOT_COVERAGE_INVALID",
             "Every selected Scene slot must occur once in frozen order",
         )
+    diagnostics = []
+    scoped = contract.get("contract_version") == "scene-realization-composition.v3"
     for slot, artifact in zip(expected, artifacts, strict=True):
+        keys = {"slot_id", "text", "used_fact_ids"} | ({"character_source_uses"} if scoped else set())
         if (
-            set(artifact) != {"slot_id", "text", "used_fact_ids"}
-            or not isinstance(artifact["text"], str)
-            or not artifact["text"].strip()
+            set(artifact) != keys
+            or not isinstance(artifact.get("text"), str)
+            or not artifact.get("text", "").strip()
         ):
-            raise KernelError(
-                "REALIZATION_ARTIFACT_INVALID",
-                "Slots require prose and explicit information-use evidence",
-            )
-        facts = artifact["used_fact_ids"]
+            diagnostics.append({"slot_id": slot["slot_id"], "defect": "ARTIFACT_FIELDS_OR_PROSE", "required_fields": sorted(keys)})
+        facts = artifact.get("used_fact_ids")
         if (
             not isinstance(facts, list)
             or any(not isinstance(ref, str) for ref in facts)
-            or len(set(facts)) != len(facts)
+            or (all(isinstance(ref, str) for ref in facts) and len(set(facts)) != len(facts))
         ):
-            raise KernelError(
-                "REALIZATION_EPISTEMIC_EVIDENCE_INVALID",
-                "Slot information use must name unique fact references",
-            )
-        if not set(facts).issubset(set(slot["accessible_knowledge"])):
-            raise KernelError(
-                "REALIZATION_EPISTEMIC_SCOPE_VIOLATION",
-                "Scene realization used information outside its frozen epistemic scope",
-            )
+            diagnostics.append({"slot_id": slot["slot_id"], "defect": "FACT_REFERENCE_TYPE_OR_DUPLICATE"})
+            facts = []
+        illegal = sorted(set(facts) - set(slot["accessible_knowledge"]))
+        if illegal:
+            diagnostics.append({"slot_id": slot["slot_id"], "defect": "OUTSIDE_SCENE_SCOPE", "invalid_refs": illegal, "allowed_refs": slot["accessible_knowledge"]})
+        if scoped:
+            uses = artifact.get("character_source_uses")
+            seen = set()
+            if not isinstance(uses, list):
+                diagnostics.append({"slot_id": slot["slot_id"], "defect": "CHARACTER_USES_ARRAY_REQUIRED"})
+                uses = []
+            for use in uses:
+                actor = use.get("character_id") if isinstance(use, dict) else None
+                actor = actor if isinstance(actor, str) else ""
+                allowed = slot["character_source_scopes"].get(actor, {}).get("source_refs", [])
+                refs = use.get("used_fact_ids") if isinstance(use, dict) else None
+                if (actor not in slot["character_source_scopes"] or actor in seen or not isinstance(refs, list)
+                    or any(not isinstance(ref, str) for ref in refs) or len(set(refs)) != len(refs)
+                    or not set(refs).issubset(set(allowed) & set(facts)) or set(use) != {"character_id", "used_fact_ids"}):
+                    diagnostics.append({"slot_id": slot["slot_id"], "defect": "CHARACTER_SOURCE_SCOPE", "character_id": actor, "allowed_refs": allowed})
+                seen.add(actor)
+    if diagnostics:
+        code = "REALIZATION_EPISTEMIC_SCOPE_VIOLATION"
+        if not scoped:
+            code = {"ARTIFACT_FIELDS_OR_PROSE": "REALIZATION_ARTIFACT_INVALID", "FACT_REFERENCE_TYPE_OR_DUPLICATE": "REALIZATION_EPISTEMIC_EVIDENCE_INVALID"}.get(diagnostics[0]["defect"], code)
+        raise KernelError(code, json.dumps({"defects": diagnostics}, ensure_ascii=False, sort_keys=True))
+
     integrated = serialize_realization(artifacts, separators)
     if integrated != text:
         raise KernelError(
@@ -414,14 +546,14 @@ def integrate_realization(
                 and voice["character_id"] not in slot["character_ids"]
             ):
                 continue
-            if voice["layer"] == "DIALOGUE" and slot["capability"] != "DIALOGUE":
+            if not scoped and voice["layer"] == "DIALOGUE" and slot["capability"] != "DIALOGUE":
                 continue
             if voice["layer"] == "NARRATOR" and slot["capability"] in {
                 "DIALOGUE",
                 "INTERIOR",
             }:
                 continue
-            if voice["layer"] in {"CHARACTER", "POV"} and slot["capability"] not in {
+            if not scoped and voice["layer"] in {"CHARACTER", "POV"} and slot["capability"] not in {
                 "DIALOGUE",
                 "INTERIOR",
             }:
@@ -474,6 +606,25 @@ def integrate_realization(
         ),
         "voice_evidence": voice_evidence,
     }
+
+
+def scoped_realization_schema(schema, contract):
+    result = deepcopy(schema)
+    options = []
+    def refs(values):
+        return {"type": "array", "items": {"type": "string", **({"enum": values} if values else {})}, **({"maxItems": 0} if not values else {})}
+    def obj(fields):
+        return {"type": "object", "properties": fields, "required": list(fields), "additionalProperties": False}
+    for slot in contract["slots"]:
+        actor_options = [obj({"character_id": {"type": "string", "enum": [actor]}, "used_fact_ids": refs(scope["source_refs"])})
+            for actor, scope in slot["character_source_scopes"].items()]
+        uses = {"type": "array", "items": {"anyOf": actor_options} if actor_options else obj({"character_id": {"type": "string"}, "used_fact_ids": refs([])})}
+        if not actor_options:
+            uses["maxItems"] = 0
+        options.append(obj({"slot_id": {"type": "string", "enum": [slot["slot_id"]]}, "text": {"type": "string", "minLength": 1},
+            "used_fact_ids": refs(slot["accessible_knowledge"]), "character_source_uses": uses}))
+    result["properties"]["scene_artifacts"] = {"type": "array", "minItems": len(options), "maxItems": len(options), "items": {"anyOf": options}}
+    return result
 
 
 def reconcile_revision_composition(

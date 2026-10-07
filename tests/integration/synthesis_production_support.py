@@ -151,6 +151,14 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
 
 
 class SynthesisChapterTransport(CreativeGroundingTransport):
+    def __call__(self, stage, inputs):
+        result = super().__call__(stage, inputs)
+        if stage == "draft" and inputs.get("realization_contract", {}).get("contract_version") == "scene-realization-composition.v3":
+            detail = " The witnesses remain at the doorway. The protagonist lays the marked route on the table, keeping the disputed line visible. One witness reaches toward the map and then withdraws a hand. The protagonist waits until both can see the mark before stating the choice again."
+            result["scene_artifacts"][0]["text"] += detail
+            result["text"] = "\n\n".join(row["text"] for row in result["scene_artifacts"])
+        return result
+
     def planning(self, stage, inputs):
         if stage == "world_candidates.generate":
             if inputs["world_preparation"]["accepted_through_chapter"] >= 2:

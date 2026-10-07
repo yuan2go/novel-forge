@@ -162,9 +162,22 @@ def apply_work_constraint_actions(content, *, admission, revision, target, canon
             raise KernelError("QUALITY_REVISION_LOCATION_REQUIRED", "A length repair requires a preserved Scene boundary")
         scene = max(scenes, key=len)
         start = text.index(scene)
+        end = start + len(scene)
+        if start == 0 and end == len(text):
+            from novel_forge.modules.canon_graph.source_spans import source_spans
+            spans = [s for s in source_spans(text)["spans"] if 0 < s["end"] - s["start"] < len(text)]
+            if not spans:
+                import re
+                spans = [{"start": m.start(1), "end": m.end(1), "quote": m.group(1)}
+                    for m in re.finditer(r"(?:^|(?<=[.!?])\s+)(.+?[.!?])(?=\s|$)", text)
+                    if m.end(1) - m.start(1) < len(text)]
+            if not spans:
+                raise KernelError("QUALITY_REVISION_LOCATION_REQUIRED", "Single-Scene length repair needs a bounded paragraph or sentence; preserve the original prose")
+            location = max(spans, key=lambda s: (s["end"] - s["start"], s["start"]))
+            start, end, scene = location["start"], location["end"], location["quote"]
         report = {"dimension": constraint["dimension"], "target_asset_version_id": target,
             "gate_status": "FAILED", "calibration_status": "DETERMINISTIC", "measurement": constraint,
-            "evidence_locations": [{"start": start, "end": start + len(scene), "quote": scene}],
+            "evidence_locations": [{"start": start, "end": end, "quote": scene}],
             "source": constraint["source_policy"]}
         content["evidence_reports"] = [row for row in content["evidence_reports"] if row["dimension"] != constraint["dimension"]] + [report]
         content["required_actions"].append({"observation": constraint["dimension"], "required_action": "LOCAL_REPAIR",

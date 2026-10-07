@@ -573,6 +573,7 @@ def normalize_draft_result(
     provider_evidence: dict[str, Any],
     work_requirements: bool = False,
     core_policy: str = "EXPLICIT_SKELETON_V1", information_policy: str = "ENTRY_ONLY_V1",
+    realization_contract: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     from .realization_composition import prose_from_output
 
@@ -620,7 +621,7 @@ def normalize_draft_result(
     from .chapter_plan_views import build_draft_style_view
 
     composition = integrate_realization(
-        contract=compile_realization_contract(
+        contract=realization_contract or compile_realization_contract(
             plan,
             build_draft_style_view(
                 context_content or {}, work_requirements=work_requirements

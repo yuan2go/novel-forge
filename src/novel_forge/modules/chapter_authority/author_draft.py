@@ -75,6 +75,11 @@ def adopted_author_draft(request) -> ChapterHandlerOutput | None:
         raise KernelError("AUTHOR_PLAN_DRIFT", "Author candidate must retain its exact originating Chapter Plan")
     intent, memo = request.require_input("chapter_execution_intent"), request.require_input("chapter_memo")
     require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=context.content)
+    source_contract = candidate.content["draft_content"].get("realization_contract", {})
+    corrected = None
+    if source_contract.get("contract_version") == "scene-realization-composition.v3":
+        from .realization_composition import compile_continuing_realization
+        corrected = compile_continuing_realization(request)
     content = normalize_draft_result(
         plan=plan.content,
         context_asset_version_id=context.asset_version_id,
@@ -86,6 +91,7 @@ def adopted_author_draft(request) -> ChapterHandlerOutput | None:
             "model_call": "NOT_APPLICABLE",
         },
         work_requirements=request.work_requirements_enabled,
+        realization_contract=corrected,
     )
     if content["text"] != candidate.content["text"]:
         raise KernelError("AUTHOR_TEXT_NORMALIZATION_CONFLICT", "Author text cannot change after exact version selection")

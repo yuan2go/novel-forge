@@ -704,6 +704,7 @@ def build_provider_task_view(
             style=_compact(inputs.get("style")),
             creative_memo=memo_view,
             realization_contract=realization,
+            **({"repair_diagnostics": deepcopy(inputs["repair_diagnostics"])} if inputs.get("repair_diagnostics") else {}),
         )
     if stage == "review":
         from novel_forge.modules.review.craft import craft_provider_task
@@ -713,6 +714,7 @@ def build_provider_task_view(
             **craft_provider_task(inputs.get("draft") or {}),
             **_cross_chapter_task(inputs),
             chapter=_prose(inputs.get("draft")),
+            **_realization_source_review(inputs.get("draft") or {}),
             creative_execution=deepcopy(
                 (inputs.get("draft") or {}).get("creative_execution") or {}
             ),
@@ -809,7 +811,7 @@ def build_provider_task_view(
             )
             if (source.get("realization_contract") or {}).get(
                 "contract_version"
-            ) == "scene-realization-composition.v2":
+            ) in {"scene-realization-composition.v2", "scene-realization-composition.v3"}:
                 payload["targeted_editing"] = {
                     "mode": "DIAGNOSIS_DIRECTED_ONLY",
                     "tasks": [
@@ -929,6 +931,7 @@ def build_provider_task_view(
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
+            **_realization_source_review(revision or {}),
             **(
                 {
                     "creative_baseline": deepcopy(
@@ -3051,6 +3054,16 @@ def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
         "target_identity": {"asset_version_id": inputs["target_candidate_asset_version_id"], "text_hash": prose_hash(str(candidate.get("text") or ""))},
         "review_objective": "Diagnose cross-chapter continuity using only covered accepted prose. Sources are read-only; never repair history or turn a Review into Canon. Locate literal target and source Unicode spans with exact identities. Assess retelling, action/space, causal cost, motivation, relationship and voice. Distinguish intentional recap, motif, reinterpretation, new POV, information gain and motivated change. Aesthetic or uncertain judgment cannot block. No issue is a valid result. Return structured evidence, not chain-of-thought. ReReview must disposition every prior code and preservation dimension; reuse lineage_code only for that same problem. No claims about excluded prose.",
     }
+
+
+def _realization_source_review(draft):
+    contract = draft.get("realization_contract") or {}
+    if contract.get("contract_version") != "scene-realization-composition.v3":
+        return {}
+    return {"realization_source_evidence": {"accepted_sources": deepcopy(contract["accepted_sources"]),
+        "information_flow": deepcopy(contract["information_flow"]),
+        "candidate_uses": [{key: deepcopy(row[key]) for key in ("slot_id", "used_fact_ids", "character_source_uses")} for row in draft["scene_artifacts"]],
+        "review_requirement": "Read the actual prose to check actor ownership, observation/communication before dependent use, future leakage and testimony versus objective fact. These declared references are evidence, not proof of occurrence or successful realization. Accepted source versions are read-only; planned sources are not accepted history."}}
 
 
 def project_longform_prose_review_context_input(asset_type: str, content: Mapping[str, Any]) -> dict[str, Any]:

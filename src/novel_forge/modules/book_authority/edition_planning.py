@@ -46,15 +46,22 @@ def edition_plan_scope(database_url: str, *, book: dict[str, Any], chapter: int,
                 raise KernelError("EDITION_PLAN_SOURCE_INVALID", "Edition units require an exact Chapter execution plan")
             sources = {source["asset_version_id"]: source for source in revision["manifest"]["sources"]}
             source_plans = {}
+            source_realizations = []
             for source_range in unit["source_ranges"]:
+                original_draft = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=source_range["asset_version_id"])
+                source_realizations.append(original_draft)
                 source_id = sources[source_range["asset_version_id"]]["chapter_plan_asset_version_id"]
                 original_plan = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=source_id)
                 source_plans[source_id] = {"asset_version_id": source_id, "content_hash": original_plan.content_hash,
                     "scene_plan": deepcopy(original_plan.content.get("scene_plan") or [])}
+            realization_policy = _source_realization_policy(source_realizations)
+            if realization_policy:
+                scope["source_realization_policy"] = realization_policy
             mapping = unit.get("scene_mapping") or []
             if not mapping and unit.get("scene_artifacts"):
                 from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
-                frozen_slots = {slot["slot_id"]: slot for slot in compile_realization_contract(plan.content, {})["slots"]}
+                frozen_slots = {slot["slot_id"]: slot for slot in compile_realization_contract(plan.content, {},
+                    core_policy=realization_policy.get("core_policy", "EXPLICIT_SKELETON_V1"))["slots"]}
                 if any(scene["slot_id"] not in frozen_slots for scene in unit["scene_artifacts"]):
                     raise KernelError("EDITION_SCENE_MAPPING_REQUIRED", "New Scene slots require an explicit structural mapping before planning")
                 mapping = [{"slot_id": scene["slot_id"], "scene_id": frozen_slots[scene["slot_id"]]["scene_id"]} for scene in unit["scene_artifacts"]]
@@ -66,6 +73,18 @@ def edition_plan_scope(database_url: str, *, book: dict[str, Any], chapter: int,
                          source_plans=list(source_plans.values()),
                          source_ranges=deepcopy(unit["source_ranges"]))
         return scope
+
+
+def _source_realization_policy(sources) -> dict[str, Any]:
+    continuous = [source for source in sources if
+        (source.content.get("realization_contract", {}).get("core_projection") or {}).get("contract_version") == "continuous-scene.v1"]
+    if not continuous:
+        return {}
+    if len(continuous) != len(sources):
+        raise KernelError("EDITION_REALIZATION_POLICY_CONFLICT", "Mixed source Scene contracts require a structural Edition plan")
+    return {"core_policy": "continuous-scene.v1", "sources": [
+        {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}
+        for source in dict((source.asset_version_id, source) for source in continuous).values()]}
 
 
 def _accepted_revision_for_run(repo, revision_id: str, book_run_id: str) -> bool:

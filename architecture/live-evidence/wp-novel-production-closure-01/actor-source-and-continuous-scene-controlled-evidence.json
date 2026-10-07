@@ -1,0 +1,74 @@
+{
+  "schema_version": "wp-novel-production-closure-01.focused-evidence.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tested_parent_sha": "a702592e4042b260d4eb1a550655bafb0ae1b761",
+  "implementation_tree_sha": "sha256:28a9bff63b0f92eea4cf3da66542071d967d196368dfcb0359149883beaad259",
+  "definitions": {
+    "draft": "3.9.3",
+    "chapter_pack": "2.33.0",
+    "migration_head": "0167"
+  },
+  "checks": [
+    {
+      "check": "actor source ownership, accepted source hash/time/permission, continuous Scene, Provider Schema, original protection and Edition contracts",
+      "result": "PASS",
+      "tests": 217,
+      "subtests": 1302,
+      "private_evidence": "unit-520.log"
+    },
+    {
+      "check": "native PostgreSQL failed-step successor, exact bounded contract window, cancellation, known/unknown receipts and atomic recovery",
+      "result": "PASS",
+      "tests": 32,
+      "subtests": 8,
+      "private_evidence": "controlled-cli-521.log"
+    },
+    {
+      "check": "native controlled two-Chapter production, author local Edition edit, validation and selected exact formal export",
+      "result": "PASS",
+      "tests": 1,
+      "duration_seconds": 148.62,
+      "provider": "CONTROLLED",
+      "private_evidence": "controlled-cli-518.log"
+    },
+    {
+      "check": "original checkpoint restored-clone same-Saga successor idempotency and exact actor sources",
+      "result": "PASS",
+      "provider_dispatch": "FORBIDDEN",
+      "private_evidence": "actor-source-preflight-509.log"
+    },
+    {
+      "check": "canonical documentation projection",
+      "result": "PASS",
+      "private_evidence": "docs-520.json"
+    }
+  ],
+  "root_causes": [
+    "Plan omissions incorrectly removed accepted actor knowledge from Writer reference scope",
+    "Typed own on-camera actions were not usable evidence in actor dialogue",
+    "Mandatory capability fragments constrained continuous Scene expression",
+    "Edition validation recompiled continuous manuscripts using historical fragment slots"
+  ],
+  "history": {
+    "old_draft": "4ae26331-5f49-4a4f-951b-75273de4bc51",
+    "receipts": [
+      "99a26a37-997c-4d36-b79b-2cc9f039898e",
+      "bcc61dc6-af58-422c-96b9-9b6dd807b1bb"
+    ],
+    "disposition": "SUCCEEDED_AND_SETTLED_HOST_REJECTED_RETAINED",
+    "retry_limit": "UNCHANGED",
+    "failure_logs_retained": [
+      "controlled-cli-515.log",
+      "controlled-cli-516.log"
+    ]
+  },
+  "evidence_state": "EXECUTABLE",
+  "real_production": {
+    "book_id": "closure-original-book",
+    "accepted_chapters_at_check": 1,
+    "target_chapters": 12,
+    "new_contract_real_run": "NOT_RUN"
+  },
+  "literary_effect": "NOT_PROVEN",
+  "scope": "Engineering evidence only; no schema repair relabelled as prose revision"
+}

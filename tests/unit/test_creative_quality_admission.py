@@ -83,6 +83,22 @@ def test_exact_work_length_overrides_only_length_opinion_and_locates_prose_scope
         assert scope["permitted_ranges"][0]["quote"] == "中间发生行动和对白。"
 
 
+@pytest.mark.parametrize("text,location", [("首段。中间发生行动和对白。末段。", {"start": 3, "end": 13, "quote": "中间发生行动和对白。"}),
+    ("First. A developed action here. End.", {"start": 7, "end": 31, "quote": "A developed action here."})])
+def test_single_continuous_scene_length_repair_preserves_other_sentences(text, location):
+    from novel_forge.modules.chapter_quality_authority.creative_validation import apply_work_constraint_actions
+    from novel_forge.modules.revision.domain import freeze_quality_edit_scope
+    revision = {"text": text, "scene_artifacts": [{"text": text}]}
+    admission = {"blocked_dimensions": ["chapter_length"], "work_constraints": [{"dimension": "chapter_length", "status": "FAILED", "source_policy": "exact-author-policy"}]}
+    quality = apply_work_constraint_actions({"required_actions": [], "evidence_reports": [], "decision_chain": {}}, admission=admission, revision=revision, target="draft", canon={})
+    scope = freeze_quality_edit_scope(revision=revision, revision_asset_version_id="draft", quality=quality, action=quality["required_actions"][0])
+    assert scope["status"] == "LOCATED"
+    assert scope["permitted_ranges"] == [location]
+    assert scope["whole_chapter_edit_authorized"] is False
+    with pytest.raises(KernelError, match="QUALITY_REVISION_LOCATION_REQUIRED"):
+        apply_work_constraint_actions({"required_actions": [], "evidence_reports": [], "decision_chain": {}}, admission=admission, revision={"text": "单句", "scene_artifacts": [{"text": "单句"}]}, target="draft", canon={})
+
+
 def test_typed_canon_interface_conflicts_remain_blocking_but_do_not_authorize_prose_edit():
     from novel_forge.modules.chapter_quality_authority.creative_validation import apply_work_constraint_actions
     for code, action in [("NARRATIVE_TRANSITION_BASELINE_MISSING", "EVIDENCE_REASSESSMENT"), ("CANON_FACT_CONFLICT", "LOCAL_REPAIR")]:

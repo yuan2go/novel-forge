@@ -35,13 +35,23 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
         if not template or _cancelled(uow.cursor, book):
             return False
         uow.cursor.execute(
-            """SELECT o.operation_id,o.command_payload,o.input_asset_snapshot,o.definition_name FROM authority_operation o
+            """SELECT DISTINCT o.operation_id,o.command_payload,o.input_asset_snapshot,o.definition_name,o.definition_version FROM authority_operation o
             JOIN authority_saga_step s USING(operation_id) JOIN authority_attempt a USING(operation_id)
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name IN ('chapter.draft.generate','chapter.revision.review')
-              AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='REALIZATION_CAPABILITY_INVALID') OR (o.definition_name='chapter.revision.review' AND o.definition_version='3.9.1' AND o.status='DEAD_LETTER' AND a.result->>'error_code'='CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT'))""",
+              AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='REALIZATION_CAPABILITY_INVALID') OR (o.definition_name='chapter.revision.review' AND o.definition_version='3.9.1' AND o.status='DEAD_LETTER' AND a.result->>'error_code'='CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT') OR (o.definition_name='chapter.draft.generate' AND o.definition_version='3.9.2' AND o.status='DEAD_LETTER' AND a.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION'))""",
             [request["chapter_root_operation_id"], book["project_id"]],
         )
         source = uow.cursor.fetchone()
+        known_effects = ()
+        if source and source[4] == "3.9.2":
+            uow.cursor.execute("SELECT e.external_effect_id,e.request_hash,e.status,b.status FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.created_at", [source[0]])
+            effects = uow.cursor.fetchall()
+            if not effects or any(row[2:] != ("SUCCEEDED", "SETTLED") for row in effects):
+                return False
+            from .receipt_recovery import _receipt
+            for row in effects:
+                _receipt(uow.cursor, row[0], book["project_id"])
+            known_effects = tuple(row[:2] for row in effects)
     if not source:
         return recover_quality_frontier(authority, book=book, request=request, template=template, principal=principal)
     query = AuthorityAssetQuery(authority.database_url)
@@ -54,11 +64,19 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
     if source[3] == "chapter.draft.generate":
         plan = next(a.content for a in inputs if a.asset_type == "chapter_plan")
         context = next(a.content for a in inputs if a.asset_type == "context_bundle")
+        extra = {}
+        if source[4] == "3.9.2":
+            from .contracts import ChapterHandlerRequest
+            from .realization_composition import resolve_accepted_realization_sources
+            binding_request = ChapterHandlerRequest(source[0], book["project_id"], "", "", "", source[1], tuple(inputs), database_url=authority.database_url, definition_version="3.9.3")
+            extra = {"accepted_sources": resolve_accepted_realization_sources(binding_request),
+                "world_preparation": context.get("chapter_execution_expectations", {}).get("world_preparation", {})}
         compiled = compile_realization_contract(
             plan,
             build_draft_style_view(context, work_requirements=True),
-            core_policy="scene-core-slots.v1",
-            information_policy="scene-information-flow.v1",
+            core_policy="continuous-scene.v1" if extra else "scene-core-slots.v1",
+            information_policy="actor-source-scope.v1" if extra else "scene-information-flow.v1",
+            **extra,
         )
     else:
         compiled = {"core_projection": None, "information_flow": None}
@@ -73,6 +91,11 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
         "completion_checks": "UNCHANGED",
         "accepted_cursor": book["accepted_through_chapter"],
     }
+    if known_effects:
+        evidence.update({"contract_version": "chapter-actor-source-successor.v1", "corrected_contract_digest": compiled["contract_digest"],
+            "source_receipts": [{"effect_id": e, "request_hash": h} for e, h in known_effects],
+            "known_receipt_disposition": "RETAINED_REJECTED_CANDIDATES_NEW_VERSIONED_CONTRACT_GENERATION", "accepted_sources": compiled["accepted_sources"],
+            "retry_limit": "UNCHANGED", "business_inputs": "IDENTICAL_FROZEN_VERSIONS"})
 
     def guard(uow):
         uow.cursor.execute(
@@ -103,7 +126,7 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
     replace_failed_step(
         authority.database_url,
         predecessor_id=source[0],
-        target_version="3.9.2",
+        target_version="3.9.3" if known_effects else "3.9.2",
         context=AdmissionContext(
             principal.principal_id,
             principal.permissions,
@@ -112,10 +135,12 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
             authority.commit_sha,
         ),
         policy_evidence=evidence,
-        expected_failure_code="REALIZATION_CAPABILITY_INVALID"
+        expected_failure_code="REALIZATION_EPISTEMIC_SCOPE_VIOLATION" if known_effects else "REALIZATION_CAPABILITY_INVALID"
         if source[3] == "chapter.draft.generate"
         else "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
         transaction_guard=guard,
+        known_receipt_effects=known_effects,
+        window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "scene_information_flow", "policy_value": "actor-source-scope.v1"} if known_effects else None,
     )
     return True
 

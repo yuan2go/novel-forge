@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
 
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
 CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.9.0"
-CHAPTER_DRAFT_DEFINITION_VERSION = "3.9.2"
+CHAPTER_DRAFT_DEFINITION_VERSION = "3.9.3"
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS = frozenset({"3.4.1", "3.5.0", "3.6.0", "3.7.0", "3.8.0"})
 CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSION = "3.4.1"
 CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION = "3.9.0-author-input.v2"
@@ -531,6 +531,7 @@ def _definition(
             **({"canon_support_kinds": "canon-claim-kinds.v1", "realization_intent_comparison": "realization-intent-comparison.v1"} if model_effects_required and node is ChapterNode.CANON_PROPOSAL and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"known_receipt_revalidation": "chapter-known-receipt.v1", "knowledge_check_scope": "review-target-scope.v1"} if model_effects_required and node in {ChapterNode.REVIEW,ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"known_receipt_revalidation": "chapter-known-receipt.v1"} if node is ChapterNode.DRAFT and model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.2" else {}),
+            **({"scene_core_projection": "continuous-scene.v1", "scene_information_flow": "actor-source-scope.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.3" else {}),
             **({"scene_core_projection": "scene-core-slots.v1", "scene_information_flow": "scene-information-flow.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION in {"3.9.1", "3.9.2"} else {}),
         },
         "completion_contract": completion,

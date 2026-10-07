@@ -1269,6 +1269,14 @@ class PostgresChapterExecutionContractBinder:
             work_requirements=prompt_contract_version in {"v8", "v9"},
             allow_noop_revision=prompt_contract_version == "v9" and not bool(inputs.get("quality_edit_contract")),
         )
+        if stage == "draft" and (inputs.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
+            from .realization_composition import scoped_realization_schema
+            schema = scoped_realization_schema(schema, inputs["realization_contract"])
+            schema_ref = "schema:chapter-provider-output:draft:v4"
+        if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
+            from .realization_composition import scoped_realization_schema
+            schema = scoped_realization_schema(schema, inputs["draft"]["realization_contract"])
+            schema_ref = "schema:chapter-provider-output:revision:v6"
         if stage.startswith("quality_") and inputs.get("quality_span_contract") == "literal-source-spans.v1":
             from novel_forge.modules.canon_graph.source_spans import quality_span_schema
             schema = quality_span_schema(schema, inputs["source_span_table"], inputs["dimension_applicability"])
@@ -2122,6 +2130,7 @@ class PostgresChapterExecutionContractBinder:
         compatible = compatible or (
             str(row[0]) in {ChapterNode.REVIEW.definition_name,ChapterNode.REREVIEW.definition_name} and str(row[1]) in {"3.9.1", "3.9.2"}
         )
+        compatible = compatible or (str(row[0]) == ChapterNode.DRAFT.definition_name and str(row[1]) in {"3.9.1", "3.9.2"})
         compatible = compatible or (
             any(str(row[0]) == node.definition_name and str(row[1]) == chapter_node_definition_version(node, True) for node in ChapterNode)
         )
@@ -2920,6 +2929,7 @@ def default_chapter_fixture_response(
                 if index == 0
                 else f"The scene carries its {slot['capability'].lower()} contribution forward.",
                 "used_fact_ids": [],
+                **({"character_source_uses": []} if contract.get("contract_version") == "scene-realization-composition.v3" else {}),
             }
             for index, slot in enumerate(contract.get("slots", []))
         ]

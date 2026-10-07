@@ -192,8 +192,9 @@ class DeterministicFixtureChapterProvider:
             return output
         text = str(output["text"])
         if stage == "draft":
+            contract = payload.get("realization_contract") or {}
             artifacts = [
-                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": []}
+                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": [], **({"character_source_uses": []} if contract.get("contract_version") == "scene-realization-composition.v3" else {})}
                 for index, slot in enumerate((payload.get("realization_contract") or {}).get("slots", []))
             ]
         else:
@@ -1502,8 +1503,14 @@ class _DraftHandler:
         )
         core_policy = "scene-core-slots.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "EXPLICIT_SKELETON_V1"
         information_policy = "scene-information-flow.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "ENTRY_ONLY_V1"
+        source_arguments = {}
+        if request.definition_version == "3.9.3":
+            from .realization_composition import resolve_accepted_realization_sources
+            core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
+            source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                "world_preparation": context.content.get("chapter_execution_expectations", {}).get("world_preparation", {})}
         realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy,
-                                                            information_policy=information_policy)
+                                                            information_policy=information_policy, **source_arguments)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         from .receipt_recovery import consume_known_draft_receipt
@@ -1518,6 +1525,7 @@ class _DraftHandler:
                 "realization_contract": realization_contract,
                 "execution_intent": intent.content,
                 "chapter_memo": memo.content,
+                **({"repair_diagnostics": _draft_source_diagnostics(request)} if request.definition_version == "3.9.3" else {}),
             },
         )
         content = normalize_draft_result(
@@ -1530,6 +1538,7 @@ class _DraftHandler:
             work_requirements=request.work_requirements_enabled,
             core_policy=core_policy,
             information_policy=information_policy,
+            realization_contract=realization_contract,
         )
         if known_receipt:
             content["known_receipt_revalidation"] = {"contract_version": "chapter-known-receipt.v1", "source": generated.execution_evidence, "provider_dispatches": 0}
@@ -1552,6 +1561,19 @@ class _DraftHandler:
         if author_guidance:
             content["author_design_guidance"] = author_guidance
         return _model_output(ChapterNode.DRAFT, content, request=request, generated=generated)
+
+
+def _draft_source_diagnostics(request):
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    with AuthorityUnitOfWork(request.database_url) as u:
+        u.cursor.execute("SELECT a.result->>'error_message' FROM authority_attempt a JOIN authority_operation o USING(operation_id) WHERE o.operation_id=%s AND o.project_id=%s AND a.result->>'error_code'='REALIZATION_EPISTEMIC_SCOPE_VIOLATION' ORDER BY a.attempt_number DESC LIMIT 1", [request.operation_id, request.project_id])
+        row = u.cursor.fetchone()
+    if not row:
+        return []
+    try:
+        return json.loads(row[0]).get("defects", [])
+    except (ValueError, TypeError, AttributeError):
+        return []
 
 
 @dataclass(frozen=True, slots=True)

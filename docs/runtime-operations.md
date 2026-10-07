@@ -38,7 +38,7 @@ A Book waiting for its durable Recap source must wake on followup operation prog
 a missing source is a technical dependency, not an author approval. Historical
 realization deviations and accepted prose remain immutable during future-only replan.
 Focused checks cover this wakeup, exact Reader lineage and future-only Recap requests.
-Canon Proposal `3.9.2` and Chapter Pack `2.32.0` bind independent intent comparison
+Canon Proposal `3.9.2` and Chapter Pack `2.33.0` bind independent intent comparison
 to exact planned-event hashes, adopted prose and successful support outputs. The current migration-manifest head adds uncertainty as distinct evidence;
 it does not alter recorded deviations or accepted history.
 Reader Context projection and Provider View must both recognize the selected candidate
@@ -3169,6 +3169,24 @@ consumption. Draft 3.9.2 revalidates that receipt without dispatch; every existi
 content and completion check still applies. UNKNOWN, business outputs, dependent work,
 live leases, cancellation and changed Book frontiers forbid this recovery. Its host
 revalidation is not a new Agent generation or a literary revision.
+
+For continuing-chapter `REALIZATION_EPISTEMIC_SCOPE_VIOLATION`, preserve every successful
+raw receipt and stop repeating the unchanged execution contract. Inspect the complete
+rendered Writer request, exact accepted State version/hash and each actor/Scene source
+scope. A plan omission is not evidence of lost accepted knowledge. A corrected contract
+uses the native failed-step successor after reconciling all original Effects and settled
+consumption; it does not edit old Context, reset the Book cursor or raise retry limits.
+The focused matrix covers accepted actor knowledge, own material evidence, same-Scene
+perception order, foreign actor theft, future sources, stale hashes and candidate/history
+separation, plus exact frozen input and same-Saga successor identity. Continuous Scene
+prose remains subject to ordinary Review, comparison, Canon and Acceptance.
+Run `tests/unit/test_actor_realization_sources.py`, the existing Craft/realization,
+Provider Schema, Pack and creative Quality tests, the native failed-step PostgreSQL
+matrix, and the complete controlled author workflow in
+`tests/integration/test_creation_cli_postgres.py` before real continuation. The original
+checkpoint preflight must prohibit Provider dispatch. Single-Scene objective length
+repair locates a proper paragraph/sentence span using the existing literal span table;
+it does not authorize editing the entire chapter. Missing bounded evidence still blocks.
 
 For `REVIEW_KNOWLEDGE_CHECK_INVALID` after a successful historical Review receipt,
 inspect the exact frozen target set and Pack rule hashes. The native successor retains

@@ -358,7 +358,9 @@ class _PlanningGenerationHandler:
             target_slots = command.edition_execution.get("target_slot_ids") or []
             if target_slots:
                 from novel_forge.modules.chapter_authority.realization_composition import compile_realization_contract
-                slots = compile_realization_contract(candidate.candidate_payload, {})["slots"]
+                policy = command.edition_execution.get("source_realization_policy") or {}
+                slots = compile_realization_contract(candidate.candidate_payload, {},
+                    core_policy=policy.get("core_policy", "EXPLICIT_SKELETON_V1"))["slots"]
                 if [slot["slot_id"] for slot in slots] != list(target_slots):
                     raise KernelError("EDITION_SLOT_MAPPING_DRIFT", "The new plan must realize every submitted Scene slot in frozen order")
             envelope["edition_execution"] = deepcopy(dict(command.edition_execution))
