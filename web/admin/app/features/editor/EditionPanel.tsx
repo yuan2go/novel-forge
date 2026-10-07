@@ -72,7 +72,12 @@ export function EditionPanel({ state, preferredBookRun = "" }: { state: DraftEdi
       const bound = value.events?.findLast((event) => event.event_kind === "VALIDATION_BOUND" || event.event_kind === "VALIDATED");
       setValidationRun(String(bound?.content.validation_book_run_id || ""));
       if (sameBase) setNotice("已恢复尚未提交的整稿输入。原稿仍可读取。");
-    }).catch((caught) => { if (token === generation.current) setError(String(caught)); });
+    }).catch((caught) => {
+      if (token !== generation.current) return;
+      if (caught instanceof ApiError && caught.code === "EDITION_SOURCE_REQUIRED") {
+        setNotice("严格定稿需要已审定章节；当前稿件仍可随时导出。");
+      } else setError(String(caught));
+    });
     return () => {generation.current++;};
   }, [state.project_id, state.workspace_id, runId, revisionId, savedKey]);
 

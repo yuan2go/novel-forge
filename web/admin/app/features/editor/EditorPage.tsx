@@ -21,6 +21,8 @@ export function EditorPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [preferredBookRun, setPreferredBookRun] = useState("");
+  const [editionOpened, setEditionOpened] = useState(false);
+  const [proseReviewOpened, setProseReviewOpened] = useState(false);
   const [drafts, setDrafts] = useState<EditorDraft[]>([]);
   const [draftId, setDraftId] = useState("");
   const [state, setState] = useState<DraftEditorState | null>(null);
@@ -210,9 +212,11 @@ export function EditorPage() {
         <a href="/manuscript">前往章节生产工作台查看后续接纳门控</a>
       </> : null}
     </section>
-    {state ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} preferredBookRun={preferredBookRun} /> : null}
-    {state ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
+    <details className="panel" onToggle={event => {if (event.currentTarget.open) setEditionOpened(true);}}><summary>严格定稿与整稿版本（按需）</summary>
+    {state && editionOpened ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} preferredBookRun={preferredBookRun} /> : null}</details>
+    <details className="panel" onToggle={event => {if (event.currentTarget.open) setProseReviewOpened(true);}}><summary>深度正文审读（按需）</summary>
+    {state && proseReviewOpened ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
       setReviewSource(source); setNotice("已选定审读问题；编辑正文并保存后，可显式关联修改候选。"); editor.current?.focus();
-    }} /> : null}
+    }} /> : null}</details>
   </FeatureShell>;
 }
