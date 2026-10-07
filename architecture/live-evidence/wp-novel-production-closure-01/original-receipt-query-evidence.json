@@ -1,0 +1,114 @@
+{
+  "schema_version": "wp-novel-production-closure-01.original-receipt-query.v1",
+  "code_sha": "c6bc1b42417877e9f5a73e619f292fa3e39b9282",
+  "implementation_tree_sha": "sha256:ff74b9a26b47f60747630d250451d4c2f25a04ffa7cde7f68da6f6c1a5d95f9a",
+  "native_no_send_readback": {
+    "book": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "original_book_and_effects_and_dispatches_and_budgets_unchanged": true,
+    "native_tick": {
+      "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+      "previous_state": "CHAPTER_RUNNING",
+      "state": "CHAPTER_RUNNING",
+      "action": "WAIT_EXTERNAL_RECONCILIATION",
+      "operation_id": "",
+      "evidence_ref": ""
+    },
+    "native_creation_status": {
+      "author_state": "RECONCILIATION_REQUIRED",
+      "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS",
+      "responsible_party": "RUNTIME_OWNER"
+    },
+    "native_drive_reason": "WAIT_EXTERNAL_RECONCILIATION",
+    "receipts": [
+      {
+        "effect": "d9c82f83-e779-4b00-a9b0-f3868d00ff10",
+        "receipt_asset": "62f777c2-518f-4415-a913-ea6919e03256",
+        "receipt_hash": "sha256:538cbd75f67224afd3e6cec33234fa58d28ff21e7641a1541048f9508fef79f1",
+        "original_query_status": "TIMED_OUT",
+        "result_recoverable": false,
+        "provider_request_id": null,
+        "local_termination_only": true,
+        "event_types": [
+          "thread.started",
+          "item.completed",
+          "turn.started"
+        ],
+        "elapsed_ms": 27289
+      },
+      {
+        "effect": "b8a63e74-70ee-415b-a67b-c165afd1ad1f",
+        "receipt_asset": "46d4c1f0-672d-4c4d-a0ec-072a761c0a92",
+        "receipt_hash": "sha256:4337602a2985900412acaeffcd92e48009452bc6befa90c4c452cc308f591108",
+        "original_query_status": "TIMED_OUT",
+        "result_recoverable": false,
+        "provider_request_id": null,
+        "local_termination_only": true,
+        "event_types": [
+          "thread.started",
+          "item.completed",
+          "turn.started"
+        ],
+        "elapsed_ms": 27452
+      },
+      {
+        "effect": "2232e1cd-8640-4d56-b2cf-c481d1909ba2",
+        "receipt_asset": "57be633c-df7d-4a34-b899-1dcbb70959d0",
+        "receipt_hash": "sha256:a3fb88bbb19cf026551099605e8fb74affd1cb2d1074372a0d2a40d643d4b060",
+        "original_query_status": "TIMED_OUT",
+        "result_recoverable": false,
+        "provider_request_id": null,
+        "local_termination_only": true,
+        "event_types": [
+          "thread.started",
+          "item.completed",
+          "turn.started"
+        ],
+        "elapsed_ms": 270336
+      },
+      {
+        "effect": "975e3dc0-9d9f-4716-a5cc-e729333f91d5",
+        "receipt_asset": "5a384126-8e1f-47d8-a6c7-718c3f7f555c",
+        "receipt_hash": "sha256:af50ca889178e8c2a86706376db69041ffde77c4f9a63cad3aa18189e5105d30",
+        "original_query_status": "TIMED_OUT",
+        "result_recoverable": false,
+        "provider_request_id": null,
+        "local_termination_only": true,
+        "event_types": [
+          "thread.started",
+          "item.completed",
+          "turn.started"
+        ],
+        "elapsed_ms": 270354
+      }
+    ],
+    "provider_dispatches": 0,
+    "remote_result": "UNRESOLVED",
+    "actual_runtime_sha": "c6bc1b42417877e9f5a73e619f292fa3e39b9282",
+    "last_real_provider_runtime_sha": "4508fe0d97acb90b8eb19216dfdb8a734079d173",
+    "frozen_release_sha": "b170ea075499defb2d3ca1a04f0717f8bb6f2972"
+  },
+  "historical_crash_recovery": {
+    "signal": "SIGKILL",
+    "stage": "AFTER_DURABLE_SUCCEEDED_RECEIPT",
+    "effect_id": "56da1aaa-022b-426d-8055-54ef2a191845",
+    "dispatch_count": 1,
+    "fences": [
+      [
+        1,
+        2,
+        "CONSUME_RESULT"
+      ],
+      [
+        1,
+        2,
+        "DISPATCH_PLANNED"
+      ]
+    ],
+    "restart_runtime_sha": "4f5c9c51dfe4a39cc7fc5d5ade58c01033e6cce1",
+    "private_evidence": [
+      "real/crash-after-provider-success-129.json",
+      "real/crash-restart-141.json"
+    ]
+  },
+  "no_long_term_reliability_claim": true
+}

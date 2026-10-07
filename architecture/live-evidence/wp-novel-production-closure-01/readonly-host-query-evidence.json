@@ -1,0 +1,23 @@
+{
+  "schema_version": "wp-novel-production-closure-01.readonly-host-query.v1",
+  "query": "Codex app read_thread on exact thread.started identities retained in original Canon stdout",
+  "tool": "mcp__codex_app__read_thread",
+  "requests": [
+    {
+      "effect_id": "2232e1cd-8640-4d56-b2cf-c481d1909ba2",
+      "thread_id": "01a1157c-2885-79b0-97f0-f5e8203ebedf",
+      "is_error": true,
+      "response": "Could not determine whether Codex thread 01a1157c-2885-79b0-97f0-f5e8203ebedf exists. Unavailable or failed hosts: durable"
+    },
+    {
+      "effect_id": "975e3dc0-9d9f-4716-a5cc-e729333f91d5",
+      "thread_id": "01a11580-4edd-70d3-9a32-5c7898ebf711",
+      "is_error": true,
+      "response": "Could not determine whether Codex thread 01a11580-4edd-70d3-9a32-5c7898ebf711 exists. Unavailable or failed hosts: durable"
+    }
+  ],
+  "conclusion": "UNRESOLVED; lookup failure is neither NOT_FOUND nor terminal Provider proof",
+  "provider_calls": 0,
+  "business_mutation": false,
+  "source_binding": "exact original thread IDs; no new turn or resume invocation"
+}

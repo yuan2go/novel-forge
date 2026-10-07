@@ -1,0 +1,438 @@
+{
+  "schema_version": "wp-novel-production-closure-01.current-delivery-projection.v1",
+  "checked_at": "2026-10-07T09:28:15.777800+00:00",
+  "supersedes_interpretation_not_raw_records": [
+    "closure-verdicts.json",
+    "native-resume-contract.json"
+  ],
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "code_sha": "c6bc1b42417877e9f5a73e619f292fa3e39b9282",
+  "implementation_tree_sha": "sha256:ff74b9a26b47f60747630d250451d4c2f25a04ffa7cde7f68da6f6c1a5d95f9a",
+  "delivery_index_sha": "resolve git HEAD of this committed index; no self-referential hash embedded",
+  "last_real_provider_runtime": {
+    "continuing_writer": "66fadd91e0c5fd34fcde42d09e4d79ae6bc73513",
+    "canon": "4508fe0d97acb90b8eb19216dfdb8a734079d173",
+    "frozen_admission_release_sha": "b170ea075499defb2d3ca1a04f0717f8bb6f2972",
+    "post_fix_native_status_runtime": "c6bc1b42417877e9f5a73e619f292fa3e39b9282",
+    "post_fix_real_provider_dispatches": 0,
+    "no_cross_version_PASS": "older runtime receipts retained individually; cumulative ledger is not a same-version quality claim"
+  },
+  "baseline_and_document_cleanup": "continuation-baseline.json; stale initial ignorance/author-grant interpretation superseded, raw failures preserved; current Source/Chapter uncertainty and Supervisor query ownership synchronized",
+  "compatibility": {
+    "PR132": "merged at baseline",
+    "published_migrations": "unchanged; forward main chain through0167",
+    "unmerged_branch": "no blind cherry-pick of alternative0157-0165 chain",
+    "legacy_pack_contracts": "frozen contracts retained; new Scene3.9.3 and Canon3.9.9 use native successors only",
+    "local_timeout_retry_semantics": "started remote CLI local termination no longer authorizes retry or a renamed Root"
+  },
+  "book": {
+    "id": "closure-original-book",
+    "run": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "accepted_chapters": 1,
+    "target": 12,
+    "accepted_records": [
+      {
+        "acceptance_id": "chapter-acceptance:bf5ea15540a5700ec15a2288bc8d88db99c41addd31cf34c0102a9dd573dc7e9",
+        "chapter": 1,
+        "request": "chapter-request:chapter-timeout:a8dfa40fd1607b07403907e95a05816894bb269baa88601378bbb725a4595968",
+        "outcome": "authority-output:56cc4d4b-df82-4c70-8547-8dab2bf9ec1a:chapter.outcome:v1",
+        "story_state": "authority-output:56cc4d4b-df82-4c70-8547-8dab2bf9ec1a:chapter.story_state:v1",
+        "canon": "authority-output:56cc4d4b-df82-4c70-8547-8dab2bf9ec1a:chapter.canon.current:v1"
+      }
+    ]
+  },
+  "five_items": [
+    {
+      "item": 1,
+      "implemented": "legal genesis/perception, actor sources, frozen task/Book identity, capacity succession and legacy uncertainty safeguards through existing Kernel/RuntimeJob/Book",
+      "controlled": "PASS affected native PG contracts",
+      "real": "1 accepted; next Writer consumed exact accepted state; same-effect single real crash takeover; four remote outcomes unresolved",
+      "remaining": "12-Chapter continuous closure, legacy terminal reconciliation completion and long-term liveness"
+    },
+    {
+      "item": 2,
+      "implemented": "preauthorized bounded comparison and explicit author/fixed-direction reuse; ties/limited evidence acknowledged",
+      "controlled": "PASS automatic/author choice and source version contracts",
+      "real": "nonfirst ChapterGroup selection and exact frozen comparison retained",
+      "remaining": "literary superiority and stronger differentiation NOT_PROVEN"
+    },
+    {
+      "item": 3,
+      "implemented": "exact prose issue scope, source-aware review, original preservation and objective constraints in CandidateComparison",
+      "controlled": "PASS local edits, original retention and no-score-only improvement",
+      "real": "1124 to1265 codepoints in paragraph9 only; original hard minimum solved, score fell5; second candidate review had no issues and retained original",
+      "remaining": "literary benefit NOT_PROVEN; no real author Edition adoption/review/export"
+    },
+    {
+      "item": 4,
+      "implemented": "approved Foundation/perception/own knowledge boundaries; continuous Scene realization; host bound identity; operational Canon context de-duplication",
+      "controlled": "PASS source isolation, future/foreign/cyclic cases and Schema parity",
+      "real": "exact Writer admission hash and full rendered request; 1286-codepoint continuing prose; Canon request 360068 to204130 bytes under same capacity",
+      "remaining": "prose still procedural and cautious voices similar; full-arc rhythm and prose quality NOT_PROVEN"
+    },
+    {
+      "item": 5,
+      "implemented": "existing creator/editor/Edition bindings, stale conflicts, exact selected export and diagnostic unknown owner state",
+      "controlled": "native two-Chapter local edit, review, adoption and exact FORMAL export PASS",
+      "real": "native status/read prose only; complete author edit/review/FORMAL export NOT_RUN",
+      "remaining": "real twelve-Chapter manuscript and author delivery BLOCKED"
+    }
+  ],
+  "verdicts": [
+    {
+      "subject": "engineering_chain",
+      "state": "EXECUTABLE",
+      "controlled": "PASS focused contracts",
+      "real": "PARTIAL_NOT_CLOSED"
+    },
+    {
+      "subject": "real_continuous_run",
+      "state": "EXECUTABLE",
+      "real": "BLOCKED_1_OF_12"
+    },
+    {
+      "subject": "recovery_reliability",
+      "state": "EXECUTABLE",
+      "controlled": "PASS unknown/cancel/idempotency; no new Book/Root generation bypass",
+      "real": "one SIGKILL recovery at an earlier exact runtime; latest real unknowns remain unresolved",
+      "long_term": "NOT_PROVEN"
+    },
+    {
+      "subject": "creative_selection",
+      "state": "EXECUTABLE",
+      "real": "nonfirst comparison exercised",
+      "literary": "NOT_PROVEN"
+    },
+    {
+      "subject": "revision_actual_gain",
+      "state": "EXECUTABLE",
+      "real": "objective length/epistemic distinction repaired; 141 added characters and more exposition",
+      "literary": "NOT_PROVEN"
+    },
+    {
+      "subject": "author_workflow",
+      "state": "EXECUTABLE",
+      "controlled": "PASS",
+      "real": "NOT_RUN_COMPLETE"
+    },
+    {
+      "subject": "longform_literary_quality",
+      "state": "WIRED",
+      "real": "NOT_PROVEN"
+    }
+  ],
+  "latest_tests": {
+    "focused": "151 passed /15 subtests; focused-545.log",
+    "postgres": "47 passed /28 subtests; controlled-cli-544.log",
+    "complete_controlled_author_flow": "1 passed /179.56s; controlled-cli-546.log",
+    "native_original_no_send_query": "PASS at committed code SHA; original-unknown-native-check-548.log",
+    "canonical_docs": "PASS docs-547.json",
+    "whole_repository": "NOT_RUN; unrelated scope not expanded"
+  },
+  "resources": {
+    "model_dispatches_cumulative": 116,
+    "measured_usage_tokens": "5539615",
+    "usage_unknown_dispatches": 8,
+    "remote_outcome_unknown_effects": 4,
+    "persisted_budget_tokens_including_conservative_estimates": "7118585",
+    "money": "UNKNOWN/N/A account membership; not billed-zero proof",
+    "deepseek_dispatches": 0,
+    "requested_model": "codex-cli:gpt-6-sol:high",
+    "actual_served_model_identity": "UNKNOWN_UNATTESTABLE",
+    "phase_usage": [
+      {
+        "stage": "arc_plan.generate",
+        "dispatches": 24,
+        "measured_usage_receipts": 24,
+        "measured_tokens": "990332",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "2607.423491"
+      },
+      {
+        "stage": "book_plan.generate",
+        "dispatches": 3,
+        "measured_usage_receipts": 3,
+        "measured_tokens": "167934",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "607.260506"
+      },
+      {
+        "stage": "canon_extraction",
+        "dispatches": 11,
+        "measured_usage_receipts": 6,
+        "measured_tokens": "756912",
+        "unknown_usage_receipts": 5,
+        "summed_execution_seconds_not_wall_time": "1420.802268"
+      },
+      {
+        "stage": "canon_support",
+        "dispatches": 5,
+        "measured_usage_receipts": 5,
+        "measured_tokens": "248082",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "156.328849"
+      },
+      {
+        "stage": "chapter_group_plan.generate",
+        "dispatches": 15,
+        "measured_usage_receipts": 15,
+        "measured_tokens": "1168414",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "3058.803622"
+      },
+      {
+        "stage": "chapter_plan.generate",
+        "dispatches": 3,
+        "measured_usage_receipts": 3,
+        "measured_tokens": "245973",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "471.716445"
+      },
+      {
+        "stage": "character.cast.generate",
+        "dispatches": 1,
+        "measured_usage_receipts": 1,
+        "measured_tokens": "41782",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "172.394095"
+      },
+      {
+        "stage": "creative.candidates.generate",
+        "dispatches": 5,
+        "measured_usage_receipts": 4,
+        "measured_tokens": "77846",
+        "unknown_usage_receipts": 1,
+        "summed_execution_seconds_not_wall_time": "231.573437"
+      },
+      {
+        "stage": "draft",
+        "dispatches": 4,
+        "measured_usage_receipts": 4,
+        "measured_tokens": "285468",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "392.905456"
+      },
+      {
+        "stage": "ending.intent.generate",
+        "dispatches": 1,
+        "measured_usage_receipts": 1,
+        "measured_tokens": "21095",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "84.825824"
+      },
+      {
+        "stage": "memo",
+        "dispatches": 4,
+        "measured_usage_receipts": 2,
+        "measured_tokens": "50959",
+        "unknown_usage_receipts": 2,
+        "summed_execution_seconds_not_wall_time": "136.393746"
+      },
+      {
+        "stage": "quality_commercial",
+        "dispatches": 5,
+        "measured_usage_receipts": 5,
+        "measured_tokens": "130576",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "136.858961"
+      },
+      {
+        "stage": "quality_longform",
+        "dispatches": 3,
+        "measured_usage_receipts": 3,
+        "measured_tokens": "103026",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "147.741299"
+      },
+      {
+        "stage": "quality_platform",
+        "dispatches": 4,
+        "measured_usage_receipts": 4,
+        "measured_tokens": "123654",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "128.644557"
+      },
+      {
+        "stage": "quality_source_originality",
+        "dispatches": 2,
+        "measured_usage_receipts": 2,
+        "measured_tokens": "52548",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "63.913462"
+      },
+      {
+        "stage": "quality_structural",
+        "dispatches": 4,
+        "measured_usage_receipts": 4,
+        "measured_tokens": "119466",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "188.581992"
+      },
+      {
+        "stage": "reader_outcome",
+        "dispatches": 1,
+        "measured_usage_receipts": 1,
+        "measured_tokens": "17565",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "30.808671"
+      },
+      {
+        "stage": "reader.promise.generate",
+        "dispatches": 1,
+        "measured_usage_receipts": 1,
+        "measured_tokens": "20462",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "45.301221"
+      },
+      {
+        "stage": "rereview",
+        "dispatches": 2,
+        "measured_usage_receipts": 2,
+        "measured_tokens": "93593",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "36.081846"
+      },
+      {
+        "stage": "review",
+        "dispatches": 2,
+        "measured_usage_receipts": 2,
+        "measured_tokens": "106257",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "53.216976"
+      },
+      {
+        "stage": "revision",
+        "dispatches": 2,
+        "measured_usage_receipts": 2,
+        "measured_tokens": "117194",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "58.811426"
+      },
+      {
+        "stage": "theme.candidates.generate",
+        "dispatches": 1,
+        "measured_usage_receipts": 1,
+        "measured_tokens": "20404",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "49.596690"
+      },
+      {
+        "stage": "volume_plan.generate",
+        "dispatches": 3,
+        "measured_usage_receipts": 3,
+        "measured_tokens": "112307",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "517.418813"
+      },
+      {
+        "stage": "world_candidates.evaluate",
+        "dispatches": 4,
+        "measured_usage_receipts": 4,
+        "measured_tokens": "179620",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "109.483466"
+      },
+      {
+        "stage": "world_candidates.generate",
+        "dispatches": 5,
+        "measured_usage_receipts": 5,
+        "measured_tokens": "252062",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "366.877689"
+      },
+      {
+        "stage": "world.design.generate",
+        "dispatches": 1,
+        "measured_usage_receipts": 1,
+        "measured_tokens": "36084",
+        "unknown_usage_receipts": 0,
+        "summed_execution_seconds_not_wall_time": "246.520907"
+      }
+    ],
+    "wall_first_last_model_intent_seconds": 69881.120858,
+    "summed_backend_execution_seconds_not_wall_time": 11520.285715
+  },
+  "interventions": {
+    "author_decision_inputs_this_continuation": 0,
+    "agent_native_recovery_jobs_cumulative": 51,
+    "agent_operational_count_semantics": "audited recovery-job lower bound; installs/queries/shell actions not fully instrumented",
+    "automatic_crash_takeover_proven": 1,
+    "automatic_unsafe_canon_retry_preserved": 1,
+    "historical_human_vs_agent_role_count": "NOT_MEASURED; shared operator identity is insufficient evidence"
+  },
+  "resume": {
+    "same_authorized_private_environment_required": true,
+    "inspect_args": [
+      "authority-runtime-inspect",
+      "--project-id",
+      "closure-original-20261006",
+      "--expected-database",
+      "novel_forge_production_closure_live"
+    ],
+    "status_args": [
+      "authority-creation",
+      "status",
+      "--project-id",
+      "closure-original-20261006",
+      "--formation-run-id",
+      "story-formation:0b15b18326b245b7822ba64cc748c18bfc6a329523c2c449af79b1767040ac60"
+    ],
+    "recover_args_after_original_outcomes_are_known": [
+      "authority-creation",
+      "recover",
+      "--project-id",
+      "closure-original-20261006",
+      "--formation-run-id",
+      "story-formation:0b15b18326b245b7822ba64cc748c18bfc6a329523c2c449af79b1767040ac60",
+      "--reason",
+      "<exact original terminal proof and native owner reconciliation>",
+      "--idempotency-key",
+      "<stable original recovery key; retain on uncertain response>"
+    ],
+    "current_recover_behavior": "BLOCKED; new request identity does not authorize resending unknown remote work",
+    "required_external_evidence": "Original completion/nonexecution/cancellation proof for four local-only timeouts, with exact request/receipt binding; no ordinary author approval or larger budget is missing",
+    "legacy_terminal_reconciliation": "NOT_RESOLVED; old failed effects and terminal Attempts preserved. Existing manual resolution accepts UNKNOWN/RECONCILIATION_REQUIRED, so legacy terminal history still requires native owner evidence handling before continuation; this package does not claim that handoff completed.",
+    "formal_export_args_after_complete_review_and_selection": [
+      "authority-edition",
+      "export",
+      "--project-id",
+      "closure-original-20261006",
+      "--workspace-id",
+      "closure-original-workspace",
+      "--book-run-id",
+      "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+      "--revision-id",
+      "<exact validated selected revision>",
+      "--export-kind",
+      "FORMAL",
+      "--format",
+      "text",
+      "--output",
+      "<new path>"
+    ],
+    "saved_progress": {
+      "book_target": 12,
+      "accepted": 1,
+      "chapter2_selected_candidate": "authority-output:8bb282b1-1157-4d79-b3e2-7a614fa6c3a4:chapter.best_candidate:v1",
+      "backups_private": [
+        "before-unknown-reconciliation-534.dump",
+        "before-canon-source-live-528.dump"
+      ],
+      "provider_workers": "STOPPED; no new sends until original uncertainty reconciled"
+    },
+    "additional_environment_blocker": "Exact Codex thread readback unavailable: durable host unavailable/failed. This is not proof of nonexecution and does not authorize another send."
+  },
+  "artifacts": [
+    "original-receipt-query-evidence.json",
+    "real-prose-and-revision-evidence.json",
+    "local-remote-outcome-controlled-evidence.json",
+    "actor-source-and-continuous-scene-controlled-evidence.json",
+    "canon-source-capacity-controlled-evidence.json",
+    "chapter-group-comparison.json",
+    "readonly-host-query-evidence.json"
+  ],
+  "overall": "BLOCKED_NOT_COMPLETE",
+  "production_proven": false,
+  "formal_manuscript_export": "NOT_RUN",
+  "literary_effect": "NOT_PROVEN"
+}
