@@ -1957,7 +1957,7 @@ class _CanonExtractionHandler:
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
-        span_contract = request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7"}
+        span_contract = request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7", "3.9.8"}
         span_inputs = {}
         if span_contract:
             from novel_forge.modules.canon_graph.source_spans import source_spans
@@ -1966,13 +1966,14 @@ class _CanonExtractionHandler:
             from .canon_contract_recovery import repair_diagnostics
             binding = (context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}
             events = scheduled_world_events(binding) if binding else []
-            if request.definition_version == "3.9.7":
+            if request.definition_version in {"3.9.7", "3.9.8"}:
                 from .domain_handlers import canon_history
                 baselines, _ = canon_history(context.content)
             span_inputs = {
-                **({"transition_precondition_contract": "accepted-cas.v1", "accepted_transition_baselines": baselines} if request.definition_version == "3.9.7" else {}),
+                **({"transition_precondition_contract": "accepted-cas.v1", "accepted_transition_baselines": baselines} if request.definition_version in {"3.9.7", "3.9.8"} else {}),
+                **({"transition_result_contract": "canonical-plan-results.v1", "canonical_transition_results": (context.content.get("chapter_execution_expectations") or {}).get("required_state_transitions") or []} if request.definition_version == "3.9.8" else {}),
                 "source_span_table": source_spans(revision.content["text"]),
-                **({"source_span_schema_contract": "typed-extraction-json.v1" if request.definition_version in {"3.9.5", "3.9.6", "3.9.7"} else "local-evidence-pattern.v1" if request.definition_version == "3.9.4" else "local-evidence-ref.v1"} if request.definition_version in {"3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7"} else {}),
+                **({"source_span_schema_contract": "typed-extraction-json.v1" if request.definition_version in {"3.9.5", "3.9.6", "3.9.7", "3.9.8"} else "local-evidence-pattern.v1" if request.definition_version == "3.9.4" else "local-evidence-ref.v1"} if request.definition_version in {"3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7", "3.9.8"} else {}),
                 "world_transition_contract": world_transition_schema(agency=any(event.get("action_mode") for event in events)),
                 "repair_diagnostics": repair_diagnostics(request),
                 "observer_transition_constraints": [
@@ -2109,7 +2110,8 @@ class _QualityGroupHandler:
             if request.definition_version == "3.9.1":
                 from novel_forge.modules.canon_graph.source_spans import source_spans
                 requirements = (revision.content.get("creative_baseline") or {}).get("method_requirements", {})
-                quality_span_inputs = {"quality_span_contract": "literal-source-spans.v1", "source_span_table": source_spans(revision.content["text"]),
+                quality_span_inputs = {"quality_span_contract": "literal-source-spans.v1", **({"transition_result_contract": "canonical-plan-results.v1", "canonical_transition_results": (context.content.get("chapter_execution_expectations") or {}).get("required_state_transitions") or []} if request.definition_version == "3.9.8" else {}),
+                "source_span_table": source_spans(revision.content["text"]),
                     "dimension_applicability": {dimension: (requirements.get(dimension) or {}).get("status", "APPLICABLE") for dimension in QUALITY_GROUPS[self.group]}}
             generated = self.provider.invoke(
                 request,

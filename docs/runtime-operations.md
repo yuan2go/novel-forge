@@ -3174,3 +3174,13 @@ correction; it reuses successful Revision/ReReview, retains the earlier comparis
 receipts, and reevaluates extraction and Quality for the newly selected exact candidate.
 This is contract succession, not an increased prose repair allowance. Verify with
 `tests/unit/test_best_candidate_selection.py` and the work-constraint focused matrix.
+
+
+For a legacy character result-label mismatch, verify that the only Canon conflicts are
+`PLANNED_STATE_TRANSITION_MISMATCH` for exact planned character states. The scheduler
+appends a `canon-contract:3.9.8` evidence generation under the same correction and Root,
+with the earlier Canon operation as causation/dependency. It reuses the selected prose,
+Revision, ReReview and comparison, then performs new extraction, support and required
+Quality. It cannot bypass missing results, epistemic conflicts or unsupported claims.
+Inspect the fully rendered v29 inner Schema and exact entity/result labels before
+Provider dispatch; original completed evidence is retained.

@@ -2172,3 +2172,13 @@ Legacy completed comparisons lacking those measurements receive an appended nati
 decision reassessment; the already generated prose and review are reused, while a changed
 selected candidate requires its own extraction and Quality evidence. No earlier operation,
 receipt or comparison is edited, and consumption stays with the original Book.
+
+
+Current Canon extraction binds a planned character result to its exact entity through
+`canonical-plan-results.v1`. The canonical label describes a required outcome, not
+prose wording. Other characters retain independent state labels. Literal candidate
+spans, independent support review, accepted preconditions and causal validation remain
+required; selecting a label does not prove that the outcome occurred. A completed
+legacy extraction with only a character result-label mismatch can append one bounded
+Canon evidence generation within the original correction lineage, reusing selected
+prose and review. Earlier Canon gates and consumption remain immutable.

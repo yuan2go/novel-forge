@@ -1,0 +1,22 @@
+{
+  "contract": "canonical-plan-results.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "source_runtime_sha": "84da5a6581e673bc118be81edfc6b70b59e8eeb6",
+  "book_id": "closure-original-book",
+  "root_operation_id": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "source_canon_operation_id": "654ab3b2-48b6-4d48-a63e-ef9163d530cc",
+  "source_gate": "BLOCKED",
+  "conflicts": [
+    "PLANNED_STATE_TRANSITION_MISMATCH"
+  ],
+  "controlled_contract": "EXECUTABLE",
+  "real_new_contract": "NOT_RUN",
+  "accepted_chapters": 0,
+  "target_chapters": 12,
+  "literary_effect": "NOT_PROVEN",
+  "provider_dispatches_in_preflight": 0,
+  "full_rendered_input_units": 227259,
+  "output_reserve": 32768,
+  "context_limit": 272000,
+  "historical_evidence": "PRESERVED"
+}

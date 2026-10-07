@@ -341,6 +341,28 @@ class ChapterAuthorityScheduler:
                     if operation is not None:
                         corrected[node] = operation
                 correction = corrected
+        canon_contract_source = None
+        completed_canon = correction.get(ChapterNode.CANON)
+        completed_extraction = correction.get(ChapterNode.CANON_EXTRACTION)
+        if completed_canon is not None and completed_canon["status"] == "SUCCEEDED" and completed_extraction is not None:
+            canon_ref = self._primary_output(str(completed_canon["operation_id"]), request.project_id)
+            canon_content = self._asset_content(canon_ref["asset_version_id"], request.project_id)
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s", [completed_extraction["operation_id"]])
+                extraction_version = uow.cursor.fetchone()[0]
+            if extraction_version == "3.9.7" and canonical_result_reassessment_required(canon_content):
+                canon_contract_source = str(completed_canon["operation_id"])
+                correction_suffix += ":canon-contract:3.9.8"
+                corrected = {node: operation for node, operation in correction.items()
+                    if node in {ChapterNode.REVISION, ChapterNode.REREVIEW, ChapterNode.BEST_CANDIDATE}}
+                for node in ChapterNode:
+                    if node in corrected:
+                        continue
+                    operation = self._initial_operation(root_operation_id=str(root["operation_id"]), project_id=request.project_id,
+                        node=node, idempotency_key=f"{root_key}:{node.value}{correction_suffix}")
+                    if operation is not None:
+                        corrected[node] = operation
+                correction = corrected
         aggregate = correction.get(ChapterNode.QUALITY)
         if aggregate is not None and aggregate["status"] == "SUCCEEDED":
             children.update(correction)
@@ -389,6 +411,8 @@ class ChapterAuthorityScheduler:
                     correction=correction,
                     common=common,
                 )
+                if node is ChapterNode.CANON_EXTRACTION and canon_contract_source:
+                    dependencies.append(canon_contract_source)
                 if node is ChapterNode.CANON:
                     proposal = correction[ChapterNode.CANON_PROPOSAL]
                     proposal_ref = self._primary_output(
@@ -1916,3 +1940,13 @@ def _is_domain_validation_failure(error_code: str) -> bool:
 
 
 __all__ = ["ChapterAuthorityScheduler", "ChapterSchedulerTick"]
+
+
+def canonical_result_reassessment_required(canon):
+    conflicts = canon.get("conflicts") or []
+    return bool(canon.get("gate") == "BLOCKED" and conflicts and all(
+        conflict.get("conflict_code") == "PLANNED_STATE_TRANSITION_MISMATCH"
+        and (conflict.get("existing_version") or {}).get("state_kind") == "character_state"
+        and isinstance((conflict.get("existing_version") or {}).get("to_state"), str)
+        and (conflict.get("existing_version") or {}).get("to_state")
+        for conflict in conflicts))

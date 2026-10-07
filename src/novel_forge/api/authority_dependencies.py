@@ -352,7 +352,7 @@ def validate_production_structured_result(
         validated = validate_native_world_schema_fragment(stage, output_schema, value, output_schema_ref=output_schema_ref)
     else:
         validated = validate_chapter_provider_output_against_schema(stage, output_schema, value)
-    if output_schema_ref in {"schema:chapter-provider-output:canon_extraction:v27", "schema:chapter-provider-output:canon_extraction:v28"}:
+    if output_schema_ref in {"schema:chapter-provider-output:canon_extraction:v27", "schema:chapter-provider-output:canon_extraction:v28", "schema:chapter-provider-output:canon_extraction:v29"}:
         from novel_forge.modules.command_kernel.errors import KernelError
         import json
         inner = output_schema.get("x-host-payload-schema")

@@ -217,3 +217,37 @@ def test_extraction_preconditions_bind_accepted_values_without_inventing_genesis
         _validate(field, "UNKNOWN", path="$.from_status")
     empty = constrain_transition_preconditions(schema, {})
     assert empty["properties"]["character_state_changes"]["items"]["properties"]["from_state"]["enum"] == [None]
+
+
+def test_canonical_plan_result_schema_binds_entity_without_overriding_independent_support():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    inputs = {"source_span_table": source_spans("甲留下待核笔记。"),
+        "source_span_schema_contract": "typed-extraction-json.v1", "transition_precondition_contract": "accepted-cas.v1",
+        "accepted_transition_baselines": {}, "transition_result_contract": "canonical-plan-results.v1",
+        "canonical_transition_results": [{"state_kind": "character_state", "entity_key": "character:a", "to_state": "持有待核笔记"}]}
+    transport, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": inputs}, prompt_contract_version="v9")
+    assert ref.endswith(":v29")
+    schema = transport["x-host-payload-schema"]
+    row = schema["properties"]["character_state_changes"]["items"]
+    branch = row["anyOf"][0]
+    _validate(branch["properties"]["state"], "持有待核笔记", path="$", root_schema=schema)
+    with pytest.raises(ValueError):
+        _validate(branch["properties"]["state"], "已找到真凶", path="$", root_schema=schema)
+    fallback = row["anyOf"][-1]["properties"]["character_id"]
+    _validate(fallback, "character:b", path="$", root_schema=schema)
+    with pytest.raises(ValueError):
+        _validate(fallback, "character:a", path="$", root_schema=schema)
+    assert "evidence_span_id" in branch["properties"]
+    assert "from_state" in branch["properties"]
+    assert inputs["canonical_transition_results"][0]["to_state"] == "持有待核笔记"
+
+
+def test_result_reassessment_is_bounded_to_native_character_label_conflict():
+    from novel_forge.modules.chapter_authority.scheduler import canonical_result_reassessment_required
+    conflict = {"conflict_code": "PLANNED_STATE_TRANSITION_MISMATCH",
+        "existing_version": {"state_kind": "character_state", "to_state": "笔记"}}
+    assert canonical_result_reassessment_required({"gate": "BLOCKED", "conflicts": [conflict]})
+    for code in ("PRECONDITION_FAILED", "CAUSAL_DEPENDENCY_CYCLE", "CANON_GROUNDING_INVALID"):
+        assert not canonical_result_reassessment_required({"gate": "BLOCKED", "conflicts": [conflict, {"conflict_code": code}]})
+    assert not canonical_result_reassessment_required({"gate": "PASSED", "conflicts": [conflict]})

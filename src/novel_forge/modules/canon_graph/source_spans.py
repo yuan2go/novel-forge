@@ -225,3 +225,33 @@ def constrain_transition_preconditions(schema, baselines):
                 values = [None, *dict.fromkeys(row[current] for row in baselines.get(kind, []) if current in row)]
                 properties[predecessor]["enum"] = values
     return result
+
+
+def constrain_planned_character_results(schema, transitions):
+    result = deepcopy(schema)
+    expected = {}
+    for transition in transitions:
+        if transition.get("state_kind") == "character_state":
+            identity, state = transition.get("entity_key"), transition.get("to_state")
+            if not isinstance(identity, str) or not identity or not isinstance(state, str) or not state:
+                raise KernelError("CANON_PLANNED_RESULT_INVALID", "An exact entity and canonical result are required")
+            expected.setdefault(identity, []).append(state)
+    if not expected:
+        return result
+    array = result["properties"]["character_state_changes"]
+    while "$ref" in array:
+        array = result["$defs"][array["$ref"].rsplit("/", 1)[1]]
+    result["properties"]["character_state_changes"] = deepcopy(array)
+    row = array["items"]
+    while "$ref" in row:
+        row = result["$defs"][row["$ref"].rsplit("/", 1)[1]]
+    branches = []
+    for identity, states in sorted(expected.items()):
+        branch = deepcopy(row)
+        branch["properties"]["character_id"] = {"type": "string", "const": identity}
+        branch["properties"]["state"] = {"type": "string", "enum": list(dict.fromkeys(states))}
+        branches.append(branch)
+    other = deepcopy(row)
+    other["properties"]["character_id"] = {"type": "string", "pattern": "^(?!(?:" + "|".join(re.escape(identity) for identity in sorted(expected)) + ")$).+$"}
+    result["properties"]["character_state_changes"]["items"] = {"anyOf": [*branches, other]}
+    return result
