@@ -24,6 +24,8 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                 WorkerFailureClass.RETRYABLE,
             ),
             (KernelError("INPUT_INVALID", "bad"), WorkerFailureClass.FINAL_FAILURE),
+            (KernelError("CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED", "contract defect"), WorkerFailureClass.FINAL_FAILURE),
+            (KernelError("CANON_GROUNDING_REEXTRACTION_REQUIRED", "repair extraction"), WorkerFailureClass.FINAL_FAILURE),
             (
                 KernelError(
                     "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "frozen capacity"

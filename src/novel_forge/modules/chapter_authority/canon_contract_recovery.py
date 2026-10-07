@@ -36,7 +36,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             [request["chapter_root_operation_id"], book["project_id"]])
         row = u.cursor.fetchone()
         if not row:
-            return False
+            return recover_support_contract(authority, book=book, request=request, template=template, principal=principal)
         source = row[0]
         u.cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'", [source["operation_id"]])
         effects = u.cursor.fetchall()
@@ -165,3 +165,54 @@ def schema_rejection_receipts(database_url, source):
     if not identities:
         raise KernelError("CANON_SCHEMA_REJECTION_UNRECONCILED", "A recorded rejection is required")
     return tuple(identities), proofs
+
+
+def recover_support_contract(authority, *, book, request, template, principal):
+    from novel_forge.modules.canon_graph.grounding import grounded_claims
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
+            JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s
+            AND o.definition_name='chapter.canon.propose_changes' AND o.definition_version='3.9.0'
+            AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code' IN
+            ('CANON_GROUNDING_REEXTRACTION_REQUIRED','CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED') LIMIT 1""",
+            [request["chapter_root_operation_id"]])
+        row = u.cursor.fetchone()
+        if not row:
+            return False
+        source = row[0]
+        u.cursor.execute("SELECT e.external_effect_id,e.request_hash,e.status,b.status FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.created_at", [source["operation_id"]])
+        effects = u.cursor.fetchall()
+        if not effects or any(row[2:] != ("SUCCEEDED", "SETTLED") for row in effects):
+            raise KernelError("CANON_SUPPORT_RECONCILIATION_REQUIRED", "Reconcile every original support effect before contract correction")
+        receipts = [_receipt(u.cursor, row[0], book["project_id"]) for row in effects]
+    assets = [AuthorityAssetQuery(authority.database_url).require(project_id=book["project_id"], asset_version_id=a["asset_version_id"]) for a in source["input_asset_snapshot"]]
+    extraction = next(a for a in assets if a.asset_type == "canon_extraction")
+    claims = {row["claim"]["grounded_claim_id"]: row["claim"]["claim_kind"] for row in grounded_claims(extraction.content)}
+    diagnostics = []
+    taxonomy = {"OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION",
+        "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE", "NARRATIVE_OBSERVATION"}
+    for result in receipts:
+        rows = result.output.get("claims") or []
+        if (result.output.get("coverage") != "COMPLETE" or len(rows) != len(claims)
+            or {r.get("claim_id") for r in rows} != set(claims)
+            or any(r.get("assessment") != "SUPPORTED" or not r.get("reason") for r in rows)):
+            return False
+        unknown = [{"claim_id": r["claim_id"], "observed_kind": r.get("observed_kind"), "expected_taxonomy": sorted(taxonomy)} for r in rows if r.get("observed_kind") not in taxonomy]
+        if not unknown:
+            return False
+        diagnostics.extend(unknown)
+    evidence = {"contract_version": "chapter-canon-support-contract-successor.v1", "book_run_id": book["book_run_id"],
+        "chapter_request_id": request["chapter_request_id"], "policy_admission": template,
+        "repair_diagnostics": diagnostics, "completion_checks": "UNCHANGED", "unsupported_claims_bypassed": False}
+    def guard(u):
+        u.cursor.execute("SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
+        if (u.cursor.fetchone() != (book["version"], book["active_chapter_request_id"], book["accepted_through_chapter"])
+            or _cancelled(u.cursor, book) or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
+            raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload the original Book frontier and authorization")
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.1",
+        context=AdmissionContext(principal.principal_id, principal.permissions, authority.chapter_port.application.registry.available_handler_keys,
+            authority.application_build_id, authority.commit_sha), policy_evidence=evidence,
+        expected_failure_code=latest_failure_code(authority.database_url, source["operation_id"]), transaction_guard=guard,
+        known_receipt_effects=tuple(row[:2] for row in effects),
+        window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_support_kinds", "policy_value": "canon-claim-kinds.v1"})
+    return True

@@ -251,6 +251,11 @@ def validate_support_review(
         or len(reviews) != len(claims)
         or {item.get("claim_id") for item in reviews} != set(claims)):
         _fail("semantic support review must account for every extracted claim exactly once")
+    unknown = [review["claim_id"] for review in reviews if review.get("observed_kind") not in {
+        "OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION",
+        "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE", "NARRATIVE_OBSERVATION"}]
+    if unknown:
+        raise KernelError("CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED", "Non-taxonomy observed_kind for claims: " + ", ".join(unknown))
     for review in reviews:
         claim = claims[review["claim_id"]]
         if (review.get("assessment") != "SUPPORTED"

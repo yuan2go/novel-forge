@@ -312,3 +312,26 @@ def test_accepted_payoff_rejects_candidate_or_claim_scope_tampering(field, value
     change['payoff_evidence'][field] = value
     with pytest.raises(KernelError, match='payoff'):
         payoff_events(change)
+
+
+def test_support_kind_interface_defects_are_not_unsupported_prose():
+    from novel_forge.modules.canon_graph.grounding import grounded_claims
+    text = "门关上了。"
+    extraction = extract(text, {"extraction_status": "EXTRACTED", "facts": [fact(text)]})
+    rows = [{"claim_id": row["claim"]["grounded_claim_id"], "assessment": "SUPPORTED",
+        "observed_kind": "DOOR_STATUS", "reason": "Text shows the closed door."} for row in grounded_claims(extraction)]
+    with pytest.raises(KernelError, match="CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED"):
+        validate_support_review(extraction=extraction, revision={"text": text}, revision_asset_version_id="final-candidate",
+            result={"coverage": "COMPLETE", "no_change_supported": False, "claims": rows})
+
+
+def test_current_support_provider_schema_uses_the_semantic_taxonomy():
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage="canon_support",
+        request_payload={"input": {"support_kind_contract": "canon-claim-kinds.v1"}}, prompt_contract_version="v9")
+    assert ref == "schema:chapter-provider-output:canon_support:v2"
+    kinds = schema["properties"]["claims"]["items"]["properties"]["observed_kind"]["enum"]
+    assert "DIALOGUE_ASSERTION" in kinds and "OBJECTIVE_STATE" in kinds
+    assert "CHARACTER_STATE" not in kinds and "ROSTER_INSCRIPTION" not in kinds
+    old, old_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage="canon_support", request_payload={"input": {}})
+    assert old_ref != ref and "enum" not in old["properties"]["claims"]["items"]["properties"]["observed_kind"]

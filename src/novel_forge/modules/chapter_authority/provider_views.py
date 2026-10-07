@@ -985,6 +985,8 @@ def build_provider_task_view(
     if stage == "canon_support":
         task = _task(stage, final_candidate=_prose(inputs.get("revision")),
                      grounding=deepcopy(inputs.get("grounding")), claims=deepcopy(inputs.get("claims")))
+        if inputs.get("support_kind_contract"):
+            task["support_kind_contract"] = inputs["support_kind_contract"]
         comparisons = [item["claim"]["actor_step_execution"] for item in inputs.get("claims") or []
                        if isinstance(item, Mapping) and isinstance(item.get("claim"), Mapping) and "actor_step_execution" in item["claim"]]
         if comparisons:

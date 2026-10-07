@@ -49,6 +49,8 @@ _FINAL_FAILURE_CODES = frozenset(
         "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",        "CHAPTER_QUALITY_GATE_FAILED",
         "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
         "SOURCE_PROVIDER_SCHEMA_REJECTED",
+        "CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED",
+        "CANON_GROUNDING_REEXTRACTION_REQUIRED",
         "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
         # WHY: Once a semantic Provider attempt has reached the final send gate,
         # loss/abort of its exact outer Opening fence is permanent for that

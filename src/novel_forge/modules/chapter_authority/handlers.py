@@ -2023,6 +2023,7 @@ class _CanonProposalHandler:
             revision = request.require_input("best_draft_candidate")
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
+                **({"support_kind_contract": "canon-claim-kinds.v1"} if request.definition_version == "3.9.1" else {}),
                 "claims": grounded_claims(extraction.content),
             })
             if request.command.get("chapter_sampling"):

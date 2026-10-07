@@ -356,7 +356,13 @@ def _corrected_contract_window(cursor, root, source, target, deadline, policy):
         raise KernelError("STEP_SUCCESSOR_WINDOW_INVALID", "Only a changed execution contract may continue a derived bounded window")
     cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
         LEFT JOIN authority_budget_reservation b USING(external_effect_id) WHERE o.root_operation_id=%s
-        AND (e.status<>'SUCCEEDED' OR b.status IS DISTINCT FROM 'SETTLED')),
+        AND (b.status IS DISTINCT FROM 'SETTLED' OR (e.status<>'SUCCEEDED' AND NOT (
+            e.status IN ('FAILED_RETRYABLE','FAILED_FINAL') AND b.accounting_basis='ACCOUNT_ENTITLEMENT'
+            AND EXISTS(SELECT 1 FROM authority_saga_step_successor successor,
+                jsonb_array_elements(COALESCE(successor.policy_evidence->'schema_rejection_receipts','[]'::jsonb)) proof
+                WHERE successor.project_id=o.project_id AND successor.predecessor_operation_id=o.operation_id
+                AND proof->>'external_effect_id'=e.external_effect_id
+                AND proof->>'outcome' IN ('PROVIDER_SCHEMA_REJECTED','COMPLETED_OUTPUT_SCHEMA_FAILURE')))))),
         EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
         JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s
         AND l.released_at IS NULL AND l.expires_at>NOW())""", [root["operation_id"]]*2)

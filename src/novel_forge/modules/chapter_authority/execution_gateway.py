@@ -1269,6 +1269,11 @@ class PostgresChapterExecutionContractBinder:
             work_requirements=prompt_contract_version in {"v8", "v9"},
             allow_noop_revision=prompt_contract_version == "v9" and not bool(inputs.get("quality_edit_contract")),
         )
+        if stage == "canon_support" and inputs.get("support_kind_contract") == "canon-claim-kinds.v1":
+            schema["properties"]["claims"]["items"]["properties"]["observed_kind"] = {"enum": [
+                "OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION",
+                "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE", "NARRATIVE_OBSERVATION"]}
+            schema_ref = "schema:chapter-provider-output:canon_support:v2"
         if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
             from novel_forge.modules.canon_graph.source_spans import span_output_schema
             json_envelope = inputs.get("source_span_schema_contract") == "typed-extraction-json.v1"
@@ -4197,6 +4202,8 @@ def _stage_semantic_contract(
             "belief, hearsay, plans and intentions. Knowledge belongs only to the evidenced recipient. "
             "GROUNDED_FINAL_CANDIDATE_CLAIM payoff citations identify this candidate's claim, "
             "not a historical event; check the actual fulfillment against the final prose. "
+            "observed_kind classifies semantic claim kind, never state_kind, impact_type or event purpose. "
+            "Use the Schema taxonomy independently; SUPPORTED requires the observed kind to agree with claim_kind. "
             "Return UNSUPPORTED or UNCERTAIN when entailment is missing. Do not repair claims or supply "
             "events from plans. Review NARRATIVE_OBSERVATION claims against prose as well; a plan is only the comparison target. Check extraction coverage; approve NO_CHANGE only when prose supports no "
             "new canonical change. You provide evidence only; Book acceptance remains Authority."

@@ -2123,3 +2123,13 @@ that payload against the frozen constraints before projecting its actual identit
 into Canon candidates. The Provider summary Schema cannot carry arbitrary state fields;
 missing transport fields are not evidence that the observed state is absent. Conflicting
 explicit summary values still fail closed, and independent grounding review remains required.
+
+Canon support review uses the claim-kind taxonomy, separately from entity type or impact
+labels. Current Provider output enumerates that taxonomy. Unknown labels are interface
+defects; an independently reported unsupported or uncertain claim requires re-extraction.
+Neither case may be resolved by repeatedly requesting the same support judgment.
+
+A changed contract window may include previously reconciled failed membership effects only
+when their exact completed/rejected outcomes are already recorded in immutable Kernel
+successor evidence. Settled consumption remains cumulative. Paid or ambiguous failures
+and unrecorded rejection claims still block continuation.
