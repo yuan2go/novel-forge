@@ -47,7 +47,9 @@ followup successor with the original frozen assets, accepted frontier and Book b
 Unknown Effects require reconciliation before any such successor admission.
 Plan Change may read an exact pending structural candidate as a proposal input only
 when its original creative-validation admission and same-Book current state are
-verified. This does not qualify or activate the candidate. An earlier zero-effect
+verified. This does not qualify or activate the candidate. After a native approval, eligibility
+is projected from the exact creative-validation approval receipt before Planning binds
+the active version; Story Planning and Plan Change share this existing state contract. An earlier zero-effect
 input-contract failure uses a linked versioned Kernel command, retaining its frozen
 proposal inputs and original idempotency identity; cancellation forbids continuation.
 Planning frozen change evidence may already be present among typed inputs. Context
