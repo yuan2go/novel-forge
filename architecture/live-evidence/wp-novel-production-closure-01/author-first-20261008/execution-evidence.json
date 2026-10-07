@@ -1,0 +1,383 @@
+{
+  "version": "author-first-closure-evidence.v1",
+  "baseline_sha": "7beea32acf7479e220f289e33ab71246e252009e",
+  "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+  "implementation_tree_sha": "sha256:f7bd9308639025908de305cb9bf8806ecdc45bb03e8d728fae0767c7298b24c3",
+  "migration_head": "20261008_0181_author_manuscript_delivery",
+  "evidence_ceiling": "EXECUTABLE",
+  "real_provider": {
+    "status": "BLOCKED_BEFORE_PROSE",
+    "runtime_sha": "b78b7431a70042d571117d0ec5773ee6c688c76c",
+    "provider": "codex-cli",
+    "cli_version": "0.159.2",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "environment": "production",
+    "template": "author_first.v12",
+    "deep_review": false,
+    "deepseek_authorized": false,
+    "formation": {
+      "formation_run_id": "story-formation:52180f1fa7e46240b0073b4a2eedbd8babd1ddde33ef1487f8071ad2ae03473b",
+      "lifecycle": "FAILED",
+      "current_stage": "WORLD_BIBLE",
+      "failure": {
+        "code": "MODEL_EFFECT_RETRYABLE_PLANNING",
+        "message": "MODEL_EFFECT_RETRYABLE_PLANNING: Planning provider outcome was retryable_failure",
+        "formation_run_id": "story-formation:52180f1fa7e46240b0073b4a2eedbd8babd1ddde33ef1487f8071ad2ae03473b"
+      }
+    },
+    "effects": [
+      {
+        "external_effect_id": "3d5ec0e6-1520-4d0e-816d-3e2427038d36",
+        "operation_id": "0dee3365-98ef-4475-9d38-17ebaab12e60",
+        "status": "SUCCEEDED",
+        "stage": null
+      },
+      {
+        "external_effect_id": "91dfd767-fcbb-4d58-a43d-0ec91ab22516",
+        "operation_id": "b44d314c-e3ac-4dd1-860b-aa62c46d6de1",
+        "status": "SUCCEEDED",
+        "stage": null
+      },
+      {
+        "external_effect_id": "b94cd03f-1b37-4fa2-86d2-926f55cc6e11",
+        "operation_id": "d927b955-2cd4-4ae9-ac46-507810ab5918",
+        "status": "SUCCEEDED",
+        "stage": null
+      },
+      {
+        "external_effect_id": "b58a1810-8c46-4e1d-8065-78a9a3123e65",
+        "operation_id": "85d709e3-7016-4cad-99a2-d1b9d46997d0",
+        "status": "SUCCEEDED",
+        "stage": null
+      },
+      {
+        "external_effect_id": "c54fc022-caae-4b5a-a4b1-835d82e2e182",
+        "operation_id": "390c2360-1069-47d2-aac0-c372afd37fb2",
+        "status": "SUCCEEDED",
+        "stage": null
+      },
+      {
+        "external_effect_id": "b250d895-6122-4c5f-b723-4aaac40c0dae",
+        "operation_id": "eea272cd-8a79-43d4-9821-9daff573c023",
+        "status": "FAILED_RETRYABLE",
+        "stage": null
+      }
+    ],
+    "reservations": [
+      {
+        "external_effect_id": "3d5ec0e6-1520-4d0e-816d-3e2427038d36",
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "actual_tokens": 22800,
+        "estimated_tokens": 58715,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "external_effect_id": "91dfd767-fcbb-4d58-a43d-0ec91ab22516",
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "actual_tokens": 22631,
+        "estimated_tokens": 58729,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "external_effect_id": "b94cd03f-1b37-4fa2-86d2-926f55cc6e11",
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "actual_tokens": 23665,
+        "estimated_tokens": 70289,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "external_effect_id": "b58a1810-8c46-4e1d-8065-78a9a3123e65",
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "actual_tokens": 23660,
+        "estimated_tokens": 70488,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "external_effect_id": "c54fc022-caae-4b5a-a4b1-835d82e2e182",
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "actual_tokens": 23889,
+        "estimated_tokens": 70357,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "external_effect_id": "b250d895-6122-4c5f-b723-4aaac40c0dae",
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "actual_tokens": 105856,
+        "estimated_tokens": 105856,
+        "reserved_amount": null,
+        "settled_amount": null
+      }
+    ],
+    "measured_success_tokens": 116645,
+    "unmeasured_legacy_conservative_tokens": 105856,
+    "membership_monetary_amount": null,
+    "membership_monetary_status": "UNKNOWN",
+    "optional_call_counts": {
+      "review": 0,
+      "canon_extraction": 0,
+      "quality": 0,
+      "independent_evaluation": 0,
+      "literary_qualification": 0,
+      "deepseek": 0
+    },
+    "saved_prose_chapters": 0,
+    "author_journey_completed": false,
+    "service_failure": "stream disconnected before completion: Transport error: network error: error decoding response body",
+    "unknown_original_receipts": [
+      {
+        "external_effect_id": "b250d895-6122-4c5f-b723-4aaac40c0dae",
+        "operation_id": "eea272cd-8a79-43d4-9821-9daff573c023",
+        "effect_status": "FAILED_RETRYABLE",
+        "process_receipt_ref": "authority-asset-version:e2ee46e9-4486-44e9-a3aa-639ed5de589e",
+        "state": "RECONCILIATION_REQUIRED",
+        "usage": "UNKNOWN"
+      }
+    ],
+    "new_guard_verified": "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED",
+    "original_dispatch_history_rewritten": false,
+    "unverified_steps": [
+      "cross-chapter prose",
+      "saved-prose interruption/resume",
+      "local edit/diff/adoption",
+      "current-manuscript export"
+    ],
+    "operation_counts": {
+      "story.formation.advance": 5,
+      "capability_pack.deployment.create": 3,
+      "story_planning.generate": 6,
+      "story_design.lifecycle.transition": 28,
+      "project_lifecycle.create": 1,
+      "provider.routing_policy.configure": 1,
+      "story.formation.admit": 1,
+      "capability_pack.manifest.register": 3,
+      "capability_pack.compile": 3,
+      "book.create": 1,
+      "capability_pack.validation.admit": 3,
+      "capability_pack.deployment.activate": 3,
+      "creative.brief.create": 1
+    },
+    "current_recovery_projection": {
+      "author_state": "RECONCILIATION_REQUIRED",
+      "responsible_party": "RUNTIME_OWNER",
+      "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS",
+      "unresolved_external_effects": [
+        {
+          "external_effect_id": "b250d895-6122-4c5f-b723-4aaac40c0dae",
+          "operation_id": "eea272cd-8a79-43d4-9821-9daff573c023",
+          "effect_status": "FAILED_RETRYABLE",
+          "process_receipt_ref": "authority-asset-version:e2ee46e9-4486-44e9-a3aa-639ed5de589e",
+          "state": "RECONCILIATION_REQUIRED",
+          "usage": "UNKNOWN"
+        }
+      ],
+      "formation_lifecycle": "FAILED",
+      "stage": "WORLD_BIBLE",
+      "production": null
+    },
+    "frozen_request_version": "formation-generation.v7",
+    "all_dispatches": 6,
+    "successful_dispatches": 5,
+    "unknown_dispatches": 1
+  },
+  "settled_preflight": {
+    "runtime_sha": "f8f3a6f47a01b9658da9e27b2d6861c3c32d137e",
+    "project_id": "author-first-live-20261008T021735",
+    "calls": 2,
+    "measured_tokens": 47712,
+    "native_formation_state": "ABORTED",
+    "unknown_effects": 0,
+    "technical_clock_recovery_interventions": 1,
+    "operator_cancel_interventions": 1,
+    "purpose": "Preserved settled setup run before API assembly fix; not current implementation proof"
+  },
+  "interventions": {
+    "author_direction_decisions": 0,
+    "additional_paid_authorizations": 0,
+    "blind_resends": 0,
+    "preflight_clock_recovery": 1,
+    "preflight_operator_cancel": 1
+  },
+  "recovery": {
+    "private_runtime_root": "/Users/yuan/.codex/author-first-live/20261008T023028-final",
+    "private_preflight_root": "/Users/yuan/.codex/author-first-live/20261008T021735",
+    "postgres_data_directory": "/tmp/nf-author-first-pg.jxLglu",
+    "database": "nf_author_first_live",
+    "postgres_port": 55489,
+    "required_action": "Obtain original remote outcome and usage evidence for the retained execution. Reconcile through Command Kernel original effect/dispatch and append verified evidence before native Formation recovery. Local exit is not remote cancellation. Do not create a new request, raise paid cap or edit frozen failure/ledger.",
+    "reconciliation_owner": "src/novel_forge/modules/command_kernel/external_effect_runtime.py:reconcile_external_effect",
+    "inspect_command": "novel-forge authority-runtime-inspect --project-id author-first-live-20261008T023028-final",
+    "postgres_server_state_at_delivery": "RUNNING_PORT_55489",
+    "object_store_state_at_delivery": "RUNNING_PORT_59089_PRIVATE_RUNTIME_ROOT",
+    "original_database_binding": "NOT_RESOLVED; configured local endpoint authentication failed, not proof of original ledger identity",
+    "native_command_template": "novel-forge authority-creation continue --project-id author-first-live-20261008T023028-final --formation-run-id story-formation:52180f1fa7e46240b0073b4a2eedbd8babd1ddde33ef1487f8071ad2ae03473b --foreground",
+    "native_command_precondition": "Only after original remote outcome and usage reconciliation; current formation is terminal FAILED and requires native linked recovery/successor, never blind continue or new request."
+  },
+  "original_book": {
+    "current_progress": "UNKNOWN",
+    "history_preserved": true,
+    "independent_validation_is_not_original_book_completion": true,
+    "runtime_binding": "NOT_RESOLVED",
+    "read_only_environment_probe": {
+      "original_checkout": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge",
+      "mutation_performed": false,
+      "configured_host": "localhost",
+      "configured_port": 5432,
+      "configured_database": "novel_forge",
+      "connection": "BLOCKED",
+      "error_type": "OperationalError",
+      "error_message": "connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  password authentication failed for user \"novel_forge\"",
+      "docker_server_available": false,
+      "docker_returncode": 1
+    },
+    "remaining_chapters": "UNKNOWN",
+    "continued": false
+  },
+  "validation": {
+    "core-unit": {
+      "status": "PASS",
+      "artifact": "core-unit.log",
+      "sha256": "sha256:f5409acc295e71c063e87a88ff5b400b6156dc4f043070e5bc5ab96069d0b28c"
+    },
+    "cli-recovery": {
+      "status": "PASS",
+      "artifact": "cli-recovery.log",
+      "sha256": "sha256:b6c3aa7fcae36609a17e454f329292e2b31e55256e81df93f3bfaca559b412ee"
+    },
+    "gateway-cancellation": {
+      "status": "PASS",
+      "artifact": "gateway-cancellation.log",
+      "sha256": "sha256:55bf7e21338d31be9fd488fee6c12d540be67689008b21a02ec1887765004422"
+    },
+    "api-authority-boundary": {
+      "status": "PASS",
+      "artifact": "api-authority-boundary.log",
+      "sha256": "sha256:6a75f1b4d7a7c1b4f91c267d0200ebb54e0db8b722aad09bad7808123b8f5f4b"
+    },
+    "resource-editor-postgres": {
+      "status": "PASS",
+      "artifact": "resource-editor-postgres.log",
+      "sha256": "sha256:dfe88e4bf33634bc2437f99330df41b9e14de676eb5bbfb93cbcf5de3a423330"
+    },
+    "work-paid-cap-postgres": {
+      "status": "PASS",
+      "artifact": "work-paid-cap-postgres.log",
+      "sha256": "sha256:4605093dc7c0ce462be42fc5f851ddebdaf162c1165a78229cc10f1b92265a3e"
+    },
+    "migration-historical-unknown": {
+      "status": "PASS",
+      "artifact": "migration-historical-unknown.log",
+      "sha256": "sha256:6460136a355b3ee5168b4b9137f25e7d817397068bd8afdba7fd1d47a807130e"
+    },
+    "legacy-workflow-adoption": {
+      "status": "PASS",
+      "artifact": "legacy-workflow-adoption.log",
+      "sha256": "sha256:12e51bccebaf87d39c12c5f4b0788e149daafac2319567b11b62075b69d9a861"
+    },
+    "unknown-scope-unit": {
+      "status": "PASS",
+      "artifact": "unknown-scope-unit.log",
+      "sha256": "sha256:5bc4b65b50f8ba281b2a7b93d56a26a9566f0084d70680a77518eb34ee3a7f7d"
+    },
+    "unknown-scope-postgres": {
+      "status": "PASS",
+      "artifact": "unknown-scope-postgres.log",
+      "sha256": "sha256:aa4f61fe4fdaf466e68b3fb56053d591a4451b64f9d291098d5dc66ff06f5762"
+    },
+    "native-author-six-chapters": {
+      "status": "PASS",
+      "artifact": "native-author-six-chapters.log",
+      "sha256": "sha256:c09f583c6ce2dc4b7784ee73619996de00de18e582046ebcb1acf489057c30c4"
+    },
+    "baseline-strict-path-failure": {
+      "status": "BASELINE_FAIL_REPRODUCED",
+      "artifact": "baseline-strict-path-failure.log",
+      "sha256": "sha256:65ea87ba1d92e95d3ddd350c480940fcc26f7ed80c783f9a2e37b2b6e8f2b902"
+    },
+    "typescript": {
+      "status": "PASS",
+      "artifact": "typescript.log",
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unicode-editor": {
+      "status": "PASS",
+      "artifact": "unicode-editor.log",
+      "sha256": "sha256:8746de04371dee5261a417f7830437ac3d289f2ff91ed9c5d445086e7c3c7689"
+    },
+    "browser-read": {
+      "status": "PASS",
+      "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+      "artifact": "browser-read.json",
+      "real_provider_calls": 0
+    },
+    "browser-edit": {
+      "status": "PASS",
+      "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+      "artifact": "browser-edit.json",
+      "real_provider_calls": 0
+    },
+    "browser-pending": {
+      "status": "PASS",
+      "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+      "artifact": "browser-pending.json",
+      "real_provider_calls": 0
+    },
+    "frozen-static-boundaries": {
+      "status": "PASS",
+      "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+      "artifact": "frozen-static-boundaries.log",
+      "sha256": "sha256:f37106a7f1217a0d58b3206d2f6cb1863e4fe5cb16e646d41446e28db2b747b8"
+    },
+    "focused-ruff": {
+      "status": "PASS",
+      "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+      "checks": "Touched Python production and focused test files"
+    }
+  },
+  "runtime_database": {
+    "database": "nf_author_first_live",
+    "oid": 224588,
+    "postgres_version": "PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit",
+    "data_directory": "/tmp/nf-author-first-pg.jxLglu/data",
+    "migration_head": {
+      "applied_at": "2026-10-08T02:17:58.781479+08:00",
+      "migration_id": "20261008_0181_author_manuscript_delivery"
+    },
+    "migration_count": 182
+  },
+  "verification_boundary": {
+    "code_and_controlled_execution": "EXECUTABLE",
+    "provider_short_journey": "BLOCKED_BEFORE_PROSE",
+    "long_form_quality": "NOT_RUN",
+    "production_acceptance": "NOT_PROVEN",
+    "whole_repository_regression": "NOT_RUN",
+    "original_book_completion": "NOT_PROVEN",
+    "true_run_sha_differs_from_final": true,
+    "original_true_run_not_retried_after_unknown": true
+  },
+  "author_usage": "docs/runtime-operations.md (author-first native commands)",
+  "ui_source_hashes": {
+    "web/admin/app/features/editor/EditorPage.tsx": "sha256:d16fbad2032ae8d82525b02fa2b2821c165dd3ba316e24b4c61ab00755bd97cb",
+    "web/admin/app/features/editor/ProseReviewPanel.tsx": "sha256:d5f0c58c06e34b886ee52be12a4039bbbe2851e4f8b95ec4340f4290d43c0bf7",
+    "web/admin/app/features/production/CreativeInputPanel.tsx": "sha256:59b9482121409a9a1cced4d0d8c315a8168b7d5980e1fa990d39e6bb979ffd89",
+    "web/admin/app/features/production/CurrentManuscriptPanel.tsx": "sha256:4ce0b782352475cd86f368d4199808aee9d49b3b84a6ab7c757771089758dc5b",
+    "web/admin/app/features/production/ProductionChainPage.tsx": "sha256:3c3abbe2e4ddd1a96967325e6866fa4de877ddf5b0643d8f2285929165450544"
+  },
+  "preserved_engineering_failure_logs": {
+    "cold_pause_resume_assembly_failure": "/tmp/nf-author-browser-edit-before-control-fix.log",
+    "baseline_strict_context_capacity": "baseline-strict-path-failure.log",
+    "original_true_provider_process_receipt": "authority-asset-version:e2ee46e9-4486-44e9-a3aa-639ed5de589e"
+  },
+  "rollback_boundary": "Append new policy/recovery records. Keep published migrations, frozen requests, all saved source versions and consumption history."
+}

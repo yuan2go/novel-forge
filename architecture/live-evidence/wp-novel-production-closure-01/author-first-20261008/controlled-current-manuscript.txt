@@ -1,0 +1,32 @@
+当前稿件 · 审定至第 0 章
+稿件版本：sha256:490357bcd2ad0a005a5f4be03ca39c7dc76293743c1b8203496b51d9272a3d32
+第 1 章：064484ee-0056-48f7-86f5-af5cc6533326 · 审读 NOT_RUN · 要求 LENGTH_TARGET_UNMET
+第 2 章：authority-output:8239a967-c3b6-4d2d-9763-765842dc2875:chapter.draft:v1 · 审读 STALE · 要求 LENGTH_TARGET_UNMET
+第 3 章：authority-output:6ab2f08a-4726-47bb-8623-4c809f8742ae:chapter.draft:v1 · 审读 STALE · 要求 LENGTH_TARGET_UNMET
+第 4 章：authority-output:596bc1e4-2ac5-4eab-a852-8bc3afb51384:chapter.draft:v1 · 审读 STALE · 要求 LENGTH_TARGET_UNMET
+第 5 章：authority-output:faad5bce-3e57-494c-95f9-ec827c585870:chapter.draft:v1 · 审读 STALE · 要求 LENGTH_TARGET_UNMET
+第 6 章：authority-output:f976e3c8-6ddf-4864-91dd-d7b78a3a098c:chapter.draft:v1 · 审读 STALE · 要求 LENGTH_TARGET_UNMET
+
+第1章 Chapter 1: The Door Closes
+
+Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. 作者增补。 浏览器选区增补。
+
+第2章 Chapter 2: The Door Closes
+
+Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.
+
+第3章 Chapter 3: The Door Closes
+
+Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.
+
+第4章 Chapter 4: The Door Closes
+
+Chapter 4 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.
+
+第5章 Chapter 5: The Door Closes
+
+Chapter 5 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.
+
+第6章 Chapter 6: The Door Closes
+
+Chapter 6 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.

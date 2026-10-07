@@ -1,0 +1,735 @@
+{
+  "version": "controlled-native-manuscript-evidence.v1",
+  "status": "PASS",
+  "transport": "CONTROLLED_PROCESS_FIXTURE",
+  "real_provider_calls": 0,
+  "cold_api_ui_runtime_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+  "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+  "writing_chapters": 6,
+  "accepted_chapters": 0,
+  "target_chapters": 6,
+  "book_state": "READY",
+  "effect_counts": [
+    {
+      "definition_name": "chapter.draft.generate",
+      "status": "SUCCEEDED",
+      "count": 6
+    },
+    {
+      "definition_name": "chapter.memo.generate",
+      "status": "SUCCEEDED",
+      "count": 6
+    },
+    {
+      "definition_name": "story_planning.generate",
+      "status": "SUCCEEDED",
+      "count": 46
+    }
+  ],
+  "operation_counts": {
+    "book.foreshadowing_ledger.author": 1,
+    "book.foreshadowing_state.author": 1,
+    "book_design.activate": 1,
+    "chapter.memo.generate": 6,
+    "book_design.propose": 1,
+    "capability_pack.manifest.register": 3,
+    "book.production_profile.author": 1,
+    "planning.realization.approve": 2,
+    "chapter.context.build": 6,
+    "capability_pack.deployment.activate": 3,
+    "story.formation.advance": 8,
+    "book.reward_ledger.author": 1,
+    "book.reader_contract.author": 1,
+    "story_planning.generate": 34,
+    "chapter.quality_rubric.author": 1,
+    "book.previous_volume_outcome.author": 1,
+    "book.quality_trend.author": 1,
+    "book.arc_portfolio.author": 1,
+    "chapter.draft.generate": 6,
+    "capability_pack.compile": 3,
+    "book.previous_chapter_group_outcome.author": 1,
+    "capability_pack.deployment.create": 3,
+    "book.character_state.author": 1,
+    "book.promise_ledger.author": 1,
+    "book.authority.mutate": 29,
+    "planning.realization.qualify": 2,
+    "chapter.author_edit.accept": 2,
+    "book.production_input.resolve": 1,
+    "chapter.author_edit.save": 2,
+    "book.reader_segment.author": 1,
+    "chapter.context.retrieve": 6,
+    "story_planning.chapter_plan.materialize": 6,
+    "story.formation.admit": 1,
+    "planning.binding.activate": 21,
+    "chapter.slice.run": 6,
+    "longform.prose_review": 1,
+    "chapter.platform_profile.author": 1,
+    "book.ending_reachability.author": 1,
+    "book.create": 1,
+    "capability_pack.validation.admit": 3,
+    "creative.brief.create": 1,
+    "book.production.coordinate": 1,
+    "book.reader_state.author": 1,
+    "chapter.style_policy.compile": 1,
+    "chapter.plan.materialize": 6,
+    "book.prose_review.advance": 1,
+    "book.conflict_state.author": 1,
+    "story_design.lifecycle.transition": 174,
+    "book.prose_review.start": 1,
+    "planning.realization.freeze": 2,
+    "project_lifecycle.create": 1,
+    "book.previous_chapter_outcome.author": 1,
+    "chapter.execution_intent.prepare": 6,
+    "book.initial_canon.author": 1,
+    "book.opening.admit": 1,
+    "provider.routing_policy.configure": 1,
+    "book.opening.complete_node": 5,
+    "book.initial_story_state.author": 1,
+    "book_design.decide": 1
+  },
+  "chapter_trace": [
+    {
+      "chapter_number": 1,
+      "chapter_root_operation_id": "63246bf6-27ef-400a-a7ad-7847e3a778a3",
+      "definition_version": "3.10.0-author-first.v1",
+      "snapshot": {
+        "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "sources": [],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:6cb48063a44c0f44e42da9bbcecdcf1b68ad81dc3047e2beecef3bcc9f01036e",
+        "target_chapter": 1,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      }
+    },
+    {
+      "chapter_number": 2,
+      "chapter_root_operation_id": "595818bb-4895-47db-bd4d-84a9bc2945e0",
+      "definition_version": "3.10.0-author-first.v1",
+      "snapshot": {
+        "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "sources": [
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 1,
+            "excerpt": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:27b9e13342061632696c970ec0b7e10288c2d8624bbf491cba8516914a59919c",
+            "content_hash": "sha256:49319b6b41b45878ef7261b7dfb5794bafab83bf7482bae6d71d3fe27c707b4a",
+            "asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          }
+        ],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:6e1fd4d17f76b97171bb1b8b74bd0285b055464423e13c498f22e4748770d6a2",
+        "target_chapter": 2,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      }
+    },
+    {
+      "chapter_number": 3,
+      "chapter_root_operation_id": "a8158120-b62c-4b3f-8144-2463247a9ee5",
+      "definition_version": "3.10.0-author-first.v1",
+      "snapshot": {
+        "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "sources": [
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 1,
+            "excerpt": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:27b9e13342061632696c970ec0b7e10288c2d8624bbf491cba8516914a59919c",
+            "content_hash": "sha256:49319b6b41b45878ef7261b7dfb5794bafab83bf7482bae6d71d3fe27c707b4a",
+            "asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 2,
+            "excerpt": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:db65e6ff9890138b9d3c1b4f85a9857a60acdf5af1028cf578c5c092d059b1c3",
+            "content_hash": "sha256:fd4d9793f4c93f7cd1d97e48bf574e786f675b0249cc49a4a0b1c76e8e1cdeff",
+            "asset_version_id": "authority-output:8239a967-c3b6-4d2d-9763-765842dc2875:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          }
+        ],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:3ba99e5b6f66ad2803d00ea9918f193d90fd1b3eed27362eaaadaac9d20d83c1",
+        "target_chapter": 3,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      }
+    },
+    {
+      "chapter_number": 4,
+      "chapter_root_operation_id": "3999603d-4398-40f6-a827-76bce540b711",
+      "definition_version": "3.10.0-author-first.v1",
+      "snapshot": {
+        "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "sources": [
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 1,
+            "excerpt": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:27b9e13342061632696c970ec0b7e10288c2d8624bbf491cba8516914a59919c",
+            "content_hash": "sha256:49319b6b41b45878ef7261b7dfb5794bafab83bf7482bae6d71d3fe27c707b4a",
+            "asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 2,
+            "excerpt": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:db65e6ff9890138b9d3c1b4f85a9857a60acdf5af1028cf578c5c092d059b1c3",
+            "content_hash": "sha256:fd4d9793f4c93f7cd1d97e48bf574e786f675b0249cc49a4a0b1c76e8e1cdeff",
+            "asset_version_id": "authority-output:8239a967-c3b6-4d2d-9763-765842dc2875:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 3,
+            "excerpt": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:935873109f5437a81fbb8aa26d7027f0bd8bb0ed9a263f3c8d802c26e5acacc5",
+            "content_hash": "sha256:9b125c4eff7a68daf90ab4175e4ab00d459b9253f780814dcff93c124ee80031",
+            "asset_version_id": "authority-output:6ab2f08a-4726-47bb-8623-4c809f8742ae:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          }
+        ],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:adc3ef3679260dedb11efef196147520c3f700f1fa289613fadb4226f588a579",
+        "target_chapter": 4,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      }
+    },
+    {
+      "chapter_number": 5,
+      "chapter_root_operation_id": "414cee3c-bf6e-4147-ac31-10970fdab498",
+      "definition_version": "3.10.0-author-first.v1",
+      "snapshot": {
+        "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "sources": [
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 1,
+            "excerpt": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:27b9e13342061632696c970ec0b7e10288c2d8624bbf491cba8516914a59919c",
+            "content_hash": "sha256:49319b6b41b45878ef7261b7dfb5794bafab83bf7482bae6d71d3fe27c707b4a",
+            "asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 2,
+            "excerpt": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:db65e6ff9890138b9d3c1b4f85a9857a60acdf5af1028cf578c5c092d059b1c3",
+            "content_hash": "sha256:fd4d9793f4c93f7cd1d97e48bf574e786f675b0249cc49a4a0b1c76e8e1cdeff",
+            "asset_version_id": "authority-output:8239a967-c3b6-4d2d-9763-765842dc2875:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 3,
+            "excerpt": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:935873109f5437a81fbb8aa26d7027f0bd8bb0ed9a263f3c8d802c26e5acacc5",
+            "content_hash": "sha256:9b125c4eff7a68daf90ab4175e4ab00d459b9253f780814dcff93c124ee80031",
+            "asset_version_id": "authority-output:6ab2f08a-4726-47bb-8623-4c809f8742ae:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 4,
+            "excerpt": "Chapter 4 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:ac8e3e2ad7db0d710f112682861f6eb1ec59456ec90fbfc46d721cf9fc3edf8f",
+            "content_hash": "sha256:680c4d097d7a924402d4e77e7c1c9afbbdd1d3c1641cd8f297eceefb3d7a026a",
+            "asset_version_id": "authority-output:596bc1e4-2ac5-4eab-a852-8bc3afb51384:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          }
+        ],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:626b5312990ee76e293633416f1f49e191a288646c15a45116a3ea5ac1c98aec",
+        "target_chapter": 5,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      }
+    },
+    {
+      "chapter_number": 6,
+      "chapter_root_operation_id": "ee0e4a63-c415-4d9b-a07a-d341bcdd9854",
+      "definition_version": "3.10.0-author-first.v1",
+      "snapshot": {
+        "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "sources": [
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 2,
+            "excerpt": "Chapter 2 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:db65e6ff9890138b9d3c1b4f85a9857a60acdf5af1028cf578c5c092d059b1c3",
+            "content_hash": "sha256:fd4d9793f4c93f7cd1d97e48bf574e786f675b0249cc49a4a0b1c76e8e1cdeff",
+            "asset_version_id": "authority-output:8239a967-c3b6-4d2d-9763-765842dc2875:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 3,
+            "excerpt": "Chapter 3 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:935873109f5437a81fbb8aa26d7027f0bd8bb0ed9a263f3c8d802c26e5acacc5",
+            "content_hash": "sha256:9b125c4eff7a68daf90ab4175e4ab00d459b9253f780814dcff93c124ee80031",
+            "asset_version_id": "authority-output:6ab2f08a-4726-47bb-8623-4c809f8742ae:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 4,
+            "excerpt": "Chapter 4 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:ac8e3e2ad7db0d710f112682861f6eb1ec59456ec90fbfc46d721cf9fc3edf8f",
+            "content_hash": "sha256:680c4d097d7a924402d4e77e7c1c9afbbdd1d3c1641cd8f297eceefb3d7a026a",
+            "asset_version_id": "authority-output:596bc1e4-2ac5-4eab-a852-8bc3afb51384:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          },
+          {
+            "status": "UNREVIEWED_WORKING_PROSE",
+            "chapter": 5,
+            "excerpt": "Chapter 5 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed.",
+            "text_hash": "sha256:1769f60ffe6f0cffad423dbc51700f19be420ac8946f938ffb6d603f25fc63f5",
+            "content_hash": "sha256:c688818f9f6a1f83c4cff0d3645d9f4708bda8135425b4eab4c2d2c5918b4dbc",
+            "asset_version_id": "authority-output:faad5bce-3e57-494c-95f9-ec827c585870:chapter.draft:v1",
+            "character_knowledge": "NOT_VERIFIED"
+          }
+        ],
+        "version": "working-manuscript-context.v1",
+        "authority": "AUTHOR_WORKING_PROSE_ONLY",
+        "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+        "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty.",
+        "snapshot_hash": "sha256:abb980ce4dc9411ee9c19f1d911a2265ef2b78eaf45a40fb1726bd95210053b2",
+        "target_chapter": 6,
+        "structured_facts": [],
+        "accepted_through_chapter": 0
+      }
+    }
+  ],
+  "current_manifest": {
+    "version": "current-manuscript-export.v1",
+    "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+    "project_id": "project:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+    "workspace_id": "workspace:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+    "book_id": "book:author:c888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd",
+    "accepted_through_chapter": 0,
+    "units": [
+      {
+        "chapter": 1,
+        "asset_version_id": "064484ee-0056-48f7-86f5-af5cc6533326",
+        "content_hash": "sha256:83b9073f314d113b640173211d1ff2c3ad3d5ecfd7f16a7d59e922b620f2e958",
+        "text_hash": "sha256:c20e428268807f7483cfe936c426efe687cb7b519329c9589f2590893a476015",
+        "title": "Chapter 1: The Door Closes",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:mara",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 11,
+          "target": {
+            "maximum": 4000,
+            "minimum": 800
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "ADOPTED"
+      },
+      {
+        "chapter": 2,
+        "asset_version_id": "authority-output:8239a967-c3b6-4d2d-9763-765842dc2875:chapter.draft:v1",
+        "content_hash": "sha256:fd4d9793f4c93f7cd1d97e48bf574e786f675b0249cc49a4a0b1c76e8e1cdeff",
+        "text_hash": "sha256:db65e6ff9890138b9d3c1b4f85a9857a60acdf5af1028cf578c5c092d059b1c3",
+        "title": "Chapter 2: The Door Closes",
+        "manuscript_status": "SAVED",
+        "review_status": "STALE",
+        "review_run_id": "82f66a3c-62e6-40d5-bec5-72b7e7d209d4",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:mara",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 0,
+          "target": {
+            "maximum": 4000,
+            "minimum": 800
+          }
+        },
+        "dependency_changes": [
+          {
+            "chapter": 1,
+            "source_asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "current_asset_version_id": "064484ee-0056-48f7-86f5-af5cc6533326"
+          }
+        ],
+        "author_selection": "GENERATED_CURRENT"
+      },
+      {
+        "chapter": 3,
+        "asset_version_id": "authority-output:6ab2f08a-4726-47bb-8623-4c809f8742ae:chapter.draft:v1",
+        "content_hash": "sha256:9b125c4eff7a68daf90ab4175e4ab00d459b9253f780814dcff93c124ee80031",
+        "text_hash": "sha256:935873109f5437a81fbb8aa26d7027f0bd8bb0ed9a263f3c8d802c26e5acacc5",
+        "title": "Chapter 3: The Door Closes",
+        "manuscript_status": "SAVED",
+        "review_status": "STALE",
+        "review_run_id": "82f66a3c-62e6-40d5-bec5-72b7e7d209d4",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:mara",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 0,
+          "target": {
+            "maximum": 4000,
+            "minimum": 800
+          }
+        },
+        "dependency_changes": [
+          {
+            "chapter": 1,
+            "source_asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "current_asset_version_id": "064484ee-0056-48f7-86f5-af5cc6533326"
+          }
+        ],
+        "author_selection": "GENERATED_CURRENT"
+      },
+      {
+        "chapter": 4,
+        "asset_version_id": "authority-output:596bc1e4-2ac5-4eab-a852-8bc3afb51384:chapter.draft:v1",
+        "content_hash": "sha256:680c4d097d7a924402d4e77e7c1c9afbbdd1d3c1641cd8f297eceefb3d7a026a",
+        "text_hash": "sha256:ac8e3e2ad7db0d710f112682861f6eb1ec59456ec90fbfc46d721cf9fc3edf8f",
+        "title": "Chapter 4: The Door Closes",
+        "manuscript_status": "SAVED",
+        "review_status": "STALE",
+        "review_run_id": "82f66a3c-62e6-40d5-bec5-72b7e7d209d4",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:mara",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 0,
+          "target": {
+            "maximum": 4000,
+            "minimum": 800
+          }
+        },
+        "dependency_changes": [
+          {
+            "chapter": 1,
+            "source_asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "current_asset_version_id": "064484ee-0056-48f7-86f5-af5cc6533326"
+          }
+        ],
+        "author_selection": "GENERATED_CURRENT"
+      },
+      {
+        "chapter": 5,
+        "asset_version_id": "authority-output:faad5bce-3e57-494c-95f9-ec827c585870:chapter.draft:v1",
+        "content_hash": "sha256:c688818f9f6a1f83c4cff0d3645d9f4708bda8135425b4eab4c2d2c5918b4dbc",
+        "text_hash": "sha256:1769f60ffe6f0cffad423dbc51700f19be420ac8946f938ffb6d603f25fc63f5",
+        "title": "Chapter 5: The Door Closes",
+        "manuscript_status": "SAVED",
+        "review_status": "STALE",
+        "review_run_id": "82f66a3c-62e6-40d5-bec5-72b7e7d209d4",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:mara",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 0,
+          "target": {
+            "maximum": 4000,
+            "minimum": 800
+          }
+        },
+        "dependency_changes": [
+          {
+            "chapter": 1,
+            "source_asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "current_asset_version_id": "064484ee-0056-48f7-86f5-af5cc6533326"
+          }
+        ],
+        "author_selection": "GENERATED_CURRENT"
+      },
+      {
+        "chapter": 6,
+        "asset_version_id": "authority-output:f976e3c8-6ddf-4864-91dd-d7b78a3a098c:chapter.draft:v1",
+        "content_hash": "sha256:45be116e1ccdde9deb5c042e9d7c7cde8afd36d3582087eb9af3d94ca2cb1105",
+        "text_hash": "sha256:fffef0829461addb0545a3b4ab204b8befe68f67b610bf40b49663791fb19e12",
+        "title": "Chapter 6: The Door Closes",
+        "manuscript_status": "SAVED",
+        "review_status": "STALE",
+        "review_run_id": "82f66a3c-62e6-40d5-bec5-72b7e7d209d4",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "a6d9d6fc-dd78-4d33-99be-cdc4ea289a3f:mara",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:903946a5-e489-4479-aa8a-0430e45a3be7:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 0,
+          "target": {
+            "maximum": 4000,
+            "minimum": 800
+          }
+        },
+        "dependency_changes": [
+          {
+            "chapter": 1,
+            "source_asset_version_id": "authority-output:6e6688d4-4fb0-4f7d-940d-fe6c92d317a3:chapter.draft:v1",
+            "current_asset_version_id": "064484ee-0056-48f7-86f5-af5cc6533326",
+            "via_chapter": 2
+          }
+        ],
+        "author_selection": "GENERATED_CURRENT"
+      }
+    ],
+    "kind": "CURRENT_AUTHOR_MANUSCRIPT",
+    "publication": "NOT_AUTHORIZED",
+    "writing_state": "READY",
+    "book_version": 28,
+    "target_chapters": 6,
+    "manifest_digest": "sha256:490357bcd2ad0a005a5f4be03ca39c7dc76293743c1b8203496b51d9272a3d32",
+    "text_digest": "sha256:3a04b1e9b13ab819f9e309789175341952eb4eea2d462225b4a18483a468f87e"
+  },
+  "optional_default_effect_calls": 0,
+  "explicit_optional_review_attempts": 1,
+  "explicit_optional_review_provider_calls": 0,
+  "browser_controls": {
+    "status": "PASS",
+    "runtime_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+    "fixture_transport": true,
+    "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+    "saved_chapters": 6,
+    "accepted_chapters": 0,
+    "checks": [
+      "scoped selection edit",
+      "candidate diff shown",
+      "one-click author adoption with optional rationale",
+      "unaffected later source versions preserved",
+      "exact current version browser download",
+      "pause/resume with unavailable Provider",
+      "review failed without withholding prose"
+    ],
+    "before_version": "bda0de91-9a12-47eb-a511-2a6e14723bfb",
+    "after_version": "064484ee-0056-48f7-86f5-af5cc6533326",
+    "export_manifest_digest": "sha256:490357bcd2ad0a005a5f4be03ca39c7dc76293743c1b8203496b51d9272a3d32",
+    "download_sha256": "sha256:64770aa0244c3b272a134aaff532f9ff8a79ba3303cab8f00c14362b2fb514a0",
+    "provider_invocations_during_browser_actions": 0
+  },
+  "browser_optional_recovery": {
+    "status": "PASS",
+    "runtime_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+    "fixture_transport": true,
+    "fault": "ISOLATED_BROWSER_ABORT_BEFORE_SERVER_SEND",
+    "checks": [
+      "optional panels make zero requests before author opens them",
+      "uncertain review request persists across browser refresh",
+      "retry retains exact original body/idempotency/trace",
+      "strict Edition absence is a separate condition with readable current export"
+    ],
+    "aborted_requests": 2,
+    "provider_calls": 0,
+    "new_server_review_operations": 0
+  },
+  "implementation_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+  "native_fixture_declared_release_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "native_fixture_build_id": "capability-pack-integrity-hardening",
+  "implementation_tree_sha": "sha256:f7bd9308639025908de305cb9bf8806ecdc45bb03e8d728fae0767c7298b24c3",
+  "runtime_identity_is_fixture": true,
+  "unknown_scope_checks": {
+    "optional_unknown_guidance_does_not_gate_required_work": "POSTGRES_NATIVE_BINDING_PASS_WITH_SIMULATED_UNKNOWN",
+    "required_unknown_and_same_review_still_block": "PASS",
+    "saved_prefix_review_vs_future_chapter": "UNIT_SCOPING_PASS",
+    "original_receipt_recheck": "POSTGRES_PASS"
+  }
+}
