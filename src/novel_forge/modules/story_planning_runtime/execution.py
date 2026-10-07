@@ -210,7 +210,11 @@ def _planning_repair_routing_lineage(
     repair_of_candidate_id: str = "",
 ) -> tuple[str, ...]:
     if not repair_of_operation_id and not repair_of_candidate_id:
-        return (operation_id,)
+        runtime = get_database_runtime(database_url)
+        with runtime.connection() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s AND project_id=%s AND book_id=%s", [operation_id, project_id, book_id])
+            if cursor.fetchone() is None:
+                return (operation_id,)
     definition_name = STORY_PLANNING_OPERATION_DEFINITION_REF.split("@", 1)[0]
     runtime = get_database_runtime(database_url)
     lineage: list[str] = []
@@ -348,9 +352,14 @@ def planning_repair_route_receipt(
             [operation_id, project_id, book_id, owner_generator],
         )
         row = uow.cursor.fetchone()
-        if row is None or not row[1]:
+        if row is None:
             return None
         payload = row[0]
+        contract_successor = bool(payload.get("runtime_continuation_id")) and payload.get("execution_contract_version") == "1.20.0" and payload.get("repair_reason") == "WORLD_AGENCY_CONTRACT_SUCCESSOR"
+        if contract_successor:
+            return _world_contract_route_receipt(database_url, command=_command_from_payload(payload), payload=payload, task_type=task_type, input_hash=input_hash, lineage=lineage)
+        if not row[1]:
+            return None
         command = _command_from_payload(payload)
         definition = GENERATOR_CATALOG[owner_generator]
         maximum = max(
@@ -4201,8 +4210,8 @@ class PostgresPlanningExecutionPreparer:
         output_schema = (
             foundation_output_schema(
                 command.generator_operation_name,
-                rfc6901_paths=command.execution_contract_version == "1.19.0",
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+                rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
             )
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else planning_provider_output_schema(
@@ -4221,9 +4230,9 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-                serialization_contract=command.execution_contract_version == "1.19.0",
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+                serialization_contract=command.execution_contract_version in {"1.19.0", "1.20.0"},
             )
         )
         if (
@@ -4264,8 +4273,8 @@ class PostgresPlanningExecutionPreparer:
         )
         if command.generator_operation_name in FOUNDATION_GENERATORS:
             output_schema_ref = foundation_output_schema_ref(command.generator_operation_name, execution_contract_version=command.execution_contract_version)
-        if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
-            output_schema_ref += ":work-v4" if command.execution_contract_version == "1.19.0" else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0"} else ":work-v2"
+        if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            output_schema_ref += ":work-v4" if command.execution_contract_version in {"1.19.0", "1.20.0"} else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"} else ":work-v2"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4399,9 +4408,9 @@ class PostgresPlanningExecutionPreparer:
             },
             candidate_payload={},
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-            rfc6901_paths=command.execution_contract_version == "1.19.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
         )
         try:
             context_policy = json.loads(frozen.context_policy_payload_json)
@@ -4422,17 +4431,17 @@ class PostgresPlanningExecutionPreparer:
                         "foundation_task": foundation_task(
                             command.generator_operation_name,
                             work_requirements=command.execution_contract_version
-                            in {"1.17.0", "1.18.0", "1.19.0"},
-                            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-                            rfc6901_paths=command.execution_contract_version == "1.19.0",
+                            in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+                            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
                         )
                     }
                     if command.generator_operation_name in FOUNDATION_GENERATORS
                     else {}
                 ),
                 "planning_command": {
-                    **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version == "1.19.0" else {}),
-                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"} else {}),
+                    **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version in {"1.19.0", "1.20.0"} else {}),
+                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"} else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "generation_operation_id": operation_id,
@@ -5731,9 +5740,9 @@ class PostgresPlanningExecutionPreparer:
                     "foundation_task": foundation_task(
                         command.generator_operation_name,
                         work_requirements=command.execution_contract_version
-                        in {"1.17.0", "1.18.0", "1.19.0"},
-                        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-                        rfc6901_paths=command.execution_contract_version == "1.19.0",
+                        in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+                        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
                     )
                 }
                 if command.generator_operation_name in FOUNDATION_GENERATORS
@@ -5769,8 +5778,8 @@ class PostgresPlanningExecutionPreparer:
                 }
                 for profile in required_qualification_profiles(
                     command.generator_operation_name,
-                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-                    profile_version="3.0.0" if command.execution_contract_version in {"1.18.0", "1.19.0"} else "2.0.0",
+                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                    profile_version="3.0.0" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"} else "2.0.0",
                 )
             ],
             "trace_id": command.trace_id,
@@ -6585,3 +6594,41 @@ __all__ = [
     "planning_fixture_response",
     "planning_provider_output_schema",
 ]
+
+
+def _world_contract_route_receipt(database_url, *, command, payload, task_type, input_hash, lineage):
+    if task_type not in {"world_candidates.generate", "world_candidates.evaluate"}:
+        return None
+    if not command.runtime_continuation_id or command.execution_contract_version != "1.20.0":
+        return None
+    from .runtime_continuation import require_binding, require_source
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    binding = require_binding(database_url, command.runtime_continuation_id)
+    if binding["successor_command"] != payload or binding["target_runtime"].get("pack_snapshot") is None:
+        raise KernelError("PLANNING_ROUTING_CONTRACT_DRIFT", "contract route must bind the registered immutable successor")
+    source_id = binding["source_operation_id"]
+    with AuthorityUnitOfWork(database_url) as uow:
+        source = require_source(uow, source_operation_id=source_id, project_id=command.project_id, active_successor_operation_id=lineage[-1])
+        if source.get("mode") != "WORLD_AGENCY_CONTRACT" or source["command"].get("repair_number") != command.repair_number:
+            raise KernelError("PLANNING_ROUTING_CONTRACT_DRIFT", "contract succession cannot reset content repair consumption")
+        uow.cursor.execute("SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED' AND request_payload->>'stage'=%s", [source_id, task_type])
+        previous = uow.cursor.fetchall()
+        if len(previous) != 1 or not previous[0][0] or previous[0][0] == input_hash:
+            raise KernelError("PLANNING_ROUTING_REPAIR_INPUT_UNCHANGED", "schema succession needs an actually changed stage request")
+    authoritative = _planning_repair_routing_lineage(database_url, project_id=command.project_id, book_id=command.book_id, generator_operation_name=command.generator_operation_name, operation_id=lineage[-1], repair_of_operation_id="")
+    if authoritative != lineage:
+        raise KernelError("PLANNING_ROUTING_LINEAGE_INVALID", "contract successor must retain full native lineage")
+    dependency = {}
+    if task_type == "world_candidates.evaluate":
+        current = AuthorityAssetQuery(database_url).require(project_id=command.project_id, logical_ref=f"world_preparation/{lineage[-1]}/generation")
+        evidence = current.content["contract"]["evidence"]
+        receipt = read_succeeded_external_effect(database_url, EffectCommandContext(operation_id=lineage[-1], project_id=command.project_id, actor_id=command.actor_id, trace_id=command.trace_id, correlation_id=command.correlation_id), effect_id=evidence["external_receipt_ref"])
+        if receipt is None or receipt["budget_reservation_status"] != "SETTLED" or receipt["provider_evidence"].get("result") != current.content["contract"]["output"]:
+            raise KernelError("PLANNING_ROUTING_DEPENDENCY_UNSETTLED", "new Director request requires current known settled generation")
+        dependency = {"dependent_evaluation": {"generation": {"asset_version_id": current.asset_version_id, "content_hash": current.content_hash}, "external_effect_id": evidence["external_receipt_ref"]}}
+    return {"contract_version": "planning-route-contract-successor.v1", **dependency, "operation_id": lineage[-1],
+        "source_operation_id": source_id, "source_asset_version_id": source["evidence_asset_version_id"],
+        "diagnosis_hash": canonical_hash(source["diagnostic"]), "repair_number": command.repair_number,
+        "maximum_repairs": 4, "contract_chain_depth": source["depth"], "source_input_hash": previous[0][0], "input_hash": input_hash,
+        "command_hash": canonical_hash(payload), "authorized_history_operation_ids": list(lineage[:-1]),
+        "accepted_history_mutation_allowed": False, "changed_contract": "world-agency.v2"}

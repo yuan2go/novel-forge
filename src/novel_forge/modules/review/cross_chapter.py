@@ -231,7 +231,7 @@ def resolution_checks(
 
 
 def apply_targeted_edits(
-    *, draft: dict[str, Any], review: dict[str, Any], result: dict[str, Any]
+    *, draft: dict[str, Any], review: dict[str, Any], result: dict[str, Any], range_policy: str = "INTERSECTION_V1"
 ) -> dict[str, Any]:
     text = str(draft.get("text") or "")
     if review.get("target_text_hash") != prose_hash(text):
@@ -261,18 +261,33 @@ def apply_targeted_edits(
                 "REVISION_TARGETED_EDIT_INVALID",
                 "ordered non-overlapping edits must name existing diagnoses",
             )
-        for code in codes:
-            target = diagnoses[code]["evidence_locator"]
-            if (
-                not target["start"]
-                <= location["start"]
-                < location["end"]
-                <= target["end"]
-            ):
-                raise KernelError(
-                    "REVISION_TARGETED_EDIT_INVALID",
-                    "repair cannot change prose outside diagnosed locations",
-                )
+        if range_policy == 'NAMED_DIAGNOSIS_UNION_V1':
+            ranges = sorted((diagnoses[code]['evidence_locator']['start'],diagnoses[code]['evidence_locator']['end']) for code in codes)
+            merged = []
+            for low,high in ranges:
+                if max(low,location['start']) >= min(high,location['end']):
+                    raise KernelError('REVISION_TARGETED_EDIT_INVALID','Every named finding must intersect its edit')
+                if merged and low <= merged[-1][1]:
+                    merged[-1][1] = max(high,merged[-1][1])
+                else:
+                    merged.append([low,high])
+            if not any(low <= location['start'] < location['end'] <= high for low,high in merged):
+                raise KernelError('REVISION_TARGETED_EDIT_INVALID','Every changed code point must remain in the connected named frozen scope')
+        elif range_policy == 'INTERSECTION_V1':
+            for code in codes:
+                target = diagnoses[code]["evidence_locator"]
+                if (
+                    not target["start"]
+                    <= location["start"]
+                    < location["end"]
+                    <= target["end"]
+                ):
+                    raise KernelError(
+                        "REVISION_TARGETED_EDIT_INVALID",
+                        "repair cannot change prose outside diagnosed locations",
+                    )
+        else:
+            raise KernelError('REVISION_RANGE_POLICY_INVALID','An explicit supported range policy is required')
         pieces.extend((text[previous_end : location["start"]], edit["replacement"]))
         located_edits.append({**edit, "start": location["start"], "end": location["end"]})
         previous_end = location["end"]

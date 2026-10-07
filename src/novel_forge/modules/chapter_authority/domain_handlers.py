@@ -752,6 +752,7 @@ def build_canon_patch(
     extraction: dict[str, Any] | None = None,
     context_bundle: dict[str, Any] | None = None,
     validation_contract: str = "LEGACY_V1",
+    reader_observation_lineage: bool = False,
 ) -> dict[str, Any]:
     historical_state: dict[str, list[dict[str, Any]]] = {}
     identity_profiles: list[dict[str, Any]] = []
@@ -876,6 +877,7 @@ def build_canon_patch(
         ),
         identity_profiles=identity_profiles,
         validation_contract=validation_contract,
+        reader_observation_lineage=reader_observation_lineage,
     )
 
 

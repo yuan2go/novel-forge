@@ -53,17 +53,25 @@ def add_operation_dependency(
     try:
         with AuthorityUnitOfWork(database_url) as uow:
             repository = uow.repositories.operation_graph
-            operation = repository.operation(operation_id, context.project_id, lock=True)
-            dependency = repository.operation(
-                depends_on_operation_id,
-                context.project_id,
-                lock=True,
+            source = repository.operation(operation_id, context.project_id)
+            uow.cursor.execute(
+                "SELECT saga_id FROM authority_saga WHERE root_operation_id=%s AND project_id=%s FOR UPDATE",
+                [source["root_operation_id"], context.project_id],
             )
+            uow.cursor.fetchone()
+            for identity in sorted({operation_id, depends_on_operation_id}):
+                repository.operation(identity, context.project_id, lock=True)
+            operation = repository.operation(operation_id, context.project_id)
+            dependency = repository.operation(depends_on_operation_id, context.project_id)
             if operation["root_operation_id"] != dependency["root_operation_id"]:
-                raise KernelError(
-                    "DEPENDENCY_ROOT_CONFLICT",
-                    "dependency operations do not belong to the same root graph",
-                )
+                from .retained_graph import permits_retained_dependency
+                if permits_retained_dependency(uow.cursor, operation["root_operation_id"], depends_on_operation_id):
+                    pass
+                else:
+                    raise KernelError(
+                        "DEPENDENCY_ROOT_CONFLICT",
+                        "dependency operations do not belong to the same root graph",
+                    )
             created = repository.add_dependency(
                 operation_id,
                 depends_on_operation_id,
@@ -463,15 +471,7 @@ def coordinate_saga(
                     admission_context,
                 )
                 steps = repository.saga_steps(saga_id)
-        elif (
-            steps
-            and all(step["status"] == "SUCCEEDED" for step in steps)
-            and (
-                repository.expected_saga_step_count(saga["root_operation_id"]) == 0
-                or len(steps)
-                >= repository.expected_saga_step_count(saga["root_operation_id"])
-            )
-        ):
+        elif initial_graph_complete(steps, repository.expected_saga_step_count(saga["root_operation_id"])):
             target_status = "SUCCEEDED"
             repository.update_saga(saga_id, saga["version"], target_status)
             if repository.complete_root(saga["root_operation_id"], target_status):
@@ -731,3 +731,14 @@ def _admit_saga_compensation_children(
 def _validate_context(context: GraphCommandContext) -> None:
     if not all((context.project_id, context.actor_id, context.trace_id, context.correlation_id)):
         raise KernelError("KERNEL_COMMAND_INVALID", "graph command context is incomplete")
+
+
+def initial_graph_complete(steps, expected_count):
+    members = {
+        step["step_key"] for step in steps if step.get("initial_completion_member", True)
+    }
+    return (
+        bool(steps)
+        and all(step["status"] == "SUCCEEDED" for step in steps)
+        and (expected_count == 0 or len(members) >= expected_count)
+    )

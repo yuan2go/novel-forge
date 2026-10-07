@@ -76,13 +76,17 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
             missing.append(f"gate:{key}")
 
     effect_states = repository.effect_states(operation["operation_id"])
+    from novel_forge.modules.command_kernel.retained_completion import retained_completion_evidence
+
+    retained_effects = retained_completion_evidence(uow, operation, effect_states)
+    completion_effects = effect_states + [(item["capability"], item["status"]) for item in retained_effects]
     effect_unknown = False
     for requirement in contract.get("required_external_effects", []):
         if not isinstance(requirement, dict):
             raise _invalid("required_external_effects")
         capability = str(requirement.get("capability") or "")
         allowed = set(requirement.get("allowed_states") or ["SUCCEEDED"])
-        matching = [status for current, status in effect_states if current == capability]
+        matching = [status for current, status in completion_effects if current == capability]
         if any(status in {"UNKNOWN", "RECONCILIATION_REQUIRED"} for status in matching):
             effect_unknown = True
         if not any(status in allowed for status in matching):
@@ -181,6 +185,7 @@ def evaluate_completion_in_uow(uow: AuthorityUnitOfWork, operation: dict[str, An
         "cost_when_provider_used" in required_evidence
         and provider_used
         and not repository.has_cost(operation["operation_id"])
+        and not retained_effects
     ):
         missing.append("evidence:cost")
 

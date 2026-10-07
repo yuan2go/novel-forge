@@ -193,7 +193,7 @@ def test_world_sampling_version_compatibility_preserves_source_admission_checks(
     cursor, row, _, query = _native_world_sample_source(monkeypatch, version)
     changed = list(row)
     if damage in {"old_version", "future_version"}:
-        changed[1] = "1.15.0" if damage == "old_version" else "1.20.0"
+        changed[1] = "1.15.0" if damage == "old_version" else "1.21.0"
     elif damage == "definition":
         changed[0] = "other.generate"
     elif damage == "hash":

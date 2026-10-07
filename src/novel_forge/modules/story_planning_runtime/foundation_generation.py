@@ -251,7 +251,7 @@ def foundation_output_schema(
 
 
 def foundation_output_schema_ref(generator: str, *, execution_contract_version: str) -> str:
-    version = {"1.17.0": 2, "1.18.0": 3, "1.19.0": 4}.get(execution_contract_version, 1)
+    version = {"1.17.0": 2, "1.18.0": 3, "1.19.0": 4, "1.20.0": 4}.get(execution_contract_version, 1)
     return f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[generator].value.lower()}:v{version}"
 
 

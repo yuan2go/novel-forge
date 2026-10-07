@@ -144,7 +144,8 @@ commands and focused matrix in `docs/runtime-operations.md`.
 
 ### Bounded creative recovery contracts
 
-Creative templates v2–v6 are explicit policy successors. They retain authenticated
+Creative template v11 is the current coordinated policy; v2–v10 remain explicit
+historical contracts. They retain authenticated
 membership identity, independent-review requirements, source isolation and strict
 production gates. New Planning dispatch uses the single native `governed_repair`
 admission. `planning-route-repair.v1` retains its frozen lineage-wide allowance;
@@ -181,7 +182,7 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
-Chapter 3.9 contracts and Pack 2.26.0/template v11 add versioned scene-core,
+Current Chapter 3.10.0 and Pack 3.0.0/template v12 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
 corrections. Plan materialization 3.9.16 consumes activated-chapter-plan.v3 and
 projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
@@ -189,6 +190,12 @@ ExecutionIntent; frozen earlier projections keep their original contracts. Known
 replacement; failed steps and affected derived Canon/Quality outputs use Command
 Kernel successor journals. The exact live unaccepted Chapter frontier, original actor,
 settled effects, no held lease and no committed downstream state gate each correction.
+Retained-graph v2 references completed siblings. Known-receipt v2 binds the exact
+original verified dispatch, output hash, settled authorization and governed current
+output; completion references the original cost evidence without copying effects or
+rewriting attempts. Canon literal spans use wire v30; earlier wire contracts remain
+explicit readers. Quality correction limits are frozen `CONFIGURABLE_POLICY` and
+the Chapter scheduler owns durable pass and unchanged-candidate accounting.
 Old successful siblings, terminal attempts and fees remain immutable. Canon transport
 preserves nullable canonical schema semantics and validates strictly decoded JSON
 against the host schema. Revalidation does not advance accepted Canon or Narrative
@@ -198,8 +205,10 @@ Execution-window continuation retains the author deadline, actual child timeout 
 no-progress evidence. Creation checks cancellation, execution lease, deadline and finite
 work bounds before recovery hooks. Book and ChapterGroup coordinate owned references;
 they do not duplicate Chapter Attempt, Lease, Fence or Effect state. Migrations
-0160 (Planning result admission) through 0168 (derived step revalidation) extend
-the published chain after 0159; full identities remain in the migration manifest.
+0160–0168 retain their published identities. The continuous forward chain 0169–0176
+adds World agency, host and projection succession, failed-step v2, retained graphs,
+Quality namespaces, Canon output repair and Quality correction control. Full
+identities and dependencies remain in the migration manifest.
 Foreign or discontinuous migration histories fail before pending migration DDL;
 historical branch ledgers require a separate explicit conversion decision.
 
@@ -1294,7 +1303,7 @@ objective interface limits remain separate hard boundaries. Private author spans
 host-side except for explicitly permitted role/scope projections.
 
 The 2026-10-04 Prompt/Skill audit remains historical diagnostic evidence. Current
-new Planning Pack 2.11.0 uses `story-planning` 1.19.0, Prompt v9,
+new Planning Pack 2.12.0 uses `story-planning` 1.20.0, Prompt v10,
 `foundation-generation.v4`, BookDesign v7
 and work qualification profiles v3. Theme exploration and ending alignment follow selected
 methods; absent choices or closure are evaluated against the coherent chosen alternative,
@@ -1307,11 +1316,17 @@ and UNDETERMINED does not establish that a method is absent. A selected
 requirement or an existing due obligation remains mandatory. Old generation v1,
 BookDesign v5 and historical profile hashes retain their original contracts.
 
-Planning 1.19.0 binds the six Foundation roles to `foundation-generation.v4`
+Planning 1.20.0 binds the six Foundation roles to `foundation-generation.v4`
 and `schema:foundation-provider-output:<role>:v4`; materialized and rendered tasks
 use that exact v4 contract. Only v4 admits RFC 6901 pointers alongside exact JSONPath.
 Planning 1.17/v2 and 1.18/v3 retain all twelve original schema hashes and their
 JSONPath-only readers. Planning 1.18.0 retains Pack 2.10.0 and Prompt v8.
+Planning 1.19.0 retains its exact Pack 2.11.0, Prompt v9 and v4 contracts.
+World succession uses explicit registration 2.0.0 and the single governed repair
+route. Agency and host recovery require a known successful World receipt; the
+projection path separately proves zero effects. The lineage must be settled and
+free of unrelated active leases. Only the exact registered running successor and
+its latest running Attempt may retain their own lease during admission.
 Current work ChapterPlan projection 3.0.0 / activated-chapter-plan.v3 binds
 `chapter-mission-scene.v4` and `work-v4` Provider schemas with explicit serialized
 scene-core and information-flow decisions. It copies only selected

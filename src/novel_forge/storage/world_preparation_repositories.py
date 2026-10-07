@@ -373,6 +373,7 @@ class WorldPreparationRepository:
         request: Mapping[str, Any],
         contract_version: str = "world-preparation-source.v2",
         provider_projection_version: str = "world-role-delivery.v3",
+        epistemic_contract: str = "world-agency.v1",
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -524,6 +525,10 @@ class WorldPreparationRepository:
         )
         reality["approved_character_ids"] = character_ids
         reality["world_dynamics_contract"] = "world-dynamics.v2"
+        if epistemic_contract == "world-agency.v2":
+            reality["epistemic_contract"] = epistemic_contract
+        elif epistemic_contract != "world-agency.v1":
+            raise KernelError("WORLD_AGENCY_CONTRACT_INVALID", "World source must retain a supported agency contract")
         world_binding = next(
             binding for binding in bindings if binding["role"] == "WORLD_BIBLE"
         )
@@ -813,6 +818,7 @@ class WorldPreparationRepository:
             request=frozen["request"],
             contract_version=frozen["contract_version"],
             provider_projection_version=frozen.get("provider_projection_version", "world-role-delivery.v1"),
+            epistemic_contract=frozen["reality"].get("epistemic_contract", "world-agency.v1"),
         )
         if narrative_hash(current) != narrative_hash(frozen):
             raise KernelError(

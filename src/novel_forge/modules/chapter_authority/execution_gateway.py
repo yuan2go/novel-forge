@@ -866,7 +866,7 @@ class PostgresChapterExecutionContractBinder:
                 "v6",
                 "v7",
                 "v8",
-        "v9", "v10", "v11",
+        "v9", "v10", "v11", "v12",
             },
             "prompt-template:agent-session-pack": {"v1"},
             "prompt-template:story-planning-pack": {"v1"},
@@ -941,6 +941,8 @@ class PostgresChapterExecutionContractBinder:
             )
         if stage == "canon_extraction" and graph["definition_version"] in {"3.9.5", "3.9.6", "3.9.7"} and materialization.prompt_template.version != ("v11" if graph["definition_version"]=="3.9.7" else "v10"):
             raise KernelError("CHAPTER_CANON_SCHEMA_PROJECTION_REQUIRED", "Canon requires its exact versioned Schema and transport Prompt binding")
+        if graph["definition_version"] == "3.10.0" and materialization.prompt_template.version != "v12":
+            raise KernelError("CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED", "Coordinated Chapter requires its exact new current prompt contract")
         provider_schema, provider_schema_ref = self._provider_output_contract(
             stage=stage,
             request_payload=request_payload,
@@ -1239,10 +1241,10 @@ class PostgresChapterExecutionContractBinder:
         )
         targeted_revision = bool(
             stage == "revision"
-            and prompt_contract_version in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11"}
+            and prompt_contract_version in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12"}
             and (
                 inputs.get("quality_edit_contract")
-                or (prompt_contract_version in {"v9", "v10", "v11"} and (
+                or (prompt_contract_version in {"v9", "v10", "v11", "v12"} and (
                     inputs.get("cross_chapter_window")
                     or (inputs.get("review") or {}).get("cross_chapter_window")
                     or (inputs.get("review") or {}).get("craft_targets")
@@ -1265,16 +1267,16 @@ class PostgresChapterExecutionContractBinder:
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
-            work_requirements=prompt_contract_version in {"v8", "v9", "v10", "v11"},
-            allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11"} and not bool(inputs.get("quality_edit_contract")),
+            work_requirements=prompt_contract_version in {"v8", "v9", "v10", "v11", "v12"},
+            allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11", "v12"} and not bool(inputs.get("quality_edit_contract")),
         )
         schema_ref = chapter_provider_output_schema_ref(
             stage,
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
-            work_requirements=prompt_contract_version in {"v8", "v9", "v10", "v11"},
-            allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11"} and not bool(inputs.get("quality_edit_contract")),
+            work_requirements=prompt_contract_version in {"v8", "v9", "v10", "v11", "v12"},
+            allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11", "v12"} and not bool(inputs.get("quality_edit_contract")),
         )
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
@@ -1283,14 +1285,14 @@ class PostgresChapterExecutionContractBinder:
                 raise KernelError("SCREENPLAY_SOURCE_CONTRACT_UNSUPPORTED", "Provider schema requires the exact frozen source contract")
             schema = screenplay_output_schema(stage, craft=contract == "screenplay-source.v2")
             schema_ref = "schema:chapter-provider-output:" + stage + (":v2" if contract == "screenplay-source.v2" else ":v1")
-        current_review = stage in {"review", "rereview"} and prompt_contract_version in {"v9", "v10", "v11"}
+        current_review = stage in {"review", "rereview"} and prompt_contract_version in {"v9", "v10", "v11", "v12"}
         if current_review:
             schema_ref = f"schema:chapter-provider-output:{stage}:v6"
         if inputs.get("cross_chapter_window") or (stage == "revision" and inputs.get("required_actions") is None and (inputs.get("review") or {}).get("cross_chapter_window")):
             from novel_forge.modules.review.cross_chapter import extend_provider_schema
             cross_version = (
                 "v2" if legacy_contract else "v6" if current_review
-                else "v5" if targeted_revision and prompt_contract_version in {"v9", "v10", "v11"} and not inputs.get("quality_edit_contract")
+                else "v5" if targeted_revision and prompt_contract_version in {"v9", "v10", "v11", "v12"} and not inputs.get("quality_edit_contract")
                 else "v4" if targeted_revision else "v3"
             )
             schema = extend_provider_schema(schema, stage, legacy_contract=legacy_contract)
@@ -1314,7 +1316,7 @@ class PostgresChapterExecutionContractBinder:
             from .provider_output_contracts import bind_delivered_knowledge_scope
             schema = bind_delivered_knowledge_scope(schema, inputs.get("knowledge_review_targets") or [])
             schema_ref += ":delivered-card-scope-v1"
-        if stage == "canon_extraction" and prompt_contract_version in {"v10", "v11"}:
+        if stage == "canon_extraction" and prompt_contract_version in {"v10", "v11", "v12"}:
             from .provider_output_contracts import shared_canon_schema
             schema = shared_canon_schema(schema)
             schema_ref = "schema:chapter-provider-output:canon_extraction:v25" if prompt_contract_version=="v11" else "schema:chapter-provider-output:canon_extraction:v24"
@@ -1326,6 +1328,28 @@ class PostgresChapterExecutionContractBinder:
             from novel_forge.modules.chapter_quality_authority.applicability_contract import bind_quality_applicability_schema
             schema=bind_quality_applicability_schema(schema,inputs["quality_context"]["creative_baseline"],stage.removeprefix("quality_"))
             schema_ref=f"schema:chapter-provider-output:{stage}:v5"
+        if stage.startswith("quality_") and prompt_contract_version == "v12":
+            from novel_forge.modules.canon_graph.source_spans import bind_quality_applicability_spans
+            table = inputs.get("source_span_table") or {}
+            if table.get("contract_version") != "literal-source-spans.v1":
+                raise KernelError("QUALITY_SOURCE_SPAN_INVALID", "Current Quality requires its exact host candidate spans")
+            schema = bind_quality_applicability_spans(schema, table)
+            schema_ref = f"schema:chapter-provider-output:{stage}:v6"
+        if stage == "canon_extraction" and prompt_contract_version == "v12":
+            from novel_forge.modules.canon_graph.source_spans import (
+                span_output_schema, constrain_transition_preconditions, constrain_planned_character_results,
+            )
+            table = inputs.get("source_span_table") or {}
+            if table.get("contract_version") != "literal-source-spans.v1":
+                raise KernelError("CANON_SOURCE_TEXT_REQUIRED", "Current Canon requires its exact host span table")
+            schema = chapter_provider_output_schema(stage, causal_batch=causal_batch, work_requirements=True)
+            schema = constrain_transition_preconditions(schema, inputs["accepted_transition_baselines"])
+            schema = span_output_schema(schema, table, compact=True, span_pattern=True)
+            schema = constrain_planned_character_results(schema, inputs["canonical_transition_results"])
+            schema = {"$schema": schema["$schema"], "type": "object", "additionalProperties": False,
+                "properties": {"payload_json": {"type": "string", "minLength": 2}}, "required": ["payload_json"],
+                "x-host-payload-schema": schema}
+            schema_ref = "schema:chapter-provider-output:canon_extraction:v30"
         return schema, schema_ref
 
     def bind(
@@ -2100,6 +2124,7 @@ class PostgresChapterExecutionContractBinder:
             *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
             CHAPTER_SLICE_DEFINITION_VERSION,
         }
+        compatible = compatible or (str(row[1]) == "3.10.0" and str(row[0]) in {node.definition_name for node in ChapterNode if node is not ChapterNode.PLAN})
         compatible = compatible or (
             str(row[0]) == ChapterNode.DRAFT.definition_name
             and str(row[1]) in {CHAPTER_DRAFT_DEFINITION_VERSION, "3.9.1"}
@@ -4446,7 +4471,7 @@ def _materialize_production_codex_prompt(
         "v6",
         "v7",
         "v8",
-        "v9", "v10", "v11",
+        "v9", "v10", "v11", "v12",
     }
     context = materialization.get("context_selection")
     knowledge = materialization.get("knowledge_selection")
@@ -4480,7 +4505,7 @@ def _materialize_production_codex_prompt(
     targeted_edits_only = stage == "revision" and is_targeted_revision_schema_ref(
         str(schema.get("ref") or "")
     )
-    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7", "v8", "v9", "v10", "v11"}
+    project_methods = str(template.get("version") or "") in {"v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12"}
     if skill.get("ref") == "prose-generation" and skill.get("version") == "prose-generation-v3":
         skill_text = _project_prose_skill(skill_text, stage=stage, targeted=targeted_edits_only)
     from .prompt_methods import project_planning_system, project_skill_method
@@ -4499,10 +4524,10 @@ def _materialize_production_codex_prompt(
         project_methods=project_methods,
         instruction_cleanup=template.get("ref")
         == "prompt-template:chapter-generation-pack"
-        and template.get("version") in {"v7", "v8", "v9", "v10", "v11"},
+        and template.get("version") in {"v7", "v8", "v9", "v10", "v11", "v12"},
         work_requirements=template.get("ref")
         == "prompt-template:chapter-generation-pack"
-        and template.get("version") in {"v8", "v9", "v10", "v11"},
+        and template.get("version") in {"v8", "v9", "v10", "v11", "v12"},
     )
     context_view = build_provider_context_view(
         stage,
@@ -4513,7 +4538,7 @@ def _materialize_production_codex_prompt(
         and template.get("version") == "v6",
         writer_projection_version="accepted-writer-history.v2"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
-        and template.get("version") in {"v7", "v8", "v9", "v10", "v11"}
+        and template.get("version") in {"v7", "v8", "v9", "v10", "v11", "v12"}
         else "",
     )
     context_manifest = context_content.get("context_manifest")
@@ -4685,7 +4710,7 @@ def _materialize_production_codex_prompt(
         "required_reader_facing_language": required_language,
         "provider_prompt_projection_version": "authority-projection-work-requirements.v1"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
-        and template.get("version") in {"v8", "v9", "v10", "v11"}
+        and template.get("version") in {"v8", "v9", "v10", "v11", "v12"}
         else "authority-projection-task-provider-v5"
         if template.get("ref") == "prompt-template:chapter-generation-pack"
         and template.get("version") == "v7"

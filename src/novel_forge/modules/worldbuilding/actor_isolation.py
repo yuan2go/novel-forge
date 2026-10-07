@@ -198,13 +198,13 @@ def actor_judge_schema(schema: Mapping[str, Any], proposals: list[dict[str, Any]
     return result
 
 
-def require_actor_judgments(generated: Mapping[str, Any], proposals: list[dict[str, Any]]) -> None:
+def require_actor_judgments(generated: Mapping[str, Any], proposals: list[dict[str, Any]], *, agency: bool = False) -> None:
     from novel_forge.modules.worldbuilding.production_schema import decode_world_generation
     by_actor = {row["actor_id"]: row for row in proposals}
     judgments = generated.get("actor_adjudications")
     if not isinstance(judgments, list) or len(judgments) != len(by_actor) or {row.get("actor_id") for row in judgments} != set(by_actor):
         raise KernelError("WORLD_ACTOR_JUDGMENT_INCOMPLETE", "all actor proposals need one exact adjudication before a world action")
-    decoded = decode_world_generation({key: value for key, value in generated.items() if key not in {"actor_adjudications", "knowledge_translations"}})
+    decoded = decode_world_generation({key: value for key, value in generated.items() if key not in {"actor_adjudications", "knowledge_translations"}}, agency=agency)
     candidates = decoded["candidates"]
     for judgment in judgments:
         proposal = by_actor[judgment["actor_id"]]

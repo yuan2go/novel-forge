@@ -11,6 +11,9 @@ from novel_forge.modules.command_kernel.routing_bootstrap import (
     chapter_sample_definition_name,
 )
 
+CHAPTER_COORDINATED_DEFINITION_VERSION = "3.10.0"
+CHAPTER_COORDINATED_AUTHOR_INPUT_VERSION = "3.10.0-author-input.v3"
+
 CHAPTER_SLICE_DEFINITION_VERSION = "2.2.1"
 CHAPTER_MODEL_EFFECT_DEFINITION_VERSION = "3.9.0"
 CHAPTER_PLAN_DEFINITION_VERSION = "3.9.16"
@@ -83,7 +86,7 @@ CHAPTER_SAMPLE_COMPLETION_TOPIC = "chapter.provider.sample.materialized"
 CHAPTER_SAMPLE_WORKFLOW_ID = "chapter_provider_sampling"
 CHAPTER_SAMPLE_WORKFLOW_REF = f"{CHAPTER_SAMPLE_WORKFLOW_ID}@{CHAPTER_SAMPLE_DEFINITION_VERSION}"
 CHAPTER_REFERENCE_WORKFLOW_ID = "chapter_reference_sampling"
-CHAPTER_REFERENCE_WORKFLOW_REF = f"{CHAPTER_REFERENCE_WORKFLOW_ID}@{CHAPTER_SAMPLE_DEFINITION_VERSION}"
+CHAPTER_REFERENCE_WORKFLOW_REF = f"{CHAPTER_REFERENCE_WORKFLOW_ID}@{CHAPTER_REFERENCE_SAMPLE_VERSION}"
 
 
 def chapter_provider_sample_definitions(
@@ -103,14 +106,19 @@ def chapter_provider_sample_definitions(
         "additionalProperties": False,
     }
     selected_version = definition_version or (CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION)
+    current = selected_version in {"2.6.0", "2.7.0"}
+    if selected_version not in ({"1.1.0", "2.1.0", "2.3.0", "2.5.0", "2.7.0"} if reference_samples else {"1.0.0", "2.0.0", "2.2.0", "2.4.0", "2.6.0"}):
+        raise ValueError("CHAPTER_SAMPLE_CONTRACT_UNSUPPORTED")
     historical = selected_version in {"1.0.0", "1.1.0", "2.0.0", "2.1.0", "2.2.0", "2.3.0"}
     source_versions = (
         ["3.4.1", "3.5.0"] if selected_version in {"2.0.0", "2.1.0"}
         else ["3.4.1", "3.8.0", "3.8.0-author-input.v2"] if historical
         else sorted({CHAPTER_SAMPLE_SOURCE_VERSION, "3.8.0", "3.8.0-author-input.v2", CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION})
     )
+    if current:
+        source_versions = sorted({*source_versions, CHAPTER_COORDINATED_DEFINITION_VERSION, CHAPTER_COORDINATED_AUTHOR_INPUT_VERSION})
     formal = {item["name"]: item for item in chapter_operation_definitions(
-        application_build_id=application_build_id, commit_sha=commit_sha, model_effects_required=True,
+        application_build_id=application_build_id, commit_sha=commit_sha, model_effects_required=True, coordinated_contract=current,
     )}
     definitions = []
     for node in ChapterNode:
@@ -176,6 +184,7 @@ def chapter_operation_definitions(
     model_effects_required: bool = False,
     semantic_retrieval_available: bool = False,
     author_input: bool = False,
+    coordinated_contract: bool = False,
 ) -> tuple[dict[str, Any], ...]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError(
@@ -191,13 +200,51 @@ def chapter_operation_definitions(
         )
         for node in ChapterNode
     )
+    if model_effects_required and coordinated_contract:
+        from copy import deepcopy
+        definitions = tuple(deepcopy(item) for item in definitions)
+        for item in definitions:
+            if item["name"] != ChapterNode.PLAN.definition_name:
+                item["definition_version"] = CHAPTER_COORDINATED_DEFINITION_VERSION
+                item["handler_contract_version"] = CHAPTER_COORDINATED_DEFINITION_VERSION
+                item["policy"]["coordinated_chapter_contract"] = "chapter-coordinated-production.v1"
+                if item["name"] in {node.definition_name for node in CHAPTER_QUALITY_PROVIDER_NODES}:
+                    item["policy"]["quality_evidence_spans"] = "literal-source-spans.v1"
+                if item["name"] in {ChapterNode.DRAFT.definition_name, ChapterNode.REVIEW.definition_name, ChapterNode.CANON_EXTRACTION.definition_name}:
+                    item["policy"]["known_receipt_recovery"] = "chapter-known-receipt.v2"
+                if item["name"] == ChapterNode.CANON_EXTRACTION.definition_name:
+                    item["policy"]["retained_result_derivation"] = "kernel-retained-graph-continuation.v2"
+                if item["name"] == ChapterNode.CANON.definition_name:
+                    item["policy"]["reader_observation_lineage"] = "reader-disclosure-observation.v1"
+                if item["name"] == ChapterNode.CANON_EXTRACTION.definition_name:
+                    item["policy"].pop("canon_wire_projection", None)
+                    item["policy"].pop("canon_schema_projection", None)
+                    item["policy"].update(canon_evidence_span="literal-source-spans.v1",
+                        canon_schema_compaction="typed-extraction-json.v2", canon_transition_preconditions="accepted-cas.v1",
+                        canon_transition_results="canonical-plan-results.v1")
+                if item["name"] in {ChapterNode.PUBLISH_GATE.definition_name, ChapterNode.EXPORT.definition_name, ChapterNode.FINAL_RELEASE_GATE.definition_name}:
+                    item["policy"]["internal_quality_input_contract"] = "creative-quality-admission.v3"
+                if item["name"] == ChapterNode.QUALITY.definition_name:
+                    item["policy"]["internal_quality_disposition"] = "creative-quality-disposition.v3"
+                if item["name"] in {ChapterNode.DRAFT.definition_name, ChapterNode.REVISION.definition_name}:
+                    item["policy"]["candidate_retry_feedback"] = "chapter-candidate-retry-feedback.v2"
+                if item["name"] in {ChapterNode.REVISION.definition_name, ChapterNode.REREVIEW.definition_name}:
+                    item["policy"]["revision_execution_decision"] = "exact-review-or-provider.v1"
+                    if item["name"] == ChapterNode.REVISION.definition_name:
+                        item["policy"]["quality_range_policy"] = "NAMED_DIAGNOSIS_UNION_V1"
+                    item["completion_contract"].pop("required_external_effects", None)
+                    node = next(node for node in ChapterNode if node.definition_name == item["name"])
+                    item["completion_contract"]["required_asset_selectors"].append({
+                        "selector": "revision_execution_decision", "output_key": node.output_key + ".execution_decision",
+                        "role": "completion_evidence", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR",
+                    })
     if not author_input:
         return definitions
     from copy import deepcopy
     author = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.DRAFT.definition_name))
     author["policy"].pop("scene_core_projection", None)
     author["policy"].pop("scene_information_flow", None)
-    author["definition_version"] = CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
+    author["definition_version"] = CHAPTER_COORDINATED_AUTHOR_INPUT_VERSION if coordinated_contract and model_effects_required else CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
     author["external_capabilities"] = []
     completion = author["completion_contract"]
     completion.pop("required_external_effects", None)
@@ -214,6 +261,7 @@ def chapter_root_operation_definition(
     application_build_id: str,
     commit_sha: str,
     model_effects_required: bool = False,
+    coordinated_contract: bool = False,
 ) -> dict[str, Any]:
     if not application_build_id or len(commit_sha) != 40:
         raise ValueError(
@@ -223,7 +271,7 @@ def chapter_root_operation_definition(
     result_schema = {"type": "object"}
     return {
         "name": CHAPTER_SLICE_ROOT_DEFINITION_NAME,
-        "definition_version": chapter_definition_version(model_effects_required),
+        "definition_version": chapter_definition_version(model_effects_required, coordinated_contract=coordinated_contract),
         "family": "chapter_authority",
         "enabled": True,
         "command_schema": command_schema,
@@ -256,6 +304,11 @@ def chapter_root_operation_definition(
             "local_storage_writes": "forbidden",
             "orchestration": "dynamic_fenced_saga_v1",
             "expected_saga_steps": len(ChapterNode),
+            **({"coordinated_chapter_contract": "chapter-coordinated-production.v1",
+                "node_definition_versions": {
+                    node.definition_name: CHAPTER_PLAN_DEFINITION_VERSION if node is ChapterNode.PLAN else CHAPTER_COORDINATED_DEFINITION_VERSION
+                    for node in ChapterNode
+                }} if model_effects_required and coordinated_contract else {}),
         },
         "completion_contract": {
             "version": "chapter.slice.run.completion.v1",
@@ -563,7 +616,9 @@ def _definition_maturity_metadata() -> dict[str, Any]:
     }
 
 
-def chapter_definition_version(model_effects_required: bool) -> str:
+def chapter_definition_version(model_effects_required: bool, *, coordinated_contract: bool = False) -> str:
+    if model_effects_required and coordinated_contract:
+        return CHAPTER_COORDINATED_DEFINITION_VERSION
     return (
         CHAPTER_MODEL_EFFECT_DEFINITION_VERSION
         if model_effects_required

@@ -30,8 +30,8 @@ from novel_forge.modules.story_design_authority.evaluation_runtime import (
     NARRATIVE_EVALUATION_VERSION,
 )
 
-_BASE_PACK = "config/capability_packs/chapter_generation_pack.json"
-STORY_PLANNING_PROMPT_VERSION = "v9"
+_BASE_PACK = "config/capability_packs/historical/chapter_generation_pack_2_26_0.json"
+STORY_PLANNING_PROMPT_VERSION = "v10"
 NARRATIVE_EVALUATION_PROMPT_VERSION = "v3"
 
 
@@ -95,7 +95,7 @@ def build_story_planning_pack_profile(
     planning_task_token_budget: int | None = None,
 ) -> LongformCapabilityPackProfile:
     version = execution_contract_version or STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
-    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}:
+    if version not in {"1.11.0", "1.12.0", "1.13.0", "1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}:
         raise ValueError("Unsupported Planning execution contract")
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
@@ -147,7 +147,7 @@ def build_story_planning_pack_profile(
         )
         nodes.append(node)
     manifest["identity"].update(
-        version="2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
+        version="2.12.0" if version == "1.20.0" else "2.11.0" if version == "1.19.0" else "2.10.0" if version == "1.18.0" else "2.9.0" if version == "1.17.0" else "2.8.0",
         name="Story Planning Generator Pack",
         domain="story_planning",
         description="Governed Foundation formation and hierarchical Planning candidate generation.",
@@ -193,19 +193,19 @@ def build_story_planning_pack_profile(
         manifest,
         artifacts,
         skill_ref="long-outline",
-        skill_version="long-outline-v3" if version in {"1.18.0", "1.19.0"} else "long-outline-v2",
-        skill_path="skills/long-outline/SKILL.md" if version in {"1.18.0", "1.19.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
+        skill_version="long-outline-v3" if version in {"1.18.0", "1.19.0", "1.20.0"} else "long-outline-v2",
+        skill_path="skills/long-outline/SKILL.md" if version in {"1.18.0", "1.19.0", "1.20.0"} else "config/capability_packs/artifacts/long_outline_work_v2.md",
         system_ref="prompt-system:story-planning-pack",
         system_path=(
-            "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
+            "config/capability_packs/artifacts/story_planning_system_instruction_v10.md" if version == "1.20.0" else "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
         ),
         template_ref="prompt-template:story-planning-pack",
         template_path=("config/capability_packs/artifacts/story_planning_template.md"),
         input_schema_ref="schema:story-planning-pack-input:v1",
         output_schema_ref="schema:story-planning-pack-output:v1",
-        system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.19.0" else "v8",
+        system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.20.0" else "v9" if version == "1.19.0" else "v8",
     )
-    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0"})
+    artifacts = _bind_planning_qualification_skills(root, manifest, artifacts, aligned_methods=version in {"1.18.0", "1.19.0", "1.20.0"})
     _update_policy_artifacts(manifest, artifacts)
     for _stage, capability in capabilities:
         _append_capability_schemas(artifacts, capability)
@@ -607,7 +607,7 @@ def _base(
     manifest = json.loads((root / _BASE_PACK).read_text(encoding="utf-8"))
     manifest["identity"]["pack_id"] = pack_id
     artifacts = [
-        item.to_dict() for item in default_chapter_artifact_resolver(root).artifacts()
+        item.to_dict() for item in default_chapter_artifact_resolver(root, include_current_contracts=False).artifacts()
     ]
     return root, manifest, artifacts
 

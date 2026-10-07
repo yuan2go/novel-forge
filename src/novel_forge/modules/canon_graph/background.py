@@ -31,11 +31,16 @@ def scheduled_world_events(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
             )
         return [deepcopy(selected[0]["transition"])]
     if plan["disposition"] == "PREPARATION_REQUIRED":
-        return [
+        due = [
             deepcopy(step["transition"])
             for step in plan["preparation_schedule"]
             if step["chapter_number"] == plan["chapter_number"]
         ]
+        if plan.get("target_in_current_batch"):
+            selected = next(item for item in plan["candidate_futures"]
+                if item.get("candidate_id") == plan["selected_candidate_id"])
+            return [*due, deepcopy(selected["transition"])]
+        return due
     if plan["disposition"] not in {"NO_OP", "DEFER"}:
         raise KernelError(
             "WORLD_ACTION_BLOCKED", "blocked world search cannot enter production"

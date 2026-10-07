@@ -48,6 +48,7 @@ from .process_supervisor import (
     ProcessTimeout,
     ResultIntegrity,
 )
+from .provider_protocol_failure import codex_protocol_failure
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
     CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
@@ -1460,22 +1461,6 @@ class _CodexResultFailure(ValueError):
         self.code = code
         self.retryable = retryable
 
-
-def codex_protocol_failure(stdout: str) -> str | None:
-    for line in stdout.splitlines():
-        try:
-            event = json.loads(line)
-            if not isinstance(event, dict):
-                continue
-            message = event.get("message") if event.get("type") == "error" else None
-            detail = json.loads(message) if isinstance(message, str) else {}
-            if (isinstance(detail, dict) and detail.get("status", 400) == 400
-                and isinstance(detail.get("error"), dict)
-                and detail["error"].get("code") == "invalid_json_schema"):
-                return "PROVIDER_SCHEMA_REJECTED"
-        except (ValueError, TypeError):
-            continue
-    return None
 
 
 def _codex_process_failure(

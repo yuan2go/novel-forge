@@ -295,9 +295,9 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-            rfc6901_paths=command.execution_contract_version == "1.19.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
         )
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
@@ -455,6 +455,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.16.0",
             "1.17.0",
             "1.18.0",
+            "1.19.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -1883,6 +1884,7 @@ class StoryPlanningGenerationApplication:
                     "1.17.0",
                     "1.18.0",
                     "1.19.0",
+            "1.20.0",
                 }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
@@ -3699,7 +3701,7 @@ def story_planning_generation_definition(
             "repair_candidate_asset_input_allowed": True,
             **(
                 {"repair_result_evidence_input_allowed": True}
-                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
                 else {}
             ),
             "capability_pack_attempt_snapshot_required": True,

@@ -108,7 +108,7 @@ def recover(application, *, source_operation_id, project_id, source_asset_versio
     envelope = build_planning_constraint_envelope(project_id=project_id, book_id=command.book_id,
         generation_operation_id=source_operation_id, generator_operation_name=command.generator_operation_name,
         frozen_inputs=inputs, input_contents=contents, candidate_payload=candidate.candidate_payload,
-        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"}, aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"}, aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
         rfc6901_paths=True)
     if envelope.get("author_design"):
         envelope["author_design_projection"] = context["author_design_projection"]

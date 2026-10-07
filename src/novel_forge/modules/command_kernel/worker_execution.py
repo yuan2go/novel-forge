@@ -44,7 +44,9 @@ _MANUAL_INTERVENTION_CODES = frozenset({"CHAPTER_QUALITY_GATE_BLOCKED",
     "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "PLANNING_REPAIR_BOUND_EXCEEDED"})
 _FINAL_FAILURE_CODES = frozenset(
     {
-        "CHAPTER_QUALITY_GATE_FAILED",
+
+        "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
+        "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",        "CHAPTER_QUALITY_GATE_FAILED",
         "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
         "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN",
         "WORLD_GENERATION_IDENTITY_UNKNOWN",
@@ -52,11 +54,11 @@ _FINAL_FAILURE_CODES = frozenset(
         "WORLD_GENERATION_IDENTITY_COLLISION",
         "WORLD_PREPARATION_BLOCKED",
         "SOURCE_PROVIDER_SCHEMA_REJECTED",
+        "CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED",
+        "QUALITY_APPLICABILITY_CONFLICT",
+        "CANON_GROUNDING_REEXTRACTION_REQUIRED",
         "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD",
-        # WHY: Once a semantic Provider attempt has reached the final send gate,
-        # loss/abort of its exact outer Opening fence is permanent for that
-        # Operation generation.  Retrying the same generation can never
-        # acquire a different owner and would only create a retry poison loop.
+        # WHY: Loss of the outer Opening fence after final send permanently blocks that frozen Operation generation.
         "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
         "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
         # WHY: These denials are evaluated at the final Provider authorization
@@ -226,6 +228,8 @@ class WorkerSupervisor:
 class WorkerFailureClassifier:
     @staticmethod
     def classify(error: BaseException) -> WorkerFailureClass:
+        if getattr(error, "sqlstate", None) in {"40P01", "40001"}:
+            return WorkerFailureClass.RETRYABLE
         if not isinstance(error, KernelError):
             return WorkerFailureClass.PROGRAMMING_BUG
         code = error.code.upper()
@@ -324,6 +328,8 @@ class AuthorityWorkerExecutionBoundary:
                     error_type=type(exc).__name__,
                     error_code=exc.code
                     if isinstance(exc, KernelError)
+                    else "POSTGRES_TRANSACTION_RETRY"
+                    if getattr(exc, "sqlstate", None) in {"40P01", "40001"}
                     else "PROGRAMMING_BUG",
                     message=str(exc),
                 )

@@ -1,4 +1,3 @@
-from dataclasses import asdict
 import json
 from typing import Any, Mapping
 
@@ -48,7 +47,7 @@ def preview_preparation_transition(
             **transition.changes,
             "world_transition": {
                 "payload_json": json.dumps(
-                    asdict(transition), sort_keys=True, separators=(",", ":")
+                    transition.to_dict(), sort_keys=True, separators=(",", ":")
                 )
             },
         },

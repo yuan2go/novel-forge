@@ -13,7 +13,7 @@ from novel_forge.modules.narrative_state.measurements import project_narrative_l
 _CONTENT_HASH = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
-STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.19.0"
+STORY_PLANNING_OPERATION_DEFINITION_REF = "story_planning.generate@1.20.0"
 STORY_PLANNING_WORKFLOW_DEFINITION_REF = "story_planning_generators@1.12.0"
 STORY_PLANNING_OPERATION_TIMEOUT_SECONDS = 1_800
 STORY_PLANNING_MAX_ATTEMPTS = 3
@@ -279,12 +279,12 @@ class StoryPlanningGenerationCommand:
     opening_execution_binding: Mapping[str, Any] | None = None
     world_preparation_request: Mapping[str, Any] | None = None
     edition_execution: Mapping[str, Any] | None = None
-    execution_contract_version: str = "1.19.0"
+    execution_contract_version: str = "1.20.0"
 
     def __post_init__(self) -> None:
         if self.edition_execution:
             if (
-                self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
                 or self.generator_operation_name
                 not in {"chapter_plan.generate", "chapter_group_plan.generate"}
                 or self.edition_execution.get("contract_version")
@@ -303,7 +303,7 @@ class StoryPlanningGenerationCommand:
             and (
                 not self.routing_bootstrap_authorization_id.strip()
                 or self.auto_approve_low_risk
-                or self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+                or self.execution_contract_version not in {"1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
             )
         ):
             raise ValueError(
@@ -319,6 +319,7 @@ class StoryPlanningGenerationCommand:
             "1.17.0",
             "1.18.0",
             "1.19.0",
+            "1.20.0",
         } or (
             self.execution_contract_version == "1.11.0"
             and self.world_preparation_request
@@ -329,7 +330,7 @@ class StoryPlanningGenerationCommand:
         if (
             self.generator_operation_name in FOUNDATION_GENERATORS
             and self.execution_contract_version
-            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
+            not in {"1.14.0", "1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"}
         ):
             raise ValueError(
                 "Foundation generation requires its current frozen execution contract"
@@ -475,6 +476,7 @@ class StoryPlanningGenerationCommand:
             "1.17.0",
             "1.18.0",
             "1.19.0",
+            "1.20.0",
         }:
             raise ValueError(
                 "runtime continuation requires its current registered contract"
@@ -490,11 +492,23 @@ class StoryPlanningGenerationCommand:
             )
         if self.repair_result_diagnostic:
             object.__setattr__(self, "repair_result_diagnostic", _json_object_snapshot(self.repair_result_diagnostic, "repair_result_diagnostic"))
-        if bool(self.repair_of_candidate_id or self.repair_of_operation_id) != bool(self.repair_reason):
+        contract_successor = (
+            bool(self.runtime_continuation_id)
+            and self.execution_contract_version == "1.20.0"
+            and self.repair_reason in {
+                "WORLD_AGENCY_CONTRACT_SUCCESSOR",
+                "WORLD_HOST_REVALIDATION_SUCCESSOR",
+                "WORLD_HOST_PROJECTION_SUCCESSOR",
+            }
+            and self.generator_operation_name == "chapter_plan.generate"
+            and bool(self.world_preparation_request)
+            and not (self.repair_of_candidate_id or self.repair_of_operation_id)
+        )
+        if not contract_successor and bool(self.repair_of_candidate_id or self.repair_of_operation_id) != bool(self.repair_reason):
             raise ValueError("Planning repair identity and reason must be paired")
-        if self.repair_number < 0 or bool(self.repair_number) != bool(
+        if self.repair_number < 0 or (contract_successor and self.repair_number > 4) or (not contract_successor and bool(self.repair_number) != bool(
             self.repair_of_candidate_id or self.repair_of_operation_id
-        ):
+        )):
             raise ValueError("Planning repair number must match repair identity")
         change_evidence = tuple(
             str(asset_version_id).strip()

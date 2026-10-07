@@ -38,7 +38,7 @@ def test_sample_contract_versions_and_target_kind_are_exact(name, version, kind,
     assert chapter_sample_definition_supported('chapter.provider.sample.' + name, version, reference_samples=kind) is supported
 
 
-@pytest.mark.parametrize("reference,version", [(False, "2.4.0"), (True, "2.5.0")])
+@pytest.mark.parametrize("reference,version", [(False, "2.6.0"), (True, "2.7.0")])
 def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts(
     reference, version
 ):
@@ -50,7 +50,7 @@ def test_new_sample_definitions_have_a_distinct_version_and_explicit_source_cont
     assert {item["definition_version"] for item in definitions} == {version}
     assert all(
         item["policy"]["source_definition_versions"]
-        == ["3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"]
+        == ["3.10.0", "3.10.0-author-input.v3", "3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"]
         for item in definitions
     )
     if reference:
@@ -138,9 +138,9 @@ def test_api_replay_reads_published_definition_without_rebuilding_it(change):
 @pytest.mark.parametrize(
     "reference,samples,workflow",
     [
-        (False, False, "chapter_provider_sampling@2.4.0"),
-        (True, False, "chapter_reference_sampling@2.4.0"),
-        (True, True, "chapter_reference_sampling@2.5.0"),
+        (False, False, "chapter_provider_sampling@2.6.0"),
+        (True, False, "chapter_reference_sampling@2.6.0"),
+        (True, True, "chapter_reference_sampling@2.7.0"),
     ],
 )
 def test_new_derived_pack_has_an_immutable_exact_semver_identity(
@@ -286,6 +286,8 @@ def test_published_sample_policy_does_not_change_when_current_chapter_contract_c
 @pytest.mark.parametrize(
     "sample_version,source_version,work_enabled",
     [
+        ("2.6.0", "3.10.0", True),
+        ("2.7.0", "3.10.0", True),
         ("2.2.0", "3.8.0", True),
         ("2.3.0", "3.8.0", True),
         ("2.2.0", "3.8.0-author-input.v2", True),
@@ -383,10 +385,10 @@ def test_new_sample_adapter_uses_exact_source_semantics_without_changing_sample_
     assert (
         "EXACT_SAMPLE_REWARD" in json.dumps(output.content["sampled_output"])
     ) is work_enabled
-    if sample_version in {"2.2.0", "2.3.0"}:
+    if sample_version in {"2.2.0", "2.3.0", "2.6.0", "2.7.0"}:
         assert output.content["source_definition_version"] == source_version
         assert output.content["sample_definition_version"] == sample_version
-        assert requests[0].semantic_definition_version == source_version
+        assert requests[0].semantic_definition_version == ("3.9.0" if source_version == "3.10.0" else source_version)
     else:
         assert "source_definition_version" not in output.content
 

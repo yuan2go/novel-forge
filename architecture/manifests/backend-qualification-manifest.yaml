@@ -107,7 +107,8 @@
       "tests/integration/test_creative_resource_migration_postgres.py",
       "tests/integration/test_creative_validation_integration_upgrade_postgres.py",
       "tests/unit/test_migration_history_admission.py",
-      "tests/integration/test_migration_history_admission_postgres.py"
+      "tests/integration/test_migration_history_admission_postgres.py",
+      "tests/integration/test_world_contract_migration_guards_postgres.py"
     ],
     "provider_hard_stop_and_callback": [
       "tests/unit/test_provider_token_admission.py",

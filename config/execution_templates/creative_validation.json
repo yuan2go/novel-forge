@@ -1,5 +1,5 @@
 {
-  "version": "creative-execution-template.v6",
+  "version": "creative-execution-template.v11",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
@@ -15,5 +15,11 @@
     "max_same_route_repairs": 2
   },
   "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
-  "canon_validation_contract": "grounded-canon-validation.v2"
+  "canon_validation_contract": "grounded-canon-validation.v2",
+  "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+  "quality_corrections": {
+    "maximum_passes": 4,
+    "maximum_unchanged_candidates": 2,
+    "version": "quality-correction-control.v1"
+  }
 }

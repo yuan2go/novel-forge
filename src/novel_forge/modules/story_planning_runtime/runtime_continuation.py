@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from copy import deepcopy
+from pathlib import Path
 from dataclasses import replace
 from typing import Any
 from uuid import uuid4
@@ -27,15 +29,17 @@ OUTPUT_KEY = "story_planning.runtime_continuation"
 
 
 def runtime_continuation_definition(
-    *, application_build_id: str, commit_sha: str
+    *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
+    if definition_version not in {"1.0.0", "2.0.0"}:
+        raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
         "name": DEFINITION_NAME,
-        "definition_version": "1.0.0",
+        "definition_version": definition_version,
         "family": "story_planning_runtime",
-        "command_schema_version": "planning-runtime-continuation.command.v1",
-        "result_schema_version": "planning-runtime-continuation.result.v1",
+        "command_schema_version": "planning-runtime-continuation.command.v1" if definition_version == "1.0.0" else "planning-runtime-continuation.command.v2",
+        "result_schema_version": "planning-runtime-continuation.result.v1" if definition_version == "1.0.0" else "planning-runtime-continuation.result.v2",
         "enabled": True,
         "command_schema": schema,
         "result_schema": schema,
@@ -45,7 +49,7 @@ def runtime_continuation_definition(
             "output_key": OUTPUT_KEY,
         },
         "handler_key": HANDLER_KEY,
-        "handler_contract_version": "planning-runtime-continuation.v1",
+        "handler_contract_version": "planning-runtime-continuation.v1" if definition_version == "1.0.0" else "planning-runtime-continuation.v2",
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "transactional",
@@ -54,7 +58,8 @@ def runtime_continuation_definition(
         "policy": {
             "execution_classification": "transaction_command",
             "trusted_operator_required": True,
-            "zero_dispatch_required": True,
+            "zero_dispatch_required": definition_version == "1.0.0",
+            **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
         "idempotency_scope": "book:planning-runtime-continuation",
         "concurrency_key_template": "book:{book_id}:planning-runtime-continuation",
@@ -90,7 +95,7 @@ def runtime_continuation_definition(
 
 
 def require_source(
-    uow: AuthorityUnitOfWork, *, source_operation_id: str, project_id: str
+    uow: AuthorityUnitOfWork, *, source_operation_id: str, project_id: str, active_successor_operation_id: str = ""
 ) -> dict[str, Any]:
     uow.cursor.execute(
         "SELECT op.status, op.version, op.workspace_id, op.command_payload->'payload', g.book_id, g.candidate_asset_version_id FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.operation_id=%s AND op.project_id=%s FOR UPDATE OF op",
@@ -129,6 +134,18 @@ def require_source(
         if attempt
         else ""
     )
+    if attempt and attempt[0] == "FAILED_FINAL":
+        mode = None
+        if row[0] == "FAILED_FINAL" and failure_code == "PROGRAMMING_BUG" and dict(attempt[2] or {}).get("error_message") == "'frozen_source'" and frozen.get("repair_reason") == "WORLD_HOST_REVALIDATION_SUCCESSOR" and frozen.get("execution_contract_version") == "1.20.0":
+            mode = _world_projection_source
+        elif row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "WORLD_PREPARATION_RESULT_INVALID":
+            if frozen.get("execution_contract_version") == "1.20.0":
+                mode = _world_host_source
+            elif frozen.get("execution_contract_version") in {"1.18.0", "1.19.0"}:
+                mode = _world_agency_source
+        if mode:
+            _require_world_lineage_settled(uow, source_operation_id=source_operation_id, project_id=project_id, book_id=str(row[4]), active_successor_operation_id=active_successor_operation_id)
+            return mode(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
     if (
         row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
         and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
@@ -278,6 +295,365 @@ def require_source(
     }
 
 
+def _world_projection_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .world_preparation import require_world_host_revalidation
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    command = _command_from_payload(frozen)
+    uow.cursor.execute(
+        "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED')",
+        [source_operation_id, source_operation_id, command.project_id, command.book_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "public projection recovery requires a zero-intent failed task and an uncancelled Book",
+        )
+    uow.cursor.execute(
+        "SELECT chain_depth,target_runtime FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",
+        [source_operation_id],
+    )
+    prior = uow.cursor.fetchone()
+    if not prior or prior[0] != 2 or not prior[1].get("world_host_revalidation"):
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
+            "public projection recovery applies once after the known-result revalidation",
+        )
+    retained = prior[1]["world_host_revalidation"]
+    proof = require_world_host_revalidation(
+        uow.database_url, command=command, operation_id=retained["source_operation_id"]
+    )
+    action = AuthorityAssetQuery(uow.database_url).require(
+        project_id=command.project_id,
+        logical_ref=f"world_preparation/{source_operation_id}/action",
+    )
+    if (
+        proof != retained
+        or action.content["contract"]["world_plan"]["plan_digest"]
+        != proof["plan_digest"]
+    ):
+        raise KernelError(
+            "WORLD_HOST_REVALIDATION_DRIFT",
+            "public projection recovery must preserve the already validated immutable action",
+        )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING",
+            "public projection recovery retains the failed task's Pack",
+        )
+    return {
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": action.asset_version_id,
+        "evidence_hash": action.content_hash,
+        "snapshot": dict(snapshot[0]),
+        "depth": 3,
+        "mode": "WORLD_HOST_PROJECTION",
+        "world_host_revalidation": proof,
+    }
+
+
+def _world_host_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .world_preparation import require_world_host_revalidation
+
+    command = _command_from_payload(frozen)
+    uow.cursor.execute(
+        "SELECT EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED') OR EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status NOT IN ('SETTLED','RELEASED'))",
+        [command.project_id, command.book_id, source_operation_id, source_operation_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "cancelled Book or unresolved original effects cannot acquire a known-result successor",
+        )
+    uow.cursor.execute(
+        "SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",
+        [source_operation_id],
+    )
+    prior = uow.cursor.fetchone()
+    if not prior or prior[0] != 1:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
+            "host revalidation permits one accounted successor after the original agency contract",
+        )
+    proof = require_world_host_revalidation(
+        uow.database_url, command=command, operation_id=source_operation_id
+    )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING",
+            "host revalidation requires the failed task's exact Pack snapshot",
+        )
+    return {
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": proof["generation"]["asset_version_id"],
+        "evidence_hash": proof["generation"]["content_hash"],
+        "snapshot": dict(snapshot[0]),
+        "depth": 2,
+        "mode": "WORLD_HOST_REVALIDATION",
+        "world_host_revalidation": proof,
+    }
+
+
+def _world_agency_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from .result_recovery import require_result_repair_source
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    command = _command_from_payload(frozen)
+    uow.cursor.execute(
+        "SELECT EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED')",
+        [command.project_id, command.book_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_CANCELLED",
+            "cancelled Book cannot acquire an automatic contract successor",
+        )
+    if (
+        command.generator_operation_name != "chapter_plan.generate"
+        or not command.world_preparation_request
+    ):
+        raise KernelError(
+            "PLANNING_WORLD_CONTRACT_SUCCESSOR_INVALID",
+            "only the native Chapter Planning World contract is affected",
+        )
+    retained = require_result_repair_source(
+        uow.database_url, command=command, operation_id=source_operation_id
+    )
+    query = AuthorityAssetQuery(uow.database_url)
+    action = query.require(
+        project_id=command.project_id,
+        logical_ref=f"world_preparation/{source_operation_id}/action",
+    )
+    plan = action.content["contract"]["world_plan"]
+    rejections = [
+        entry.get("rejection", {}).get("code")
+        for entry in [*plan["candidate_futures"], *plan["rejected_paths"]]
+    ]
+    if (
+        "WORLD_CHARACTER_DECISION_BASIS_REQUIRED" not in rejections
+        or plan["disposition"] != "BLOCKED"
+    ):
+        raise KernelError(
+            "PLANNING_WORLD_CONTRACT_FAILURE_NOT_ALLOWED",
+            "successor requires the reproduced blanket character-agency rejection",
+        )
+    generation = query.require(
+        project_id=command.project_id, asset_version_id=retained["asset_version_id"]
+    )
+    world_source = query.require(
+        project_id=command.project_id,
+        asset_version_id=generation.content["contract"]["source"]["asset_version_id"],
+    )
+    if world_source.content["contract"].get("actor_experiment") or world_source.content[
+        "contract"
+    ]["reality"].get("epistemic_contract"):
+        raise KernelError(
+            "PLANNING_WORLD_CONTRACT_ALREADY_CURRENT",
+            "isolated private-actor contracts and current agency contracts retain their own recovery",
+        )
+    uow.cursor.execute(
+        "SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')",
+        [source_operation_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "reconcile every unknown or in-flight effect before contract succession",
+        )
+    uow.cursor.execute(
+        "SELECT count(*) FROM authority_budget_reservation WHERE operation_id=%s AND status NOT IN ('SETTLED','RELEASED')",
+        [source_operation_id],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BUDGET_UNSETTLED",
+            "original usage remains accounted before successor admission",
+        )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING",
+            "contract succession requires the original Pack snapshot",
+        )
+    return {
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": retained["asset_version_id"],
+        "evidence_hash": retained["content_hash"],
+        "snapshot": dict(snapshot[0]),
+        "depth": 1,
+        "mode": "WORLD_AGENCY_CONTRACT",
+        "diagnostic": retained["diagnostic"],
+        "source_world": generation.content["contract"]["source"],
+    }
+
+
+def _world_agency_pack_profile(version, operation_hash, *, repository_root):
+    from novel_forge.modules.capability_packs.longform_profiles import (
+        LongformCapabilityPackProfile,
+    )
+
+    manifest = deepcopy(version["manifest"])
+    manifest["identity"]["version"] = "2.12.0"
+    nodes = manifest["workflow_template"]["nodes"]
+    generation = (
+        max(
+            (
+                int(node["agent_definition_ref"].rpartition("@")[2])
+                for node in nodes
+                if node.get("agent_definition_ref")
+            ),
+            default=0,
+        )
+        + 1
+    )
+    for node in nodes:
+        if node["operation_definition_ref"] not in {"story_planning.generate@1.18.0", "story_planning.generate@1.19.0"}:
+            raise KernelError(
+                "PLANNING_WORLD_CONTRACT_PACK_INVALID",
+                "source Pack must contain only the affected native Planning contract",
+            )
+        node["operation_definition_ref"] = "story_planning.generate@1.20.0"
+        node["operation_definition_hash"] = operation_hash
+        if node.get("agent_definition_ref"):
+            node["agent_definition_ref"] = (
+                f"{node['agent_definition_ref'].rpartition('@')[0]}@{generation}"
+            )
+    from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
+    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.20.0")
+    manifest["prompt_binding"] = {**manifest["prompt_binding"], **{key: current.manifest["prompt_binding"][key] for key in ("system_instruction_ref", "system_instruction_version", "system_instruction_hash")}}
+    catalog = deepcopy(version["artifact_catalog"])
+    system = next(item for item in current.artifact_catalog["artifacts"] if item["ref"] == manifest["prompt_binding"]["system_instruction_ref"] and item["version"] == "v10")
+    catalog["artifacts"].append(deepcopy(system))
+    workflow = manifest["workflow_template"]
+    return LongformCapabilityPackProfile(
+        pack_id=manifest["identity"]["pack_id"],
+        workflow_ref=f"{workflow['workflow_id']}@{workflow['workflow_version']}",
+        manifest=manifest,
+        artifact_catalog=catalog,
+        agent_skill_ref=manifest["skill_binding"]["skills"][0]["skill_ref"],
+    ), generation
+
+
+def _require_world_agency_pack(uow, *, source, successor, target):
+    old = uow.repositories.capability_packs.require_version(
+        source["snapshot"]["pack_id"], source["snapshot"]["pack_version"]
+    )
+    new = uow.repositories.capability_packs.require_version(
+        target["pack_snapshot"]["pack_id"], target["pack_snapshot"]["pack_version"]
+    )
+    uow.cursor.execute(
+        "SELECT definition_hash FROM authority_operation_definition WHERE name=%s AND definition_version=%s",
+        ["story_planning.generate", successor.execution_contract_version],
+    )
+    definition = uow.cursor.fetchone()
+    if not definition:
+        raise KernelError(
+            "PLANNING_WORLD_CONTRACT_PACK_INVALID",
+            "successor definition must be registered",
+        )
+    expected, _ = _world_agency_pack_profile(old, str(definition[0]), repository_root=Path(__file__).resolve().parents[4])
+    if (
+        new["manifest"] != expected.manifest
+        or new["artifact_catalog"] != expected.artifact_catalog
+    ):
+        raise KernelError(
+            "PLANNING_WORLD_CONTRACT_PACK_DRIFT",
+            "contract succession cannot change frozen content, policy or workflow semantics",
+        )
+
+
+def _ensure_world_agency_pack(application, source, original, successor, principal):
+    from novel_forge.modules.capability_packs.validation_deployment import (
+        install_longform_validation_pack,
+    )
+    from novel_forge.storage.authority_repositories import definition_hash
+    from .application import story_planning_generation_definition
+
+    try:
+        existing = resolve_target(application, successor)
+    except KernelError as error:
+        if error.code != "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT":
+            raise
+    else:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            _capacity_authorization(
+                uow,
+                source=source,
+                successor=successor,
+                principal=principal,
+                target=existing,
+            )
+        return
+    old_target = resolve_target(application, original)
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        _capacity_authorization(
+            uow,
+            source={**source, "mode": "PRE_SEND_CAPACITY"},
+            successor=original,
+            principal=principal,
+            target=old_target,
+        )
+        version = uow.repositories.capability_packs.require_version(
+            source["snapshot"]["pack_id"], source["snapshot"]["pack_version"]
+        )
+    definition = story_planning_generation_definition(
+        application_build_id=application.application_build_id,
+        commit_sha=application.commit_sha,
+        definition_version=successor.execution_contract_version,
+    )
+    profile, generation = _world_agency_pack_profile(
+        version, definition_hash(definition), repository_root=Path(__file__).resolve().parents[4]
+    )
+    resolver = application.execution_binder.resolver
+    if resolver.environment != "validation":
+        raise KernelError(
+            "PLANNING_WORLD_CONTRACT_PACK_ADMISSION_REQUIRED",
+            "this creation contract upgrade uses the existing validation template admission",
+        )
+    install_longform_validation_pack(
+        application.database_url,
+        profile=profile,
+        pack_version=profile.manifest["identity"]["version"],
+        agent_generation=generation,
+        expected_activation_version=old_target["pack_snapshot"]["activation_version"],
+        project_id=successor.project_id,
+        workspace_id=successor.workspace_id,
+        book_id=successor.book_id,
+        application_build_id=application.application_build_id,
+        commit_sha=application.commit_sha,
+        compiler=principal,
+        approver=principal,
+        agent_admin=principal,
+        agent_domain="story_planning",
+        agent_scope_type="BOOK",
+        runtime_environment=resolver.environment,
+    )
+
+
+
 def _pre_send_capacity_source(
     uow: Any,
     *,
@@ -407,13 +783,14 @@ def _capacity_authorization(
             "PLANNING_CAPACITY_CONTINUATION_AUTHORIZATION_REQUIRED",
             "Allocation must retain the original author, active membership authorization and allowed route",
         )
+    if source.get("mode") == "WORLD_AGENCY_CONTRACT":
+        _require_world_agency_pack(uow, source=source, successor=successor, target=target)
     if any(
         source["snapshot"].get(key) != target["pack_snapshot"].get(key)
         for key in (
-            "manifest_hash",
+            *(("manifest_hash", "prompt_bundle_hash") if source.get("mode") != "WORLD_AGENCY_CONTRACT" else ()),
             "route_policy_hash",
             "context_policy_hash",
-            "prompt_bundle_hash",
             "skill_bundle_hash",
             "tool_policy_hash",
         )
@@ -595,7 +972,7 @@ def require_route_evidence(
             template = decision_template({"task":{"work_id":source["command"]["book_id"],
                 "policy_snapshot":admission["policy_snapshot"]}}) if admission else None
             repair = source["preflight_failure"]["blocked_decision"]["native_repair_evidence"]
-            if (not template or template['version'] not in {'creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6'}
+            if (not template or template['version'] not in {'creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7','creative-execution-template.v8','creative-execution-template.v9','creative-execution-template.v10','creative-execution-template.v11'}
                     or not template.get('repair_routing')
                     or repair.get('stage_repair_number', repair['repair_number']) > template['repair_routing']['max_same_route_repairs']
                     or repair['repair_number'] > 4
@@ -809,28 +1186,68 @@ def register(
         )
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
+    contract_change = source.get("mode") == "WORLD_AGENCY_CONTRACT"
+    host_revalidation = source.get("mode") in {
+        "WORLD_HOST_REVALIDATION",
+        "WORLD_HOST_PROJECTION",
+    }
     successor = replace(
         original,
-        execution_contract_version=original.execution_contract_version,
+        execution_contract_version="1.20.0"
+        if contract_change
+        else original.execution_contract_version,
+        **(
+            {
+                "repair_of_operation_id": "",
+                "repair_result_asset_version_id": "",
+                "repair_result_diagnostic": None,
+                "repair_of_candidate_id": "",
+                "repair_reason": "WORLD_HOST_PROJECTION_SUCCESSOR"
+                if source.get("mode") == "WORLD_HOST_PROJECTION"
+                else "WORLD_HOST_REVALIDATION_SUCCESSOR"
+                if host_revalidation
+                else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
+                "parent_agent_session_operation_id": "",
+            }
+            if contract_change or host_revalidation
+            else {}
+        ),
         runtime_continuation_id=continuation_id,
         idempotency_key=f"{original.idempotency_key}:runtime-continuation:{source['depth']}",
     )
     application._register_definitions(successor.execution_contract_version)
+    if contract_change:
+        _ensure_world_agency_pack(application, source, original, successor, principal)
     target = resolve_target(application, successor)
+    if host_revalidation:
+        target = {
+            **target,
+            "world_host_revalidation": source["world_host_revalidation"],
+        }
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
-    if not capacity and source["snapshot"]["release_sha"] == application.commit_sha:
+    if (
+        not capacity
+        and not contract_change
+        and not host_revalidation
+        and source["snapshot"]["release_sha"] == application.commit_sha
+    ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_RELEASE_UNCHANGED",
             "same-release failures use native Attempt recovery",
         )
-    if not capacity and (
-        (source["provider"], source["model_id"])
-        != (
-            target["model_provider"],
-            target["model_id"],
+    if (
+        not capacity
+        and not contract_change
+        and not host_revalidation
+        and (
+            (source["provider"], source["model_id"])
+            != (
+                target["model_provider"],
+                target["model_id"],
+            )
+            or source["snapshot"]["route_policy_hash"]
+            != target["pack_snapshot"]["route_policy_hash"]
         )
-        or source["snapshot"]["route_policy_hash"]
-        != target["pack_snapshot"]["route_policy_hash"]
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
@@ -840,7 +1257,44 @@ def register(
     if source.get("preflight_failure"):
         from .preflight_continuation import require_capacity_target
         capacity_decision = require_capacity_target(source, target)
-    if capacity:
+    if host_revalidation:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = _capacity_authorization(
+                uow,
+                source=source,
+                successor=successor,
+                principal=principal,
+                target=target,
+            )
+        route_evidence = {
+            **route_evidence,
+            "capacity_only": False,
+            "host_revalidation": "world-host-revalidation.v1",
+            "preserved_repair_number": original.repair_number,
+            **(
+                {"projection_revalidation": "world-direction-projection.v1"}
+                if source.get("mode") == "WORLD_HOST_PROJECTION"
+                else {}
+            ),
+        }
+    elif contract_change:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = _capacity_authorization(
+                uow,
+                source=source,
+                successor=successor,
+                principal=principal,
+                target=target,
+            )
+        route_evidence = {
+            **route_evidence,
+            "capacity_only": False,
+            "changed_contract": "world-agency.v2",
+            "preserved_repair_number": original.repair_number,
+            "original_diagnostic": source["diagnostic"],
+            "source_world": source["source_world"],
+        }
+    elif capacity:
         target, route_evidence = _capacity_target(
             application, source, successor, principal, target
         )
@@ -857,6 +1311,7 @@ def register(
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
+        definition_version="2.0.0" if contract_change or host_revalidation else "1.0.0",
     )
     with AuthorityUnitOfWork(application.database_url) as uow:
         uow.repositories.definitions.register(definition)
@@ -870,7 +1325,7 @@ def register(
         "independent_human_review": "NOT_REVIEWED",
     }
     content = {
-        "contract_version": "planning-runtime-continuation.v1",
+        "contract_version": "planning-runtime-continuation.v2" if contract_change or host_revalidation else "planning-runtime-continuation.v1",
         "continuation_id": continuation_id,
         "source_operation_id": source_operation_id,
         "source_evidence_asset_version_id": source["evidence_asset_version_id"],
@@ -884,8 +1339,7 @@ def register(
         "source_release_sha": source["snapshot"]["release_sha"],
         "target_release_sha": application.commit_sha,
         "chain_depth": source["depth"],
-        **({"source_preflight_failure": source["preflight_failure"], "capacity_decision": capacity_decision}
-           if source.get("preflight_failure") else {}),
+        **({"source_preflight_failure": source["preflight_failure"], "capacity_decision": capacity_decision} if source.get("preflight_failure") else {}),
         "control_evidence_only": True,
     }
 
@@ -895,6 +1349,28 @@ def register(
         )
         if (
             current != source
+            or (
+                contract_change
+                and _capacity_authorization(
+                    uow,
+                    source=current,
+                    successor=successor,
+                    principal=principal,
+                    target=target,
+                )
+                != {
+                    key: value
+                    for key, value in route_evidence.items()
+                    if key
+                    not in {
+                        "changed_contract",
+                        "preserved_repair_number",
+                        "original_diagnostic",
+                        "source_world",
+                    }
+                }
+                | {"capacity_only": True}
+            )
             or (
                 capacity
                 and _capacity_authorization(
@@ -907,7 +1383,30 @@ def register(
                 != route_evidence
             )
             or (
+                host_revalidation
+                and _capacity_authorization(
+                    uow,
+                    source=current,
+                    successor=successor,
+                    principal=principal,
+                    target=target,
+                )
+                != {
+                    key: value
+                    for key, value in route_evidence.items()
+                    if key
+                    not in {
+                        "host_revalidation",
+                        "preserved_repair_number",
+                        "projection_revalidation",
+                    }
+                }
+                | {"capacity_only": True}
+            )
+            or (
                 not capacity
+                and not contract_change
+                and not host_revalidation
                 and require_route_evidence(
                     uow,
                     source=current,
@@ -929,7 +1428,7 @@ def register(
                 project_id=project_id,
                 asset_id=continuation_id,
                 asset_type="planning_runtime_continuation",
-                schema_version="planning-runtime-continuation.v1",
+                schema_version=content["contract_version"],
                 logical_ref=f"planning/runtime_continuations/{source_operation_id}.json",
                 category="runs",
                 output_key=OUTPUT_KEY,
@@ -1025,6 +1524,8 @@ def register(
     )
 
 
+
+
 def require_binding(database_url: str, continuation_id: str) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
@@ -1073,7 +1574,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key != "planning_capacity"
+        if key not in {"planning_capacity", "world_host_revalidation"}
     }
     if (
         validate_runtime
@@ -1142,3 +1643,34 @@ def attach_successor(
             "PLANNING_RUNTIME_CONTINUATION_SUCCESSOR_CONFLICT",
             "only one successor Operation may bind the registered continuation",
         )
+
+
+def _require_world_lineage_settled(uow, *, source_operation_id, project_id, book_id, active_successor_operation_id=""):
+    uow.cursor.execute("""WITH RECURSIVE lineage(operation_id) AS (
+        SELECT operation_id FROM authority_story_planning_generation
+        WHERE operation_id=%s AND project_id=%s AND book_id=%s
+        UNION SELECT g.operation_id FROM authority_story_planning_generation g
+        JOIN authority_operation o ON o.operation_id=g.operation_id
+        JOIN lineage l ON (o.causation_operation_id=l.operation_id OR o.operation_id=(SELECT causation_operation_id FROM authority_operation WHERE operation_id=l.operation_id))
+        WHERE g.project_id=%s AND g.book_id=%s)
+        SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN lineage l USING(operation_id)
+            WHERE e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED'))
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation b JOIN lineage l USING(operation_id)
+            WHERE b.status NOT IN ('SETTLED','RELEASED'))
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt a USING(attempt_id) JOIN lineage l USING(operation_id) WHERE lease.status='HELD' AND NOT (a.operation_id=%s AND a.status='RUNNING'
+            AND a.attempt_number=(SELECT max(active.attempt_number) FROM authority_attempt active WHERE active.operation_id=a.operation_id) AND EXISTS (
+            SELECT 1 FROM authority_operation child
+            JOIN authority_story_planning_runtime_continuation r ON r.successor_operation_id=child.operation_id
+            JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id
+            WHERE child.operation_id=a.operation_id AND child.status='RUNNING' AND child.causation_operation_id=%s
+              AND child.project_id=%s AND r.project_id=child.project_id AND r.book_id=%s
+              AND child.workspace_id=r.workspace_id AND child.actor_id=registration.actor_id
+              AND registration.status='SUCCEEDED' AND registration.definition_name='story_planning.runtime_continuation.register'
+              AND registration.definition_version='2.0.0' AND r.source_operation_id=%s
+              AND child.command_payload->'payload'=r.successor_command
+              AND child.command_payload #>> '{payload,runtime_continuation_id}'=r.continuation_id)))
+        OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state IN ('ABORTED','COMPLETED','CANCELLED'))
+        OR EXISTS(SELECT 1 FROM authority_story_creation_cancellation c JOIN authority_book_production book ON book.stable_idempotency_key=c.formation_run_id || ':production' WHERE c.project_id=book.project_id AND book.project_id=%s AND book.book_id=%s)
+        """, [source_operation_id, project_id, book_id, project_id, book_id, active_successor_operation_id, source_operation_id, project_id, book_id, source_operation_id, project_id, book_id, project_id, book_id])
+    if uow.cursor.fetchone()[0]:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE", "World contract succession requires settled live lineage; only the exact registered running child may hold its execution lease")

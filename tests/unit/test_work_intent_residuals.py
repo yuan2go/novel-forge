@@ -157,6 +157,7 @@ def test_current_chapter_manifest_binds_exact_definition_hashes():
             application_build_id="unit",
             commit_sha="0" * 40,
             model_effects_required=True,
+            coordinated_contract=True,
         )
     }
     manifest = json.loads(
@@ -275,14 +276,23 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
     from novel_forge.modules.story_design_authority.domain import GENERATOR_CATALOG
 
     current = build_story_planning_pack_profile(
-        ROOT, operation_definition_hash="sha256:" + "a" * 64
+        ROOT, operation_definition_hash="sha256:" + "a" * 64,
+        execution_contract_version="1.20.0",
     )
     old = build_story_planning_pack_profile(
         ROOT,
         operation_definition_hash="sha256:" + "a" * 64,
         execution_contract_version="1.17.0",
     )
-    assert current.manifest["identity"]["version"] == "2.11.0"
+    frozen_main = build_story_planning_pack_profile(
+        ROOT, operation_definition_hash="sha256:" + "a" * 64,
+        execution_contract_version="1.19.0",
+    )
+    assert current.manifest["identity"]["version"] == "2.12.0"
+    assert frozen_main.manifest["identity"]["version"] == "2.11.0"
+    assert old.manifest["identity"]["version"] == "2.9.0"
+    assert {node["operation_definition_ref"] for node in current.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.20.0"}
+    assert {node["operation_definition_ref"] for node in frozen_main.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.19.0"}
 
     def select(profile):
         binding = profile.manifest["prompt_binding"]
@@ -295,6 +305,7 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
 
     current_binding = select(current)
     old_binding = select(old)
+    frozen_main_binding = select(frozen_main)
 
     def method(profile, binding):
         artifact = next(
@@ -321,6 +332,8 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
         or "where the work commits" in new
     )
     assert new != legacy
+    assert frozen_main_binding == current_binding
+    assert method(frozen_main, frozen_main_binding) == new
     assert "Return the declared" in new or "declared schema" in new
 
 

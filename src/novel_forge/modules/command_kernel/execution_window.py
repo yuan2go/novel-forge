@@ -62,6 +62,11 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
             ('chapter.canon.extract','FAILED_RETRYABLE','PROVIDER_ROUTING_BLOCKED'):('3.9.0',None,None),
         }
         correction = corrections.get((source[3],source[0],source[1])) if source else None
+        if correction and correction[0]=='3.9.4' and target_version=='3.9.16':
+            cursor.execute("SELECT definition_version,definition_snapshot #>> '{policy,quality_range_policy}' FROM authority_operation WHERE operation_id=%s",[predecessor_id])
+            declared=cursor.fetchone()
+            if declared==('3.9.16','NAMED_DIAGNOSIS_UNION_V1'):
+                correction=('3.9.16',correction[1],correction[2])
         if source and source[1] == 'OPERATION_BUSINESS_TIMEOUT' and not start_repair_phase:
             raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','A known no-send timeout requires its explicit bounded control recovery')
         if not correction or source[2] != principal.principal_id or correction[0] != target_version or has_candidate_domain_outputs(cursor,predecessor_id):
@@ -171,7 +176,7 @@ def continue_candidate_execution_window(database_url, *, root_id, predecessor_id
                 raise KernelError('EXECUTION_PHASE_SOURCE_INVALID','Only a known settled bounded length retry may start a new phase')
             cursor.execute('SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s FOR UPDATE',[predecessor_id])
             child,child_deadline = cursor.fetchone()
-            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.5' if canon_schema_retry else '3.9.4') or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
+            if child['definition_version'] != ('3.9.0' if canon_capacity else '3.9.5' if canon_schema_retry else target_version) or any(k in child['command_payload'] for k in ('business_deadline_at','author_deadline_at')):
                 raise KernelError('EXECUTION_PHASE_CHILD_INVALID','Only the exact derived length retry window can continue')
             cursor.execute("SELECT a.attempt_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int FROM authority_attempt a JOIN authority_operation o USING(operation_id) WHERE o.operation_id=%s ORDER BY a.attempt_number DESC LIMIT 1",[predecessor_id])
             failed_attempt,number,maximum = cursor.fetchone()
@@ -235,7 +240,7 @@ def continued_attempt_limit(cursor, *, operation_id, project_id, original_limit)
     cursor.execute("""SELECT j.payload FROM audit_log j JOIN authority_operation o ON o.root_operation_id=j.operation_id
         JOIN authority_attempt a ON a.operation_id=o.operation_id
         WHERE o.operation_id=%s AND o.project_id=%s AND o.status IN ('READY','FAILED_RETRYABLE')
-        AND o.definition_name='chapter.revision.apply' AND o.definition_version='3.9.4'
+        AND o.definition_name='chapter.revision.apply' AND o.definition_version IN ('3.9.4','3.9.16')
         AND j.action=%s AND j.payload->>'contract_version'='chapter-execution-window-renewal.v3'
         AND j.payload->>'predecessor_operation_id'=o.operation_id
         AND j.payload->>'failed_attempt_id'=a.attempt_id AND a.status='FAILED_RETRYABLE'

@@ -821,9 +821,27 @@ class CostAwareRouter:
         if len({item.candidate_id for item in candidates}) != len(candidates):
             raise ValueError("ROUTING_DUPLICATE_CANDIDATE")
         repair = task.declared_requirements.get("governed_repair", {})
+        contract_successor = (
+            repair.get("contract_version") == "planning-route-contract-successor.v1"
+            and task.task_type in {"world_candidates.generate", "world_candidates.evaluate"}
+            and repair.get("operation_id") == task.operation_id
+            and repair.get("input_hash") == task.input_hash
+            and repair.get("source_input_hash")
+            and repair.get("source_input_hash") != task.input_hash
+            and repair.get("changed_contract") == "world-agency.v2"
+            and type(repair.get("contract_chain_depth")) is int
+            and repair.get("contract_chain_depth") == 1
+            and type(repair.get("repair_number")) is int
+            and 0 <= repair["repair_number"] <= 4
+            and type(repair.get("maximum_repairs")) is int
+            and repair.get("maximum_repairs") == 4
+            and repair.get("accepted_history_mutation_allowed") is False
+            and tuple(repair.get("authorized_history_operation_ids", ())) == tuple(task.lineage_operation_ids[:-1])
+            and repair.get("source_operation_id") in repair.get("authorized_history_operation_ids", ())
+        )
         repair_sources = (
             set(repair.get("authorized_history_operation_ids", ()))
-            if (
+            if contract_successor or (
                 repair.get("contract_version") in {"planning-route-repair.v1", "planning-route-repair.v2"}
                 and repair.get("operation_id") == task.operation_id
                 and repair.get("input_hash") == task.input_hash

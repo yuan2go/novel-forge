@@ -27,6 +27,131 @@ from novel_forge.storage.world_preparation_repositories import (
 )
 
 
+def require_world_host_revalidation(
+    database_url: str, *, command: Any, operation_id: str
+) -> dict[str, Any]:
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        EffectCommandContext,
+        read_failed_operation_success,
+    )
+
+    query = AuthorityAssetQuery(database_url)
+    documents = {
+        key: query.require(
+            project_id=command.project_id,
+            logical_ref=f"world_preparation/{operation_id}/{key}",
+        )
+        for key in ("source", "generation", "evaluation", "action")
+    }
+    refs = {
+        key: {
+            "asset_version_id": doc.asset_version_id,
+            "content_hash": doc.content_hash,
+        }
+        for key, doc in documents.items()
+    }
+    source, generation, evaluation, action = (
+        documents[key].content["contract"]
+        for key in ("source", "generation", "evaluation", "action")
+    )
+    rejected = {
+        row.get("rejection", {}).get("code")
+        for row in action["world_plan"]["rejected_paths"]
+    }
+    if (
+        command.execution_contract_version != "1.20.0"
+        or source["reality"].get("epistemic_contract") != "world-agency.v2"
+        or source.get("actor_experiment")
+        or source["request"] != dict(command.world_preparation_request)
+        or action["world_plan"]["disposition"] != "BLOCKED"
+        or "WORLD_PERCEPTION_ACTOR_INVALID" not in rejected
+        or any(
+            action[key] != refs[key] for key in ("source", "generation", "evaluation")
+        )
+        or generation["source"] != refs["source"]
+        or evaluation["source"] != refs["source"]
+        or evaluation["generation"] != refs["generation"]
+    ):
+        raise KernelError(
+            "WORLD_HOST_REVALIDATION_SOURCE_INVALID",
+            "host revalidation requires the exact retained first-perception identity failure and frozen World receipts",
+        )
+    with AuthorityUnitOfWork(database_url) as uow:
+        WorldPreparationRepository(uow.cursor).assert_source_current(
+            project_id=command.project_id, book_id=command.book_id, frozen=source
+        )
+    for output in (generation, evaluation):
+        receipt = read_failed_operation_success(
+            database_url,
+            EffectCommandContext(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                actor_id=command.actor_id,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            ),
+            effect_id=output["evidence"]["external_receipt_ref"],
+        )
+        if (
+            receipt is None
+            or receipt["budget_reservation_status"] != "SETTLED"
+            or receipt["provider_evidence"].get("result") != output["output"]
+        ):
+            raise KernelError(
+                "WORLD_HOST_REVALIDATION_RECEIPT_UNSETTLED",
+                "reuse requires exact succeeded Provider output and settled original usage",
+            )
+    decoded = decode_world_generation(
+        {
+            key: value
+            for key, value in generation["output"].items()
+            if key != "knowledge_translations"
+        }, agency=True
+    )
+    policy = WorldProductionPolicy(**source["policy"])
+    PlanningWorldPreparation._validate_references(
+        source, validate_generated_candidates(decoded, policy), command
+    )
+    plan = compile_world_plan(
+        reality=source["reality"],
+        generated=decoded,
+        evaluation=evaluation["output"],
+        policy=policy,
+        chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+        intent_version_id=source["intent_version_id"],
+    )
+    from novel_forge.modules.worldbuilding.continuation import (
+        decide_preparation,
+        apply_preparation_decisions,
+    )
+
+    decisions = [
+        decide_preparation(
+            reality=source["reality"],
+            origin=item["origin"],
+            accepted_steps=item["accepted_steps"],
+            chapter_number=int(source["request"]["accepted_through_chapter"]) + 1,
+            intent_version_id=source["intent_version_id"],
+        )
+        for item in source.get("preparation_sources", [])
+    ]
+    plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+    if plan["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"}:
+        raise KernelError(
+            "WORLD_HOST_REVALIDATION_UNRESOLVED",
+            "host revalidation cannot replace a rejected candidate with NO_OP or DEFER",
+        )
+    return {
+        "contract_version": "world-host-revalidation.v1",
+        "source_operation_id": operation_id,
+        **refs,
+        "plan_digest": plan["plan_digest"],
+        "knowledge_selection_digest": generation.get("knowledge_selection_digest", ""),
+    }
+
+
+
 @dataclass(frozen=True, slots=True)
 class PlanningProviderStage:
     name: str
@@ -36,6 +161,8 @@ class PlanningProviderStage:
     @property
     def output_schema_ref(self) -> str:
         version = {"world-actor-task.v2": "v2", "world-actor-task.v3": "v3"}.get(self.task.get("contract_version"), "v1")
+        if self.task.get("epistemic_contract") == "world-agency.v2":
+            version = "v2"
         suffix = ":actor-isolation-v1" if self.task.get("actor_proposals") else ""
         return f"schema:{self.name}:{version}{suffix}"
 
@@ -165,6 +292,15 @@ class PlanningWorldPreparation:
         prefix = f"world_preparation/{operation_id}"
         repair_source = None
         source_prefix = prefix
+        revalidation = None
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_binding
+            revalidation = require_binding(self.preparer.database_url, command.runtime_continuation_id)["target_runtime"].get("world_host_revalidation")
+            if revalidation:
+                current = require_world_host_revalidation(self.preparer.database_url, command=command, operation_id=revalidation["source_operation_id"])
+                if current != revalidation:
+                    raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Known-result continuation must retain exact source, receipts and derived plan")
+                source_prefix = f"world_preparation/{revalidation['source_operation_id']}"
         if command.repair_of_operation_id:
             from .result_recovery import require_result_repair_source
 
@@ -195,7 +331,7 @@ class PlanningWorldPreparation:
                 )
             source_prefix = f"world_preparation/{self._source_operation(self.preparer.database_url, command.project_id, source_document.asset_version_id)}"
         else:
-            source_document = self._read(command.project_id, f"{prefix}/source")
+            source_document = self._read(command.project_id, f"{source_prefix}/source")
         if source_document is None:
             with AuthorityUnitOfWork(self.preparer.database_url) as uow:
                 source = WorldPreparationRepository(uow.cursor).require_source(
@@ -205,6 +341,7 @@ class PlanningWorldPreparation:
                     contract_version="world-preparation-source.v1"
                     if command.execution_contract_version == "1.12.0"
                     else "world-preparation-source.v2",
+                    epistemic_contract="world-agency.v2" if command.execution_contract_version == "1.20.0" else "world-agency.v1",
                 )
             source_document = self._store(
                 command,
@@ -275,7 +412,7 @@ class PlanningWorldPreparation:
             )
             for item in source.get("preparation_sources", [])
         ]
-        generation_document = self._read(command.project_id, f"{prefix}/generation")
+        generation_document = self._read(command.project_id, f"{source_prefix if revalidation else prefix}/generation")
         knowledge_selection = dict(knowledge_selection or {})
         from .knowledge_translation import validate_knowledge_translations
 
@@ -328,6 +465,8 @@ class PlanningWorldPreparation:
                 },
             )
         generation = generation_document.content["contract"]
+        if revalidation and generation.get("knowledge_selection_digest", "") != knowledge_selection.get("selection_digest", ""):
+            raise KernelError("WORLD_REPAIR_KNOWLEDGE_DRIFT", "Known-result revalidation must retain frozen knowledge selection")
         if generation["source"] != source_ref:
             raise KernelError(
                 "WORLD_PREPARATION_RECEIPT_DRIFT",
@@ -340,14 +479,14 @@ class PlanningWorldPreparation:
             validate_knowledge_translations(generation["output"], knowledge_selection)
         if actor_proposals:
             from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
-            require_actor_judgments(generation["output"], actor_proposals)
+            require_actor_judgments(generation["output"], actor_proposals, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
         decoded = decode_world_generation({
             key: value for key, value in generation["output"].items()
             if key not in {"knowledge_translations", "actor_adjudications"}
-        })
+        }, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
         candidates = validate_generated_candidates(decoded, policy)
         self._validate_references(source, candidates, command)
-        evaluation_document = self._read(command.project_id, f"{prefix}/evaluation")
+        evaluation_document = self._read(command.project_id, f"{source_prefix if revalidation else prefix}/evaluation")
         generation_ref = {
             "asset_version_id": generation_document.asset_version_id,
             "content_hash": generation_document.content_hash,
@@ -391,6 +530,8 @@ class PlanningWorldPreparation:
             )
         if source["contract_version"] == "world-preparation-source.v2":
             plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+        if revalidation and plan["plan_digest"] != revalidation["plan_digest"]:
+            raise KernelError("WORLD_HOST_REVALIDATION_DRIFT", "Derived action differs from registered known-result proof")
         action = {
             "contract_version": "world-production-action.v1"
             if source["contract_version"] == "world-preparation-source.v1"
@@ -450,6 +591,7 @@ class PlanningWorldPreparation:
         schema = add_translation_contract(world_generation_schema(
             WorldProductionPolicy(**source["policy"]),
             audience_scoped=source["contract_version"] == "world-preparation-source.v2",
+            agency=source["reality"].get("epistemic_contract") == "world-agency.v2",
             **({key: tuple(value) for key, value in allowed_references.items()} if allowed_references is not None else {}),
         ), knowledge_selection)
         if actor_proposals:
@@ -475,15 +617,15 @@ class PlanningWorldPreparation:
             raise KernelError("WORLD_ACTOR_PROPOSAL_REQUIRED", "Director requires the frozen actor proposals and their world adjudications")
         if actor_proposals:
             from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
-            require_actor_judgments(generation["output"], actor_proposals)
-        decoded = decode_world_generation({key: value for key, value in generation["output"].items() if key not in {"knowledge_translations", "actor_adjudications"}})
+            require_actor_judgments(generation["output"], actor_proposals, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
+        decoded = decode_world_generation({key: value for key, value in generation["output"].items() if key not in {"knowledge_translations", "actor_adjudications"}}, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
         return PlanningProviderStage(
             "world_candidates.evaluate",
             {**cls._task(source, source_ref, "DIRECTOR"), "generated_portfolio": decoded,
              "generation_ref": generation_ref, "narrative_intelligence": knowledge_selection,
              "knowledge_translations": generation["output"].get("knowledge_translations", []),
              **({"actor_proposals": actor_proposals, "actor_adjudications": generation["output"]["actor_adjudications"]} if actor_proposals else {})},
-            world_evaluation_schema(decoded),
+            world_evaluation_schema(decoded, agency=source["reality"].get("epistemic_contract") == "world-agency.v2"),
         )
 
     @staticmethod
@@ -501,6 +643,7 @@ class PlanningWorldPreparation:
         )
         return {
             "contract_version": "world-provider-task.v2" if source.get("provider_projection_version") in {"world-role-delivery.v2", "world-role-delivery.v3"} else "world-provider-task.v1",
+            **({"epistemic_contract": "world-agency.v2"} if source["reality"].get("epistemic_contract") == "world-agency.v2" else {}),
             "role": role,
             "source_ref": dict(source_ref),
             "baseline_id": source["reality"]["revision_id"],
@@ -647,14 +790,14 @@ class PlanningWorldPreparation:
                 ).content["contract"]["output"]
                 for index in range(len(actor_policy["actor_ids"]))
             ]
-            require_actor_judgments(retained["output"], proposals)
+            require_actor_judgments(retained["output"], proposals, agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
         decoded = decode_world_generation(
             {
                 key: value
                 for key, value in retained["output"].items()
                 if key not in {"knowledge_translations", "actor_adjudications"}
             }
-        )
+        , agency=source["reality"].get("epistemic_contract") == "world-agency.v2")
         candidates = validate_generated_candidates(
             decoded, WorldProductionPolicy(**source["policy"])
         )

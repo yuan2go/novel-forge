@@ -32,20 +32,22 @@ CHAPTER_REFERENCE_TASKS = {
 }
 CHAPTER_BOOTSTRAP_TASKS = {**CHAPTER_GENERATOR_TASKS, **CHAPTER_REFERENCE_TASKS}
 CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION = "1.0.0"
-CHAPTER_SAMPLE_DEFINITION_VERSION = "2.4.0"
+CHAPTER_PUBLISHED_SAMPLE_DEFINITION_VERSION = "2.4.0"
+CHAPTER_SAMPLE_DEFINITION_VERSION = "2.6.0"
 CHAPTER_SAMPLE_IDEMPOTENCY_SCOPE = "book:chapter-provider-sample"
 CHAPTER_SAMPLE_SOURCE_VERSION = "3.4.1"
 SCREENPLAY_SAMPLE_TASKS = {"screenplay_generate", "screenplay_review", "screenplay_revision"}
 WORLD_SAMPLE_TASKS = {"world_candidates.generate", "world_candidates.evaluate", *("world_candidates.actor_" + str(index) for index in range(3))}
 WORLD_SAMPLE_IDEMPOTENCY_SCOPE = "book:world-provider-sample"
 WORLD_SAMPLE_DEFINITION_VERSION = "1.0.0"
-PLANNING_BOOTSTRAP_SOURCE_VERSIONS = frozenset({"1.16.0", "1.17.0", "1.18.0", "1.19.0"})
+PLANNING_BOOTSTRAP_SOURCE_VERSIONS = frozenset({"1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"})
 CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION = "1.1.0"
-CHAPTER_REFERENCE_SAMPLE_VERSION = "2.5.0"
+CHAPTER_PUBLISHED_REFERENCE_SAMPLE_VERSION = "2.5.0"
+CHAPTER_REFERENCE_SAMPLE_VERSION = "2.7.0"
 CHAPTER_REFERENCE_SAMPLE_SOURCES = {"review": "chapter.draft.generate", "rereview": "chapter.revision.apply"}
 
-CHAPTER_SAMPLE_DEFINITION_VERSIONS = frozenset({CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION, "2.0.0", "2.2.0", CHAPTER_SAMPLE_DEFINITION_VERSION})
-CHAPTER_REFERENCE_SAMPLE_VERSIONS = frozenset({CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION, "2.1.0", "2.3.0", CHAPTER_REFERENCE_SAMPLE_VERSION})
+CHAPTER_SAMPLE_DEFINITION_VERSIONS = frozenset({CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION, "2.0.0", "2.2.0", CHAPTER_PUBLISHED_SAMPLE_DEFINITION_VERSION, CHAPTER_SAMPLE_DEFINITION_VERSION})
+CHAPTER_REFERENCE_SAMPLE_VERSIONS = frozenset({CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION, "2.1.0", "2.3.0", CHAPTER_PUBLISHED_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION})
 CHAPTER_SAMPLE_READABLE_VERSIONS = tuple(sorted(CHAPTER_SAMPLE_DEFINITION_VERSIONS | CHAPTER_REFERENCE_SAMPLE_VERSIONS))
 
 
@@ -62,7 +64,7 @@ def chapter_sample_definition_supported(name: str, version: str, *, reference_sa
 def chapter_sample_source_version_supported(version: Any) -> bool:
     from novel_forge.modules.chapter_authority.definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
 
-    return isinstance(version, str) and version in {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS, "3.8.0-author-input.v2", "3.9.0-author-input.v2"}
+    return isinstance(version, str) and version in {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, *CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS, "3.8.0-author-input.v2", "3.9.0-author-input.v2", "3.10.0", "3.10.0-author-input.v3"}
 
 
 def chapter_sample_definition_name(task_type: str) -> str:
@@ -694,6 +696,8 @@ def load_bootstrap_authorization(
         )
         origin = cursor.fetchone()
         validate_chapter_sample_origin(payload, origin, project_id=project_id)
+        if row[2] not in {CHAPTER_SAMPLE_DEFINITION_VERSION, CHAPTER_REFERENCE_SAMPLE_VERSION} and origin[1] in {"3.10.0", "3.10.0-author-input.v3"}:
+            raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "Published historical samples cannot acquire current contract permissions")
         if row[2] in {CHAPTER_LEGACY_SAMPLE_DEFINITION_VERSION, CHAPTER_LEGACY_REFERENCE_SAMPLE_VERSION} and origin[1] != CHAPTER_SAMPLE_SOURCE_VERSION:
             raise KernelError("ROUTING_BOOTSTRAP_SCOPE_MISMATCH", "legacy samples require their original published source version")
         if payload["chapter_sampling"].get("generation_sample") is not None:

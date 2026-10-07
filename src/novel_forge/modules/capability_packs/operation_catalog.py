@@ -291,7 +291,7 @@ _NON_PROVIDER_CAPABILITIES = {
 }
 
 
-def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
+def chapter_workflow_binding_catalog(*, coordinated_contract: bool = True) -> WorkflowBindingCatalog:
     bindings: list[WorkflowBinding] = []
     for node in ChapterNode:
         capability = _NON_PROVIDER_CAPABILITIES.get(node.value)
@@ -310,12 +310,12 @@ def chapter_workflow_binding_catalog() -> WorkflowBindingCatalog:
         )
     return WorkflowBindingCatalog(
         CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
-        CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
+        "3.10.0" if coordinated_contract else CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION,
         bindings,
     )
 
 
-def chapter_sampling_workflow_binding_catalog(*, reference: bool = False, reference_samples: bool = False) -> WorkflowBindingCatalog:
+def chapter_sampling_workflow_binding_catalog(*, reference: bool = False, reference_samples: bool = False, coordinated_contract: bool = True) -> WorkflowBindingCatalog:
     from novel_forge.modules.command_kernel.routing_bootstrap import (
         CHAPTER_GENERATOR_TASKS, CHAPTER_REFERENCE_TASKS, CHAPTER_SAMPLE_DEFINITION_VERSION,
         CHAPTER_REFERENCE_SAMPLE_VERSION, CHAPTER_REFERENCE_SAMPLE_SOURCES,
@@ -323,10 +323,10 @@ def chapter_sampling_workflow_binding_catalog(*, reference: bool = False, refere
     )
     from novel_forge.modules.chapter_authority.definitions import CHAPTER_REFERENCE_WORKFLOW_ID
 
-    formal = chapter_workflow_binding_catalog()
+    formal = chapter_workflow_binding_catalog(coordinated_contract=coordinated_contract)
     return WorkflowBindingCatalog(
         CHAPTER_REFERENCE_WORKFLOW_ID if reference else CHAPTER_SAMPLE_WORKFLOW_ID,
-        CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION,
+        (CHAPTER_REFERENCE_SAMPLE_VERSION if reference_samples else CHAPTER_SAMPLE_DEFINITION_VERSION) if coordinated_contract else ("2.5.0" if reference_samples else "2.4.0"),
         (WorkflowBinding(
             node_id="canon_proposal" if stage == "canon_support" else stage, operation_name=chapter_sample_definition_name(stage), stage=stage,
             handler_key="novel_forge.chapter_authority.sample." + stage,
@@ -473,7 +473,11 @@ def governed_workflow_binding_catalog(
         # COMPATIBILITY: Shared node routing does not replace frozen database contracts/assets.
         return WorkflowBindingCatalog(workflow_id, workflow_version, current.bindings())
     catalogs = (
-        chapter_workflow_binding_catalog(),
+        chapter_workflow_binding_catalog(coordinated_contract=False),
+        chapter_workflow_binding_catalog(coordinated_contract=True),
+        chapter_sampling_workflow_binding_catalog(coordinated_contract=False),
+        chapter_sampling_workflow_binding_catalog(reference=True, coordinated_contract=False),
+        chapter_sampling_workflow_binding_catalog(reference=True, reference_samples=True, coordinated_contract=False),
         chapter_sampling_workflow_binding_catalog(),
         chapter_sampling_workflow_binding_catalog(reference=True),
         chapter_sampling_workflow_binding_catalog(reference=True, reference_samples=True),
@@ -509,10 +513,17 @@ def chapter_operation_definition_catalog(
             application_build_id=application_build_id,
             commit_sha=release_sha,
             model_effects_required=True,
-        ), *chapter_provider_sample_definitions(
+        ), *(item for item in chapter_operation_definitions(
+            application_build_id=application_build_id, commit_sha=release_sha,
+            model_effects_required=True, coordinated_contract=True,
+        ) if item["name"] != ChapterNode.PLAN.definition_name), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=release_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=release_sha, reference_samples=True,
+        ), *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=release_sha, definition_version="2.4.0",
+        ), *chapter_provider_sample_definitions(
+            application_build_id=application_build_id, commit_sha=release_sha, reference_samples=True, definition_version="2.5.0",
         ), *model_reference_creation_definitions(
             application_build_id=application_build_id, commit_sha=release_sha,
         ))

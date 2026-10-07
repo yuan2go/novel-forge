@@ -105,10 +105,10 @@ class OperationGraphRepository:
             SELECT operation_id, status, definition_name, parent_operation_id
             FROM authority_operation
             WHERE project_id = %s
-              AND (operation_id = %s OR root_operation_id = %s)
+              AND (operation_id = %s OR root_operation_id = %s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s))
             ORDER BY created_at, operation_id
             """,
-            [project_id, root_operation_id, root_operation_id],
+            [project_id, root_operation_id, root_operation_id,root_operation_id],
         )
         return [
             {
@@ -335,7 +335,22 @@ class OperationGraphRepository:
             "compensation_operation_id",
             "compensation_operation_status",
         )
-        return [dict(zip(fields, row, strict=True)) for row in self.cursor.fetchall()]
+        owned=[dict(zip(fields, row, strict=True)) for row in self.cursor.fetchall()]
+        self.cursor.execute("""SELECT ref.operation_id,ref.step_key,ref.ordinal,operation.status,ref.source_step_snapshot->>'reference_source'
+            FROM authority_saga_retained_step ref JOIN authority_operation operation USING(operation_id)
+            JOIN authority_graph_continuation journal USING(continuation_id)
+            JOIN authority_operation root ON root.operation_id=journal.successor_root_operation_id
+            WHERE ref.saga_id=%s AND journal.successor_saga_id=ref.saga_id
+              AND operation.project_id=journal.project_id AND root.project_id=journal.project_id
+              AND operation.actor_id=journal.actor_id AND root.actor_id=journal.actor_id
+              AND operation.workspace_id=root.workspace_id
+              AND ((journal.contract_version='kernel-retained-graph-continuation.v1' AND root.definition_version='3.9.0')
+                OR (journal.contract_version='kernel-retained-graph-continuation.v2' AND root.definition_version='3.10.0'))
+            ORDER BY ref.ordinal FOR SHARE OF operation""",[saga_id])
+        retained=[{"operation_id":row[0],"step_key":row[1],"ordinal":row[2],"compensation_definition":"","compensation_status":"NOT_REQUIRED","status":row[3],"compensation_operation_id":None,"compensation_operation_status":None,"retained":True,"initial_completion_member":row[4]!="native-completed-correction-command.v1"} for row in self.cursor.fetchall()]
+        if any(item['status']!='SUCCEEDED' for item in retained):
+            raise KernelError('RETAINED_GRAPH_STEP_DRIFT','Retained completed operations cannot change lifecycle')
+        return sorted(owned+retained,key=lambda item:item['ordinal'])
 
     def mark_compensation_required(self, operation_ids: list[str]) -> None:
         if not operation_ids:
@@ -533,8 +548,8 @@ class CompletionContractRepository:
 
     def child_states(self, operation_id: str) -> list[tuple[str, str]]:
         self.cursor.execute(
-            "SELECT definition_name, status FROM authority_operation WHERE parent_operation_id = %s",
-            [operation_id],
+            "SELECT definition_name, status FROM authority_operation WHERE parent_operation_id = %s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)",
+            [operation_id,operation_id],
         )
         return self.cursor.fetchall()
 

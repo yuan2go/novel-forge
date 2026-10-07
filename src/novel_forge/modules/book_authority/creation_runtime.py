@@ -86,6 +86,21 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract, recover_completed_canon_window
+        recover(lambda: recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        recover(lambda: recover_completed_canon_window(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
+        recover(lambda: recover_known_draft_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.current_semantic_recovery import retire_semantic_frontier
+        try:
+            recover(lambda: retire_semantic_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        except KernelError as error:
+            if error.code == "CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED":
+                return error.code
+            raise
+        from .retained_recovery import recover_retained_quality
+        if recover(lambda: recover_retained_quality(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+            events({"kind": "CHAPTER_RETAINED_GRAPH_CONTINUATION", "book_run_id": book_run_id})
         from novel_forge.modules.chapter_authority.derived_recovery import recover_derived_frontier
         while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
             events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
@@ -109,6 +124,9 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         recover(lambda: recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier
         recover(lambda: recover_realization_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from .execution_recovery_v2 import recover_timeout as recover_timeout_v2
+        if recover(lambda: recover_timeout_v2(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+            book = composition.authority.require(book_run_id)
         from .execution_recovery import recover_timeout
         if recover(lambda: recover_timeout(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
             book = composition.authority.require(book_run_id)
@@ -148,6 +166,11 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                     if error.code in {"CHAPTER_LENGTH_REPAIR_INCOMPLETE", "OPERATION_BUSINESS_TIMEOUT"} and recover(lambda: recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
                         events({"kind": "CHAPTER_LENGTH_RETRY_PHASE", "operation_id": active})
                         continue
+                    if error.code in {"MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE", "CHAPTER_LENGTH_REPAIR_INCOMPLETE", "CANON_QUOTE_LOCALIZATION_INVALID"}:
+                        from .member_retry import wait_settled_member_retry
+                        if recover(lambda: wait_settled_member_retry(composition.authority, book_run_id=book_run_id, root_id=active, principal=composition.principal, deadline=deadline)):
+                            events({"kind": "CHAPTER_MEMBER_RETRY_WAIT", "operation_id": active})
+                            continue
                     if scheduler.has_ready_quality_work(project_id=book["project_id"], root_operation_id=active):
                         continue
                     return error.code

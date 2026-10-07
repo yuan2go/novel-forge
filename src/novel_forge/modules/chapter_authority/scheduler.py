@@ -134,6 +134,8 @@ class ChapterAuthorityScheduler:
         root, saga, children = self._graph_state(project_id, root_operation_id)
         from novel_forge.modules.book_authority.execution_recovery import require_dispatch
         require_dispatch(self.database_url, command_payload=root["command_payload"], root_operation_id=root_operation_id)
+        from novel_forge.modules.book_authority.execution_recovery_v2 import require_dispatch as require_dispatch_v2
+        require_dispatch_v2(self.database_url, command_payload=root["command_payload"], root_operation_id=root_operation_id)
         if (root["command_payload"].get("preparation_report") or {}).get("author_book_replacement"):
             from novel_forge.modules.book_authority.author_revision import (
                 require_author_replacement_dispatch,
@@ -289,6 +291,293 @@ class ChapterAuthorityScheduler:
             recovery_mode=recovery_mode,
         )
 
+    def _advance_coordinated_quality_correction(
+        self,
+        *,
+        request: SingleChapterRequest,
+        root: dict[str, Any],
+        saga: dict[str, Any],
+        children: dict[ChapterNode, dict[str, Any]],
+    ) -> ChapterSchedulerTick | None:
+        import hashlib
+        root_key = request.idempotency_key or (
+            f"{request.project_id}:chapter:{request.chapter}:root"
+        )
+        initial_quality = self._initial_operation(
+            root_operation_id=str(root["operation_id"]),
+            project_id=request.project_id,
+            node=ChapterNode.QUALITY,
+            idempotency_key=f"{root_key}:{ChapterNode.QUALITY.value}",
+        )
+        if initial_quality is None or initial_quality["status"] != "SUCCEEDED":
+            return None
+        tasks = self._operation_outputs(
+            str(initial_quality["operation_id"]),
+            request.project_id,
+            role="required_action",
+        )
+        if not tasks:
+            return None
+        from novel_forge.modules.production_execution.execution_template import (
+            selected_book_template,
+            selected_template,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            admission = selected_book_template(
+                uow.cursor, project_id=request.project_id, book_id=request.book_id
+            )
+            template = (
+                selected_template(
+                    admission["policy_snapshot"]["policy"], request.book_id
+                )
+                if admission
+                else None
+            )
+        control = (
+            template.get("quality_corrections")
+            if template and template["mode"] == "CREATIVE_VALIDATION"
+            else None
+        )
+        generation = 1
+        incumbent = self._initial_primary(root, request, ChapterNode.BEST_CANDIDATE)
+        candidate_hashes = [
+            hashlib.sha256(
+                self._asset_content(incumbent["asset_version_id"], request.project_id)[
+                    "text"
+                ].encode()
+            ).hexdigest()
+        ]
+        while True:
+            correction = self._correction_operations(
+                root_operation_id=str(root["operation_id"]),
+                project_id=request.project_id,
+                generation=generation,
+                root_idempotency_key=root_key,
+            )
+            aggregate = correction.get(ChapterNode.QUALITY)
+            if aggregate is None or aggregate["status"] != "SUCCEEDED":
+                break
+            next_tasks = self._operation_outputs(
+                str(aggregate["operation_id"]),
+                request.project_id,
+                role="required_action",
+            )
+            if control and not next_tasks:
+                report = self._asset_content(
+                    self._primary_output(
+                        str(aggregate["operation_id"]), request.project_id
+                    )["asset_version_id"],
+                    request.project_id,
+                )
+                if report.get("internal_admission", {}).get(
+                    "status"
+                ) == "BLOCKED" and report.get("internal_required_actions"):
+                    with AuthorityUnitOfWork(self.database_url) as uow:
+                        uow.cursor.execute(
+                            "SELECT input_asset_snapshot,definition_version FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+                            [aggregate["operation_id"], request.project_id],
+                        )
+                        frozen_inputs, version = uow.cursor.fetchone()
+                    if version not in {"3.9.11", "3.10.0"}:
+                        raise KernelError(
+                            "QUALITY_CORRECTION_ACTIONS_MISSING",
+                            "Blocked aggregate must emit native correction tasks",
+                        )
+                    replacement = self._admit_node(
+                        request=request,
+                        root=root,
+                        saga_id=str(saga["saga_id"]),
+                        children=children,
+                        node=ChapterNode.QUALITY,
+                        idempotency_suffix=f":quality-correction:{generation}:action-revalidation",
+                        register_step=False,
+                        explicit_inputs=frozen_inputs,
+                        dependency_operation_ids=[str(aggregate["operation_id"])],
+                        timeline_step_key=f"quality-correction:{generation}:quality-actions",
+                        timeline_ordinal=2099 + (generation - 1) * 100,
+                        activate_immediately=True,
+                    )
+                    recovery = self._execute_node(
+                        request, ChapterNode.QUALITY, replacement
+                    )
+                    return self._generation_tick(
+                        root,
+                        saga,
+                        self._child(
+                            str(replacement["operation_id"]), request.project_id
+                        ),
+                        ChapterNode.QUALITY,
+                        "quality_actions_" + recovery,
+                    )
+            if not control or not next_tasks:
+                children.update(correction)
+                return None
+            incumbent = self._primary_output(
+                str(correction[ChapterNode.BEST_CANDIDATE]["operation_id"]),
+                request.project_id,
+            )
+            candidate_hashes.append(
+                hashlib.sha256(
+                    self._asset_content(
+                        incumbent["asset_version_id"], request.project_id
+                    )["text"].encode()
+                ).hexdigest()
+            )
+            from .quality_correction_control import require_next_pass
+
+            require_next_pass(
+                completed_passes=generation,
+                candidate_hashes=candidate_hashes,
+                control=control,
+            )
+            initial_quality, tasks = aggregate, next_tasks
+            generation += 1
+        common = {
+            ChapterNode.PLAN: self._initial_primary(root, request, ChapterNode.PLAN),
+            ChapterNode.CONTEXT: self._initial_primary(
+                root, request, ChapterNode.CONTEXT
+            ),
+            ChapterNode.DRAFT: self._initial_primary(root, request, ChapterNode.DRAFT),
+            ChapterNode.REVIEW: self._initial_primary(
+                root, request, ChapterNode.REVIEW
+            ),
+            ChapterNode.BEST_CANDIDATE: incumbent,
+        }
+        sequence = (
+            ChapterNode.REVISION,
+            ChapterNode.REREVIEW,
+            ChapterNode.BEST_CANDIDATE,
+            ChapterNode.CANON_EXTRACTION,
+            ChapterNode.CANON_PROPOSAL,
+            ChapterNode.CANON,
+            *QUALITY_GROUP_NODES,
+            ChapterNode.QUALITY,
+        )
+        for ordinal, node in enumerate(sequence, start=1):
+            operation = correction.get(node)
+            if operation is not None and operation["status"] == "SUCCEEDED":
+                continue
+            if operation is not None and operation["status"] in {
+                "FAILED_FINAL",
+                "DEAD_LETTER",
+                "CANCELLED",
+            }:
+                return self._terminal_quality_correction(root, saga, operation, node)
+            if operation is None:
+                inputs, dependencies = self._quality_correction_inputs(
+                    request=request,
+                    root=root,
+                    node=node,
+                    initial_quality=initial_quality,
+                    tasks=tasks,
+                    correction=correction,
+                    common=common,
+                )
+                if node is ChapterNode.CANON:
+                    proposal = correction[ChapterNode.CANON_PROPOSAL]
+                    proposal_ref = self._primary_output(
+                        str(proposal["operation_id"]), request.project_id
+                    )
+                    gate = ensure_canon_approval_requests(
+                        self.database_url,
+                        CanonApprovalContext(
+                            project_id=request.project_id,
+                            principal_id=self.worker_id,
+                            trace_id=str(root["trace_id"]),
+                            correlation_id=str(root["correlation_id"]),
+                        ),
+                        root_operation_id=str(root["operation_id"]),
+                        saga_id=str(saga["saga_id"]),
+                        proposal_asset_version_id=proposal_ref["asset_version_id"],
+                        proposal=self._asset_content(
+                            proposal_ref["asset_version_id"], request.project_id
+                        ),
+                    )
+                    if gate["waiting"]:
+                        return self._generation_tick(
+                            root,
+                            saga,
+                            proposal,
+                            ChapterNode.CANON,
+                            "quality_correction_canon_gate",
+                        )
+                    inputs.extend(
+                        decision_asset_versions(
+                            self.database_url,
+                            project_id=request.project_id,
+                            root_operation_id=str(root["operation_id"]),
+                        )
+                    )
+                operation = self._admit_node(
+                    request=request,
+                    root=root,
+                    saga_id=str(saga["saga_id"]),
+                    children=children,
+                    node=node,
+                    idempotency_suffix=f":quality-correction:{generation}",
+                    register_step=False,
+                    explicit_inputs=inputs,
+                    dependency_operation_ids=dependencies,
+                    input_overrides=(
+                        {
+                            "correction_generation": generation,
+                            **(
+                                {
+                                    "preparation_report": {
+                                        **(request.preparation_report or {}),
+                                        "maximum_correction_generations": control[
+                                            "maximum_passes"
+                                        ],
+                                    }
+                                }
+                                if control
+                                else {}
+                            ),
+                        }
+                        if node is ChapterNode.BEST_CANDIDATE
+                        else None
+                    ),
+                    timeline_step_key=f"quality-correction:{generation}:{node.value}",
+                    timeline_ordinal=2000 + (generation - 1) * 100 + ordinal,
+                    activate_immediately=True,
+                )
+                correction[node] = operation
+            try:
+                recovery = self._execute_node(request, node, operation)
+            except Exception:
+                current = self._child(
+                    str(operation["operation_id"]), request.project_id
+                )
+                if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+                    return self._terminal_quality_correction(root, saga, current, node)
+                raise
+            current = self._child(str(operation["operation_id"]), request.project_id)
+            if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
+                return self._terminal_quality_correction(root, saga, current, node)
+            final = coordinate_saga(
+                self.database_url,
+                GraphCommandContext(
+                    project_id=request.project_id,
+                    actor_id=self.worker_id,
+                    trace_id=str(root["trace_id"]),
+                    correlation_id=str(root["correlation_id"]),
+                ),
+                str(saga["saga_id"]),
+            )
+            return ChapterSchedulerTick(
+                root_operation_id=str(root["operation_id"]),
+                saga_id=str(saga["saga_id"]),
+                saga_status=str(final["status"]),
+                operation_id=str(operation["operation_id"]),
+                node=node.value,
+                operation_status=self._operation_status(
+                    str(operation["operation_id"]), request.project_id
+                ),
+                recovery_mode=f"quality_correction_{recovery}",
+            )
+        return None
+
     def _advance_quality_correction(
         self,
         *,
@@ -297,6 +586,8 @@ class ChapterAuthorityScheduler:
         saga: dict[str, Any],
         children: dict[ChapterNode, dict[str, Any]],
     ) -> ChapterSchedulerTick | None:
+        if root["definition_version"] == "3.10.0":
+            return self._advance_coordinated_quality_correction(request=request, root=root, saga=saga, children=children)
         root_key = request.idempotency_key or (
             f"{request.project_id}:chapter:{request.chapter}:root"
         )
@@ -664,7 +955,7 @@ class ChapterAuthorityScheduler:
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0"}
+                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0"}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )
@@ -990,19 +1281,21 @@ class ChapterAuthorityScheduler:
                          1
                        )
                 FROM authority_operation
-                WHERE root_operation_id=%s AND project_id=%s
+                WHERE (root_operation_id=%s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)) AND project_id=%s
                   AND definition_name=%s
-                  AND operation_id IN (SELECT operation_id FROM authority_saga_step)
+                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step WHERE step_key NOT LIKE 'quality-correction:%%') OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE step_key NOT LIKE 'quality-correction:%%'))
                   AND (idempotency_key=%s
-                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE contract_version='kernel-failed-step-successor.v1')
-                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE contract_version='kernel-derived-step-successor.v1'))
+                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE contract_version IN ('kernel-failed-step-successor.v1','kernel-failed-step-successor.v2'))
+                    OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE contract_version='kernel-derived-step-successor.v1') OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s))
                 LIMIT 1
                 """,
                 [
                     root_operation_id,
+                    root_operation_id,
                     project_id,
                     node.definition_name,
                     idempotency_key,
+                    root_operation_id,
                 ],
             )
             row = uow.cursor.fetchone()
@@ -1028,6 +1321,9 @@ class ChapterAuthorityScheduler:
             f"{root_idempotency_key}:{node.value}:quality-correction:{generation}"
             for node in ChapterNode
         ]
+        expected_keys.append(
+            f"{root_idempotency_key}:{ChapterNode.QUALITY.value}:quality-correction:{generation}:action-revalidation"
+        )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -1037,11 +1333,17 @@ class ChapterAuthorityScheduler:
                          1
                        )
                 FROM authority_operation
-                WHERE root_operation_id=%s AND project_id=%s
-                  AND idempotency_key=ANY(%s)
+                WHERE project_id=%s AND ((root_operation_id=%s AND idempotency_key=ANY(%s))
+                    OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s AND ref.step_key LIKE %s))
                 ORDER BY created_at, operation_id
                 """,
-                [root_operation_id, project_id, expected_keys],
+                [
+                    project_id,
+                    root_operation_id,
+                    expected_keys,
+                    root_operation_id,
+                    f"quality-correction:{generation}:%",
+                ],
             )
             rows = uow.cursor.fetchall()
         by_definition = {node.definition_name: node for node in ChapterNode}
@@ -1591,17 +1893,20 @@ class ChapterAuthorityScheduler:
                            WHERE attempt.operation_id=authority_operation.operation_id
                              AND attempt.status='FAILED_RETRYABLE')
                 FROM authority_operation
-                WHERE root_operation_id = %s AND operation_id <> %s AND project_id = %s
-                  AND operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s)
-                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s))
+                WHERE (root_operation_id = %s OR operation_id IN (SELECT ref.operation_id FROM authority_saga_retained_step ref JOIN authority_graph_continuation j USING(continuation_id) WHERE j.successor_root_operation_id=%s)) AND operation_id <> %s AND project_id = %s
+                  AND (operation_id IN (SELECT operation_id FROM authority_saga_step WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s AND step_key NOT LIKE 'quality-correction:%%'))
+                  AND (idempotency_key=ANY(%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_successor WHERE saga_id=%s) OR operation_id IN (SELECT successor_operation_id FROM authority_saga_step_revalidation WHERE saga_id=%s) OR operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=%s AND step_key NOT LIKE 'quality-correction:%%'))
                 ORDER BY created_at, operation_id
                 """,
                 [
                     root_operation_id,
                     root_operation_id,
+                    root_operation_id,
                     project_id,
                     saga_row[0],
+                    saga_row[0],
                     initial_child_keys,
+                    saga_row[0],
                     saga_row[0],
                     saga_row[0],
                 ],
@@ -1903,3 +2208,14 @@ def _is_domain_validation_failure(error_code: str) -> bool:
 
 
 __all__ = ["ChapterAuthorityScheduler", "ChapterSchedulerTick"]
+
+
+def reader_lineage_reassessment_required(canon):
+    conflicts = canon.get("conflicts") or []
+    unpaired = [(kind, row) for kind, rows in canon.get("state_changes", {}).items() for row in rows
+        if row.get("story_time") and not row.get("causal_batch") and not row.get("world_transition") and not row.get("causality")]
+    return bool(canon.get("gate") == "BLOCKED" and conflicts and unpaired
+        and canon.get("grounding", {}).get("semantic_status") == "SUPPORTED_CANDIDATE"
+        and all(conflict.get("conflict_code") == "NARRATIVE_EVENT_CAUSALITY_REQUIRED" for conflict in conflicts)
+        and all(kind == "disclosure_event" and row.get("extraction_evidence", {}).get("source_revision_asset_version_id")
+            and row.get("extraction_evidence", {}).get("excerpt_digest") for kind, row in unpaired))

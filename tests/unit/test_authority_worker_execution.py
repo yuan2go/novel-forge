@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+
+from psycopg.errors import DeadlockDetected, SerializationFailure, UndefinedColumn
 from datetime import datetime, timezone
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -22,6 +24,8 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                 WorkerFailureClass.RETRYABLE,
             ),
             (KernelError("INPUT_INVALID", "bad"), WorkerFailureClass.FINAL_FAILURE),
+            (KernelError("CANON_SUPPORT_SCHEMA_REBUILD_REQUIRED", "contract defect"), WorkerFailureClass.FINAL_FAILURE),
+            (KernelError("CANON_GROUNDING_REEXTRACTION_REQUIRED", "repair extraction"), WorkerFailureClass.FINAL_FAILURE),
             (
                 KernelError(
                     "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "frozen capacity"
@@ -90,6 +94,8 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                     WorkerFailureClass.FINAL_FAILURE,
                 )
                 for code in (
+                    "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
+                    "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
                     "BUDGET_SCOPE_CONFLICT",
                     "BUDGET_SCOPE_NOT_FOUND",
                     "BOOK_OPENING_BUDGET_EFFECT_BINDING_REQUIRED",
@@ -130,6 +136,16 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
             WorkerFailureClassifier.classify(KernelError("EFFECT_STATE_UNKNOWN", "remote outcome unknown")),
             WorkerFailureClass.UNKNOWN_EXTERNAL_STATE,
         )
+
+    def test_only_known_aborted_database_transactions_are_retryable(self) -> None:
+        for error in (DeadlockDetected("deadlock"), SerializationFailure("conflict")):
+            self.assertEqual(WorkerFailureClassifier.classify(error), WorkerFailureClass.RETRYABLE)
+            failures = AuthorityWorkerExecutionBoundary(worker_kind="chapter").execute_batch(
+                (("p", "op"),), identity=lambda item: item,
+                execute=lambda item: (_ for _ in ()).throw(error),
+            )
+            self.assertEqual(failures[0].error_code, "POSTGRES_TRANSACTION_RETRY")
+        self.assertEqual(WorkerFailureClassifier.classify(UndefinedColumn("schema bug")), WorkerFailureClass.PROGRAMMING_BUG)
 
     def test_batch_continues_after_known_task_failure(self) -> None:
         visited: list[str] = []

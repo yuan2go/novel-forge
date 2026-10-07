@@ -2117,6 +2117,9 @@ class PostgresBookAuthority:
         if request["chapter_root_operation_id"]:
             return self.reconcile_chapter(chapter_request_id)
         payload = dict(request["command_payload"])
+        if payload.get("execution_replacement_chapter_command_v2"):
+            from .execution_recovery_v2 import resume_successor
+            return resume_successor(self, chapter_request_id=chapter_request_id, principal=principal)
         if payload.get("execution_replacement_chapter_command"):
             from .execution_recovery import resume_successor
             return resume_successor(self, chapter_request_id=chapter_request_id, principal=principal)

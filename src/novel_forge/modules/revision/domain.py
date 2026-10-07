@@ -9,10 +9,10 @@ from novel_forge.modules.chapter_authority.realization_composition import (
 
 
 def _materialize_targeted_result(
-    source: dict[str, Any], review: dict[str, Any], result: dict[str, Any],
+    source: dict[str, Any], review: dict[str, Any], result: dict[str, Any], range_policy: str = "INTERSECTION_V1",
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     from novel_forge.modules.review.cross_chapter import apply_targeted_edits
-    targeted = apply_targeted_edits(draft=source, review=review, result=result)
+    targeted = apply_targeted_edits(draft=source, review=review, result=result, range_policy=range_policy)
     if "scene_artifacts" not in result:
         slots = derive_targeted_revision_slots(source, targeted["targeted_edits"])
         result = {**result, "scene_artifacts": slots}
@@ -149,6 +149,7 @@ def apply_quality_revision_result(
     context_bundle_version_id: str,
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
+    range_policy: str = "INTERSECTION_V1",
 ) -> dict[str, Any]:
     if not all(
         (
@@ -164,20 +165,29 @@ def apply_quality_revision_result(
             "QUALITY_REVISION_INPUT_INVALID",
             "Quality correction requires versioned target, decision, task, and context lineage",
         )
-    scope = quality_edit_contract(revision=revision, revision_asset_version_id=revision_asset_version_id, revision_tasks=revision_tasks)
+    scope = quality_edit_contract(revision=revision, revision_asset_version_id=revision_asset_version_id, revision_tasks=revision_tasks, range_policy=range_policy)
     targeted = {}
     if scope is not None:
         result, targeted = _materialize_targeted_result(
             revision,
             {"target_text_hash": scope["target_text_hash"], "issues": scope["permitted_ranges"]},
             result,
+            range_policy=range_policy,
         )
     text = prose_from_output(result, separators=revision.get("scene_separators"))
     if not text.strip():
         raise KernelError(
             "QUALITY_REVISION_INCOMPLETE", "Quality correction produced no revised text"
         )
-    required_actions = list(quality.get("required_actions") or [])
+    if range_policy == 'NAMED_DIAGNOSIS_UNION_V1':
+        admission = quality.get('internal_admission') or {}
+        if (admission.get('version') not in {'creative-quality-admission.v2', 'creative-quality-admission.v3'} or admission.get('status') != 'BLOCKED'
+            or admission.get('strict_certification_eligible') is not False
+            or admission.get('target_asset_version_id') != revision_asset_version_id):
+            raise KernelError('QUALITY_INTERNAL_DISPOSITION_REQUIRED','A source-bound blocked internal disposition is required')
+        required_actions = list(quality.get('internal_required_actions') or [])
+    else:
+        required_actions = list(quality.get('required_actions') or [])
     expected = {
         str(item.get("observation") or item.get("issue", {}).get("code") or "")
         for item in required_actions
@@ -272,7 +282,7 @@ def freeze_quality_edit_scope(*, revision: dict[str, Any], revision_asset_versio
 
 
 def quality_edit_contract(*, revision: dict[str, Any], revision_asset_version_id: str,
-                          revision_tasks: tuple[dict[str, Any], ...]) -> dict[str, Any] | None:
+                          revision_tasks: tuple[dict[str, Any], ...], range_policy: str = "INTERSECTION_V1") -> dict[str, Any] | None:
     from novel_forge.modules.review.diagnostics import prose_hash, validate_location
     if not any(task.get("bounded_edit_scope") or task.get("contract_version") == "governed-revision-task-v2" for task in revision_tasks):
         return None
@@ -300,9 +310,11 @@ def quality_edit_contract(*, revision: dict[str, Any], revision_asset_version_id
             combined.append([item["start"], item["end"]])
     if sum(end - start for start, end in combined) >= len(text):
         raise KernelError("QUALITY_REVISION_SCOPE_INVALID", "Combined task evidence cannot authorize a whole-chapter rewrite")
-    return {"contract_version": "quality-targeted-repair.v1", "target_asset_version_id": revision_asset_version_id,
+    if range_policy == "NAMED_DIAGNOSIS_UNION_V1" and any(task.get("disposition_contract") != "creative-quality-disposition.v2" for task in revision_tasks):
+        raise KernelError("QUALITY_RANGE_POLICY_SCOPE_INVALID", "The union successor requires exact creative internal disposition tasks")
+    return {"contract_version": "quality-targeted-repair.v2" if range_policy == "NAMED_DIAGNOSIS_UNION_V1" else "quality-targeted-repair.v1", **({"range_policy": range_policy} if range_policy == "NAMED_DIAGNOSIS_UNION_V1" else {}), "target_asset_version_id": revision_asset_version_id,
             "target_text_hash": prose_hash(text), "permitted_ranges": ranges,
-            "instructions": "Return exact ordered non-overlapping edits, naming the permitted range code in issue_codes. Edit only inside those frozen ranges. Keep every other Unicode code point unchanged, including whitespace. Preserve adopted Craft, facts and accepted history. Updated scene artifacts must reconstruct the same resulting text. Unresolved or unlocated evidence requires author review, never wider edits."}
+            "instructions": ("For each edit, every named range must intersect it and their connected union must cover the edit, without gaps. " if range_policy == "NAMED_DIAGNOSIS_UNION_V1" else "") + "Return exact ordered non-overlapping edits, naming the permitted range code in issue_codes. Edit only inside those frozen ranges. Keep every other Unicode code point unchanged, including whitespace. Preserve adopted Craft, facts and accepted history. Updated scene artifacts must reconstruct the same resulting text. Unresolved or unlocated evidence requires author review, never wider edits."}
 
 
 def extend_quality_rereview_schema(schema: dict[str, Any], *, legacy_contract: bool = False) -> dict[str, Any]:
@@ -400,3 +412,48 @@ def validate_chapter_length_scope(scope: dict[str, Any], source: dict[str, Any],
         raise KernelError('CHAPTER_LENGTH_SCOPE_INVALID', 'Only an exact out-of-bounds frozen candidate authorizes whole-chapter length repair')
     if not minimum <= han_characters(text) <= maximum:
         raise KernelError('CHAPTER_LENGTH_REPAIR_INCOMPLETE', f'Actual HAN_CHARACTERS_V1 count {han_characters(text)} is outside frozen bounds {minimum}–{maximum}; repair the full candidate without padding')
+
+
+def retain_reviewed_draft(*, draft, draft_id, draft_hash, review, review_id, review_hash, context_id, context_hash):
+    from copy import deepcopy
+    from novel_forge.modules.review.diagnostics import open_diagnoses, prose_hash, require_review_score
+    if review.get("review_decision_contract") != "work-review-decision.v1" or review.get("decision") != "PASSED" or open_diagnoses(review):
+        return None
+    require_review_score(review)
+    if (review.get("target_asset_version_id") != draft_id or review.get("context_bundle_version_id") != context_id
+        or review.get("target_text_hash") != prose_hash(draft.get("text", ""))):
+        raise KernelError("REVISION_DIAGNOSIS_STALE", "Retention requires the exact reviewed draft and Context")
+    if "creative_baseline" in draft:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import validate_creative_baseline
+        if review.get("creative_baseline_digest") != validate_creative_baseline(draft["creative_baseline"])["baseline_digest"]:
+            raise KernelError("REVISION_CREATIVE_BASELINE_DRIFT", "Retention cannot reuse a different work contract")
+    proof = {"contract_version": "unchanged-reviewed-prose.v1", "decision": "NO_REPAIR_REQUIRED",
+        "source_draft_asset_version_id": draft_id, "source_draft_content_hash": draft_hash,
+        "source_review_asset_version_id": review_id, "source_review_content_hash": review_hash,
+        "context_bundle_asset_version_id": context_id, "context_bundle_content_hash": context_hash,
+        "target_text_hash": review["target_text_hash"], "provider_dispatches": 0, "improvement_claimed": False}
+    return {**deepcopy(draft), "source_draft_version_id": draft_id, "review_version_id": review_id,
+        "context_bundle_version_id": context_id, "resolved_issue_codes": [], "resolution_claimed_issue_codes": [],
+        "issue_resolutions": [], "revision_execution_decision": proof,
+        "provider_evidence": {"evidence_class": "NATIVE_RETENTION", "source_review_asset_version_id": review_id}}
+
+
+def reuse_unchanged_review(*, draft, draft_id, draft_hash, review, review_id, review_hash, revision, revision_id, context_id, context_hash):
+    from copy import deepcopy
+    expected = retain_reviewed_draft(draft=draft, draft_id=draft_id, draft_hash=draft_hash,
+        review=review, review_id=review_id, review_hash=review_hash, context_id=context_id, context_hash=context_hash)
+    if expected is None or not revision.get("revision_execution_decision"):
+        return None
+    if revision != expected:
+        raise KernelError("REREVIEW_RETENTION_DRIFT", "A changed candidate cannot reuse the original Review")
+    score = review["score"]
+    return {**deepcopy(review), "report_type": "ReReviewReport", "target_asset_version_id": revision_id,
+        "revision_version_id": revision_id, "original_draft_version_id": draft_id, "initial_review_version_id": review_id,
+        "issue_lineage": [], "resolution_checks": [], "resolved_issue_codes": [], "remaining_issue_codes": [],
+        "unresolved_issues": [], "new_issues": [], "regression_issue_codes": [],
+        "revision_quality_delta": {"before_score": score, "after_score": score, "score_delta": 0,
+            "resolved_issue_count": 0, "remaining_issue_count": 0, "new_issue_count": 0, "regression_count": 0},
+        "review_reuse_evidence": {**expected["revision_execution_decision"], "decision": "REUSED_EXACT_REVIEW",
+            "target_revision_asset_version_id": revision_id}, "provider_evidence": {
+            "evidence_class": "NATIVE_REVIEW_REUSE", "source_review_asset_version_id": review_id,
+            "source_review_provider_evidence": deepcopy(review.get("provider_evidence") or {})}}

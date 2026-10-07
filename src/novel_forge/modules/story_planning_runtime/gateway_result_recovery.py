@@ -255,9 +255,9 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
     validate_raw_result(
         command.generator_operation_name,
         raw,
-        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-        rfc6901_paths=command.execution_contract_version == "1.19.0",
+        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
     )
     snapshot = CapabilityPackRuntimeResolver(
         application.database_url

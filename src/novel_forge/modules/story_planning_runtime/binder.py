@@ -484,10 +484,10 @@ class CapabilityPackBackedPlanningExecutionBinder:
             validate_raw_result(
                 command.generator_operation_name,
                 execution.raw_output,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
-                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
-                rfc6901_paths=command.execution_contract_version == "1.19.0",
-                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"} else None,
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
+                rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
+                compiled_scope="BOOK" if command.generator_operation_name == "world.design.generate" and command.execution_contract_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"} else None,
             )
         except KernelError as error:
             raise PlanningResultValidationError(error, raw_result=execution.raw_output, execution_evidence=planning_evidence.to_dict()) from error

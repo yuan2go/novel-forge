@@ -70,6 +70,8 @@ def recover_information_frontier(authority, *, book_run_id, principal):
 
 
 def candidate_repair_payload(request):
+    if request.definition_version == "3.10.0":
+        return _current_candidate_repair_payload(request)
     if request.definition_version not in {'3.9.2','3.9.3','3.9.4'} or not request.database_url:
         return {}
     with AuthorityUnitOfWork(request.database_url) as uow:
@@ -480,3 +482,53 @@ def recover_quality_frontier(authority, *, book_run_id, principal):
             definition_name=f'chapter.quality.{group}.evaluate',target_version='3.9.9',contract_version='chapter-quality-contract-repair.v1',
             failure_codes=('QUALITY_APPLICABILITY_CONFLICT',),statuses=('DEAD_LETTER',)) or changed
     return changed
+
+
+def _current_candidate_repair_payload(request):
+    if not request.database_url or not request.attempt_id:
+        return {}
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, _read_verified_success
+    from novel_forge.storage.external_effect_repositories import ExternalEffectRepository
+    from .model_effects import ModelProviderResult
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        cursor = uow.cursor
+        cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+            JOIN authority_attempt current ON current.operation_id=o.operation_id
+            WHERE o.operation_id=%s AND o.project_id=%s AND current.attempt_id=%s
+            AND o.definition_version='3.10.0' AND o.definition_name IN ('chapter.draft.generate','chapter.revision.apply')
+            AND o.definition_snapshot #>> '{policy,candidate_retry_feedback}'='chapter-candidate-retry-feedback.v2'""",
+            [request.operation_id, request.project_id, request.attempt_id])
+        owner = cursor.fetchone()
+        if not owner:
+            return {}
+        owner = owner[0]
+        cursor.execute("""SELECT e.external_effect_id,a.attempt_id,a.result,e.request_hash FROM authority_attempt a
+            JOIN authority_external_effect e ON e.operation_id=a.operation_id
+                AND e.request_payload #>> '{_production_execution,attempt_id}'=a.attempt_id
+            JOIN authority_attempt current ON current.operation_id=a.operation_id AND current.attempt_id=%s
+            WHERE a.operation_id=%s AND a.attempt_number<current.attempt_number
+            AND a.status='FAILED_RETRYABLE' AND e.status='SUCCEEDED'
+            AND (a.result->>'error_code' LIKE 'REALIZATION_%%' OR a.result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE')
+            ORDER BY a.attempt_number DESC,e.external_effect_id""", [request.attempt_id, request.operation_id])
+        rows = cursor.fetchall()
+        if not rows:
+            return {}
+        recent = [row for row in rows if row[1] == rows[0][1]]
+        if len(recent) != 1:
+            raise KernelError('CHAPTER_CANDIDATE_REPAIR_SOURCE_AMBIGUOUS', 'Require one exact latest rejected candidate receipt')
+        effect_id, attempt_id, diagnostic, request_hash = recent[0]
+        context = EffectCommandContext(operation_id=owner['operation_id'], project_id=owner['project_id'],
+            actor_id=owner['actor_id'], trace_id=owner['trace_id'], correlation_id=owner['correlation_id'])
+        repository = ExternalEffectRepository(cursor)
+        effect = repository.get_for_update(effect_id)
+        if effect['operation_id'] != request.operation_id or effect['request_hash'] != request_hash:
+            raise KernelError('CHAPTER_CANDIDATE_REPAIR_EVIDENCE_MISSING', 'Retain exact candidate request ownership')
+        verified = _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id)
+        if not verified or verified['budget_reservation_status'] != 'SETTLED':
+            raise KernelError('CHAPTER_CANDIDATE_REPAIR_EVIDENCE_MISSING', 'Reconcile the original candidate and conservative usage')
+    result = ModelProviderResult.from_evidence(verified['provider_evidence'])
+    return {'candidate_repair': {'contract_version': 'chapter-candidate-retry-feedback.v2',
+        'source_effect_id': effect_id, 'source_request_hash': request_hash, 'source_attempt_id': attempt_id,
+        'diagnostic': diagnostic, 'rejected_candidate': result.output,
+        'instruction': 'Repair the exact latest rejected candidate within the frozen slots, knowledge and length requirements. Preserve facts and voice. Do not fabricate approval, acceptance or new knowledge.'}}

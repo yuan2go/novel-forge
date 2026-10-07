@@ -134,7 +134,8 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                 )
         if (inputs.get("foundation_task") or {}).get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}:
             result["applicability"] = []
-            def declare(value, schema, path="$", parent_present=True):
+            current_paths = inputs["foundation_task"]["contract_version"] == "foundation-generation.v4"
+            def declare(value, schema, path="" if current_paths else "$"):
                 if isinstance(schema.get("type"), list) and "null" in schema["type"]:
                     result["applicability"].append({"field_path": path,
                         "status": "APPLICABLE" if value is not None else "NOT_APPLICABLE",
@@ -142,11 +143,12 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                 if isinstance(value, dict):
                     for key, child in schema.get("properties", {}).items():
                         if key in value:
-                            declare(value[key], child, path+"."+key)
+                            token = key.replace("~", "~0").replace("/", "~1")
+                            declare(value[key], child, path+"/"+token if current_paths else path+"."+key)
                 elif isinstance(value, list):
                     for index, child in enumerate(value):
-                        declare(child, schema.get("items", {}), f"{path}[{index}]")
-            declare(result, foundation_output_schema(stage, work_requirements=True))
+                        declare(child, schema.get("items", {}), f"{path}/{index}" if current_paths else f"{path}[{index}]")
+            declare(result, foundation_output_schema(stage, work_requirements=True, rfc6901_paths=current_paths))
         return result
 
 
@@ -162,13 +164,33 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 self.calls.append({"stage": stage, "input": inputs, "output": result})
                 return result
         result = super().planning(stage, inputs)
+        task = inputs.get("world_preparation") or {}
+        if task.get("epistemic_contract") == "world-agency.v2":
+            from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
+
+            if stage == "world_candidates.generate":
+                for transition in agency_transition_paths(result).values():
+                    payload = json.loads(transition["payload_json"])
+                    if (payload["action"] == "act on the approved faction pressure"
+                        and payload["state_kind"] not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"}):
+                        payload["action_mode"] = "ROUTINE"
+                        transition["payload_json"] = json.dumps(payload)
+            elif stage == "world_candidates.evaluate":
+                result["action_classifications"] = [
+                    {"field_path": path,
+                     "supported": transition.get("action_mode") == "ROUTINE"
+                        and transition.get("action") == "act on the approved faction pressure"
+                        and transition.get("state_kind") not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"},
+                     "rationale": "Check this exact scripted ordinary faction-pressure action; epistemic or unrecognized actions require their own source-backed fixture."}
+                    for path, transition in agency_transition_paths(task["generated_portfolio"]).items()
+                ]
         if (inputs.get("planning_command") or {}).get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}:
             for row in result.get("chapter_function_matrix", []):
                 row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
             for event in result.get("narrative_event_chain", []):
                 event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Selected causal strategy of this synthetic mystery fixture"} for name in ("decision", "resistance", "irreversible_change")}
             if stage == "chapter_plan.generate":
-                if inputs["planning_command"].get("execution_contract_version") == "1.19.0":
+                if inputs["planning_command"].get("execution_contract_version") in {"1.19.0", "1.20.0"}:
                     result["chapter_contract_schema_version"] = "chapter-mission-scene.v4"
                     result["serialization_function"] = "payoff_and_new_obligation"
                 else:
