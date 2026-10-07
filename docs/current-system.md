@@ -1247,6 +1247,10 @@ Accepted-history immunity is resolved from committed Book acceptance and its exa
 output/prose versions, rather than inferred from generic state or Canon asset names.
 Recap revision proposals are immutable observations of that historical boundary,
 not accepted future events.
+The Book worker gives a pending future correction one automatic-authorization probe
+under the original Formation policy. A failed probe durably waits until its inputs
+change or an author decides, preventing an unchanged approval wait from polling.
+Regeneration consumes the accepted projection references already held by that Book Run.
 An initial Book snapshot can precede Opening and therefore contain no ChapterGroup.
 Future regeneration resolves that group from the same Book Run's durable coordination
 window and accepted cursor. A binding removed by this proposal's recorded invalidation
