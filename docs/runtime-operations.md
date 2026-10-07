@@ -262,8 +262,10 @@ recovery results; global backend qualification and literary proof remain separat
 For future Chapter work, author `book-chapter-context.v1` with
 `draft_profile: draft-context-profile-v4`, a positive `draft_token_budget` at most
 512,000, and the desired quality task budget. World/Director roles may use
-`world-production-policy.v4` with independently chosen Context allocation. Deploy
-and select Chapter Generation Pack `2.7.0` through the existing Pack Authority;
+`world-production-policy.v4` with independently chosen Context allocation. The v4
+Context profile was introduced in Chapter Generation Pack `2.7.0`; new work must
+deploy and select the current `config/capability_packs/chapter_generation_pack.json`
+(Pack `3.0.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
 then verify its compiled snapshot and the Chapter preparation report's
 `stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
 the Planning task target to 64,000 tokens; this does not increase the authorized
@@ -335,8 +337,14 @@ Book chapter target, production profile, Pack snapshot, author-supervised permis
 route/model/reasoning and finite budget expiry before execution. Preserve dispatch
 brakes until authorized conditions hold. The formal proof remains generation,
 Review, necessary edits-only Revision/ReReview, Book Acceptance and next-chapter
-consumption of accepted Canon/Narrative State. A missing or expired grant keeps
-real execution `NOT_RUN`. Finite paired Context comparisons must retain original
+consumption of accepted Canon/Narrative State. A missing or expired required grant keeps
+real execution `NOT_RUN`. Membership execution uses the authenticated resource
+contract described in Creative validation resource operations, without cumulative
+call/token/money caps. Context substages are not registered Chapter bootstrap sample
+tasks: a grant for Draft or Review cannot authorize either substage. An isolated
+native Chapter under its explicit creative-validation template can execute these
+substages, retaining strict qualification exclusions and its nonqualifying result.
+Finite paired Context comparisons must retain original
 and revised text, independent evaluation, exact task/source/model boundaries, full
 chain token/cost receipts and latency. Controlled fixture success cannot establish
 literary gain or long-term production.

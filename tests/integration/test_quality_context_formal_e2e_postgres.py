@@ -114,7 +114,7 @@ def test_native_overflow_compression_fidelity_draft_review_and_frozen_resume():
 
     case = ChapterModelEffectsPostgresTests()
     case.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(
-        routed=True
+        routed=True, native_through_review=True
     )
 
 

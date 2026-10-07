@@ -2188,6 +2188,7 @@ class PostgresChapterExecutionContractBinder:
         reference_samples = reference and graph["definition_version"] in CHAPTER_REFERENCE_SAMPLE_VERSIONS
         workflow_ref = ("chapter_reference_sampling" if reference else "chapter_provider_sampling") + "@" + graph["definition_version"] if sampling else self.workflow_definition_ref
         from .definitions import (
+            CHAPTER_COORDINATED_DEFINITION_VERSION,
             CHAPTER_MODEL_WORKFLOW_DEFINITION_ID,
             CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
         )
@@ -2197,7 +2198,7 @@ class PostgresChapterExecutionContractBinder:
             and graph["definition_name"]
             in {node.definition_name for node in ChapterNode}
             and graph["definition_version"]
-            in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS
+            in CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {CHAPTER_COORDINATED_DEFINITION_VERSION}
         ):
             workflow_ref = (
                 f"{CHAPTER_MODEL_WORKFLOW_DEFINITION_ID}@{graph['definition_version']}"
