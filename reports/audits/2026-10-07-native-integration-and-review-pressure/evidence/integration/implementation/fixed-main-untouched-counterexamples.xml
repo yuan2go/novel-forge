@@ -1,0 +1,1859 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="18" skipped="0" tests="97" time="8.480" timestamp="2026-10-07T06:57:12.396854+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_returns_durable_evidence" time="0.001"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_register_qualified_branch_in_uow_returns_durable_evidence() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+    
+&gt;       evidence = application.register_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:293: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10acdd550&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_branch_commit_contract_is_exported_from_story_planning_runtime" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_replays_exact_evidence" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_register_qualified_branch_in_uow_replays_exact_evidence() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+    
+&gt;       first = application.register_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:349: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10d8b6e10&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_rejects_conflicting_membership" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_register_qualified_branch_in_uow_rejects_conflicting_membership() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+&gt;       application.register_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:373: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10acde6f0&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[10-narrative-search-branch-evidence.v2]" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">field_index = 10, replacement = 'narrative-search-branch-evidence.v2'
+
+    @pytest.mark.parametrize(
+        ("field_index", "replacement"),
+        (
+            (10, "narrative-search-branch-evidence.v2"),
+            (11, "sha256:" + "9" * 64),
+        ),
+    )
+    def test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift(
+        field_index: int,
+        replacement: str,
+    ) -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+&gt;       application.register_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:413: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10d8cb830&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[11-sha256:9999999999999999999999999999999999999999999999999999999999999999]" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">field_index = 11
+replacement = 'sha256:9999999999999999999999999999999999999999999999999999999999999999'
+
+    @pytest.mark.parametrize(
+        ("field_index", "replacement"),
+        (
+            (10, "narrative-search-branch-evidence.v2"),
+            (11, "sha256:" + "9" * 64),
+        ),
+    )
+    def test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift(
+        field_index: int,
+        replacement: str,
+    ) -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+&gt;       application.register_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:413: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10dba0440&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_requires_reconciliation_for_legacy_row" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_register_qualified_branch_in_uow_requires_reconciliation_for_legacy_row(
+    ) -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+        uow.cursor.membership = (
+            "narrative-search-candidate:search:test:future-1",
+            "search:test",
+            "future-1",
+            "candidate:future-1",
+            "operation:future-1",
+            _projection("agency", 0.82),
+            "sha256:" + "6" * 64,
+            "agency",
+            0.82,
+            "sha256:" + "3" * 64,
+            "legacy-unbound",
+            "",
+        )
+    
+        with pytest.raises(KernelError) as reconciliation:
+&gt;           application.register_qualified_branch_in_uow(
+                uow,  # type: ignore[arg-type]
+                search_id="search:test",
+                branch_key="future-1",
+                result=_result(),
+            )
+
+tests/unit/test_narrative_search_branch_registration.py:458: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10d8cb920&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_reconcile_legacy_branch_in_uow_appends_exact_sidecar_evidence" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_reconcile_legacy_branch_in_uow_appends_exact_sidecar_evidence() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+        projection = _projection("agency", 0.82)
+        uow.cursor.membership = (
+            "narrative-search-candidate:search:test:future-1",
+            "search:test",
+            "future-1",
+            "candidate:future-1",
+            "operation:future-1",
+            projection,
+            canonical_hash(projection),
+            "agency",
+            NarrativeSearchProjection.from_mapping(projection).comparison_score,
+            "sha256:" + "3" * 64,
+            "legacy-unbound",
+            "",
+        )
+    
+&gt;       evidence = application.reconcile_legacy_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+            opening_run_id="opening:test",
+            opening_execution_id="opening-execution:test:1",
+            execution_generation=1,
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:494: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1218: in reconcile_legacy_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10dba17f0&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_reconcile_legacy_branch_in_uow_is_exactly_idempotent" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_reconcile_legacy_branch_in_uow_is_exactly_idempotent() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+        projection = _projection("agency", 0.82)
+        uow.cursor.membership = (
+            "narrative-search-candidate:search:test:future-1",
+            "search:test",
+            "future-1",
+            "candidate:future-1",
+            "operation:future-1",
+            projection,
+            canonical_hash(projection),
+            "agency",
+            NarrativeSearchProjection.from_mapping(projection).comparison_score,
+            "sha256:" + "3" * 64,
+            "legacy-unbound",
+            "",
+        )
+        options = {
+            "search_id": "search:test",
+            "branch_key": "future-1",
+            "result": _result(),
+            "opening_run_id": "opening:test",
+            "opening_execution_id": "opening-execution:test:1",
+            "execution_generation": 1,
+        }
+    
+&gt;       first = application.reconcile_legacy_qualified_branch_in_uow(
+            uow, **options  # type: ignore[arg-type]
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:547: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1218: in reconcile_legacy_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10dba2270&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_reconcile_legacy_branch_rejects_outer_execution_drift" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_reconcile_legacy_branch_rejects_outer_execution_drift() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+        projection = _projection("agency", 0.82)
+        uow.cursor.membership = (
+            "narrative-search-candidate:search:test:future-1",
+            "search:test",
+            "future-1",
+            "candidate:future-1",
+            "operation:future-1",
+            projection,
+            canonical_hash(projection),
+            "agency",
+            NarrativeSearchProjection.from_mapping(projection).comparison_score,
+            "sha256:" + "3" * 64,
+            "legacy-unbound",
+            "",
+        )
+&gt;       first = application.reconcile_legacy_qualified_branch_in_uow(
+            uow,  # type: ignore[arg-type]
+            search_id="search:test",
+            branch_key="future-1",
+            result=_result(),
+            opening_run_id="opening:test",
+            opening_execution_id="opening-execution:test:1",
+            execution_generation=1,
+        )
+
+tests/unit/test_narrative_search_branch_registration.py:580: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1218: in reconcile_legacy_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10d716360&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_selection_uses_the_same_search_then_membership_lock_order" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_selection_rejects_legacy_membership_without_explicit_sidecar_gate" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_reconciled_selection_requires_exact_outer_checkpoint" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_register_qualified_branch_in_uow_rejects_other_unique_conflict" time="0.000"><failure message="AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',&#10;        e.external_effect_id,e.operation_id,v.content&#10;        FROM authority_operation_output_asset output&#10;        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id&#10;        JOIN authority_asset a ON a.asset_id=v.asset_id&#10;        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id&#10;        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'&#10;          AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'&#10;          AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'">def test_register_qualified_branch_in_uow_rejects_other_unique_conflict() -&gt; None:
+        application = PostgresNarrativeSearchApplication(
+            "postgresql://authority.test/database",
+            planning=_Planning(),  # type: ignore[arg-type]
+        )
+        uow = _Uow()
+        uow.cursor.suppress_insert = True
+    
+        with pytest.raises(KernelError) as conflict:
+&gt;           application.register_qualified_branch_in_uow(
+                uow,  # type: ignore[arg-type]
+                search_id="search:test",
+                branch_key="future-1",
+                result=_result(),
+            )
+
+tests/unit/test_narrative_search_branch_registration.py:735: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/search_application.py:1004: in register_qualified_branch_in_uow
+    qualification = self._lock_qualification_for_branch_registration(
+src/novel_forge/modules/story_planning_runtime/search_application.py:1539: in _lock_qualification_for_branch_registration
+    admission = candidate_validation(uow.cursor, project_id=project_id, asset_version_id=candidate_asset_version_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/creative_validation.py:14: in candidate_validation
+    cursor.execute("""SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.unit.test_narrative_search_branch_registration._Cursor object at 0x10dba1e20&gt;
+statement = "SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',\n        e....    AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+parameters = ['project:test', 'candidate:future-1']
+
+    def execute(self, statement: str, parameters: list[Any]) -&gt; None:
+        if "FROM authority_story_narrative_search\n" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("search")
+            self._row = (
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "GENERATING",
+            )
+            return
+        if "FROM authority_story_planning_generation" in statement:
+            assert "FOR SHARE" in statement
+            self.read_order.append("generation")
+            self._row = (
+                "generation:future-1",
+                "operation:future-1",
+                "project:test",
+                "workspace:test",
+                "book:test",
+                "book_plan.generate",
+                "BOOK",
+                "book:main",
+                "sha256:" + "1" * 64,
+                "APPROVAL_PENDING",
+                "candidate:future-1",
+                "search:test",
+                "future-1",
+            )
+            return
+        if "FROM authority_story_planning_candidate AS candidate" in statement:
+            assert "FOR SHARE OF candidate,version,asset" in statement
+            self.read_order.append("candidate")
+            self._row = (
+                "generation:future-1",
+                "project:test",
+                "book:test",
+                "sha256:" + "2" * 64,
+                "sha256:" + "2" * 64,
+                "project:test",
+                {"narrative_search_projection": _projection("agency", 0.82)},
+            )
+            return
+        if "FROM authority_narrative_design_qualification" in statement:
+            assert "FOR SHARE OF qualification" in statement
+            self.read_order.append("qualification")
+            self._rows = self._qualification_rows()
+            self._row = None
+            return
+        if "INSERT INTO authority_story_narrative_search_candidate" in statement:
+            self.insert_parameters = list(parameters)
+            if self.suppress_insert:
+                self._row = None
+                return
+            if self.membership is None:
+                self.membership = (
+                    parameters[0],
+                    parameters[1],
+                    parameters[2],
+                    parameters[3],
+                    parameters[4],
+                    parameters[5].obj,
+                    parameters[6],
+                    parameters[7],
+                    parameters[8],
+                    parameters[9],
+                    parameters[10],
+                    parameters[11],
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "INSERT INTO authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            self.reconciliation_insert_parameters = list(parameters)
+            if self.reconciliation is None:
+                self.reconciliation = tuple(
+                    parameter.obj if hasattr(parameter, "obj") else parameter
+                    for parameter in parameters
+                )
+                self._row = (parameters[0],)
+            else:
+                self._row = None
+            return
+        if (
+            "FROM authority_story_narrative_branch_reconciliation_evidence"
+            in statement
+        ):
+            assert "FOR SHARE" in statement
+            self.read_order.append("reconciliation")
+            self._row = self.reconciliation
+            return
+        if "FROM authority_story_narrative_search_candidate" in statement:
+            assert "FOR UPDATE" in statement
+            self.read_order.append("membership")
+            self._row = self.membership
+            return
+&gt;       raise AssertionError(statement)
+E       AssertionError: SELECT v.content_hash,e.request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}',
+E               e.external_effect_id,e.operation_id,v.content
+E               FROM authority_operation_output_asset output
+E               JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
+E               JOIN authority_asset a ON a.asset_id=v.asset_id
+E               JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+E               WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+E                 AND e.request_payload-&gt;&gt;'stage'=v.content-&gt;&gt;'generator_operation_name'
+E                 AND e.request_payload #&gt;&gt; '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'
+
+tests/unit/test_narrative_search_branch_registration.py:198: AssertionError</failure></testcase><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_explore_routes_every_qualified_future_through_coordinated_committer" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_explore_preserves_exact_opening_fence_on_every_future_command" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_explore_resumes_admitted_branch_with_its_frozen_outer_fence" time="0.000" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_explore_rejects_semantic_drift_in_an_admitted_branch_command" time="0.001" /><testcase classname="tests.unit.test_narrative_search_branch_registration" name="test_explore_rejects_committer_evidence_for_another_branch" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_first_chapter_empty_window_and_frozen_replay" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_source_rejects_future_unaccepted_foreign_and_changed_prose[chapter_number-2]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_source_rejects_future_unaccepted_foreign_and_changed_prose[book_id-other]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_source_rejects_future_unaccepted_foreign_and_changed_prose[project_id-other]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_source_rejects_future_unaccepted_foreign_and_changed_prose[workspace_id-other]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_source_rejects_future_unaccepted_foreign_and_changed_prose[acceptance_status-CANDIDATE]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_source_rejects_future_unaccepted_foreign_and_changed_prose[text_hash-wrong]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_full_excerpt_exclusion_and_overflow_are_explicit" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_exact_quote_outside_frozen_excerpt_is_not_reviewed_evidence" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[quote-\u865a\u6784\u5f15\u6587]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[start--1]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[end-999]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[asset_version_id-unaccepted]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[text_hash-wrong]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[content_hash-wrong]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_support_requires_exact_source_hash_unicode_span_and_quote[chapter_number-99]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_unicode_code_points_and_target_hash_are_checked" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_all_cross_chapter_categories_retain_paired_evidence[CAUSAL_CARRYOVER]" time="0.007" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_all_cross_chapter_categories_retain_paired_evidence[MOTIVATION_CONTINUITY]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_all_cross_chapter_categories_retain_paired_evidence[REDUNDANT_RETELLING]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_all_cross_chapter_categories_retain_paired_evidence[RELATIONSHIP_CONTINUITY]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_all_cross_chapter_categories_retain_paired_evidence[SPATIAL_ACTION_CONTINUITY]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_all_cross_chapter_categories_retain_paired_evidence[VOICE_DRIFT]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_same_category_locations_are_distinct_and_lineage_survives_candidate_change" time="0.001" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_intentional_repetition_or_change_cannot_become_blocker[INTENTIONAL_RECAP]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_intentional_repetition_or_change_cannot_become_blocker[MOTIF]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_intentional_repetition_or_change_cannot_become_blocker[REINTERPRETATION]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_intentional_repetition_or_change_cannot_become_blocker[MOTIVATED_CHANGE]" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_targeted_edit_cannot_rewrite_unrelated_prose" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_rereview_requires_every_prior_issue_and_preservation_dimension" time="0.001" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_high_score_cannot_replace_unresolved_or_regressed_candidate" time="0.000"><failure message="AssertionError: assert 'a' == 'b'&#10;  &#10;  - b&#10;  + a">def test_high_score_cannot_replace_unresolved_or_regressed_candidate():
+        previous = CandidateEvidence("a", {}, 60, ("issue",), "review")
+        challenger = CandidateEvidence(
+            "b",
+            {},
+            99,
+            ("issue",),
+            "rereview",
+            "actionable-diagnostics.v1",
+            ({"status": "SATISFIED", "preservation": "PRESERVED"},),
+            cross_chapter_review=True,
+            preservation_checks=tuple(
+                {"status": "PRESERVED"} for _ in PRESERVATION_DIMENSIONS
+            ),
+        )
+    
+        def selected(value):
+            return compare_candidates(
+                project_id="p",
+                chapter_root_operation_id="root",
+                previous=previous,
+                challenger=value,
+                minimum_net_improvement=1,
+            )["selected_asset_version_id"]
+    
+        assert selected(challenger) == "a"
+        challenger = replace(challenger, blocker_codes=())
+&gt;       assert selected(challenger) == "b"
+E       AssertionError: assert 'a' == 'b'
+E         
+E         - b
+E         + a
+
+tests/unit/test_cross_chapter_prose_review.py:392: AssertionError</failure></testcase><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_provider_views_isolate_history_and_schema_keeps_legacy_contract" time="0.005" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_normal_chinese_chapter_uses_token_estimate_then_complete_admission" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_schema_normalization_and_domain_agree_on_judgment_combinations" time="0.023" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_rereview_materialized_task_retains_exact_before_and_changed_target" time="0.001" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_unresolved_issue_moves_to_exact_new_span_without_losing_origin" time="0.000" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_native_review_preflight_and_handler_keep_exact_incumbent_and_sample_target[False]" time="0.003" /><testcase classname="tests.unit.test_cross_chapter_prose_review" name="test_native_review_preflight_and_handler_keep_exact_incumbent_and_sample_target[True]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_process_brake_is_fail_closed[-False]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_process_brake_is_fail_closed[0-False]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_process_brake_is_fail_closed[false-False]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_process_brake_is_fail_closed[1-True]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_process_brake_is_fail_closed[true-True]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_process_brake_is_fail_closed[invalid-True]" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_suspended_process_does_not_query_or_claim_historical_work" time="0.001" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_scoped_pause_blocks_but_unmanaged_preserves_legacy_behavior" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_runtime_coordination_process_pause_allocates_no_job_attempt" time="0.001" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_only_native_pause_exception_with_matching_control_evidence_is_exempt" time="0.000" /><testcase classname="tests.unit.test_runtime_dispatch_control" name="test_formation_pause_waits_without_recording_business_failure" time="0.000"><failure message="TypeError: 'Mock' object is not subscriptable">def test_formation_pause_waits_without_recording_business_failure():
+        from types import SimpleNamespace
+        from novel_forge.modules.command_kernel.dispatch_control import RuntimeDispatchPaused
+        from novel_forge.workers.book_authority import execute_story_formation_claim
+        claim = SimpleNamespace(job_kind="STORY_FORMATION_ADVANCE", runtime_group="story_formation",
+            subject_kind="STORY_FORMATION_RUN", subject_id="formation", attempt_id="attempt",
+            input_snapshot={"observed_stage": "THEME_CONTRACT", "observed_version": 4})
+        pause = RuntimeDispatchPaused("paused", {"project_id": "project", "scope": "PROJECT", "version": 1})
+        formation, jobs = Mock(), Mock()
+        formation.advance_expected.side_effect = pause
+        with pytest.raises(RuntimeDispatchPaused):
+&gt;           execute_story_formation_claim(jobs, formation, Mock(), claim)
+
+tests/unit/test_runtime_dispatch_control.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+runtime_jobs = &lt;Mock id='4484543456'&gt;, formation = &lt;Mock id='4484543600'&gt;
+principal = &lt;Mock id='4484542976'&gt;
+claim = namespace(job_kind='STORY_FORMATION_ADVANCE', runtime_group='story_formation', subject_kind='STORY_FORMATION_RUN', subject_id='formation', attempt_id='attempt', input_snapshot={'observed_stage': 'THEME_CONTRACT', 'observed_version': 4})
+lease_seconds = 30
+
+    def execute_story_formation_claim(
+        runtime_jobs: RuntimeJobAuthority,
+        formation: StoryFormationApplication,
+        principal: Principal,
+        claim: RuntimeJobClaim,
+        *,
+        lease_seconds: int = 30,
+    ) -&gt; dict[str, object]:
+        if (
+            claim.job_kind != "STORY_FORMATION_ADVANCE"
+            or claim.runtime_group != "story_formation"
+            or claim.subject_kind != "STORY_FORMATION_RUN"
+        ):
+            raise RuntimeError("Book worker received an invalid Story Formation job")
+        runtime_jobs.start(claim)
+        current = formation.require(claim.subject_id)
+&gt;       if current["lifecycle"] in {"FAILED", "WAITING_APPROVAL", "ABORTED"}:
+           ^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'Mock' object is not subscriptable
+
+src/novel_forge/workers/book_authority.py:321: TypeError</failure></testcase><testcase classname="tests.unit.test_story_formation_worker_wait" name="test_manual_approval_completes_technical_job_without_retry_or_failure" time="0.000"><failure message="AttributeError: 'Formation' object has no attribute 'require'">def test_manual_approval_completes_technical_job_without_retry_or_failure() -&gt; None:
+        principal = Principal(
+            principal_id="formation-worker",
+            principal_type=PrincipalType.WORKER,
+            permissions=frozenset({"book.authority.execute"}),
+            project_scope=frozenset({"project-1"}),
+            authentication_source="book_formation_worker_configuration",
+        )
+        claim = SimpleNamespace(
+            job_kind="STORY_FORMATION_ADVANCE",
+            runtime_group="story_formation",
+            subject_kind="STORY_FORMATION_RUN",
+            subject_id="story-formation:1",
+            attempt_id="runtime-attempt:1",
+            input_snapshot={"observed_stage": "THEME_CONTRACT", "observed_version": 4},
+        )
+    
+        class Jobs:
+            def __init__(self) -&gt; None:
+                self.completed = None
+                self.failed = None
+                self.checkpoints: list[dict[str, object]] = []
+    
+            def start(self, _claim: object) -&gt; None:
+                pass
+    
+            def heartbeat(self, _claim: object, *, lease_seconds: int) -&gt; None:
+                assert lease_seconds == 30
+    
+            def checkpoint(self, _claim: object, value: dict[str, object]) -&gt; None:
+                self.checkpoints.append(value)
+    
+            def complete(self, _claim: object, value: dict[str, object]) -&gt; None:
+                self.completed = value
+    
+            def fail(self, _claim: object, value: dict[str, object]) -&gt; None:
+                self.failed = value
+    
+        class Formation:
+            failure_recorded = False
+    
+            def advance_expected(self, *_args: object, **kwargs: object) -&gt; None:
+                assert kwargs["principal"] is principal
+                raise FormationApprovalRequired(
+                    stage="THEME_CONTRACT",
+                    authority="STORY_PLANNING_AUTHORITY",
+                    candidate_asset_version_id="asset-version:theme",
+                    candidate_content_hash="sha256:" + "a" * 64,
+                    candidate_asset_version_ids=("asset-version:theme",),
+                )
+    
+            def wait_for_approval(self, *_args: object, **kwargs: object):
+                assert kwargs["principal"] is principal
+                assert kwargs["runtime_attempt_id"] == claim.attempt_id
+                return {
+                    "formation_run_id": claim.subject_id,
+                    "current_stage": "THEME_CONTRACT",
+                    "lifecycle": "WAITING_APPROVAL",
+                    "version": 5,
+                }
+    
+            def record_failure(self, *_args: object, **_kwargs: object) -&gt; None:
+                self.failure_recorded = True
+    
+        jobs = Jobs()
+        formation = Formation()
+&gt;       result = execute_story_formation_claim(
+            jobs,  # type: ignore[arg-type]
+            formation,  # type: ignore[arg-type]
+            principal,
+            claim,  # type: ignore[arg-type]
+            lease_seconds=30,
+        )
+
+tests/unit/test_story_formation_worker_wait.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+runtime_jobs = &lt;tests.unit.test_story_formation_worker_wait.test_manual_approval_completes_technical_job_without_retry_or_failure.&lt;locals&gt;.Jobs object at 0x10b4c83b0&gt;
+formation = &lt;tests.unit.test_story_formation_worker_wait.test_manual_approval_completes_technical_job_without_retry_or_failure.&lt;locals&gt;.Formation object at 0x10b4c85c0&gt;
+principal = Principal(principal_id='formation-worker', principal_type=&lt;PrincipalType.WORKER: 'worker'&gt;, permissions=frozenset({'bo...hority.execute'}), project_scope=frozenset({'project-1'}), authentication_source='book_formation_worker_configuration')
+claim = namespace(job_kind='STORY_FORMATION_ADVANCE', runtime_group='story_formation', subject_kind='STORY_FORMATION_RUN', sub...rmation:1', attempt_id='runtime-attempt:1', input_snapshot={'observed_stage': 'THEME_CONTRACT', 'observed_version': 4})
+lease_seconds = 30
+
+    def execute_story_formation_claim(
+        runtime_jobs: RuntimeJobAuthority,
+        formation: StoryFormationApplication,
+        principal: Principal,
+        claim: RuntimeJobClaim,
+        *,
+        lease_seconds: int = 30,
+    ) -&gt; dict[str, object]:
+        if (
+            claim.job_kind != "STORY_FORMATION_ADVANCE"
+            or claim.runtime_group != "story_formation"
+            or claim.subject_kind != "STORY_FORMATION_RUN"
+        ):
+            raise RuntimeError("Book worker received an invalid Story Formation job")
+        runtime_jobs.start(claim)
+&gt;       current = formation.require(claim.subject_id)
+                  ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Formation' object has no attribute 'require'
+
+src/novel_forge/workers/book_authority.py:320: AttributeError</failure></testcase><testcase classname="tests.unit.test_chapter_agent_binding_boundary" name="test_controlled_unmigrated_stage_fails_closed_before_pep_dispatch" time="0.000" /><testcase classname="tests.unit.test_chapter_agent_binding_boundary" name="test_development_compatibility_is_explicitly_recorded" time="0.000" /><testcase classname="tests.unit.test_chapter_agent_binding_boundary" name="test_legacy_binding_surface_tracks_model_capability_stages" time="0.000"><failure message="AssertionError: assert frozenset({'a...dicate', ...}) == {'agent_sessi...mercial', ...}&#10;  &#10;  Extra items in the left set:&#10;  'model_reference_adjudicate'&#10;  'model_reference_evaluate'&#10;  Use -v to get more diff">def test_legacy_binding_surface_tracks_model_capability_stages() -&gt; None:
+&gt;       assert AGENT_BOUND_CHAPTER_STAGES == {
+            "memo",
+            "canon_support",
+            "retrieval",
+            "retrieval_query_expansion",
+            "draft",
+            "review",
+            "revision",
+            "rereview",
+            "canon_extraction",
+            "quality_structural",
+            "quality_commercial",
+            "quality_source_originality",
+            "quality_longform",
+            "quality_platform",
+            "agent_session",
+        }
+E       AssertionError: assert frozenset({'a...dicate', ...}) == {'agent_sessi...mercial', ...}
+E         
+E         Extra items in the left set:
+E         'model_reference_adjudicate'
+E         'model_reference_evaluate'
+E         Use -v to get more diff
+
+tests/unit/test_chapter_agent_binding_boundary.py:61: AssertionError</failure></testcase><testcase classname="tests.unit.test_creation_runner_settings" name="test_native_creation_runners_preserve_isolated_object_store_configuration[run_creation_synthesis]" time="0.050"><failure message="assert 0 == 1&#10; +  where 0 = len([])">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x10dba3050&gt;
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-971/test_native_creation_runners_p0')
+runner_name = 'run_creation_synthesis'
+
+    @pytest.mark.parametrize('runner_name', ['run_creation_synthesis', 'run_world_production_smoke'])
+    def test_native_creation_runners_preserve_isolated_object_store_configuration(monkeypatch, tmp_path, runner_name):
+        import scripts.run_creation_synthesis as run_creation_synthesis
+        import scripts.run_world_production_smoke as run_world_production_smoke
+        runner = run_creation_synthesis if runner_name == 'run_creation_synthesis' else run_world_production_smoke
+        values = {
+            'NOVEL_FORGE_ENVIRONMENT': 'production',
+            'NOVEL_FORGE_DATABASE_URL': 'postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1/isolated_pilot_test',
+            'NOVEL_FORGE_MINIO_ENDPOINT': 'isolated-storage.invalid:9911',
+            'NOVEL_FORGE_MINIO_ACCESS_KEY': 'dummy-pilot-access',
+            'NOVEL_FORGE_MINIO_SECRET_KEY': 'dummy-pilot-secret',
+            'NOVEL_FORGE_MINIO_SECURE': 'true',
+            'NOVEL_FORGE_MINIO_RAW_BUCKET': 'pilot-raw',
+            'NOVEL_FORGE_MINIO_ARTIFACT_BUCKET': 'pilot-artifacts',
+            'NOVEL_FORGE_MINIO_EXPORT_BUCKET': 'pilot-exports',
+        }
+        for key, value in values.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **_kw: '' if args[1] == 'status' else 'a' * 40)
+        monkeypatch.setattr(runner, 'build_implementation_tree_identity', lambda _root: {'implementation_tree_sha': 'fixture-tree'})
+        monkeypatch.setattr(runner, 'validate_configuration', lambda _values: None)
+        import psycopg
+        connection = SimpleNamespace(execute=lambda _sql: SimpleNamespace(fetchone=lambda: ('isolated_pilot_test',)))
+        monkeypatch.setattr(psycopg, 'connect', lambda *_args, **_kw: nullcontext(connection))
+        captured = []
+        def capture(settings, **_kwargs):
+            captured.append(settings)
+            raise RuntimeError('test stops before execution composition')
+        monkeypatch.setattr(runner, 'build_production_execution_composition', capture)
+        args = ['--expected-sha', 'a' * 40, '--root', str(tmp_path / 'runtime'), '--run-key', 'settings-only',
+                '--evidence-dir', str(tmp_path / 'evidence'), '--execute']
+        if runner_name == 'run_creation_synthesis':
+            monkeypatch.setattr(runner, 'authorize_execution', lambda *_args: {'accounting_basis': 'FIXTURE'})
+            monkeypatch.setattr(runner, 'build_trusted_principal_resolver', lambda **_kwargs: Mock())
+            monkeypatch.setattr(runner, 'build_content_authority_application', lambda *_args, **_kwargs: None)
+            source = Path(__file__).resolve().parents[2] / 'config/production/knowledge-closure'
+            args += ['--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
+                     '--formation-policy', str(source / 'formation.json'), '--project-id', 'settings-project', '--book-id', 'settings-book']
+        else:
+            args += ['--input-snapshot-id', 'settings-snapshot']
+        assert runner.main(args) == 2
+&gt;       assert len(captured) == 1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/unit/test_creation_runner_settings.py:51: AssertionError</failure></testcase><testcase classname="tests.unit.test_creation_runner_settings" name="test_native_creation_runners_preserve_isolated_object_store_configuration[run_world_production_smoke]" time="0.002" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_bind_four_dimensions_and_exact_producer_scope[dimension-coverage]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_bind_four_dimensions_and_exact_producer_scope[evaluation_version-older-contract]" time="0.001" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_bind_four_dimensions_and_exact_producer_scope[chapter_end-2]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_bind_four_dimensions_and_exact_producer_scope[protocol_version-unknown]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_need_exact_source_and_review_locations[quote-not the text]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_need_exact_source_and_review_locations[sample_path-/coverage_complete]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_need_exact_source_and_review_locations[window_id-another-window]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_need_exact_source_and_review_locations[start--1]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_reviewer_labels_need_exact_source_and_review_locations[observation-]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output" time="0.034"><failure message="AssertionError: assert '1.3.0' == '1.2.0'&#10;  &#10;  - 1.2.0&#10;  ?   ^&#10;  + 1.3.0&#10;  ?   ^">def test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output():
+        from novel_forge.modules.book_followup_authority.definitions import book_followup_operation_definitions
+        from novel_forge.modules.capability_packs.longform_profiles import build_longform_prose_review_pack_profile, build_longform_prose_review_sample_pack_profile
+        from novel_forge.modules.capability_packs.operation_catalog import governed_workflow_binding_catalog
+        from novel_forge.modules.content_authority.definitions import content_operation_definitions
+        from novel_forge.storage.authority_repositories import definition_hash
+    
+        args = {"application_build_id": "sample-test", "commit_sha": "e" * 40}
+        formal_definition = next(item for item in book_followup_operation_definitions(**args) if item["name"] == "longform.prose_review")
+        definition = prose_sample_definition(**args)
+        formal = build_longform_prose_review_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=definition_hash(formal_definition))
+        sample = build_longform_prose_review_sample_pack_profile(formal, operation_definition_hash=definition_hash(definition))
+        assert sample.artifact_catalog == formal.artifact_catalog
+&gt;       assert sample.manifest["identity"]["version"] == formal.manifest["identity"]["version"] == "1.2.0"
+E       AssertionError: assert '1.3.0' == '1.2.0'
+E         
+E         - 1.2.0
+E         ?   ^
+E         + 1.3.0
+E         ?   ^
+
+tests/unit/test_prose_reviewer_sampling.py:65: AssertionError</failure></testcase><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_prose_sample_requires_separate_reference_purpose_and_exact_frozen_binding" time="0.027" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_prose_sampling_replacement_never_overwrites_success_or_unknown[SUCCEEDED-effects0-budgets0]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_prose_sampling_replacement_never_overwrites_success_or_unknown[FAILED_FINAL-effects1-budgets1]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_prose_sampling_replacement_never_overwrites_success_or_unknown[FAILED_FINAL-effects2-budgets2]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_prose_sampling_replacement_never_overwrites_success_or_unknown[RUNNING-effects3-budgets3]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_native_prose_budget_keeps_remote_range_and_authorizes_its_upper_bound" time="0.009" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_independent_reviewer_projection_uses_only_adjudicated_lower_bounds[PASSED-interval0-0.85]" time="0.007" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_independent_reviewer_projection_uses_only_adjudicated_lower_bounds[FAILED-interval1-0.0]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_independent_reviewer_projection_uses_only_adjudicated_lower_bounds[PASSED-interval2-None]" time="0.000" /><testcase classname="tests.unit.test_prose_reviewer_sampling" name="test_native_sample_api_uses_trusted_actor_and_rejects_wrong_book_or_grant" time="0.161" /><testcase classname="tests.architecture.test_repository_execution_boundaries.RepositoryExecutionBoundaryTests" name="test_execution_plane_imports_no_business_domain_module" time="0.104"><failure message="AssertionError: Lists differ: [('routing_runtime.py', 'novel_forge.modul[125 chars]ds')] != []&#10;&#10;First list contains 2 additional elements.&#10;First extra element 0:&#10;('routing_runtime.py', 'novel_forge.modules.story_planning_runtime.execution')&#10;&#10;+ []&#10;- [('routing_runtime.py', 'novel_forge.modules.story_planning_runtime.execution'),&#10;-  ('execution_template.py',&#10;-   'novel_forge.modules.authority_handler_runtime.policy_commands')]">self = &lt;test_repository_execution_boundaries.RepositoryExecutionBoundaryTests testMethod=test_execution_plane_imports_no_business_domain_module&gt;
+
+    def test_execution_plane_imports_no_business_domain_module(self) -&gt; None:
+        violations: list[tuple[str, str]] = []
+        allowed = (
+            "novel_forge.modules.production_execution",
+            "novel_forge.modules.provider_control",
+            "novel_forge.modules.command_kernel",
+        )
+        for path in EXECUTION_PLANE.glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.ImportFrom) or not node.module:
+                    continue
+                if not node.module.startswith("novel_forge.modules."):
+                    continue
+                if not node.module.startswith(allowed):
+                    violations.append((path.name, node.module))
+&gt;       self.assertEqual(violations, [])
+E       AssertionError: Lists differ: [('routing_runtime.py', 'novel_forge.modul[125 chars]ds')] != []
+E       
+E       First list contains 2 additional elements.
+E       First extra element 0:
+E       ('routing_runtime.py', 'novel_forge.modules.story_planning_runtime.execution')
+E       
+E       + []
+E       - [('routing_runtime.py', 'novel_forge.modules.story_planning_runtime.execution'),
+E       -  ('execution_template.py',
+E       -   'novel_forge.modules.authority_handler_runtime.policy_commands')]
+
+tests/architecture/test_repository_execution_boundaries.py:56: AssertionError</failure></testcase><testcase classname="tests.architecture.test_repository_execution_boundaries.RepositoryExecutionBoundaryTests" name="test_repository_ast_execution_boundary_has_no_business_violation" time="5.891" /><testcase classname="tests.architecture.test_capability_pack_authority_boundaries" name="test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed" time="0.001"><failure message="assert 'CapabilityPackApprovalScope.from_payload' in 'from __future__ import annotations\n\nfrom dataclasses import asdict, dataclass\nimport json\nfrom typing import Any,...ilityPackRuntimeResolver&quot;,\n    &quot;chapter_node_binding_from_snapshot&quot;,\n    &quot;materialize_registered_pack_version&quot;,\n]\n'">def test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed() -&gt; None:
+        runtime = (
+            ROOT / "src/novel_forge/modules/capability_pack_authority/runtime.py"
+        ).read_text(encoding="utf-8")
+        application = (
+            ROOT / "src/novel_forge/modules/capability_pack_authority/application.py"
+        ).read_text(encoding="utf-8")
+        repository = (
+            ROOT / "src/novel_forge/storage/capability_pack_authority_repositories.py"
+        ).read_text(encoding="utf-8")
+        policy = (
+            ROOT / "src/novel_forge/modules/capability_pack_authority/policy.py"
+        ).read_text(encoding="utf-8")
+        migration_71 = (
+            ROOT
+            / "src/novel_forge/storage/migrations/versions/"
+            "v20260805_0071_capability_pack_authority.py"
+        ).read_text(encoding="utf-8")
+        migration = (
+            ROOT
+            / "src/novel_forge/storage/migrations/versions/"
+            "v20260806_0072_capability_pack_integrity_hardening.py"
+        ).read_text(encoding="utf-8")
+        query = (
+            ROOT / "src/novel_forge/modules/capability_pack_authority/query.py"
+        ).read_text(encoding="utf-8")
+        assert "RolloutStatus.COMPLETED" not in runtime
+        assert "complete_rollout(" in application and "activate_deployment_cas(" in repository
+        assert "CapabilityPackApprovalScope.from_payload" in application
+&gt;       assert "CapabilityPackApprovalScope.from_payload" in runtime
+E       assert 'CapabilityPackApprovalScope.from_payload' in 'from __future__ import annotations\n\nfrom dataclasses import asdict, dataclass\nimport json\nfrom typing import Any,...ilityPackRuntimeResolver",\n    "chapter_node_binding_from_snapshot",\n    "materialize_registered_pack_version",\n]\n'
+
+tests/architecture/test_capability_pack_authority_boundaries.py:114: AssertionError</failure></testcase></testsuite></testsuites>

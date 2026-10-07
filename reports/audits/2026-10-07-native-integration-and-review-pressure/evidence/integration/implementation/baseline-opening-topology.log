@@ -1,0 +1,71 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation _
+
+    def test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation() -> (
+        None
+    ):
+        base = _command("book_plan.generate")
+        topology_budget = {
+            "contract_version": "book-opening-topology-budget.v2",
+            "policy_contract_version": "book-opening-provider-budget.v2",
+            "policy_hash": "sha256:" + "b" * 64,
+            "arc_count": 2,
+            "calls_per_search": 6,
+            "reserved_search_count": 1,
+            "provider_call_capacity": 48,
+            "reserved_provider_calls": 6,
+            "max_volume_count": 4,
+        }
+        command = StoryPlanningGenerationCommand(
+            project_id=base.project_id,
+            workspace_id=base.workspace_id,
+            book_id=base.book_id,
+            actor_id=base.actor_id,
+            generator_operation_name=base.generator_operation_name,
+            logical_key="book:main",
+            input_versions=base.input_versions,
+            idempotency_key=base.idempotency_key,
+            trace_id=base.trace_id,
+            correlation_id=base.correlation_id,
+            narrative_search_id="search:book",
+            narrative_search_branch_key="future-1",
+            narrative_search_strategy_directive="establish sustainable architecture",
+            narrative_search_planning_horizon={
+                "level": "BOOK",
+                "target_chapters": 12,
+                "opening_topology_budget": topology_budget,
+            },
+            narrative_search_desired_transformation={
+                "required_target_chapters": 12,
+            },
+            narrative_search_hard_constraints=("the Opening topology budget is immutable",),
+        )
+        candidate = planning_fixture_response(
+            "book_plan.generate",
+            {
+                "planning_command": {
+                    "logical_key": "book:main",
+                    "narrative_search_planning_horizon": {
+                        "level": "BOOK",
+                        "target_chapters": 12,
+                    },
+                }
+            },
+        )
+        candidate["volume_skeleton"] = [
+            {"volume": ordinal, "goal": f"volume {ordinal}"} for ordinal in range(1, 5)
+        ]
+        _validate_narrative_search_horizon(command, candidate)
+    
+        oversized = deepcopy(candidate)
+        oversized["volume_skeleton"].append({"volume": 5, "goal": "poisoned outer"})
+>       with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED'
+E         Actual message: 'NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT: Book candidate differs from frozen Opening workload'
+
+tests/unit/test_story_planning_runtime.py:2258: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_story_planning_runtime.py::test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation
+1 failed, 145 deselected in 0.86s

@@ -9,6 +9,10 @@ from .dynamics import WorldTransition
 from .production_planning import WorldProductionPolicy
 
 
+def world_transition_payload_schema() -> dict[str, Any]:
+    return world_transition_schema()
+
+
 def _object(properties: dict[str, Any]) -> dict[str, Any]:
     return {
         "type": "object",
@@ -133,7 +137,8 @@ def world_transition_schema() -> dict[str, Any]:
 
 
 def world_generation_schema(
-    policy: WorldProductionPolicy, *, audience_scoped: bool = False
+    policy: WorldProductionPolicy, *, audience_scoped: bool = False,
+    arc_refs: tuple[str, ...] | None = None, obligation_refs: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     transition = _object(
         {
@@ -207,6 +212,11 @@ def world_generation_schema(
             ),
         }
     )
+    for key, allowed in (("arc_refs", arc_refs), ("obligation_refs", obligation_refs)):
+        if allowed is not None:
+            candidate["properties"][key] = {"type": "array", "maxItems": len(allowed),
+                "items": {"type": "string", **({"enum": list(allowed)} if allowed else {})},
+                "description": "Only these exact native references are authorized; use an empty array when none applies."}
     if audience_scoped:
         candidate["properties"]["information_scope"] = _object(
             {

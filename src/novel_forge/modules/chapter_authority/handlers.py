@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
 from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
 import hashlib
@@ -222,11 +224,17 @@ class _PlanHandler:
                 "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
                 "ChapterPlan command identity does not match the frozen AssetVersion",
             )
-        if (request.definition_version in {"3.8.0", "3.8.0-author-input.v2"}
+        if (request.definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
                 and source_plan.content.get("source_planning_candidate_asset_version_id")
                 and source_plan.content.get("runtime_projection_version") != "2.0.0"):
             raise KernelError("CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED",
                 "Current production cannot select a legacy projection with fabricated work methods")
+        if (request.definition_version == '3.9.16'
+                and source_plan.content.get('source_planning_candidate_asset_version_id')
+                and ((source_plan.content.get('runtime_projection_version'), source_plan.content.get('chapter_contract_schema_version'))
+                     not in {('2.0.0','chapter-mission-scene.v3'), ('3.0.0','chapter-mission-scene.v4')})):
+            raise KernelError('CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED',
+                              'Current Plan requires an exact declared method projection contract')
         plan, qualification = normalize_authoritative_chapter_plan(
             project_id=request.project_id,
             expected_chapter=chapter,
@@ -278,7 +286,7 @@ class _PlanHandler:
                 "workspace_id": request.workspace_id,
                 **({"style_policy_version_id": next(
                     (item["asset_version_id"] for item in selected if item["asset_type"] == "style_policy"), ""
-                )} if request.definition_version == "3.8.0" else {}),
+                )} if request.semantic_definition_version in {"3.8.0", "3.9.0"} else {}),
                 "quality_profile_version_id": next(
                     (
                         item["asset_version_id"]
@@ -360,7 +368,7 @@ class _ExecutionIntentHandler:
             policies = [
                 item for item in request.inputs if item.asset_type == "style_policy"
             ]
-            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2"}:
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
                 if len(policies) != 1 or (
                     policies[0].content.get("contract_version") != "foundation-style-projection.v4"
                     or not any(fact.get("key") == "work_applicability"
@@ -1487,6 +1495,7 @@ class _DraftHandler:
                     request.require_input("context_bundle").content,
                 )
             return authored
+        from .candidate_repair import candidate_repair_payload
         plan = request.require_input("chapter_plan")
         intent = request.require_input("chapter_execution_intent")
         memo = request.require_input("chapter_memo")
@@ -1501,7 +1510,9 @@ class _DraftHandler:
         plan_view = build_draft_plan_view(
             plan.content, work_requirements=request.work_requirements_enabled
         )
-        realization_contract = compile_realization_contract(plan.content, style)
+        core_policy = "scene-core-slots.v1" if request.definition_version in {"3.9.1", "3.9.2"} else "EXPLICIT_SKELETON_V1"
+        information_policy = "scene-information-flow.v1" if request.definition_version == "3.9.2" else "ENTRY_ONLY_V1"
+        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         generated = self.provider.invoke(
@@ -1511,6 +1522,7 @@ class _DraftHandler:
                 "plan": plan_view,
                 "style": style,
                 "realization_contract": realization_contract,
+                **candidate_repair_payload(request),
                 "execution_intent": intent.content,
                 "chapter_memo": memo.content,
             },
@@ -1523,6 +1535,8 @@ class _DraftHandler:
             result=generated.output,
             provider_evidence=_provider_evidence(generated),
             work_requirements=request.work_requirements_enabled,
+            core_policy=core_policy,
+            information_policy=information_policy,
         )
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,
@@ -1623,12 +1637,22 @@ class _RevisionHandler:
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
+        length_scope = None
+        repair_payload = {}
+        if request.definition_version == "3.9.4":
+            from novel_forge.modules.revision.domain import freeze_chapter_length_scope
+            from .candidate_repair import candidate_repair_payload
+            length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
+                context=context.content, context_asset_version_id=context.asset_version_id)
+            repair_payload = candidate_repair_payload(request)
         revised = self.provider.invoke(
             request,
             stage="revision",
             payload={
                 "draft": draft.content,
                 "review": review.content,
+                **({"chapter_length_repair_scope": length_scope} if length_scope else {}),
+                **repair_payload,
             },
         )
         return _model_output(
@@ -1642,6 +1666,7 @@ class _RevisionHandler:
                 provider_evidence=_provider_evidence(revised),
                 project_id=request.project_id,
                 context_bundle_version_id=context.asset_version_id,
+                length_scope=length_scope,
             ),
             request=request,
             generated=revised,
@@ -1863,6 +1888,16 @@ class _CanonHandler:
             decisions=decisions,
         )
         context = request.require_input("context_bundle")
+        validation_contract = 'LEGACY_V1'
+        policy_binding = None
+        if request.definition_version == '3.9.10' and request.database_url:
+            from novel_forge.modules.canon_graph.validation_recovery import selected_validation_policy
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                uow.cursor.execute('SELECT root_operation_id FROM authority_operation WHERE operation_id=%s AND project_id=%s', [request.operation_id,request.project_id])
+                root_id = uow.cursor.fetchone()[0]
+                policy_binding = selected_validation_policy(uow.cursor,project_id=request.project_id,root_operation_id=root_id)
+            if policy_binding:
+                validation_contract = policy_binding['canon_validation_contract']
         content = build_canon_patch(
             revision=revision.content,
             revision_asset_version_id=revision.asset_version_id,
@@ -1870,6 +1905,7 @@ class _CanonHandler:
             context_bundle_version_id=context.asset_version_id,
             extraction=resolved_extraction,
             context_bundle=context.content,
+            validation_contract=validation_contract,
         )
         continuity_report = {
             **dict(content["deterministic_validation"]),
@@ -1995,6 +2031,7 @@ class _CanonProposalHandler:
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
                 "claims": grounded_claims(extraction.content),
+                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.definition_version)=="3.9.8" else {}),
             })
             if request.command.get("chapter_sampling"):
                 from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result
@@ -2031,13 +2068,18 @@ class _QualityGroupHandler:
         fixture = not any(
             bool(item.content.get("provider_evidence", {}).get("real_model_call"))
             for item in request.inputs
+            if isinstance(item.content.get("provider_evidence", {}), dict)
         )
         context_content = dict(context.content)
         generated: ModelProviderResult | None = None
         reference_calibration = None
-        if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2"}:
+        if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
             raise KernelError("QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED",
                               "Frozen work-quality.v1 cannot safely continue under v2; retain receipts and admit an explicit replacement")
+        world_projection = None
+        if self.group == 'longform' and request.definition_version == '3.9.12' and request.database_url:
+            from novel_forge.modules.chapter_quality_authority.foundation_context import request_world_projection
+            world_projection = request_world_projection(request)
         quality_context = build_quality_context_view(
             group=self.group,
             revision=revision.content,
@@ -2052,6 +2094,7 @@ class _QualityGroupHandler:
                 request.command, f"quality_{self.group}"
             ),
             work_requirements=request.work_requirements_enabled,
+            governed_world_projection=world_projection,
         )
         if bool(
             getattr(self.provider, "external_effect_backed", False)
@@ -2063,6 +2106,7 @@ class _QualityGroupHandler:
                 payload={
                     "revision": revision.content,
                     "quality_context": quality_context,
+                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.definition_version in {"3.9.9", "3.9.12"} else {}),
                     "dimensions": list(QUALITY_GROUPS[self.group]),
                 },
             )
@@ -2084,6 +2128,7 @@ class _QualityGroupHandler:
                 (
                     f"schema:chapter-provider-output:quality_{self.group}:v3",
                     f"schema:chapter-provider-output:quality_{self.group}:v4",
+                    f"schema:chapter-provider-output:quality_{self.group}:v5",
                 )
             )
             for item in generated.output.get("dimensions", []):
@@ -2320,7 +2365,7 @@ class _QualityHandler:
             evidence_reports=group_reports,
         )
         from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
-        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id)
+        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.definition_version=="3.9.11" else 1)
         if admission is not None:
             content["internal_admission"] = admission
         primary = _output(
@@ -2349,6 +2394,11 @@ class _QualityHandler:
         )
         from novel_forge.modules.revision.domain import freeze_quality_edit_scope
 
+        actions = content.get("required_actions", [])
+        if admission and request.definition_version == '3.9.11':
+            from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
+            actions = internal_required_actions(admission=admission, evidence_reports=content['evidence_reports'], target=revision.asset_version_id)
+            content['internal_required_actions'] = actions
         action_outputs = (
             tuple(
                 ChapterAuxiliaryOutput(
@@ -2406,7 +2456,7 @@ class _QualityHandler:
                     },
                 )
                 for ordinal, action in enumerate(
-                    content.get("required_actions", []), start=1
+                    actions, start=1
                 )
             )
             if not any(item.asset_type == "revision_task" for item in request.inputs)

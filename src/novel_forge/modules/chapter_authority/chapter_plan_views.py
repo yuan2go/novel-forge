@@ -74,7 +74,7 @@ def qualification_profile_for_plan(
 
     if (
         uses_work_requirements(content)
-        or content.get("chapter_contract_schema_version") == "chapter-mission-scene.v3"
+        or content.get("chapter_contract_schema_version") in {"chapter-mission-scene.v3", "chapter-mission-scene.v4"}
     ):
         return ChapterPlanQualificationProfile(
             profile_id="chapter-plan-work-v1",
@@ -197,7 +197,7 @@ def normalize_authoritative_chapter_plan(
         "source_chapter_plan_asset_version_id": asset_version_id,
         "source_chapter_plan_content_hash": content_hash,
         "source_schema_version": str(content.get("schema_version") or content.get("contract_version") or "legacy"),
-        "contract_version": "authoritative-chapter-plan-v4",
+        "contract_version": "authoritative-chapter-plan-v5" if content.get("runtime_projection_version") == "3.0.0" else "authoritative-chapter-plan-v4",
     }
     for field in PLAN_FIELDS:
         if field in {"chapter_objective", "scene_sequence", "chapter_hook"}:
@@ -206,6 +206,11 @@ def normalize_authoritative_chapter_plan(
         normalized[field] = list(value) if field in LIST_FIELDS and isinstance(value, (list, tuple)) else (
             [] if field in LIST_FIELDS else value
         )
+    if content.get('runtime_projection_version') == '3.0.0':
+        if content.get('chapter_contract_schema_version') != 'chapter-mission-scene.v4' or 'serialization_function' not in content:
+            raise KernelError('CHAPTER_PLAN_METHOD_CONTRACT_INVALID', 'Method projection requires the explicit versioned serialized choice')
+        if content['serialization_function'] is not None and (not isinstance(content['serialization_function'], str) or not content['serialization_function'].strip()):
+            raise KernelError('CHAPTER_PLAN_METHOD_CONTRACT_INVALID', 'The selected serialized choice must be a nonempty string or explicit null')
     normalized.update({key: content[key] for key in KNOWLEDGE_PLAN_FIELDS if key in content})
     known = {"project_id", "chapter", "title", "premise", "objective", "beats", "scenes", "closing_hook", "schema_version", "contract_version", *PLAN_FIELDS, *KNOWLEDGE_PLAN_FIELDS}
     normalized["source_extensions"] = {
@@ -284,6 +289,11 @@ def build_draft_plan_view(
             result["contract_version"] = "draft-plan-view-v3"
             result["method_choices"] = {key: source[key] for key in (
                 "reward_action", "promise_action", "ending_hook", "antagonist_actions",
+            ) if key in source}
+        if source.get('runtime_projection_version') == '3.0.0':
+            result['contract_version'] = 'draft-plan-view-v4'
+            result['method_choices'] = {key: source[key] for key in (
+                'reward_action', 'promise_action', 'ending_hook', 'antagonist_actions', 'serialization_function',
             ) if key in source}
     binding = (plan.get("constraint_envelope") or {}).get("author_design")
     if binding:
@@ -389,7 +399,7 @@ def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -
         if (
             dimension == "golden_opening"
             and source.get("chapter_contract_schema_version")
-            == "chapter-mission-scene.v3"
+            in {"chapter-mission-scene.v3", "chapter-mission-scene.v4"}
         ):
             selected = (
                 ["primary_function"]
@@ -399,7 +409,7 @@ def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -
             present = ["primary_function"]
         confirmed = plan.get(
             "chapter_contract_schema_version"
-        ) == "chapter-mission-scene.v3" and bool(present)
+        ) in {"chapter-mission-scene.v3", "chapter-mission-scene.v4"} and bool(present)
         result[dimension] = {
             "status": "APPLICABLE"
             if selected
@@ -408,7 +418,7 @@ def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -
             else "UNDETERMINED",
             "source_fields": present,
             **({"selected_values": {name: source[name] for name in present}}
-               if source.get("runtime_projection_version") == "2.0.0" else {}),
+               if source.get("runtime_projection_version") in {"2.0.0", "3.0.0"} else {}),
         }
     aliases = {"$.serialization_potential": "serialization_function"}
     selected_style = context_bundle.get("production_input_manifest", {}).get("style_policy_version_id")

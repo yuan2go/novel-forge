@@ -42,8 +42,12 @@ class RealizationSlot:
 
 
 def compile_realization_contract(
-    plan: Mapping[str, Any], style: Mapping[str, Any]
+    plan: Mapping[str, Any], style: Mapping[str, Any], *, core_policy: str = "EXPLICIT_SKELETON_V1", information_policy: str = "ENTRY_ONLY_V1"
 ) -> dict[str, Any]:
+    if core_policy not in {"EXPLICIT_SKELETON_V1", "scene-core-slots.v1"}:
+        raise KernelError("REALIZATION_CORE_POLICY_INVALID", "Unknown frozen core slot interpretation")
+    if information_policy not in {"ENTRY_ONLY_V1", "scene-information-flow.v1"}:
+        raise KernelError("REALIZATION_INFORMATION_POLICY_INVALID", "Unknown frozen information interpretation")
     scenes = plan.get("scene_plan") or []
     slots = []
     legacy_beats = False
@@ -60,7 +64,7 @@ def compile_realization_contract(
                 isinstance(beat, str)
                 and beat.strip()
                 and plan.get("chapter_contract_schema_version")
-                not in {"chapter-mission-scene.v2", "chapter-mission-scene.v3"}
+                not in {"chapter-mission-scene.v2", "chapter-mission-scene.v3", "chapter-mission-scene.v4"}
             ):
                 legacy_beats = True
                 beat_ids.append(f"{scene['scene_id']}:legacy-beat:{ordinal}")
@@ -75,12 +79,14 @@ def compile_realization_contract(
             or not capabilities
             or len(set(capabilities)) != len(capabilities)
             or not set(capabilities).issubset(set(RealizationCapability))
-            or "SKELETON" not in capabilities
+            or (core_policy == "EXPLICIT_SKELETON_V1" and "SKELETON" not in capabilities)
         ):
             raise KernelError(
                 "REALIZATION_CAPABILITY_INVALID",
                 "Scene capability selection must be unique, typed and include its narrative skeleton",
             )
+        if core_policy == "scene-core-slots.v1":
+            capabilities = ["SKELETON", *(c for c in capabilities if c != "SKELETON")]
         known = {
             item["character_id"]: set(item.get("known_fact_ids", []))
             for item in plan.get("character_participation", [])
@@ -102,8 +108,19 @@ def compile_realization_contract(
                 )
             for actor in actors:
                 accessible = set(scene.get("accessible_knowledge", []))
+                if information_policy == "scene-information-flow.v1":
+                    accessible |= set(scene.get("information_gain", []))
+                    chapter = int(plan["chapter"])
+                    withheld = {d["fact_id"] for d in plan.get("disclosures", []) if d["mode"] == "WITHHOLD" and d["audience"] in {actor or "READER", "ALL"}}
+                    accessible -= withheld
+                    if actor:
+                        granted = set(known.get(actor, set()))
+                        granted |= {b["fact_id"] for b in plan.get("knowledge_boundaries", []) if b["layer"] == "CHARACTER_KNOWLEDGE" and b["subject_id"] == actor and b["status"] == "KNOWN" and b["available_from_chapter"] <= chapter}
+                        granted |= {d["fact_id"] for d in plan.get("disclosures", []) if d["audience"] == actor and d["mode"] == "CONFIRM" and d["earliest_chapter"] <= chapter}
+                        accessible &= granted
                 if actor:
-                    accessible &= known.get(actor, set())
+                    if information_policy == "ENTRY_ONLY_V1":
+                        accessible &= known.get(actor, set())
                 slot = RealizationSlot(
                     slot_id=f"{scene['scene_id']}:{capability.lower()}"
                     + (f":{actor}" if actor else ""),
@@ -166,6 +183,12 @@ def compile_realization_contract(
         "integration_policy": "ordered-slot-concatenation.v1",
         "authority": "CANDIDATE_REALIZATION_ONLY",
     }
+    if core_policy == "scene-core-slots.v1":
+        body["core_projection"] = {"contract_version": core_policy,
+            "source_capabilities": {s["scene_id"]: s.get("realization_capabilities", ["SKELETON"]) for s in scenes},
+            "intrinsic_capability": "SKELETON", "authority": "EXECUTION_PROJECTION_ONLY"}
+    if information_policy == "scene-information-flow.v1":
+        body["information_flow"] = {"contract_version": information_policy, "scene_scope": "ENTRY_PLUS_DECLARED_SCENE_GAIN", "character_scope": "EXPLICIT_KNOWN_OR_CONFIRMED", "presentation_requirement": "Present the planned observation or disclosure before using newly gained information. Future Scene gains remain unavailable.", "authority": "EXECUTION_PROJECTION_ONLY"}
     policies = [fact["value"] for policy in style.get("policies", []) for fact in policy.get("structured_facts", []) if isinstance(fact, dict) and fact.get("key") == "realization_policy"]
     if policies:
         if len(policies) != 1 or policies[0] not in [

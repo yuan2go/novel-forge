@@ -1,0 +1,13 @@
+{
+  "schema_version": "novel-forge.qualification-interruption-observation.v1",
+  "status": "FAIL",
+  "reason": "Explicitly interrupted after separate historical fixture failure; not a complete canonical P0 report",
+  "tested_sha": "cc85a91b9ccfb3b700b39134c07e7931a3efd8d3",
+  "run_id": "12fb98a7165d4283aa53fff8c28bba07",
+  "interrupted_child_pids": [
+    69405
+  ],
+  "canonical_p0_final_report": "NOT_PRODUCED",
+  "owned_postgresql_or_compose_start": "NOT_RUN",
+  "real_provider": "NOT_RUN"
+}

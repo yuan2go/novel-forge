@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.963" timestamp="2026-10-07T06:59:50.747699+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_accept_requires_all_evidence" time="2.412"><failure message="AssertionError: &quot;BOOK_CHAPTER_ACCEPTANCE_NOT_READY&quot; does not match &quot;BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING: missing unique Chapter outputs: chapter_plan, release_package, final_release_gate_report&quot;">novel_forge.modules.command_kernel.errors.KernelError: BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING: missing unique Chapter outputs: chapter_plan, release_package, final_release_gate_report
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_accept_requires_all_evidence&gt;
+
+    def test_book_accept_requires_all_evidence(self) -&gt; None:
+        fixture = self._new_book_fixture(target_chapter_count=1)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+&gt;       with self.assertRaisesRegex(KernelError, "BOOK_CHAPTER_ACCEPTANCE_NOT_READY"):
+E       AssertionError: "BOOK_CHAPTER_ACCEPTANCE_NOT_READY" does not match "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_MISSING: missing unique Chapter outputs: chapter_plan, release_package, final_release_gate_report"
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1264: AssertionError</failure></testcase></testsuite></testsuites>

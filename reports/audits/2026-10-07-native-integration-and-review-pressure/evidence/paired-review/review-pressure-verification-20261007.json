@@ -1,0 +1,79 @@
+{
+  "schema_version": "review-pressure-engineering-verification.v1",
+  "baseline_main_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "implementation_tree_sha": "sha256:f12e03f086e79b30591b8149808f6e1720da8f115e1ed8becab6da5a2447a158",
+  "changed_files": [
+    "architecture/manifests/module-manifest.yaml",
+    "architecture/manifests/test-manifest.yaml",
+    "architecture/reality-evidence.json",
+    "config/evaluation/model_reference_pressure_v1.json",
+    "docs/current-system.md",
+    "docs/runtime-operations.md",
+    "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+    "src/novel_forge/tools/review_pressure_regression.py",
+    "tests/unit/test_review_pressure_regression.py"
+  ],
+  "offline_diagnostic_state": "EXECUTABLE",
+  "model_behavior": "NOT_PROVEN",
+  "real_provider": "NOT_RUN",
+  "real_provider_reason": "Current exact native creation grants do not admit pressure/history inputs.",
+  "focused": {
+    "status": "PASS",
+    "passed": 89,
+    "junit": "/tmp/review-pressure-focused-final.xml"
+  },
+  "complete_local_collection": {
+    "status": "FAIL",
+    "passed": 4136,
+    "failed": 24,
+    "subtests_passed": 1500,
+    "junit": "/tmp/review-pressure-engineering-frozen.xml"
+  },
+  "main_failure_control": {
+    "status": "REPRODUCED",
+    "failed": 24,
+    "failure_sets_equal": true,
+    "introduced_failures": [],
+    "junit": "/tmp/review-pressure-main-control-v1.xml"
+  },
+  "final_contract_gates": {
+    "status": "PASS",
+    "log": "/tmp/review-pressure-contract-gates-final.log"
+  },
+  "static_validation": {
+    "status": "FAIL",
+    "inherited_blockers": [
+      "unmanaged story_planning_runtime/world_preparation.py instruction",
+      "four stale proposal lifecycles"
+    ],
+    "log": "/tmp/review-pressure-validate-final.log"
+  },
+  "p0_and_postgresql_qualification": "NOT_RUN",
+  "publication": "NOT_RUN",
+  "failures": [
+    "tests/architecture/test_capability_pack_authority_boundaries.py::test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed",
+    "tests/architecture/test_repository_execution_boundaries.py::RepositoryExecutionBoundaryTests::test_controlled_external_effect_blocks_legacy_before_database",
+    "tests/architecture/test_repository_execution_boundaries.py::RepositoryExecutionBoundaryTests::test_execution_plane_imports_no_business_domain_module",
+    "tests/unit/test_capability_pack_artifact_materialization.py::test_revision_renderer_projects_one_output_method[False]",
+    "tests/unit/test_capability_pack_artifact_materialization.py::test_revision_renderer_projects_one_output_method[True]",
+    "tests/unit/test_capability_pack_validator.py::CapabilityPackValidatorTests::test_valid_chapter_generation_pack_passes",
+    "tests/unit/test_chapter_agent_binding_boundary.py::test_legacy_binding_surface_tracks_model_capability_stages",
+    "tests/unit/test_creation_runner_settings.py::test_native_creation_runners_preserve_isolated_object_store_configuration[run_creation_synthesis]",
+    "tests/unit/test_cross_chapter_prose_review.py::test_high_score_cannot_replace_unresolved_or_regressed_candidate",
+    "tests/unit/test_instruction_surface.py::test_repository_instruction_surface_is_complete_and_identity_bound",
+    "tests/unit/test_narrative_search_branch_registration.py::test_reconcile_legacy_branch_in_uow_appends_exact_sidecar_evidence",
+    "tests/unit/test_narrative_search_branch_registration.py::test_reconcile_legacy_branch_in_uow_is_exactly_idempotent",
+    "tests/unit/test_narrative_search_branch_registration.py::test_reconcile_legacy_branch_rejects_outer_execution_drift",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_conflicting_membership",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_other_unique_conflict",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[10-narrative-search-branch-evidence.v2]",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[11-sha256:9999999999999999999999999999999999999999999999999999999999999999]",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_replays_exact_evidence",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_requires_reconciliation_for_legacy_row",
+    "tests/unit/test_narrative_search_branch_registration.py::test_register_qualified_branch_in_uow_returns_durable_evidence",
+    "tests/unit/test_prose_reviewer_sampling.py::test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output",
+    "tests/unit/test_runtime_dispatch_control.py::test_formation_pause_waits_without_recording_business_failure",
+    "tests/unit/test_story_formation_worker_wait.py::test_manual_approval_completes_technical_job_without_retry_or_failure",
+    "tests/unit/test_story_planning_runtime.py::test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation"
+  ]
+}

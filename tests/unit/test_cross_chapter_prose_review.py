@@ -363,10 +363,10 @@ def test_rereview_requires_every_prior_issue_and_preservation_dimension():
 
 
 def test_high_score_cannot_replace_unresolved_or_regressed_candidate():
-    previous = CandidateEvidence("a", {}, 60, ("issue",), "review")
+    previous = CandidateEvidence("a", {"text": "original prose"}, 60, ("issue",), "review")
     challenger = CandidateEvidence(
         "b",
-        {},
+        {"text": "revised prose"},
         99,
         ("issue",),
         "rereview",

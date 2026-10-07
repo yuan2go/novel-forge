@@ -64,6 +64,7 @@ def test_formation_pause_waits_without_recording_business_failure():
         input_snapshot={"observed_stage": "THEME_CONTRACT", "observed_version": 4})
     pause = RuntimeDispatchPaused("paused", {"project_id": "project", "scope": "PROJECT", "version": 1})
     formation, jobs = Mock(), Mock()
+    formation.require.return_value = {"lifecycle": "RUNNING"}
     formation.advance_expected.side_effect = pause
     with pytest.raises(RuntimeDispatchPaused):
         execute_story_formation_claim(jobs, formation, Mock(), claim)

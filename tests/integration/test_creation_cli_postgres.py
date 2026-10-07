@@ -73,6 +73,12 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
         "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
         "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
     }, monkeypatch, transport)
+    if full_creation:
+        catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+        for model in catalog["models"]:
+            model["reasoning"] = "medium"
+        env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+        env["NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT"] = "medium"
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
@@ -258,13 +264,29 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         monkeypatch.setattr(planning_application, "admit_command", retain_repair_cause)
 
+    historical_classifier_restored = False
     if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
         from novel_forge.modules.story_planning_runtime.world_preparation import (
             PlanningWorldPreparation,
         )
 
+        from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass
+
         native_world_prepare = PlanningWorldPreparation.prepare
+        native_classifier = WorkerFailureClassifier.classify
+        historical_classifier_source = "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609"
+        historical_errors = set()
+        historical_snapshots = []
         legacy_block = []
+        historical_classifier_restored = False
+
+        def historical_failure_class(error):
+            if error in historical_errors:
+                assert error.historical_classifier_source == historical_classifier_source
+                return WorkerFailureClass.RETRYABLE
+            return native_classifier(error)
+
+        monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(historical_failure_class))
 
         def historical_gate_checkpoint(preparation, **values):
             try:
@@ -274,10 +296,13 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                     error.code == "WORLD_PREPARATION_RESULT_INVALID"
                     and (not legacy_block or (mode == "world-causal-dead-letter-replay" and values["command"].repair_number == 0))
                 ):
-                    legacy_block.append(True)
-                    raise KernelError(
-                        "WORLD_PREPARATION_BLOCKED", error.message
-                    ) from error
+                    assert values["command"].repair_number == 0
+                    historical_error = KernelError("WORLD_PREPARATION_BLOCKED", error.message)
+                    historical_error.historical_classifier_source = historical_classifier_source
+                    historical_error.historical_operation_id = values["operation_id"]
+                    historical_errors.add(historical_error)
+                    legacy_block.append(historical_error.historical_operation_id)
+                    raise historical_error from error
                 raise
 
         monkeypatch.setattr(
@@ -394,7 +419,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                     visit(child)
         visit(result)
         if mode == "partial-alternative" and stage == "creative.candidates.generate" and len(creative_calls) > 1:
-            result["applicability"][0]["field_path"] = "/serialization_potential"
+            result["applicability"][0]["field_path"] = "serialization_potential"
         return result
     transport.planning = bounded_planning
     env = controlled_member_environment(tmp_path, {
@@ -419,6 +444,11 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
         "--idempotency-key", "durable", "--repository-root", str(root)])
+    if mode.startswith("world-"):
+        execution_template = json.loads((root / "config/execution_templates/creative_validation.json").read_text())
+        execution_template["world_future_preparation"] = "REQUIRED"
+        args.execution_template_file = tmp_path / "required-world-execution-template.json"
+        args.execution_template_file.write_text(json.dumps(execution_template))
     settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="validation")
     first = run_creation_command(settings, args)
     identity = first["formation_run_id"]
@@ -591,7 +621,60 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             return result
         monkeypatch.setattr(RuntimeJobAuthority, "complete_and_schedule_continuation", response_lost)
 
+    def capture_historical_checkpoint(source_id, *, require_dead_letter=False):
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [source_id])
+            source_status = uow.cursor.fetchone()[0]
+            if require_dead_letter:
+                assert source_status == "DEAD_LETTER"
+            assert source_status in {"FAILED_RETRYABLE", "DEAD_LETTER"}
+            uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s ORDER BY attempt_number", [source_id])
+            attempts = [row[0] for row in uow.cursor.fetchall()]
+            assert attempts and all(row["status"] == "FAILED_RETRYABLE" for row in attempts)
+            uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(b) FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id", [source_id])
+            receipts = uow.cursor.fetchall()
+            assert len(receipts) == 2
+            assert all(effect["status"] == "SUCCEEDED" and budget["status"] == "SETTLED" for effect, budget in receipts)
+            uow.cursor.execute("SELECT candidate_asset_version_id,repair_number FROM authority_story_planning_generation WHERE operation_id=%s", [source_id])
+            assert uow.cursor.fetchone() == (None, 0)
+            uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE project_id=%s AND status='COMMITTED'", [project])
+            assert uow.cursor.fetchone() == (0,)
+        historical_snapshots.append({"source_operation_id": source_id, "source_status": source_status,
+            "attempts": attempts, "receipts": receipts, "world_calls": len(world_calls),
+            "classifier_source": historical_classifier_source})
+        return source_status
+
+    def restore_dead_letter_classifier():
+        nonlocal historical_classifier_restored
+        if mode != "world-causal-dead-letter-replay" or historical_classifier_restored or not legacy_block:
+            return False
+        source_id = legacy_block[0]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [source_id])
+            source_status = uow.cursor.fetchone()[0]
+        if source_status != "DEAD_LETTER":
+            return False
+        capture_historical_checkpoint(source_id, require_dead_letter=True)
+        monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(native_classifier))
+        historical_classifier_restored = True
+        assert all(WorkerFailureClassifier.classify(error) is WorkerFailureClass.FINAL_FAILURE for error in historical_errors)
+        return True
+
+    if mode == "world-causal-dead-letter-replay":
+        from novel_forge.modules.story_planning_runtime.application import StoryPlanningGenerationApplication
+
+        native_result_repair = StoryPlanningGenerationApplication._repair_unmaterialized_result
+
+        def restore_before_result_repair(application, command, **values):
+            if values["operation_id"] in legacy_block:
+                assert restore_dead_letter_classifier() or historical_classifier_restored
+            return native_result_repair(application, command, **values)
+
+        monkeypatch.setattr(StoryPlanningGenerationApplication, "_repair_unmaterialized_result", restore_before_result_repair)
+
     def execute_window(current):
+        nonlocal historical_classifier_restored
+        restore_dead_letter_classifier()
         try:
             return execute_creation_worker_claim(settings, current)
         except KernelError as error:
@@ -606,6 +689,13 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                 "WORLD_PREPARATION_BLOCKED",
             }:
                 raise
+            if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"} and error in historical_errors:
+                source_id = error.historical_operation_id
+                source_status = capture_historical_checkpoint(source_id)
+                if mode == "world-causal-legacy-replay" or source_status == "DEAD_LETTER":
+                    monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(native_classifier))
+                    historical_classifier_restored = True
+                    assert WorkerFailureClassifier.classify(error) is WorkerFailureClass.FINAL_FAILURE
             status = jobs.get(current.runtime_job_id)["status"]
             if status == "DEAD_LETTER" and mode == "world-causal-dead-letter-replay":
                 recover = parser.parse_args(["authority-creation", "recover", "--project-id", project,
@@ -701,6 +791,20 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                 == "WORLD_CAUSAL_GATE"
                 for row in lineage[1:]
             )
+        if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
+            assert legacy_block and historical_snapshots and historical_classifier_restored
+            assert all(record["classifier_source"] == historical_classifier_source for record in historical_snapshots)
+            original = historical_snapshots[-1]
+            assert original["source_operation_id"] == lineage[1][1]
+            assert original["source_status"] == ("DEAD_LETTER" if mode == "world-causal-dead-letter-replay" else "FAILED_RETRYABLE")
+            assert original["world_calls"] == 1
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                for record in historical_snapshots:
+                    for attempt in record["attempts"]:
+                        uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE attempt_id=%s", [attempt["attempt_id"]])
+                        assert uow.cursor.fetchone()[0] == attempt
+                    uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(b) FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id", [record["source_operation_id"]])
+                    assert uow.cursor.fetchall() == record["receipts"]
         if mode == "world-causal-legacy-replay":
             assert legacy_block
             with AuthorityUnitOfWork(DATABASE_URL) as uow:

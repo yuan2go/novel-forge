@@ -33,11 +33,15 @@ from novel_forge.modules.source_authority import (
 )
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.database_runtime import DatabaseRuntime, DatabaseRuntimeConfig
-from novel_forge.storage.migrations import run_migrations
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, run_migrations
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
     identifier,
+)
+from tests.integration.migration_window_postgres_support import (
+    disposable_database_at_migration,
+    materialize_historical_fixture_at_migration,
 )
 
 
@@ -1924,6 +1928,14 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
             self.assertEqual(str(evidence[receipt_key]["status"]), "PASS")
 
     def test_source_migration_requires_verified_blob_and_real_projection(self) -> None:
+        with disposable_database_at_migration(
+            DATABASE_URL,
+            prefix="legacy_source_binding",
+            target_migration_id=LATEST_MIGRATION_ID,
+        ) as database_url, patch(f"{__name__}.DATABASE_URL", database_url):
+            self._source_migration_requires_verified_blob_and_real_projection()
+
+    def _source_migration_requires_verified_blob_and_real_projection(self) -> None:
         project_id = identifier("domain-source-project")
         workspace_id = identifier("domain-source-workspace")
         ProjectAuthorityApplication(
@@ -2085,6 +2097,13 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
         # evidence was stored on activated items. The 0067 forward migration
         # must recover the immutable archival AssetVersion from the activation-
         # bound Validation record and make server revalidation possible.
+        later_fixture_tables = materialize_historical_fixture_at_migration(
+            DATABASE_URL,
+            target_migration_id="20260804_0066_runtime_job_attempt_lease_existence",
+        )
+        self.assertEqual(
+            set(later_fixture_tables), {"authority_operation_definition_release"}
+        )
         ambiguous_asset_id = identifier("ambiguous-archival-asset")
         ambiguous_version_id = identifier("ambiguous-archival-version")
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -2102,16 +2121,6 @@ class LegacyMigrationAuthorityPostgresTests(unittest.TestCase):
                 [validation["migration_validation_id"], str(item[0])],
             )
             archival_source = uow.cursor.fetchone()
-            uow.cursor.execute(
-                """
-                ALTER TABLE authority_legacy_migration_item
-                DROP CONSTRAINT authority_migration_item_archival_binding_check
-                """
-            )
-            uow.cursor.execute(
-                "DELETE FROM nf_schema_migrations WHERE migration_id=%s",
-                ["20260804_0067_activated_migration_archival_binding"],
-            )
             uow.cursor.execute(
                 """
                 UPDATE authority_legacy_migration_item

@@ -824,7 +824,7 @@ class CostAwareRouter:
         repair_sources = (
             set(repair.get("authorized_history_operation_ids", ()))
             if (
-                repair.get("contract_version") == "planning-route-repair.v1"
+                repair.get("contract_version") in {"planning-route-repair.v1", "planning-route-repair.v2"}
                 and repair.get("operation_id") == task.operation_id
                 and repair.get("input_hash") == task.input_hash
                 and repair.get("source_input_hash")
@@ -832,8 +832,15 @@ class CostAwareRouter:
                 and type(repair.get("repair_number")) is int
                 and type(repair.get("maximum_repairs")) is int
                 and 0
-                < repair.get("repair_number", 0)
+                < (repair.get("stage_repair_number", 0) if repair.get("contract_version") == "planning-route-repair.v2" else repair.get("repair_number", 0))
                 <= repair.get("maximum_repairs", 0)
+                and (repair.get("contract_version") != "planning-route-repair.v2" or (
+                    type(repair.get("stage_repair_number")) is int
+                    and repair.get("repair_stage") == task.task_type
+                    and repair.get("maximum_lineage_repairs") == 4
+                    and 0 < repair.get("repair_number", 0) <= 4
+                    and bool(repair.get("policy_admission"))
+                ))
             )
             else set()
         )

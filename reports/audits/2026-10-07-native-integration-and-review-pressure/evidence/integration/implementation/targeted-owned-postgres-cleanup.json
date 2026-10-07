@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "owned_container": "nf-pr133-integration-20261007",
+  "container_id": "9eb94a28e3dfe4a604c939d1c6f74bff7e1fc8d1959c2af7fe0a85bc03bde6af",
+  "ownership_label": {
+    "novel-forge.integration.task": "pr133-native-integration"
+  },
+  "storage": "tmpfs",
+  "remaining_owned_container_count": 0,
+  "scope": "Targeted diagnostic databases only; final P0 independently owns new run UUID resources"
+}

@@ -8,6 +8,94 @@
   ],
   "classification_rules": [
     {
+      "id": "creative-planning-primary-context-identity",
+      "patterns": [
+        "tests/unit/test_planning_result_context_identity.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "story-planning-runtime",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-quality-frozen-world-receipt",
+      "patterns": [
+        "tests/unit/test_quality_frozen_world_foundation.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-quality-authority",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/foundation_context.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-creation-recovery-controls",
+      "patterns": [
+        "tests/unit/test_creation_recovery_control.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-recovery-derived-contract",
+      "patterns": [
+        "tests/unit/test_derived_step_revalidation.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creative-recovery-controlled-protocol",
+      "patterns": [
+        "tests/unit/test_book_execution_recovery.py",
+        "tests/unit/test_native_stage_repair_bound.py",
+        "tests/unit/test_native_planning_repair_routing.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "runtime-authorities",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "AUTO_FROM_TEST_IMPORTS",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-validation-integration-upgrade",
+      "patterns": [
+        "tests/integration/test_creative_validation_integration_upgrade_postgres.py",
+        "tests/unit/test_migration_history_admission.py",
+        "tests/integration/test_migration_history_admission_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "migration-authority",
+      "capability": "fresh-install-and-supported-upgrade",
+      "production_target": "src/novel_forge/storage/migrations/runner.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "review-pressure-paired-regression",
+      "patterns": [
+        "tests/unit/test_review_pressure_regression.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-quality-authority",
+      "capability": "review-revision-quality",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+      "qualification_role": "SYNTHETIC_ENGINEERING_BENCHMARK_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
       "id": "creation-durable-coordination",
       "patterns": [
         "tests/unit/test_creation_coordination.py"
@@ -1215,6 +1303,14 @@
         "src/novel_forge/modules/mkaos_authority/craft_authoring.py"
       ],
       "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "creative_validation_bounded_recovery": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+        "src/novel_forge/modules/command_kernel/step_successor.py"
+      ],
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
     }
   }
 }

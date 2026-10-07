@@ -1,0 +1,18 @@
+.............................. [  7%]
+........................................................................ [ 26%]
+........................................................................ [ 46%]
+........................................................................ [ 65%]
+...................................................................... [ 83%]
+....................................F.........................       [100%]
+=================================== FAILURES ===================================
+____ test_planning_context_target_is_frozen_in_manifest_and_resolved_policy ____
+tests/unit/test_longform_capability_pack_profiles.py:255: in test_planning_context_target_is_frozen_in_manifest_and_resolved_policy
+    assert require_capacity_target(source,target)["successor_target"]==239232
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:100: in require_capacity_target
+    if source["preflight_failure"]["contract_version"] in {"planning-repair-route-preflight.v1","planning-input-order-preflight.v1"}:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'preflight_failure'
+=========================== short test summary info ============================
+FAILED tests/unit/test_longform_capability_pack_profiles.py::test_planning_context_target_is_frozen_in_manifest_and_resolved_policy
+1 failed, 377 passed, 1344 subtests passed in 22.94s

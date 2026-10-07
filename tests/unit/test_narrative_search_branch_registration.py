@@ -93,6 +93,14 @@ class _Cursor:
         ]
 
     def execute(self, statement: str, parameters: list[Any]) -> None:
+        if "SELECT v.content FROM authority_asset_version" in statement:
+            assert parameters == ["project:test", "candidate:future-1"]
+            self._row = ({"narrative_search_projection": _projection("agency", 0.82)},)
+            return
+        if "SELECT v.content_hash,e.request_payload" in statement:
+            self._rows = []
+            self._row = None
+            return
         if "FROM authority_story_narrative_search\n" in statement:
             assert "FOR UPDATE" in statement
             self.read_order.append("search")

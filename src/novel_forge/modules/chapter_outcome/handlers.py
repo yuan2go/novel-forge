@@ -40,7 +40,7 @@ class ChapterOutcomeCommitHandler:
         chapter_plan = inputs["chapter_plan"].content
         validation = quality.get("internal_admission")
         internal = (isinstance(validation, dict) and validation.get("status") == "INTERNAL_ADMITTED"
-            and validation.get("version") == "creative-quality-admission.v1"
+            and validation.get("version") in {"creative-quality-admission.v1", "creative-quality-admission.v2"}
             and validation.get("book_id") == payload["book_id"]
             and validation.get("target_asset_version_id") == inputs["best_draft_candidate"].asset_version_id
             and validation == final_gate.get("internal_admission")

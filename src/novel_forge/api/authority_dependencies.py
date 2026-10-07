@@ -168,6 +168,7 @@ from novel_forge.modules.provider_control import (
 from novel_forge.modules.provider_control.contracts import ProviderControlLevel
 from novel_forge.modules.provider_callback_authority import ProviderCallbackAuthorityService
 from novel_forge.modules.production_execution import (
+    CapabilityId,
     AdmissionController,
     AuthorityExecutionRecoveryStore,
     CodexAccountEntitlementSnapshot,
@@ -435,6 +436,7 @@ def build_production_execution_composition(
                 default_candidate.provider, default_candidate.model, default_candidate.reasoning
             )
             context_limit = default_candidate.context_limit
+            output_limit = default_candidate.output_limit
             accounting_method = "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"
             accounting_evidence = default_candidate.capability_version
         else:
@@ -442,6 +444,10 @@ def build_production_execution_composition(
             model = str(values.get("NOVEL_FORGE_CODEX_ESCALATION_MODEL") or "").strip()
             reasoning = codex_router_reasoning
             context_limit = int(values.get("NOVEL_FORGE_CODEX_ESCALATION_CONTEXT_LIMIT") or 0)
+            catalog_model = next((entry for entry in codex_catalog
+                if entry["model"] == model and entry["reasoning"] == reasoning), None)
+            output_limit = int(catalog_model["output_limit"] if catalog_model
+                else values.get("NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT") or 0)
             accounting_method = "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"
             accounting_evidence = str(values.get("NOVEL_FORGE_CODEX_CONFIGURATION_REF") or "")
         for stage_name in ("MODEL", "MEMO", "DRAFT", "REVIEW", "REVISION", "REREVIEW",
@@ -454,6 +460,7 @@ def build_production_execution_composition(
         templates["NOVEL_FORGE_NARRATIVE_SEMANTIC_EVALUATION_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_MODEL_REFERENCE_REASONING_EFFORT"] = reasoning
         templates["NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT"] = str(context_limit)
+        templates.setdefault("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", str(output_limit))
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD"] = accounting_method
         templates["NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF"] = accounting_evidence
         values = templates
@@ -786,7 +793,7 @@ def build_production_execution_composition(
         )
         profile = ModelProfile(
             profile_id=profile_id,
-            profile_version=1,
+            profile_version=2 if capability_definition.capability_id is CapabilityId.PLANNING_CHAPTER_MEMO else 1,
             backend_id=backend_id,
             runtime_class=runtime_class,
             model_provider=provider_identity,
@@ -1354,7 +1361,10 @@ def build_production_execution_composition(
                     quota_remaining=None if channel_resources else int(values["NOVEL_FORGE_CODEX_ESCALATION_CALL_LIMIT"]),
                     authorization_ref=codex_entitlement.authorization_ref,
                 ))
+        from functools import partial
         from novel_forge.modules.review.cross_model_binding import freeze_review_requirement
+        from novel_forge.modules.story_planning_runtime.execution import planning_repair_route_receipt
+        from novel_forge.modules.story_planning_runtime.planning_repair_routing import verify_native_repair
         model_gateway.provider_router = ProductionProviderRouter(
             settings.database_url, candidates=candidates, execution_environment=environment,
             provider_task_scope=provider_task_scope,
@@ -1363,6 +1373,8 @@ def build_production_execution_composition(
             soft_money_limit=str(values.get("NOVEL_FORGE_ROUTER_SOFT_COST_PER_TASK") or "") or None,
             outcome_projection=domain_gate_outcomes,
             review_requirement_resolver=freeze_review_requirement,
+            planning_repair_resolver=partial(planning_repair_route_receipt, settings.database_url),
+            legacy_planning_repair_validator=verify_native_repair,
             membership_identity=codex_entitlement.billing_identity if codex_entitlement else None,
             disabled_provider_reasons=disabled_provider_reasons,
             provider_billing_accounts={"deepseek": str(values.get("NOVEL_FORGE_DEEPSEEK_BILLING_ACCOUNT_REF") or "").strip()},

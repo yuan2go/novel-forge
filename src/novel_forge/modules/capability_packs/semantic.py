@@ -381,6 +381,11 @@ def validate_capability_pack_semantics(
                 "reject_cross_project"
             ),
         }
+        target = manifest.context_sources.planning_task_token_budget
+        if target is not None:
+            if type(target) is not int or type(manifest.context_sources.max_tokens) is not int or not 0 < target <= min(512000, manifest.context_sources.max_tokens):
+                issues.error("CAPABILITY_PACK_CONTEXT_TARGET_INVALID", "$.context_sources.planning_task_token_budget", "Planning Context target must be bounded by the system ceiling")
+            context_expectations["planning_task_token_budget"] = target
         for field, expected in context_expectations.items():
             if policy_content.get(field) != expected:
                 issues.error(

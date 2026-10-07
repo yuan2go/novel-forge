@@ -276,6 +276,7 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
             {
                 "policy_id": STRING,
                 "max_tokens": INTEGER,
+                "planning_task_token_budget": INTEGER,
                 "source_isolation": STRING,
                 "allowed_asset_types": STRING_ARRAY,
                 "forbidden_asset_types": STRING_ARRAY,
@@ -289,7 +290,9 @@ CAPABILITY_PACK_V1_CONTRACT = _object(
                     }
                 ),
                 "longform_bindings": LONGFORM_BINDINGS,
-            }
+            },
+            required=frozenset({"policy_id", "max_tokens", "source_isolation", "allowed_asset_types",
+                "forbidden_asset_types", "required_version_refs", "priority", "freshness", "longform_bindings"}),
         ),
         "tool_permissions": _object(
             {

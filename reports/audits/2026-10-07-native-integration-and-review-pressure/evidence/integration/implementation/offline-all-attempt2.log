@@ -1,0 +1,320 @@
+........................................................................ [  1%]
+.................................................................... [  3%]
+.................................................................... [  4%]
+....................................... [  5%]
+.......................................................... [  7%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+................................................................................................................................ [ 15%]
+.................................................................. [ 16%]
+...................................................................................................... [ 19%]
+........................................................................ [ 20%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+................................................................... [ 29%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+............................F............................. [ 48%]
+................................................................. [ 50%]
+........................................................................ [ 52%]
+.................................................................. [ 53%]
+........................................................................ [ 55%]
+..................................................................... [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 61%]
+.............................F.......................................... [ 63%]
+........................................................................ [ 65%]
+............................................................................................................................... [ 68%]
+........................................................................ [ 69%]
+................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 74%]
+............................................................... [ 76%]
+.................................F...................................... [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+.......................FFFF............................................. [ 93%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+.................................................................. [ 97%]
+.................................................................. [ 99%]
+....................                                                 [100%]
+=================================== FAILURES ===================================
+_ DocumentationRealityTests.test_current_repository_satisfies_its_own_reality_contract _
+
+self = <tests.unit.test_documentation_reality.DocumentationRealityTests testMethod=test_current_repository_satisfies_its_own_reality_contract>
+
+    def test_current_repository_satisfies_its_own_reality_contract(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+    
+        report = check_repository(root)
+    
+>       self.assertEqual(report["status"], "PASS", report)
+E       AssertionError: 'FAIL' != 'PASS'
+E       - FAIL
+E       + PASS
+E        : {'schema_version': 'novel-forge.documentation-reality-check.v1', 'evidence_class': 'reality_inventory', 'status': 'FAIL', 'tested_sha': 'f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609', 'inventory_sha256': 'sha256:2d8e5aaae60038e7f70bf1be5314f1e3cfc9cf3c27f8276822419572236f0533', 'canonical_document_count': 5, 'capability_count': 26, 'source_comment_count': 515, 'script_comment_count': 13, 'web_comment_count': 5, 'module_docstring_count': 37, 'source_docstring_count': 135, 'comment_ratchet': {'status': 'PASS', 'base_sha': 'f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609', 'base_source_comment_count': 515, 'base_script_comment_count': 13, 'base_source_docstring_count': 135, 'base_web_comment_count': 5}, 'errors': ['current-system projection is stale for the implementation tree']}
+
+tests/unit/test_documentation_reality.py:852: AssertionError
+_ test_world_sampling_version_compatibility_preserves_source_admission_checks[future_version] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e4a1040>
+damage = 'future_version'
+
+    @pytest.mark.parametrize("damage", ["old_version", "future_version", "definition", "generator", "book", "repair", "bootstrap", "hash"])
+    def test_world_sampling_version_compatibility_preserves_source_admission_checks(monkeypatch, damage):
+        from novel_forge.modules.story_planning_runtime.world_sampling import _require_world_sample_source
+        version = STORY_PLANNING_OPERATION_DEFINITION_REF.rpartition("@")[2]
+        cursor, row, _, query = _native_world_sample_source(monkeypatch, version)
+        changed = list(row)
+        if damage in {"old_version", "future_version"}:
+            changed[1] = "1.15.0" if damage == "old_version" else "1.19.0"
+        elif damage == "definition":
+            changed[0] = "other.generate"
+        elif damage == "hash":
+            changed[4] = "sha256:" + "0" * 64
+        else:
+            field, value = {"generator": ("generator_operation_name", "book_plan.generate"),
+                "book": ("book_id", "another-book"), "repair": ("repair_of_operation_id", "parent"),
+                "bootstrap": ("routing_bootstrap_authorization_id", "benchmark-grant")}[damage]
+            changed[2][field] = value
+        cursor.fetchone.side_effect = lambda: tuple(changed)
+>       with pytest.raises(KernelError, match="WORLD_SAMPLE_SOURCE_INVALID"):
+E       Failed: DID NOT RAISE KernelError
+
+tests/unit/test_planning_routing_bootstrap.py:207: Failed
+____ test_planning_bootstrap_rejects_unregistered_adjacent_versions[1.19.0] ____
+
+version = '1.19.0'
+
+    @pytest.mark.parametrize("version", ["1.15.0", "1.19.0", "1.180.0", "1.17.0-extra"])
+    def test_planning_bootstrap_rejects_unregistered_adjacent_versions(version):
+        from novel_forge.modules.command_kernel.routing_bootstrap import load_bootstrap_authorization
+        payload, _, snapshot = contract()
+        payload["routing_bootstrap_authorization"] = snapshot
+        class Cursor:
+            def execute(self, *_args):
+                pass
+            def fetchone(self):
+                return (payload, "story_planning.generate", version, "book:story-planning-generation", "sample-one")
+>       with pytest.raises(KernelError, match="ROUTING_BOOTSTRAP_SCOPE_MISMATCH"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'ROUTING_BOOTSTRAP_SCOPE_MISMATCH'
+E         Actual message: 'ROUTING_BOOTSTRAP_POLICY_INTEGRITY_FAILURE: benchmark grant does not match its immutable policy version'
+
+tests/unit/test_routing_bootstrap.py:467: AssertionError
+_ test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[theme.candidates.generate-narrative-beat-design-Theme question] _
+
+stage = 'theme.candidates.generate', skill = 'narrative-beat-design'
+heading = 'Theme question'
+
+    @pytest.mark.parametrize(
+        "stage,skill,heading",
+        [
+            ("theme.candidates.generate", "narrative-beat-design", "Theme question"),
+            ("ending.intent.generate", "long-outline", "Ending intent"),
+            ("book_plan.generate", "long-outline", "Book planning"),
+            ("volume_plan.generate", "long-outline", "Volume planning"),
+        ],
+    )
+    def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor(
+        stage, skill, heading
+    ):
+        from novel_forge.modules.capability_pack_authority.application import (
+            _select_capability_skill,
+        )
+        from novel_forge.modules.story_design_authority.domain import GENERATOR_CATALOG
+    
+        current = build_story_planning_pack_profile(
+            ROOT, operation_definition_hash="sha256:" + "a" * 64
+        )
+        old = build_story_planning_pack_profile(
+            ROOT,
+            operation_definition_hash="sha256:" + "a" * 64,
+            execution_contract_version="1.17.0",
+        )
+>       assert current.manifest["identity"]["version"] == "2.10.0"
+E       AssertionError: assert '2.11.0' == '2.10.0'
+E         
+E         - 2.10.0
+E         ?    ^
+E         + 2.11.0
+E         ?    ^
+
+tests/unit/test_work_intent_residuals.py:285: AssertionError
+_ test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[ending.intent.generate-long-outline-Ending intent] _
+
+stage = 'ending.intent.generate', skill = 'long-outline'
+heading = 'Ending intent'
+
+    @pytest.mark.parametrize(
+        "stage,skill,heading",
+        [
+            ("theme.candidates.generate", "narrative-beat-design", "Theme question"),
+            ("ending.intent.generate", "long-outline", "Ending intent"),
+            ("book_plan.generate", "long-outline", "Book planning"),
+            ("volume_plan.generate", "long-outline", "Volume planning"),
+        ],
+    )
+    def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor(
+        stage, skill, heading
+    ):
+        from novel_forge.modules.capability_pack_authority.application import (
+            _select_capability_skill,
+        )
+        from novel_forge.modules.story_design_authority.domain import GENERATOR_CATALOG
+    
+        current = build_story_planning_pack_profile(
+            ROOT, operation_definition_hash="sha256:" + "a" * 64
+        )
+        old = build_story_planning_pack_profile(
+            ROOT,
+            operation_definition_hash="sha256:" + "a" * 64,
+            execution_contract_version="1.17.0",
+        )
+>       assert current.manifest["identity"]["version"] == "2.10.0"
+E       AssertionError: assert '2.11.0' == '2.10.0'
+E         
+E         - 2.10.0
+E         ?    ^
+E         + 2.11.0
+E         ?    ^
+
+tests/unit/test_work_intent_residuals.py:285: AssertionError
+_ test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[book_plan.generate-long-outline-Book planning] _
+
+stage = 'book_plan.generate', skill = 'long-outline', heading = 'Book planning'
+
+    @pytest.mark.parametrize(
+        "stage,skill,heading",
+        [
+            ("theme.candidates.generate", "narrative-beat-design", "Theme question"),
+            ("ending.intent.generate", "long-outline", "Ending intent"),
+            ("book_plan.generate", "long-outline", "Book planning"),
+            ("volume_plan.generate", "long-outline", "Volume planning"),
+        ],
+    )
+    def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor(
+        stage, skill, heading
+    ):
+        from novel_forge.modules.capability_pack_authority.application import (
+            _select_capability_skill,
+        )
+        from novel_forge.modules.story_design_authority.domain import GENERATOR_CATALOG
+    
+        current = build_story_planning_pack_profile(
+            ROOT, operation_definition_hash="sha256:" + "a" * 64
+        )
+        old = build_story_planning_pack_profile(
+            ROOT,
+            operation_definition_hash="sha256:" + "a" * 64,
+            execution_contract_version="1.17.0",
+        )
+>       assert current.manifest["identity"]["version"] == "2.10.0"
+E       AssertionError: assert '2.11.0' == '2.10.0'
+E         
+E         - 2.10.0
+E         ?    ^
+E         + 2.11.0
+E         ?    ^
+
+tests/unit/test_work_intent_residuals.py:285: AssertionError
+_ test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[volume_plan.generate-long-outline-Volume planning] _
+
+stage = 'volume_plan.generate', skill = 'long-outline'
+heading = 'Volume planning'
+
+    @pytest.mark.parametrize(
+        "stage,skill,heading",
+        [
+            ("theme.candidates.generate", "narrative-beat-design", "Theme question"),
+            ("ending.intent.generate", "long-outline", "Ending intent"),
+            ("book_plan.generate", "long-outline", "Book planning"),
+            ("volume_plan.generate", "long-outline", "Volume planning"),
+        ],
+    )
+    def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor(
+        stage, skill, heading
+    ):
+        from novel_forge.modules.capability_pack_authority.application import (
+            _select_capability_skill,
+        )
+        from novel_forge.modules.story_design_authority.domain import GENERATOR_CATALOG
+    
+        current = build_story_planning_pack_profile(
+            ROOT, operation_definition_hash="sha256:" + "a" * 64
+        )
+        old = build_story_planning_pack_profile(
+            ROOT,
+            operation_definition_hash="sha256:" + "a" * 64,
+            execution_contract_version="1.17.0",
+        )
+>       assert current.manifest["identity"]["version"] == "2.10.0"
+E       AssertionError: assert '2.11.0' == '2.10.0'
+E         
+E         - 2.10.0
+E         ?    ^
+E         + 2.11.0
+E         ?    ^
+
+tests/unit/test_work_intent_residuals.py:285: AssertionError
+=============================== warnings summary ===============================
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_project_scoped_principal_cannot_query_another_project
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_required_product_reads_are_exposed_by_postgresql_app
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_async_command_returns_202_and_uses_trusted_principal
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_chapter_query_denies_cross_project_scope
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_command_and_strong_query_routes_use_authority_application
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_content_command_returns_202_and_uses_trusted_principal
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_route_fails_closed_when_authority_dependencies_are_missing
+  /Users/yuan/.codex/worktrees/pr133-native-integration/novel-forge/src/novel_forge/api/authority_app.py:749: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_project_scoped_principal_cannot_query_another_project
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_required_product_reads_are_exposed_by_postgresql_app
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_async_command_returns_202_and_uses_trusted_principal
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_chapter_query_denies_cross_project_scope
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_command_and_strong_query_routes_use_authority_application
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_content_command_returns_202_and_uses_trusted_principal
+tests/unit/test_chapter_authority_api.py::ChapterAuthorityApiTests::test_route_fails_closed_when_authority_dependencies_are_missing
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_documentation_reality.py::DocumentationRealityTests::test_current_repository_satisfies_its_own_reality_contract
+FAILED tests/unit/test_planning_routing_bootstrap.py::test_world_sampling_version_compatibility_preserves_source_admission_checks[future_version]
+FAILED tests/unit/test_routing_bootstrap.py::test_planning_bootstrap_rejects_unregistered_adjacent_versions[1.19.0]
+FAILED tests/unit/test_work_intent_residuals.py::test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[theme.candidates.generate-narrative-beat-design-Theme question]
+FAILED tests/unit/test_work_intent_residuals.py::test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[ending.intent.generate-long-outline-Ending intent]
+FAILED tests/unit/test_work_intent_residuals.py::test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[book_plan.generate-long-outline-Book planning]
+FAILED tests/unit/test_work_intent_residuals.py::test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor[volume_plan.generate-long-outline-Volume planning]
+7 failed, 4277 passed, 14 warnings, 1500 subtests passed in 218.72s (0:03:38)

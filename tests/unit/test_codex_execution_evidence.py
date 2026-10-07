@@ -383,8 +383,9 @@ def test_provider_process_timeout_preserves_external_effect_settlement_headroom(
 
 @pytest.mark.parametrize("accounting_basis", ["PRICED", "ACCOUNT_ENTITLEMENT"])
 @pytest.mark.parametrize("local_crash", [False, True])
+@pytest.mark.parametrize("encoded_json", [False, True])
 def test_codex_backend_validates_schema_and_semantics_before_success(
-    accounting_basis: str, local_crash: bool,
+    accounting_basis: str, local_crash: bool, encoded_json: bool,
 ) -> None:
     contract_set = contracts(
         backend_id="codex-cli",
@@ -407,7 +408,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
     def validator(stage, schema, value, *, output_schema_ref):  # type: ignore[no-untyped-def]
         nonlocal validation_calls
         validation_calls += 1
-        assert output_schema_ref == "schema:chapter-provider-output:draft:v2"
+        assert output_schema_ref == ("schema:chapter-provider-output:canon_extraction:v25" if encoded_json else "schema:chapter-provider-output:draft:v2")
         if local_crash and validation_calls == 1:
             raise RuntimeError("local validator unavailable")
         validate_chapter_provider_output_against_schema(stage, schema, value)
@@ -435,9 +436,9 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
             sys.executable,
             "-c",
             (
-                "import json,sys; "
-                "json.dump({'text':'Validated chapter.','scene_artifacts':[]},open(sys.argv[1],'w')); "
-                "print(sys.argv[2])"
+                "import json,sys; " +
+                ("json.dump({'output_json':json.dumps({'text':'Validated chapter.','scene_artifacts':[]})},open(sys.argv[1],'w')); " if encoded_json else "json.dump({'text':'Validated chapter.','scene_artifacts':[]},open(sys.argv[1],'w')); ")
+                + "print(sys.argv[2])"
             ),
             str(result_path),
             stdout_event,
@@ -452,7 +453,7 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
                         input_text=input_text,
                         working_directory=tmp,
                         timeout_seconds=5,
-                        output_schema_version="schema:chapter-provider-output:draft:v2",
+                        output_schema_version=("schema:chapter-provider-output:canon_extraction:v25" if encoded_json else "schema:chapter-provider-output:draft:v2"),
                         command=command,
                         output_schema=chapter_provider_output_schema("draft", legacy_contract=True),
                         capability_evidence={
@@ -488,6 +489,9 @@ def test_codex_backend_validates_schema_and_semantics_before_success(
     assert validation_calls == (2 if local_crash else 1)
     evidence = store.get_record(request.execution_id).raw_evidence
     assert evidence["result"] == {"text": "Validated chapter.", "scene_artifacts": []}
+    if encoded_json:
+        assert evidence['transport_decode']['contract_version']=='codex-canonical-json.v1'
+        assert evidence['transport_decode']['envelope_hash']!=evidence['transport_decode']['decoded_hash']
     assert evidence["usage"]["measurement"] == "MEASURED"
     if accounting_basis == "ACCOUNT_ENTITLEMENT":
         assert evidence["cost"]["availability"] == "UNAVAILABLE"
@@ -677,6 +681,8 @@ def test_codex_protocol_schema_rejection_is_distinct_from_transient_failure():
     rejected = {"type": "error", "message": json.dumps({"status": 400,
         "error": {"code": "invalid_json_schema", "message": "uniqueItems is not permitted"}})}
     assert codex_protocol_failure(json.dumps(rejected)) == "PROVIDER_SCHEMA_REJECTED"
+    rejected["message"] = json.dumps({"error":{"code":"invalid_json_schema","type":"invalid_request_error","param":"text.format.schema"}})
+    assert codex_protocol_failure(json.dumps(rejected)) == "PROVIDER_SCHEMA_REJECTED"
     for value in ("[]", "not json", json.dumps({"type": "error", "message": "timeout"}),
         json.dumps({"type": "error", "message": json.dumps({"status": 429, "error": {"code": "rate_limit"}})})):
         assert codex_protocol_failure(value) is None
@@ -703,3 +709,82 @@ def test_codex_source_schema_projects_partial_alternatives_as_closed_objects():
     value['findings'][0]['evidence_span_ids']=[]
     with pytest.raises(KernelError, match="SCHEMA"):
         validate_chapter_provider_output_against_schema("source.deconstruction.observe", projected, value)
+
+
+def test_codex_nullable_shared_object_preserves_closed_value_contract():
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.command_kernel.errors import KernelError
+    original = {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":{"$ref":"#/$defs/nullable"}},"required":["value"],"additionalProperties":False,
+        "$defs":{"nullable":{"type":["object","null"],"properties":{"id":{"type":"string","minLength":1}},"required":["id"],"additionalProperties":False}}}
+    projected = codex_output_schema(original)
+    assert projected['$defs']['nullable']['anyOf'][0]['type']=='object'
+    assert projected['$defs']['nullable']['anyOf'][1]=={'type':'null'}
+    for value in ({'value':None},{'value':{'id':'known'}}):
+        for schema in (original,projected):
+            validate_chapter_provider_output_against_schema('canon_extraction',schema,value)
+    for value in ({'value':{}},{'value':{'id':''}},{'value':{'id':'known','extra':True}},{'value':3}):
+        for schema in (original,projected):
+            with pytest.raises(KernelError):
+                validate_chapter_provider_output_against_schema('canon_extraction',schema,value)
+
+
+def test_codex_wire_correction_requires_exact_retained_hashes():
+    import hashlib
+    from novel_forge.modules.production_execution.codex_configuration import codex_wire_correction_evidence
+    canonical={'type':'object','properties':{'value':{'type':['object','null'],'properties':{'id':{'type':'string'}},'required':['id'],'additionalProperties':False}},'required':['value'],'additionalProperties':False}
+    def digest(value):
+        return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    evidence={'output_schema':canonical,'output_schema_version':'schema:chapter-provider-output:canon_extraction:v24',
+        'provider_schema_contract':{'version':'codex-structured-schema.v3','canonical_hash':digest(canonical),'provider_hash':digest(canonical)}}
+    proof=codex_wire_correction_evidence(evidence)
+    assert proof and proof['reversible_equivalence']=='EXACT'
+    assert proof['previous_wire_hash']!=proof['corrected_wire_hash']
+    evidence['provider_schema_contract']['provider_hash']='sha256:'+'0'*64
+    assert codex_wire_correction_evidence(evidence) is None
+    evidence['provider_schema_contract']['provider_hash']=digest(canonical)
+    evidence['output_schema_version']='schema:chapter-provider-output:canon_extraction:v23'
+    assert codex_wire_correction_evidence(evidence) is None
+
+
+@pytest.mark.parametrize("field,valid,invalid", [
+    ({"type":["string","null"],"minLength":2}, [None,"ok"], ["x",1,[]]),
+    ({"type":["array","null"],"items":{"type":"integer"},"minItems":1}, [None,[1]], [[],["x"],False]),
+    ({"type":["number","null"],"minimum":2}, [None,2,3.5], [1,"2",False]),
+    ({"type":["boolean","null"]}, [None,True,False], [1,"true",[]]),
+    ({"type":["string","null"],"enum":[None],"minLength":1}, [None], ["x","",1,False]),
+    ({"type":["string","null"],"enum":["x"]}, ["x"], [None,"y",1]),
+    ({"type":["string","null"],"const":"x"}, ["x"], [None,"y",1]),
+])
+def test_nullable_wire_values_preserve_canonical_contract(field,valid,invalid):
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.command_kernel.errors import KernelError
+    schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":field},"required":["value"],"additionalProperties":False}
+    wire=codex_output_schema(schema)
+    for value in valid:
+        for contract in (schema,wire):
+            validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})
+    for value in invalid:
+        for contract in (schema,wire):
+            with pytest.raises(KernelError):
+                validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})
+
+
+@pytest.mark.parametrize("value", [{"output_json":"[]"}, {"output_json":"{}","extra":True}, {"output_json":"{\"a\":1,\"a\":2}"}, {"output_json":"{\"a\":NaN}"}, {"output_json":"{\"a\":1e999}"}, {"output_json":3}])
+def test_canonical_transport_rejects_ambiguous_or_malformed_envelopes(value):
+    from novel_forge.modules.production_execution.codex_configuration import decode_codex_output,CODEX_CANONICAL_JSON_SCHEMA_REF
+    with pytest.raises(ValueError):
+        decode_codex_output(value,schema_ref=CODEX_CANONICAL_JSON_SCHEMA_REF)
+
+
+def test_canonical_transport_does_not_replace_the_host_schema():
+    from novel_forge.modules.production_execution.codex_configuration import decode_codex_output,codex_output_schema,CODEX_CANONICAL_JSON_SCHEMA_REF
+    from novel_forge.modules.command_kernel.errors import KernelError
+    schema=chapter_provider_output_schema("draft",legacy_contract=True)
+    wire=codex_output_schema(schema,schema_ref=CODEX_CANONICAL_JSON_SCHEMA_REF)
+    assert set(wire['properties'])=={'output_json'}
+    decoded,proof=decode_codex_output({'output_json':'{\"unexpected\":true}'},schema_ref=CODEX_CANONICAL_JSON_SCHEMA_REF)
+    assert proof['contract_version']=='codex-canonical-json.v1'
+    with pytest.raises(KernelError):
+        validate_chapter_provider_output_against_schema('draft',schema,decoded)

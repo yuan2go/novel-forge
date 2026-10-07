@@ -159,3 +159,127 @@ def test_inherited_paid_configuration_is_closed_and_missing_configuration_disabl
     paid["currency"] = "CNY"
     (tmp_path / "paid.json").write_text(json.dumps(paid))
     assert load_paid_configuration(values)[1] == "PAID_TEMPLATE_UNAVAILABLE_OR_INVALID"
+
+
+def test_v3_world_policy_is_explicit_and_strict_requires_simulation():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    repair = {"version": "native-repair-routing.v1", "max_same_route_repairs": 2}
+    value = template(version="creative-execution-template.v3", repair_routing=repair, world_future_preparation="DISABLED")
+    validate_templates({"execution_templates": [value]})
+    definition = owned_policy_definition(owner="PROVIDER_ROUTING", content={"execution_templates": [value]},
+        application_build_id="fixture", commit_sha="a"*40)
+    assert definition["definition_version"] == "1.8.0"
+    previous = template(version="creative-execution-template.v2", repair_routing=repair)
+    assert owned_policy_definition(owner="PROVIDER_ROUTING", content={"execution_templates": [previous]},
+        application_build_id="fixture", commit_sha="a"*40)["definition_version"] == "1.7.0"
+    with pytest.raises(KernelError):
+        validate_templates({"execution_templates": [{k:v for k,v in value.items() if k != "world_future_preparation"}]})
+    with pytest.raises(KernelError):
+        validate_templates({"execution_templates": [{**value, "mode":"STRICT_PRODUCTION", "require_literary_qualification":True}]})
+    validate_templates({"execution_templates": [{**value, "mode":"STRICT_PRODUCTION",
+        "require_literary_qualification":True, "world_future_preparation":"REQUIRED"}]})
+
+
+@pytest.mark.parametrize("field", ["actor_experiment", "preparation_sources"])
+def test_optional_world_policy_cannot_defer_independent_or_accepted_commitments(field):
+    from novel_forge.modules.story_planning_runtime.world_optional import require_optional_source
+    require_optional_source({"actor_experiment":None, "preparation_sources":[]})
+    with pytest.raises(KernelError, match="WORLD_OPTIONAL_DEFERRAL_DEPENDENCY_REQUIRED"):
+        require_optional_source({field: ["required"]})
+
+
+def test_execution_window_recovery_is_explicit_creative_v5_only():
+    value = template(version='creative-execution-template.v5',world_future_preparation='DISABLED',
+        repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},
+        chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR')
+    validate_templates({'execution_templates':[value]})
+    value['version'] = 'creative-execution-template.v4'
+    with pytest.raises(KernelError,match='EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID'):
+        validate_templates({'execution_templates':[value]})
+    value.update(version='creative-execution-template.v5',mode='STRICT_PRODUCTION',
+        require_literary_qualification=True,world_future_preparation='REQUIRED')
+    with pytest.raises(KernelError,match='EXECUTION_TEMPLATE_WINDOW_RECOVERY_INVALID'):
+        validate_templates({'execution_templates':[value]})
+
+
+def test_v6_canon_validation_is_explicit_preserves_v5_and_strict():
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    value=template(version='creative-execution-template.v6',world_future_preparation='DISABLED',
+        repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},
+        chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',canon_validation_contract='grounded-canon-validation.v2')
+    validate_templates({'execution_templates':[value]})
+    kwargs=dict(owner='PROVIDER_ROUTING',application_build_id='fixture',commit_sha='a'*40)
+    new=owned_policy_definition(content={'execution_templates':[value]},**kwargs)
+    assert new['definition_version']=='1.11.0'
+    previous={k:v for k,v in value.items() if k!='canon_validation_contract'}
+    previous['version']='creative-execution-template.v5'
+    validate_templates({'execution_templates':[previous]})
+    old=owned_policy_definition(content={'execution_templates':[previous]},**kwargs)
+    assert old['definition_version']=='1.10.0'
+    schema=old['command_schema']['properties']['policy']['properties']['execution_templates']['items']
+    assert 'canon_validation_contract' not in schema['properties']
+    assert 'creative-execution-template.v6' not in schema['properties']['version']['enum']
+    for invalid in ({**value,'version':'creative-execution-template.v5'},
+                    {**value,'mode':'STRICT_PRODUCTION','require_literary_qualification':True,'world_future_preparation':'REQUIRED'},
+                    {k:v for k,v in value.items() if k!='canon_validation_contract'}):
+        with pytest.raises(KernelError):
+            validate_templates({'execution_templates':[invalid]})
+
+
+@pytest.mark.parametrize("status", ["FAILED_FINAL", "DEAD_LETTER"])
+def test_optional_world_invalid_raw_without_blocked_action_cannot_defer(monkeypatch, status):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime import application as planning_application
+    from novel_forge.modules.story_planning_runtime import world_optional
+
+    frozen = {"immutable": "source-command"}
+    queries = []
+    class Cursor:
+        def execute(self, query, args):
+            queries.append(query)
+        def fetchone(self):
+            return (status, 2, frozen, {"error_code": "WORLD_PREPARATION_RESULT_INVALID"})
+        def fetchall(self):
+            return []
+    class UnitOfWork:
+        cursor = Cursor()
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    principal = SimpleNamespace(principal_id="actor", require=lambda *args: None)
+    command = SimpleNamespace(actor_id="actor", project_id="project", book_id="book")
+    application = SimpleNamespace(database_url="postgresql://unused", _probe=lambda probe: None)
+    monkeypatch.setattr(world_optional, "AuthorityUnitOfWork", lambda url: UnitOfWork())
+    monkeypatch.setattr(world_optional, "optional_policy", lambda *args, **kwargs: {"explicit": "optional"})
+    monkeypatch.setattr(planning_application, "_command_payload", lambda value: frozen)
+    with pytest.raises(KernelError, match="WORLD_OPTIONAL_DEFERRAL_RESULT_INVALID"):
+        world_optional.follow_optional_failure(application, command=command, operation_id="source", principal=principal)
+    assert len(queries) == 2
+    assert all(query.lstrip().startswith("SELECT") for query in queries)
+
+
+@pytest.mark.parametrize("status", ["FAILED_RETRYABLE", "WAITING_EXTERNAL_RESULT", "RUNNING"])
+def test_optional_world_unresolved_or_retryable_source_has_no_permission(monkeypatch, status):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime import world_optional
+
+    queries = []
+    class Cursor:
+        def execute(self, query, args):
+            queries.append(query)
+        def fetchone(self):
+            return (status, 2, {}, {"error_code": "WORLD_PREPARATION_BLOCKED"})
+    class UnitOfWork:
+        cursor = Cursor()
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    principal = SimpleNamespace(principal_id="actor", require=lambda *args: None)
+    command = SimpleNamespace(actor_id="actor", project_id="project", book_id="book")
+    application = SimpleNamespace(database_url="postgresql://unused", _probe=lambda probe: None)
+    monkeypatch.setattr(world_optional, "AuthorityUnitOfWork", lambda url: UnitOfWork())
+    monkeypatch.setattr(world_optional, "optional_policy", lambda *args, **kwargs: {"explicit": "optional"})
+    assert world_optional.follow_optional_failure(application, command=command, operation_id="source", principal=principal) is None
+    assert len(queries) == 1 and queries[0].lstrip().startswith("SELECT")

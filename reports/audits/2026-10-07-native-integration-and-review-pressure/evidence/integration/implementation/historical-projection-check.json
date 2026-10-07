@@ -1,0 +1,19 @@
+{
+  "authority_surface_file_count": 1565,
+  "eight_chapter_canonical_reference_count": 0,
+  "errors": [],
+  "fact_types": {
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY"
+  },
+  "forbidden_machine_field_count": 0,
+  "historical_roadmap_authority_count": 0,
+  "historical_test_authority_count": 0,
+  "retired_path_count": 0,
+  "schema_version": "novel-forge.historical-reality.v1",
+  "stale_wp_pr_adr_roadmap_authority_count": 0,
+  "status": "PASS",
+  "unmanaged_historical_instruction_count": 0
+}

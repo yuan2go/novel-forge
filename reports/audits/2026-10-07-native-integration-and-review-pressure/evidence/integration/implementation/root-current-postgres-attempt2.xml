@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="30" time="53.495" timestamp="2026-10-07T07:13:51.683945+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_adapter_exception_is_recorded_and_releases_lease" time="0.530" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_callback_policy_keeps_ack_distinct_from_business_success" time="0.068" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_cancel_before_dispatch_and_after_dispatch_have_distinct_outcomes" time="0.048" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_compensation_is_a_linked_idempotent_external_effect" time="0.099" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_completed_effect_recovery_resumes_waiting_owner_and_rejects_unknown_or_foreign_effect" time="0.130" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_dispatch_success_and_prepared_dispatch_replay" time="0.063" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_expired_post_request_lease_requires_query_without_duplicate_execute" time="1.189" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_local_file_adapter_executes_outside_transaction_and_is_idempotent" time="0.071" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_permanent_budget_assertion_denial_is_terminal_before_send" time="0.065" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_permanent_pre_send_denial_blocks_provider_and_terminalizes_effect" time="0.044" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_provider_v2_capability_drift_fails_before_dispatch" time="0.015" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_provider_v2_profile_and_request_id_are_frozen_and_persisted" time="0.052" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_receipt_inbox_replay_conflict_and_generation_binding" time="0.028" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_reconciliation_not_found_allows_retry_and_ambiguous_stays_blocked" time="0.106" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_reconciliation_not_found_terminalizes_checkpointed_attempt_for_retry" time="0.098" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_slow_provider_dispatch_renews_effect_lease" time="1.304" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_stable_effect_key_is_scoped_by_project" time="0.044" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_timeout_after_effect_requires_provider_reconciliation" time="0.065" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_timeout_before_effect_retries_and_exhaustion_dead_letters" time="0.071" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_two_dispatchers_compete_and_expired_lease_takeover_fences_old" time="0.068" /><testcase classname="tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests" name="test_typed_provider_failures_preserve_send_boundary_and_fail_closed" time="0.125" /><testcase classname="tests.integration.test_creation_cli_postgres" name="test_native_start_freezes_current_work_and_reuses_original_formation[admission-boundaries]" time="2.643" /><testcase classname="tests.integration.test_creation_cli_postgres" name="test_native_start_freezes_current_work_and_reuses_original_formation[controlled-process-main-chain]" time="45.788"><failure message="novel_forge.modules.command_kernel.errors.KernelError: MODEL_EFFECT_FINAL_PLANNING: Planning provider outcome was final_failure">tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-993/test_native_start_freezes_curr1')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x109ee2360&gt;
+full_creation = True
+
+    @pytest.mark.parametrize("full_creation", [False, True], ids=["admission-boundaries", "controlled-process-main-chain"])
+    def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_path, monkeypatch, full_creation):
+        harness = CapabilityPackPostgresHarness("creation-cli-full" if full_creation else "creation-cli-admission")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        from tests.integration.synthesis_production_support import SynthesisTransport
+        transport = SynthesisTransport() if full_creation else None
+        if full_creation:
+            from novel_forge.api import authority_dependencies
+            build_book = authority_dependencies.build_book_production_composition
+            checkpoints = []
+            def fail_once(checkpoint):
+                if checkpoint == "after_business_projection_update":
+                    checkpoints.append(checkpoint)
+                    if len(checkpoints) == 3:
+                        raise RuntimeError("controlled projection interruption")
+            def recovering_book(*values, **options):
+                composition = build_book(*values, **options)
+                composition.formation.generation.book_design.fault_injector = fail_once
+                return composition
+            monkeypatch.setattr(authority_dependencies, "build_book_production_composition", recovering_book)
+            from novel_forge.modules.chapter_authority.model_effects import ExternalEffectChapterModelPort
+            from novel_forge.modules.command_kernel.errors import KernelError
+            invoke = ExternalEffectChapterModelPort.invoke
+            quality_order = []
+            def unavailable_once(port, request, *, stage, **options):
+                if stage.startswith("quality_"):
+                    quality_order.append(stage)
+                    if quality_order == ["quality_structural"]:
+                        raise KernelError("PROVIDER_ROUTING_BLOCKED", "controlled independent task temporarily unavailable")
+                return invoke(port, request, stage=stage, **options)
+            monkeypatch.setattr(ExternalEffectChapterModelPort, "invoke", unavailable_once)
+            normal = transport.planning
+            def bounded_fixture(stage, values):
+                result = normal(stage, values)
+                if stage == "creative.candidates.generate":
+                    result["serialization_potential"] = None
+                    for declaration in result.get("applicability", []):
+                        if declaration["field_path"] == "$.serialization_potential":
+                            declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
+                def visit(value):
+                    if isinstance(value, dict):
+                        for key, child in value.items():
+                            if key == "serialization_function":
+                                value[key] = None
+                            else:
+                                visit(child)
+                    elif isinstance(value, list):
+                        for child in value:
+                            visit(child)
+                visit(result)
+                return result
+            transport.planning = bounded_fixture
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+            "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
+        }, monkeypatch, transport)
+        if full_creation:
+            catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+            for model in catalog["models"]:
+                model["reasoning"] = "medium"
+            env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+            env["NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT"] = "medium"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_ROUTER_PROVIDERS", "codex-cli,deepseek")
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "missing-paid-template.json"))
+        inputs = {"version": "creation-request.v1", "title": "Current author work", "target_chapters": 1 if full_creation else 17,
+            "chapter_length": {"minimum": 800, "maximum": 4000},
+            "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist confronts contradictory accounts of a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve the author's intended scope."],
+                "source_boundaries": ["Original work; do not copy protected expression."]}}
+        input_file = tmp_path / "request.json"
+        input_file.write_text(json.dumps(inputs))
+        book = project + "-new-book"
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--project-id", project,
+            "--workspace-id", harness.workspace_id + "-new", "--book-id", book, "--input-file", str(input_file),
+            "--idempotency-key", "native-create", "--repository-root", str(root), "--maximum-ticks", "100",
+            "--creative-selection", "FIRST_ADMITTED", "--foreground"])
+        if not full_creation:
+            args.yield_after_window = True
+            monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
+                lambda **values: {"formation_run_id": values["formation_run_id"], "stop_reason": "YIELDED_CHECKPOINT"})
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="validation")
+        first = run_creation_command(settings, args)
+        if full_creation:
+            assert first["stop_reason"] == "FORMATION_FAILED", first
+            before_recovery = len(transport.calls)
+            recovery_args = parser.parse_args(["authority-creation", "continue", "--project-id", project,
+                "--formation-run-id", first["formation_run_id"], "--repository-root", str(root), "--maximum-ticks", "2"])
+&gt;           first = run_creation_command(settings, recovery_args)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_creation_cli_postgres.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:37: in run_creation_command
+    return execute_creation_command(settings, args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:886: in execute_creation_command
+    result = continue_creation(composition=composition, content=content, chapter=chapter, formation_run_id=formation_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:303: in continue_creation
+    stop = drive_book(composition=composition, chapter=chapter, book_run_id=existing[0], worker=book_worker,
+src/novel_forge/modules/book_authority/creation_runtime.py:43: in drive_book
+    return _drive_book(composition=composition, chapter=chapter, book_run_id=book_run_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:123: in _drive_book
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:184: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:69: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:130: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:464: in _tick
+    result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:962: in _generate_plan
+    result = self.planning.generate(frozen or generation, principal=self.principal)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:784: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:419: in execute
+    execution = bundle.execution_port.execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = _PlanningPepPort(database_url='postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:49856/nf_pr133_integration_test', worker...&gt;, post_provider_fault_injector=&lt;function PostgresPlanningExecutionPreparer.__init__.&lt;locals&gt;.&lt;lambda&gt; at 0x109fa3100&gt;)
+command = DomainExecutionCommand(capability='planning.story_chapter.generate', operation=&lt;DomainModelOperation.GENERATE: 'genera...ing_id': 'b7c16969-d9a4-58ee-bba8-4dd30fc8f457', 'logical_key': 'chapter:1', 'planning_scope': 'CHAPTER'}, review=None)
+
+    def execute(self, command: DomainExecutionCommand) -&gt; DomainExecutionCandidate:
+        if command.capability != self.binding.request.capability:
+            raise KernelError(
+                "PLANNING_PEP_CAPABILITY_DRIFT",
+                "Planning command differs from the frozen execution capability",
+            )
+        try:
+            dispatched = self.recovered_completion or dispatch_external_effect(
+                self.database_url,
+                self.context,
+                effect_id=self.effect_id,
+                worker_id=self.worker_id,
+                lease_seconds=self.lease_seconds,
+                adapter=self.adapter,
+                budget_reservation_id=self.reservation_id,
+            )
+        except Exception as exc:
+            if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                )
+            raise
+        recovered_completion = self.recovered_completion is not None
+        if recovered_completion:
+            dispatched = {**dispatched, "outcome": "success"}
+        capability_profile = _planning_budget_capability_profile(
+            adapter=self.adapter,
+            recovered_completion=self.recovered_completion,
+        )
+        if dispatched["outcome"] != "success":
+            budget_decision = _planning_failed_provider_budget_decision(
+                dispatched=dispatched,
+                capability_profile=capability_profile,
+                reserved_amount=self.reserved_amount,
+                reserved_tokens=self.reserved_tokens,
+            )
+            outcome = str(dispatched.get("outcome") or "unknown")
+            disposition = str(budget_decision["disposition"])
+            if disposition == "RELEASE":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                )
+            elif disposition == "HOLD_UNKNOWN":
+                resolve_provider_budget_failure(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                    external_state_unknown=True,
+                )
+            elif disposition == "SETTLE":
+                settlement = dict(budget_decision["settlement"])
+                amount_value = settlement["amount"]
+                amount = str(amount_value) if amount_value is not None else None
+                total_tokens = int(settlement["total_tokens"])
+                usage = dict(settlement["usage"])
+                cost = dict(settlement["cost"])
+                evidence = dispatched.get("provider_evidence")
+                provider_evidence = evidence if isinstance(evidence, Mapping) else {}
+                settle_provider_budget(
+                    self.database_url,
+                    reservation_id=self.reservation_id,
+                    project_id=self.context.project_id,
+                    actual_amount=amount,
+                    actual_tokens=total_tokens,
+                    evidence={
+                        "provider_id": str(provider_evidence.get("provider_id") or ""),
+                        "model_id": str(provider_evidence.get("model_id") or ""),
+                        "real_model_call": bool(
+                            provider_evidence.get("real_model_call")
+                        ),
+                        "fixture": bool(provider_evidence.get("fixture_protocol_only")),
+                        "execution_outcome": outcome.upper(),
+                        "accepted_candidate": False,
+                        "submission_state": str(budget_decision["submission_state"]),
+                        "measurement_available": bool(
+                            budget_decision["measurement_available"]
+                        ),
+                        "usage_settlement_basis": str(settlement["usage_basis"]),
+                        "cost_settlement_basis": str(settlement["cost_basis"]),
+                        "accounting_basis": str(
+                            settlement.get("accounting_basis") or "PRICED"
+                        ),
+                        "cost_status": str(settlement.get("cost_status") or "KNOWN"),
+                    },
+                )
+                self._record_model_evidence(
+                    evidence=provider_evidence,
+                    usage=usage,
+                    cost=cost,
+                    amount=amount,
+                    total_tokens=total_tokens,
+                    accepted_candidate=False,
+                    recovered_completion=False,
+                    failure={
+                        "code": "PLANNING_PROVIDER_NON_SUCCESS",
+                        "outcome": outcome,
+                        "submission_state": str(budget_decision["submission_state"]),
+                        "budget_disposition": "SETTLED",
+                    },
+                )
+            else:  # pragma: no cover - the pure decision contract is exhaustive
+                raise KernelError(
+                    "PLANNING_BUDGET_FAILURE_DISPOSITION_INVALID",
+                    "Planning Provider failure produced an unsupported budget action",
+                )
+            code = (
+                "MODEL_EFFECT_RETRYABLE_PLANNING"
+                if outcome in {"retryable_failure", "not_found"}
+                else "MODEL_EFFECT_FINAL_PLANNING"
+            )
+&gt;           raise KernelError(code, f"Planning provider outcome was {outcome}")
+E           novel_forge.modules.command_kernel.errors.KernelError: MODEL_EFFECT_FINAL_PLANNING: Planning provider outcome was final_failure
+
+src/novel_forge/modules/story_planning_runtime/execution.py:3757: KernelError</failure></testcase></testsuite></testsuites>

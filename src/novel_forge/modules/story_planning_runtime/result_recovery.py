@@ -46,7 +46,7 @@ class PlanningResultValidationError(KernelError):
 
 
 def validate_raw_result(
-    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False
 ) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise KernelError(
@@ -72,7 +72,7 @@ def validate_raw_result(
             for key, value in normalized.items()
             if key not in {"author_design_decisions", "knowledge_translations"}
         }
-        envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
+        envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
         if compiled_scope and generator == "world.design.generate":
             envelope["world_compilation"] = {"compiled_scope": compiled_scope}
         structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
@@ -132,6 +132,8 @@ def require_result_repair_source(
     command: StoryPlanningGenerationCommand,
     operation_id: str,
     source_asset_version_id: str = "",
+    require_valid_result: bool = False,
+    result_validation_contract_version: str | None = None,
 ) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
@@ -265,6 +267,24 @@ def require_result_repair_source(
             "PLANNING_RESULT_REPAIR_BUDGET_UNSETTLED",
             "settle the known original Provider usage before admitting a repair request",
         )
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT output.asset_version_id,version.content_hash,version.content
+            FROM authority_operation_output_asset output
+            JOIN authority_asset asset ON asset.asset_id=output.asset_id
+            JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=%s AND asset.asset_type='context_bundle'""", [operation_id])
+        contexts = uow.cursor.fetchall()
+    context_ref = evidence.get("context_bundle_asset_version_id")
+    if context_ref:
+        contexts = [item for item in contexts if str(item[0]) == context_ref]
+    elif world_generation:
+        contexts = []
+    if (not world_generation or context_ref) and len(contexts) != 1:
+        raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair requires the original Operation's exact frozen Context")
+    context_id, context_hash, context_content = contexts[0] if contexts else ("", "", {})
+    if ((evidence.get("context_bundle_asset_version_id") and evidence["context_bundle_asset_version_id"] != str(context_id))
+            or (evidence.get("context_bundle_hash") and evidence["context_bundle_hash"] != context_hash)):
+        raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair cannot substitute another author projection")
     try:
         if world_generation:
             from .world_preparation import PlanningWorldPreparation
@@ -279,12 +299,16 @@ def require_result_repair_source(
                 command.generator_operation_name,
                 raw,
                 work_requirements=command.execution_contract_version
-                in {"1.17.0", "1.18.0"},
-                aligned_methods=command.execution_contract_version == "1.18.0",
+                in {"1.17.0", "1.18.0", "1.19.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+                rfc6901_paths=(result_validation_contract_version or command.execution_contract_version) == "1.19.0",
                 compiled_scope="BOOK"
                 if command.generator_operation_name == "world.design.generate"
                 else None,
             )
+        if not world_generation:
+            from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
+            validate_author_decisions(raw, context_content.get("author_design_projection") or {})
         if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"][
             "error_code"
         ].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
@@ -304,6 +328,8 @@ def require_result_repair_source(
             validate_concrete_selection(raw, selection)
             build_craft_strategy(raw, selection)
     except KernelError as error:
+        if require_valid_result:
+            raise KernelError("PLANNING_RESULT_ADMISSION_INVALID", error.message) from error
         if world_generation and error.code.startswith(
             (
                 "WORLD_REPAIR_",
@@ -321,11 +347,13 @@ def require_result_repair_source(
             if error.code == "WORLD_GENERATION_CAUSAL_REJECTED":
                 diagnostic["validation_kind"] = "WORLD_CAUSAL_GATE"
     else:
-        raise KernelError(
-            "PLANNING_RESULT_REPAIR_NOT_REQUIRED",
-            "retained Provider result is valid; recover the original persistence failure without regenerating",
-        )
-    if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"] != diagnostic:
+        if not require_valid_result:
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_NOT_REQUIRED",
+                "retained Provider result is valid; recover the original persistence failure without regenerating",
+            )
+        diagnostic = dict(source.content.get("diagnostic") or {})
+    if not require_valid_result and source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"] != diagnostic:
         raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "A replayed failure must match the recorded diagnosis exactly")
     return {
         "asset_version_id": source.asset_version_id,
@@ -335,4 +363,7 @@ def require_result_repair_source(
         "diagnostic": diagnostic,
         "execution_evidence": evidence,
         "schema_version": "planning-result-repair-context.v1",
+        "context_asset_version_id": str(context_id),
+        "context_hash": context_hash,
+        "context_content": context_content,
     }

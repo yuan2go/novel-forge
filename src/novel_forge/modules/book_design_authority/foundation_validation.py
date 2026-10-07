@@ -61,7 +61,7 @@ def validate_foundation_layer(
     }
     work_requirements = (
         dict(content.get("constraint_envelope") or {}).get("contract_version")
-        in {"foundation-generation.v2", "foundation-generation.v3"}
+        in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}
     )
     if work_requirements:
         from novel_forge.modules.story_planning_runtime.foundation_generation import (

@@ -1,0 +1,106 @@
+{
+  "checked_domain_files": 45,
+  "checked_domain_packages": 53,
+  "checked_production_files": 340,
+  "checked_provider_files": 867,
+  "classified_production_entries": 42,
+  "schema_version": "architecture-fitness-report.v1",
+  "status": "PASS",
+  "subordinate_manifests": {
+    "console-scripts": {
+      "checked": 11,
+      "items": [
+        "novel-forge",
+        "novel-forge-agent-authority-worker",
+        "novel-forge-book-authority-worker",
+        "novel-forge-book-followup-worker",
+        "novel-forge-d0-provider-worker",
+        "novel-forge-maintenance-worker",
+        "novel-forge-migrate",
+        "novel-forge-mkaos-authority-worker",
+        "novel-forge-outbox-worker",
+        "novel-forge-source-authority-worker",
+        "novel-forge-source-import-worker"
+      ],
+      "kind": "console_scripts",
+      "status": "PASS"
+    },
+    "migrations": {
+      "checked": 169,
+      "head": "20261007_0168_derived_step_revalidation",
+      "kind": "migrations",
+      "status": "PASS"
+    },
+    "reachability": {
+      "checked": 42,
+      "kind": "reachability",
+      "proof_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+      "runtime_reachable": 42,
+      "status": "PASS"
+    },
+    "tests": {
+      "checked": 4,
+      "collections": [
+        {
+          "collected_file_count": 25,
+          "complete_collection": true,
+          "count": 110,
+          "name": "architecture",
+          "qualification_class": "BACKEND_NON_POSTGRESQL",
+          "source_file_count": 25
+        },
+        {
+          "collected_file_count": 307,
+          "complete_collection": true,
+          "count": 4217,
+          "name": "unit",
+          "qualification_class": "BACKEND_NON_POSTGRESQL",
+          "source_file_count": 307
+        },
+        {
+          "collected_file_count": 1,
+          "complete_collection": true,
+          "count": 2,
+          "name": "acceptance",
+          "qualification_class": "BACKEND_NON_POSTGRESQL",
+          "source_file_count": 1
+        },
+        {
+          "collected_file_count": 158,
+          "complete_collection": true,
+          "count": 1081,
+          "name": "integration",
+          "qualification_class": "POSTGRESQL_REQUIRED",
+          "source_file_count": 158
+        }
+      ],
+      "kind": "tests",
+      "reality": {
+        "classification_file_counts": {
+          "CURRENT_AUTHORITY_BOUNDARY": 19,
+          "CURRENT_DOMAIN_INVARIANT": 128,
+          "CURRENT_RUNTIME_CONTRACT": 151,
+          "FIXTURE_PROTOCOL": 141,
+          "HISTORICAL_REDUNDANT": 0,
+          "MIGRATION_COMPATIBILITY": 27,
+          "QUALIFICATION_INFRASTRUCTURE": 24,
+          "RETIREMENT_GUARD": 1
+        },
+        "classification_test_counts": {
+          "CURRENT_AUTHORITY_BOUNDARY": 84,
+          "CURRENT_DOMAIN_INVARIANT": 985,
+          "CURRENT_RUNTIME_CONTRACT": 846,
+          "FIXTURE_PROTOCOL": 1349,
+          "HISTORICAL_REDUNDANT": 0,
+          "MIGRATION_COMPATIBILITY": 119,
+          "QUALIFICATION_INFRASTRUCTURE": 170,
+          "RETIREMENT_GUARD": 4
+        },
+        "test_definition_count": 3557,
+        "test_file_count": 491
+      },
+      "status": "PASS"
+    }
+  },
+  "violations": []
+}

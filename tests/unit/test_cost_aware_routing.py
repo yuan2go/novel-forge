@@ -1020,3 +1020,23 @@ def test_second_diagnosed_raw_result_repair_retains_history_and_native_bound(
     )
     assert result["status"] == expected
     assert list(result["task"]["history"]) == list(history)
+
+
+@pytest.mark.parametrize("ordinal,total,stage,failure,expected", [
+    (1, 3, "classification", "SCHEMA_REJECTION", "SELECTED"),
+    (2, 4, "classification", "MALFORMED_STRUCTURED_OUTPUT", "SELECTED"),
+    (3, 3, "classification", "SCHEMA_REJECTION", "BLOCKED"),
+    (1, 5, "classification", "SCHEMA_REJECTION", "BLOCKED"),
+    (1, 3, "other-stage", "SCHEMA_REJECTION", "BLOCKED"),
+    (1, 3, "classification", "UNKNOWN_EXTERNAL_OUTCOME", "BLOCKED"),
+])
+def test_governed_stage_receipt_requires_exact_stage_and_global_bound(ordinal, total, stage, failure, expected):
+    receipt = {"contract_version": "planning-route-repair.v2", "operation_id": "operation",
+        "input_hash": "changed-input", "source_input_hash": "original-input", "repair_number": total,
+        "maximum_repairs": 2, "stage_repair_number": ordinal, "repair_stage": stage,
+        "maximum_lineage_repairs": 4, "policy_admission": {"native_policy_selected": True},
+        "authorized_history_operation_ids": ["source"]}
+    context = task(input_hash="changed-input", history=({"operation_id": "source", "candidate_id": "flash", "failure_class": failure, "status": "SUCCEEDED"},),
+        declared_requirements={"governed_repair": receipt})
+    result = route(context, [candidate()], {"flash": samples()})
+    assert result["status"] == expected

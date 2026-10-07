@@ -282,7 +282,7 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
         operation_definition_hash="sha256:" + "a" * 64,
         execution_contract_version="1.17.0",
     )
-    assert current.manifest["identity"]["version"] == "2.10.0"
+    assert current.manifest["identity"]["version"] == "2.11.0"
 
     def select(profile):
         binding = profile.manifest["prompt_binding"]

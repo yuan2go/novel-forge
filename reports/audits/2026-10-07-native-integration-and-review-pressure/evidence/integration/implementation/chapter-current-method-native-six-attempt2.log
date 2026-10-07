@@ -1,0 +1,16 @@
+F
+=================================== FAILURES ===================================
+_ test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts _
+tests/integration/test_synthesis_formation_postgres.py:2153: in test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+    False, False, False, False, False, False, 1, creative_validation=True, world_disabled=True, gateway_null_recovery=True)
+tests/integration/test_synthesis_formation_postgres.py:1272: in test_native_formation_generates_foundation_from_author_brief
+    expected_failure_code='REALIZATION_CAPABILITY_INVALID')
+E   AssertionError: {'opening_run_id': 'book-opening:e6772e0d605f806916a6ad95c54ff02dad53e0e7f60c45c0753bc26e86b0b96f', 'stop_reason': 'PL...ce_id': 'workspace-fcea570fb4244b739c691d70757e237a', 'book_id': 'book:project-fcea570fb4244b739c691d70757e237a', ...}}
+E   assert 'PLANNING_HIS...T_REPLAY_ONLY' == 'MODEL_EFFECT_TIMEOUT'
+E     
+E     - MODEL_EFFECT_TIMEOUT
+E     + PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 16.45s

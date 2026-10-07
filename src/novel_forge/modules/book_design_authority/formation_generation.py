@@ -326,7 +326,7 @@ class FormationGeneration:
         )
         work_requirements = all(
             value.get("constraint_envelope", {}).get("contract_version")
-            in {"foundation-generation.v2", "foundation-generation.v3"}
+            in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}
             for value in content.values()
         )
         if not invariants and not work_requirements:
@@ -335,7 +335,7 @@ class FormationGeneration:
                 "Generated foundations lack operational constraints",
             )
         payload = {
-            "schema_version": (WORK_BOOK_DESIGN_SCHEMA_VERSION if all(value.get("constraint_envelope", {}).get("contract_version") == "foundation-generation.v3" for value in content.values()) else LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION)
+            "schema_version": (WORK_BOOK_DESIGN_SCHEMA_VERSION if all(value.get("constraint_envelope", {}).get("contract_version") in {"foundation-generation.v3", "foundation-generation.v4"} for value in content.values()) else LEGACY_WORK_BOOK_DESIGN_SCHEMA_VERSION)
             if work_requirements
             else FOUNDATION_BOOK_DESIGN_SCHEMA_VERSION,
             "title": policy["title"],

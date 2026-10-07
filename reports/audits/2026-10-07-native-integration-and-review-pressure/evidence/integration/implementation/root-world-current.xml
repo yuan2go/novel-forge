@@ -1,0 +1,1336 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="65.873" timestamp="2026-10-07T07:33:35.027483+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_creation_cli_postgres" name="test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source[world-result-repair]" time="64.752"><failure message="novel_forge.modules.command_kernel.errors.KernelError: PLANNING_STAGE_REPAIR_SOURCE_AMBIGUOUS: 89001b4d-56ec-4886-ad9b-a40099688aec">raw = {'reason': 'Controlled malformed typed transition only.', 'candidates': [{'risks': [], 'arc_refs': [], 'rationale': 'C...in-invalid result.', 'transition': {'payload_json': '{"story_time": "chapter:1"}'}, ...}], 'disposition': 'CANDIDATES'}
+
+    def decode_world_generation(raw: Mapping[str, Any]) -&gt; dict[str, Any]:
+        result = deepcopy(dict(raw))
+        location = "$.candidates"
+        try:
+            for index, candidate in enumerate(result["candidates"]):
+                location = f"$.candidates[{index}].transition.payload_json"
+                candidate["transition"] = json.loads(
+                    candidate["transition"]["payload_json"]
+                )
+&gt;               WorldTransition.from_mapping(candidate["transition"])
+
+src/novel_forge/modules/worldbuilding/production_schema.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/worldbuilding/dynamics.py:224: in from_mapping
+    require_contract_fields(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {'story_time': 'chapter:1'}
+required = {'action', 'actor_id', 'camera', 'cause_refs', 'changes', 'entity_key', ...}
+optional = {'epistemic_basis'}
+
+    def require_contract_fields(
+        value: Mapping[str, Any], *, required: set[str], optional: set[str] = frozenset()
+    ) -&gt; None:
+        if (
+            not isinstance(value, Mapping)
+            or not required.issubset(value)
+            or set(value) - required - optional
+        ):
+&gt;           raise KernelError(
+                "CAUSAL_CONTRACT_INVALID",
+                "causal contract fields must match the declared version",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: CAUSAL_CONTRACT_INVALID: causal contract fields must match the declared version
+
+src/novel_forge/modules/worldbuilding/dynamics.py:28: KernelError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;novel_forge.modules.story_planning_runtime.application.StoryPlanningGenerationApplication object at 0x108369df0&gt;
+command = StoryPlanningGenerationCommand(project_id='project-4e840576f95640b3808c90996e0df336-native', workspace_id='workspace-4...v1', 'role': 'arc_plans'}], 'story_state_version_id': ''}, edition_execution=None, execution_contract_version='1.19.0')
+principal = Principal(principal_id='durable-operator', principal_type=&lt;PrincipalType.LOCAL_OPERATOR: 'local_operator'&gt;, permission...ect_scope=frozenset({'project-4e840576f95640b3808c90996e0df336-native'}), authentication_source='server_configuration')
+execution_probe = None
+
+    def generate(
+        self,
+        command: StoryPlanningGenerationCommand,
+        *,
+        principal: Principal,
+        execution_probe: Callable[[], object] | None = None,
+    ) -&gt; PlanningGenerationResult:
+        principal.require("story_planning.authority.execute", command.project_id)
+        if principal.principal_id != command.actor_id:
+            raise PermissionError(
+                "Planning Generation actor must be the trusted Principal"
+            )
+        environment = (
+            str(getattr(getattr(self.execution_binder, "resolver", None), "environment", ""))
+            if command.routing_bootstrap_authorization_id else ""
+        )
+        if command.routing_bootstrap_authorization_id and environment != "validation":
+            raise KernelError(
+                "ROUTING_BOOTSTRAP_ENVIRONMENT_FORBIDDEN",
+                "benchmark challengers require the validation runtime",
+            )
+        self._probe(execution_probe)
+        continuation = None
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_successor
+            continuation = require_successor(self, command, validate_runtime=False)
+        replay = self._terminal_generation_replay(command, principal=principal, execution_probe=execution_probe)
+        if replay is not None:
+            return replay
+        if continuation is not None:
+            continuation = require_successor(self, command)
+        definition = GENERATOR_CATALOG[command.generator_operation_name]
+        self._register_definitions(command.execution_contract_version)
+        frozen_inputs = self._resolve_inputs(command)
+        if command.generator_operation_name == "book_plan.generate":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                self.planning._require_qualified_foundation_for_book_plan(
+                    uow.cursor,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    content={
+                        "frozen_inputs": [asdict(item) for item in frozen_inputs],
+                    },
+                )
+        frozen_change_evidence = self._resolve_change_evidence(command)
+        input_assets = [
+            {
+                "asset_version_id": item.asset_version_id,
+                "content_hash": item.content_hash,
+            }
+            for item in frozen_inputs
+        ]
+        input_assets.extend(
+            {
+                "asset_version_id": item.asset_version_id,
+                "content_hash": item.content_hash,
+            }
+            for item in frozen_change_evidence
+        )
+        if command.edition_execution:
+            from novel_forge.modules.book_authority.edition_planning import require_edition_planning_request, validate_edition_plan_scope
+            require_edition_planning_request(self.database_url, project_id=command.project_id, book_id=command.book_id,
+                scope=dict(command.edition_execution), definition_name=STORY_PLANNING_GENERATION_DEFINITION, idempotency_key=command.idempotency_key)
+            input_assets.extend(validate_edition_plan_scope(self.database_url, project_id=command.project_id,
+                book_id=command.book_id, scope=dict(command.edition_execution)))
+        if command.narrative_realization:
+            self._require_frozen_realization_slice(command)
+            proof = self._require_asset(
+                project_id=command.project_id,
+                asset_version_id=str(
+                    command.narrative_realization["proof_asset_version_id"]
+                ),
+            )
+            if str(proof["content_hash"]) != str(
+                command.narrative_realization["proof_hash"]
+            ):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_PROOF_STALE",
+                    "ChapterPlan proof asset differs from the Frozen Realization",
+                )
+            input_assets.append(
+                {
+                    "asset_version_id": str(proof["asset_version_id"]),
+                    "content_hash": str(proof["content_hash"]),
+                }
+            )
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+            repair_source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+            if repair_source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
+                raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "the frozen result repair diagnosis changed")
+            input_assets.append({"asset_version_id": repair_source["asset_version_id"], "content_hash": repair_source["content_hash"]})
+        causation_operation_id = (
+            (continuation["source_operation_id"] if continuation else "")
+            or command.repair_of_operation_id
+            or command.parent_agent_session_operation_id
+            or None
+        )
+        if command.repair_of_candidate_id:
+            from .execution import require_candidate_repair_operation
+    
+            repair_asset = self._require_asset(
+                project_id=command.project_id,
+                asset_version_id=command.repair_of_candidate_id,
+            )
+            if (
+                repair_asset["content"].get("routing_eligibility") == "BENCHMARK_ONLY"
+                or repair_asset["content"].get("routing_bootstrap_authorization")
+            ):
+                raise KernelError(
+                    "PLANNING_BENCHMARK_ONLY",
+                    "bootstrap candidates cannot become production repair inputs",
+                )
+            input_assets.append(
+                {
+                    "asset_version_id": repair_asset["asset_version_id"],
+                    "content_hash": repair_asset["content_hash"],
+                }
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                source_operation_id = require_candidate_repair_operation(
+                    uow.cursor, candidate_asset_version_id=command.repair_of_candidate_id,
+                    project_id=command.project_id, book_id=command.book_id,
+                    generator_operation_name=command.generator_operation_name,
+                    logical_key=command.logical_key,
+                )
+                uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s AND project_id=%s", [source_operation_id, command.project_id])
+                source_version = uow.cursor.fetchone()
+                if source_version is None or str(source_version[0]) != command.execution_contract_version:
+                    raise KernelError("PLANNING_REPAIR_CONTRACT_DRIFT", "candidate repair must retain the source generation contract")
+                uow.cursor.execute(
+                    "SELECT causation_operation_id FROM authority_operation WHERE project_id=%s AND definition_name=%s AND idempotency_scope='book:story-planning-generation' AND idempotency_key=%s",
+                    [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
+                )
+                retained = uow.cursor.fetchone()
+            causation_operation_id = (
+                retained[0]
+                if retained
+                else (
+                    continuation["source_operation_id"]
+                    if continuation
+                    else source_operation_id
+                )
+            )
+        input_assets = self._replay_ordered_input_assets(
+            command=command,
+            resolved_input_assets=_canonical_admission_assets(input_assets),
+        )
+        payload = _command_payload(command)
+        if command.routing_bootstrap_authorization_id:
+            from novel_forge.modules.authority_handler_runtime.routing_bootstrap import (
+                freeze_planning_bootstrap_authorization,
+            )
+    
+            payload["routing_bootstrap_authorization"] = (
+                freeze_planning_bootstrap_authorization(
+                    database_url=self.database_url,
+                    command_payload=payload,
+                    principal=principal,
+                    environment=environment,
+                )
+            )
+        self._probe(execution_probe)
+        admitted = admit_command(
+            self.database_url,
+            {
+                "definition_name": STORY_PLANNING_GENERATION_DEFINITION,
+                "definition_version": command.execution_contract_version,
+                "project_id": command.project_id,
+                "workspace_id": command.workspace_id,
+                "book_id": command.book_id,
+                "logical_key": command.logical_key,
+                "actor_id": command.actor_id,
+                "idempotency_scope": "book:story-planning-generation",
+                "idempotency_key": command.idempotency_key,
+                "trace_id": command.trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": command.correlation_id,
+                "causation_id": (
+                    command.parent_agent_session_operation_id
+                    or command.repair_of_operation_id
+                    or command.repair_of_candidate_id
+                ),
+                "causation_operation_id": causation_operation_id,
+                "input": {
+                    "project_id": command.project_id,
+                    "input_asset_version_ids": [
+                        item["asset_version_id"] for item in input_assets
+                    ],
+                    "payload": payload,
+                },
+                "input_assets": input_assets,
+            },
+            context=AdmissionContext(
+                actor_id=command.actor_id,
+                permissions=frozenset({"story_planning.authority.execute"}),
+                available_handlers=self.registry.available_handler_keys,
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+        )
+        operation_id = str(admitted["operation_id"])
+        self._record_generation(
+            operation_id=operation_id,
+            command=command,
+            inputs=(*frozen_inputs, *frozen_change_evidence),
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(
+                operation_id, command.project_id
+            )
+        if state["status"] == "ADMITTED":
+            transition_operation(
+                self.database_url,
+                OperationTransitionCommand(
+                    operation_id=operation_id,
+                    project_id=command.project_id,
+                    expected_version=int(state["version"]),
+                    expected_status="ADMITTED",
+                    target_status="READY",
+                    actor_id=command.actor_id,
+                    reason="Planning Generation inputs and Pack route are frozen",
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    causation_id=(
+                        command.parent_agent_session_operation_id
+                        or command.repair_of_candidate_id
+                    ),
+                ),
+            )
+            start_saga(
+                self.database_url,
+                GraphCommandContext(
+                    command.project_id,
+                    command.actor_id,
+                    command.trace_id,
+                    command.correlation_id,
+                ),
+                root_operation_id=operation_id,
+            )
+        generation = self.require_generation(operation_id)
+        existing_candidate_id = str(generation.get("candidate_asset_version_id") or "")
+        if existing_candidate_id:
+            existing_candidate = self.require_candidate(existing_candidate_id)
+            advanced = self._advance_candidate(
+                operation_id=operation_id,
+                candidate_asset_version_id=existing_candidate_id,
+                candidate_content_hash=str(existing_candidate["content_hash"]),
+                command=command,
+                principal=principal,
+                replayed=True,
+                definition=definition,
+            )
+            return self._evaluate_pending_if_required(
+                advanced=advanced,
+                generation_command=command,
+                principal=principal,
+                execution_probe=execution_probe,
+            )
+        self._probe(execution_probe)
+        if command.world_preparation_request:
+            from .world_result_recovery import resume_world_result_checkpoint
+            resume_world_result_checkpoint(self.database_url, command=command, operation_id=operation_id)
+        try:
+            scheduled = ContentAuthorityScheduler(
+                self.database_url,
+                registry=self.registry,
+                worker_id=self.worker_id,
+&gt;           ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/novel_forge/modules/story_planning_runtime/application.py:784: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:402: in execute
+    bundle = self.resolver.resolve(
+src/novel_forge/modules/story_planning_runtime/binder.py:258: in resolve
+    prepared = prepare(
+src/novel_forge/modules/story_planning_runtime/execution.py:4092: in prepare
+    action = PlanningWorldPreparation(self).prepare(
+src/novel_forge/modules/story_planning_runtime/world_preparation.py:344: in prepare
+    decoded = decode_world_generation({
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+raw = {'reason': 'Controlled malformed typed transition only.', 'candidates': [{'risks': [], 'arc_refs': [], 'rationale': 'C...in-invalid result.', 'transition': {'payload_json': '{"story_time": "chapter:1"}'}, ...}], 'disposition': 'CANDIDATES'}
+
+    def decode_world_generation(raw: Mapping[str, Any]) -&gt; dict[str, Any]:
+        result = deepcopy(dict(raw))
+        location = "$.candidates"
+        try:
+            for index, candidate in enumerate(result["candidates"]):
+                location = f"$.candidates[{index}].transition.payload_json"
+                candidate["transition"] = json.loads(
+                    candidate["transition"]["payload_json"]
+                )
+                WorldTransition.from_mapping(candidate["transition"])
+                for path_index, path in enumerate(candidate["preparation_paths"]):
+                    for step_index, step in enumerate(path["steps"]):
+                        location = f"$.candidates[{index}].preparation_paths[{path_index}].steps[{step_index}].transition.payload_json"
+                        step["transition"] = json.loads(step["transition"]["payload_json"])
+                        WorldTransition.from_mapping(step["transition"])
+        except (KeyError, TypeError, ValueError) as exc:
+&gt;           raise KernelError(
+                "WORLD_PROVIDER_TRANSITION_INVALID",
+                f"{location}: generated world transitions must decode to the declared typed contract; {exc}",
+            ) from exc
+E           novel_forge.modules.command_kernel.errors.KernelError: WORLD_PROVIDER_TRANSITION_INVALID: $.candidates[0].transition.payload_json: generated world transitions must decode to the declared typed contract; CAUSAL_CONTRACT_INVALID: causal contract fields must match the declared version
+
+src/novel_forge/modules/worldbuilding/production_schema.py:322: KernelError
+
+During handling of the above exception, another exception occurred:
+
+raw = {'reason': 'Controlled malformed typed transition only.', 'candidates': [{'risks': [], 'arc_refs': [], 'rationale': 'C...in-invalid result.', 'transition': {'payload_json': '{"story_time": "chapter:1"}'}, ...}], 'disposition': 'CANDIDATES'}
+
+    def decode_world_generation(raw: Mapping[str, Any]) -&gt; dict[str, Any]:
+        result = deepcopy(dict(raw))
+        location = "$.candidates"
+        try:
+            for index, candidate in enumerate(result["candidates"]):
+                location = f"$.candidates[{index}].transition.payload_json"
+                candidate["transition"] = json.loads(
+                    candidate["transition"]["payload_json"]
+                )
+&gt;               WorldTransition.from_mapping(candidate["transition"])
+
+src/novel_forge/modules/worldbuilding/production_schema.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/worldbuilding/dynamics.py:224: in from_mapping
+    require_contract_fields(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {'story_time': 'chapter:1'}
+required = {'action', 'actor_id', 'camera', 'cause_refs', 'changes', 'entity_key', ...}
+optional = {'epistemic_basis'}
+
+    def require_contract_fields(
+        value: Mapping[str, Any], *, required: set[str], optional: set[str] = frozenset()
+    ) -&gt; None:
+        if (
+            not isinstance(value, Mapping)
+            or not required.issubset(value)
+            or set(value) - required - optional
+        ):
+&gt;           raise KernelError(
+                "CAUSAL_CONTRACT_INVALID",
+                "causal contract fields must match the declared version",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: CAUSAL_CONTRACT_INVALID: causal contract fields must match the declared version
+
+src/novel_forge/modules/worldbuilding/dynamics.py:28: KernelError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;novel_forge.modules.story_planning_runtime.application.StoryPlanningGenerationApplication object at 0x108369df0&gt;
+command = StoryPlanningGenerationCommand(project_id='project-4e840576f95640b3808c90996e0df336-native', workspace_id='workspace-4...v1', 'role': 'arc_plans'}], 'story_state_version_id': ''}, edition_execution=None, execution_contract_version='1.19.0')
+principal = Principal(principal_id='durable-operator', principal_type=&lt;PrincipalType.LOCAL_OPERATOR: 'local_operator'&gt;, permission...ect_scope=frozenset({'project-4e840576f95640b3808c90996e0df336-native'}), authentication_source='server_configuration')
+execution_probe = None
+
+    def generate(
+        self,
+        command: StoryPlanningGenerationCommand,
+        *,
+        principal: Principal,
+        execution_probe: Callable[[], object] | None = None,
+    ) -&gt; PlanningGenerationResult:
+        principal.require("story_planning.authority.execute", command.project_id)
+        if principal.principal_id != command.actor_id:
+            raise PermissionError(
+                "Planning Generation actor must be the trusted Principal"
+            )
+        environment = (
+            str(getattr(getattr(self.execution_binder, "resolver", None), "environment", ""))
+            if command.routing_bootstrap_authorization_id else ""
+        )
+        if command.routing_bootstrap_authorization_id and environment != "validation":
+            raise KernelError(
+                "ROUTING_BOOTSTRAP_ENVIRONMENT_FORBIDDEN",
+                "benchmark challengers require the validation runtime",
+            )
+        self._probe(execution_probe)
+        continuation = None
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_successor
+            continuation = require_successor(self, command, validate_runtime=False)
+        replay = self._terminal_generation_replay(command, principal=principal, execution_probe=execution_probe)
+        if replay is not None:
+            return replay
+        if continuation is not None:
+            continuation = require_successor(self, command)
+        definition = GENERATOR_CATALOG[command.generator_operation_name]
+        self._register_definitions(command.execution_contract_version)
+        frozen_inputs = self._resolve_inputs(command)
+        if command.generator_operation_name == "book_plan.generate":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                self.planning._require_qualified_foundation_for_book_plan(
+                    uow.cursor,
+                    project_id=command.project_id,
+                    book_id=command.book_id,
+                    content={
+                        "frozen_inputs": [asdict(item) for item in frozen_inputs],
+                    },
+                )
+        frozen_change_evidence = self._resolve_change_evidence(command)
+        input_assets = [
+            {
+                "asset_version_id": item.asset_version_id,
+                "content_hash": item.content_hash,
+            }
+            for item in frozen_inputs
+        ]
+        input_assets.extend(
+            {
+                "asset_version_id": item.asset_version_id,
+                "content_hash": item.content_hash,
+            }
+            for item in frozen_change_evidence
+        )
+        if command.edition_execution:
+            from novel_forge.modules.book_authority.edition_planning import require_edition_planning_request, validate_edition_plan_scope
+            require_edition_planning_request(self.database_url, project_id=command.project_id, book_id=command.book_id,
+                scope=dict(command.edition_execution), definition_name=STORY_PLANNING_GENERATION_DEFINITION, idempotency_key=command.idempotency_key)
+            input_assets.extend(validate_edition_plan_scope(self.database_url, project_id=command.project_id,
+                book_id=command.book_id, scope=dict(command.edition_execution)))
+        if command.narrative_realization:
+            self._require_frozen_realization_slice(command)
+            proof = self._require_asset(
+                project_id=command.project_id,
+                asset_version_id=str(
+                    command.narrative_realization["proof_asset_version_id"]
+                ),
+            )
+            if str(proof["content_hash"]) != str(
+                command.narrative_realization["proof_hash"]
+            ):
+                raise KernelError(
+                    "NARRATIVE_REALIZATION_PROOF_STALE",
+                    "ChapterPlan proof asset differs from the Frozen Realization",
+                )
+            input_assets.append(
+                {
+                    "asset_version_id": str(proof["asset_version_id"]),
+                    "content_hash": str(proof["content_hash"]),
+                }
+            )
+        if command.repair_of_operation_id:
+            from .result_recovery import require_result_repair_source
+            repair_source = require_result_repair_source(self.database_url, command=command, operation_id=command.repair_of_operation_id, source_asset_version_id=command.repair_result_asset_version_id)
+            if repair_source["diagnostic"] != dict(command.repair_result_diagnostic or {}):
+                raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "the frozen result repair diagnosis changed")
+            input_assets.append({"asset_version_id": repair_source["asset_version_id"], "content_hash": repair_source["content_hash"]})
+        causation_operation_id = (
+            (continuation["source_operation_id"] if continuation else "")
+            or command.repair_of_operation_id
+            or command.parent_agent_session_operation_id
+            or None
+        )
+        if command.repair_of_candidate_id:
+            from .execution import require_candidate_repair_operation
+    
+            repair_asset = self._require_asset(
+                project_id=command.project_id,
+                asset_version_id=command.repair_of_candidate_id,
+            )
+            if (
+                repair_asset["content"].get("routing_eligibility") == "BENCHMARK_ONLY"
+                or repair_asset["content"].get("routing_bootstrap_authorization")
+            ):
+                raise KernelError(
+                    "PLANNING_BENCHMARK_ONLY",
+                    "bootstrap candidates cannot become production repair inputs",
+                )
+            input_assets.append(
+                {
+                    "asset_version_id": repair_asset["asset_version_id"],
+                    "content_hash": repair_asset["content_hash"],
+                }
+            )
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                source_operation_id = require_candidate_repair_operation(
+                    uow.cursor, candidate_asset_version_id=command.repair_of_candidate_id,
+                    project_id=command.project_id, book_id=command.book_id,
+                    generator_operation_name=command.generator_operation_name,
+                    logical_key=command.logical_key,
+                )
+                uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s AND project_id=%s", [source_operation_id, command.project_id])
+                source_version = uow.cursor.fetchone()
+                if source_version is None or str(source_version[0]) != command.execution_contract_version:
+                    raise KernelError("PLANNING_REPAIR_CONTRACT_DRIFT", "candidate repair must retain the source generation contract")
+                uow.cursor.execute(
+                    "SELECT causation_operation_id FROM authority_operation WHERE project_id=%s AND definition_name=%s AND idempotency_scope='book:story-planning-generation' AND idempotency_key=%s",
+                    [command.project_id, STORY_PLANNING_GENERATION_DEFINITION, command.idempotency_key],
+                )
+                retained = uow.cursor.fetchone()
+            causation_operation_id = (
+                retained[0]
+                if retained
+                else (
+                    continuation["source_operation_id"]
+                    if continuation
+                    else source_operation_id
+                )
+            )
+        input_assets = self._replay_ordered_input_assets(
+            command=command,
+            resolved_input_assets=_canonical_admission_assets(input_assets),
+        )
+        payload = _command_payload(command)
+        if command.routing_bootstrap_authorization_id:
+            from novel_forge.modules.authority_handler_runtime.routing_bootstrap import (
+                freeze_planning_bootstrap_authorization,
+            )
+    
+            payload["routing_bootstrap_authorization"] = (
+                freeze_planning_bootstrap_authorization(
+                    database_url=self.database_url,
+                    command_payload=payload,
+                    principal=principal,
+                    environment=environment,
+                )
+            )
+        self._probe(execution_probe)
+        admitted = admit_command(
+            self.database_url,
+            {
+                "definition_name": STORY_PLANNING_GENERATION_DEFINITION,
+                "definition_version": command.execution_contract_version,
+                "project_id": command.project_id,
+                "workspace_id": command.workspace_id,
+                "book_id": command.book_id,
+                "logical_key": command.logical_key,
+                "actor_id": command.actor_id,
+                "idempotency_scope": "book:story-planning-generation",
+                "idempotency_key": command.idempotency_key,
+                "trace_id": command.trace_id,
+                "span_id": str(uuid4()),
+                "correlation_id": command.correlation_id,
+                "causation_id": (
+                    command.parent_agent_session_operation_id
+                    or command.repair_of_operation_id
+                    or command.repair_of_candidate_id
+                ),
+                "causation_operation_id": causation_operation_id,
+                "input": {
+                    "project_id": command.project_id,
+                    "input_asset_version_ids": [
+                        item["asset_version_id"] for item in input_assets
+                    ],
+                    "payload": payload,
+                },
+                "input_assets": input_assets,
+            },
+            context=AdmissionContext(
+                actor_id=command.actor_id,
+                permissions=frozenset({"story_planning.authority.execute"}),
+                available_handlers=self.registry.available_handler_keys,
+                application_build_id=self.application_build_id,
+                commit_sha=self.commit_sha,
+            ),
+        )
+        operation_id = str(admitted["operation_id"])
+        self._record_generation(
+            operation_id=operation_id,
+            command=command,
+            inputs=(*frozen_inputs, *frozen_change_evidence),
+        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(
+                operation_id, command.project_id
+            )
+        if state["status"] == "ADMITTED":
+            transition_operation(
+                self.database_url,
+                OperationTransitionCommand(
+                    operation_id=operation_id,
+                    project_id=command.project_id,
+                    expected_version=int(state["version"]),
+                    expected_status="ADMITTED",
+                    target_status="READY",
+                    actor_id=command.actor_id,
+                    reason="Planning Generation inputs and Pack route are frozen",
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                    causation_id=(
+                        command.parent_agent_session_operation_id
+                        or command.repair_of_candidate_id
+                    ),
+                ),
+            )
+            start_saga(
+                self.database_url,
+                GraphCommandContext(
+                    command.project_id,
+                    command.actor_id,
+                    command.trace_id,
+                    command.correlation_id,
+                ),
+                root_operation_id=operation_id,
+            )
+        generation = self.require_generation(operation_id)
+        existing_candidate_id = str(generation.get("candidate_asset_version_id") or "")
+        if existing_candidate_id:
+            existing_candidate = self.require_candidate(existing_candidate_id)
+            advanced = self._advance_candidate(
+                operation_id=operation_id,
+                candidate_asset_version_id=existing_candidate_id,
+                candidate_content_hash=str(existing_candidate["content_hash"]),
+                command=command,
+                principal=principal,
+                replayed=True,
+                definition=definition,
+            )
+            return self._evaluate_pending_if_required(
+                advanced=advanced,
+                generation_command=command,
+                principal=principal,
+                execution_probe=execution_probe,
+            )
+        self._probe(execution_probe)
+        if command.world_preparation_request:
+            from .world_result_recovery import resume_world_result_checkpoint
+            resume_world_result_checkpoint(self.database_url, command=command, operation_id=operation_id)
+        try:
+            scheduled = ContentAuthorityScheduler(
+                self.database_url,
+                registry=self.registry,
+                worker_id=self.worker_id,
+&gt;           ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+src/novel_forge/modules/story_planning_runtime/application.py:784: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:402: in execute
+    bundle = self.resolver.resolve(
+src/novel_forge/modules/story_planning_runtime/binder.py:258: in resolve
+    prepared = prepare(
+src/novel_forge/modules/story_planning_runtime/execution.py:4092: in prepare
+    action = PlanningWorldPreparation(self).prepare(
+src/novel_forge/modules/story_planning_runtime/world_preparation.py:344: in prepare
+    decoded = decode_world_generation({
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+raw = {'reason': 'Controlled malformed typed transition only.', 'candidates': [{'risks': [], 'arc_refs': [], 'rationale': 'C...in-invalid result.', 'transition': {'payload_json': '{"story_time": "chapter:1"}'}, ...}], 'disposition': 'CANDIDATES'}
+
+    def decode_world_generation(raw: Mapping[str, Any]) -&gt; dict[str, Any]:
+        result = deepcopy(dict(raw))
+        location = "$.candidates"
+        try:
+            for index, candidate in enumerate(result["candidates"]):
+                location = f"$.candidates[{index}].transition.payload_json"
+                candidate["transition"] = json.loads(
+                    candidate["transition"]["payload_json"]
+                )
+                WorldTransition.from_mapping(candidate["transition"])
+                for path_index, path in enumerate(candidate["preparation_paths"]):
+                    for step_index, step in enumerate(path["steps"]):
+                        location = f"$.candidates[{index}].preparation_paths[{path_index}].steps[{step_index}].transition.payload_json"
+                        step["transition"] = json.loads(step["transition"]["payload_json"])
+                        WorldTransition.from_mapping(step["transition"])
+        except (KeyError, TypeError, ValueError) as exc:
+&gt;           raise KernelError(
+                "WORLD_PROVIDER_TRANSITION_INVALID",
+                f"{location}: generated world transitions must decode to the declared typed contract; {exc}",
+            ) from exc
+E           novel_forge.modules.command_kernel.errors.KernelError: WORLD_PROVIDER_TRANSITION_INVALID: $.candidates[0].transition.payload_json: generated world transitions must decode to the declared typed contract; CAUSAL_CONTRACT_INVALID: causal contract fields must match the declared version
+
+src/novel_forge/modules/worldbuilding/production_schema.py:322: KernelError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-1013/test_durable_creation_compares0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x109fe3f50&gt;
+mode = 'world-result-repair'
+
+    @pytest.mark.parametrize(
+        "mode",
+        [
+            "complete",
+            "partial-alternative",
+            "cancel",
+            "no-progress",
+            "repair-exhausted",
+            "capacity-recovery",
+            "capacity-repair",
+            "capacity-retained-repair-cause",
+            "world-result-repair",
+            "world-primary-result-repair",
+            "world-causal-result-repair",
+            "world-causal-legacy-replay",
+            "world-causal-dead-letter-replay",
+        ],
+    )
+    def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_source(
+        tmp_path, monkeypatch, mode
+    ):
+        from novel_forge.modules.book_authority.creation_runtime import schedule_creation_jobs, creation_status
+        from novel_forge.modules.runtime_job import RuntimeJobAuthority
+        from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+        from novel_forge.workers.book_authority import execute_creation_worker_claim
+        from tests.integration.synthesis_production_support import SynthesisTransport
+    
+        from novel_forge.modules.command_kernel.errors import KernelError
+    
+        harness = CapabilityPackPostgresHarness("durable-creation")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        if mode.startswith("capacity-"):
+            from novel_forge.modules.story_planning_runtime.execution import (
+                PostgresPlanningExecutionPreparer,
+            )
+            from novel_forge.modules.command_kernel.errors import KernelError
+    
+            build_context = PostgresPlanningExecutionPreparer._context_bundle
+    
+            def capacity_failure(preparer, **values):
+                command = values["command"]
+                if (
+                    command.generator_operation_name == "chapter_group_plan.generate"
+                    and not command.runtime_continuation_id
+                    and (mode == "capacity-recovery" or command.repair_of_candidate_id)
+                ):
+                    raise KernelError(
+                        "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+                        "Controlled native pre-send capacity failure",
+                    )
+                return build_context(preparer, **values)
+    
+            monkeypatch.setattr(
+                PostgresPlanningExecutionPreparer, "_context_bundle", capacity_failure
+            )
+        planning = transport.planning
+        creative_calls = []
+        group_calls = []
+        world_calls = []
+        primary_calls = []
+        if mode == "capacity-retained-repair-cause":
+            from novel_forge.modules.story_planning_runtime import (
+                application as planning_application,
+            )
+    
+            native_admit = planning_application.admit_command
+    
+            def retain_repair_cause(database_url, request, **options):
+                payload = request["input"]["payload"]
+                if payload.get("runtime_continuation_id") and payload.get(
+                    "repair_of_candidate_id"
+                ):
+                    with AuthorityUnitOfWork(database_url) as uow:
+                        uow.cursor.execute(
+                            "SELECT operation_id FROM authority_story_planning_generation WHERE candidate_asset_version_id=%s",
+                            [payload["repair_of_candidate_id"]],
+                        )
+                        request = {
+                            **request,
+                            "causation_operation_id": uow.cursor.fetchone()[0],
+                        }
+                return native_admit(database_url, request, **options)
+    
+            monkeypatch.setattr(planning_application, "admit_command", retain_repair_cause)
+    
+        if mode in {"world-causal-legacy-replay", "world-causal-dead-letter-replay"}:
+            from novel_forge.modules.story_planning_runtime.world_preparation import (
+                PlanningWorldPreparation,
+            )
+    
+            native_world_prepare = PlanningWorldPreparation.prepare
+            legacy_block = []
+    
+            def historical_gate_checkpoint(preparation, **values):
+                try:
+                    return native_world_prepare(preparation, **values)
+                except KernelError as error:
+                    if (
+                        error.code == "WORLD_PREPARATION_RESULT_INVALID"
+                        and (not legacy_block or (mode == "world-causal-dead-letter-replay" and values["command"].repair_number == 0))
+                    ):
+                        legacy_block.append(True)
+                        raise KernelError(
+                            "WORLD_PREPARATION_BLOCKED", error.message
+                        ) from error
+                    raise
+    
+            monkeypatch.setattr(
+                PlanningWorldPreparation, "prepare", historical_gate_checkpoint
+            )
+    
+        def bounded_planning(stage, inputs):
+            result = planning(stage, inputs)
+            if stage == "world_candidates.generate":
+                world_calls.append(inputs)
+                if mode == "world-result-repair" and len(world_calls) &lt;= 2:
+                    result = {
+                        **result,
+                        "disposition": "CANDIDATES",
+                        "reason": "Controlled malformed typed transition only.",
+                        "candidates": [
+                            {
+                                "transition": {
+                                    "payload_json": json.dumps({"story_time": "chapter:1"})
+                                },
+                                "affected_entities": [
+                                    inputs["world_preparation"]["approved_entity_ids"][0]
+                                ],
+                                "world_consequences": [
+                                    "Controlled proposed consequence; not accepted fact."
+                                ],
+                                "arc_refs": [],
+                                "obligation_refs": [],
+                                "risks": [],
+                                "soft_assumptions": [],
+                                "narrative_preferences": [],
+                                "rationale": "Controlled Schema-valid but domain-invalid result.",
+                                "preparation_paths": [],
+                                "information_scope": {"disclosures": []},
+                            }
+                        ],
+                    }
+                if (
+                    mode in {"world-causal-result-repair", "world-causal-legacy-replay", "world-causal-dead-letter-replay"}
+                    and len(world_calls) &lt;= 2
+                ):
+                    identity = inputs["world_preparation"]["approved_entity_ids"][0]
+                    proposal = {
+                        "transition_id": "blocked_future",
+                        "actor_id": identity,
+                        "camera": "ON_CAMERA",
+                        "story_time": {
+                            "timeline_id": "controlled",
+                            "start_ordinal": 1,
+                            "end_ordinal": 1,
+                            "precision": "EXACT",
+                            "label": "controlled",
+                        },
+                        "action": "Controlled proposal with unavailable causal support.",
+                        "state_kind": "world_state",
+                        "entity_key": identity,
+                        "changes": {"status": "controlled"},
+                        "requirements": [],
+                        "cause_refs": ["controlled:missing-source"],
+                        "epistemic_basis": [],
+                    }
+                    result = {
+                        **result,
+                        "disposition": "CANDIDATES",
+                        "reason": "Controlled causal rejection, not a fabricated manuscript flaw.",
+                        "candidates": [
+                            {
+                                "transition": {"payload_json": json.dumps(proposal)},
+                                "affected_entities": [
+                                    inputs["world_preparation"]["approved_entity_ids"][0]
+                                ],
+                                "world_consequences": [
+                                    "Controlled proposed consequence; not accepted fact."
+                                ],
+                                "arc_refs": [],
+                                "obligation_refs": [],
+                                "risks": [],
+                                "soft_assumptions": [],
+                                "narrative_preferences": [],
+                                "rationale": "Controlled unavailable causal support.",
+                                "preparation_paths": [],
+                                "information_scope": {"disclosures": []},
+                            }
+                        ],
+                    }
+            if stage == "chapter_plan.generate":
+                primary_calls.append(inputs)
+                if mode == "world-primary-result-repair" and len(primary_calls) &lt;= 2:
+                    result["objective"] = " "
+            if stage == "chapter_group_plan.generate":
+                group_calls.append(stage)
+                if (
+                    mode in {"capacity-repair", "capacity-retained-repair-cause"}
+                    and len(group_calls) == 1
+                ):
+                    result["narrative_event_chain"][0]["causes"] = [
+                        "controlled-missing-predecessor"
+                    ]
+            if stage == "creative.candidates.generate":
+                creative_calls.append(stage)
+                result["serialization_potential"] = None
+                for declaration in result.get("applicability", []):
+                    if declaration["field_path"] == "$.serialization_potential":
+                        declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
+            def visit(value):
+                if isinstance(value, dict):
+                    for key, child in value.items():
+                        if key == "serialization_function":
+                            value[key] = None
+                        else:
+                            visit(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        visit(child)
+            visit(result)
+            if mode == "partial-alternative" and stage == "creative.candidates.generate" and len(creative_calls) &gt; 1:
+                result["applicability"][0]["field_path"] = "serialization_potential"
+            return result
+        transport.planning = bounded_planning
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "durable-operator",
+            "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
+        }, monkeypatch, transport)
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        inputs = {"version": "creation-request.v1", "title": "Durable original work", "target_chapters": 2 if mode == "complete" else 1,
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates conflicting flood accounts.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve cause and knowledge boundaries."],
+                "source_boundaries": ["Original expression only."]}}
+        input_file = tmp_path / "request.json"
+        input_file.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--project-id", project,
+            "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
+            "--idempotency-key", "durable", "--repository-root", str(root)])
+        if mode.startswith("world-"):
+            execution_template = json.loads((root / "config/execution_templates/creative_validation.json").read_text())
+            execution_template["world_future_preparation"] = "REQUIRED"
+            args.execution_template_file = tmp_path / "required-world-execution-template.json"
+            args.execution_template_file.write_text(json.dumps(execution_template))
+        settings = IndustrialSettings(root=root, database_url=DATABASE_URL, environment="validation")
+        first = run_creation_command(settings, args)
+        identity = first["formation_run_id"]
+        assert first["stop_reason"] == "WORKER_OWNS_CONTINUATION"
+        jobs = RuntimeJobAuthority(DATABASE_URL)
+    
+        def claim():
+            return jobs.claim(runtime_group="book_creation", worker_id="durable-book", lease_seconds=60,
+                job_kinds=("BOOK_CREATION_ADVANCE",), subject_kind="STORY_FORMATION_RUN", subject_id=identity)
+    
+        if mode == "repair-exhausted":
+            def exhausted(**_values):
+                from novel_forge.modules.command_kernel.errors import KernelError
+                raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "Exact raw proposals exhausted their frozen allowance")
+            monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation", exhausted)
+            current = claim()
+            result = execute_creation_worker_claim(settings, current)
+            assert result["wait_class"] == "OWNER_RECOVERY_REQUIRED"
+            assert result["failure"]["code"] == "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED"
+            assert jobs.get(current.runtime_job_id)["status"] == "SUCCEEDED"
+            assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+            assert claim() is None
+            status = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity,
+                principal=build_trusted_principal_resolver().resolve_api_principal())
+            assert status["author_state"] == "OWNER_RECOVERY_REQUIRED"
+            assert status["failure"] == result["failure"]
+            assert status["recovery_instruction"] == result["recovery_instruction"]
+            assert status["responsible_party"] == "RUNTIME_OWNER"
+            assert len(transport.calls) == 0
+            return
+    
+        if mode == "no-progress":
+            monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
+                lambda **values:{"formation_run_id":identity,"stop_reason":"YIELDED_CHECKPOINT"})
+            for _ in range(12):
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE subject_id=%s AND job_kind='BOOK_CREATION_ADVANCE' AND status IN ('READY','RETRY_WAIT')", [identity])
+                    uow.commit()
+                current = claim()
+                assert current is not None
+                result = execute_creation_worker_claim(settings, current)
+            assert result["wait_class"] == "OWNER_RECOVERY_REQUIRED"
+            assert result["stop_reason"] == "CREATION_NO_PROGRESS"
+            assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+            assert claim() is None
+            assert len(transport.calls) == 0
+            recover = parser.parse_args(["authority-creation","recover","--project-id",project,"--formation-run-id",identity,
+                "--reason","Operator resolved the isolated scheduling configuration","--idempotency-key","recovery-window","--repository-root",str(root)])
+            restored = run_creation_command(settings,recover)
+            assert len(restored["scheduled"]) == 1
+            replay = run_creation_command(settings,recover)
+            assert replay["scheduled"][0]["runtime_job_id"] == restored["scheduled"][0]["runtime_job_id"]
+            assert replay["scheduled"][0]["deduplicated"]
+            from fastapi import FastAPI
+            from fastapi.testclient import TestClient
+            from types import SimpleNamespace
+            from novel_forge.api import authority_dependencies as dependencies
+            from novel_forge.api.models import product_model_map
+            from novel_forge.api.routers.book_authority import create_router
+            from novel_forge.api.routers.context import ProductRouterContext
+            author = build_trusted_principal_resolver().resolve_api_principal()
+            native_execution = dependencies.build_production_execution_composition(settings)
+            try:
+                native_chapter = dependencies.build_chapter_authority_application(settings, execution=native_execution)
+                native = dependencies.build_book_production_composition(settings, principal=author,
+                    execution=native_execution, chapter_application=native_chapter)
+                app = FastAPI()
+                app.include_router(create_router(ProductRouterContext(app_settings=settings,models=product_model_map(),
+                    services=SimpleNamespace(book_production=native))))
+                body = {"expected_version":creation_status(DATABASE_URL,project_id=project,formation_run_id=identity,principal=author)["version"],
+                        "reason":recover.reason,"idempotency_key":recover.idempotency_key}
+                with TestClient(app) as client:
+                    endpoint = f"/product/production/book-authority/formation-runs/{identity}/resume"
+                    for _ in range(2):
+                        response = client.post(endpoint,json=body)
+                        assert response.status_code == 202, response.text
+                        assert response.json()["creation"]["coordination"]["runtime_job_id"] == restored["scheduled"][0]["runtime_job_id"]
+                    drift = client.post(endpoint,json={**body,"reason":"A different request cannot reuse this recovery key"})
+                    assert drift.status_code == 409, drift.text
+            finally:
+                native_execution.close()
+            assert claim() is not None
+            assert len(transport.calls) == 0
+            return
+        current = claim()
+        result = execute_creation_worker_claim(settings, current)
+        assert result["wait_class"] == "AUTHOR_DECISION"
+        assert len(transport.calls) == 2
+        assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+        assert claim() is None
+        author = build_trusted_principal_resolver().resolve_api_principal()
+        status = creation_status(DATABASE_URL, project_id=project, formation_run_id=identity, principal=author)
+        candidates = status["recovery_instruction"]["candidate_asset_version_ids"]
+        assert len(candidates) == (1 if mode == "partial-alternative" else 2)
+        if mode == "partial-alternative":
+            assert len(status["recovery_instruction"]["generation_failures"]) == 1
+        if mode == "cancel":
+            cancellation = parser.parse_args(["authority-creation", "cancel", "--project-id", project,
+                "--formation-run-id", identity, "--reason", "Author cancels isolated work", "--idempotency-key", "cancel-work", "--repository-root", str(root)])
+            cancelled = run_creation_command(settings, cancellation)
+            assert cancelled["stop_reason"] == "CANCELLED"
+            assert cancelled["cancellation"]["frozen_input_digest"]
+            assert schedule_creation_jobs(DATABASE_URL, formation_run_id=identity) == ()
+            assert claim() is None
+            assert run_creation_command(settings, args)["stop_reason"] == "CANCELLED"
+            assert len(transport.calls) == 2
+            return
+        if mode == "complete":
+            from fastapi import FastAPI
+            from fastapi.testclient import TestClient
+            from types import SimpleNamespace
+            from novel_forge.api import authority_dependencies as dependencies
+            from novel_forge.api.models import product_model_map
+            from novel_forge.api.routers.book_authority import create_router
+            from novel_forge.api.routers.context import ProductRouterContext
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT expected_book_version,frozen_stage_inputs FROM authority_story_formation_run WHERE formation_run_id=%s", [identity])
+                source_version, source = uow.cursor.fetchone()
+            native_execution = dependencies.build_production_execution_composition(settings)
+            try:
+                native_chapter = dependencies.build_chapter_authority_application(settings, execution=native_execution)
+                native = dependencies.build_book_production_composition(settings, principal=author,
+                    execution=native_execution, chapter_application=native_chapter)
+                app = FastAPI()
+                app.include_router(create_router(ProductRouterContext(app_settings=settings,models=product_model_map(),
+                    services=SimpleNamespace(book_production=native))))
+                body = {"project_id":project,"workspace_id":args.workspace_id,"expected_book_version":source_version,
+                    "idempotency_key":"durable","creative_brief_asset_version_id":source["creative_brief_asset_version_id"],
+                    "creative_brief_content_hash":source["creative_brief_content_hash"],
+                    "production_intent":{key:inputs[key] for key in ("title","target_chapters","language_contract","chapter_length")}}
+                with TestClient(app) as client:
+                    endpoint = f"/product/production/book-authority/books/{args.book_id}/formation-runs"
+                    stale = client.post(endpoint,json={**body,"expected_book_version":source_version+1})
+                    assert stale.status_code == 409, stale.text
+                    response = client.post(endpoint,json=body)
+                    assert response.status_code == 202, response.text
+                    assert response.json()["formation_run_id"] == identity
+                    malformed = client.post(endpoint,json={**body,"production_intent":{**body["production_intent"],"chapter_length":{"minimum":5,"maximum":1}}})
+                    assert malformed.status_code == 422
+                assert len(transport.calls) == 2
+            finally:
+                native_execution.close()
+        selected = candidates[0] if mode == "partial-alternative" else candidates[1]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s", [selected])
+            chosen_hash = uow.cursor.fetchone()[0]
+        chosen = parser.parse_args(["authority-creation", "choose", "--project-id", project,
+            "--formation-run-id", identity, "--candidate-version", selected, "--candidate-hash", chosen_hash,
+            "--reason", "Controlled author comparison chooses the second exact branch; no literary preference proof.",
+            "--idempotency-key", "choose-second", "--repository-root", str(root)])
+        run_creation_command(settings, chosen)
+        run_creation_command(settings, chosen)
+        if mode == "complete":
+            from novel_forge.modules.book_authority import creation_runtime
+            advance = creation_runtime.execute_creation_claim
+            windows = []
+            def bounded_window(*args, **options):
+                if not windows:
+                    options["maximum_ticks"] = 2
+                windows.append(True)
+                return advance(*args, **options)
+            monkeypatch.setattr(creation_runtime, "execute_creation_claim", bounded_window)
+            handoff = RuntimeJobAuthority.complete_and_schedule_continuation
+            lost = []
+            def response_lost(authority, *values, **options):
+                result = handoff(authority, *values, **options)
+                if not lost:
+                    lost.append(True)
+                    raise OSError("controlled committed handoff response loss")
+                return result
+            monkeypatch.setattr(RuntimeJobAuthority, "complete_and_schedule_continuation", response_lost)
+    
+        def execute_window(current):
+            try:
+                return execute_creation_worker_claim(settings, current)
+            except KernelError as error:
+                if mode not in {
+                    "world-result-repair",
+                    "world-causal-result-repair",
+                    "world-causal-legacy-replay",
+                    "world-causal-dead-letter-replay",
+                } or error.code not in {
+                    "WORLD_PROVIDER_TRANSITION_INVALID",
+                    "WORLD_PREPARATION_RESULT_INVALID",
+                    "WORLD_PREPARATION_BLOCKED",
+                }:
+                    raise
+                status = jobs.get(current.runtime_job_id)["status"]
+                if status == "DEAD_LETTER" and mode == "world-causal-dead-letter-replay":
+                    recover = parser.parse_args(["authority-creation", "recover", "--project-id", project,
+                        "--formation-run-id", identity, "--reason", "Controlled owner resolved historical World retry classification; retain original inputs and receipts.",
+                        "--idempotency-key", "legacy-dead-letter-window", "--repository-root", str(root)])
+                    run_creation_command(settings, recover)
+                else:
+                    assert status == "RETRY_WAIT"
+                return {"stop_reason": "YIELDED_CHECKPOINT", "error_code": error.code}
+    
+        result = execute_window(claim())
+        if mode == "complete":
+            assert result["stop_reason"] == "YIELDED_CHECKPOINT"
+            assert lost
+            from novel_forge.api import authority_dependencies as dependencies
+            from novel_forge.workers.book_authority import execute_book_phase_with_creation_scope, execute_story_formation_claim
+            legacy_execution = dependencies.build_production_execution_composition(settings)
+            try:
+                legacy_chapter = dependencies.build_chapter_authority_application(settings, execution=legacy_execution)
+                legacy = dependencies.build_book_production_composition(
+                    settings,
+                    principal=build_trusted_principal_resolver().resolve_worker_principal(
+                        "durable-phase-worker"
+                    ),
+                    execution=legacy_execution,
+                    chapter_application=legacy_chapter,
+                )
+                legacy.formation.schedule_candidates(limit=1, project_id=project, formation_run_id=identity)
+                phase = jobs.claim(runtime_group="story_formation", worker_id="durable-phase", lease_seconds=60,
+                    job_kinds=("STORY_FORMATION_ADVANCE",), subject_kind="STORY_FORMATION_RUN", subject_id=identity)
+                assert phase is not None
+                worker = build_trusted_principal_resolver().resolve_book_formation_worker_principal(phase.worker_id)
+                native = execute_book_phase_with_creation_scope(settings, phase, legacy,
+                    lambda scoped: execute_story_formation_claim(jobs, scoped.formation, worker, phase, lease_seconds=60))
+                assert native["current_stage"] == "ENDING_INTENT"
+            finally:
+                legacy_execution.close()
+        assert result["stop_reason"] in {"COMPLETED", "YIELDED_CHECKPOINT"}, result
+        for _ in range(10 if mode == "world-causal-dead-letter-replay" else 6):
+            if result["stop_reason"] == "COMPLETED":
+                break
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("UPDATE authority_runtime_job SET available_at=NOW() WHERE project_id=%s AND job_kind IN ('BOOK_CREATION_ADVANCE','BOOK_COORDINATION_TICK') AND status IN ('READY','RETRY_WAIT')", [project])
+                uow.commit()
+            next_claim = claim()
+            assert next_claim is not None, result
+&gt;           result = execute_window(next_claim)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_creation_cli_postgres.py:666: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_creation_cli_postgres.py:607: in execute_window
+    return execute_creation_worker_claim(settings, current)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:68: in execute_creation_worker_claim
+    return execute_creation_claim(jobs, claim, composition=composition, content=content, chapter=chapter,
+src/novel_forge/modules/book_authority/creation_runtime.py:517: in execute_creation_claim
+    result = continue_creation(composition=composition, content=content, chapter=chapter,
+src/novel_forge/modules/book_authority/creation_runtime.py:303: in continue_creation
+    stop = drive_book(composition=composition, chapter=chapter, book_run_id=existing[0], worker=book_worker,
+src/novel_forge/modules/book_authority/creation_runtime.py:43: in drive_book
+    return _drive_book(composition=composition, chapter=chapter, book_run_id=book_run_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:123: in _drive_book
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/workers/book_authority.py:184: in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/composition.py:69: in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:130: in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:464: in _tick
+    result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/supervisor.py:962: in _generate_plan
+    result = self.planning.generate(frozen or generation, principal=self.principal)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:800: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1968: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:800: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1968: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:784: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:402: in execute
+    bundle = self.resolver.resolve(
+src/novel_forge/modules/story_planning_runtime/binder.py:258: in resolve
+    prepared = prepare(
+src/novel_forge/modules/story_planning_runtime/execution.py:4092: in prepare
+    action = PlanningWorldPreparation(self).prepare(
+src/novel_forge/modules/story_planning_runtime/world_preparation.py:356: in prepare
+    evaluated = execute_stage(
+src/novel_forge/modules/story_planning_runtime/execution.py:4081: in execute_stage
+    prepared = self._prepare_stage(**arguments, provider_stage=stage)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:4669: in _prepare_stage
+    planning_route, routing_decision = provider_router.select(
+src/novel_forge/modules/production_execution/routing_runtime.py:863: in select
+    self.registry.planning_repair_receipt(
+src/novel_forge/modules/production_execution/routing_runtime.py:741: in planning_repair_receipt
+    return self.planning_repair_resolver(
+src/novel_forge/modules/story_planning_runtime/execution.py:360: in planning_repair_route_receipt
+    stage_bound = routing_repair_bound(uow.cursor, command=command, lineage=lineage, stage=task_type, maximum=maximum)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cursor = &lt;psycopg.Cursor [closed] [IDLE] (host=127.0.0.1 port=49856 user=novel_forge database=nf_pr133_integration_test) at 0x10a45b290&gt;
+command = StoryPlanningGenerationCommand(project_id='project-4e840576f95640b3808c90996e0df336-native', workspace_id='workspace-4...v1', 'role': 'arc_plans'}], 'story_state_version_id': ''}, edition_execution=None, execution_contract_version='1.19.0')
+lineage = ('792e68f3-6b6e-446f-9446-e44e4cc4a378', '89001b4d-56ec-4886-ad9b-a40099688aec', '87bc2bd2-14e0-48bb-a4d3-c23628413aca')
+stage = 'world_candidates.evaluate', maximum = 2
+
+    def routing_repair_bound(cursor, *, command, lineage, stage, maximum):
+        admission = selected_book_template(cursor, project_id=command.project_id, book_id=command.book_id)
+        template = decision_template({"task": {"work_id": command.book_id, "policy_snapshot": admission["policy_snapshot"]}}) if admission else None
+        if (not template or template["version"] not in {"creative-execution-template.v4", "creative-execution-template.v5", "creative-execution-template.v6"}
+                or template["mode"] != "CREATIVE_VALIDATION" or template["require_literary_qualification"]):
+            return None
+        source = command.repair_of_operation_id
+        if not source and command.repair_of_candidate_id:
+            from .execution import require_candidate_repair_operation
+            source = require_candidate_repair_operation(cursor, candidate_asset_version_id=command.repair_of_candidate_id,
+                project_id=command.project_id, book_id=command.book_id, generator_operation_name=command.generator_operation_name, logical_key=command.logical_key)
+        if not source:
+            return None
+        cursor.execute("SELECT request_payload #&gt; '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect WHERE operation_id=%s AND request_payload-&gt;&gt;'stage'=%s AND status IN ('SUCCEEDED','FAILED_FINAL')", [source, stage])
+        decisions = cursor.fetchall()
+        if len(decisions) != 1:
+&gt;           raise KernelError("PLANNING_STAGE_REPAIR_SOURCE_AMBIGUOUS", source)
+E           novel_forge.modules.command_kernel.errors.KernelError: PLANNING_STAGE_REPAIR_SOURCE_AMBIGUOUS: 89001b4d-56ec-4886-ad9b-a40099688aec
+
+src/novel_forge/modules/story_planning_runtime/stage_repairs.py:65: KernelError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,21 @@
+F
+=================================== FAILURES ===================================
+_ test_native_formation_generates_foundation_from_author_brief[current-production] _
+tests/integration/test_synthesis_formation_postgres.py:1674: in test_native_formation_generates_foundation_from_author_brief
+    stop = drive(
+scripts/run_world_production_smoke.py:291: in drive
+    result = scheduler.tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:222: in tick
+    child = self._admit_node(
+src/novel_forge/modules/chapter_authority/scheduler.py:727: in _admit_node
+    inputs.extend(world_input_bindings(self.database_url, project_id=request.project_id, root_operation_id=root['operation_id']))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_quality_authority/foundation_context.py:90: in world_input_bindings
+    evidence = frozen_world_evidence(
+src/novel_forge/modules/chapter_quality_authority/foundation_context.py:61: in frozen_world_evidence
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: QUALITY_FOUNDATION_SCOPE_INVALID: An independent governed World design receipt must bind the exact Book input
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 109.12s (0:01:49)

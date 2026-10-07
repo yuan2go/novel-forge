@@ -1,0 +1,7 @@
+{
+  "checked": 42,
+  "kind": "reachability",
+  "proof_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "runtime_reachable": 42,
+  "status": "PASS"
+}

@@ -460,3 +460,70 @@ def test_terminal_noncapacity_failure_cannot_borrow_cancelled_runtime_continuati
             source_operation_id="source",
             project_id="project",
         )
+
+
+def test_frozen_command_may_be_inspected_for_terminal_replay_on_new_release(monkeypatch):
+    from dataclasses import replace
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as module
+    from novel_forge.modules.story_planning_runtime.application import _command_payload
+    from tests.unit.test_story_planning_runtime import _command
+    command = replace(_command("chapter_group_plan.generate"), runtime_continuation_id="old-continuation")
+    binding = {"successor_command":_command_payload(command), "target_release_sha":"a"*40,
+        "successor_operation_id":"completed-old-operation", "target_runtime": {}}
+    monkeypatch.setattr(module, "require_binding", lambda *args:binding)
+    app = SimpleNamespace(database_url="unused", commit_sha="b"*40)
+    assert module.require_successor(app, command, validate_runtime=False) == binding
+    with pytest.raises(KernelError, match="COMMAND_DRIFT"):
+        module.require_successor(app, command, validate_runtime=True)
+    binding["successor_command"] = {**binding["successor_command"], "book_id":"foreign-book"}
+    with pytest.raises(KernelError, match="COMMAND_DRIFT"):
+        module.require_successor(app, command, validate_runtime=False)
+
+
+def test_completed_unselected_candidate_resumes_owner_admission_without_generation(monkeypatch):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime import application as module
+    from tests.unit.test_story_planning_runtime import _command
+    command = _command("chapter_group_plan.generate")
+
+    class Uow:
+        cursor = None
+
+        def __enter__(self):
+            self.cursor = self
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def execute(self, *args):
+            pass
+
+        def fetchone(self):
+            return "completed",module._command_payload(command),"SUCCEEDED","APPROVAL_PENDING","candidate"
+
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", lambda *args:Uow())
+    app = object.__new__(module.StoryPlanningGenerationApplication)
+    app.database_url = "unused"
+    app.story_design = SimpleNamespace(require=lambda **kwargs:{"lifecycle":"MATERIALIZED"})
+    app._require_asset = Mock(return_value={"content_hash":"frozen-hash"})
+    app._advance_candidate = Mock(return_value="owner-admission-result")
+    assert app._terminal_generation_replay(command, principal="trusted") == "owner-admission-result"
+    assert app._advance_candidate.call_args.kwargs["replayed"] is True
+    assert app._advance_candidate.call_args.kwargs["candidate_content_hash"] == "frozen-hash"
+
+
+def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime import application as module
+    from tests.unit.test_story_planning_runtime import _command
+
+    app = object.__new__(module.StoryPlanningGenerationApplication)
+    app.database_url = "unused"
+    uow = Mock()
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", uow)
+    def cancelled():
+        raise KernelError("BOOK_CREATION_CANCELLED", "Retained creation intent is cancelled")
+    with pytest.raises(KernelError, match="BOOK_CREATION_CANCELLED"):
+        app._terminal_generation_replay(_command("chapter_group_plan.generate"), principal=object(), execution_probe=cancelled)
+    uow.assert_not_called()

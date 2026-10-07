@@ -134,6 +134,7 @@ from .narrative_search import (
 from .foundation_generation import (
     FOUNDATION_GENERATORS,
     foundation_output_schema,
+    foundation_output_schema_ref,
     foundation_task,
 )
 
@@ -161,7 +162,7 @@ def require_candidate_repair_operation(
     book_id: str, generator_operation_name: str, logical_key: str,
 ) -> str:
     cursor.execute(
-        """SELECT generation.operation_id,candidate.content_hash,version.content_hash,version.content
+        """SELECT generation.operation_id,candidate.content_hash,version.content_hash,version.content,operation.status
            FROM authority_story_planning_candidate candidate
            JOIN authority_story_planning_generation generation USING(generation_id)
            JOIN authority_asset_version version ON version.asset_version_id=candidate.candidate_asset_version_id
@@ -172,7 +173,6 @@ def require_candidate_repair_operation(
              AND candidate.book_id=generation.book_id AND generation.generator_operation_name=%s
              AND generation.logical_key=%s AND asset.project_id=candidate.project_id
              AND asset.asset_type='planning_generation_candidate'
-             AND operation.status IN ('WAITING_GATE','SUCCEEDED')
              AND operation.project_id=generation.project_id
              AND operation.command_payload #>> '{payload,book_id}'=generation.book_id
              AND operation.definition_name='story_planning.generate'""",
@@ -180,6 +180,11 @@ def require_candidate_repair_operation(
     )
     row = cursor.fetchone()
     content = dict(row[3]) if row and isinstance(row[3], Mapping) else {}
+    if row and row[4] not in {"WAITING_GATE","SUCCEEDED"}:
+        from novel_forge.modules.story_design_authority.creative_validation import candidate_validation
+        recovered = candidate_validation(cursor,project_id=project_id,asset_version_id=candidate_asset_version_id)
+        if not recovered or recovered["generation_operation_id"] != row[0] or recovered["book_id"] != book_id:
+            raise KernelError("PLANNING_REPAIR_SOURCE_OPERATION_INVALID", "Repair requires an admissible source or its native validation result recovery")
     if (
         not row or row[1] != row[2] or row[2] != canonical_hash(content)
         or content.get("project_id") != project_id or content.get("book_id") != book_id
@@ -268,7 +273,7 @@ def _planning_repair_routing_lineage(
             capacity_predecessor = ""
             if payload.get("runtime_continuation_id"):
                 cursor.execute(
-                    "SELECT source_operation_id,successor_command FROM authority_story_planning_runtime_continuation WHERE continuation_id=%s AND successor_operation_id=%s AND project_id=%s AND book_id=%s",
+                    "SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload' FROM authority_story_planning_runtime_continuation r JOIN authority_operation source ON source.operation_id=r.source_operation_id AND source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER') JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED' WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s",
                     [
                         payload["runtime_continuation_id"],
                         current_id,
@@ -277,7 +282,7 @@ def _planning_repair_routing_lineage(
                     ],
                 )
                 binding = cursor.fetchone()
-                if binding is None or binding[1] != payload:
+                if binding is None or binding[1] != payload or binding[2] != binding[3]:
                     raise KernelError(
                         "PLANNING_ROUTING_LINEAGE_INVALID",
                         "Runtime successor lacks its exact native continuation",
@@ -339,7 +344,7 @@ def planning_repair_route_receipt(
         return None
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute(
-            "SELECT op.command_payload->'payload',g.repair_number,g.input_snapshot_hash FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.operation_id=%s AND op.project_id=%s AND g.book_id=%s AND g.generator_operation_name=%s",
+            "SELECT op.command_payload->'payload',g.repair_number,g.input_snapshot_hash,g.input_snapshot FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.operation_id=%s AND op.project_id=%s AND g.book_id=%s AND g.generator_operation_name=%s",
             [operation_id, project_id, book_id, owner_generator],
         )
         row = uow.cursor.fetchone()
@@ -352,9 +357,14 @@ def planning_repair_route_receipt(
             definition.maximum_semantic_repairs,
             definition.maximum_structural_regenerations,
         )
+        from .stage_repairs import routing_repair_bound
+        stage_bound = routing_repair_bound(uow.cursor, command=command, lineage=lineage, stage=task_type, maximum=maximum)
+        ordinal = stage_bound["stage_repair_number"] if stage_bound else command.repair_number
+        maximum = stage_bound["maximum_repairs"] if stage_bound else maximum
         if (
             command.repair_number != int(row[1])
-            or not 0 < command.repair_number <= maximum
+            or not 0 < ordinal <= maximum
+            or stage_bound is not None and command.repair_number > 4
         ):
             raise KernelError(
                 "PLANNING_ROUTING_REPAIR_BOUND_EXCEEDED",
@@ -462,9 +472,18 @@ def planning_repair_route_receipt(
             diagnosis_hash = canonical_hash(result["diagnostic"])
         else:
             return None
+        scope_proof = {}
+        if stage_bound:
+            uow.cursor.execute("SELECT input_snapshot,input_snapshot_hash FROM authority_story_planning_generation WHERE operation_id=%s AND project_id=%s AND book_id=%s AND generator_operation_name=%s", [source, project_id, book_id, owner_generator])
+            parent_inputs = uow.cursor.fetchone()
+            if parent_inputs is None or canonical_hash(row[3]) != row[2]:
+                raise KernelError("PLANNING_ROUTING_REPAIR_INPUT_DRIFT", "Repair must retain its exact frozen input identities")
+            from .application import _replay_generation_input_snapshot
+            frozen_inputs = _replay_generation_input_snapshot(row[3], parent_inputs[0], parent_inputs[1])
+            scope_proof = {"parent_input_snapshot_hash": parent_inputs[1], "input_snapshot_hash": row[2], "input_scope_hash": canonical_hash({item["role"]: item for item in frozen_inputs})}
         uow.cursor.execute(
-            "SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect WHERE operation_id=%s AND project_id=%s AND status='SUCCEEDED' AND request_payload->>'stage'=%s ORDER BY created_at DESC LIMIT 1",
-            [source, project_id, task_type],
+            "SELECT e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect e WHERE e.operation_id=%s AND e.project_id=%s AND (e.status='SUCCEEDED' OR (%s AND e.status='FAILED_FINAL' AND EXISTS(SELECT 1 FROM authority_planning_result_admission a JOIN authority_operation recovery ON recovery.operation_id=a.recovery_operation_id AND recovery.status='SUCCEEDED' WHERE a.source_operation_id=e.operation_id AND a.external_effect_id=e.external_effect_id AND a.candidate_asset_version_id=%s))) AND e.request_payload->>'stage'=%s ORDER BY e.created_at DESC LIMIT 1",
+            [source, project_id, stage_bound is not None, command.repair_of_candidate_id, task_type],
         )
         source_input = uow.cursor.fetchone()
         if (
@@ -492,7 +511,9 @@ def planning_repair_route_receipt(
             "Repair receipt must cover the exact native lineage",
         )
     return {
-        "contract_version": "planning-route-repair.v1",
+        "contract_version": "planning-route-repair.v2" if stage_bound else "planning-route-repair.v1",
+        **scope_proof,
+        **({"repair_stage": task_type, "stage_repair_number": ordinal, "maximum_lineage_repairs": 4, "policy_admission": stage_bound["policy_admission"]} if stage_bound else {}),
         **({"dependent_evaluation": dependency} if dependency else {}),
         "operation_id": operation_id,
         "source_operation_id": source,
@@ -904,6 +925,7 @@ class PlanningExecutionRoute:
     token_accounting_evidence_ref: str = ""
     token_safety_margin: int = 256
     token_framing_overhead: int = 16
+    task_reasoning_authorization: tuple[str, str] | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -2482,6 +2504,8 @@ def world_schema_evidence_identity(
         root / "chapter_authority" / "provider_views.py",
     ]
     bound_paths = {
+        ("properties", "candidates", "items", "properties", "arc_refs", "items", "enum"),
+        ("properties", "candidates", "items", "properties", "obligation_refs", "items", "enum"),
         ("properties", "actor_id", "enum"),
         ("properties", "basis_refs", "items", "enum"),
         ("properties", "actor_adjudications", "items", "properties", "actor_id", "enum"),
@@ -2525,6 +2549,7 @@ def planning_provider_output_schema(
     chapter_schedule_row: Mapping[str, Any] | None = None,
     work_requirements: bool = False,
     aligned_methods: bool = False,
+    serialization_contract: bool = False,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -2732,7 +2757,7 @@ def planning_provider_output_schema(
                             if exact_group_chapters
                             else {"type": "integer", "minimum": 1}
                         ),
-                        "causes": {"type": "array", "items": string},
+                        "causes": {"type": "array", "items": string, "description": "Only earlier event_id values in this exact narrative_event_chain. Every edge A -> B must appear both as A.next_event_ids containing B and B.causes containing A. No external, later or self event references."},
                         "actor_ref": string,
                         "motivation": string,
                         "preconditions": {
@@ -2791,7 +2816,7 @@ def planning_provider_output_schema(
                             "items": arc_ref,
                         },
                         "irreversible_change": string,
-                        "next_event_ids": {"type": "array", "items": string},
+                        "next_event_ids": {"type": "array", "items": string, "description": "Only later event_id values in this exact narrative_event_chain. Include every event that names this event in causes; each outgoing edge must be reciprocated in the target's causes. The final event has no later edge."},
                         "required": {"type": "boolean"},
                     }
                 ),
@@ -2966,6 +2991,12 @@ def planning_provider_output_schema(
     )
     if work_requirements:
         _apply_work_planning_schema(properties, isolated=aligned_methods)
+    if serialization_contract and contract_type is PlanContractType.CHAPTER:
+        properties["serialization_function"] = {
+            "type": ["string", "null"], "minLength": 1,
+            "description": "Explicit selected serialization realization for this Chapter under the frozen Book work requirement; null only when that requirement is not applicable.",
+        }
+        properties["chapter_contract_schema_version"]["const"] = "chapter-mission-scene.v4"
     if contract_type is PlanContractType.CHAPTER:
         realization = dict(narrative_realization or {})
         if not realization:
@@ -4170,7 +4201,8 @@ class PostgresPlanningExecutionPreparer:
         output_schema = (
             foundation_output_schema(
                 command.generator_operation_name,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
+                rfc6901_paths=command.execution_contract_version == "1.19.0",
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
             )
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else planning_provider_output_schema(
@@ -4189,8 +4221,9 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-                aligned_methods=command.execution_contract_version == "1.18.0",
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+                serialization_contract=command.execution_contract_version == "1.19.0",
             )
         )
         if (
@@ -4230,9 +4263,9 @@ class PostgresPlanningExecutionPreparer:
             )
         )
         if command.generator_operation_name in FOUNDATION_GENERATORS:
-            output_schema_ref = f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[command.generator_operation_name].value.lower()}:v{3 if command.execution_contract_version == '1.18.0' else 2 if command.execution_contract_version == '1.17.0' else 1}"
-        if command.execution_contract_version in {"1.17.0", "1.18.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
-            output_schema_ref += ":work-v3" if command.execution_contract_version == "1.18.0" else ":work-v2"
+            output_schema_ref = foundation_output_schema_ref(command.generator_operation_name, execution_contract_version=command.execution_contract_version)
+        if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            output_schema_ref += ":work-v4" if command.execution_contract_version == "1.19.0" else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0"} else ":work-v2"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4366,8 +4399,9 @@ class PostgresPlanningExecutionPreparer:
             },
             candidate_payload={},
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-            aligned_methods=command.execution_contract_version == "1.18.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+            rfc6901_paths=command.execution_contract_version == "1.19.0",
         )
         try:
             context_policy = json.loads(frozen.context_policy_payload_json)
@@ -4388,15 +4422,17 @@ class PostgresPlanningExecutionPreparer:
                         "foundation_task": foundation_task(
                             command.generator_operation_name,
                             work_requirements=command.execution_contract_version
-                            in {"1.17.0", "1.18.0"},
-                            aligned_methods=command.execution_contract_version == "1.18.0",
+                            in {"1.17.0", "1.18.0", "1.19.0"},
+                            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+                            rfc6901_paths=command.execution_contract_version == "1.19.0",
                         )
                     }
                     if command.generator_operation_name in FOUNDATION_GENERATORS
                     else {}
                 ),
                 "planning_command": {
-                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version == "1.18.0" else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0"} else {}),
+                    **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version == "1.19.0" else {}),
+                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"} else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "generation_operation_id": operation_id,
@@ -5695,8 +5731,9 @@ class PostgresPlanningExecutionPreparer:
                     "foundation_task": foundation_task(
                         command.generator_operation_name,
                         work_requirements=command.execution_contract_version
-                        in {"1.17.0", "1.18.0"},
-                        aligned_methods=command.execution_contract_version == "1.18.0",
+                        in {"1.17.0", "1.18.0", "1.19.0"},
+                        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+                        rfc6901_paths=command.execution_contract_version == "1.19.0",
                     )
                 }
                 if command.generator_operation_name in FOUNDATION_GENERATORS
@@ -5732,8 +5769,8 @@ class PostgresPlanningExecutionPreparer:
                 }
                 for profile in required_qualification_profiles(
                     command.generator_operation_name,
-                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-                    profile_version="3.0.0" if command.execution_contract_version == "1.18.0" else "2.0.0",
+                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+                    profile_version="3.0.0" if command.execution_contract_version in {"1.18.0", "1.19.0"} else "2.0.0",
                 )
             ],
             "trace_id": command.trace_id,

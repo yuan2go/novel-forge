@@ -1,0 +1,1 @@
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m compileall -q src tests

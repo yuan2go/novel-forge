@@ -1,0 +1,178 @@
+F.....FFFF                                                               [100%]
+=================================== FAILURES ===================================
+______ test_codex_nullable_shared_object_preserves_closed_value_contract _______
+
+    def test_codex_nullable_shared_object_preserves_closed_value_contract():
+        from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+        from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+        from novel_forge.modules.command_kernel.errors import KernelError
+        original = {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":{"$ref":"#/$defs/nullable"}},"required":["value"],"additionalProperties":False,
+            "$defs":{"nullable":{"type":["object","null"],"properties":{"id":{"type":"string","minLength":1}},"required":["id"],"additionalProperties":False}}}
+        projected = codex_output_schema(original)
+>       assert projected['$defs']['nullable']['anyOf'][0]['type']=='object'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'anyOf'
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_codex_execution_evidence.py:721: KeyError
+_ test_nullable_wire_values_preserve_canonical_contract[field5-valid5-invalid5] _
+
+field = {'type': ['string', 'null'], 'enum': ['x']}, valid = ['x']
+invalid = [None, 'y', 1]
+
+    @pytest.mark.parametrize("field,valid,invalid", [
+        ({"type":["string","null"],"minLength":2}, [None,"ok"], ["x",1,[]]),
+        ({"type":["array","null"],"items":{"type":"integer"},"minItems":1}, [None,[1]], [[],["x"],False]),
+        ({"type":["number","null"],"minimum":2}, [None,2,3.5], [1,"2",False]),
+        ({"type":["boolean","null"]}, [None,True,False], [1,"true",[]]),
+        ({"type":["string","null"],"enum":[None],"minLength":1}, [None], ["x","",1,False]),
+        ({"type":["string","null"],"enum":["x"]}, ["x"], [None,"y",1]),
+        ({"type":["string","null"],"const":"x"}, ["x"], [None,"y",1]),
+    ])
+    def test_nullable_wire_values_preserve_canonical_contract(field,valid,invalid):
+        from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+        from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+        from novel_forge.modules.command_kernel.errors import KernelError
+        schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":field},"required":["value"],"additionalProperties":False}
+        wire=codex_output_schema(schema)
+        for value in valid:
+            for contract in (schema,wire):
+                validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})
+        for value in invalid:
+            for contract in (schema,wire):
+>               with pytest.raises(KernelError):
+E               Failed: DID NOT RAISE KernelError
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_codex_execution_evidence.py:770: Failed
+_ test_nullable_wire_values_preserve_canonical_contract[field6-valid6-invalid6] _
+
+field = {'type': ['string', 'null'], 'const': 'x'}, valid = ['x']
+invalid = [None, 'y', 1]
+
+    @pytest.mark.parametrize("field,valid,invalid", [
+        ({"type":["string","null"],"minLength":2}, [None,"ok"], ["x",1,[]]),
+        ({"type":["array","null"],"items":{"type":"integer"},"minItems":1}, [None,[1]], [[],["x"],False]),
+        ({"type":["number","null"],"minimum":2}, [None,2,3.5], [1,"2",False]),
+        ({"type":["boolean","null"]}, [None,True,False], [1,"true",[]]),
+        ({"type":["string","null"],"enum":[None],"minLength":1}, [None], ["x","",1,False]),
+        ({"type":["string","null"],"enum":["x"]}, ["x"], [None,"y",1]),
+        ({"type":["string","null"],"const":"x"}, ["x"], [None,"y",1]),
+    ])
+    def test_nullable_wire_values_preserve_canonical_contract(field,valid,invalid):
+        from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+        from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+        from novel_forge.modules.command_kernel.errors import KernelError
+        schema={"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"value":field},"required":["value"],"additionalProperties":False}
+        wire=codex_output_schema(schema)
+        for value in valid:
+            for contract in (schema,wire):
+                validate_chapter_provider_output_against_schema("canon_extraction",contract,{"value":value})
+        for value in invalid:
+            for contract in (schema,wire):
+>               with pytest.raises(KernelError):
+E               Failed: DID NOT RAISE KernelError
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_codex_execution_evidence.py:770: Failed
+_______ test_v3_world_policy_is_explicit_and_strict_requires_simulation ________
+
+content = {'execution_templates': [{'version': 'creative-execution-template.v3', 'book_id': 'book', 'mode': 'CREATIVE_VALIDATION', 'allowed_candidates': ['member', 'flash'], ...}]}
+
+    def validate_templates(content: Mapping[str, Any]) -> None:
+        books = set()
+        for value in content.get("execution_templates", []):
+            try:
+>               ExecutionTemplateConfiguration.model_validate(value)
+E               pydantic_core._pydantic_core.ValidationError: 3 validation errors for ExecutionTemplateConfiguration
+E               version
+E                 Input should be 'creative-execution-template.v1' [type=literal_error, input_value='creative-execution-template.v3', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+E               repair_routing
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value={'version': 'native-repai..._same_route_repairs': 2}, input_type=dict]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E               world_future_preparation
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value='DISABLED', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+
+src/novel_forge/modules/production_execution/execution_template.py:71: ValidationError
+
+The above exception was the direct cause of the following exception:
+
+    def test_v3_world_policy_is_explicit_and_strict_requires_simulation():
+        from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+        repair = {"version": "native-repair-routing.v1", "max_same_route_repairs": 2}
+        value = template(version="creative-execution-template.v3", repair_routing=repair, world_future_preparation="DISABLED")
+>       validate_templates({"execution_templates": [value]})
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_creative_execution_template.py:168: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+content = {'execution_templates': [{'version': 'creative-execution-template.v3', 'book_id': 'book', 'mode': 'CREATIVE_VALIDATION', 'allowed_candidates': ['member', 'flash'], ...}]}
+
+    def validate_templates(content: Mapping[str, Any]) -> None:
+        books = set()
+        for value in content.get("execution_templates", []):
+            try:
+                ExecutionTemplateConfiguration.model_validate(value)
+            except ValidationError as error:
+>               raise KernelError("EXECUTION_TEMPLATE_INVALID", "Template violates its closed typed contract") from error
+E               novel_forge.modules.command_kernel.errors.KernelError: EXECUTION_TEMPLATE_INVALID: Template violates its closed typed contract
+
+src/novel_forge/modules/production_execution/execution_template.py:73: KernelError
+_________ test_v6_canon_validation_is_explicit_preserves_v5_and_strict _________
+
+content = {'execution_templates': [{'version': 'creative-execution-template.v6', 'book_id': 'book', 'mode': 'CREATIVE_VALIDATION', 'allowed_candidates': ['member', 'flash'], ...}]}
+
+    def validate_templates(content: Mapping[str, Any]) -> None:
+        books = set()
+        for value in content.get("execution_templates", []):
+            try:
+>               ExecutionTemplateConfiguration.model_validate(value)
+E               pydantic_core._pydantic_core.ValidationError: 5 validation errors for ExecutionTemplateConfiguration
+E               version
+E                 Input should be 'creative-execution-template.v1' [type=literal_error, input_value='creative-execution-template.v6', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+E               world_future_preparation
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value='DISABLED', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E               repair_routing
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value={'version': 'native-repai..._same_route_repairs': 2}, input_type=dict]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E               chapter_contract_recovery
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value='KNOWN_SETTLED_CONTRACT_REPAIR', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+E               canon_validation_contract
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value='grounded-canon-validation.v2', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden
+
+src/novel_forge/modules/production_execution/execution_template.py:71: ValidationError
+
+The above exception was the direct cause of the following exception:
+
+    def test_v6_canon_validation_is_explicit_preserves_v5_and_strict():
+        from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+        value=template(version='creative-execution-template.v6',world_future_preparation='DISABLED',
+            repair_routing={'version':'native-repair-routing.v2','max_same_route_repairs':2},
+            chapter_contract_recovery='KNOWN_SETTLED_CONTRACT_REPAIR',canon_validation_contract='grounded-canon-validation.v2')
+>       validate_templates({'execution_templates':[value]})
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_creative_execution_template.py:210: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+content = {'execution_templates': [{'version': 'creative-execution-template.v6', 'book_id': 'book', 'mode': 'CREATIVE_VALIDATION', 'allowed_candidates': ['member', 'flash'], ...}]}
+
+    def validate_templates(content: Mapping[str, Any]) -> None:
+        books = set()
+        for value in content.get("execution_templates", []):
+            try:
+                ExecutionTemplateConfiguration.model_validate(value)
+            except ValidationError as error:
+>               raise KernelError("EXECUTION_TEMPLATE_INVALID", "Template violates its closed typed contract") from error
+E               novel_forge.modules.command_kernel.errors.KernelError: EXECUTION_TEMPLATE_INVALID: Template violates its closed typed contract
+
+src/novel_forge/modules/production_execution/execution_template.py:73: KernelError
+=========================== short test summary info ============================
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_codex_execution_evidence.py::test_codex_nullable_shared_object_preserves_closed_value_contract
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_codex_execution_evidence.py::test_nullable_wire_values_preserve_canonical_contract[field5-valid5-invalid5]
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_codex_execution_evidence.py::test_nullable_wire_values_preserve_canonical_contract[field6-valid6-invalid6]
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_creative_execution_template.py::test_v3_world_policy_is_explicit_and_strict_requires_simulation
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_source_creative_execution_template.py::test_v6_canon_validation_is_explicit_preserves_v5_and_strict
+5 failed, 5 passed in 1.03s

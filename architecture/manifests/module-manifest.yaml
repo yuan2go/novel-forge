@@ -40,6 +40,8 @@
     {"name": "capability-packs", "path": "src/novel_forge/modules/capability_packs/__init__.py", "import_path": "novel_forge.modules.capability_packs", "owner": "agent-os", "authority_mode": "compiled-admission-binding"},
     {"name": "capability-pack-authority", "path": "src/novel_forge/modules/capability_pack_authority/__init__.py", "import_path": "novel_forge.modules.capability_pack_authority", "owner": "agent-os", "authority_mode": "postgresql-attempt-snapshot-authority"},
     {"name": "world-dynamics", "path": "src/novel_forge/modules/worldbuilding/dynamics.py", "import_path": "novel_forge.modules.worldbuilding.dynamics", "owner": "worldbuilding-domain", "authority_mode": "candidate-validation-only"},
-    {"name": "database-runtime", "path": "src/novel_forge/storage/database_runtime.py", "import_path": "novel_forge.storage.database_runtime", "owner": "storage", "authority_mode": "postgresql"}
+    {"name": "database-runtime", "path": "src/novel_forge/storage/database_runtime.py", "import_path": "novel_forge.storage.database_runtime", "owner": "storage", "authority_mode": "postgresql"},
+    {"name": "model-reference-pressure-diagnostics", "path": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py", "import_path": "novel_forge.modules.chapter_quality_authority.paired_regression", "owner": "chapter-quality-authority", "authority_mode": "offline-diagnostic-only"},
+    {"name": "review-pressure-diagnostic-entry", "path": "src/novel_forge/tools/review_pressure_regression.py", "import_path": "novel_forge.tools.review_pressure_regression", "owner": "chapter-quality-authority", "authority_mode": "offline-diagnostic-only"}
   ]
 }

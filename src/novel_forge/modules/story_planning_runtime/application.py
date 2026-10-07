@@ -251,7 +251,11 @@ class _PlanningGenerationHandler:
                 raise KernelError("CRAFT_PLANNING_SELECTION_DRIFT", "Craft planning evidence must bind the exact persisted Context and frozen selection")
             from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
             author_projection = dict(context.content.get("author_design_projection") or {})
-            validate_author_decisions(candidate.candidate_payload, author_projection)
+            try:
+                validate_author_decisions(candidate.candidate_payload, author_projection)
+            except KernelError as error:
+                from .result_recovery import PlanningResultValidationError
+                raise PlanningResultValidationError(error, raw_result=candidate.raw_provider_result or candidate.candidate_payload, execution_evidence=evidence) from error
             if selection.get("policy_version") == "knowledge-grounded-selection-v2":
                 try:
                     validate_knowledge_translations(candidate.candidate_payload, selection)
@@ -291,8 +295,9 @@ class _PlanningGenerationHandler:
             },
             candidate_payload=candidate.candidate_payload,
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0"},
-            aligned_methods=command.execution_contract_version == "1.18.0",
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0"},
+            rfc6901_paths=command.execution_contract_version == "1.19.0",
         )
         if envelope.get("author_design"):
             from novel_forge.modules.story_design_authority.author_input import frozen_author_projection
@@ -449,6 +454,7 @@ class StoryPlanningGenerationHandlerRegistry:
             "1.15.0",
             "1.16.0",
             "1.17.0",
+            "1.18.0",
         }:
             raise KeyError((definition_name, definition_version))
         return replace(item, definition_version=definition_version)
@@ -534,7 +540,7 @@ class StoryPlanningGenerationApplication:
         if command.runtime_continuation_id:
             from .runtime_continuation import require_successor
             continuation = require_successor(self, command, validate_runtime=False)
-        replay = self._terminal_generation_replay(command, principal=principal)
+        replay = self._terminal_generation_replay(command, principal=principal, execution_probe=execution_probe)
         if replay is not None:
             return replay
         if continuation is not None:
@@ -768,6 +774,9 @@ class StoryPlanningGenerationApplication:
                 execution_probe=execution_probe,
             )
         self._probe(execution_probe)
+        if command.world_preparation_request:
+            from .world_result_recovery import resume_world_result_checkpoint
+            resume_world_result_checkpoint(self.database_url, command=command, operation_id=operation_id)
         try:
             scheduled = ContentAuthorityScheduler(
                 self.database_url,
@@ -780,11 +789,14 @@ class StoryPlanningGenerationApplication:
                 "CONTENT_RECOVERY_RETRY_EXHAUSTED",
             }:
                 continued = self._terminal_generation_replay(
-                    command, principal=principal
+                    command, principal=principal, execution_probe=execution_probe
                 )
                 if continued is not None:
                     return continued
-            if error.code not in {"PLANNING_GENERATION_RESULT_INVALID", "WORLD_PREPARATION_RESULT_INVALID"}:
+            from .world_result_recovery import WORLD_GENERATION_CONTRACT_ERRORS
+            if error.code not in {"PLANNING_GENERATION_RESULT_INVALID", "WORLD_PREPARATION_RESULT_INVALID"} and not (
+                command.world_preparation_request and error.code in WORLD_GENERATION_CONTRACT_ERRORS
+            ):
                 raise
             return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
         self._probe(execution_probe)
@@ -1451,7 +1463,7 @@ class StoryPlanningGenerationApplication:
             project_id=generation["project_id"], asset_version_id=candidate_asset_version_id,
         )
         from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
-        projection_version = "2.0.0" if (uses_work_requirements(candidate["content"]) and candidate["content"].get("chapter_contract_schema_version") == "chapter-mission-scene.v3") else "1.0.0"
+        projection_version = "3.0.0" if candidate["content"].get("chapter_contract_schema_version") == "chapter-mission-scene.v4" else "2.0.0" if (uses_work_requirements(candidate["content"]) and candidate["content"].get("chapter_contract_schema_version") == "chapter-mission-scene.v3") else "1.0.0"
         definition = chapter_plan_projection_definition(
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha, definition_version=projection_version,
@@ -1529,7 +1541,7 @@ class StoryPlanningGenerationApplication:
                     project_id=generation["project_id"],
                     asset_id=f"chapter-plan:{candidate_asset_version_id}",
                     asset_type="chapter_plan",
-                    schema_version="activated-chapter-plan.v2" if projection_version == "2.0.0" else "activated-chapter-plan.v1",
+                    schema_version="activated-chapter-plan.v3" if projection_version == "3.0.0" else "activated-chapter-plan.v2" if projection_version == "2.0.0" else "activated-chapter-plan.v1",
                     logical_ref=(
                         "story_planning/chapter_plans/"
                         f"{candidate_asset_version_id}.json"
@@ -1736,8 +1748,10 @@ class StoryPlanningGenerationApplication:
         return projection
 
     def _terminal_generation_replay(
-        self, command: StoryPlanningGenerationCommand, *, principal: Principal
+        self, command: StoryPlanningGenerationCommand, *, principal: Principal,
+        execution_probe: Callable[[], object] | None = None,
     ) -> PlanningGenerationResult | None:
+        self._probe(execution_probe)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 "SELECT op.operation_id, op.command_payload->'payload', op.status, g.status, g.candidate_asset_version_id FROM authority_operation op LEFT JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND op.definition_name=%s AND op.idempotency_scope='book:story-planning-generation' AND op.idempotency_key=%s",
@@ -1762,11 +1776,11 @@ class StoryPlanningGenerationApplication:
             key: value for key, value in frozen_payload.items()
             if key != "routing_bootstrap_authorization"
         }
-        if row[2] == "CANCELLED" and not row[4]:
+        if row[2] in {"CANCELLED","FAILED_FINAL"} and not row[4]:
             from .runtime_continuation import follow
             current_payload = _command_payload(command)
             if {key: value for key, value in public_frozen_payload.items() if key != "execution_contract_version"} == {key: value for key, value in current_payload.items() if key != "execution_contract_version"}:
-                resumed = follow(self, str(row[0]), _command_from_payload(frozen_payload), principal=principal)
+                resumed = follow(self, str(row[0]), _command_from_payload(frozen_payload), principal=principal, execution_probe=execution_probe)
                 if resumed is not None:
                     return resumed
         if public_frozen_payload != _command_payload(command):
@@ -1774,13 +1788,18 @@ class StoryPlanningGenerationApplication:
                 "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
                 "replay must use the exact immutable admitted Planning command",
             )
+        if row[2] in {'FAILED_FINAL', 'DEAD_LETTER'} and not row[4] and command.world_preparation_request:
+            from .world_optional import follow_optional_failure
+            deferred = follow_optional_failure(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)
+            if deferred is not None:
+                return deferred
         if row[2] == "CANCELLED" and not row[4]:
             from .runtime_continuation import follow
-            return follow(self, str(row[0]), command, principal=principal)
+            return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
         if row[2] in {"FAILED_FINAL", "DEAD_LETTER"} and not row[4]:
             from .runtime_continuation import follow, register
 
-            continued = follow(self, str(row[0]), command, principal=principal)
+            continued = follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
             if continued is not None:
                 return continued
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -1795,6 +1814,7 @@ class StoryPlanningGenerationApplication:
                 )
                 source_version = int(uow.cursor.fetchone()[0])
             if failure and failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+                self._probe(execution_probe)
                 register(
                     self,
                     str(row[0]),
@@ -1808,11 +1828,29 @@ class StoryPlanningGenerationApplication:
                     trace_id=command.trace_id,
                     correlation_id=command.correlation_id,
                 )
-                return follow(self, str(row[0]), command, principal=principal)
+                return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
+            if row[2] == "FAILED_FINAL":
+                from .gateway_result_recovery import recover
+                revalidated = recover(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)
+                if revalidated is not None:
+                    return self.generate(command, principal=principal, execution_probe=execution_probe)
             if row[2] in {"FAILED_FINAL", "DEAD_LETTER"}:
                 return self._repair_unmaterialized_result(
-                    command, operation_id=str(row[0]), principal=principal
+                    command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe
                 )
+        if row[4] and row[3] in {"REJECTED", "REPAIR_REQUIRED"}:
+            from .stage_repairs import follow_rejected
+            stage_successor = follow_rejected(self, command=command, operation_id=str(row[0]), candidate_asset_version_id=str(row[4]), principal=principal, execution_probe=execution_probe)
+            if stage_successor is not None:
+                return stage_successor
+        if row[2] == "FAILED_FINAL" and row[4]:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_planning_result_admission r JOIN authority_operation o ON o.operation_id=r.recovery_operation_id WHERE r.source_operation_id=%s AND r.candidate_asset_version_id=%s AND o.status='SUCCEEDED')", [row[0], row[4]])
+                recovered = uow.cursor.fetchone()[0]
+            if recovered:
+                asset = self._require_asset(project_id=command.project_id, asset_version_id=str(row[4]))
+                self._probe(execution_probe)
+                return self._advance_candidate(operation_id=str(row[0]), candidate_asset_version_id=str(row[4]), candidate_content_hash=asset["content_hash"], command=command, principal=principal, replayed=True, definition=GENERATOR_CATALOG[command.generator_operation_name])
         if not row[4] or (
             row[2] != "SUCCEEDED"
             and not (row[2] == "WAITING_GATE" and row[3] in {"REPAIR_REQUIRED", "REJECTED"})
@@ -1844,6 +1882,7 @@ class StoryPlanningGenerationApplication:
                     "1.16.0",
                     "1.17.0",
                     "1.18.0",
+                    "1.19.0",
                 }:
                     definition = GENERATOR_CATALOG[command.generator_operation_name]
                     maximum = (
@@ -1867,7 +1906,7 @@ class StoryPlanningGenerationApplication:
                         repair_number=command.repair_number + 1,
                         idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}",
                     )
-                    return self.generate(repaired, principal=principal)
+                    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
                 return PlanningGenerationResult(
                     str(row[0]),
                     str(row[4]),
@@ -1876,6 +1915,12 @@ class StoryPlanningGenerationApplication:
                     replayed=True,
                 )
         if state["lifecycle"] not in {"ACTIVE", "REJECTED"}:
+            if row[2] == "SUCCEEDED":
+                asset = self._require_asset(project_id=command.project_id, asset_version_id=str(row[4]))
+                self._probe(execution_probe)
+                return self._advance_candidate(operation_id=str(row[0]), candidate_asset_version_id=str(row[4]),
+                    candidate_content_hash=asset["content_hash"], command=command, principal=principal, replayed=True,
+                    definition=GENERATOR_CATALOG[command.generator_operation_name])
             return None
         binding = (
             self.planning.require_binding(
@@ -1902,7 +1947,10 @@ class StoryPlanningGenerationApplication:
                 "invalid bootstrap output is retained; a new challenger requires explicit authorization",
             )
         maximum = min(MAXIMUM_RESULT_REPAIRS, GENERATOR_CATALOG[command.generator_operation_name].maximum_structural_regenerations)
-        if command.repair_number >= maximum:
+        from .stage_repairs import repair_bound
+        bound=repair_bound(self,command=command,operation_id=operation_id,maximum=maximum)
+        exhausted=(bound['stage_repair_number']>=bound['maximum_repairs'] or command.repair_number>=4) if bound else command.repair_number>=maximum
+        if exhausted:
             raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
         source = require_result_repair_source(self.database_url, command=command, operation_id=operation_id)
         diagnostic = source["diagnostic"]
@@ -1922,6 +1970,12 @@ class StoryPlanningGenerationApplication:
 
     def frozen_generation_command(self, operation_id: str) -> dict[str, Any]:
         return self._frozen_generation_payload(operation_id)
+
+    def register_result_admission_recovery(self, source_operation_id: str, *, project_id: str,
+        source_asset_version_id: str, reason: str, principal: Principal) -> dict[str, Any]:
+        from .result_admission import recover
+        return recover(self, source_operation_id=source_operation_id, project_id=project_id,
+            source_asset_version_id=source_asset_version_id, reason=reason, principal=principal)
 
     def require_generation(self, operation_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -2547,6 +2601,9 @@ class StoryPlanningGenerationApplication:
             "NARRATIVE_SEMANTIC_QUALIFICATION_FAILED",
         }
         validation_kind = "SEMANTIC" if semantic else "STRUCTURAL"
+        maximum = definition.maximum_semantic_repairs if semantic else definition.maximum_structural_regenerations
+        from .stage_repairs import repair_bound
+        bound = repair_bound(self, command=command, operation_id=operation_id, maximum=maximum)
         report = {
             "status": "FAIL",
             "validation_kind": validation_kind,
@@ -2554,6 +2611,8 @@ class StoryPlanningGenerationApplication:
             "message": error.message,
             "candidate_asset_version_id": candidate_asset_version_id,
         }
+        if bound is not None:
+            report["stage_repair_bound"] = bound
         if error.code.startswith(("SCENE_", "BEAT_", "REALIZATION_")):
             report["directed_rejection"] = {
                 "contract_version": "planning-directed-rejection.v1",
@@ -2604,7 +2663,8 @@ class StoryPlanningGenerationApplication:
             expected_version=int(state["version"]),
             evidence={"passed": False, "validation_report_hash": report_hash},
         )
-        if command.repair_number >= maximum:
+        exhausted=(bound['stage_repair_number']>=bound['maximum_repairs'] or command.repair_number>=4) if bound else command.repair_number>=maximum
+        if exhausted:
             self._update_generation_status(operation_id, "REJECTED")
             return PlanningGenerationResult(
                 operation_id,
@@ -2985,8 +3045,21 @@ class StoryPlanningGenerationApplication:
             ("repair_of_operation_id", "repair_result_asset_version_id")
             if command.repair_of_operation_id else ()
         )
+        if command.runtime_continuation_id:
+            repair_fields += ("runtime_continuation_id",)
+        source_operation_id = command.repair_of_operation_id
+        if command.runtime_continuation_id:
+            from .runtime_continuation import require_binding
+            source_operation_id = require_binding(self.database_url, command.runtime_continuation_id)["source_operation_id"]
+        elif command.repair_of_candidate_id:
+            from .execution import require_candidate_repair_operation
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                source_operation_id = require_candidate_repair_operation(uow.cursor,
+                    candidate_asset_version_id=command.repair_of_candidate_id, project_id=command.project_id,
+                    book_id=command.book_id, generator_operation_name=command.generator_operation_name,
+                    logical_key=command.logical_key)
         with AuthorityUnitOfWork(self.database_url) as uow:
-            if command.repair_of_operation_id:
+            if source_operation_id:
                 uow.cursor.execute(
                     """
                     SELECT input_snapshot, input_snapshot_hash
@@ -2994,7 +3067,7 @@ class StoryPlanningGenerationApplication:
                     WHERE operation_id=%s AND project_id=%s AND workspace_id=%s
                       AND book_id=%s AND generator_operation_name=%s AND logical_key=%s
                     """,
-                    [command.repair_of_operation_id, command.project_id,
+                    [source_operation_id, command.project_id,
                      command.workspace_id, command.book_id,
                      command.generator_operation_name, command.logical_key],
                 )
@@ -3495,16 +3568,18 @@ def _chapter_runtime_projection(candidate: dict[str, Any], *, projection_version
     )
 
     require_chapter_contracts(candidate)
+    if (projection_version == "3.0.0") != (candidate.get("chapter_contract_schema_version") == "chapter-mission-scene.v4"):
+        raise KernelError("CHAPTER_PROJECTION_CONTRACT_MISMATCH", "Current method projection requires its exact Mission contract")
 
     from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
-    if (projection_version == "2.0.0" and uses_work_requirements(candidate)
-            and candidate.get("chapter_contract_schema_version") == "chapter-mission-scene.v3"):
+    if (projection_version in {"2.0.0", "3.0.0"} and uses_work_requirements(candidate)
+            and candidate.get("chapter_contract_schema_version") == ("chapter-mission-scene.v4" if projection_version == "3.0.0" else "chapter-mission-scene.v3")):
         return {
             **candidate,
             "chapter": int(candidate.get("chapter_number") or candidate.get("chapter") or 0),
             "title": str(candidate.get("title") or ""),
             "premise": str(candidate.get("premise") or candidate.get("objective") or ""),
-            "runtime_projection_version": "2.0.0",
+            "runtime_projection_version": projection_version,
             "chapter_function": candidate["primary_function"],
             "chapter_objective": str(candidate.get("objective") or ""),
             "scene_sequence": list(candidate.get("scene_plan") or ()),
@@ -3624,7 +3699,7 @@ def story_planning_generation_definition(
             "repair_candidate_asset_input_allowed": True,
             **(
                 {"repair_result_evidence_input_allowed": True}
-                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0"}
+                if definition_version in {"1.15.0", "1.16.0", "1.17.0", "1.18.0", "1.19.0"}
                 else {}
             ),
             "capability_pack_attempt_snapshot_required": True,

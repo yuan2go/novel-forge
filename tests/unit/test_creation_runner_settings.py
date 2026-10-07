@@ -27,7 +27,7 @@ def test_native_creation_runners_preserve_isolated_object_store_configuration(mo
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **_kw: '' if args[1] == 'status' else 'a' * 40)
     monkeypatch.setattr(runner, 'build_implementation_tree_identity', lambda _root: {'implementation_tree_sha': 'fixture-tree'})
-    monkeypatch.setattr(runner, 'validate_configuration', lambda _values: None)
+    monkeypatch.setattr(runner, 'validate_configuration', lambda _values, **_kwargs: None)
     import psycopg
     connection = SimpleNamespace(execute=lambda _sql: SimpleNamespace(fetchone=lambda: ('isolated_pilot_test',)))
     monkeypatch.setattr(psycopg, 'connect', lambda *_args, **_kw: nullcontext(connection))

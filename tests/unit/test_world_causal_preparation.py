@@ -939,3 +939,80 @@ def test_retained_world_candidate_missing_required_evidence_is_diagnosable_befor
         KernelError, match="WORLD_GENERATION_CANDIDATE_EVIDENCE_INVALID"
     ):
         validate_generated_candidates(raw, WorldProductionPolicy())
+
+
+def test_world_provider_delivers_typed_nested_payload_without_normalizing_invalid_fields():
+    from novel_forge.modules.command_kernel.service import _validate_json_schema as validate
+    from novel_forge.modules.worldbuilding.production_schema import world_transition_payload_schema, decode_world_generation
+    from novel_forge.modules.worldbuilding.dynamics import WorldTransition
+
+    payload = generated_paths()["candidates"][0]["transition"]
+    schema = world_transition_payload_schema()
+    validate(schema, payload)
+    WorldTransition.from_mapping(payload)
+    for key, invalid in [("story_time", "chapter:1:morning"), ("epistemic_basis", "Observed directly"), ("requirements", "Supplies exist")]:
+        damaged = {**payload, key: invalid}
+        with pytest.raises(KernelError):
+            validate(schema, damaged)
+        with pytest.raises(KernelError, match="WORLD_PROVIDER_TRANSITION_INVALID"):
+            decode_world_generation({"candidates": [{"transition": {"payload_json": json.dumps(damaged)}, "preparation_paths": []}]})
+
+
+def test_world_reference_contract_uses_selected_arcs_and_accepted_obligations_only():
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation, world_plan_references
+    from novel_forge.modules.worldbuilding.production_schema import world_generation_schema
+    from novel_forge.modules.worldbuilding.production_planning import WorldProductionPolicy
+
+    source = {"entity_ids": ["faction:caravan", "supply"], "reality": {"current_state": {
+        "narrative_obligation": [{"state": {"obligation_id": "accepted:obligation"}}]}}}
+    command = SimpleNamespace(input_versions={"arc_plans": "selected:arc"},
+        related_arc_plan_version_ids=("selected:character-arc",))
+    refs = world_plan_references(source, command)
+    assert refs == {"arc_refs": ["selected:arc", "selected:character-arc"], "obligation_refs": ["accepted:obligation"]}
+    properties = world_generation_schema(WorldProductionPolicy(),
+        **{key: tuple(value) for key, value in refs.items()})["properties"]["candidates"]["items"]["properties"]
+    for key in refs:
+        assert properties[key]["items"]["enum"] == refs[key]
+        assert properties[key]["maxItems"] == len(refs[key])
+    empty = world_generation_schema(WorldProductionPolicy(), arc_refs=(), obligation_refs=())["properties"]["candidates"]["items"]["properties"]
+    assert empty["obligation_refs"]["maxItems"] == 0
+    candidates = generated_paths()["candidates"]
+    candidates[0]["arc_refs"] = refs["arc_refs"]
+    PlanningWorldPreparation._validate_references(source, candidates, command)
+    candidates[0]["arc_refs"].append("visible-but-unselected:arc")
+    with pytest.raises(KernelError, match="WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN"):
+        PlanningWorldPreparation._validate_references(source, candidates, command)
+
+
+def test_retained_blocked_world_plan_preserves_exact_json_identity_after_storage():
+    from novel_forge.modules.story_planning_runtime.world_preparation import require_exact_blocked_plan, blocked_candidate_diagnostic
+    from novel_forge.modules.worldbuilding.production_planning import compile_world_plan, WorldProductionPolicy
+
+    generated = generated_paths()
+    generated["candidates"][0]["preparation_paths"] = []
+    judged = evaluation()
+    judged["evaluations"][0]["preferred_path_id"] = ""
+    plan = compile_world_plan(reality=reality_state(), generated=generated, evaluation=judged,
+        policy=WorldProductionPolicy(), chapter_number=2, intent_version_id="intent:v1")
+    assert plan["disposition"] == "BLOCKED"
+    candidate = plan["candidate_futures"][0]
+    assert "transition_id" not in candidate
+    diagnosis = blocked_candidate_diagnostic(candidate)
+    assert diagnosis["transition_id"] == candidate["transition"]["transition_id"]
+    assert diagnosis["unmet_requirements"] == [dict(item) for item in candidate["requirements"] if not item["satisfied"]]
+    assert diagnosis["unmet_requirements"]
+    stored = json.loads(json.dumps(plan))
+    assert plan != stored
+    require_exact_blocked_plan(plan, stored)
+    stored["candidate_futures"][0]["requirements"][0]["value"] += 1
+    with pytest.raises(KernelError, match="WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT"):
+        require_exact_blocked_plan(plan, stored)
+
+
+def test_legacy_rejection_and_typed_transition_cannot_conflict_in_diagnostic():
+    from novel_forge.modules.story_planning_runtime.world_preparation import blocked_candidate_diagnostic
+    rejection = {"code": "WORLD_REALITY_CAUSE_UNKNOWN", "message": "Unknown cause"}
+    assert blocked_candidate_diagnostic({"transition_id": "proposal", "rejection": rejection}) == {"transition_id": "proposal", "rejection": rejection}
+    with pytest.raises(KernelError, match="WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT"):
+        blocked_candidate_diagnostic({"transition_id": "proposal", "transition": {"transition_id": "different"}})

@@ -142,6 +142,71 @@ accepted chapters. Its ceiling is `EXECUTABLE`; real Provider operation, long-fo
 literary quality and strict production certification remain unproven. See the executable
 commands and focused matrix in `docs/runtime-operations.md`.
 
+### Bounded creative recovery contracts
+
+Creative templates v2–v6 are explicit policy successors. They retain authenticated
+membership identity, independent-review requirements, source isolation and strict
+production gates. New Planning dispatch uses the single native `governed_repair`
+admission. `planning-route-repair.v1` retains its frozen lineage-wide allowance;
+`planning-route-repair.v2` binds the authorized v4–v6 policy, exact Provider stage,
+stage ordinal, both ordered input hashes and complete role-to-artifact scope. Its
+two-repair stage limit and four-repair lineage limit are `CONFIGURABLE_POLICY`.
+The global counter never resets across runtime continuation, local result admission
+or World deferral. A stage with no prior native dispatch has no repair receipt; its
+first evaluator uses ordinary admission. Historical `native-planning-repair-evidence` remains readable;
+it does not independently authorize new dispatch.
+
+Planning adds three distinct local recovery boundaries. A trusted local operator may
+admit a valid retained Foundation result using its original Context, Pack, Fence,
+inputs and settled receipt; the result remains `CANDIDATE` / `INELIGIBLE` until the
+ordinary Story Design decision. Mutation-time admission requires every source and
+repair-lineage reservation to be `SETTLED`, settled successful effects and no held
+lease; an unknown cost estimate alone does not invalidate a settled reservation.
+Recovery explicitly records validation contract 1.19 and its new v4 Candidate
+provenance, without rewriting the frozen source request. Input-order or blocked-route continuation requires
+the exact zero-send failure, original role-to-artifact map and route/account evidence;
+it does not replace the separate pre-send capacity path. A complete Codex completion
+rejected only by literal-null interpretation may be revalidated against the original
+frozen schema and process/result hashes without another send. These paths append
+evidence and preserve the original terminal Operation, Effect and costs.
+
+World future preparation is explicitly `REQUIRED`, `OPTIONAL` or `DISABLED` under
+the frozen template. Governed optional deferral records `DEFER` / `NOT_RUN`; it creates
+no accepted World fact. Strict production, accepted preparation commitments and
+independent actor experiments retain their required dependencies. Typed transitions,
+exact Arc/obligation references, causal rejection reproduction, settled Director
+receipts and reuse of the original selected action remain mandatory. Longform Quality
+binds the frozen World Foundation. When its qualification is an independent evaluation,
+the input evidence additionally retains the exact PASS result, native APPROVE receipt
+and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
+that chain.
+
+Chapter 3.9 contracts and Pack 2.26.0/template v11 add versioned scene-core,
+information-flow, delivered-card review, measured length, Canon support and Quality
+corrections. Plan materialization 3.9.16 consumes activated-chapter-plan.v3 and
+projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
+ExecutionIntent; frozen earlier projections keep their original contracts. Known settled pre-prose Memo timeouts may append a Book-owned request
+replacement; failed steps and affected derived Canon/Quality outputs use Command
+Kernel successor journals. The exact live unaccepted Chapter frontier, original actor,
+settled effects, no held lease and no committed downstream state gate each correction.
+Old successful siblings, terminal attempts and fees remain immutable. Canon transport
+preserves nullable canonical schema semantics and validates strictly decoded JSON
+against the host schema. Revalidation does not advance accepted Canon or Narrative
+State; Book acceptance still binds their projections atomically.
+
+Execution-window continuation retains the author deadline, actual child timeout and
+no-progress evidence. Creation checks cancellation, execution lease, deadline and finite
+work bounds before recovery hooks. Book and ChapterGroup coordinate owned references;
+they do not duplicate Chapter Attempt, Lease, Fence or Effect state. Migrations
+0160 (Planning result admission) through 0168 (derived step revalidation) extend
+the published chain after 0159; full identities remain in the migration manifest.
+Foreign or discontinuous migration histories fail before pending migration DDL;
+historical branch ledgers require a separate explicit conversion decision.
+
+The additional recovery projection has a `WIRED` evidence ceiling. Source-bound
+historical results and controlled fixtures do not establish integrated release
+qualification, real Provider execution, literary quality or production operation.
+
 ## Scoped worker approval and local Codex execution
 
 Production composition now freezes model selection through
@@ -184,6 +249,16 @@ literary qualification; production snapshots distinguish `AUTHOR_SUPERVISED_DESI
 `LONGFORM_DESIGN_QUALIFIED`. Native Book control requires author decision boundaries.
 
 Supervised model reviews use the existing semantic Evaluation and Chapter review paths.
+The separate offline pressure diagnostic entry is
+`novel_forge.tools.review_pressure_regression`: paired synthetic probes reuse the
+model-reference status/score-range/findings shape without changing the native panel or
+quality policy. Corpus, transcript, result and independent findings-annotation hashes bind
+its descriptive metrics. It writes caller-owned diagnostic files exclusively, performs no
+Provider or PostgreSQL mutation, and retains a scripted/reconstructed evidence ceiling.
+Current exact native creation grants reject the additional pressure/history inputs;
+real pressure runs and model stability remain NOT_RUN/NOT_PROVEN. Procedures and
+denominator rules are in `docs/runtime-operations.md`.
+
 The Router binds the exact target hash and successful generator Effect: Codex-generated
 targets require DeepSeek review, and DeepSeek-generated targets require Codex review.
 Different accounts or role prompts do not satisfy this policy. Semantic review purpose
@@ -270,7 +345,8 @@ and served model identity. Its group report retains these references and marks t
 dimensions `REFERENCE_CALIBRATED`; Context and Provider JSON cannot assert this status.
 Missing or changed receipts fail closed. Sampling cannot acquire that status or activate
 a global Quality profile. Native reference calibration recognizes the current Chapter
-definition `3.8.0` and recoverable frozen `3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`; other versions remain ineligible.
+semantics `3.9.0` with exact node definition versions, and recoverable frozen
+`3.8.0`/`3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`; unsupported versions remain ineligible.
 Generator feedback now projects independent adjudications of native samples into task-scoped `GENERATOR_SCORE`; Narrative
 operator proxy labels alone cannot qualify a semantic evaluator.
 For a Planning benchmark candidate, native Content annotation version `2.4.0` binds
@@ -1218,7 +1294,8 @@ objective interface limits remain separate hard boundaries. Private author spans
 host-side except for explicitly permitted role/scope projections.
 
 The 2026-10-04 Prompt/Skill audit remains historical diagnostic evidence. Current
-new Planning Pack 2.10.0 uses `story-planning` 1.18.0, `foundation-generation.v3`, BookDesign v7
+new Planning Pack 2.11.0 uses `story-planning` 1.19.0, Prompt v9,
+`foundation-generation.v4`, BookDesign v7
 and work qualification profiles v3. Theme exploration and ending alignment follow selected
 methods; absent choices or closure are evaluated against the coherent chosen alternative,
 with PASS alignment evidence and no repair, not as missing universal requirements.
@@ -1230,13 +1307,20 @@ and UNDETERMINED does not establish that a method is absent. A selected
 requirement or an existing due obligation remains mandatory. Old generation v1,
 BookDesign v5 and historical profile hashes retain their original contracts.
 
-Current work ChapterPlan projection 2.0.0 / activated-chapter-plan.v2 copies only selected
+Planning 1.19.0 binds the six Foundation roles to `foundation-generation.v4`
+and `schema:foundation-provider-output:<role>:v4`; materialized and rendered tasks
+use that exact v4 contract. Only v4 admits RFC 6901 pointers alongside exact JSONPath.
+Planning 1.17/v2 and 1.18/v3 retain all twelve original schema hashes and their
+JSONPath-only readers. Planning 1.18.0 retains Pack 2.10.0 and Prompt v8.
+Current work ChapterPlan projection 3.0.0 / activated-chapter-plan.v3 binds
+`chapter-mission-scene.v4` and `work-v4` Provider schemas with explicit serialized
+scene-core and information-flow decisions. It copies only selected
 Mission/Scene decisions: it cannot fill an absent hook, reward, emotional or suspense
 curve, protagonist charm, antagonist pressure or escalating conflict. Frozen projection
-1.0.0 and Mission/Scene v2 preserve their historical semantics; existing projections
+1.0.0/2.0.0 and Mission/Scene v2/v3 preserve their historical semantics; existing projections
 are reused by immutable source identity.
 
-New Chapter 3.8.0 and Pack 2.12.0/template v9 retain `work-requirements.v1` inputs
+Chapter 3.8.0 and Pack 2.12.0/template v9 retain their frozen `work-requirements.v1` inputs
 and emit `work-quality.v2` evidence. Selected method values reach Draft Plan v3,
 ExecutionIntent and every candidate/review/Quality baseline; statuses alone are not
 a sufficient Writer contract. Fresh 3.8 admission rejects legacy polluted projections

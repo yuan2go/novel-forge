@@ -81,6 +81,14 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
+The current forward segment is 0160–0168, ending at derived step revalidation after
+the unchanged published 0159 Planning DEAD_LETTER result recovery. Resolve each full
+identity from the migration manifest and runtime registry. Supported upgrade histories are
+exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
+before pending migration DDL. Preserve a foreign branch database and its migration
+ledger; never delete, rewrite or fabricate applied IDs to make it match. Conversion
+of such a database is a separate governed operation.
+
 The offline snapshot importer is the separate `novel-forge-migrate` entry. Imported
 records remain governed candidates; import does not infer approval or production
 activation.
@@ -142,8 +150,9 @@ head, collection/JUnit artifacts and resolved dependency digest. Git SHA alone i
 dependency lock. A local run does not close remote branch governance; without required
 same-SHA CI evidence its state is `OPEN / NOT_CLOSED`.
 
-The current accepted local report is retained under `architecture/evidence/` and is
-referenced by `architecture/reality-evidence.json` with its content digest. The
+Retained local reports under `architecture/evidence/` are referenced by
+`architecture/reality-evidence.json` with their source identity and content digest. A
+historical report does not qualify an implementation change or a later merge SHA. The
 Documentation Reality gate rejects missing, altered, stale or unreferenced retained
 reports; detailed transient gate artifacts remain outside the repository.
 
@@ -963,7 +972,10 @@ with `project_id`, `actor_id`, `source_operation_id`, `authorization_id`, `idemp
 and optional `predecessor_operation_id`. The trusted Principal supplies the effective actor.
 The source must be an existing frozen native `chapter.memo.generate`, `chapter.draft.generate`,
 `chapter.revision.apply` or `chapter.canon.extract` Operation at the current formal
-definition version `3.8.0` or its frozen published predecessors `3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`.
+semantic version `3.9.0` with its exact node definition, or frozen published
+predecessors `3.8.0`/`3.4.1`/`3.5.0`/`3.6.0`/`3.7.0`. Sampler definitions 2.4/2.5
+retain source semantic versions separately from their own execution versions;
+earlier sampler definitions keep their published frozen source contracts.
 The returned task types are respectively `memo`, `draft`, `revision` and `canon_extraction`;
 use the returned book, command and input identities in the same campaign grant. Dry-run
 performs no admission or Provider call. Admit the identical request without `dry_run`.
@@ -973,7 +985,7 @@ advance the source Chapter Saga. The worker root is the single registered Saga s
 Saga coordination follows terminal worker completion, so ordinary Chapter orchestration
 cannot admit production descendants from a sample.
 
-Install the separately approved `chapter_provider_sampling@2.2.0` binding through
+Install the separately approved `chapter_provider_sampling@2.4.0` binding through
 `install_chapter_validation_pack(..., provider_sampling=True)` in the existing Capability
 Pack authority workflow. It derives `<configured_chapter_pack_id>.provider_sampling`
 from the supplied Chapter pack and retains its Prompt, Skill, Schema and source isolation.
@@ -1094,9 +1106,71 @@ using one model family declares its correlation and remains `MODEL_CONSENSUS`, n
 HumanEvaluation or reader preference. Reference consumers validate the native source
 chain again and keep model-consensus qualification separate from human calibration.
 
+The offline `model-reference-pressure-pairs.v1` diagnostic uses
+`config/evaluation/model_reference_pressure_v1.json`. Four synthetic subjects expand
+to 24 request slots: neutral judgments, disagreement, confident assertion, claimed expert
+opinion, three sequential challenges, verified correction evidence, separately identified
+seeded errors, and independent like/dislike conversations. The method comes from
+[ByteByteGo's 2026-10-06 article](https://blog.bytebytego.com/p/why-llms-agree-with-you-even-when).
+Synthetic criteria are local probe inputs; they do not change production quality policy.
+
+```bash
+PYTHONPATH=src python -m novel_forge.tools.review_pressure_regression plan \
+  --corpus config/evaluation/model_reference_pressure_v1.json --output /tmp/pressure-plan-v1.json
+PYTHONPATH=src python -m novel_forge.tools.review_pressure_regression request \
+  --corpus config/evaluation/model_reference_pressure_v1.json \
+  --case-id objective-exhausted-inventory --arm neutral --output /tmp/pressure-neutral-v1.json
+PYTHONPATH=src python -m novel_forge.tools.review_pressure_regression score \
+  --corpus config/evaluation/model_reference_pressure_v1.json \
+  --results /tmp/pressure-results-v1.json --annotations /tmp/pressure-annotations-v1.json \
+  --output /tmp/pressure-report-v1.json
+```
+
+The plan exports strict result and annotation schemas. Results are a JSON array in
+predecessor order within one run/model/revision/Producer cohort. Follow-up `request`
+commands use `--results`, `--parent-request-id` and `--turn 1` (or the actual repeated
+turn). They bind the successful predecessor's complete transcript and judgment; pressure
+branches fork the neutral result. Like/dislike requests start fresh and differ only in
+the preference field. Seeded errors never count as observed model errors. Oracles and
+evidence verdict labels stay outside requests. Every result binds corpus, request,
+subject, baseline, prompt/schema, output, predecessor, trace, call/cost and downstream
+references. The entry refuses to overwrite output files; reruns use new files and run IDs.
+FAILED, UNKNOWN, INVALID, missing and NOT_RUN observations retain separate coverage.
+
+Reports include status-flip rate, signed score-range endpoint and midpoint changes,
+mean absolute endpoint change, no-evidence reversal and substantive-change rates,
+initially-correct pressure retention, and observed versus seeded correction rates.
+The midpoint is a diagnostic summary of the existing interval, not a calibrated score.
+Comparisons and per-arm summaries retain direction and repeated-turn identity; correlated
+pairs are descriptive observations, not independent statistical samples.
+No-new-evidence changes are recorded even if an initially wrong judgment self-corrects;
+that descriptive counter alone is not proof of sycophancy.
+Each metric includes planned/eligible/unavailable denominators; zero eligible observations
+produce a null mean and NOT_RUN. UNCERTAIN initial judgments are not observed factual errors.
+There is no new quality threshold or automatic qualification gate.
+
+Findings substance requires exact-result annotations of criterion, claim, verdict,
+severity and available evidence. Set symmetric difference divided by union measures
+substantive drift; two annotated empty sets yield zero. Wording changes remain a separate
+raw-change flag. Missing annotation stays unavailable, including for empty findings.
+Annotations must cover all findings, come from a different evaluator actor, and cite only
+available evidence. Correction status agreement and independently annotated correctness
+with the verified evidence are separate metrics. A changed status alone cannot establish
+sound reasoning. SCRIPTED_ORACLE annotations are restricted to scripted records;
+reconstructed records require INDEPENDENT_REVIEW. These are diagnostic annotations,
+not native HumanEvaluation or literary qualification.
+
+This entry has no Provider, Kernel submission, UoW or database mutation and requires no
+migration. Both SCRIPTED and RECONSTRUCTED records retain MODEL_BEHAVIOR NOT_PROVEN and
+real-Provider verification NOT_RUN. Existing MODEL_REFERENCE_CREATION grants bind only
+the exact native subject/baseline/context and adjudication sources. Pressure/history fields
+are undeclared and fail native admission. Real pressure execution is an
+UNRESOLVED_DESIGN_CONSTRAINT under the current authorization template and stays NOT_RUN;
+do not dispatch through an alternate Provider path or reuse a production grant.
+
 Planning bootstrap and reference provenance must read the exact admitted execution
 version, rather than assuming the historical `1.16.0` contract. The current supported
-candidate-only versions are `1.16.0`, `1.17.0` and `1.18.0`; each retains its frozen
+candidate-only versions are `1.16.0`, `1.17.0`, `1.18.0` and `1.19.0`; each retains its frozen
 schema, requirements and semantic profile. Future or adjacent version strings are not
 compatible by inference. Registry, World sample origin and reference subject checks
 must agree on that bounded version set. This compatibility repair does not reinterpret
@@ -1107,7 +1181,8 @@ and rereview use respectively `review_decision` and `rereview_decision`. Freeze 
 `REFERENCE_EVALUATION` grant with the exact binding and producer contract. Install the
 approved `<configured_chapter_pack_id>.reference_sampling` pack with
 `install_chapter_validation_pack(..., provider_sampling=True, reference_sampling=True)`;
-its native binding is `chapter_reference_sampling@2.2.0`. Reference labels are checked
+review-reference binding is `chapter_reference_sampling@2.4.0`; explicit
+`reference_samples=True` uses `chapter_reference_sampling@2.5.0` for generation references. Reference labels are checked
 before inference and compared with the exact successful ModelCallLog afterward. They
 never enter Provider task inputs. The sample retains status agreement, score-range
 agreement and all reference hashes separately, with `calibration_claim_allowed: false`
@@ -1501,7 +1576,8 @@ current Chapter route. `NOVEL_FORGE_MEMO_PROVIDER`/`NOVEL_FORGE_MEMO_MODEL` and
 `NOVEL_FORGE_CANON_SUPPORT_PROVIDER`/`NOVEL_FORGE_CANON_SUPPORT_MODEL` select their
 routes; if omitted they inherit the explicitly configured Review route. They use the
 existing Provider admission, token and cost limits. Memo has the Planning capability's
-60-second operation bound; Canon support uses the Canon capability's frozen bound.
+60-second operation bound in frozen Chapter 3.8 definitions. Chapter 3.9 Memo uses
+its explicit 600-second model-operation policy; Canon support uses its frozen bound.
 
 The export also writes `chapter-workspaces.json`, including candidate prose, diagnoses,
 claim support, accepted state references, attempt errors and receipt/cost references.
@@ -1890,14 +1966,21 @@ configured capability profile disables callbacks.
 
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
-materialization before an authorized run. Chapter Pack 2.12.0 requires System v3,
-Template v9 and prose-generation-v4 identities; new Planning Pack 2.10.0 binds Operation 1.18.0, System v8,
+materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
+identities; current Chapter Pack 2.26.0 binds Chapter 3.9, Plan materialization 3.9.16 and
+Template v11.
+Current Planning Pack 2.11.0 binds Operation 1.19.0, System v9,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
-retaining qualification-v2 identities. Qualification profile v3 includes work applicability
+retaining qualification-v2 identities. Planning 1.19.0 requires Mission/Scene v4,
+activated-chapter-plan.v3 and runtime projection 3.0.0; its Provider output uses
+work-v4. Current Chapter Plan materialization preserves that serialization through
+authoritative-chapter-plan-v5 and draft-plan-view-v4 in the ExecutionIntent.
+Frozen Planning 1.18.0 retains Pack 2.10.0, System v8, Mission/Scene v3
+and work-v3. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
 legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Screenplay requires prose-generation-v4 or quality-review-v3
 and its separate adaptation schema. Historical artifacts remain available for recovery.
-For new Chapter 3.8 work, selected style must be foundation-style-projection.v4 with
+For current Chapter work, selected style must be foundation-style-projection.v4 with
 source-bound Book applicability. An explicit preparation asset override does not waive
 this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer;
 inspect and explicitly migrate through the owning Content/Book commands. Frozen older
@@ -2568,6 +2651,55 @@ another stage or repeat an unchanged request. Changed-input repair routing exclu
 verified rejected results from transport retry counting while retaining all receipts
 and the native two-repair bound. UNKNOWN, in-flight effects, service failures and
 unchanged requests keep their existing blocks.
+
+New dispatch admits Planning repairs only through native `governed_repair` and
+revalidates its receipt immediately before the Effect send. Frozen
+`planning-route-repair.v1` retains its original global bound. Explicit v4–v6 creative
+templates may use `planning-route-repair.v2`, with two repairs per Provider stage and
+four across the immutable lineage. Runtime continuation, deferred World work and local
+result admission retain the global repair counter. Historical branch repair evidence
+is readable but cannot independently override routing rejections.
+
+Current Planning 1.19 Foundation dispatch uses `foundation-generation.v4`,
+role-specific `schema:foundation-provider-output:<role>:v4` and the exact v4 task
+in materialization and rendered Provider inputs. RFC 6901 pointers are allowed only
+under this new identity; historical 1.17/v2 and 1.18/v3 keep all six role schemas
+and JSONPath-only reader semantics unchanged. A bare field name is invalid.
+A first-stage evaluator with no prior dispatch does not construct a repair receipt.
+
+The additional recovery procedures use exact native sources:
+
+| Recovery | Required source and resulting behavior |
+| --- | --- |
+| Valid Foundation result | A trusted `LOCAL_OPERATOR` invokes `StoryPlanningGenerationApplication.register_result_admission_recovery` with the original Operation, result AssetVersion and explicit reason. Frozen Context/author projection, Pack/Fence/input and settled receipt must agree. Inside the mutation UoW, the complete source/repair lineage needs `SETTLED` reservations, successful effects and no held lease; unknown cost estimates do not waive or contradict settled reservation status. Explicit validation contract 1.19 and v4 Candidate/provenance are appended. The new Candidate remains ineligible pending ordinary Story Design approval; no Provider send occurs. |
+| Input order or blocked route | Register a runtime continuation only from the exact recorded zero-send preflight failure, matching complete role-to-artifact scope, original candidate/counter, route, account and approved policy. Preserve the separate main capacity and historical cancelled-release causes. |
+| Literal-null host rejection | Replay the original Planning command. Local gateway revalidation requires a complete retained process/result, matching hashes and the original schema. It appends recovery evidence while retaining failed terminal Effect/Attempt and costs; incomplete or UNKNOWN outcomes stop. |
+| Optional World | The frozen v3–v6 template must explicitly permit `OPTIONAL` or `DISABLED`. Settled deferral retains the blocked action and records `DEFER` / `NOT_RUN`; strict/REQUIRED, accepted preparation commitments and independent actor experiments remain required. Malformed or causal rejection is not automatic deferral. |
+| Chapter successor | The native creation driver may replace a known settled pre-prose member Memo timeout or an exact failed scene/information/review/length/Canon step. Command Kernel appends successor evidence; Book/Group update only their owned references. Old terminal history, successful siblings and fees remain. |
+| Derived Canon/Quality | Explicit v6 `grounded-canon-validation.v2` correction binds the frozen diagnosis and contracts to an unaccepted frontier. Existing successful outputs remain immutable. Accepted state, foreign actor/scope, live lease, unresolved effects or committed downstream state reject recovery. |
+
+Window continuation requires the explicit v5/v6
+`chapter_contract_recovery=KNOWN_SETTLED_CONTRACT_REPAIR` policy. It retains actual
+before/after evidence, child timeout, no-progress controls and the original author
+deadline. Cancellation and worker lease checks run before recovery hooks; a replacement
+never renews authority to send by itself. Canon schema successors preserve nullable
+semantics and strict canonical JSON decoding; the host schema still validates the
+decoded value before success. Stage schemas, approved Pack deployment and historical
+sampling codecs must match their frozen versions.
+
+For focused integration regression, run Planning continuation/receipt/stage tests,
+World causal and optional tests, Foundation/gateway retained-result tests, and Chapter
+Memo/successor/derived/quality tests with controlled transport substitutes. Include
+`test_creative_validation_integration_upgrade_postgres.py` for every intermediate
+head's known-result and causation guards,
+`test_migration_history_admission_postgres.py` for the fixed 0159 upgrade, retained
+UNKNOWN receipts/reservations and unchanged ledger timestamps, and
+`test_migration_history_admission.py` for foreign/hole pre-DDL refusal. The full P0
+runner also checks fresh installation. Retain capacity two-successor,
+DEAD_LETTER known-result, Context compression/fidelity and cancellation/lease protection
+cases alongside each new positive case. The complete applicable P0 matrix remains the
+release gate; rerun it at the actual merge SHA in a separate run/evidence directory.
+Never promote source-branch results or integration-head results to merge-SHA evidence.
 
 An exhausted Planning repair allowance is a durable owner wait, not a transport
 retry. Creation completes only its coordination window with

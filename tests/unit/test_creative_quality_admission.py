@@ -60,3 +60,38 @@ def test_independent_quality_groups_continue_while_required_sibling_waits():
     children[blocked]["status"] = "FAILED_FINAL"
     children[ready]["status"] = "READY"
     assert scheduler._current_or_next(children) == (blocked, children[blocked])
+
+
+def test_internal_disposition_repairs_real_semantic_failure_without_certification():
+    from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
+    from novel_forge.modules.revision.domain import freeze_quality_edit_scope
+    reports=groups()
+    row=reports[0]['dimensions'][0]
+    row.update(semantic_verdict='FAILED',target_asset_version_id='draft',evidence_locations=[{'start':0,'end':2,'quote':'重复'}])
+    admission=assess_internal_quality(groups=reports,target='draft',disposition_version=2)
+    assert admission['status']=='BLOCKED' and admission['strict_certification_eligible'] is False
+    actions=internal_required_actions(admission=admission,evidence_reports=[row],target='draft')
+    assert len(actions)==1 and actions[0]['required_action']=='LOCAL_REPAIR'
+    scope=freeze_quality_edit_scope(revision={'text':'重复，但还需要保留的正文。'},revision_asset_version_id='draft',quality={'evidence_reports':[row]},action=actions[0])
+    assert scope['status']=='LOCATED' and scope['permitted_ranges']==[{'start':0,'end':2,'quote':'重复'}]
+    assert not scope['whole_chapter_edit_authorized']
+    row['provider_verified']=False
+    assert internal_required_actions(admission=admission,evidence_reports=[row],target='draft')[0]['required_action']=='EVIDENCE_REASSESSMENT'
+
+
+def test_missing_evidence_disposition_cannot_authorize_prose_rewrite():
+    from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
+    reports=groups()
+    row=reports[0]['dimensions'][0]
+    row.update(semantic_verdict='INSUFFICIENT_EVIDENCE',target_asset_version_id='draft')
+    admission=assess_internal_quality(groups=reports,target='draft',disposition_version=2)
+    action=internal_required_actions(admission=admission,evidence_reports=[row],target='draft')[0]
+    assert action['required_action']=='EVIDENCE_REASSESSMENT' and action['permitted_change_scope']=='EVIDENCE_ONLY'
+
+
+def test_internal_v2_cannot_promote_fixture_claims_to_real_assessment():
+    reports=groups()
+    row=reports[0]['dimensions'][0]
+    row.update(fixture=True,calibration_status='FIXTURE_UNCALIBRATED')
+    result=assess_internal_quality(groups=reports,target='draft',disposition_version=2)
+    assert result['status']=='BLOCKED' and row['dimension'] in result['blocked_dimensions']

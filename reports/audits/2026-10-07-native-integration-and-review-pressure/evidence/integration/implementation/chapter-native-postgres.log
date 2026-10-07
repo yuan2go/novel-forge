@@ -1,0 +1,31 @@
+F
+=================================== FAILURES ===================================
+_ test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts _
+tests/integration/test_synthesis_formation_postgres.py:2129: in test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+    test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,
+tests/integration/test_synthesis_formation_postgres.py:147: in test_native_formation_generates_foundation_from_author_brief
+    template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled,contract_recovery=scene_information_recovery or review_knowledge_recovery or length_scope_recovery)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/creative_validation_production_support.py:64: in prepare_native_template
+    install_chapter_validation_pack(DATABASE_URL, repository_root=Path(__file__).resolve().parents[2],
+src/novel_forge/modules/capability_packs/validation_deployment.py:192: in install_chapter_validation_pack
+    return _install_validation_manifest(
+src/novel_forge/modules/capability_packs/validation_deployment.py:482: in _install_validation_manifest
+    compilation = _pack_command(
+src/novel_forge/modules/capability_packs/validation_deployment.py:639: in _pack_command
+    return app.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:496: in execute
+    prepared = self._prepare(command)
+               ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:567: in _prepare
+    return self._prepare_compilation(command)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:608: in _prepare_compilation
+    ).load(
+src/novel_forge/modules/capability_packs/operation_catalog.py:229: in load
+    raise KeyError(
+E   KeyError: 'operation definition not found: chapter.canon.extract@3.9.7'
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 4.44s

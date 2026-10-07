@@ -1,0 +1,63 @@
+{
+  "checked": 4,
+  "collections": [
+    {
+      "collected_file_count": 25,
+      "complete_collection": true,
+      "count": 110,
+      "name": "architecture",
+      "qualification_class": "BACKEND_NON_POSTGRESQL",
+      "source_file_count": 25
+    },
+    {
+      "collected_file_count": 305,
+      "complete_collection": true,
+      "count": 4165,
+      "name": "unit",
+      "qualification_class": "BACKEND_NON_POSTGRESQL",
+      "source_file_count": 305
+    },
+    {
+      "collected_file_count": 1,
+      "complete_collection": true,
+      "count": 2,
+      "name": "acceptance",
+      "qualification_class": "BACKEND_NON_POSTGRESQL",
+      "source_file_count": 1
+    },
+    {
+      "collected_file_count": 158,
+      "complete_collection": true,
+      "count": 1072,
+      "name": "integration",
+      "qualification_class": "POSTGRESQL_REQUIRED",
+      "source_file_count": 158
+    }
+  ],
+  "kind": "tests",
+  "reality": {
+    "classification_file_counts": {
+      "CURRENT_AUTHORITY_BOUNDARY": 19,
+      "CURRENT_DOMAIN_INVARIANT": 128,
+      "CURRENT_RUNTIME_CONTRACT": 151,
+      "FIXTURE_PROTOCOL": 139,
+      "HISTORICAL_REDUNDANT": 0,
+      "MIGRATION_COMPATIBILITY": 27,
+      "QUALIFICATION_INFRASTRUCTURE": 24,
+      "RETIREMENT_GUARD": 1
+    },
+    "classification_test_counts": {
+      "CURRENT_AUTHORITY_BOUNDARY": 84,
+      "CURRENT_DOMAIN_INVARIANT": 985,
+      "CURRENT_RUNTIME_CONTRACT": 838,
+      "FIXTURE_PROTOCOL": 1334,
+      "HISTORICAL_REDUNDANT": 0,
+      "MIGRATION_COMPATIBILITY": 119,
+      "QUALIFICATION_INFRASTRUCTURE": 170,
+      "RETIREMENT_GUARD": 4
+    },
+    "test_definition_count": 3534,
+    "test_file_count": 489
+  },
+  "status": "PASS"
+}

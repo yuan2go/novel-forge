@@ -1,0 +1,3741 @@
+{
+  "base_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "candidate_sha": "cc85a91b9ccfb3b700b39134c07e7931a3efd8d3",
+  "candidate_tree": "84a0aa0efe2f56f58053291840ddd3484140198c",
+  "implementation_identity": "sha256:1a8d8a9e564a78593064a8398a3d78cfe2101ffcb1565bf6e69c477e6aa3d499",
+  "changed_path_count": 171,
+  "original_pr133_changed_paths_retained_count": 120,
+  "additional_changed_path_count": 51,
+  "unchanged_original_pr133_path_count": 12,
+  "all_changed_paths_attributed": true,
+  "records": [
+    {
+      "path": "architecture/manifests/ai-instruction-manifest.yaml",
+      "fixed_main": {
+        "git_blob": "ccbaf0162e7952b299f06e20b78b64f3f598b688",
+        "sha256": "a81be65db07419e44014b76a452b951bcdb9bf3b407b7509685b40fd5b71d685",
+        "bytes": 3344
+      },
+      "fixed_pr133": {
+        "git_blob": "58fd6e4cfcff09cb22af7970f26b9f918f247acf",
+        "sha256": "8da376893636f64642426280df9fd8bdc7cc78b146c57b3e311bbb2dd2b07c44",
+        "bytes": 3496
+      },
+      "final_candidate": {
+        "git_blob": "7478a146c6aa8bd4d2843bc44b810e027c43e9cb",
+        "sha256": "1a39e9742937dccf45f44e461652dbca7eb38e4bd8e97efa149721a77cd154d0",
+        "bytes": 3496
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/manifests/backend-qualification-manifest.yaml",
+      "fixed_main": {
+        "git_blob": "1984937cb4abffda1f648075aba19df3fa12cefb",
+        "sha256": "a879fe555e5fead30490991ceaa263a8b0ece6107d1992b5c84867618975344a",
+        "bytes": 8933
+      },
+      "fixed_pr133": {
+        "git_blob": "1984937cb4abffda1f648075aba19df3fa12cefb",
+        "sha256": "a879fe555e5fead30490991ceaa263a8b0ece6107d1992b5c84867618975344a",
+        "bytes": 8933
+      },
+      "final_candidate": {
+        "git_blob": "bde52dadc755fa34c7874c359ca98f4d1243d64c",
+        "sha256": "d6cee41bad92ceb2c764ac9c2e0ba5eb4810d5df9a0250fd8631f9f45b8e5b11",
+        "bytes": 10224
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/manifests/historical-reality-policy.yaml",
+      "fixed_main": {
+        "git_blob": "a07d5481c0324e184a78577c879345599710ef30",
+        "sha256": "b4b6d390320b68ec6366e0a5bf49a2b748d0e15ef09b66669cc21b33da507bb1",
+        "bytes": 6884
+      },
+      "fixed_pr133": {
+        "git_blob": "a07d5481c0324e184a78577c879345599710ef30",
+        "sha256": "b4b6d390320b68ec6366e0a5bf49a2b748d0e15ef09b66669cc21b33da507bb1",
+        "bytes": 6884
+      },
+      "final_candidate": {
+        "git_blob": "c85bef97f712dc7d03fcf8a438ab8bc9201d872e",
+        "sha256": "cae4cf919773b796037f100d1e15de5fbd404ba659d29b3908b83e4f81af3aaf",
+        "bytes": 6928
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/manifests/migration-manifest.yaml",
+      "fixed_main": {
+        "git_blob": "99bca63f52f9fcb001f0c36fb9f28ad213d94736",
+        "sha256": "5971ecfd433f616b5610c67e29663c0a61570283b69ead79bd4810cea067f280",
+        "bytes": 7895
+      },
+      "fixed_pr133": {
+        "git_blob": "aa4f8fe5ab2ee392d1403a45fcfc62f2a2b28f61",
+        "sha256": "2b8df2bd84062dbdcdc495ed8ca1e52b2d4f95bf8eeb95c1a915534660000567",
+        "bytes": 8153
+      },
+      "final_candidate": {
+        "git_blob": "2d31d54f97f4413e660e40201f161ba9c166a86e",
+        "sha256": "c4fcfa867b6dcf7742f0432e30b5808c0650411646a29fa65f99a8a3045c4079",
+        "bytes": 8311
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/manifests/production-entry-manifest.yaml",
+      "fixed_main": {
+        "git_blob": "1bb136d734dad855cfc3f308008b154bb653f101",
+        "sha256": "98928b60e013aa7575aebb390c938897555a3ed540deb0c26e2d43bd7d44024e",
+        "bytes": 17744
+      },
+      "fixed_pr133": {
+        "git_blob": "1bb136d734dad855cfc3f308008b154bb653f101",
+        "sha256": "98928b60e013aa7575aebb390c938897555a3ed540deb0c26e2d43bd7d44024e",
+        "bytes": 17744
+      },
+      "final_candidate": {
+        "git_blob": "a314282e34dfd293cfaf45eb1d0525e57c088ed2",
+        "sha256": "f2b6c4b09dc89dc254210fcab20000c08a673aabcaccf61161c990a1f2a76790",
+        "bytes": 19338
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/manifests/test-manifest.yaml",
+      "fixed_main": {
+        "git_blob": "ec78d87b2cd80fb58b23b9152e36f8702af1befb",
+        "sha256": "bcb6142b488a319811fa600007b87ab978679d7f7917def0dcb7910b5fe25d2d",
+        "bytes": 48465
+      },
+      "fixed_pr133": {
+        "git_blob": "ef4f940ea695142844fd11c8ef9a494ea93b39f4",
+        "sha256": "98ea85111f64d7106d1435b9efa0cea01de2c1557b94b9ff96cefcb94fa44890",
+        "bytes": 47504
+      },
+      "final_candidate": {
+        "git_blob": "f04e1de3a08ada5faeaae50fb826e932960c4d83",
+        "sha256": "c500805589f622b830cdd321c32f261897de5f5442803bc74e62f6acb152db0f",
+        "bytes": 51995
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "fixed_main": {
+        "git_blob": "576af5afa475fc319a0183befa490ce67814b5ef",
+        "sha256": "3370da777bf5cae745c344351b376644077cb9ecd7a2fd69c6dbbf838dd1209f",
+        "bytes": 11394
+      },
+      "fixed_pr133": {
+        "git_blob": "576af5afa475fc319a0183befa490ce67814b5ef",
+        "sha256": "3370da777bf5cae745c344351b376644077cb9ecd7a2fd69c6dbbf838dd1209f",
+        "bytes": 11394
+      },
+      "final_candidate": {
+        "git_blob": "b77f339cfe2c5932f063330817c63ca8d6fcd122",
+        "sha256": "fd303e90fa35557e0f7fc0dec914729e050cb7fd9a7c33b42e84e8a681543cae",
+        "bytes": 11998
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "reviewed_existing_proposal_current_checkpoint"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "fixed_main": {
+        "git_blob": "55d8c1ed422754063864052ddc0ecd5647535ed8",
+        "sha256": "943bd31bd035fe54529efb80a9dc550a61a4bf9cb95c54f8590108f9e3c627b2",
+        "bytes": 40180
+      },
+      "fixed_pr133": {
+        "git_blob": "55d8c1ed422754063864052ddc0ecd5647535ed8",
+        "sha256": "943bd31bd035fe54529efb80a9dc550a61a4bf9cb95c54f8590108f9e3c627b2",
+        "bytes": 40180
+      },
+      "final_candidate": {
+        "git_blob": "e7f1b06929d63447b09e912485194b6661f1a757",
+        "sha256": "e09abd42db5b4d5e97c827d56ee6c46509ee00838208990a0a24dc2d5d7b87dc",
+        "bytes": 41327
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "reviewed_existing_proposal_current_checkpoint"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "fixed_main": {
+        "git_blob": "87d6436583e75bbe65ec10ded8be453e75329c1c",
+        "sha256": "05e3e3921bf75866c28dc8bc00fba6375adbc26408b0ea8178a4a92780d1791c",
+        "bytes": 37643
+      },
+      "fixed_pr133": {
+        "git_blob": "87d6436583e75bbe65ec10ded8be453e75329c1c",
+        "sha256": "05e3e3921bf75866c28dc8bc00fba6375adbc26408b0ea8178a4a92780d1791c",
+        "bytes": 37643
+      },
+      "final_candidate": {
+        "git_blob": "66fd3a30986c31179a624379d774348c716533e4",
+        "sha256": "89a42b3e38440c3bde7b999bc897d8eb8fa678db31f208d6233036a98a033745",
+        "bytes": 38135
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "reviewed_existing_proposal_current_checkpoint"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+      "fixed_main": {
+        "git_blob": "52195b3bdbd63f4f3eb955acccc9c1f8f1fe40e1",
+        "sha256": "45be4198de21823db0a18f324987ecf695a3afeaa0a1f3a30b601de616eababa",
+        "bytes": 50844
+      },
+      "fixed_pr133": {
+        "git_blob": "52195b3bdbd63f4f3eb955acccc9c1f8f1fe40e1",
+        "sha256": "45be4198de21823db0a18f324987ecf695a3afeaa0a1f3a30b601de616eababa",
+        "bytes": 50844
+      },
+      "final_candidate": {
+        "git_blob": "2292d0cb5c931b8db38aec18d5d1c81c46c57e6c",
+        "sha256": "d0b855680d3209b3bfa56c96693afdbcdb82969f163dd6c099ef71d4ad832774",
+        "bytes": 50912
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "reviewed_existing_proposal_current_checkpoint"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "architecture/reality-evidence.json",
+      "fixed_main": {
+        "git_blob": "03e41a73aa754850520be6dbf9e92f56a2d9d498",
+        "sha256": "957c77f5b69df69fb77bd53c8db85b4999d65eba81a25a6522cddbd51ed7aefd",
+        "bytes": 437866
+      },
+      "fixed_pr133": {
+        "git_blob": "bd3a0a115e91a2dfd79b98d85ace6d3b9f218f53",
+        "sha256": "e0ae1d0104fb8ae99d10e02ca19e821ca48d9e496a20639fe04fa60eff16d592",
+        "bytes": 439562
+      },
+      "final_candidate": {
+        "git_blob": "1bb7a1001fa71521591cc8a1b540217c01e1dbdc",
+        "sha256": "3e0331e5ab3f40a63e11f39c247b40e0e92a5a8a8c084a7cc03234efa271ee89",
+        "bytes": 455348
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+      "fixed_main": {
+        "git_blob": "4f631520ac50bda967b4df8087a648e2be62ad6f",
+        "sha256": "af033d4429edb26545b4348dc218b5606b9a837c186017b7a5189c6c70790479",
+        "bytes": 43014
+      },
+      "fixed_pr133": {
+        "git_blob": "5a702e96e89f5a3f15824bbeecd9255cb05dd16f",
+        "sha256": "c08e58965e876c007648112f9dddb8c161938ddd813dc73385475ba53aa1b446",
+        "bytes": 44509
+      },
+      "final_candidate": {
+        "git_blob": "5a702e96e89f5a3f15824bbeecd9255cb05dd16f",
+        "sha256": "c08e58965e876c007648112f9dddb8c161938ddd813dc73385475ba53aa1b446",
+        "bytes": 44509
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v10.md",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "86c927971c2c9c1e3ff96ace2157fca32b823708",
+        "sha256": "d2399264315aabfa5e75b341d2316c015effaf6562b7044555ede5668e5323d1",
+        "bytes": 1548
+      },
+      "final_candidate": {
+        "git_blob": "86c927971c2c9c1e3ff96ace2157fca32b823708",
+        "sha256": "d2399264315aabfa5e75b341d2316c015effaf6562b7044555ede5668e5323d1",
+        "bytes": 1548
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v11.md",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "b0dfe417237280a6408d8d74540a2256fa66de91",
+        "sha256": "b60d5af0af82787a8cbf692817068f244e2bcb42012d0c2e007c6bc38d6593b1",
+        "bytes": 1793
+      },
+      "final_candidate": {
+        "git_blob": "b0dfe417237280a6408d8d74540a2256fa66de91",
+        "sha256": "b60d5af0af82787a8cbf692817068f244e2bcb42012d0c2e007c6bc38d6593b1",
+        "bytes": 1793
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction_v9.md",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "41efeaa56e89c76f4cc5abd5c1c2508b3e7b2b7b",
+        "sha256": "b6e7113f13e17c0d3d2ca63a8b7f6163e65a59cf0d02abbe3413d390e529670d",
+        "bytes": 7889
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "config/capability_packs/chapter_generation_pack.json",
+      "fixed_main": {
+        "git_blob": "9ce60c088657a766f8aa9d0591054eec3522c8b9",
+        "sha256": "e86a961ed2113bb5707f0c385993bb31a2607e569d01c3234944fb4840b62631",
+        "bytes": 34707
+      },
+      "fixed_pr133": {
+        "git_blob": "f4cccf547f1c2d7fbbc62651e23edd92633cebef",
+        "sha256": "309ad5b2eb018265eeeb5887caf843460705e61afa0f1592f6bf9cd5ebebcf75",
+        "bytes": 34738
+      },
+      "final_candidate": {
+        "git_blob": "7e801ab50c8ae664bd3235443ccac8e98d0e3f3b",
+        "sha256": "dee46d963d9b68cb79138b91bb05e5fac5e3e43c4efab6b249b1e3051082efc8",
+        "bytes": 34739
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "config/execution_templates/creative_validation.json",
+      "fixed_main": {
+        "git_blob": "95acc22e51b324446406c54ff87d4026bd0235d0",
+        "sha256": "d5f0bb3ddeb531e730c14a83988499be7dd5725558b32d10225c6319d2fa64aa",
+        "bytes": 381
+      },
+      "fixed_pr133": {
+        "git_blob": "2481364087591f9f15214076e99dcdb61548cd6a",
+        "sha256": "f57cd0c8d42192216f60911153c61571d09047a92d735a034bdab5d09b16d54b",
+        "bytes": 652
+      },
+      "final_candidate": {
+        "git_blob": "2481364087591f9f15214076e99dcdb61548cd6a",
+        "sha256": "f57cd0c8d42192216f60911153c61571d09047a92d735a034bdab5d09b16d54b",
+        "bytes": 652
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "docs/current-system.md",
+      "fixed_main": {
+        "git_blob": "6a0d448dfa97122ff2ca725fcf531f6aab3d672e",
+        "sha256": "51f13f5b8993655f56380be12452907973900e6b21bcd28101d2061b1530f703",
+        "bytes": 155991
+      },
+      "fixed_pr133": {
+        "git_blob": "2587ee80799d3d34726b3f21dd5c117663c013eb",
+        "sha256": "c1c9a44612a9c632bd01409ca899cb0d803a07e9e240b3fb0e4c001397a5b374",
+        "bytes": 169031
+      },
+      "final_candidate": {
+        "git_blob": "3f1da124c4de2f49c57e104de9942645c68b6a97",
+        "sha256": "34d986b82401d11e5243f3112782546e0358090548782b328594de6d1513ba89",
+        "bytes": 161358
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "fixed_main": {
+        "git_blob": "e716bf5094b6f93fe2214c4810b7afb9c4ae60f4",
+        "sha256": "cc97f77b7718c16fa4bc97e020257d8a32a49c444af64267a71d7d452b8390b8",
+        "bytes": 216167
+      },
+      "fixed_pr133": {
+        "git_blob": "a29bf6f1efdd35358e8949d37754ddf47148ec4f",
+        "sha256": "77055a2e1cd8276b6b502247f4678f13306ca6cb23858d5a03c6b07f1f4a6a73",
+        "bytes": 227208
+      },
+      "final_candidate": {
+        "git_blob": "8511f0b4a6a153cbab1f6b210f29ae0cdd7dde23",
+        "sha256": "1d7a8cf7ffb344c08705807588f3e24f39094e747800f90eca46b945e8c661d6",
+        "bytes": 222768
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/api/authority_dependencies.py",
+      "fixed_main": {
+        "git_blob": "a3cfdb18582d873bfd02e20542a4648148c87a68",
+        "sha256": "be6e129ad7cf249eb7b419c4de0c3244c979f6d2d698a55d3c47daafb590a6b0",
+        "bytes": 114534
+      },
+      "fixed_pr133": {
+        "git_blob": "a74929afe08fbf0e9858192ecc89e1b2175a94e7",
+        "sha256": "93149c419e4044e836abd3aa62e12b7c94f577b6ff83d383ea41d44cdf82e589",
+        "bytes": 115100
+      },
+      "final_candidate": {
+        "git_blob": "73e1deded3e77b4c09d61b65ef69316ec9cef80f",
+        "sha256": "ee3077eede44dee9d6b0eb0511db95f41d586a9fbd65ca50113f92d8798b2cd5",
+        "bytes": 115516
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/cli/execution_template.py",
+      "fixed_main": {
+        "git_blob": "a3cde69c3359b12d65ad8e252a0c4bf4ca6ca988",
+        "sha256": "68ce3597f3809fc571dff6d0590114e4fd5eefbca465b4596b4c74b8b1f2bd22",
+        "bytes": 924
+      },
+      "fixed_pr133": {
+        "git_blob": "bd5b169ae373e06265bc5433ab4f077d3b58846c",
+        "sha256": "30942b1eaeaf1e29ee0f9f2a797caa4ebe6c24e7b5c2765d01599e385e3f359e",
+        "bytes": 4454
+      },
+      "final_candidate": {
+        "git_blob": "ebfe65bac81b605debd16966b0947b9202391f4c",
+        "sha256": "8343ec62da848e84920e1dfdb4ce464d4d0d06ace16959da6d2612f2ec5424b6",
+        "bytes": 926
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/authority_handler_runtime/policy_commands.py",
+      "fixed_main": {
+        "git_blob": "b891a47aeb5793f6546ea5e1d914d909234c2364",
+        "sha256": "e2ba4061a27e75c9c30710a07295a3cb7451ef33e2cbff83eaa4c468b39975dd",
+        "bytes": 15230
+      },
+      "fixed_pr133": {
+        "git_blob": "9fad13a4e69259c6b11470ef7f0810114f21ef1a",
+        "sha256": "cf8d7211beebcf0659b508a414439a2ed014031104b5105fa689b7cfec68836d",
+        "bytes": 18327
+      },
+      "final_candidate": {
+        "git_blob": "68f5394fd414ef0ed64bd20fdc280af851ee8d62",
+        "sha256": "01bf1fcf717aebc0e2b5b3a15b7fc3e023d60d743227861ee227ae96db1c6f8c",
+        "bytes": 22000
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/authority_handler_runtime/routing_feedback.py",
+      "fixed_main": {
+        "git_blob": "0d0eca0766a2952da1f412a063d9ce2e6807b746",
+        "sha256": "14a609e949849da330d86fb19e8bcd4929ba9adb45c5539fcf494f3092578247",
+        "bytes": 22031
+      },
+      "fixed_pr133": {
+        "git_blob": "7145a013f6aa1c472279dafee8f9e61f15bef98e",
+        "sha256": "9118fead4352fba6d62728b6e29928c06e3cfb43d413a64708669d04676e8a63",
+        "bytes": 22221
+      },
+      "final_candidate": {
+        "git_blob": "7145a013f6aa1c472279dafee8f9e61f15bef98e",
+        "sha256": "9118fead4352fba6d62728b6e29928c06e3cfb43d413a64708669d04676e8a63",
+        "bytes": 22221
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "fixed_main": {
+        "git_blob": "b4fb69bbbc1d10042fa90adeb026056ef54e993b",
+        "sha256": "6f5349dc589287f49a9d46b3d2fb74df2c0bfa3822e4c4c7d0a6d6565a7accdf",
+        "bytes": 64246
+      },
+      "fixed_pr133": {
+        "git_blob": "a749422504c6eb233e2d42b3befed56b922e1080",
+        "sha256": "c64f7a07f41e5463ec3c06a15cb3f98659451baca5e175be59a003091337fa3c",
+        "bytes": 20530
+      },
+      "final_candidate": {
+        "git_blob": "0d59368fdb24dda25d5af31159543cd762f21c08",
+        "sha256": "db93d1b3763c9b1a6c792c2e88bc31d0ef5f3489544df346c3c5268f24c4dbcc",
+        "bytes": 70835
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/execution_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "c136ecfa33f1323554fdc4de118e55c37f9b3927",
+        "sha256": "bc3abe92444e6125779aca1464c9d95757381e43a3c5ae88dbd922135d831796",
+        "bytes": 17514
+      },
+      "final_candidate": {
+        "git_blob": "6f990ec384c6a99ba8574fa0ac3f1a4b488741ab",
+        "sha256": "fbf8c4a9096633a515fd1149ff0afbd0c81238db23dc5a1c0ccba68c524bd6a1",
+        "bytes": 25010
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_authority/production.py",
+      "fixed_main": {
+        "git_blob": "4c12633b65c8120f6cb4e01bbbe2642b8f5e709c",
+        "sha256": "1abab2f7200e44ee044c6b58d895d1766d7afb67c2deca3648e0aee84185146f",
+        "bytes": 164294
+      },
+      "fixed_pr133": {
+        "git_blob": "98542039439687515e3848947721f8de97466ae8",
+        "sha256": "387244a1378f1d2a3a9afa4a3346a3bde272e5c6d19470beb4b85b6714aa7eb6",
+        "bytes": 164853
+      },
+      "final_candidate": {
+        "git_blob": "a2523283ffb6851238c800f5ead704e46d6b8d00",
+        "sha256": "8fb3482d94ddf60d5335377f1b573b5978e133bf3eb57a9c64d4d6868946bda0",
+        "bytes": 165494
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+      "fixed_main": {
+        "git_blob": "155ec11f9f59a4e6744ee9421c69e3afaaf1b74d",
+        "sha256": "a660e8dcecb312124466b04b895899a9b7ece87f178c669fe1561149505ccc9e",
+        "bytes": 24798
+      },
+      "fixed_pr133": {
+        "git_blob": "3499cd678d8b58f75a3dc8a40be8c25f44a9cf2f",
+        "sha256": "c936f70909a9fe5bbf8914fd484e06595dbec68d7668ebe27fbdacc8adccb02a",
+        "bytes": 19752
+      },
+      "final_candidate": {
+        "git_blob": "c2b33666b4f88abf9cf96712e6347d3a1f6c1809",
+        "sha256": "b6812670e3da30962c612ee0136fe28da5c8e28a4e903671952921aae529b347",
+        "bytes": 24856
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "foundation_v4_preserves_published_v2_v3"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/book_design_authority/foundation_validation.py",
+      "fixed_main": {
+        "git_blob": "a9ad2193a6baf18ef0d2e3ae7b3f253c24930cc1",
+        "sha256": "123c6e7dfb6eabfa0505fd29d31422895b2e808e4af2d0af405960e0bad0ae96",
+        "bytes": 11298
+      },
+      "fixed_pr133": {
+        "git_blob": "a9ad2193a6baf18ef0d2e3ae7b3f253c24930cc1",
+        "sha256": "123c6e7dfb6eabfa0505fd29d31422895b2e808e4af2d0af405960e0bad0ae96",
+        "bytes": 11298
+      },
+      "final_candidate": {
+        "git_blob": "8fc351aa4d41a47a7dbd777f6a8253a34814c340",
+        "sha256": "af9b798af3ddc08a3a5e13bc1729b6b0951751def91fdf9806fb609f5274afba",
+        "bytes": 11326
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "foundation_v4_preserves_published_v2_v3"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/domain.py",
+      "fixed_main": {
+        "git_blob": "9066e3b0ae65c8c865626cb35071589d9a910312",
+        "sha256": "b0a695dbc28220aec4a10d6e744de646cd7ea2255b9db1d60db70cb1f726c828",
+        "bytes": 62061
+      },
+      "fixed_pr133": {
+        "git_blob": "4cd4d74effaddf9c4c3299f2eba52c76a3f112be",
+        "sha256": "6cdf53e0f44754bd6e245accf9c66b44e9348ec7fa0985ed2539edd0904a7506",
+        "bytes": 64502
+      },
+      "final_candidate": {
+        "git_blob": "4cd4d74effaddf9c4c3299f2eba52c76a3f112be",
+        "sha256": "6cdf53e0f44754bd6e245accf9c66b44e9348ec7fa0985ed2539edd0904a7506",
+        "bytes": 64502
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/grounding.py",
+      "fixed_main": {
+        "git_blob": "68383fba0aa0d15a9cf2266fd659ad89963970c2",
+        "sha256": "bfb7d6b1efffd5d02a5b2d07e10c56b366a063692407e54bfe5f9a1a8340f5a1",
+        "bytes": 13516
+      },
+      "fixed_pr133": {
+        "git_blob": "1bcf29deffe95cf9a0016c6227a3b1286898ea58",
+        "sha256": "0f46d2fe21449954a582c6ef28ea6737c45fdff72b1868254becc48301965e46",
+        "bytes": 15077
+      },
+      "final_candidate": {
+        "git_blob": "1bcf29deffe95cf9a0016c6227a3b1286898ea58",
+        "sha256": "0f46d2fe21449954a582c6ef28ea6737c45fdff72b1868254becc48301965e46",
+        "bytes": 15077
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/support_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "57ad919e912f9c434306a8a3fa480c6807995b4c",
+        "sha256": "b8d3c479e3ead1f82480d2644ddd3d0cb7d653e856c4d82fcbe1c0ae442daf79",
+        "bytes": 2002
+      },
+      "final_candidate": {
+        "git_blob": "57ad919e912f9c434306a8a3fa480c6807995b4c",
+        "sha256": "b8d3c479e3ead1f82480d2644ddd3d0cb7d653e856c4d82fcbe1c0ae442daf79",
+        "bytes": 2002
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/validation_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "08bdbf5da65e4406287562ea478c35b8224f65c3",
+        "sha256": "1bd9e78d3f9ce79c899dc1315cd42d55103fa6f6eea4fd19690bb080109ba71f",
+        "bytes": 5068
+      },
+      "final_candidate": {
+        "git_blob": "08bdbf5da65e4406287562ea478c35b8224f65c3",
+        "sha256": "1bd9e78d3f9ce79c899dc1315cd42d55103fa6f6eea4fd19690bb080109ba71f",
+        "bytes": 5068
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/artifacts.py",
+      "fixed_main": {
+        "git_blob": "c5c0067bc99afbfc6c55b1baffa0a2078f90f65b",
+        "sha256": "23f8297f38bf3a2dad548fb751d914023f7886f960ee6a6d093327d1346d0fba",
+        "bytes": 16969
+      },
+      "fixed_pr133": {
+        "git_blob": "1cc7dd32d0734e321692d2bbbb84b20c76cd968e",
+        "sha256": "0f9b8992a2b7a3f14683d7be463f783634142a72a826698ddfe823ad2758f98a",
+        "bytes": 17411
+      },
+      "final_candidate": {
+        "git_blob": "1cc7dd32d0734e321692d2bbbb84b20c76cd968e",
+        "sha256": "0f9b8992a2b7a3f14683d7be463f783634142a72a826698ddfe823ad2758f98a",
+        "bytes": 17411
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/longform_profiles.py",
+      "fixed_main": {
+        "git_blob": "3366fc7b81c96d9030b41531c879fab907d177ef",
+        "sha256": "0c4d779c17e037e3dd35ac3875987516e611980afd36add4687e985100895dab",
+        "bytes": 33737
+      },
+      "fixed_pr133": {
+        "git_blob": "0ba6b77c24d2179a925a596e571d447b817589df",
+        "sha256": "51fbce0812931a8456618a3450e5da466a0aa2b4c7537fdb24dcc008bd89a8e5",
+        "bytes": 34368
+      },
+      "final_candidate": {
+        "git_blob": "0600df26552e359c4974df7d101f74ebdcd82624",
+        "sha256": "08f0ce803e03c35d8cab860f3d4d527a9e0bbd4c76f6f4ae814304f8c7812865",
+        "bytes": 34588
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/operation_catalog.py",
+      "fixed_main": {
+        "git_blob": "89e45130b0416c7b8ac348ab05e9b207c1667d7b",
+        "sha256": "544d7bf1c76157ef51bec32c9185ca4ec952b0e354978a3b2ede51701504940c",
+        "bytes": 23149
+      },
+      "fixed_pr133": {
+        "git_blob": "1beb5eff88aa294e0a4aa8b80012a903759ac418",
+        "sha256": "143f7483553592ded5ab5759a77eb16fba2f0b69dbcfaaafaf0ec01ab2c12c5a",
+        "bytes": 23145
+      },
+      "final_candidate": {
+        "git_blob": "1beb5eff88aa294e0a4aa8b80012a903759ac418",
+        "sha256": "143f7483553592ded5ab5759a77eb16fba2f0b69dbcfaaafaf0ec01ab2c12c5a",
+        "bytes": 23145
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/protocol.py",
+      "fixed_main": {
+        "git_blob": "f110407e60e877aabf0e6fe40d2715cb3c6c0dbb",
+        "sha256": "d0f09d54af9f3f18c88a1202a67e6b6720624df102fa0f6ac64e2ed9ba6ba982",
+        "bytes": 17099
+      },
+      "fixed_pr133": {
+        "git_blob": "eccb1b19ab8764323251cc339531c5bb856938ef",
+        "sha256": "be93ef4f4270357c9d5bce5f48ca6f0f4cb81ed295aa23131ee487e2302d15e4",
+        "bytes": 17371
+      },
+      "final_candidate": {
+        "git_blob": "eccb1b19ab8764323251cc339531c5bb856938ef",
+        "sha256": "be93ef4f4270357c9d5bce5f48ca6f0f4cb81ed295aa23131ee487e2302d15e4",
+        "bytes": 17371
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/schema.py",
+      "fixed_main": {
+        "git_blob": "6779e2d8a3e2d225aec1c32579c1e6d7ecc17f5e",
+        "sha256": "1c3534d958ffe1568f891f52fb8b16cb214e0b384f703ad5a91ff4f7e1b4783d",
+        "bytes": 18779
+      },
+      "fixed_pr133": {
+        "git_blob": "c83b81a109498924d620cccc4d8f37514cd730c8",
+        "sha256": "1f3b36316407e23cb1a096e96b3008e4fe6a9f53db1901f7f4be0ac5f2c97126",
+        "bytes": 18877
+      },
+      "final_candidate": {
+        "git_blob": "c83b81a109498924d620cccc4d8f37514cd730c8",
+        "sha256": "1f3b36316407e23cb1a096e96b3008e4fe6a9f53db1901f7f4be0ac5f2c97126",
+        "bytes": 18877
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/semantic.py",
+      "fixed_main": {
+        "git_blob": "cd74fddac9c731f2a9b1ad7e0010c51382b1a942",
+        "sha256": "7c542a11e50282d88edfd6377da68502c090960c522182039eaac7d52b2a3f56",
+        "bytes": 32185
+      },
+      "fixed_pr133": {
+        "git_blob": "3e013376f464a09d56f1c0a4701edb81ce575c9a",
+        "sha256": "fce5c29160f133b08edb636c5cfec2d5e75af391fbbfca1e82f122223b0498e5",
+        "bytes": 32707
+      },
+      "final_candidate": {
+        "git_blob": "3e013376f464a09d56f1c0a4701edb81ce575c9a",
+        "sha256": "fce5c29160f133b08edb636c5cfec2d5e75af391fbbfca1e82f122223b0498e5",
+        "bytes": 32707
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/validator.py",
+      "fixed_main": {
+        "git_blob": "c8bf56917b70a29c901cda084290921245d46381",
+        "sha256": "4705e8d72bed08e256fbbea8f2c0899e677584cd37706861ad61720d72376094",
+        "bytes": 69784
+      },
+      "fixed_pr133": {
+        "git_blob": "07ebf4e10c6a16a079136a705754e45d25ea2f94",
+        "sha256": "36a0a153e3c14933f4a0218af7df50f9bf9afae3e716c7f798675932a4a72003",
+        "bytes": 70204
+      },
+      "final_candidate": {
+        "git_blob": "07ebf4e10c6a16a079136a705754e45d25ea2f94",
+        "sha256": "36a0a153e3c14933f4a0218af7df50f9bf9afae3e716c7f798675932a4a72003",
+        "bytes": 70204
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/candidate_repair.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "fbfed1dedfac3120e470ddb681d0c009d5996113",
+        "sha256": "a887f3176a0d83859378f131c096408a9e4ce0162e2080de13702483b9797060",
+        "bytes": 39530
+      },
+      "final_candidate": {
+        "git_blob": "7c6ab3daf8c9867ab748c7e12dfa00d3f3766ffd",
+        "sha256": "aca0c341ada329ff3ebca88b358ac80280252ba45f52e6e80ea08225c428997a",
+        "bytes": 40276
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+      "fixed_main": {
+        "git_blob": "4d1c5ddd563e47c1db93301c3dfc02542dd735de",
+        "sha256": "8b5f1c17d00aaf260ffffb01b061e82d1bbe999ee6006566906747e4a4520798",
+        "bytes": 25119
+      },
+      "fixed_pr133": {
+        "git_blob": "4d1c5ddd563e47c1db93301c3dfc02542dd735de",
+        "sha256": "8b5f1c17d00aaf260ffffb01b061e82d1bbe999ee6006566906747e4a4520798",
+        "bytes": 25119
+      },
+      "final_candidate": {
+        "git_blob": "5034d16761c52f3dc6aec0889d2fb230f1ad495b",
+        "sha256": "97b8e29118a6b50db0cb2971af475cbfcbe0fae14578b5b01a1e2bdcc9c0cd54",
+        "bytes": 26304
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/context_compression_provider.py",
+      "fixed_main": {
+        "git_blob": "87c700730fd91ad583869dd6cadace16f92dec26",
+        "sha256": "6dcd864fd48b84633be88d122b7a0f8572cdde841b539ac5939748cb4676c24c",
+        "bytes": 8016
+      },
+      "fixed_pr133": {
+        "git_blob": "c64f0215ae5ee2ff42a32e8d23d1d9beb754ddb8",
+        "sha256": "3747fec13e3c535ec51b2cf3062021b61c5f6a22cf8cb31a38d0342c3d3f9f53",
+        "bytes": 8386
+      },
+      "final_candidate": {
+        "git_blob": "c64f0215ae5ee2ff42a32e8d23d1d9beb754ddb8",
+        "sha256": "3747fec13e3c535ec51b2cf3062021b61c5f6a22cf8cb31a38d0342c3d3f9f53",
+        "bytes": 8386
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/contract_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "3040e2452f39fdae3e79890b70f4b1ec5fa45e39",
+        "sha256": "3ffbce93000180b6863fc81dee5a6f5da025ab32977e64c4468d99243128fb68",
+        "bytes": 4511
+      },
+      "final_candidate": {
+        "git_blob": "3040e2452f39fdae3e79890b70f4b1ec5fa45e39",
+        "sha256": "3ffbce93000180b6863fc81dee5a6f5da025ab32977e64c4468d99243128fb68",
+        "bytes": 4511
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+      "fixed_main": {
+        "git_blob": "4021b017d952809e3dc7d71a6988f5c83d06e27c",
+        "sha256": "2d10a24f807907642933d2a4be71791892f9281c63ff509adc471263f5cacd88",
+        "bytes": 11156
+      },
+      "fixed_pr133": {
+        "git_blob": "439fade9cd6a094b2a03786a9e6e4672384aa186",
+        "sha256": "57edbcd117063931ab58e282ae9043f18cc881f508fb1a72b2d7b9d5a2e2bd86",
+        "bytes": 11393
+      },
+      "final_candidate": {
+        "git_blob": "cd252b2f7fd0194bfccafb971e3713741be57f53",
+        "sha256": "88d1bce4e9dcbe684fff34ee3bd7365bb950529986e6aa8d670ef5d4cd5e417d",
+        "bytes": 11403
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor",
+        "exact_plan_semantic_mapping_and_fallback_style_identity"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/definitions.py",
+      "fixed_main": {
+        "git_blob": "df3226687806351899677b09624e9229389a11a5",
+        "sha256": "f39daabc2ed2e28ddac8d37e41d1a6c6901e3420be18155b8a4ac28058fc50b0",
+        "bytes": 23912
+      },
+      "fixed_pr133": {
+        "git_blob": "3b0d0dbfc1adf725d5b3f25a452e4cbd84be5e88",
+        "sha256": "4c4b04af39cf6f4132d9c6815e52d2e03306ec1adbb91b79b7a0cf596092adda",
+        "bytes": 30409
+      },
+      "final_candidate": {
+        "git_blob": "a6a846c87ae3163920daef6572b6c46b33cf1a50",
+        "sha256": "b4fff7d15993c5c778ce4b5e1198ece4a49db8a4468fdaab3e75204bc60ac2f3",
+        "bytes": 30790
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/derived_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "482480b13db741c9381807788f90657f1f69fe16",
+        "sha256": "573c407742d198705bda043f9918b22037d967575f3bac6e23c694338174d6db",
+        "bytes": 6574
+      },
+      "final_candidate": {
+        "git_blob": "482480b13db741c9381807788f90657f1f69fe16",
+        "sha256": "573c407742d198705bda043f9918b22037d967575f3bac6e23c694338174d6db",
+        "bytes": 6574
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+      "fixed_main": {
+        "git_blob": "9d873e987a6aa999c075704a500a649fb79287de",
+        "sha256": "59549d37338a8c8d7ddfc366a30a65d52f0f148800e954822e1fc2963ec856f0",
+        "bytes": 43707
+      },
+      "fixed_pr133": {
+        "git_blob": "bc8f9ae020b54e7f3bbd713c40e1f84e1534d936",
+        "sha256": "5491f1a1489bf1ebf08d341024d7eb2fe7dbd88fe7522a4c574f4fa752bd6ed8",
+        "bytes": 44065
+      },
+      "final_candidate": {
+        "git_blob": "bc8f9ae020b54e7f3bbd713c40e1f84e1534d936",
+        "sha256": "5491f1a1489bf1ebf08d341024d7eb2fe7dbd88fe7522a4c574f4fa752bd6ed8",
+        "bytes": 44065
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_artifacts.py",
+      "fixed_main": {
+        "git_blob": "862281f8b6a7b854df3568f3c8dcb350be293261",
+        "sha256": "5490e1a48779c056f4148f7aece97b91f458b7cc17b29598bdab44ec85c7d7b0",
+        "bytes": 31266
+      },
+      "fixed_pr133": {
+        "git_blob": "862281f8b6a7b854df3568f3c8dcb350be293261",
+        "sha256": "5490e1a48779c056f4148f7aece97b91f458b7cc17b29598bdab44ec85c7d7b0",
+        "bytes": 31266
+      },
+      "final_candidate": {
+        "git_blob": "ffac7ae647b169257061a1a9cfaa788e2f211478",
+        "sha256": "4c1462e9bb62f7fa0964a1952a3475cd52e6090d9e482a533c4f5c352b9bdf09",
+        "bytes": 31294
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "fixed_main": {
+        "git_blob": "9d521e01ce68b571c831fd3dd449c54642d70059",
+        "sha256": "f4791f1cc7e41b1b32c72b130794c561fb31551813c338a81cca328207f93673",
+        "bytes": 265260
+      },
+      "fixed_pr133": {
+        "git_blob": "8906bed16d27e9ea1e3664f08231fe55b34d5b76",
+        "sha256": "3027bf6cdb255b8fba46cbd5268c07f680262316e2326b7780f14f258866e41b",
+        "bytes": 270643
+      },
+      "final_candidate": {
+        "git_blob": "8906bed16d27e9ea1e3664f08231fe55b34d5b76",
+        "sha256": "3027bf6cdb255b8fba46cbd5268c07f680262316e2326b7780f14f258866e41b",
+        "bytes": 270643
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+      "fixed_main": {
+        "git_blob": "f7b9ccc691883145c68c7aad663814bfdd385b3f",
+        "sha256": "9ff82130a7bcb8a8d659556fc2a52c98e7dfd9b6d1c53713b905ccd7f28dcd6a",
+        "bytes": 134629
+      },
+      "fixed_pr133": {
+        "git_blob": "7b3d0f006c264f14e5cd072963cce364ab1aaae9",
+        "sha256": "2709b016a08aa65fc97221e9f355c115ffa77e3b2ce60d1ee21fa4acc97fcaf2",
+        "bytes": 138103
+      },
+      "final_candidate": {
+        "git_blob": "60f500d751ae3d747227b292c576a5b11abe5cec",
+        "sha256": "a308b4359f83096ef7f1fd535528b98f50077e422f9633f8493662c80f9998e8",
+        "bytes": 138749
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor",
+        "frozen_world_native_qualification_bridge",
+        "exact_plan_semantic_mapping_and_fallback_style_identity"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+      "fixed_main": {
+        "git_blob": "afe1e3f1558db960c49668f16860d4f9529d4056",
+        "sha256": "a10e9fcdce4127612c90bdd3282446b35198b5ac38dd9d361d871f2cb0d25db2",
+        "bytes": 44945
+      },
+      "fixed_pr133": {
+        "git_blob": "25162d44b01414fb47fa9591ec401800ba94767e",
+        "sha256": "dc280d93b891ff9ae7fbe36c0252b86cb70582d04b08cc265936b98b39f0d8e9",
+        "bytes": 48282
+      },
+      "final_candidate": {
+        "git_blob": "e736aed71ffb60e69d96c8290bf5ba2c20e6101e",
+        "sha256": "e258b52f09ddb8bb3f8ec64c72629573e3435af1ab3ed57a4e7e09ce333221fc",
+        "bytes": 48502
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "frozen_world_native_qualification_bridge"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/provider_output_contracts.py",
+      "fixed_main": {
+        "git_blob": "7ea6584aae1f5ac4428804b4cc4db89a65f00dd6",
+        "sha256": "7e3e70eeeb0443254a7c986ad525f1aeecee777d09f91140484c1de6368e26e5",
+        "bytes": 60301
+      },
+      "fixed_pr133": {
+        "git_blob": "a27ea25f99ca2a24f1dd2dad3e5f65c26725f4fa",
+        "sha256": "f8a8f55957f10da65a2ff36d67e40ad73afdb70900ad1f6ba0bd0617a433faa8",
+        "bytes": 64128
+      },
+      "final_candidate": {
+        "git_blob": "a27ea25f99ca2a24f1dd2dad3e5f65c26725f4fa",
+        "sha256": "f8a8f55957f10da65a2ff36d67e40ad73afdb70900ad1f6ba0bd0617a433faa8",
+        "bytes": 64128
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "fixed_main": {
+        "git_blob": "0d84b3d32d7d9688c557358fa4b7f78a2c605acf",
+        "sha256": "d97dc7920a80a782b49702b6a507aceb360c32741295ec6d6ed5c2ca5b97b6cf",
+        "bytes": 154362
+      },
+      "fixed_pr133": {
+        "git_blob": "2e92a49877df7ea2c052ca351d017482c47d9c88",
+        "sha256": "70cbd22b7223e5b610cce9bfcfa2e0a0a32d79e7ec498616cab4fff555c1e359",
+        "bytes": 155753
+      },
+      "final_candidate": {
+        "git_blob": "8f83cbcb1caa4482e6b174aeeb9d4110a2003d0a",
+        "sha256": "e04008c19ffe6cc8e545f0f65f36fac5e23f40d039b7e032f7d162268bb1586d",
+        "bytes": 155822
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "foundation_v4_preserves_published_v2_v3"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/queries.py",
+      "fixed_main": {
+        "git_blob": "89d3fc8085571ee586d912eec57036c26789ee8c",
+        "sha256": "0fcc1fc108506e5d67a6b4a16c1f264e9871c123200cc7c1689b50cea01d7b5a",
+        "bytes": 24104
+      },
+      "fixed_pr133": {
+        "git_blob": "eec7674088d6d73ec8bd69be25baf26a3e4289ff",
+        "sha256": "3abc6f6e5a3888ba69d157276271b6d04b4436fce71cd073f190415bc1bf3d70",
+        "bytes": 30268
+      },
+      "final_candidate": {
+        "git_blob": "26bde3d0a9bee45b82af5e323e8cbe9a543e939d",
+        "sha256": "df279ff7981e2e959bb7b15918dfa6159e481368344d642c67c5359451b963ff",
+        "bytes": 31337
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "fixed_main": {
+        "git_blob": "677d4b882f49caf546632d6c9c7df090f4626134",
+        "sha256": "2418ec3abd040828962d789c9502b7bf2443e1b2aa660c81d45c1d27eecb4a72",
+        "bytes": 21885
+      },
+      "fixed_pr133": {
+        "git_blob": "6097242c2a951b073ab578a6dab26d6f14ed2126",
+        "sha256": "623b4def27eef42ed470974f55090fff54fa5676c7f49409b2d9affb7137ad1d",
+        "bytes": 24288
+      },
+      "final_candidate": {
+        "git_blob": "d8d8c3fd72f13d8d1a5c0ce3f7257b94be226783",
+        "sha256": "e29089c485e329567ab06c53647654ff97166dcd3cdf9c5f38e43b53dfebff09",
+        "bytes": 24316
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/review_window.py",
+      "fixed_main": {
+        "git_blob": "8cc7517c84a1741367a6c26492814a841bb191dc",
+        "sha256": "abb65c05b473196aed577bc4cc90669ac1492f1ef2fe449e7d6e48102bf14304",
+        "bytes": 5594
+      },
+      "fixed_pr133": {
+        "git_blob": "f1998e4927c88078180e080715142ff087662af3",
+        "sha256": "759631b2f36121caf04360a67b52b1eed26ca157c0eadb41a928ecb63c583333",
+        "bytes": 5822
+      },
+      "final_candidate": {
+        "git_blob": "f1998e4927c88078180e080715142ff087662af3",
+        "sha256": "759631b2f36121caf04360a67b52b1eed26ca157c0eadb41a928ecb63c583333",
+        "bytes": 5822
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/runtime.py",
+      "fixed_main": {
+        "git_blob": "3a05390e0707aa5a219a4182d68edc1624c46bde",
+        "sha256": "b65d89b3c66e5d13c02ad6548861617af35a0cf61f62aac1d5d7c891d64155f9",
+        "bytes": 12828
+      },
+      "fixed_pr133": {
+        "git_blob": "3f1d92700bfe9b469cb3a8f91dd32fd85e3e1f73",
+        "sha256": "a14c31771b01fd547a0163c0a7cc11bbbef57d2de0c12a426381bb9baf3fdbf2",
+        "bytes": 14294
+      },
+      "final_candidate": {
+        "git_blob": "c25d82c4a67bfa6f4766e5554a21064726c6706c",
+        "sha256": "c9ca2d314d2e2eaece75e14a1271b009604bea635db35ab970f460839e39cbb4",
+        "bytes": 14390
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+      "fixed_main": {
+        "git_blob": "752730463b86baea416779790af7e58ee948ba5a",
+        "sha256": "47503d4774c9f0586d4c6334802887a7242ee17e18a7731a8fd81da928ec4e59",
+        "bytes": 79025
+      },
+      "fixed_pr133": {
+        "git_blob": "5c30c7cd6e9b527b36cd809b3a613819a7a9d99f",
+        "sha256": "87d9431937df30b84aa0bcd5a0c014b3d4844b96c1146cf74d81759c5e4e57bd",
+        "bytes": 83233
+      },
+      "final_candidate": {
+        "git_blob": "5c30c7cd6e9b527b36cd809b3a613819a7a9d99f",
+        "sha256": "87d9431937df30b84aa0bcd5a0c014b3d4844b96c1146cf74d81759c5e4e57bd",
+        "bytes": 83233
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "frozen_world_native_qualification_bridge"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/author_revision.py",
+      "fixed_main": {
+        "git_blob": "4dab739340906bda5ebf421ed0b82c5f3c12c205",
+        "sha256": "b6d29ba73bc830f07cbc17c9bf9f2cf39bd94cc4404a1d509a14a9a82a95f160",
+        "bytes": 1468
+      },
+      "fixed_pr133": {
+        "git_blob": "bdd760a933960dfce36e041dd689144d0a6aee3e",
+        "sha256": "9af9f4db72af0a969a1f1b93c50f6b162a86a004e2d79ca2f7296e529ef3283f",
+        "bytes": 1493
+      },
+      "final_candidate": {
+        "git_blob": "bdd760a933960dfce36e041dd689144d0a6aee3e",
+        "sha256": "9af9f4db72af0a969a1f1b93c50f6b162a86a004e2d79ca2f7296e529ef3283f",
+        "bytes": 1493
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_outcome/handlers.py",
+      "fixed_main": {
+        "git_blob": "eaaadfc9cd1a15fb999fcf32e68a76b9e29414fd",
+        "sha256": "768d5f3cec251de084956af92801b46af524fede9756a74c1f950da122683a88",
+        "bytes": 7947
+      },
+      "fixed_pr133": {
+        "git_blob": "bf2ed102b046a4d212e4b4ef28f31d3dbb325c8d",
+        "sha256": "adca36390d5ee58559bb0ffd17d436aec5e2d026cb42891976e6c139d9dccc97",
+        "bytes": 7982
+      },
+      "final_candidate": {
+        "git_blob": "bf2ed102b046a4d212e4b4ef28f31d3dbb325c8d",
+        "sha256": "adca36390d5ee58559bb0ffd17d436aec5e2d026cb42891976e6c139d9dccc97",
+        "bytes": 7982
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/applicability_contract.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "c89be0c397e355026c60520d3b3437a73222e8b0",
+        "sha256": "e850af081ce81ccfa4207a1edda26ec282f9bd5415dfd2dc4ce6108548702335",
+        "bytes": 4195
+      },
+      "final_candidate": {
+        "git_blob": "c89be0c397e355026c60520d3b3437a73222e8b0",
+        "sha256": "e850af081ce81ccfa4207a1edda26ec282f9bd5415dfd2dc4ce6108548702335",
+        "bytes": 4195
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/context_views.py",
+      "fixed_main": {
+        "git_blob": "d05c09ac0563e8bfbb6ff8b93b7bcfc98c343071",
+        "sha256": "657a2b2dcb24fcbba4c2a4dd5863fd268fa50067c217a4c63b719d90e94f54b3",
+        "bytes": 39632
+      },
+      "fixed_pr133": {
+        "git_blob": "9769bfdfe6705e4ce7078468b1fac1fa812b4a26",
+        "sha256": "71cbcbd3308d8ffe3ddc66109e3c7934e67e29bb8ddbb8385726a28a83006b48",
+        "bytes": 41310
+      },
+      "final_candidate": {
+        "git_blob": "9769bfdfe6705e4ce7078468b1fac1fa812b4a26",
+        "sha256": "71cbcbd3308d8ffe3ddc66109e3c7934e67e29bb8ddbb8385726a28a83006b48",
+        "bytes": 41310
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+      "fixed_main": {
+        "git_blob": "41d024dd2fc9e229178ac998b9b62297989cdf74",
+        "sha256": "d6f9eeb10dc93ebfe727f8a4a6fac094ce1028a196097d50082c1337a20a90c5",
+        "bytes": 7087
+      },
+      "fixed_pr133": {
+        "git_blob": "dbd8b74757a8573c98fe3ee9b72090bcc2e70dc8",
+        "sha256": "3029e3b3e0df940674c5e88d61c18ae401463b5e99d8835500ccd3baa1d11222",
+        "bytes": 8765
+      },
+      "final_candidate": {
+        "git_blob": "dbd8b74757a8573c98fe3ee9b72090bcc2e70dc8",
+        "sha256": "3029e3b3e0df940674c5e88d61c18ae401463b5e99d8835500ccd3baa1d11222",
+        "bytes": 8765
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/domain.py",
+      "fixed_main": {
+        "git_blob": "c6462205c20ca91dd09913275ee2a3de38a1dac3",
+        "sha256": "083a85067150e942f7a12ce7d230258251dd9944ebb7afe2980a85bcb740b769",
+        "bytes": 47338
+      },
+      "fixed_pr133": {
+        "git_blob": "c18dcfd6136ac5ddd67aed3f5e8851c5059bb998",
+        "sha256": "eac3125751a688e446625325981b0bc3ffa1554618eb18dd526840f7a1b5f587",
+        "bytes": 47400
+      },
+      "final_candidate": {
+        "git_blob": "c18dcfd6136ac5ddd67aed3f5e8851c5059bb998",
+        "sha256": "eac3125751a688e446625325981b0bc3ffa1554618eb18dd526840f7a1b5f587",
+        "bytes": 47400
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/foundation_context.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "1e37f1f9b8a74b8e75cfabdc80940d3f385d8b09",
+        "sha256": "63af57d883604342fe508e2f5afcac4342078ff242c62349034fffe00e5724e3",
+        "bytes": 4860
+      },
+      "final_candidate": {
+        "git_blob": "af268239e76b7e4b3dbad24ca443bfdc8817d475",
+        "sha256": "144de3d5c406e865a6b0a4d98166f88e31374e1ac9a555f684feefcf214457ba",
+        "bytes": 8321
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "frozen_world_native_qualification_bridge"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/revalidation.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "49423db5ce4e8e8deb6ff02071b7d563ede6ff65",
+        "sha256": "314177c88808e8cfdd8f78842272005d8c51fd939d06e08d2d05fcd237cfab68",
+        "bytes": 12234
+      },
+      "final_candidate": {
+        "git_blob": "49423db5ce4e8e8deb6ff02071b7d563ede6ff65",
+        "sha256": "314177c88808e8cfdd8f78842272005d8c51fd939d06e08d2d05fcd237cfab68",
+        "bytes": 12234
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/asset_commands.py",
+      "fixed_main": {
+        "git_blob": "e7535905b8bd44c534de5aaede303e7c325b1696",
+        "sha256": "d067bbe9dd0a4fd70bca5c8e48081a46556bd0f416a395f6966ff824071557cb",
+        "bytes": 2951
+      },
+      "fixed_pr133": {
+        "git_blob": "4284785094745b9ac1cd79f484eea208efa04c5c",
+        "sha256": "1abb0acdafab0636405f45b3e2c6ac82f2eeee746619349f3997f31e58f2493e",
+        "bytes": 3111
+      },
+      "final_candidate": {
+        "git_blob": "4284785094745b9ac1cd79f484eea208efa04c5c",
+        "sha256": "1abb0acdafab0636405f45b3e2c6ac82f2eeee746619349f3997f31e58f2493e",
+        "bytes": 3111
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
+      "fixed_main": {
+        "git_blob": "b73b67cea46d1b4b2dd6f0a0d991959ac8d911e9",
+        "sha256": "1e20ff1466a2926ac56f91985854537b1cd02b147fb2f73864e19fa3b9938f68",
+        "bytes": 27714
+      },
+      "fixed_pr133": {
+        "git_blob": "063d04692f4ff6c44a033ebc78790f52cb284182",
+        "sha256": "a7f61bbdce82857d67226bfeca9dd7c37566eb902cf5ee8479a22090ef1cc696",
+        "bytes": 27911
+      },
+      "final_candidate": {
+        "git_blob": "063d04692f4ff6c44a033ebc78790f52cb284182",
+        "sha256": "a7f61bbdce82857d67226bfeca9dd7c37566eb902cf5ee8479a22090ef1cc696",
+        "bytes": 27911
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "c74c9d2a62b2e4f0fb80a3546243b0d7c3a50a61",
+        "sha256": "2ad3a5efcde3b2b4ad5b9873188de1d7ae772a1a5b7d14acf7163c4f800256be",
+        "bytes": 27940
+      },
+      "final_candidate": {
+        "git_blob": "7b4a10b1d742101e532ed0771078b565f94b46af",
+        "sha256": "1ecf5e9ae020fb0c59655a30d592fd46df5aca2cfe7dd151832419e7c71926e2",
+        "bytes": 29252
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/execution_window.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "731e9c92696c6f87aacde3af7a9e92e7adc5f6e1",
+        "sha256": "14e7e0a4d83c31f21f391f1117ff90ced8ad62d7509228601e24696e1e39f947",
+        "bytes": 25592
+      },
+      "final_candidate": {
+        "git_blob": "b3b8f2c3b9f941960759930a194aefd9d0c4fb7b",
+        "sha256": "481fea0815ab28ba1561c5fc2421289e9eddfe7ccd840f121c49a2e80fb73230",
+        "bytes": 25742
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/external_effect_runtime.py",
+      "fixed_main": {
+        "git_blob": "4297b653d18f39809051cf9d53e4960d6d31e4b0",
+        "sha256": "140d37e81eaf186cd6cd74a4bcbf70f7ad63bf8409534614d8258c0d3276d9db",
+        "bytes": 78593
+      },
+      "fixed_pr133": {
+        "git_blob": "3d98db7c12cee3852f188bc8f85b47f87e283daf",
+        "sha256": "d589926836597821db11f9b3654580a32aa2b8ed5f40bb55d097786232c8bfe8",
+        "bytes": 84372
+      },
+      "final_candidate": {
+        "git_blob": "6c45ef677e29cadebcd3a39c68a993472b5eb053",
+        "sha256": "f07d9f19ef6ee3773e6d5524e5237a06194b7ce183d81a232b4f4a8cf5cb1994",
+        "bytes": 84616
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "production_legacy_pre_database_denial"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+      "fixed_main": {
+        "git_blob": "c05e94e65729e39146e3eaf8fb50bac5be4e24d8",
+        "sha256": "ee698190e746ef9f942bbd38212971dd4e73ee8d36732ed6400889d0203a916c",
+        "bytes": 51610
+      },
+      "fixed_pr133": {
+        "git_blob": "50a6c4c878930b44752c60ecb6bf1d659d42585c",
+        "sha256": "d40d94740df2afc0d67d2fed62b31b1ff02ad323fd7ec531add1320ca07fb528",
+        "bytes": 51653
+      },
+      "final_candidate": {
+        "git_blob": "1bce1ca2700dc3d1c6ad4a6a34b5fed1ac8706f1",
+        "sha256": "ce2353faf8502b6814baeb2759f156797eb9d6c185fe6577c5e7d9fd0b05ba6e",
+        "bytes": 51663
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "416492ccb49c4ad89e0d782afd54bd09bcbdab57",
+        "sha256": "def8d13c2189726236faba7885ef1a880dde746568edd0fb0baa0537b474d8b7",
+        "bytes": 25686
+      },
+      "final_candidate": {
+        "git_blob": "0e3d8e3b8296f044e38714affa5ce74d8def9820",
+        "sha256": "212b80e8af4a7f70166ceb19175293ce03ea8c8c4bb26ad7a22844540effa22c",
+        "bytes": 29014
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/worker_execution.py",
+      "fixed_main": {
+        "git_blob": "3aac01b6f6b01ff28249d712cfcdadc23a71e24d",
+        "sha256": "ea5cdca0824fe54d3b30c14c0b2106b9d2924a6d09cced4db695e3afc4a2b52e",
+        "bytes": 13417
+      },
+      "fixed_pr133": {
+        "git_blob": "ad105a0a28709f9c53acef9bbf751a24f989ceb3",
+        "sha256": "a62924df3769f4e13fc96786c53e96e833a6a813f25d329163d9745c59ce5647",
+        "bytes": 13398
+      },
+      "final_candidate": {
+        "git_blob": "e76dc5e08c768f72925e8e68fe874b13ad3e3e34",
+        "sha256": "4e7ab03ec529c4a4ae17b9508d98b45a9a99b94da6fadb27833817d8decb38db",
+        "bytes": 13640
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/application.py",
+      "fixed_main": {
+        "git_blob": "e2e9ebfbb0f9e59af297fb79b92ecaa41550b207",
+        "sha256": "6069f8caae75f010bd69d1bb06183f1299d5bf78dcddce80d3b92cbd6bf74a48",
+        "bytes": 59453
+      },
+      "fixed_pr133": {
+        "git_blob": "ad9f9170fae6406bd4f391c1bc7d6769fd6038bd",
+        "sha256": "631065ee7dc9b290025df755fbd7da68fb5e746b2cd840899e671e91bead8902",
+        "bytes": 60032
+      },
+      "final_candidate": {
+        "git_blob": "ad9f9170fae6406bd4f391c1bc7d6769fd6038bd",
+        "sha256": "631065ee7dc9b290025df755fbd7da68fb5e746b2cd840899e671e91bead8902",
+        "bytes": 60032
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+      "fixed_main": {
+        "git_blob": "311f90e42e5b4bd64d963b222ca7872ec068d58d",
+        "sha256": "3a987cc520d6dc4e69172b5f2f8ac73ee5f16d71897895657fba1e6e073b7ba7",
+        "bytes": 5512
+      },
+      "fixed_pr133": {
+        "git_blob": "311f90e42e5b4bd64d963b222ca7872ec068d58d",
+        "sha256": "3a987cc520d6dc4e69172b5f2f8ac73ee5f16d71897895657fba1e6e073b7ba7",
+        "bytes": 5512
+      },
+      "final_candidate": {
+        "git_blob": "1b0fb78661292918c286dd0ba96b103cc41843a8",
+        "sha256": "0bbb9324bbfa5942e6ca1beb0d416f6f7b9bab3e5b294432a0f955c70be723c5",
+        "bytes": 6003
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/hierarchical_planning/domain.py",
+      "fixed_main": {
+        "git_blob": "6cc11c84897bfa6c760292cb08d5ee14c8e9d8dd",
+        "sha256": "e0520e8a0afcd6dfc93e5014470fa00a86f8ced697981d6866d024e508d2dbaf",
+        "bytes": 68570
+      },
+      "fixed_pr133": {
+        "git_blob": "6cc11c84897bfa6c760292cb08d5ee14c8e9d8dd",
+        "sha256": "e0520e8a0afcd6dfc93e5014470fa00a86f8ced697981d6866d024e508d2dbaf",
+        "bytes": 68570
+      },
+      "final_candidate": {
+        "git_blob": "0b9888f96f1079ab39bc8aa647cd79fc4cd5199f",
+        "sha256": "7570350aee3a83beec4d360fbebe39c9dd57f5b7ee8d972cd9889cd45f559d33",
+        "bytes": 68630
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/backends.py",
+      "fixed_main": {
+        "git_blob": "45678df72d769e0ef06430abafdc782ecb127ea8",
+        "sha256": "cc2d727b451a1ee368337a95a2ed400b3ab3b09723a200cecd24b742b73722fe",
+        "bytes": 92835
+      },
+      "fixed_pr133": {
+        "git_blob": "b4f7de4f43e03400f5d4d53914fdd9ea1cd1b7e9",
+        "sha256": "6b7e08135ee0238f6b5ee0a782a78b0b437f12385a1c513edfc24583921eebda",
+        "bytes": 94052
+      },
+      "final_candidate": {
+        "git_blob": "b4f7de4f43e03400f5d4d53914fdd9ea1cd1b7e9",
+        "sha256": "6b7e08135ee0238f6b5ee0a782a78b0b437f12385a1c513edfc24583921eebda",
+        "bytes": 94052
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/capabilities.py",
+      "fixed_main": {
+        "git_blob": "ac6f5880f96d8c30447aa79ae52c418b5188f094",
+        "sha256": "10fe788198c80d4fc26576026997506acbbaed9e292e37c74eda33ed8b5ab825",
+        "bytes": 11621
+      },
+      "fixed_pr133": {
+        "git_blob": "01818a09bf66b19695cc47a79450d125086f4eeb",
+        "sha256": "98639aa8c941818f15ef9b93699ce1855260a4965cb0df83deb8027540318e0b",
+        "bytes": 11673
+      },
+      "final_candidate": {
+        "git_blob": "01818a09bf66b19695cc47a79450d125086f4eeb",
+        "sha256": "98639aa8c941818f15ef9b93699ce1855260a4965cb0df83deb8027540318e0b",
+        "bytes": 11673
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/capability_registry.py",
+      "fixed_main": {
+        "git_blob": "65d55118175ba53ab7633a9618a15db945751332",
+        "sha256": "4813fb94d91c8dd5cffef90251df39a776cbb920a5eb0c4802136638032814fa",
+        "bytes": 17725
+      },
+      "fixed_pr133": {
+        "git_blob": "485b5e2aebbf981c0cca497f89b379dd106f670b",
+        "sha256": "56e0a4a658302d07fac34d88d0d41147b67a10e459e7e4fd9167a226a5740a79",
+        "bytes": 17795
+      },
+      "final_candidate": {
+        "git_blob": "485b5e2aebbf981c0cca497f89b379dd106f670b",
+        "sha256": "56e0a4a658302d07fac34d88d0d41147b67a10e459e7e4fd9167a226a5740a79",
+        "bytes": 17795
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/codex_configuration.py",
+      "fixed_main": {
+        "git_blob": "67cd8418d464d75f4a5643a3bb5a1d5e05b7581d",
+        "sha256": "3a2b2450adaf310ef32273441cd809433532f6fa5d40c98c8afb662c4526832b",
+        "bytes": 9476
+      },
+      "fixed_pr133": {
+        "git_blob": "0f5239b1da50606cb49a47599b25be0034a4f6f3",
+        "sha256": "23dc701102ff3bf530e0f8214a37e1384123ce5ada99b9b282d887280e851464",
+        "bytes": 13854
+      },
+      "final_candidate": {
+        "git_blob": "0f5239b1da50606cb49a47599b25be0034a4f6f3",
+        "sha256": "23dc701102ff3bf530e0f8214a37e1384123ce5ada99b9b282d887280e851464",
+        "bytes": 13854
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/cost_routing.py",
+      "fixed_main": {
+        "git_blob": "8b67ef9fe341ec0409a42dcb1aceb48b849b2f77",
+        "sha256": "b8d1e215183de3a8fed4f1c5d238fe942c1a09b71451b6ee201eeea435d06cf4",
+        "bytes": 48651
+      },
+      "fixed_pr133": {
+        "git_blob": "adff78b4a12bcb877b1cac12a83d8e2b85a641f2",
+        "sha256": "6845b0f68ec2505cea9db6efc5b31e44fa3abbb8c59e153de4392985ff7120a7",
+        "bytes": 46753
+      },
+      "final_candidate": {
+        "git_blob": "e82c42d9dc0aa2fa93e23ec884d3fb823d302a82",
+        "sha256": "b490d8297d8408b11657b66ae8c78df68360040db5474f86cc532b7b2a21e3a3",
+        "bytes": 49223
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "new_native_route_counter_and_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/execution_template.py",
+      "fixed_main": {
+        "git_blob": "adc35189a5d6a4305a2183d488364ed9996f5574",
+        "sha256": "11d1ad18312832e2f94bf2765b8a6d22a5421c20c92f4e04c032e2241c748cc6",
+        "bytes": 18446
+      },
+      "fixed_pr133": {
+        "git_blob": "ec042025f15f02234f94baacd43b03f5cb71989a",
+        "sha256": "0a14e38e36208b8fd0aac1bf30622a71d41d0220c6f965a67ac9a1a79f59e358",
+        "bytes": 17735
+      },
+      "final_candidate": {
+        "git_blob": "7e3bfe8ae20ad8f3e40a94211798cec29b25c8f2",
+        "sha256": "9907b35195604c8ea7ef882f4aa4ddf025881e4fcdbb4428ce1eb6588315969b",
+        "bytes": 17185
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/rejected_output.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "812e6f2fd0e650a74313c0e7b090f17f03c98989",
+        "sha256": "f9075dc58457c66bf36747bb0215ff91a140771404e55ac7588e2c25189db40c",
+        "bytes": 2485
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/production_execution/routing_runtime.py",
+      "fixed_main": {
+        "git_blob": "f8c6a5e657a4ebe278943199155abba72d5c6e8d",
+        "sha256": "f1ff6572b8e5c099fcc719ca3bd7d4c95516aae0ba0f0b104362a3e01f7e806a",
+        "bytes": 86414
+      },
+      "fixed_pr133": {
+        "git_blob": "3f3c125c1877b1432bee632d0a10a07d1a1fc112",
+        "sha256": "611a74c1d46ad54fae6546bb61ca44429bd461c30d54c5e44b7c375f762190cb",
+        "bytes": 85836
+      },
+      "final_candidate": {
+        "git_blob": "d28c66d9d29651d148aa887a1e06232d16e441d1",
+        "sha256": "27524fa9555d6aad08af4f26eeb1cf31c84bcec46dae9ab62950d5142bcb4b33",
+        "bytes": 88041
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/publishing/domain.py",
+      "fixed_main": {
+        "git_blob": "c189da0993f5ef4ca496f95950b0a1835e45f3c5",
+        "sha256": "e98f17bad14b5f8081bd70fe3e1a5a84c6847e4a48c2c6ada0390758cc962c53",
+        "bytes": 17047
+      },
+      "fixed_pr133": {
+        "git_blob": "5222df4ef74a57b10c629cd15b89a92873454e87",
+        "sha256": "cb73e1958f7a10c4b45ebe1f6503997fa7169784efaf7f2bdb0fb05fdd4d807d",
+        "bytes": 17082
+      },
+      "final_candidate": {
+        "git_blob": "5222df4ef74a57b10c629cd15b89a92873454e87",
+        "sha256": "cb73e1958f7a10c4b45ebe1f6503997fa7169784efaf7f2bdb0fb05fdd4d807d",
+        "bytes": 17082
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/review/diagnostics.py",
+      "fixed_main": {
+        "git_blob": "a1b9234c43949ac1ffa849cbd5551ac4b2dd05e1",
+        "sha256": "c18999b58cdf3c7305ee2ba15a114bb01cdb6b4d5c0064e7199b558b192850e3",
+        "bytes": 10697
+      },
+      "fixed_pr133": {
+        "git_blob": "8aa448548162d00c0a808b4c03e543f18562d309",
+        "sha256": "ae14e3dd897d7ff7a8b05612a04aad2d53b26d08fdfa466b1901817a183ba84d",
+        "bytes": 11115
+      },
+      "final_candidate": {
+        "git_blob": "8aa448548162d00c0a808b4c03e543f18562d309",
+        "sha256": "ae14e3dd897d7ff7a8b05612a04aad2d53b26d08fdfa466b1901817a183ba84d",
+        "bytes": 11115
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/revision/domain.py",
+      "fixed_main": {
+        "git_blob": "b8ea064ab1b8e697abcf3ab2230f7fc8f0b122b0",
+        "sha256": "ae8c0a606c7eae2e2dc8a25b554cb8b494e79fe492abd053ee267dc747e72714",
+        "bytes": 18307
+      },
+      "fixed_pr133": {
+        "git_blob": "11e50e5298dbcdcf4cdd5550838b8cc9f26db2f6",
+        "sha256": "58ea6e6c2b4c2211eebcc5c3319d833837f89f3a21a39f9d937d48d107963c79",
+        "bytes": 22474
+      },
+      "final_candidate": {
+        "git_blob": "11e50e5298dbcdcf4cdd5550838b8cc9f26db2f6",
+        "sha256": "58ea6e6c2b4c2211eebcc5c3319d833837f89f3a21a39f9d937d48d107963c79",
+        "bytes": 22474
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/author_input.py",
+      "fixed_main": {
+        "git_blob": "d4ee15840befb7f2e633efe0ba5346a59b90f9bb",
+        "sha256": "2a4a26b4d3400b406f9b7bf2a233bd3e161813f6e3e48c3327c6fd5b9e953afe",
+        "bytes": 24668
+      },
+      "fixed_pr133": {
+        "git_blob": "31474ae37792f8b08960dfe2899191c5d70428f7",
+        "sha256": "d70b82240fbefe0098a86da2f8b1b28ab1f74db56f3609f3639996fd96c77fb6",
+        "bytes": 25062
+      },
+      "final_candidate": {
+        "git_blob": "31474ae37792f8b08960dfe2899191c5d70428f7",
+        "sha256": "d70b82240fbefe0098a86da2f8b1b28ab1f74db56f3609f3639996fd96c77fb6",
+        "bytes": 25062
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/creative_validation.py",
+      "fixed_main": {
+        "git_blob": "f5ead9ca75639b0c45127893cf8a366f013c751f",
+        "sha256": "0440a1c2b0dea94f2cc58625a4e5ee680887c7a24eb2b190db21fe3d80e73ae8",
+        "bytes": 4246
+      },
+      "fixed_pr133": {
+        "git_blob": "3463d4110206965c2480ac416bab91b92111f835",
+        "sha256": "8a427de68e1c1bb1124ec709e3ee5da6e0c3e37536be0144ad5af50210a10519",
+        "bytes": 5606
+      },
+      "final_candidate": {
+        "git_blob": "3463d4110206965c2480ac416bab91b92111f835",
+        "sha256": "8a427de68e1c1bb1124ec709e3ee5da6e0c3e37536be0144ad5af50210a10519",
+        "bytes": 5606
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_design_authority/qualification.py",
+      "fixed_main": {
+        "git_blob": "99de047ddd82fe6788ce95ab613f92ac23c48cd5",
+        "sha256": "a6e430fc9d128fed386a6be9bf08d06ca4456a528835b00c85429722748ebd79",
+        "bytes": 35301
+      },
+      "fixed_pr133": {
+        "git_blob": "99de047ddd82fe6788ce95ab613f92ac23c48cd5",
+        "sha256": "a6e430fc9d128fed386a6be9bf08d06ca4456a528835b00c85429722748ebd79",
+        "bytes": 35301
+      },
+      "final_candidate": {
+        "git_blob": "46690b7826f478343a4f6465ec8e6b45464423c8",
+        "sha256": "545b46fda6ddc8054ebca6c1a1c6ec9a70994e373c081d4795e40b8f10c58933",
+        "bytes": 35359
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "foundation_v4_preserves_published_v2_v3"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "fixed_main": {
+        "git_blob": "76877841c1cfabfe53e17aee0ba641674783698d",
+        "sha256": "697931eda0ea33566d3aa718ea2969a4bf8e9a28a4915306a123fe01004de37a",
+        "bytes": 198066
+      },
+      "fixed_pr133": {
+        "git_blob": "8f197c13ca05cd4edc02d87c8db340c0afb14786",
+        "sha256": "91cdc5d43efab61f766d9ac0f83b0eec7a171d1fffd3926b241f11a589830a46",
+        "bytes": 201033
+      },
+      "final_candidate": {
+        "git_blob": "b322a53948a2123c0e2139f8676b8fe0dd134879",
+        "sha256": "f633cb004609b671ebc717106360e2a832f0d19555c739873cc14c0c03f02e63",
+        "bytes": 204541
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/binder.py",
+      "fixed_main": {
+        "git_blob": "fc7f67b9688c1f8b603d04a1b9f07b05cd7c3f28",
+        "sha256": "d1bbaf329bc4c92082d8c7fcef34e0c467464934b38e2cd46ca61f77cb89fe72",
+        "bytes": 23442
+      },
+      "fixed_pr133": {
+        "git_blob": "962b2b55c821e4e99582024a1661a5cbfc8d7c6f",
+        "sha256": "56c44f55f26b45a99222494fa07d3947774b3079b4f4d5ec2794486d83d4437f",
+        "bytes": 23502
+      },
+      "final_candidate": {
+        "git_blob": "058b46b834e6b823b931b9eea82eae63538b764c",
+        "sha256": "ba6ecee5e4c4720c8e70f2d539c1b780bd8ab0f44c8d5bf8a26ba2c03bf2c594",
+        "bytes": 23491
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor",
+        "planning_failure_checkpoint_exact_context_binding"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/domain.py",
+      "fixed_main": {
+        "git_blob": "e9fe45c8e29a549bec2bf9dfc6b0f049b3a25881",
+        "sha256": "061ac7c80c54f8eeb9b47c60905d70d0cd7ac6968a689cbd4e8898f23d616e50",
+        "bytes": 59060
+      },
+      "fixed_pr133": {
+        "git_blob": "f0d5767e82f9fcb8cec03aea2d12535763d5d3ce",
+        "sha256": "0bb35cca252f4f17ce2483cc2c6c8d1361df23ff00fce3ad75c210f917178f3a",
+        "bytes": 59117
+      },
+      "final_candidate": {
+        "git_blob": "0a48f1b99ab99bfc2ec38cd9590b794fa8882317",
+        "sha256": "1438bd50d596c558ea9413446d4fe3b273bddffe52cbb2432c56897d529475cb",
+        "bytes": 59249
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "fixed_main": {
+        "git_blob": "086b60a36093be2a78e1a701f4b5c7e59a447bef",
+        "sha256": "d21b19fbae2d425de3c080c362a6ff7c96206e593c8cc93209dba56194b4c7c2",
+        "bytes": 292676
+      },
+      "fixed_pr133": {
+        "git_blob": "6969788df31d484b9930c78bd4fac0aa53ad6b47",
+        "sha256": "de39c8da7b0226aaa95e22e4dec6251017b0fd5beb69cd7c663d19c3ef2ea34a",
+        "bytes": 282813
+      },
+      "final_candidate": {
+        "git_blob": "af1edd139a96a228c9eb5b41b16a17db7bacc433",
+        "sha256": "15e465e8686461812e42e99d96525ddd6ae1a4786051659a6aa288f02376f1d8",
+        "bytes": 297487
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor",
+        "foundation_v4_preserves_published_v2_v3",
+        "first_evaluator_and_required_world_failure_fixture"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+      "fixed_main": {
+        "git_blob": "9c3b4c42ef152119d09c3039d0b9575d8ae97ddb",
+        "sha256": "f85d6bcc043a180722ca6af0df4e1bcda8cfa1decaeae25a4968465ea842b1cc",
+        "bytes": 23219
+      },
+      "fixed_pr133": {
+        "git_blob": "0a8e4b816bab89cc508655b02a4d4121aee6f352",
+        "sha256": "b87a6e58c7735ff3cfa6f4670c61005b4b008611b9d5eaae29045f51c1a8be5a",
+        "bytes": 23235
+      },
+      "final_candidate": {
+        "git_blob": "7ec846c3bd15d30a577b56b4d3759a781e2dbdc8",
+        "sha256": "562461b7927da9a5609e7fb7ab2d9967556a267ef4781d0ad7f7624fc4e9e28c",
+        "bytes": 24616
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "foundation_rfc6901_schema_and_partial_alternative_fixture",
+        "foundation_v4_preserves_published_v2_v3"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/gateway_result_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "2343e8b941048b2542cfee48b45442c28e66c2e5",
+        "sha256": "fdfd918ce9689135ed75c5425e48b1780c21c36c1731faace3bec087187048a0",
+        "bytes": 27838
+      },
+      "final_candidate": {
+        "git_blob": "52d4210700b48f04d31980c0e3aac4b4112bc812",
+        "sha256": "5e16ff5b3c7e64796fcf81d1c0b2f9d4d90b87d7ecc5f7bc8d8b63c3fc074397",
+        "bytes": 27241
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor",
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/planning_repair_routing.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "a3530629ea8b56028039296e343a277f376ac319",
+        "sha256": "5dea46508b66bb397c035c7443e79d83fdc4076afe1f6fdee6a096c573d69c61",
+        "bytes": 7730
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "new_native_route_counter_and_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/preflight_continuation.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "6b7c1607d794ab8806516e3adc57f6feee115cb6",
+        "sha256": "2bec9386df283b6f37127499e14d73f062f36b1e33aecbbd7798f3e0c35105de",
+        "bytes": 14977
+      },
+      "final_candidate": {
+        "git_blob": "356b4e79359405a99eb7f02baf29512a92dbd65d",
+        "sha256": "04a888e282dbffe1c0c037576b92452adf0384dabcdcd18f45793bbe59e63722",
+        "bytes": 15646
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "86f95ba243c544749ae7405d3c67b8a815028473",
+        "sha256": "e6d1c413c751749f3bfb926cc4ec812a762fc3e8b8fdcc66be10ad12cb221b32",
+        "bytes": 17369
+      },
+      "final_candidate": {
+        "git_blob": "0db5eff1a7e18cb1e2e01022961ae99bbb2342c8",
+        "sha256": "ea7ada46286de359a183264e1753b46444af7a786ca4aa7a163d7c2fb29483ad",
+        "bytes": 18055
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor",
+        "production_ports_and_owned_policy",
+        "retained_foundation_mutation_time_lineage_guard"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+      "fixed_main": {
+        "git_blob": "2e2ee22de25871a88c810628aba4f5a58fa9a21f",
+        "sha256": "a75990c9c289e64a206efac4c3fbeecb0473f7f4c0fd518c8def038cbc35d62c",
+        "bytes": 14978
+      },
+      "fixed_pr133": {
+        "git_blob": "75bd123212302a6d8f29faeaf753a9bc45bb13db",
+        "sha256": "be51331c05179b53a2b78ddcb5c41a7a8e498de89e82c71698672316215f0c98",
+        "bytes": 15322
+      },
+      "final_candidate": {
+        "git_blob": "125946b5142df2c897369109c85fd7b73e8c6222",
+        "sha256": "114a66965f2086c804ded98703957d783e2dcdf54e769e22a0f283ca8fbf8c8b",
+        "bytes": 17330
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor",
+        "foundation_v4_preserves_published_v2_v3",
+        "retained_foundation_mutation_time_lineage_guard",
+        "planning_failure_checkpoint_exact_context_binding"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "fixed_main": {
+        "git_blob": "c8aefcecc71d7459af16d023351f2e9f7d9c687d",
+        "sha256": "1d2681351d7359657e12fa790dcb79b8ed49110c71253cbb04624667cab03d85",
+        "bytes": 44105
+      },
+      "fixed_pr133": {
+        "git_blob": "a04a729173fa5c4228dcaa43be4aef4897e11cb8",
+        "sha256": "b4a8785553703ab9e14c8d2daad8c83bb22590c187575b5bde50bcd7d28eb567",
+        "bytes": 37291
+      },
+      "final_candidate": {
+        "git_blob": "2992b48dc2bb7bb405f4a13aa2046e58132ac6d1",
+        "sha256": "bacdb40fb2b1d77a848d30b1d8761363984316ba2242d49a8d8aacc6d0c0e67d",
+        "bytes": 48656
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/stage_repairs.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "6c13a9b76bb3838fc09989f16d9f5264b242c2b2",
+        "sha256": "fc46aa548ad02df10c9a3a1d5210786d02603515d8ec779af7cb363736c013dc",
+        "bytes": 9489
+      },
+      "final_candidate": {
+        "git_blob": "7c07e0664071fe33498a272f318670e356b9b155",
+        "sha256": "b2011ab611e48076e1257fa7bc5485f0f10205a5616d7af5fe062bc5454926b2",
+        "bytes": 12246
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/world_optional.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "9fa91b733a361dd1bbbd3b96057efb62892fdde9",
+        "sha256": "109e5fcfa3b18350e81677a861df0e45c4b31a7645a2853d59d9141bb650b6bf",
+        "bytes": 31302
+      },
+      "final_candidate": {
+        "git_blob": "e395ee65ddd5f9ec1c0d642f609133322d1aad3c",
+        "sha256": "0ae5be307008b5568a4fc86c4560a938266bee452e66884437b90b2237179dd1",
+        "bytes": 31765
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "production_ports_and_owned_policy"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+      "fixed_main": {
+        "git_blob": "ea1f33bae37bb62da435af7035dd04688c754879",
+        "sha256": "7532af5026ec90e5f0c71844241597be6315850600aa0fe5f28e895516b7f206",
+        "bytes": 42253
+      },
+      "fixed_pr133": {
+        "git_blob": "ab51f0488b6e6c49046daacc3d65ae729dfe936e",
+        "sha256": "8e374e8eee9c9cb363af7da3dad414ac57d38f2c313f49d1cf83c3f38c19073b",
+        "bytes": 32001
+      },
+      "final_candidate": {
+        "git_blob": "eff357c518f7875839b04accb80536041da7b129",
+        "sha256": "8d75af100fb9f6153741de3a5e3190830df20c2e2090c6f5ee4f6abf025c6e78",
+        "bytes": 46483
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [
+        "canonical_blocked_world_identity"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/story_planning_runtime/world_result_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "540a1a66911db4cf535679e299a875e1d1a8b3e8",
+        "sha256": "f806ed028363309fc451a1135cddaec4924888848f8f7532152ece15f7f91e0a",
+        "bytes": 11547
+      },
+      "final_candidate": {
+        "git_blob": "540a1a66911db4cf535679e299a875e1d1a8b3e8",
+        "sha256": "f806ed028363309fc451a1135cddaec4924888848f8f7532152ece15f7f91e0a",
+        "bytes": 11547
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "RETIRE_DUPLICATE",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/modules/worldbuilding/production_schema.py",
+      "fixed_main": {
+        "git_blob": "1572d10f3d4a5ad96c878a36ef4f013d387b0a09",
+        "sha256": "b7388dca4406d45327d8ff9cc33cd19e595bea6cf0450f3ecc802c3f6c7e8569",
+        "bytes": 12617
+      },
+      "fixed_pr133": {
+        "git_blob": "5e6a993edb926a441d0f99bde3d4aaf8f6baa3ab",
+        "sha256": "2b2ebdc409f4f0a2fc6143393135c72b7d027100fbfc90789b5abe9529f58339",
+        "bytes": 9614
+      },
+      "final_candidate": {
+        "git_blob": "6aba7edef37d97b44e6ea243ed5e43100a00ccdb",
+        "sha256": "0d096964fbf02757cc3cc07f8445bd9c9b6d994257d61cb876cd2c7635600f06",
+        "bytes": 13230
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/runner.py",
+      "fixed_main": {
+        "git_blob": "3847097fa00af32307536f8bcbf297b066e2db11",
+        "sha256": "9fa556da5283b8c5cccff8aca5d5bdf8e9f0418f7b08878901692a4dbd277983",
+        "bytes": 8256
+      },
+      "fixed_pr133": {
+        "git_blob": "3847097fa00af32307536f8bcbf297b066e2db11",
+        "sha256": "9fa556da5283b8c5cccff8aca5d5bdf8e9f0418f7b08878901692a4dbd277983",
+        "bytes": 8256
+      },
+      "final_candidate": {
+        "git_blob": "aed71ee2e6d00a415ce95b4d6892a5486e04308e",
+        "sha256": "0fdcd9b46c79adc0f8e813f92b61e878833a6b16b0b82a8db07f4c6786c4dd9c",
+        "bytes": 8602
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/__init__.py",
+      "fixed_main": {
+        "git_blob": "d46b9dfda0162f7aa6fb4cf86397726c3f466211",
+        "sha256": "66ccabfea02bb0fe949999674377a271bafee639d33ab67fac1c353d79c98b81",
+        "bytes": 15152
+      },
+      "fixed_pr133": {
+        "git_blob": "9ab928b1efcaceea537e580fe88850344231a459",
+        "sha256": "55076e847049621efb54ea3f922b8a67d02775adb0600e905e208f30a8264d70",
+        "bytes": 15678
+      },
+      "final_candidate": {
+        "git_blob": "76ec2a67b2d213b3c38abfe4a8be7c797dd4299d",
+        "sha256": "ba1bb68f289f36a23be28a167988cce29f9ce0a6da2fd66a8c069220ed1b0f5d",
+        "bytes": 15988
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "KEEP_MAIN",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "1b1ffd8b2ba8b0c73ea7af4ce78c5cf7c969a877",
+        "sha256": "3d8438bed44fcc571a2de8ce480cc2dc2cec24e20d23671840d330bb6740c7c9",
+        "bytes": 3888
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "08a48206fbcb8ff267bf14318f7b77e051bf5223",
+        "sha256": "a841e1483663a813279f634e0a818bc68e21cf77aff38854ddf29e381c9cb883",
+        "bytes": 8834
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "a345034006700740f5fe24854d3043d1c2435977",
+        "sha256": "fa9c2e2d67821a74ab712c3a30ea320f9f5140b5f01a529d4b5c185fd5eef8a5",
+        "bytes": 9262
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "5eac7e1c0efb378107d8024b6e55787943698261",
+        "sha256": "91c3eb6e1b920f63607e5d5339484bba77bb3d08e89bc74af335c513bce09b64",
+        "bytes": 13379
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight",
+        "unpublished_optional_world_sql_main_compatibility"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "392241413aba8ab155ee0b82ce573c959d7fc61f",
+        "sha256": "f6302ade8351e36c06d703666fc895080af551d1cc1318b65ac69e00ae406800",
+        "bytes": 5239
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "879d3ab650d11afc94d91d112bffb90985e7bd3a",
+        "sha256": "1ac967edd79392fdcb3a98b3b2d7ef06f0238d0bedd046ded660ad7cdcacde1a",
+        "bytes": 15255
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight",
+        "unpublished_optional_world_sql_main_compatibility"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "42ded1447b0293468f0aa86fe8c9903f5ec36810",
+        "sha256": "e6bff7a85379e255668ca56b24ba78c77eac5a71839dbd05155a8e60d9005901",
+        "bytes": 1187
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "bb127cd7eab3b9a8e3dcd822528d896a31e3ff78",
+        "sha256": "22eef73645660fb65acb77c670eb312efc94839ec8d5434402cabee77436f2d7",
+        "bytes": 14564
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight",
+        "unpublished_optional_world_sql_main_compatibility"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "2be0294d57acdc39bc87aff1193c4ecc237a5a87",
+        "sha256": "95ec57374f592ccf8ac8dcd6b8a6ddb47df52a62c03c969498e7af765dbe3752",
+        "bytes": 15424
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "forward_migration_identity_and_history_preflight",
+        "unpublished_optional_world_sql_main_compatibility"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "src/novel_forge/storage/world_preparation_repositories.py",
+      "fixed_main": {
+        "git_blob": "ba3d5e0cc19d76110718b4c37ef39db0b2076eab",
+        "sha256": "a76269a6665f8bb9bc5484d95e69610b2befc050bfc63e9e642362be8692db26",
+        "bytes": 38961
+      },
+      "fixed_pr133": {
+        "git_blob": "7c66365ad81e43d2772f70bfa4babfc0acdf0cf6",
+        "sha256": "ef2e2355f8d9685ca053421e15faa9312760d86ee8122ed79b6ffcbf934e0b31",
+        "bytes": 39241
+      },
+      "final_candidate": {
+        "git_blob": "7c66365ad81e43d2772f70bfa4babfc0acdf0cf6",
+        "sha256": "ef2e2355f8d9685ca053421e15faa9312760d86ee8122ed79b6ffcbf934e0b31",
+        "bytes": 39241
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/architecture/test_capability_pack_authority_boundaries.py",
+      "fixed_main": {
+        "git_blob": "cf005a5a062d793d4298e512c3e139e6f38ecf7b",
+        "sha256": "8d2b47f69f432cdf8f5a47b5315bc3a986ce81f9f740033be29fce5c3ee1536a",
+        "bytes": 5371
+      },
+      "fixed_pr133": {
+        "git_blob": "cf005a5a062d793d4298e512c3e139e6f38ecf7b",
+        "sha256": "8d2b47f69f432cdf8f5a47b5315bc3a986ce81f9f740033be29fce5c3ee1536a",
+        "bytes": 5371
+      },
+      "final_candidate": {
+        "git_blob": "d0dcd1e3022a11a8196a68398622554f64b3a10d",
+        "sha256": "eeb5628c0d5b81b83b871ee95db20e9f0e61c57e1fc571ba8cc2b72b51de273c",
+        "bytes": 5582
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/creative_validation_production_support.py",
+      "fixed_main": {
+        "git_blob": "bf6c27b999bec7f45e7fd3f9f2138d39e7f675df",
+        "sha256": "336f2d75f11fc4b830e17020680ba5251bc7f0363dda6c78548aa8435cd4e362",
+        "bytes": 10149
+      },
+      "fixed_pr133": {
+        "git_blob": "6158a4dfb42256faa74e31602f548f1d33e2646a",
+        "sha256": "7a0d2a3d0a125ddcff51f89b41551ffb2f749119299f8f00deb65d115250646b",
+        "bytes": 11709
+      },
+      "final_candidate": {
+        "git_blob": "6158a4dfb42256faa74e31602f548f1d33e2646a",
+        "sha256": "7a0d2a3d0a125ddcff51f89b41551ffb2f749119299f8f00deb65d115250646b",
+        "bytes": 11709
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/synthesis_production_support.py",
+      "fixed_main": {
+        "git_blob": "86b3af302e957bdc61260ad9b6028a484c80f9c0",
+        "sha256": "144ae2c001088ef99368767bb3b28449d54ceec9eee333183d3d35372f44aaa6",
+        "bytes": 11439
+      },
+      "fixed_pr133": {
+        "git_blob": "86b3af302e957bdc61260ad9b6028a484c80f9c0",
+        "sha256": "144ae2c001088ef99368767bb3b28449d54ceec9eee333183d3d35372f44aaa6",
+        "bytes": 11439
+      },
+      "final_candidate": {
+        "git_blob": "a952235e50016c89f987867f47af6fb156e6accf",
+        "sha256": "cc6cba6dfea531a6d07def77316538bb994ecd078e2ef34adae3b7aa6845a075",
+        "bytes": 11760
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "shared_controlled_provider_fixture_versioning"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+      "fixed_main": {
+        "git_blob": "c0942c1b37bf9daab95d6b2bd71ee1b456a4cbf2",
+        "sha256": "067fe917fc37e159d99fe6e3eb6659950d8ba6c382f6ffc35aaf5a601dfe646b",
+        "bytes": 88749
+      },
+      "fixed_pr133": {
+        "git_blob": "caf1abdb57aff1fa664f45063b691c2351186d5b",
+        "sha256": "7cca2d9ee9a3187bec56aca908466d323c3fb967c53d9515ea3b34dfa781f73a",
+        "bytes": 92642
+      },
+      "final_candidate": {
+        "git_blob": "2e16de725e8e6954b845c5e2093bdbc2551bf4c8",
+        "sha256": "d776df4a71b993c7b40f712365575afe2c873b7ab85e5d978e22fbf72cc3e2f4",
+        "bytes": 92649
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_creation_cli_postgres.py",
+      "fixed_main": {
+        "git_blob": "dbe83215edd3982db2459f60f143d7cb905f228f",
+        "sha256": "83984f24ea369ba8dc17d094560a4212b0a2a0b23a0bb71e2a8ff28e34aebd8b",
+        "bytes": 53259
+      },
+      "fixed_pr133": {
+        "git_blob": "20ac5e9f7fe4da1d64619ed7fc528638b4dd5f9a",
+        "sha256": "ea7ee85cf9aa086a9832bf455ffd97e42a8eab5204f9ace68421fa1d2022953f",
+        "bytes": 11905
+      },
+      "final_candidate": {
+        "git_blob": "6e8f643c5e2ae5279b32ed6596d6a0e367bdc372",
+        "sha256": "f9631976c663f9a100b0cd59906993dd92a85233f99eeb1084f86c825e9b4b7a",
+        "bytes": 58804
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "foundation_rfc6901_schema_and_partial_alternative_fixture",
+        "fixed_main_historical_world_classifier_fixture_scope"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_creative_validation_admission_postgres.py",
+      "fixed_main": {
+        "git_blob": "91da05eeb4c6f581da1d5d06bac7100e201157d6",
+        "sha256": "c9cff67013fd0c4ecb0889cc3c95a0e025f887a1be950429dd6c6b559c3454b0",
+        "bytes": 3697
+      },
+      "fixed_pr133": {
+        "git_blob": "71f7c477fa07c1c2ecaf17cee4669ca6d0c342ca",
+        "sha256": "ffa1ffc858a90c8b2c2dbf273f8ffc12762b18afd4f51654e1a32c2faf9dd94c",
+        "bytes": 6978
+      },
+      "final_candidate": {
+        "git_blob": "d58a5b6fcede72dd18ea9539d6b1ef2f3cef289b",
+        "sha256": "0d23c302eef8541df3ec0e82c980a7a88cce85d8844cb9ceeec1b2b5b4c2bbaa",
+        "bytes": 10675
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "retained_foundation_mutation_time_lineage_guard"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_creative_validation_integration_upgrade_postgres.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "7442f1efff1d4a477ef5b9878c7fb2b18b83f892",
+        "sha256": "edc085cfa301709c228077cf4ee695ef3f00e870d332b1b80567880533bda151",
+        "bytes": 16131
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_external_effect_runtime_postgres.py",
+      "fixed_main": {
+        "git_blob": "1057bd24fc56d23c4b12e02befc4c73acdf84e16",
+        "sha256": "c1c4700df43e16d763fde778c6a59fa3e8323e8163ea85cd6e88cb169babaa5e",
+        "bytes": 39198
+      },
+      "fixed_pr133": {
+        "git_blob": "90626da38c5a02591e89f6e3544779425036b0a6",
+        "sha256": "5c3ac2b507bc53ca4913f25095777683d6ac33c578ecde9021c3b1653486d86f",
+        "bytes": 42093
+      },
+      "final_candidate": {
+        "git_blob": "90626da38c5a02591e89f6e3544779425036b0a6",
+        "sha256": "5c3ac2b507bc53ca4913f25095777683d6ac33c578ecde9021c3b1653486d86f",
+        "bytes": 42093
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_migration_history_admission_postgres.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "ac076fb9370fc29bd14648ff57feaa85f5f81022",
+        "sha256": "4037e7dca2e5858b559f3029de6a32fab7da40bd5136e1efd90dfd5ae6708dc5",
+        "bytes": 3985
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/integration/test_synthesis_formation_postgres.py",
+      "fixed_main": {
+        "git_blob": "b3c12090750d27d35aad513bfa78013cb09f8d46",
+        "sha256": "34e7b388b7e1ed9a4b42a8850af5072ccf8666d3323ff1b0e089a15027459514",
+        "bytes": 66785
+      },
+      "fixed_pr133": {
+        "git_blob": "ff5142b375dca58fe3ca0e9b54104f377c8fac40",
+        "sha256": "acee3a0ed1e787f8cb78373c42f403f614873223d1184142fcb5cc1478cdbb5a",
+        "bytes": 158299
+      },
+      "final_candidate": {
+        "git_blob": "8c920a37c07c3a4fc28a244e6ae453e4a997fbaa",
+        "sha256": "47cdd9bfeab19f2f22e801b0c2816f3d5a3176c9e0481ec9564070f8f8e2e12d",
+        "bytes": 168035
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "first_evaluator_and_required_world_failure_fixture"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_authority_asset_locator.py",
+      "fixed_main": {
+        "git_blob": "66afddeef7eb27276cb6a9bdaa5e8eebfdb6c2ad",
+        "sha256": "cafba236da8b8597178ba2ead19de596115ca7f351469b9c5985c7a9db1a6ced",
+        "bytes": 2338
+      },
+      "fixed_pr133": {
+        "git_blob": "d4ec781796723fd49ce1d51f1fd06d2edfd9f7ef",
+        "sha256": "afdc86e19be8ecb1ac37002663c432b86967498646876636c3790d4c53cc82b9",
+        "bytes": 2780
+      },
+      "final_candidate": {
+        "git_blob": "d4ec781796723fd49ce1d51f1fd06d2edfd9f7ef",
+        "sha256": "afdc86e19be8ecb1ac37002663c432b86967498646876636c3790d4c53cc82b9",
+        "bytes": 2780
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_authority_worker_execution.py",
+      "fixed_main": {
+        "git_blob": "85a34625d09b9e6ad416d5407bc36f36795c74af",
+        "sha256": "84171947608b69166224b48feb238d42ff9b59b3684c7d229399c5871827f667",
+        "bytes": 6711
+      },
+      "fixed_pr133": {
+        "git_blob": "069be760e70f0470baf2ff1ce4d4632162b1cee1",
+        "sha256": "5385d43507f8612ed63a6234ae54c67e01f4224b624ba77895a51e2fc61b724a",
+        "bytes": 7443
+      },
+      "final_candidate": {
+        "git_blob": "cddb5123d2a02405cb5537924337c6fa6c2c8cbc",
+        "sha256": "30cec59fe4e0514b2a511f53e6808b92c190f3424ef1ee9a1f519f8293dc60ab",
+        "bytes": 7744
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_book_execution_recovery.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "ce7f08685423e03a3ffe05a37fb0b1eee2850ed6",
+        "sha256": "6946a66236a260ec7a983342e04551247741c8b7d207268127d58ace6e9120eb",
+        "bytes": 4848
+      },
+      "final_candidate": {
+        "git_blob": "4b4e6f95a25b22ad741c30a9b6733589eb6bfe24",
+        "sha256": "5dc36657380a23c9c87dd9130119d5087b9a3d2bd6393b6f444ea44fcca4fcab",
+        "bytes": 12496
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_capability_pack_artifact_materialization.py",
+      "fixed_main": {
+        "git_blob": "c521629a366f3a2e3db4ccacd13fe53692fc4c4d",
+        "sha256": "bb6bc9aedf06f8d1f892af6291a0a4a2907cedf356e93764943176d666547fff",
+        "bytes": 25501
+      },
+      "fixed_pr133": {
+        "git_blob": "6f8e146ce0b106d983af8b4d0e4f29ceb3cd1bde",
+        "sha256": "fcd058d34353dcbd9f322caa7dadee32499e579559ec165da0ec99398bd187d3",
+        "bytes": 25679
+      },
+      "final_candidate": {
+        "git_blob": "56ab81d1cd122dc9036f67edf30367e42a6e57bd",
+        "sha256": "617ff4a1f6db74844c841b9ab5dd006765925309e16f112687337381950b4bc7",
+        "bytes": 25680
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_capability_pack_resolution_compiler.py",
+      "fixed_main": {
+        "git_blob": "b8d6a7bcbd8019de1f5cd10bb8674317cbdf3fb7",
+        "sha256": "975c65f1247f7491c64a8d8a65e08bd5f217bab88423477b68628e075419bcd0",
+        "bytes": 32395
+      },
+      "fixed_pr133": {
+        "git_blob": "b8d6a7bcbd8019de1f5cd10bb8674317cbdf3fb7",
+        "sha256": "975c65f1247f7491c64a8d8a65e08bd5f217bab88423477b68628e075419bcd0",
+        "bytes": 32395
+      },
+      "final_candidate": {
+        "git_blob": "92cbb7329799eb31ed686c1c91977e08bd849ee9",
+        "sha256": "c458baa1363e6db5c4da547c70304c27e3e805478c583a5831c09538a2efa273",
+        "bytes": 32505
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_capability_pack_validator.py",
+      "fixed_main": {
+        "git_blob": "1bea2c93615fb5f9f67f9f312a922b8709d6eb78",
+        "sha256": "b3a736106a4d8dfc9add48c2178ffe7a67ea46613b7c8bfbdf475f5f228896ed",
+        "bytes": 28602
+      },
+      "fixed_pr133": {
+        "git_blob": "76bd5af776e1fd574b463297028af933dd3d0ad5",
+        "sha256": "cc8660514ce4e615faa07b051f31de1682eed98c06e8b4e3b4f359a2b9fde0ee",
+        "bytes": 28602
+      },
+      "final_candidate": {
+        "git_blob": "a24ff3c5ec97ca579047bfe27bdbf846c7a500f9",
+        "sha256": "d37f92430ca1f41103dcdcd47155dd129fc93e5cf86f14830f6e0ca22c92c724",
+        "bytes": 28602
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_agent_binding_boundary.py",
+      "fixed_main": {
+        "git_blob": "0f1977db8e4499ad4ca93155608e0163392c2e7d",
+        "sha256": "ca4edaeb8a9d4f411889f5292ee2d484dfd394dd9250fea2c20cbc4649014a8c",
+        "bytes": 2323
+      },
+      "fixed_pr133": {
+        "git_blob": "0f1977db8e4499ad4ca93155608e0163392c2e7d",
+        "sha256": "ca4edaeb8a9d4f411889f5292ee2d484dfd394dd9250fea2c20cbc4649014a8c",
+        "bytes": 2323
+      },
+      "final_candidate": {
+        "git_blob": "181ca44e0c2a5f92438856cd3e0d73837c3145b2",
+        "sha256": "fd3dd740b7626253e03f5cbe8015a73be96f8937b9309f92e365142e83ba3d08",
+        "bytes": 2397
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_authority_definitions.py",
+      "fixed_main": {
+        "git_blob": "7236410e863be839964b3e61e07d50303b6109b7",
+        "sha256": "3165df916e1c053e455f78e2ea49bedffa64f5d77e6ee13d4187961a7e7cd6c9",
+        "bytes": 13487
+      },
+      "fixed_pr133": {
+        "git_blob": "ac7af6b2993062a7fc70828b88b951f7eb4a240d",
+        "sha256": "658c68bd7eab1b5813b391f44d14590c75a22c0da088a12e3cc5ae4a4eb0a8b7",
+        "bytes": 13601
+      },
+      "final_candidate": {
+        "git_blob": "3b7234b51bb09377a0a2b55807df3cbef00a4e1e",
+        "sha256": "79e155cd5d878af9b666911b5721a932d28c6418ca0e245e5f4a76342b460520",
+        "bytes": 13611
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor",
+        "exact_plan_semantic_mapping_and_fallback_style_identity"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_authority_dependencies.py",
+      "fixed_main": {
+        "git_blob": "6ff8f6aa7ee71d557388ddee9b7d47ff1df7ce7e",
+        "sha256": "b71bb05b7b0d1bbabf0f05796804d80c897ca406c165cb0f130655361d8c0609",
+        "bytes": 38390
+      },
+      "fixed_pr133": {
+        "git_blob": "eeb22ec975e936eed700ebc2405e09a3278d71c6",
+        "sha256": "f0cb09f1b01f8d844df86f90442bcbf30bce113b88530bd6fa399a34bd8216b1",
+        "bytes": 38635
+      },
+      "final_candidate": {
+        "git_blob": "eeb22ec975e936eed700ebc2405e09a3278d71c6",
+        "sha256": "f0cb09f1b01f8d844df86f90442bcbf30bce113b88530bd6fa399a34bd8216b1",
+        "bytes": 38635
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_provider_output_contracts.py",
+      "fixed_main": {
+        "git_blob": "1e65365277b381a64e9fb844b74dfc8cee6ebf3e",
+        "sha256": "30033c59827e18e9a1f12b325c864641396a719e5f2e636a684fd4c7693f0ed0",
+        "bytes": 45712
+      },
+      "fixed_pr133": {
+        "git_blob": "f8b11c1e32f9234f55df1bb68963b45f76efe678",
+        "sha256": "e6c481e089248c3b8e6149e91b8c63b747a10e682653e4b2cf777ad95fab9624",
+        "bytes": 50480
+      },
+      "final_candidate": {
+        "git_blob": "f8b11c1e32f9234f55df1bb68963b45f76efe678",
+        "sha256": "e6c481e089248c3b8e6149e91b8c63b747a10e682653e4b2cf777ad95fab9624",
+        "bytes": 50480
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_chapter_sample_contract_versions.py",
+      "fixed_main": {
+        "git_blob": "8f5387044eec2886685c35fc35f72fdb1abc7a29",
+        "sha256": "49b9ddae055428b1eeef85638e7222e182e93e0cb8ad194c1908c936d56870a2",
+        "bytes": 19998
+      },
+      "fixed_pr133": {
+        "git_blob": "cb02aa397a0a76e2351a1594b16ec787538cf8da",
+        "sha256": "c3d6335ee58394f6c75d129a52a95ce572f4d581040a3d8e689a3559dcdd6037",
+        "bytes": 20735
+      },
+      "final_candidate": {
+        "git_blob": "cb02aa397a0a76e2351a1594b16ec787538cf8da",
+        "sha256": "c3d6335ee58394f6c75d129a52a95ce572f4d581040a3d8e689a3559dcdd6037",
+        "bytes": 20735
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_codex_execution_evidence.py",
+      "fixed_main": {
+        "git_blob": "ad79286e834098037b242647512fd552c56c7636",
+        "sha256": "5a3b6c6f3c9d2af8f5ccba7ebe229626b6a819ad2ba4d605f3f5f9cd3562788b",
+        "bytes": 29700
+      },
+      "fixed_pr133": {
+        "git_blob": "ec7fa13ce200e2063e5fa2904d03406db59107ff",
+        "sha256": "b835fb42e476e27203dd12926570da1bf598c52e5ab77fb22478bd406f633e88",
+        "bytes": 36179
+      },
+      "final_candidate": {
+        "git_blob": "ec7fa13ce200e2063e5fa2904d03406db59107ff",
+        "sha256": "b835fb42e476e27203dd12926570da1bf598c52e5ab77fb22478bd406f633e88",
+        "bytes": 36179
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_context_compression_provider.py",
+      "fixed_main": {
+        "git_blob": "3c04a96a307acf63b175d2467f3fe7976c43b839",
+        "sha256": "5ab7500be72d42f51f8e5364204445d9661133f2de30447d96e959d9851bd5a8",
+        "bytes": 24244
+      },
+      "fixed_pr133": {
+        "git_blob": "73b2667a1e66fcb586cc039ef8236d6b9f179122",
+        "sha256": "3a7f846b9f805ed60d66efc586d392648f11ae2190281d26645622a4d7dc3851",
+        "bytes": 22590
+      },
+      "final_candidate": {
+        "git_blob": "d5db0a8c77f3d7c0f4b0d0b9011c59fffa1af64d",
+        "sha256": "9ac530e4c229adfea29e8eb5b3852c455feb5cd8eadad3e4c4a8f6ac392cba39",
+        "bytes": 25035
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_cost_aware_routing.py",
+      "fixed_main": {
+        "git_blob": "44f489d97bd2de665435af2fed7bc63b31d3b420",
+        "sha256": "d0b006ffc543879e71d3c1f2a738c8e275acbb66ebd8069f77537d3104c60ffe",
+        "bytes": 47002
+      },
+      "fixed_pr133": {
+        "git_blob": "bc4a8c5e99488054a6548c78b4262eeb2f8385d6",
+        "sha256": "3a43b11d6f431ff6c33c4d588e3eb440e6be38502c6793b550350ff429d3104d",
+        "bytes": 42926
+      },
+      "final_candidate": {
+        "git_blob": "a85dd9e9bd13013075afa6d6a26b531c764138c0",
+        "sha256": "95cf4511bcb3132a950b0fbcbd10dd2d488d7aafa37d47c1d66af810016bde27",
+        "bytes": 48323
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "new_native_route_counter_and_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_creation_recovery_control.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "5f8d984f578783e33a86e6571a1e9e1ab451daf2",
+        "sha256": "f71754403a134a0652d1cdff7773ed5c13a45d7ba1b71ab30fe88c97ffe4cd5d",
+        "bytes": 3318
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_creation_runner_settings.py",
+      "fixed_main": {
+        "git_blob": "a1fe983c34cbfb478e29bc4b464fee357e5239d5",
+        "sha256": "02aa02298481fc362b2e2d0fc77bd52adbaf002002f099f3c40dcd251a7d0693",
+        "bytes": 3781
+      },
+      "fixed_pr133": {
+        "git_blob": "a1fe983c34cbfb478e29bc4b464fee357e5239d5",
+        "sha256": "02aa02298481fc362b2e2d0fc77bd52adbaf002002f099f3c40dcd251a7d0693",
+        "bytes": 3781
+      },
+      "final_candidate": {
+        "git_blob": "4bcd30d70412b0e4d3ef28cb8874a6738e28028b",
+        "sha256": "c2e4603f0decf42b83778b52825ff473a60dc9d5550ce57c83f2d2a809485bc5",
+        "bytes": 3792
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_creative_execution_template.py",
+      "fixed_main": {
+        "git_blob": "7cf8403ef73ea3c6f47ca7da64dd46b6ffe109a8",
+        "sha256": "e05d97820cf27780422b8291170eff6bb2df1cffb585cce3ab4e9c2b1610f725",
+        "bytes": 10915
+      },
+      "fixed_pr133": {
+        "git_blob": "4345e530e1d6767736b5bce6f57c116b4979ecd1",
+        "sha256": "0dd7114264493aa6431572d95b8fd762ccdb84e08bc2d74f289087922d687a2c",
+        "bytes": 15503
+      },
+      "final_candidate": {
+        "git_blob": "b239d7252daeed08ae7d4c1d1d36dc04732ff048",
+        "sha256": "a7862c4d117e04c5cccf0b0b6c2f0d9fd90133c5a03fbefeb1e08e5f7f93656d",
+        "bytes": 18554
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_creative_quality_admission.py",
+      "fixed_main": {
+        "git_blob": "2909c07bbc66440794c17a6ec4c982b5e1f30bc5",
+        "sha256": "833b58b593c9b86fffe68a7744c21eeae4c2f13e3a7ff846cd94cafe5042b716",
+        "bytes": 3289
+      },
+      "fixed_pr133": {
+        "git_blob": "d5b6c8b0ce7860302d655e0c55ce5c961be51480",
+        "sha256": "297bbecc4dec2910ebd89c87ff2badbf9dc6a9a8b2ee3e55ce91e78796962ff1",
+        "bytes": 5655
+      },
+      "final_candidate": {
+        "git_blob": "d5b6c8b0ce7860302d655e0c55ce5c961be51480",
+        "sha256": "297bbecc4dec2910ebd89c87ff2badbf9dc6a9a8b2ee3e55ce91e78796962ff1",
+        "bytes": 5655
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_cross_chapter_prose_review.py",
+      "fixed_main": {
+        "git_blob": "9d4cd2ebd202790705b11975dd304b1c9b9f7a03",
+        "sha256": "df7f6ff412f0bfc48d90126b3dddb10a54e804e03909b0907a7e36ad9f72075e",
+        "bytes": 21077
+      },
+      "fixed_pr133": {
+        "git_blob": "9d4cd2ebd202790705b11975dd304b1c9b9f7a03",
+        "sha256": "df7f6ff412f0bfc48d90126b3dddb10a54e804e03909b0907a7e36ad9f72075e",
+        "bytes": 21077
+      },
+      "final_candidate": {
+        "git_blob": "6e945a35b18ea041a9fdc528bee7a8990ee94a3f",
+        "sha256": "1e562ce19305eee611bcd2c97aeb81ffa1d42626355bbee2408672076d77fba0",
+        "bytes": 21124
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_derived_step_revalidation.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "be35e9ac22129882cbfa5c4415ab316b1ded1020",
+        "sha256": "ec1a99793f81df527826e95377c556aa4f49173e9bce8252a292191ea70d11f4",
+        "bytes": 2850
+      },
+      "final_candidate": {
+        "git_blob": "bb4ebef04001e81017c6222dd799655e18e7de99",
+        "sha256": "4076a388d9a9002c23ee0d55f99d6eddd4c87f22cc0c35004dc2da3548432ba6",
+        "bytes": 4168
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_deterministic_continuity_validator.py",
+      "fixed_main": {
+        "git_blob": "35429174cc874c3c7a60ebd2eacfaf47e9871b97",
+        "sha256": "d826062b472182ac90be6d1b0bfd31e3c5e6b5cb1551274d9549057bb1fb5b9c",
+        "bytes": 22759
+      },
+      "fixed_pr133": {
+        "git_blob": "a65482927acf52f8c93f6d667e2b098c2ced19ae",
+        "sha256": "5df1ebd93b83ad57c1a6d181585dd4004edc68ddfa88750b5cfde5e7a7cf2bb1",
+        "bytes": 25299
+      },
+      "final_candidate": {
+        "git_blob": "a65482927acf52f8c93f6d667e2b098c2ced19ae",
+        "sha256": "5df1ebd93b83ad57c1a6d181585dd4004edc68ddfa88750b5cfde5e7a7cf2bb1",
+        "bytes": 25299
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_grounded_canon.py",
+      "fixed_main": {
+        "git_blob": "faba761de176ac97c50ed6c05985aec0a1118803",
+        "sha256": "f19e2e45eaed13cf384f07c4ed00ca483508610c8d98d79c5505a18584eb2f4f",
+        "bytes": 17286
+      },
+      "fixed_pr133": {
+        "git_blob": "146987d6d2f55aeba236d3e463ecd7e2b3c0c184",
+        "sha256": "0065088df1ea32ab26a821272c3808d2cb932c90567942a54a5ccfac698ac643",
+        "bytes": 19558
+      },
+      "final_candidate": {
+        "git_blob": "146987d6d2f55aeba236d3e463ecd7e2b3c0c184",
+        "sha256": "0065088df1ea32ab26a821272c3808d2cb932c90567942a54a5ccfac698ac643",
+        "bytes": 19558
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_longform_capability_pack_profiles.py",
+      "fixed_main": {
+        "git_blob": "ce28e9c6b599de9427ba89afd1accc939dae8400",
+        "sha256": "2ca57449fed0698a1af31ddc3e39f112b7124c16626cc1b851d2593686ffcea0",
+        "bytes": 10568
+      },
+      "fixed_pr133": {
+        "git_blob": "ab76677722b611b46482dfd3ef3448a3ff5fef7b",
+        "sha256": "854aed5cd4aa1f33e3cd1d4a7d13dc74882436148d2cedebea62684c76bdea1b",
+        "bytes": 13470
+      },
+      "final_candidate": {
+        "git_blob": "ab76677722b611b46482dfd3ef3448a3ff5fef7b",
+        "sha256": "854aed5cd4aa1f33e3cd1d4a7d13dc74882436148d2cedebea62684c76bdea1b",
+        "bytes": 13470
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_migration_history_admission.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "b28d207c5ac1b5e8a2f884fa383d4fde294a155c",
+        "sha256": "4f79be587e6cc1341b9ca055bba721f1635fc6423f8890e4e0ffbe940b56ab90",
+        "bytes": 1645
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_narrative_search_branch_registration.py",
+      "fixed_main": {
+        "git_blob": "02c946390c6c1b079e17ec9c4038a7a444080b38",
+        "sha256": "d9765fca0f90611388a01ee0d93b969511e28fc78e585168f1c958ff1a0dacd6",
+        "bytes": 39864
+      },
+      "fixed_pr133": {
+        "git_blob": "02c946390c6c1b079e17ec9c4038a7a444080b38",
+        "sha256": "d9765fca0f90611388a01ee0d93b969511e28fc78e585168f1c958ff1a0dacd6",
+        "bytes": 39864
+      },
+      "final_candidate": {
+        "git_blob": "20a62f303da614cbe80374d8a2452c7ac0500b08",
+        "sha256": "5c7e011f3e72daa0e8ccdbef296a9de718ae6d35c834268f6d7a5d0f1926ea0a",
+        "bytes": 40259
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_native_planning_repair_routing.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "17837f73ca2ab8370e42669452e0d84404fedbb4",
+        "sha256": "f471fa9aa9f28e426e7c336889cf39aadc6613c99e3aa5d9e3774016a9584f63",
+        "bytes": 8704
+      },
+      "final_candidate": {
+        "git_blob": "d9b2d4bae4e4489d8ab4802c03deaadfa3d13f78",
+        "sha256": "e8125211d749de5b86ad5d65cc1b8258559cff961bb37088f78db117baac7098",
+        "bytes": 8601
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_native_stage_repair_bound.py",
+      "fixed_main": null,
+      "fixed_pr133": {
+        "git_blob": "7c69536426b0b3d42c8b9ade8e182c77097085d7",
+        "sha256": "3e6ed1caf86d26ae3af4d3a9e6387ed5a87dc7bc2bdfb64267e3b7480beb4939",
+        "bytes": 4146
+      },
+      "final_candidate": {
+        "git_blob": "7817f85284162a1af724067fbc7a39820364854e",
+        "sha256": "b8ebe78520d288779d3ae1b39ce995c78ce56bf5f990874a6ca0e8cdeb3ef716",
+        "bytes": 6864
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_planning_result_context_identity.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "63ab16e9a4b3305b0ec2bd5924b6372ef0c35818",
+        "sha256": "1198bcdb192837bf69489b4b532d8256c18c11fa2e5723ac872edfb14f067e33",
+        "bytes": 4417
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "planning_failure_checkpoint_exact_context_binding"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_planning_routing_bootstrap.py",
+      "fixed_main": {
+        "git_blob": "bc068afe5ed517c92198f6747ae87f181450cd03",
+        "sha256": "c05432203567deb6158766fc19a57def4577d96da8b5d7237c57610f778c50d3",
+        "bytes": 20735
+      },
+      "fixed_pr133": {
+        "git_blob": "bc068afe5ed517c92198f6747ae87f181450cd03",
+        "sha256": "c05432203567deb6158766fc19a57def4577d96da8b5d7237c57610f778c50d3",
+        "bytes": 20735
+      },
+      "final_candidate": {
+        "git_blob": "4e7a5d0a05018da1da9dea0d7e184a5812c91d22",
+        "sha256": "56b87528ebddc2be7875861c92999b06292e378c2cf63a2f4b13b54d578958bc",
+        "bytes": 20735
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "new_native_route_counter_and_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_planning_runtime_continuation.py",
+      "fixed_main": {
+        "git_blob": "7f6ec9a61769d123a4203f88e4d7af4bb99ccf57",
+        "sha256": "815d64f84949b538a79fda85def5e78508da44ec435008868690f476d2594169",
+        "bytes": 15106
+      },
+      "fixed_pr133": {
+        "git_blob": "8e1e91cc12fd4330e131abb546b18511ba941b72",
+        "sha256": "1f7008e075d9a07a66bd4743d82cd7cacf5361f798952f6f37d5b03770eb4827",
+        "bytes": 16615
+      },
+      "final_candidate": {
+        "git_blob": "0ad396b5f40930992b76ba3b4a780f5481dda7d0",
+        "sha256": "67b6a5e28fa516b3d6c54be55560f1b7bf49b024ffb9fa27ec5f23b3606fa322",
+        "bytes": 18509
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_prose_reviewer_sampling.py",
+      "fixed_main": {
+        "git_blob": "7365d7e4779477101a95e73f711f3f3515bd1ccc",
+        "sha256": "06e61ef1048d4c1139402556e52940382c9f3fae8c63a60321a516727a6c344b",
+        "bytes": 14683
+      },
+      "fixed_pr133": {
+        "git_blob": "7365d7e4779477101a95e73f711f3f3515bd1ccc",
+        "sha256": "06e61ef1048d4c1139402556e52940382c9f3fae8c63a60321a516727a6c344b",
+        "bytes": 14683
+      },
+      "final_candidate": {
+        "git_blob": "c638f0ed9e5993a7c6cc17d818264a52ef6c91f7",
+        "sha256": "f8788053d20b312356d0421929df7deadc0270b893256323eff92c2045886506",
+        "bytes": 14683
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_quality_frozen_world_foundation.py",
+      "fixed_main": null,
+      "fixed_pr133": null,
+      "final_candidate": {
+        "git_blob": "2abea67d6617c940dc4ac87c036775eccea31c04",
+        "sha256": "751e7cd5e7430204ab56ed3b91be0722e4b61f591db59d68b96c6af5b2cc0485",
+        "bytes": 3125
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "frozen_world_native_qualification_bridge",
+        "integration_protection_and_checked_projection"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_routing_bootstrap.py",
+      "fixed_main": {
+        "git_blob": "21ddb2938f884aeecce0d00f7eab72af26e6a4c2",
+        "sha256": "a9b4a30e7aadaf82412913b51ac5ca5b233d7c07aa530e8f39d959cac0cf738d",
+        "bytes": 47193
+      },
+      "fixed_pr133": {
+        "git_blob": "21ddb2938f884aeecce0d00f7eab72af26e6a4c2",
+        "sha256": "a9b4a30e7aadaf82412913b51ac5ca5b233d7c07aa530e8f39d959cac0cf738d",
+        "bytes": 47193
+      },
+      "final_candidate": {
+        "git_blob": "bd2b372a684ac20902a02d0229f9b75fee066a4a",
+        "sha256": "fae61461701b1206a3a83d9c7587e1a899468325feb9fba8c53e024c5399a0c9",
+        "bytes": 47203
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "new_native_route_counter_and_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_runtime_dispatch_control.py",
+      "fixed_main": {
+        "git_blob": "692d5902214ca7eafb8b74ce72d9d1ae27f00614",
+        "sha256": "d28a79eb22cbf47e01e3b8675df18122a9dd6ca78a6c466cd024ede3b5a49855",
+        "bytes": 3806
+      },
+      "fixed_pr133": {
+        "git_blob": "692d5902214ca7eafb8b74ce72d9d1ae27f00614",
+        "sha256": "d28a79eb22cbf47e01e3b8675df18122a9dd6ca78a6c466cd024ede3b5a49855",
+        "bytes": 3806
+      },
+      "final_candidate": {
+        "git_blob": "c82aac5ec27dfa6e00410556fa138e0716e03226",
+        "sha256": "6581e3ea944d8631fe3f9ce482683a43197488d7d72f8d25fabfee8ef5d887b9",
+        "bytes": 3868
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_story_formation_worker_wait.py",
+      "fixed_main": {
+        "git_blob": "0f4ce7f3e3bf91484d1ed1c1d2f3f2229a3da621",
+        "sha256": "2416e2ce7689f019e9d43aa9d0b1c6b68e46b7a4a1c1736231ce5f86eff45ff9",
+        "bytes": 3325
+      },
+      "fixed_pr133": {
+        "git_blob": "0f4ce7f3e3bf91484d1ed1c1d2f3f2229a3da621",
+        "sha256": "2416e2ce7689f019e9d43aa9d0b1c6b68e46b7a4a1c1736231ce5f86eff45ff9",
+        "bytes": 3325
+      },
+      "final_candidate": {
+        "git_blob": "394d4d6556f66bdb16f0033619b369fb0ea2d798",
+        "sha256": "6be56c212d95ec488633e948609cea6ace4eb075c9e47d63b53ccf78c62c6e7a",
+        "bytes": 3416
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "exact_main_fixture_alignment"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_story_planning_runtime.py",
+      "fixed_main": {
+        "git_blob": "8aac8d4175a63f635870ca6689e8a123c7e23943",
+        "sha256": "e625604c0f64213f1d56ed66efa354615adbd116ac0238d228caa1dd0d07adb7",
+        "bytes": 132055
+      },
+      "fixed_pr133": {
+        "git_blob": "8722f113fbe033f40dfacec902c7f2be0315e39f",
+        "sha256": "4b5628622c1cfa892111439f6dc61dd06c6deec37ba68ccb40065d9baa8f8abe",
+        "bytes": 133146
+      },
+      "final_candidate": {
+        "git_blob": "9bd78b862ca3d4b1543bcc1b87341a2ef0315a09",
+        "sha256": "a8b03d4730a76e42e49b0013e395c1afa232ced086d0b34784ff1ca7fcb11e1a",
+        "bytes": 136916
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor",
+        "planning_failure_checkpoint_exact_context_binding"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_work_applicability_binding.py",
+      "fixed_main": {
+        "git_blob": "2a8d4f9ac177bef31695552cd9d503920dbb7079",
+        "sha256": "417d5addac20aebce65050c582a6060e706ed0fc275329d9e13fa224b528ac2c",
+        "bytes": 14768
+      },
+      "fixed_pr133": {
+        "git_blob": "2a8d4f9ac177bef31695552cd9d503920dbb7079",
+        "sha256": "417d5addac20aebce65050c582a6060e706ed0fc275329d9e13fa224b528ac2c",
+        "bytes": 14768
+      },
+      "final_candidate": {
+        "git_blob": "589878aba406e0f9418e0d82d2a4d6bc3dd5aed0",
+        "sha256": "927837d154621b01aa830bbe5a4e785b68d002e7e814083ad42cfcba3c881163",
+        "bytes": 18593
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "new_native_route_counter_and_fixture_alignment",
+        "exact_plan_semantic_mapping_and_fallback_style_identity"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_work_foundation_contract.py",
+      "fixed_main": {
+        "git_blob": "2f6365c9e37fc5db1a2af750e49e84a59b52e7b1",
+        "sha256": "573d1603d7bd6064c7cf399a8ee0170eafcfaeb896fe4f1a193fe9ab316cf0e1",
+        "bytes": 7217
+      },
+      "fixed_pr133": {
+        "git_blob": "100558f10026123a266a05bfb3d64062943e6f0a",
+        "sha256": "7663e34ddc5c62b9149ef299b54f367e97ecda13e3d14771267506e39f079bb6",
+        "bytes": 7937
+      },
+      "final_candidate": {
+        "git_blob": "c9ed562d725eb202f8daf161b26be842b53c1722",
+        "sha256": "8f8a7d84086d8a0ac09b0307c726a86b2a00161366199769ca55ce8c705c9364",
+        "bytes": 12976
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "foundation_rfc6901_schema_and_partial_alternative_fixture",
+        "foundation_v4_preserves_published_v2_v3"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_work_intent_residuals.py",
+      "fixed_main": {
+        "git_blob": "219a39cdaee9ebe2d0030144f39171fc6a81854d",
+        "sha256": "a54f6072f17992335eba2c6f63585ce3b8f4fe0377946641d56451ae9c01f0be",
+        "bytes": 33414
+      },
+      "fixed_pr133": {
+        "git_blob": "219a39cdaee9ebe2d0030144f39171fc6a81854d",
+        "sha256": "a54f6072f17992335eba2c6f63585ce3b8f4fe0377946641d56451ae9c01f0be",
+        "bytes": 33414
+      },
+      "final_candidate": {
+        "git_blob": "94c9cbbb9b81e264c6d41a028d5093e0a85d0002",
+        "sha256": "78c153ff1b1727811e254baf2843aa551c277074a1cb9bca4f1d033f1b013804",
+        "bytes": 33414
+      },
+      "in_original_132_path_verdicts": false,
+      "original_source_decision": null,
+      "integration_forward_groups": [
+        "planning_serialization_contract_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_work_quality_semantics.py",
+      "fixed_main": {
+        "git_blob": "78ca7bed12c7f76bbac9e57e1b65969a5eef95ec",
+        "sha256": "a706f94e36cc083d9823894be2edf62e547d312c2e2ac182dcac3a3d0cc4ade9",
+        "bytes": 10083
+      },
+      "fixed_pr133": {
+        "git_blob": "8d17496ba84d7a0341f551b27983f99bd4489371",
+        "sha256": "39139e056b075d08ec4994c0201907ea301c0e150c27be3985429df604651257",
+        "bytes": 12145
+      },
+      "final_candidate": {
+        "git_blob": "8d17496ba84d7a0341f551b27983f99bd4489371",
+        "sha256": "39139e056b075d08ec4994c0201907ea301c0e150c27be3985429df604651257",
+        "bytes": 12145
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_work_realization_contract.py",
+      "fixed_main": {
+        "git_blob": "53397f180707f345ef42c00365ca836352566fc8",
+        "sha256": "9e89e4c599e22bb77e24b9d8a72625e19ea655aa6b814ae16b71b9e48d191a71",
+        "bytes": 11746
+      },
+      "fixed_pr133": {
+        "git_blob": "731ec9b0e7bcd97d211cdbdccbb450cfd0c6177e",
+        "sha256": "bf16195801019ee4e9204a4ec4fb63974f49d7100e8785d36eb66a113a1a745b",
+        "bytes": 17034
+      },
+      "final_candidate": {
+        "git_blob": "731ec9b0e7bcd97d211cdbdccbb450cfd0c6177e",
+        "sha256": "bf16195801019ee4e9204a4ec4fb63974f49d7100e8785d36eb66a113a1a745b",
+        "bytes": 17034
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "chapter_plan_serialization_successor"
+      ],
+      "attribution_covered": true
+    },
+    {
+      "path": "tests/unit/test_world_causal_preparation.py",
+      "fixed_main": {
+        "git_blob": "e7e88a7b62c96ef8527714c99a880ba833afd45e",
+        "sha256": "659ba23bde153a488e69f85df31222500734710954086c35ad9843b693e63682",
+        "bytes": 34636
+      },
+      "fixed_pr133": {
+        "git_blob": "ff0604f091c766103396eee47df434b7c107dec0",
+        "sha256": "95b78156f738d50eb016a83532da3de554d8260c3cb58d5bc86cd688e6942226",
+        "bytes": 35423
+      },
+      "final_candidate": {
+        "git_blob": "40340f0ba18b5ba992ef9e9cb911c06e364f916b",
+        "sha256": "22c785d24bd62e788d54ff9fde7833836821be773274dd4db9992351b888ae05",
+        "bytes": 39607
+      },
+      "in_original_132_path_verdicts": true,
+      "original_source_decision": "PORT_DELTA",
+      "integration_forward_groups": [
+        "canonical_blocked_world_identity"
+      ],
+      "attribution_covered": true
+    }
+  ],
+  "full_applicable_p0": "RUNNING",
+  "merge_sha_independent_verification": "NOT_RUN",
+  "real_provider": "NOT_RUN"
+}

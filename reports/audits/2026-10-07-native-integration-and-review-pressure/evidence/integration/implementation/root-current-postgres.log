@@ -1,0 +1,77 @@
+E
+==================================== ERRORS ====================================
+_ ERROR at setup of ExternalEffectRuntimePostgresTests.test_adapter_exception_is_recorded_and_releases_lease _
+
+cls = <class 'tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests'>
+
+    @classmethod
+    def setUpClass(cls) -> None:
+>       ensure_migrated()
+
+tests/integration/test_external_effect_runtime_postgres.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/authority_postgres_support.py:38: in ensure_migrated
+    status = run_migrations(DATABASE_URL)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/storage/migrations/runner.py:81: in run_migrations
+    with _connect(database_url) as connection:
+         ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/storage/migrations/runner.py:183: in _connect
+    return psycopg.connect(database_url, connect_timeout=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'psycopg.Connection'>
+conninfo = 'user=novel_forge password=novel_forge dbname=novel_forge_authority_test host=127.0.0.1 port=55432 connect_timeout=1 hostaddr=127.0.0.1'
+autocommit = False, prepare_threshold = 5, context = None, row_factory = None
+cursor_factory = None, kwargs = {'connect_timeout': 1}
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+        **kwargs: ConnParam,
+    ) -> Self:
+        """
+        Connect to a database server and return a new `Connection` instance.
+        """
+    
+        params = cls._get_connection_params(conninfo, **kwargs)
+        timeout = timeout_from_conninfo(params)
+        rv = None
+        attempts = conninfo_attempts(params)
+        conn_errors: list[tuple[e.Error, str]] = []
+        for attempt in attempts:
+            tdescr = (attempt.get("host"), attempt.get("port"), attempt.get("hostaddr"))
+            descr = "host: %r, port: %r, hostaddr: %r" % tdescr
+            logger.debug("connection attempt: %s", descr)
+            try:
+                conninfo = make_conninfo("", **attempt)
+                gen = cls._connect_gen(conninfo, timeout=timeout)
+                rv = waiting.wait_conn(gen, interval=_WAIT_INTERVAL)
+            except e.Error as ex:
+                logger.debug("connection failed: %s: %s", descr, str(ex))
+                conn_errors.append((ex, descr))
+            except e._NO_TRACEBACK as ex:
+                raise ex.with_traceback(None)
+            else:
+                logger.debug("connection succeeded: %s", descr)
+                break
+    
+        if not rv:
+            last_ex = conn_errors[-1][0]
+            if len(conn_errors) == 1:
+>               raise last_ex.with_traceback(None)
+E               psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: OperationalError
+=========================== short test summary info ============================
+ERROR tests/integration/test_external_effect_runtime_postgres.py::ExternalEffectRuntimePostgresTests::test_adapter_exception_is_recorded_and_releases_lease
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 error in 0.58s

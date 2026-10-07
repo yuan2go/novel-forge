@@ -67,7 +67,9 @@
         "src/novel_forge/modules/revision/domain.py",
         "src/novel_forge/modules/worldbuilding/actor_isolation.py",
         "src/novel_forge/modules/story_planning_runtime/knowledge_translation.py",
-        "src/novel_forge/modules/book_followup_authority/screenplay_execution.py"
+        "src/novel_forge/modules/book_followup_authority/screenplay_execution.py",
+        "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+        "src/novel_forge/modules/chapter_authority/candidate_repair.py"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "runtime-authorities",

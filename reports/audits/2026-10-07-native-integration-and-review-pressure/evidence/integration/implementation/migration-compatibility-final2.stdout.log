@@ -1,0 +1,2624 @@
+..................................F..F........F...EEEEEEEEEEEEEEEE [ 57%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE.....EEE                        [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_0102_upgrade_preserves_legacy_membership_and_requires_sidecar _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_previous_main_expired_active_job_formally_binds_loses_and_recovers _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_expired_active_legacy_execution_rejects_abort_until_formal_loss _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_missing_runtime_job_gets_formal_loss_marker_then_recovers _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_missing_runtime_loss_marker_can_be_formally_aborted_without_rewrite _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_terminal_runtime_history_is_bound_immutably_then_recovered _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_loss_sweeper_reassesses_after_release_drift_and_converges _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_book_opening_process_loss_converges_and_admits_one_replacement _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_book_opening_job_requires_authority_coordinated_first_claim _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_runtime_job_start_replays_the_exact_live_claim_after_response_loss _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_assert_live_rechecks_the_exact_claim_against_database_time _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_assert_live_rejects_any_relational_claim_drift[attempt_id-runtime-attempt:forged] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_assert_live_rejects_any_relational_claim_drift[lease_id-runtime-lease:forged] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_assert_live_rejects_any_relational_claim_drift[worker_id-forged-worker] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_assert_live_rejects_any_relational_claim_drift[fencing_token-999] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_generic_completion_cannot_terminalize_a_book_opening_job _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_internal_completion_cannot_bypass_the_frozen_checkpoint_graph _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_generic_failure_cannot_retry_or_terminalize_a_book_opening_job _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_generic_continuation_cannot_replace_a_book_opening_execution _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_generic_pending_cancel_cannot_supersede_a_book_opening_execution _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_execution_loss_replay_is_bound_to_the_exact_terminal_reason _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_authority_failure_replay_is_bound_to_the_exact_terminal_error _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_book_opening_failure_commit_response_loss_replays_exactly _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_0104_upgrade_does_not_rewrite_v2_opening_execution_history _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_0093_accepted_history_upgrades_through_0094_and_repairs _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_arc_followup_reconciles_canonical_failures_and_retry_replay _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_bounded_runtime_job_atomically_hands_off_continuation _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_committed_chapter_checkpoint_resumes_after_worker_crash _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_existing_0094_install_discovers_and_repairs_missing_pointers _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_postgresql_fts_retrieval_freezes_memo_boundary_and_excludes_future _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of BookProjectionRepairUpgradePostgresTests.test_repair_persists_accepted_obligation_checkpoint_followup _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_source_analysis_dimension_upgrade_preserves_and_expands_constraint _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_world_event_identity_clock_migration_fresh_and_supported_upgrade[20260625_0001_initial_industrial_schema] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_world_event_identity_clock_migration_fresh_and_supported_upgrade[20260906_0116_book_control_policy] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_world_event_identity_clock_migration_fresh_and_supported_upgrade[20260906_0117_world_causal_event_locators] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_published_accepted_history_upgrades_and_frozen_planning_replays[ed494c62ec9d9065dc560f9c7bafceb1e26df6f1-20260906_0116_book_control_policy--1.11.0] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_published_accepted_history_upgrades_and_frozen_planning_replays[88100f821ae3f0bdcf00577dada8610ebece72a7-20260906_0117_world_causal_event_locators-[True]-1.12.0] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_published_accepted_history_upgrades_and_frozen_planning_replays[e600ab7d94cfab841dc618c49e8d47552342c324-20260907_0118_preparation_event_lineage-[True]-1.13.0] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_grounded_acceptance_guard_is_installed_fresh_and_on_upgrade[20260625_0001_initial_industrial_schema] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_grounded_acceptance_guard_is_installed_fresh_and_on_upgrade[20260907_0118_preparation_event_lineage] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_craft_origin_fresh_migration_and_rerun_install_validated_constraints _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_supervised_snapshot_forward_migration_preserves_strict_contract[20260625_0001_initial_industrial_schema] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_supervised_snapshot_forward_migration_preserves_strict_contract[20260927_0147_runtime_job_dispatch_pause] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_zero_increment_outcome_forward_views_preserve_accepted_history[20260625_0001_initial_industrial_schema] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_zero_increment_outcome_forward_views_preserve_accepted_history[20260928_0148_author_supervised_design] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_previous_head_upgrade_retains_historical_unknown_reservation_and_frozen_intent _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0159_planning_dead_letter_result_recovery] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0160_planning_result_admission] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0161_planning_capacity_lineage] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0162_planning_input_order_recovery] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0163_optional_world_continuation] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0164_gateway_result_revalidation] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0165_stage_repair_policy] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0166_failed_step_successor] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0167_execution_contract_continuation] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0168_derived_step_revalidation] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_invalid_ledger_blocks_all_pending_business_ddl_and_preserves_history[foreign] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+_ ERROR at setup of test_invalid_ledger_blocks_all_pending_business_ddl_and_preserves_history[hole] _
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+>       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+=================================== FAILURES ===================================
+_ AuthorityMigrationsPostgresTests.test_clean_database_applies_complete_migration_chain _
+
+self = <tests.integration.test_authority_migrations_postgres.AuthorityMigrationsPostgresTests testMethod=test_clean_database_applies_complete_migration_chain>
+
+    def test_clean_database_applies_complete_migration_chain(self) -> None:
+        status = run_migrations(self.test_url)
+    
+        self.assertTrue(status["ok"])
+        self.assertEqual(status["current"], LATEST_MIGRATION_ID)
+        self.assertEqual(
+            [row["migration_id"] for row in status["applied"]],
+            [migration.migration_id for migration in MIGRATIONS],
+        )
+        with psycopg.connect(self.test_url) as connection:
+            row = connection.execute(
+                """
+                SELECT
+                    to_regclass('authority_operation'),
+                    to_regclass('authority_external_receipt'),
+                    to_regprocedure('authority_acquire_attempt_lease(text,text,text,integer)'),
+                    to_regprocedure('authority_record_inbox_message(text,text,text,jsonb)')
+                """
+            ).fetchone()
+            missing_foreign_key_indexes = connection.execute(
+                """
+                SELECT constraint_row.conrelid::regclass::text, constraint_row.conname
+                FROM pg_constraint AS constraint_row
+                JOIN pg_class AS table_row ON table_row.oid = constraint_row.conrelid
+                WHERE constraint_row.contype = 'f'
+                  AND table_row.relname LIKE 'authority_%'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM pg_index AS index_row
+                      WHERE index_row.indrelid = constraint_row.conrelid
+                        AND index_row.indisvalid
+                        AND constraint_row.conkey::smallint[]
+                            <@ index_row.indkey::smallint[]
+                  )
+                ORDER BY constraint_row.conrelid::regclass::text, constraint_row.conname
+                """
+            ).fetchall()
+        self.assertEqual(
+            tuple(str(value) for value in row),
+            (
+                "authority_operation",
+                "authority_external_receipt",
+                "authority_acquire_attempt_lease(text,text,text,integer)",
+                "authority_record_inbox_message(text,text,text,jsonb)",
+            ),
+        )
+>       self.assertEqual(missing_foreign_key_indexes, [])
+E       AssertionError: Lists differ: [('authority_saga_step_revalidation', 'aut[121 chars]ey')] != []
+E       
+E       First list contains 2 additional elements.
+E       First extra element 0:
+E       ('authority_saga_step_revalidation', 'authority_saga_step_revalidation_saga_id_fkey')
+E       
+E       + []
+E       - [('authority_saga_step_revalidation',
+E       -   'authority_saga_step_revalidation_saga_id_fkey'),
+E       -  ('authority_saga_step_successor',
+E       -   'authority_saga_step_successor_saga_id_fkey')]
+
+tests/integration/test_authority_migrations_postgres.py:663: AssertionError
+_ AuthorityMigrationsPostgresTests.test_policy_completion_index_upgrade_rolls_back_and_replays _
+
+self = <tests.integration.test_authority_migrations_postgres.AuthorityMigrationsPostgresTests testMethod=test_policy_completion_index_upgrade_rolls_back_and_replays>
+
+    def test_policy_completion_index_upgrade_rolls_back_and_replays(self) -> None:
+        from tests.integration.test_book_projection_repair_upgrade_postgres import (
+            _apply_through,
+        )
+    
+        _apply_through(self.test_url, "20260905_0112_realization_execution_policy")
+        with psycopg.connect(self.test_url) as connection:
+            before = connection.execute(
+                "SELECT migration_id, applied_at FROM nf_schema_migrations ORDER BY migration_id"
+            ).fetchall()
+            indexes_before = connection.execute(
+                "SELECT indexrelid FROM pg_index ORDER BY indexrelid"
+            ).fetchall()
+            pending = [
+                migration for migration in MIGRATIONS
+                if migration.migration_id not in {row[0] for row in before}
+            ]
+            self.assertTrue(pending, "the merged policy/completion schema needs a forward index repair")
+            with self.assertRaisesRegex(RuntimeError, "rollback index repair"):
+                with connection.transaction():
+                    for migration in pending:
+                        for statement in migration.upgrade_statements:
+                            connection.execute(statement)
+                    raise RuntimeError("rollback index repair")
+            self.assertEqual(
+                connection.execute("SELECT indexrelid FROM pg_index ORDER BY indexrelid").fetchall(),
+                indexes_before,
+            )
+        first = run_migrations(self.test_url)
+        self.assertTrue(first["ok"])
+        self.assertEqual(run_migrations(self.test_url), first)
+        with psycopg.connect(self.test_url) as connection:
+            after = dict(connection.execute(
+                "SELECT migration_id, applied_at FROM nf_schema_migrations"
+            ).fetchall())
+            self.assertTrue(all(after[revision] == applied_at for revision, applied_at in before))
+            missing = connection.execute(
+                """
+                SELECT constraint_row.conname FROM pg_constraint AS constraint_row
+                JOIN pg_class AS table_row ON table_row.oid=constraint_row.conrelid
+                WHERE constraint_row.contype='f' AND table_row.relname LIKE 'authority_%'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM pg_index AS index_row
+                      WHERE index_row.indrelid=constraint_row.conrelid
+                        AND index_row.indisvalid
+                        AND constraint_row.conkey::smallint[] <@ index_row.indkey::smallint[]
+                  )
+                """
+            ).fetchall()
+>           self.assertEqual(missing, [])
+E           AssertionError: Lists differ: [('authority_saga_step_revalidation_saga_i[54 chars]y',)] != []
+E           
+E           First list contains 2 additional elements.
+E           First extra element 0:
+E           ('authority_saga_step_revalidation_saga_id_fkey',)
+E           
+E           + []
+E           - [('authority_saga_step_revalidation_saga_id_fkey',),
+E           -  ('authority_saga_step_successor_saga_id_fkey',)]
+
+tests/integration/test_authority_migrations_postgres.py:714: AssertionError
+_ LegacyMigrationAuthorityPostgresTests.test_source_migration_requires_verified_blob_and_real_projection _
+
+self = <tests.integration.test_authority_legacy_migration_postgres.LegacyMigrationAuthorityPostgresTests testMethod=test_source_migration_requires_verified_blob_and_real_projection>
+
+    def test_source_migration_requires_verified_blob_and_real_projection(self) -> None:
+        project_id = identifier("domain-source-project")
+        workspace_id = identifier("domain-source-workspace")
+        ProjectAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="legacy-domain-source-integration",
+            commit_sha="1" * 40,
+        ).execute(
+            ProjectAuthorityCommand(
+                definition_name="project_lifecycle.create",
+                project_id=project_id,
+                workspace_id=workspace_id,
+                actor_id="source-migration-bootstrap",
+                idempotency_key=f"source-migration-project:{project_id}",
+                trace_id=f"trace:{project_id}",
+                correlation_id=f"correlation:{project_id}",
+                payload={"title": "Source Migration Project"},
+            )
+        )
+        blob_id = identifier("legacy-source-blob")
+        source_bytes = b"synthetic source evidence only"
+        source_digest = "sha256:" + hashlib.sha256(source_bytes).hexdigest()
+        object_key = f"sources/{project_id}/{blob_id}"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_blob(
+                    blob_id, project_id, provider, object_key,
+                    expected_hash, expected_size, media_type,
+                    actual_object_key, actual_hash, actual_size,
+                    receipt_provider, status
+                ) VALUES (%s, %s, 'fixture_object_store', %s, %s, %s,
+                          'text/plain', %s, %s, %s,
+                          'fixture_object_store', 'AVAILABLE')
+                """,
+                [
+                    blob_id,
+                    project_id,
+                    object_key,
+                    source_digest,
+                    len(source_bytes),
+                    object_key,
+                    source_digest,
+                    len(source_bytes),
+                ],
+            )
+            uow.commit()
+        service = LegacyMigrationService(
+            DATABASE_URL,
+            application_build_id="legacy-domain-source-integration",
+            commit_sha="1" * 40,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "data" / "workspaces").mkdir(parents=True)
+            (root / "data" / "sources").mkdir(parents=True)
+            self._write(
+                root / "data" / "workspaces" / "workspace.json",
+                {
+                    "id": workspace_id,
+                    "type": "project_workspace_state",
+                    "title": "Source Migration Project",
+                    "content": {"project_id": project_id},
+                },
+            )
+            self._write(
+                root / "data" / "sources" / "source.json",
+                {
+                    "id": "legacy-source-1",
+                    "type": "source_document",
+                    "project_id": project_id,
+                    "content": {
+                        "blob_id": blob_id,
+                        "title": "Verified Synthetic Source",
+                        "source_kind": "test_fixture",
+                        "source_uri": "urn:fixture:legacy-source-1",
+                        "rights_authorization": "test_fixture",
+                        "license_name": "",
+                        "copyright_boundary": "fixture-only no production claim",
+                        "allow_downstream_generation": True,
+                    },
+                },
+            )
+            for path in root.rglob("*"):
+                path.chmod(0o555 if path.is_dir() else 0o444)
+            root.chmod(0o555)
+            imported = service.import_snapshot(root)
+            verification_root = self._retain_snapshot(root)
+        self._validate_approve_activate(
+            service, imported["migration_run_id"], "project_workspace_state"
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT migration_item_id, item_version, source_hash,
+                       target_asset_version_id
+                FROM authority_legacy_migration_item
+                WHERE migration_run_id=%s AND source_asset_type='source_document'
+                """,
+                [imported["migration_run_id"]],
+            )
+            item = uow.cursor.fetchone()
+        validation = service.validate_domain_item(
+            str(item[0]), expected_item_version=int(item[1])
+        )
+        decision = LegacyMigrationApprovalApplication(
+            DATABASE_URL,
+            application_build_id="legacy-domain-source-integration",
+            commit_sha="1" * 40,
+        ).execute(
+            LegacyMigrationDecisionCommand(
+                migration_run_id=imported["migration_run_id"],
+                migration_item_id=str(item[0]),
+                project_id=project_id,
+                workspace_id=workspace_id,
+                actor_id="source-migration-reviewer",
+                decision=MigrationDecision.APPROVE,
+                reason="verified Blob receipt and rights independently accepted",
+                expected_item_version=int(validation["item_version"]),
+                source_hash=str(item[2]),
+                target_asset_version_id=str(item[3]),
+                migration_validation_id=str(validation["migration_validation_id"]),
+                idempotency_key=f"approve:{item[0]}:{item[2]}",
+                trace_id=f"trace:{imported['migration_run_id']}",
+                correlation_id=f"correlation:{project_id}",
+            )
+        )
+        activated = service.activate_domain_item(
+            str(item[0]), expected_item_version=int(decision["item_version"])
+        )
+        verified = service.verify(
+            imported["migration_run_id"],
+            snapshot_root=verification_root,
+            required_level="DOMAIN_NATIVE",
+        )
+        self.assertEqual(verified["status"], "DOMAIN_RECONCILED")
+        self.assertEqual(verified["verification_status"], "PASS")
+        self.assertEqual(verified["actual_domain_failures"], 0)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT item_version FROM authority_legacy_migration_item "
+                "WHERE migration_item_id=%s",
+                [str(item[0])],
+            )
+            current_source_item_version = int(uow.cursor.fetchone()[0])
+        source_revalidation = service.validate_domain_item(
+            str(item[0]), expected_item_version=current_source_item_version
+        )
+        self.assertEqual(source_revalidation["validation_status"], "PASS")
+        self.assertEqual(
+            service.verify(
+                imported["migration_run_id"],
+                snapshot_root=verification_root,
+                required_level="DOMAIN_NATIVE",
+            )["verification_status"],
+            "PASS",
+        )
+    
+        # Simulate a populated 0066 database produced before archival binding
+        # evidence was stored on activated items. The 0067 forward migration
+        # must recover the immutable archival AssetVersion from the activation-
+        # bound Validation record and make server revalidation possible.
+        ambiguous_asset_id = identifier("ambiguous-archival-asset")
+        ambiguous_version_id = identifier("ambiguous-archival-version")
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                """
+                SELECT item.operation_id, version.content, version.content_hash,
+                       version.schema_version
+                FROM authority_legacy_migration_item AS item
+                JOIN authority_legacy_migration_validation AS validation
+                  ON validation.migration_validation_id=%s
+                JOIN authority_asset_version AS version
+                  ON version.asset_version_id=validation.target_asset_version_id
+                WHERE item.migration_item_id=%s
+                """,
+                [validation["migration_validation_id"], str(item[0])],
+            )
+            archival_source = uow.cursor.fetchone()
+            uow.cursor.execute(
+                """
+                ALTER TABLE authority_legacy_migration_item
+                DROP CONSTRAINT authority_migration_item_archival_binding_check
+                """
+            )
+            uow.cursor.execute(
+                "DELETE FROM nf_schema_migrations WHERE migration_id=%s",
+                ["20260804_0067_activated_migration_archival_binding"],
+            )
+            uow.cursor.execute(
+                """
+                UPDATE authority_legacy_migration_item
+                SET evidence=(evidence
+                    - 'archival_target_asset_id'
+                    - 'archival_target_asset_version_id'
+                    - 'archival_target_content_hash'
+                    - 'migration_validation_id')
+                WHERE migration_item_id=%s
+                """,
+                [str(item[0])],
+            )
+            uow.cursor.execute(
+                "INSERT INTO authority_asset(asset_id, project_id, asset_type) "
+                "VALUES (%s, %s, 'legacy_archival_ambiguity_fixture')",
+                [ambiguous_asset_id, project_id],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_asset_version(
+                    asset_version_id, asset_id, version_number, lifecycle,
+                    eligibility, governance, content, content_hash, schema_version
+                ) VALUES (%s, %s, 1, 'IMPORTED', 'PENDING_EVALUATION',
+                          'CLEAR', %s, %s, %s)
+                """,
+                [
+                    ambiguous_version_id,
+                    ambiguous_asset_id,
+                    Jsonb(dict(archival_source[1])),
+                    str(archival_source[2]),
+                    str(archival_source[3]),
+                ],
+            )
+            uow.cursor.execute(
+                """
+                INSERT INTO authority_operation_output_asset(
+                    operation_id, asset_id, asset_version_id,
+                    output_key, role, content_hash
+                ) VALUES (%s, %s, %s, 'ambiguous-archival', 'PRIMARY', %s)
+                """,
+                [
+                    str(archival_source[0]),
+                    ambiguous_asset_id,
+                    ambiguous_version_id,
+                    str(archival_source[2]),
+                ],
+            )
+            uow.commit()
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "activated_domain_item_without_unique_archival_binding=1",
+        ):
+>           run_migrations(DATABASE_URL)
+
+tests/integration/test_authority_legacy_migration_postgres.py:2167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -> list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+            raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+        prefix_length = len(applied_ids)
+        if applied_ids != set(known[:prefix_length]):
+>           raise ValueError("MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix")
+E           ValueError: MIGRATION_HISTORY_DISCONTINUOUS: applied identities must form the registered prefix
+
+src/novel_forge/storage/migrations/runner.py:65: ValueError
+=========================== short test summary info ============================
+FAILED tests/integration/test_authority_migrations_postgres.py::AuthorityMigrationsPostgresTests::test_clean_database_applies_complete_migration_chain
+FAILED tests/integration/test_authority_migrations_postgres.py::AuthorityMigrationsPostgresTests::test_policy_completion_index_upgrade_rolls_back_and_replays
+FAILED tests/integration/test_authority_legacy_migration_postgres.py::LegacyMigrationAuthorityPostgresTests::test_source_migration_requires_verified_blob_and_real_projection
+ERROR tests/integration/test_book_opening_branch_reconciliation_upgrade_postgres.py::test_0102_upgrade_preserves_legacy_membership_and_requires_sidecar
+ERROR tests/integration/test_book_opening_legacy_reconciliation_postgres.py::test_previous_main_expired_active_job_formally_binds_loses_and_recovers
+ERROR tests/integration/test_book_opening_legacy_reconciliation_postgres.py::test_expired_active_legacy_execution_rejects_abort_until_formal_loss
+ERROR tests/integration/test_book_opening_legacy_reconciliation_postgres.py::test_missing_runtime_job_gets_formal_loss_marker_then_recovers
+ERROR tests/integration/test_book_opening_legacy_reconciliation_postgres.py::test_missing_runtime_loss_marker_can_be_formally_aborted_without_rewrite
+ERROR tests/integration/test_book_opening_legacy_reconciliation_postgres.py::test_terminal_runtime_history_is_bound_immutably_then_recovered
+ERROR tests/integration/test_book_opening_legacy_reconciliation_postgres.py::test_loss_sweeper_reassesses_after_release_drift_and_converges
+ERROR tests/integration/test_book_opening_recovery_regression_postgres.py::test_book_opening_process_loss_converges_and_admits_one_replacement
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_book_opening_job_requires_authority_coordinated_first_claim
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_runtime_job_start_replays_the_exact_live_claim_after_response_loss
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_assert_live_rechecks_the_exact_claim_against_database_time
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_assert_live_rejects_any_relational_claim_drift[attempt_id-runtime-attempt:forged]
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_assert_live_rejects_any_relational_claim_drift[lease_id-runtime-lease:forged]
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_assert_live_rejects_any_relational_claim_drift[worker_id-forged-worker]
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_assert_live_rejects_any_relational_claim_drift[fencing_token-999]
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_generic_completion_cannot_terminalize_a_book_opening_job
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_internal_completion_cannot_bypass_the_frozen_checkpoint_graph
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_generic_failure_cannot_retry_or_terminalize_a_book_opening_job
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_generic_continuation_cannot_replace_a_book_opening_execution
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_generic_pending_cancel_cannot_supersede_a_book_opening_execution
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_execution_loss_replay_is_bound_to_the_exact_terminal_reason
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_authority_failure_replay_is_bound_to_the_exact_terminal_error
+ERROR tests/integration/test_book_opening_runtime_hardening_postgres.py::test_book_opening_failure_commit_response_loss_replays_exactly
+ERROR tests/integration/test_book_opening_workflow_upgrade_postgres.py::test_0104_upgrade_does_not_rewrite_v2_opening_execution_history
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_0093_accepted_history_upgrades_through_0094_and_repairs
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_arc_followup_reconciles_canonical_failures_and_retry_replay
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_bounded_runtime_job_atomically_hands_off_continuation
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_committed_chapter_checkpoint_resumes_after_worker_crash
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_existing_0094_install_discovers_and_repairs_missing_pointers
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_postgresql_fts_retrieval_freezes_memo_boundary_and_excludes_future
+ERROR tests/integration/test_book_projection_repair_upgrade_postgres.py::BookProjectionRepairUpgradePostgresTests::test_repair_persists_accepted_obligation_checkpoint_followup
+ERROR tests/integration/test_source_analysis_dimension_upgrade_postgres.py::test_source_analysis_dimension_upgrade_preserves_and_expands_constraint
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_world_event_identity_clock_migration_fresh_and_supported_upgrade[20260625_0001_initial_industrial_schema]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_world_event_identity_clock_migration_fresh_and_supported_upgrade[20260906_0116_book_control_policy]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_world_event_identity_clock_migration_fresh_and_supported_upgrade[20260906_0117_world_causal_event_locators]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_published_accepted_history_upgrades_and_frozen_planning_replays[ed494c62ec9d9065dc560f9c7bafceb1e26df6f1-20260906_0116_book_control_policy--1.11.0]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_published_accepted_history_upgrades_and_frozen_planning_replays[88100f821ae3f0bdcf00577dada8610ebece72a7-20260906_0117_world_causal_event_locators-[True]-1.12.0]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_published_accepted_history_upgrades_and_frozen_planning_replays[e600ab7d94cfab841dc618c49e8d47552342c324-20260907_0118_preparation_event_lineage-[True]-1.13.0]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_grounded_acceptance_guard_is_installed_fresh_and_on_upgrade[20260625_0001_initial_industrial_schema]
+ERROR tests/integration/test_world_causal_migrations_postgres.py::test_grounded_acceptance_guard_is_installed_fresh_and_on_upgrade[20260907_0118_preparation_event_lineage]
+ERROR tests/integration/test_narrative_craft_migration_upgrade_postgres.py::test_craft_origin_upgrade_preserves_legacy_source_candidates_and_enforces_new_origin
+ERROR tests/integration/test_narrative_craft_migration_upgrade_postgres.py::test_craft_origin_fresh_migration_and_rerun_install_validated_constraints
+ERROR tests/integration/test_author_supervision_migration_postgres.py::test_supervised_snapshot_forward_migration_preserves_strict_contract[20260625_0001_initial_industrial_schema]
+ERROR tests/integration/test_author_supervision_migration_postgres.py::test_supervised_snapshot_forward_migration_preserves_strict_contract[20260927_0147_runtime_job_dispatch_pause]
+ERROR tests/integration/test_author_supervision_migration_postgres.py::test_zero_increment_outcome_forward_views_preserve_accepted_history[20260625_0001_initial_industrial_schema]
+ERROR tests/integration/test_author_supervision_migration_postgres.py::test_zero_increment_outcome_forward_views_preserve_accepted_history[20260928_0148_author_supervised_design]
+ERROR tests/integration/test_creative_resource_migration_postgres.py::test_previous_head_upgrade_retains_historical_unknown_reservation_and_frozen_intent
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0159_planning_dead_letter_result_recovery]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0160_planning_result_admission]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0161_planning_capacity_lineage]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0162_planning_input_order_recovery]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0163_optional_world_continuation]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0164_gateway_result_revalidation]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0165_stage_repair_policy]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0166_failed_step_successor]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0167_execution_contract_continuation]
+ERROR tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261007_0168_derived_step_revalidation]
+ERROR tests/integration/test_migration_history_admission_postgres.py::test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger
+ERROR tests/integration/test_migration_history_admission_postgres.py::test_invalid_ledger_blocks_all_pending_business_ddl_and_preserves_history[foreign]
+ERROR tests/integration/test_migration_history_admission_postgres.py::test_invalid_ledger_blocks_all_pending_business_ddl_and_preserves_history[hole]
+3 failed, 52 passed, 60 errors, 6 subtests passed in 90.53s (0:01:30)

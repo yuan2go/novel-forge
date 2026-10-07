@@ -1,0 +1,172 @@
+...F
+=================================== FAILURES ===================================
+_ BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership _
+
+self = <tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership>
+
+    def test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership(
+        self,
+    ) -> None:
+        project_id = identifier("book-chapter-vertical")
+        with tempfile.TemporaryDirectory() as root:
+            settings = IndustrialSettings(
+                root=Path(root),
+                environment="test",
+                storage_authority="postgresql",
+                database_url=DATABASE_URL,
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
+                "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-chapter-pep-worker",
+                "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+            }
+            execution = build_production_execution_composition(settings, env=env)
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            followup = BookFollowupAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="book-chapter-vertical",
+                commit_sha="e" * 40,
+                model_port=build_reader_outcome_model_port(
+                    settings, execution=execution, env=env
+                ),
+                worker_id="book-followup-vertical-worker",
+            )
+            port = _SynchronousCommandPort(chapter)
+            authority = PostgresBookAuthority(
+                DATABASE_URL,
+                chapter_port=port,
+                followup_application=followup,
+                application_build_id="book-chapter-vertical",
+                commit_sha="e" * 40,
+                legacy_fixture_input_allowed=True,
+            )
+            principal = Principal(
+                principal_id="book-authority-operator",
+                principal_type=PrincipalType.LOCAL_OPERATOR,
+                permissions=frozenset(
+                    {
+                        "book.authority.execute",
+                        "book.followup:*",
+                        "chapter.authority.execute",
+                    }
+                ),
+                project_scope=frozenset({project_id}),
+                authentication_source="integration-test",
+            )
+            candidates = (
+                chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
+                    project_id, current_state_contract=True
+                )
+            )
+            longform_versions = self._seed_book_inputs(project_id)
+            book = authority.start(
+                StartBookProductionCommand(
+                    project_id=project_id,
+                    workspace_id=f"workspace:{project_id}",
+                    book_id=f"book:{project_id}",
+                    actor_id=principal.principal_id,
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                    stable_idempotency_key=f"{project_id}:book:v1",
+                    book_design_version=longform_versions.pop("book_design_version"),
+                    book_plan_version=longform_versions.pop("book_plan_version"),
+                    production_profile_version="production-profile:v1",
+                    longform_context_versions=longform_versions,
+                    target_chapter_count=1,
+                    input_mode="LEGACY_FIXTURE_INPUT_MODE",
+                    light_recap_cadence=1,
+                    formal_recap_cadence=1,
+                ),
+                principal=principal,
+            )
+            paused = authority.pause(
+                book.book_run_id, reason="fixture pause", principal=principal
+            )
+            resumed = authority.resume(
+                book.book_run_id, reason="fixture resume", principal=principal
+            )
+            self.assertEqual(paused["state"], "PAUSED")
+            self.assertEqual(resumed["state"], "READY")
+            plan = next(
+                item for item in candidates if item["asset_type"] == "chapter_plan"
+            )
+            chapter_command = SubmitBookChapterCommand(
+                context_token_budget=64_000,
+                book_run_id=book.book_run_id,
+                chapter_number=1,
+                title="The Cost of a Promise",
+                premise="The protagonist must pay a visible cost.",
+                chapter_plan_asset_version_id=str(plan["asset_version_id"]),
+                chapter_plan_content_hash=str(plan["content_hash"]),
+                context_candidates=tuple(candidates),
+            )
+    
+>           request = authority.submit_chapter(chapter_command, principal=principal)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/book_authority/production.py:938: in submit_chapter
+    return self._dispatch_reserved_chapter(str(existing[0]), principal=principal)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/production.py:963: in _dispatch_reserved_chapter
+    admission = self.chapter_port.submit(chapter_command, principal=principal)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:69: in submit
+    result = self.application.run(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/application.py:128: in run
+    return run_single_chapter_slice(
+src/novel_forge/modules/chapter_authority/orchestrator.py:488: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:561: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:231: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:39: in execute_authority_handler
+    request = _load_request(database_url, command, registration)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_url = 'postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:49856/nf_pr133_integration_test'
+command = WorkerLeaseCommand(attempt_id='70815ff3-2175-4910-96ac-fb39acc3ec6a', project_id='book-chapter-vertical-e36be156-9c15-...chapter:1', correlation_id='3dff1a9c-86f8-4424-bd16-142a90115baf', causation_id='1c094325-967a-4a8c-9042-56a9aac26574')
+registration = AuthorityHandlerRegistration(definition_name='chapter.plan.materialize', definition_version='3.9.0', handler_key='nove...orker', database_url='postgresql://[REDACTED_USER]:[REDACTED_PASSWORD]@127.0.0.1:49856/nf_pr133_integration_test', sampling=False))
+
+    def _load_request(
+        database_url: str,
+        command: WorkerLeaseCommand,
+        registration: AuthorityHandlerRegistration,
+    ) -> AuthorityHandlerRequest:
+        with AuthorityUnitOfWork(database_url) as uow:
+            attempt = require_current_fence(uow, command)
+            operation = uow.repositories.chapter_authority.operation_execution(
+                attempt["operation_id"], command.project_id
+            )
+            if operation["definition_name"] != registration.definition_name:
+                raise KernelError(
+                    "AUTHORITY_HANDLER_DEFINITION_CONFLICT",
+                    f"handler cannot execute {operation['definition_name']}",
+                )
+            snapshot = operation["definition_snapshot"] or {}
+            if snapshot.get("handler_key") != registration.handler_key:
+                raise KernelError(
+                    "AUTHORITY_HANDLER_DEFINITION_CONFLICT",
+                    "frozen handler key does not match the runtime registration",
+                )
+            if str(operation["definition_version"]) != registration.definition_version:
+>               raise KernelError(
+                    "AUTHORITY_HANDLER_CONTRACT_STALE",
+                    "frozen definition version does not match the runtime codec",
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: AUTHORITY_HANDLER_CONTRACT_STALE: frozen definition version does not match the runtime codec
+
+src/novel_forge/modules/authority_handler_runtime/runtime.py:303: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 3 passed, 3 subtests passed in 1.74s

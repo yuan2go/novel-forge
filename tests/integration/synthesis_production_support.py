@@ -132,7 +132,7 @@ class SynthesisTransport(ScriptedProviderAdapterV2):
                         }
                     ],
                 )
-        if (inputs.get("foundation_task") or {}).get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3"}:
+        if (inputs.get("foundation_task") or {}).get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}:
             result["applicability"] = []
             def declare(value, schema, path="$", parent_present=True):
                 if isinstance(schema.get("type"), list) and "null" in schema["type"]:
@@ -168,7 +168,11 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
             for event in result.get("narrative_event_chain", []):
                 event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Selected causal strategy of this synthetic mystery fixture"} for name in ("decision", "resistance", "irreversible_change")}
             if stage == "chapter_plan.generate":
-                result["chapter_contract_schema_version"] = "chapter-mission-scene.v3"
+                if inputs["planning_command"].get("execution_contract_version") == "1.19.0":
+                    result["chapter_contract_schema_version"] = "chapter-mission-scene.v4"
+                    result["serialization_function"] = "payoff_and_new_obligation"
+                else:
+                    result["chapter_contract_schema_version"] = "chapter-mission-scene.v3"
                 result["required_state_delta"] = {"status": "CHANGED", **result["required_state_delta"]}
         return result
 

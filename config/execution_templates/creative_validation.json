@@ -1,12 +1,19 @@
 {
-  "version": "creative-execution-template.v1",
+  "version": "creative-execution-template.v6",
   "book_id": "FROM_CURRENT_BOOK",
   "mode": "CREATIVE_VALIDATION",
   "allowed_candidates": [],
   "member_authorization_ref": "FROM_AUTHENTICATED_MEMBERSHIP",
   "deepseek": null,
   "optional_enhancements": [],
+  "world_future_preparation": "DISABLED",
   "require_literary_qualification": false,
   "require_independent_review": false,
-  "require_pack_human_approval": false
+  "require_pack_human_approval": false,
+  "repair_routing": {
+    "version": "native-repair-routing.v2",
+    "max_same_route_repairs": 2
+  },
+  "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+  "canon_validation_contract": "grounded-canon-validation.v2"
 }

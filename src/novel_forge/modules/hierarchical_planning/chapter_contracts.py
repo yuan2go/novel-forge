@@ -32,11 +32,15 @@ def require_chapter_contracts(content: Mapping[str, Any]) -> SceneArchitecture:
     if content.get("chapter_contract_schema_version") not in {
         CHAPTER_CONTRACT_SCHEMA_VERSION,
         "chapter-mission-scene.v3",
+        "chapter-mission-scene.v4",
     }:
         raise KernelError(
             "CHAPTER_CONTRACT_VERSION_REQUIRED",
             "new Chapter planning requires the current Mission and Scene contract",
         )
+    if content.get("chapter_contract_schema_version") == "chapter-mission-scene.v4":
+        if "serialization_function" not in content or (content["serialization_function"] is not None and (not isinstance(content["serialization_function"], str) or not content["serialization_function"].strip())):
+            raise KernelError("CHAPTER_SERIALIZATION_DECLARATION_REQUIRED", "Current Chapter contract requires explicit nullable serialization realization")
     realization = content.get("narrative_realization_slice") or {}
     events = realization.get("events") or ()
     event_ids = frozenset(str(item.get("event_id") or "") for item in events)

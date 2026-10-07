@@ -1,0 +1,32 @@
+[
+  {
+    "proposal": "architecture/proposals/classical-corpus-codex-validation.md",
+    "reviewed_scope_delta": [
+      "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+      "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py"
+    ],
+    "meaning": "Only supporting FK indexes; business guards, remaining decisions and work unchanged",
+    "reviewed_baseline": "b484551d1d128075b67784c2b4bed489d1119397",
+    "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+  },
+  {
+    "proposal": "architecture/proposals/industrial-novel-os-blueprint.md",
+    "reviewed_scope_delta": [
+      "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+      "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py"
+    ],
+    "meaning": "Only supporting FK indexes; business guards, remaining decisions and work unchanged",
+    "reviewed_baseline": "b484551d1d128075b67784c2b4bed489d1119397",
+    "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+  },
+  {
+    "proposal": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+    "reviewed_scope_delta": [
+      "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+      "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py"
+    ],
+    "meaning": "Only supporting FK indexes; business guards, remaining decisions and work unchanged",
+    "reviewed_baseline": "b484551d1d128075b67784c2b4bed489d1119397",
+    "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+  }
+]

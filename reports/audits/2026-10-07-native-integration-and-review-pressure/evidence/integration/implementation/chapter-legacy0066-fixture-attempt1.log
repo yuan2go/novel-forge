@@ -1,0 +1,44 @@
+F
+=================================== FAILURES ===================================
+_ LegacyMigrationAuthorityPostgresTests.test_source_migration_requires_verified_blob_and_real_projection _
+
+self = <tests.integration.test_authority_legacy_migration_postgres.LegacyMigrationAuthorityPostgresTests testMethod=test_source_migration_requires_verified_blob_and_real_projection>
+
+    def test_source_migration_requires_verified_blob_and_real_projection(self) -> None:
+        with disposable_database_at_migration(
+            DATABASE_URL,
+            prefix="legacy_source_binding",
+            target_migration_id=LATEST_MIGRATION_ID,
+        ) as database_url, patch(f"{__name__}.DATABASE_URL", database_url):
+>           self._source_migration_requires_verified_blob_and_real_projection()
+
+tests/integration/test_authority_legacy_migration_postgres.py:1937: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_authority_legacy_migration_postgres.py:2202: in _source_migration_requires_verified_blob_and_real_projection
+    restore_post_window_fixture_tables(DATABASE_URL, later_fixture_tables)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_url = 'user=novel_forge password=novel_forge dbname=legacy_source_bindin_3a120e47aa404271bd6ebf331bd93269_test host=127.0.0.1 port=59466'
+tables = {'authority_operation_definition_release': (('name', 'definition_version', 'application_build_id', 'commit_sha', 'defi...eccf7eed0e87c201b', datetime.datetime(2026, 10, 7, 0, 13, 12, 893170, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))), ...])}
+
+    def restore_post_window_fixture_tables(
+        database_url: str,
+        tables: dict[str, tuple[tuple[str, ...], tuple[str, ...], list[tuple[Any, ...]]]],
+    ) -> None:
+        """Restore only later-schema fixture inputs after the historical window is upgraded."""
+        from novel_forge.storage.migrations import LATEST_MIGRATION_ID
+    
+        assert_database_at_migration(database_url, target_migration_id=LATEST_MIGRATION_ID)
+        with psycopg.connect(database_url) as connection:
+            for name in tables:
+                count = connection.execute(
+                    sql.SQL("SELECT COUNT(*) FROM {}").format(sql.Identifier(name))
+                ).fetchone()[0]
+>               assert count == 0, f"upgrade already populated later fixture table: {name}"
+E               AssertionError: upgrade already populated later fixture table: authority_operation_definition_release
+
+tests/integration/migration_window_postgres_support.py:409: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_authority_legacy_migration_postgres.py::LegacyMigrationAuthorityPostgresTests::test_source_migration_requires_verified_blob_and_real_projection
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 9.47s

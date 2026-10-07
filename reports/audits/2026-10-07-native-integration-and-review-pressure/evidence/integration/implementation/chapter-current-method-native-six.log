@@ -1,0 +1,32 @@
+F
+=================================== FAILURES ===================================
+_ test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts _
+tests/integration/test_synthesis_formation_postgres.py:792: in test_native_formation_generates_foundation_from_author_brief
+    execute_story_formation_claim(
+src/novel_forge/workers/book_authority.py:342: in execute_story_formation_claim
+    result = formation.advance_expected(
+src/novel_forge/modules/book_design_authority/formation.py:233: in advance_expected
+    generated_layer = self.generation.prepare_layer(run, frozen, principal=principal)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_design_authority/formation_generation.py:134: in prepare_layer
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:542: in generate
+    replay = self._terminal_generation_replay(command, principal=principal, execution_probe=execution_probe)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1768: in _terminal_generation_replay
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY: historical Planning definitions may only resume their already admitted commands
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_synthesis_formation_postgres.py:2149: in test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+    test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,
+tests/integration/test_synthesis_formation_postgres.py:857: in test_native_formation_generates_foundation_from_author_brief
+    assert (
+E   AssertionError: assert ('PLANNING_HIS...tted commands' == 'simulated ac...jection crash'
+E     
+E     - simulated activation projection crash
+E     + PLANNING_HISTORICAL_CONTRACT_REPLAY_ONLY: historical Planning definitions may only resume their already admitted commands)
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 3.46s

@@ -572,6 +572,8 @@ def normalize_draft_result(
     result: dict[str, Any],
     provider_evidence: dict[str, Any],
     work_requirements: bool = False,
+    core_policy: str = "EXPLICIT_SKELETON_V1",
+    information_policy: str = "ENTRY_ONLY_V1",
 ) -> dict[str, Any]:
     from .realization_composition import prose_from_output
 
@@ -624,6 +626,8 @@ def normalize_draft_result(
             build_draft_style_view(
                 context_content or {}, work_requirements=work_requirements
             ),
+            core_policy=core_policy,
+            information_policy=information_policy,
         ),
         artifacts=result.get("scene_artifacts", []),
         text=text,
@@ -684,6 +688,7 @@ def normalize_revision_result(
     provider_evidence: dict[str, Any],
     project_id: str = "local-system",
     context_bundle_version_id: str = "legacy-context-bundle",
+    length_scope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return apply_revision_result(
         project_id=project_id,
@@ -694,6 +699,7 @@ def normalize_revision_result(
         context_bundle_version_id=context_bundle_version_id,
         result=result,
         provider_evidence=provider_evidence,
+        length_scope=length_scope,
     )
 
 
@@ -745,6 +751,7 @@ def build_canon_patch(
     context_bundle_version_id: str = "legacy-context-bundle",
     extraction: dict[str, Any] | None = None,
     context_bundle: dict[str, Any] | None = None,
+    validation_contract: str = "LEGACY_V1",
 ) -> dict[str, Any]:
     historical_state: dict[str, list[dict[str, Any]]] = {}
     identity_profiles: list[dict[str, Any]] = []
@@ -868,6 +875,7 @@ def build_canon_patch(
             (context_bundle or {}).get("chapter_execution_expectations") or {}
         ),
         identity_profiles=identity_profiles,
+        validation_contract=validation_contract,
     )
 
 

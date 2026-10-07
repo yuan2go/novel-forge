@@ -150,6 +150,17 @@ def read_failed_operation_success(
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
+def read_checkpointed_operation_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+            [context.operation_id, context.project_id])
+        row = uow.cursor.fetchone()
+        if row is None or row[0] not in {'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED'}:
+            raise KernelError('EFFECT_RETAINED_RESULT_OWNER_INVALID', 'Completed checkpoint recovery requires a waiting owner')
+        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
+
+
 def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
     effect = repository.get_for_update(effect_id)
     _require_project(effect, context.project_id)
@@ -229,6 +240,101 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
         "recovered": True,
     }
 
+
+
+def read_rejected_structured_completion(database_url, context, *, effect_id):
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            "SELECT status,actor_id FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+            [context.operation_id, context.project_id],
+        )
+        owner = uow.cursor.fetchone()
+        if not owner or owner != ("FAILED_FINAL", context.actor_id):
+            raise KernelError(
+                "EFFECT_REJECTED_RESULT_OWNER_INVALID",
+                "Require this actor and its failed-final owner",
+            )
+        effect = uow.repositories.external_effects.get_for_update(effect_id)
+        _require_project(effect, context.project_id)
+        if effect["operation_id"] != context.operation_id:
+            raise KernelError(
+                "EFFECT_OPERATION_CONFLICT",
+                "Rejected result belongs to another Operation",
+            )
+        if (
+            effect["status"] != "FAILED_FINAL"
+            or effect["effect_type"] != "model.invoke"
+        ):
+            raise KernelError(
+                "EFFECT_REJECTED_RESULT_STATUS_INVALID",
+                "Only the original failed model dispatch may be revalidated",
+            )
+        uow.cursor.execute(
+            "SELECT d.status,d.evidence,d.payload_hash,d.generation,e.last_error FROM authority_external_effect_dispatch d JOIN authority_external_effect e USING(external_effect_id) WHERE d.external_effect_id=%s ORDER BY d.generation DESC LIMIT 1",
+            [effect_id],
+        )
+        row = uow.cursor.fetchone()
+        if (
+            not row
+            or row[0] != "FAILED_FINAL"
+            or row[1] != row[4]
+            or row[2] != effect["request_hash"] or _hash(effect["request_payload"]) != effect["request_hash"]
+        ):
+            raise KernelError(
+                "EFFECT_REJECTED_RESULT_EVIDENCE_INVALID",
+                "Failed dispatch evidence must retain its exact digest",
+            )
+        evidence = row[1]
+        process = evidence.get("production_execution", {}).get("process_evidence", {})
+        result = evidence.get("production_execution", {}).get("execution_result", {})
+        if (
+            process.get("failure_code") != "OUTPUT_SCHEMA_FAILURE"
+            or result.get("outcome") != "FINAL_FAILURE"
+            or not result.get("raw_output_ref")
+            or not result.get("process_receipt_ref")
+            or process.get("unauthorized_tools")
+            or not result.get("usage_receipt_ref")
+            or not result.get("cost_receipt_ref")
+        ):
+            raise KernelError(
+                "EFFECT_REJECTED_RESULT_FAILURE_NOT_ALLOWED",
+                "Only an intact structured-output rejection may be revalidated",
+            )
+        uow.cursor.execute(
+            "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND status<>'SUCCEEDED' AND external_effect_id<>%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status<>'SETTLED') OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=%s AND l.status='HELD')",
+            [
+                context.operation_id,
+                effect_id,
+                context.operation_id,
+                context.operation_id,
+            ],
+        )
+        if uow.cursor.fetchone()[0]:
+            raise KernelError(
+                "EFFECT_REJECTED_RESULT_RECONCILIATION_REQUIRED",
+                "All original calls and usage must be resolved without an active lease",
+            )
+        uow.cursor.execute(
+            "SELECT reservation_id,status FROM authority_budget_reservation WHERE external_effect_id=%s AND project_id=%s",
+            [effect_id, context.project_id],
+        )
+        budgets = uow.cursor.fetchall()
+        if len(budgets) != 1 or budgets[0][1] != "SETTLED":
+            raise KernelError(
+                "EFFECT_REJECTED_RESULT_BUDGET_INVALID",
+                "Require the exact settled original usage",
+            )
+        return {
+            "external_effect_id": effect_id,
+            "provider_evidence": evidence,
+            "original_outcome": "FAILED_FINAL",
+            "generation": row[3],
+            "budget_reservation_id": budgets[0][0],
+            "budget_reservation_status": "SETTLED",
+            "request_payload": effect["request_payload"],
+            "request_hash": effect["request_hash"],
+        }
 
 def read_external_effect_intent(
     database_url: str,
@@ -533,6 +639,9 @@ def dispatch_external_effect(
     budget_reservation_id: str = "",
     pre_send_assertion: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
+    if type(adapter) is not MinioObjectStoreExternalEffectAdapter:
+        assert_legacy_execution_allowed(component="ExternalEffect adapter",
+            gateway_backed=bool(getattr(adapter, "production_execution_gateway_backed", False)))
     effect = _read_effect(database_url, effect_id, context.project_id)
     if adapter.provider != effect["provider"]:
         raise KernelError(
@@ -1543,9 +1652,15 @@ def resume_operation_from_completed_effect(
 
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
-        _require_context(repository, context)
+        _validate_effect_context(context)
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+            [context.operation_id, context.project_id])
+        if uow.cursor.fetchone() is None:
+            raise KernelError('OPERATION_NOT_FOUND', 'Completed effect recovery requires its existing owner')
         effect = repository.get_for_update(effect_id)
         _require_project(effect, context.project_id)
+        if effect['operation_id'] != context.operation_id:
+            raise KernelError('EFFECT_OPERATION_CONFLICT', 'Completed effect belongs to another Operation')
         if effect["status"] != "SUCCEEDED":
             raise KernelError(
                 "EFFECT_STATUS_CONFLICT",

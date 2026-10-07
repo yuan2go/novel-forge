@@ -2117,6 +2117,9 @@ class PostgresBookAuthority:
         if request["chapter_root_operation_id"]:
             return self.reconcile_chapter(chapter_request_id)
         payload = dict(request["command_payload"])
+        if payload.get("execution_replacement_chapter_command"):
+            from .execution_recovery import resume_successor
+            return resume_successor(self, chapter_request_id=chapter_request_id, principal=principal)
         if payload.get("author_replacement_chapter_command"):
             from .author_revision import resume_author_chapter_replacement
             return resume_author_chapter_replacement(self, chapter_request_id=chapter_request_id, principal=principal)
@@ -2166,6 +2169,8 @@ class PostgresBookAuthority:
         else:
             request_status, book_state = "RUNNING", BookProductionState.CHAPTER_RUNNING
         book = self.require(request["book_run_id"])
+        if request["status_reference"] == request_status and book["state"] == book_state.value:
+            return request
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """
@@ -2207,8 +2212,9 @@ class PostgresBookAuthority:
             action="chapter_reconcile",
             event_type="book.chapter.status_reconciled",
             idempotency_key=(
-                f"{request['stable_idempotency_key']}:reconcile:"
-                f"{request['status_reference']}:{request_status}"
+                f"{request['stable_idempotency_key']}:reconcile:v2:{book['version']}:"
+                f"{run.get('version', 0)}:{run.get('saga', {}).get('version', 0)}:"
+                f"{request['status_reference']}:{request_status}:{operation_status}:{saga_status}"
             ),
             actor_id=str(root_identity[0]),
             trace_id=str(root_identity[1]),
@@ -2218,6 +2224,8 @@ class PostgresBookAuthority:
                 "chapter_request_id": chapter_request_id,
                 "child_operation_status": operation_status,
                 "child_saga_status": saga_status,
+                "child_operation_version": run.get("version"),
+                "child_saga_version": run.get("saga", {}).get("version"),
             },
             handler=commit_reconciliation,
         )
@@ -3586,7 +3594,16 @@ def _validate_chapter_acceptance_evidence(
         "effects_terminal": (
             not model_effects
             or (
-                effect_operation_ids == succeeded_effect_operation_ids
+                effect_operation_ids == succeeded_effect_operation_ids | {
+                    str(item["operation_id"]) for item in model_effects
+                    if item.get("settled_candidate_superseded") is True
+                    and item.get("successor_operation_id") and item.get("status") == "SUCCEEDED"
+                } | {
+                    str(item["operation_id"]) for item in model_effects
+                    if item.get("settled_nonproducing_superseded") is True
+                    and item.get("successor_operation_id")
+                    and item.get("status") in {"FAILED_FINAL", "FAILED_RETRYABLE"}
+                }
                 and all(
                     item.get("status") == "SUCCEEDED"
                     for item in model_effects

@@ -521,7 +521,7 @@ def build_provider_task_view(
         command = inputs.get("planning_command")
         frozen = inputs.get("frozen_inputs")
         task = inputs.get("foundation_task")
-        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2"):
+        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") == "1.19.0"):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
         return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
     if stage in _PLANNING_STAGES:
@@ -700,6 +700,7 @@ def build_provider_task_view(
             style=_compact(inputs.get("style")),
             creative_memo=memo_view,
             realization_contract=realization,
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
         )
     if stage == "review":
         from novel_forge.modules.review.craft import craft_provider_task
@@ -715,6 +716,8 @@ def build_provider_task_view(
             knowledge_review_targets=deepcopy(
                 inputs.get("knowledge_review_targets") or []
             ),
+            **({"review_knowledge_scope_contract": inputs["review_knowledge_scope_contract"]} if inputs.get("review_knowledge_scope_contract") else {}),
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
             author_design_review_targets=deepcopy(
                 inputs.get("author_design_review_targets") or {}
             ),
@@ -731,6 +734,8 @@ def build_provider_task_view(
     if stage == "revision":
         source = dict(inputs.get("draft") or {})
         payload: dict[str, Any] = {
+            **({"chapter_length_repair_scope": {**deepcopy(inputs["chapter_length_repair_scope"]), "planning_target_han_characters":(inputs["chapter_length_repair_scope"]["minimum"]+inputs["chapter_length_repair_scope"]["maximum"])//2, "objective":"Aim within the range with margin rather than estimating a boundary. Correct measured length across the frozen scenes to the original bounds through consequential actions, interaction and sensory feedback. Preserve facts, voice and scene coverage. No padding, repetition, new plot or fabricated resolution."}} if inputs.get("chapter_length_repair_scope") else {}),
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
             "chapter": _prose(source),
             "creative_execution": deepcopy(source.get("creative_execution") or {}),
             "knowledge_checks": deepcopy(
@@ -978,6 +983,8 @@ def build_provider_task_view(
             knowledge_review_targets=deepcopy(
                 inputs.get("knowledge_review_targets") or []
             ),
+            **({"review_knowledge_scope_contract": inputs["review_knowledge_scope_contract"]} if inputs.get("review_knowledge_scope_contract") else {}),
+            **({"candidate_repair": deepcopy(inputs["candidate_repair"])} if inputs.get("candidate_repair") else {}),
             author_design_review_targets=deepcopy(
                 inputs.get("author_design_review_targets") or {}
             ),

@@ -16,8 +16,22 @@ def candidate_validation(cursor: Any, *, project_id: str, asset_version_id: str)
         FROM authority_operation_output_asset output
         JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
         JOIN authority_asset a ON a.asset_id=v.asset_id
-        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
-        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
+        LEFT JOIN authority_planning_result_admission recovery ON recovery.candidate_asset_version_id=v.asset_version_id
+          AND recovery.recovery_operation_id=output.operation_id
+        LEFT JOIN authority_operation recovery_operation ON recovery_operation.operation_id=recovery.recovery_operation_id
+        JOIN authority_external_effect e ON e.operation_id=COALESCE(recovery.source_operation_id,output.operation_id) AND e.project_id=a.project_id
+        WHERE a.project_id=%s AND v.asset_version_id=%s AND (e.status='SUCCEEDED' OR (e.status='FAILED_FINAL'
+            AND recovery_operation.definition_name='story_planning.gateway_result.revalidate'
+            AND recovery.evidence->>'contract_version'='planning-gateway-result-revalidation.v1'
+            AND recovery.evidence->>'original_gateway_outcome'='FINAL_FAILURE'
+            AND recovery.evidence->>'current_result_validation'='VALID'
+            AND recovery.evidence->'provider_invoked'='false'::jsonb))
+          AND (recovery.recovery_id IS NULL OR (recovery_operation.status='SUCCEEDED'
+            AND recovery_operation.definition_name IN ('story_planning.result_admission.recover','story_planning.gateway_result.revalidate')
+            AND recovery.external_effect_id=e.external_effect_id
+            AND recovery.evidence->>'target_release_sha'=recovery_operation.definition_snapshot->>'commit_sha'
+            AND recovery.project_id=a.project_id AND recovery.book_id=v.content->>'book_id'
+            AND v.content->'result_admission_recovery'=recovery.evidence))
           AND e.request_payload->>'stage'=v.content->>'generator_operation_name'
           AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'""",
         [project_id, asset_version_id])

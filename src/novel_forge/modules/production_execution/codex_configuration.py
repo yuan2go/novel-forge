@@ -30,7 +30,8 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 )
 
 
-CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v3"
+CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v5"
+CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v2"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
 
@@ -78,7 +79,44 @@ def codex_account_binding_evidence(backend: object) -> dict:
     return evidence
 
 
-def codex_output_schema(schema: dict) -> dict:
+CODEX_CANONICAL_JSON_SCHEMA_REF = "schema:chapter-provider-output:canon_extraction:v25"
+CODEX_CANONICAL_JSON_CODEC = "codex-canonical-json.v1"
+
+
+def codex_output_schema(schema: dict, *, schema_ref: str = "") -> dict:
+    if schema_ref == CODEX_CANONICAL_JSON_SCHEMA_REF:
+        return {"type":"object","properties":{"output_json":{"type":"string"}},
+            "required":["output_json"],"additionalProperties":False}
+    return _codex_output_schema(schema, all_nullable=True)
+
+
+def strict_codex_json_loads(text: str):
+    def pairs(items):
+        result={}
+        for key,item in items:
+            if key in result:
+                raise ValueError("canonical JSON transport rejects duplicate keys")
+            result[key]=item
+        return result
+    def reject_constant(value):
+        raise ValueError("canonical JSON transport rejects non-finite numbers")
+    return json.loads(text,object_pairs_hook=pairs,parse_constant=reject_constant)
+
+
+def decode_codex_output(value, *, schema_ref: str):
+    if schema_ref != CODEX_CANONICAL_JSON_SCHEMA_REF:
+        return value, None
+    if not isinstance(value, dict) or set(value)!={"output_json"} or not isinstance(value['output_json'],str):
+        raise ValueError("canonical JSON transport requires exactly one output_json string")
+    decoded=strict_codex_json_loads(value['output_json'])
+    if not isinstance(decoded,dict):
+        raise ValueError("canonical JSON transport requires an object result")
+    def digest(item):
+        return 'sha256:'+hashlib.sha256(json.dumps(item,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+    return decoded, {'contract_version':CODEX_CANONICAL_JSON_CODEC,'envelope_hash':digest(value),'decoded_hash':digest(decoded)}
+
+
+def _codex_output_schema(schema: dict, *, all_nullable: bool) -> dict:
     result = {k: v for k, v in schema.items() if k != "uniqueItems"}
     if set(result.get("properties", {})) == {"finding_code", "statement", "evidence_span_ids", "input_observation_asset_version_ids"}:
         properties = result["properties"]
@@ -98,6 +136,9 @@ def codex_output_schema(schema: dict) -> dict:
         result["type"] = "object"
         result["additionalProperties"] = False
         result["required"] = list(properties)
+    if all_nullable and result.get("enum") == [None] and (result.get("type") == "null" or isinstance(result.get("type"), list) and "null" in result["type"]):
+        result = {k:v for k,v in result.items() if k not in {"enum", "minLength", "maxLength", "pattern", "format", "minimum", "maximum", "items", "minItems", "maxItems"}}
+        result["type"] = "null"
     choices = [result["const"]] if "const" in result else result.get("enum", [])
     if "type" not in result and choices:
         types = {type(value) for value in choices}
@@ -108,13 +149,17 @@ def codex_output_schema(schema: dict) -> dict:
         result["type"] = inferred[0] if len(inferred) == 1 else inferred
     for key in ("properties", "$defs", "definitions", "patternProperties"):
         if isinstance(result.get(key), dict):
-            result[key] = {k: codex_output_schema(v) for k, v in result[key].items()}
+            result[key] = {k: _codex_output_schema(v, all_nullable=all_nullable) for k, v in result[key].items()}
     for key in ("items", "additionalProperties", "not", "if", "then", "else"):
         if isinstance(result.get(key), dict):
-            result[key] = codex_output_schema(result[key])
+            result[key] = _codex_output_schema(result[key], all_nullable=all_nullable)
     for key in ("allOf", "anyOf", "oneOf", "prefixItems"):
         if isinstance(result.get(key), list):
-            result[key] = [codex_output_schema(v) for v in result[key]]
+            result[key] = [_codex_output_schema(v, all_nullable=all_nullable) for v in result[key]]
+    if isinstance(result.get("type"), list) and "null" in result["type"] and len(result["type"])==2 and (all_nullable or "object" in result["type"]):
+        concrete=next(t for t in result["type"] if t!="null")
+        null_branch = {"type": "null", **{k: v for k, v in result.items() if all_nullable and k in {"enum", "const", "allOf", "anyOf", "oneOf", "not", "if", "then", "else"}}}
+        result = {"anyOf": [{**result, "type": concrete}, null_branch]}
     return result
 
 
@@ -205,3 +250,29 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
         "model_calls": 0,
         "fallback": "FORBIDDEN",
     }
+
+
+def codex_wire_correction_evidence(process_evidence: Mapping) -> dict | None:
+    contract = process_evidence.get('provider_schema_contract') or {}
+    canonical = process_evidence.get('output_schema')
+    if (not isinstance(canonical, dict) or process_evidence.get('output_schema_version') != 'schema:chapter-provider-output:canon_extraction:v24'
+        or contract.get('version') != 'codex-structured-schema.v3'):
+        return None
+    def digest(value):
+        return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    def reverse(value):
+        if isinstance(value, dict):
+            branches = value.get('anyOf')
+            if (set(value)=={'anyOf'} and isinstance(branches,list) and len(branches)==2
+                and branches[1]=={'type':'null'} and branches[0].get('type')=='object'):
+                return reverse({**branches[0],'type':['object','null']})
+            return {key:reverse(item) for key,item in value.items()}
+        if isinstance(value,list):
+            return [reverse(item) for item in value]
+        return value
+    wire = _codex_output_schema(canonical, all_nullable=False)
+    if (digest(canonical) != contract.get('canonical_hash') or digest(reverse(wire)) != contract.get('provider_hash')
+        or digest(wire)==contract.get('provider_hash')):
+        return None
+    return {'contract_version':'codex-nullable-shared-types.v1','canonical_hash':digest(canonical),
+        'previous_wire_hash':contract['provider_hash'],'corrected_wire_hash':digest(wire),'reversible_equivalence':'EXACT'}

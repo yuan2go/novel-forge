@@ -276,6 +276,7 @@ def build_quality_context_view(
     token_budget: int = 6000,
     token_estimator: TokenEstimator | None = None,
     work_requirements: bool = False,
+    governed_world_projection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if token_budget <= 0:
         raise KernelError(
@@ -428,16 +429,20 @@ def build_quality_context_view(
             **common,
             "revision_text": str(revision.get("text") or ""),
             "canon_patch_asset_version_id": canon_asset_version_id,
+            **({'identity_reference_observations':canon['deterministic_validation']['identity_reference_observations'],
+                'identity_reference_check_status':canon['deterministic_validation']['identity_reference_check_status'],
+                'identity_review_instruction':'Independently check the actual prose for each unresolved reference. A NOT_RUN heuristic is not evidence of either a contradiction or a pass.'}
+                if canon.get('deterministic_validation',{}).get('validation_contract')=='grounded-canon-validation.v2' else {}),
             "canon_conflicts": _project_canon_conflicts(
                 list(canon.get("conflicts") or [])
             ),
             "previous_state_snapshots": previous_states,
             "current_state_candidates": current_states,
-            "governed_world_rules": _segments_of_type(segments, "world_bible"),
+            "governed_world_rules": [governed_world_projection] if governed_world_projection else _segments_of_type(segments, "world_bible"),
             "volume_arc": _segments_of_type(segments, "volume_arc"),
             "arc_progress": _segments_of_type(segments, "arc_progress_report"),
             "previous_recap": _segments_of_type(segments, "longform_recap_report"),
-            "chapter_plan": _longform_chapter_plan_view(chapter_plan),
+            "chapter_plan": _longform_chapter_plan_view(chapter_plan, include_governed_constraints=canon.get("deterministic_validation",{}).get("validation_contract")=="grounded-canon-validation.v2"),
             "canon_change_proposal_asset_version_id": canon.get(
                 "canon_change_proposal_asset_version_id", ""
             ),
@@ -473,7 +478,7 @@ def build_quality_context_view(
     )
     body["coverage_report"] = coverage
     body["contract_version"] = (
-        "stage-quality-context-v6" if work_requirements else "stage-quality-context-v4"
+        "stage-quality-context-v8" if governed_world_projection else "stage-quality-context-v7" if work_requirements and group == "longform" and canon.get("deterministic_validation",{}).get("validation_contract")=="grounded-canon-validation.v2" else "stage-quality-context-v6" if work_requirements else "stage-quality-context-v4"
     )
     if work_requirements:
         body["evaluation_semantics_version"] = "work-quality.v2"
@@ -701,7 +706,7 @@ def _state_identity(item: dict[str, Any], state_type: str) -> str:
     return f"{state_type}:project"
 
 
-def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
+def _longform_chapter_plan_view(chapter_plan: dict[str, Any], *, include_governed_constraints: bool = False) -> dict[str, Any]:
 
     canonical_fields = (
         "chapter",
@@ -726,6 +731,13 @@ def _longform_chapter_plan_view(chapter_plan: dict[str, Any]) -> dict[str, Any]:
         for field in canonical_fields
         if field in chapter_plan
     }
+    if include_governed_constraints:
+        view['governed_plan_contract'] = {
+            'source_chapter_plan_asset_version_id':chapter_plan.get('source_chapter_plan_asset_version_id',''),
+            'constraint_envelope':chapter_plan.get('constraint_envelope',{}),
+            'world_rule_usages':chapter_plan.get('world_rule_usages',[]),
+            'power_state_changes':chapter_plan.get('power_state_changes',[]),
+            'evidence_scope':'Governed design requirements and planned uses; neither accepted past events nor a substitute for missing historical state.'}
     view["scene_plan"] = [
         {
             field: scene[field]

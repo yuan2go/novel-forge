@@ -111,7 +111,7 @@ def validate_chapter_execution_intent(
     if normalized.get("contract_version") == "chapter-execution-intent-v3" or (
         normalized.get("contract_version") == "chapter-execution-intent-v4"
         and normalized.get("mission_schema_version")
-        in {"chapter-mission-scene.v2", "chapter-mission-scene.v3"}
+        in {"chapter-mission-scene.v2", "chapter-mission-scene.v3", "chapter-mission-scene.v4"}
     ):
         from novel_forge.modules.hierarchical_planning.chapter_contracts import (
             ChapterMission,

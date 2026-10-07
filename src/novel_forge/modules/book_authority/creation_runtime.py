@@ -31,11 +31,48 @@ def resolved_book_command(snapshot: Any, *, actor: str, run_key: str, chapters: 
     )
 
 
+class _RecoveryCheckpoint(Exception):
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
 def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
+               maximum_ticks: int, deadline: float, continuation_live: Callable[[], bool] = lambda: True, execution_probe: Callable[[], object] = lambda: None, events: Callable[[dict[str, Any]], None] = lambda _: None) -> str:
+    try:
+        return _drive_book(composition=composition, chapter=chapter, book_run_id=book_run_id,
+            worker=worker, maximum_ticks=maximum_ticks, deadline=deadline,
+            continuation_live=continuation_live, execution_probe=execution_probe, events=events)
+    except _RecoveryCheckpoint as checkpoint:
+        return checkpoint.reason
+
+
+def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                maximum_ticks: int, deadline: float, continuation_live: Callable[[], bool] = lambda: True, execution_probe: Callable[[], object] = lambda: None, events: Callable[[dict[str, Any]], None] = lambda _: None) -> str:
     from novel_forge.workers.book_authority import schedule_book_coordination_jobs, execute_book_coordination_claim
 
     jobs = RuntimeJobAuthority(composition.authority.database_url)
+    recovery_actions = 0
+
+    def recover(action: Callable[[], bool]) -> bool:
+        nonlocal recovery_actions
+        execution_probe()
+        if not continuation_live():
+            composition.authority.cancel(book_run_id, reason="Original creation cancellation", principal=composition.principal)
+            raise _RecoveryCheckpoint("CANCELLED")
+        current = composition.authority.require(book_run_id)
+        worker.require("book.authority.execute", current["project_id"])
+        if current["state"] == "COMPLETED":
+            raise _RecoveryCheckpoint("COMPLETED")
+        if current["state"] in {"ABORTED", "CANCELLED"}:
+            raise _RecoveryCheckpoint("CANCELLED")
+        if monotonic() >= deadline or recovery_actions >= maximum_ticks:
+            raise _RecoveryCheckpoint("YIELDED_CHECKPOINT")
+        changed = action()
+        if changed:
+            recovery_actions += 1
+        return changed
+
     for _ in range(maximum_ticks):
         execution_probe()
         if not continuation_live():
@@ -49,6 +86,35 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.chapter_authority.derived_recovery import recover_derived_frontier
+        while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+            events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_quality_frontier
+        recover(lambda: recover_quality_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_support_frontier
+        recover(lambda: recover_support_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_information_frontier
+        recover(lambda: recover_information_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_review_frontier
+        recover(lambda: recover_review_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_length_frontier
+        recover(lambda: recover_length_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_length_retry_phase
+        recover(lambda: recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_capacity_frontier
+        recover(lambda: recover_canon_capacity_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_protocol_frontier
+        recover(lambda: recover_canon_protocol_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_schema_retry_phase
+        recover(lambda: recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier
+        recover(lambda: recover_realization_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        from .execution_recovery import recover_timeout
+        if recover(lambda: recover_timeout(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+            book = composition.authority.require(book_run_id)
+        from novel_forge.modules.story_planning_runtime.stage_repairs import resume_rejected_book_plan
+        if recover(lambda: resume_rejected_book_plan(composition, composition.authority.require(book_run_id), worker=worker, execution_probe=execution_probe)):
+            book=composition.authority.require(book_run_id)
         schedule_book_coordination_jobs(composition.query, jobs, limit=1, book_run_id=book_run_id)
         claim = jobs.claim(runtime_group="book", worker_id=worker.principal_id, lease_seconds=30,
             job_kinds=("BOOK_COORDINATION_TICK",), subject_kind="BOOK_RUN", subject_id=book_run_id)
@@ -71,10 +137,24 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
                     events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
+                    if recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                        while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                            pass
+                        continue
+                    if error.code == "PROVIDER_ROUTING_BLOCKED" and recover(lambda: recover_canon_capacity_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                        continue
+                    if error.code == "MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE" and recover(lambda: recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                        continue
+                    if error.code in {"CHAPTER_LENGTH_REPAIR_INCOMPLETE", "OPERATION_BUSINESS_TIMEOUT"} and recover(lambda: recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                        events({"kind": "CHAPTER_LENGTH_RETRY_PHASE", "operation_id": active})
+                        continue
                     if scheduler.has_ready_quality_work(project_id=book["project_id"], root_operation_id=active):
                         continue
                     return error.code
                 events({"kind": "CHAPTER_TICK", "result": asdict(result)})
+                if result.recovery_mode.startswith(('derived_canon_','derived_quality_')) and result.operation_status=='SUCCEEDED':
+                    while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                        events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
                 if result.saga_status == "SUCCEEDED":
                     break
                 if result.operation_status in {"WAITING_RETRY", "UNKNOWN", "FAILED_FINAL", "FAILED_TERMINAL"}:
@@ -722,7 +802,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 raise ValueError("CREATION_FROZEN_INPUT_DRIFT")
             admission = selected_book_template(uow.cursor, project_id=args.project_id, book_id=args.book_id, allow_literary_required=True)
         if admission is None:
-            from novel_forge.modules.production_execution.execution_template import configure_execution_template
+            from novel_forge.modules.authority_handler_runtime.policy_commands import configure_execution_template
             configure_execution_template(settings, SimpleNamespace(project_id=args.project_id,
                 workspace_id=args.workspace_id, book_id=args.book_id, policy_version="creation:" + formation_id,
                 idempotency_key=args.idempotency_key + ":execution-template", template_file=args.execution_template_file))

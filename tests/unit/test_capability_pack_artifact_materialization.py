@@ -200,7 +200,7 @@ def test_current_draft_request_renders_single_body_contract_without_operator_pol
     assert "second whole-chapter body" in prompt
     assert "operator handoff" not in prompt.lower()
     assert '"required":["scene_artifacts"]' in prompt
-    assert evidence["prompt_template"]["version"] == "v9"
+    assert evidence["prompt_template"]["version"] == "v11"
 
 
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
@@ -607,7 +607,8 @@ def test_revision_renderer_projects_one_output_method(targeted: bool) -> None:
             "source_chapter_plan_asset_version_id": "plan:v1",
             "source_chapter_plan_content_hash": HASH,
         },
-        {},
+        {"production_input_manifest": {"style_policy_version_id": "style:v1"},
+         "context_segments": [{"asset_type": "style_policy", "asset_version_id": "style:v1", "content": {}}]},
     )
     prompt, evidence = _materialize_chapter_codex_prompt(
         request=request,
