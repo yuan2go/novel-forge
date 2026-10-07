@@ -1498,6 +1498,8 @@ implicit capabilities.
 
 ## Narrative Reality and causal production
 
+Intent comparison retains `REALIZATION_COMPARISON_UNCERTAIN` separately from a confirmed semantic deviation; both retain exact prose, plan and independent support evidence for future-only planning.
+
 Realization descriptions express planned intent. Literal equality of action, decision,
 state descriptions or disclosure prose cannot establish semantic coverage. Current
 legacy consumption retains that historical comparison contract. Its recorded deviations
