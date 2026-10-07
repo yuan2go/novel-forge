@@ -22,3 +22,8 @@ def test_known_settled_host_repairs_require_their_explicit_successor_contract():
         assert not eligible_retry(("actor", 2, 1, code, "grant", "3.9.24"), "actor", "grant")
         assert eligible_retry(("actor", 2, 1, code, "grant", version), "actor", "grant")
         assert not eligible_retry(("actor", 2, 2, code, "grant", version), "actor", "grant")
+
+
+def test_current_semantic_successor_keeps_known_quote_retry_bounded():
+    assert eligible_retry(('actor', 2, 1, 'CANON_QUOTE_LOCALIZATION_INVALID', 'grant', '3.9.30'), 'actor', 'grant')
+    assert not eligible_retry(('actor', 2, 2, 'CANON_QUOTE_LOCALIZATION_INVALID', 'grant', '3.9.30'), 'actor', 'grant')

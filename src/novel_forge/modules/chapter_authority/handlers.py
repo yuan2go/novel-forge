@@ -1995,16 +1995,19 @@ class _CanonExtractionHandler:
         repair = None
         semantic_repair = None
         quote_repair = None
-        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29"}
+        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30"}
         if current_contract and request.database_url:
             from .canon_output_recovery import repair_feedback
             repair = repair_feedback(request)
             if request.definition_version == "3.9.24":
                 from .canon_support_coverage import reextraction_feedback
                 semantic_repair = reextraction_feedback(request)
-        if request.definition_version == "3.9.29" and request.database_url:
+        if request.definition_version in {"3.9.29", "3.9.30"} and request.database_url:
             from .current_quote_recovery import repair_feedback as current_feedback, retry_feedback
             quote_repair = retry_feedback(request) or current_feedback(request, stage="canon_extraction")
+            if request.definition_version == "3.9.30":
+                from .current_semantic_recovery import repair_feedback as semantic_feedback
+                semantic_repair = semantic_feedback(request)
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):

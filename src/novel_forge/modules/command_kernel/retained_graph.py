@@ -48,9 +48,16 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
             "RETAINED_GRAPH_SOURCE_INVALID", "Retain the original terminal Saga"
         )
     saga = row[0]
+    if (root["definition_name"] != "chapter.slice.run" or root["root_operation_id"] != root_id
+            or root["actor_id"] != actor_id or root["definition_version"] != "3.9.0"
+            or saga["project_id"] != project_id
+            or (root["status"], saga["status"]) not in {("FAILED_FINAL", "MANUAL_INTERVENTION"), ("SUCCEEDED", "SUCCEEDED")}):
+        raise KernelError("RETAINED_GRAPH_SOURCE_INVALID", "Require the exact authorized terminal Chapter and Saga")
     cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation o JOIN authority_attempt a USING(operation_id)
         WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.24'
-        AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_QUOTE_LOCALIZATION_INVALID')""", [root_id])
+        AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_QUOTE_LOCALIZATION_INVALID'
+        OR o.root_operation_id=%s AND o.definition_name='chapter.canon.propose_changes' AND o.definition_version='3.9.23'
+        AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_REEXTRACTION_REQUIRED')""", [root_id, root_id])
     if cursor.fetchone()[0]:
         if (root["actor_id"] != actor_id or root["definition_name"] != "chapter.slice.run"
                 or root["root_operation_id"] != root_id or saga["project_id"] != project_id):
@@ -280,7 +287,7 @@ def continue_graph_in_uow(uow, *, source, request, context):
         or template.get("chapter_graph_recovery")
         not in {"RETAIN_SETTLED_QUALITY_RANGE_RESULT", "RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
         or source["retained_result"]["contract_version"] == "chapter-quality-review-revalidation.v1" and template.get("chapter_graph_recovery") not in {"RETAIN_SETTLED_QUALITY_RESULT", "RETAIN_SETTLED_CREATIVE_RESULT"}
-        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1", "chapter-current-quote-repair.v1"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
+        or source["retained_result"]["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1", "chapter-current-quote-repair.v1", "chapter-current-semantic-repair.v1"} and template.get("chapter_graph_recovery") != "RETAIN_SETTLED_CREATIVE_RESULT"
         or admission != binding.get("admission")
         or template["member_authorization_ref"]
         != source["retained_result"]["cost_authorization_ref"]
@@ -445,13 +452,13 @@ def acknowledge_retained_result(cursor, effects, root_id):
         JOIN authority_asset_version v USING(asset_version_id) WHERE (o.root_operation_id=%s OR o.operation_id IN (SELECT operation_id FROM authority_saga_retained_step WHERE saga_id=(SELECT successor_saga_id FROM authority_graph_continuation WHERE successor_root_operation_id=%s))) AND o.definition_version=%s
         AND o.status='SUCCEEDED' AND output.role='primary' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
         AND (%s='' OR o.idempotency_key LIKE %s)""",
-        [root_id, root_id, "3.9.29" if proof["contract_version"] == "chapter-current-quote-repair.v1" else "3.9.24" if proof["contract_version"] == "chapter-canon-support-reextraction.v1" else "3.9.23" if proof["contract_version"] == "chapter-canon-support-coverage-repair.v1" else "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17", "CURRENT" if proof["contract_version"] == "chapter-current-quote-repair.v1" else "", f"%%:canon_extraction:quality-correction:{proof.get('quality_generation', 0)}" if proof["contract_version"] == "chapter-current-quote-repair.v1" else ""],
+        [root_id, root_id, "3.9.30" if proof["contract_version"] == "chapter-current-semantic-repair.v1" else "3.9.29" if proof["contract_version"] == "chapter-current-quote-repair.v1" else "3.9.24" if proof["contract_version"] == "chapter-canon-support-reextraction.v1" else "3.9.23" if proof["contract_version"] == "chapter-canon-support-coverage-repair.v1" else "3.9.22" if proof["contract_version"] == "chapter-canon-output-repair.v2" else "3.9.21" if proof["contract_version"] == "chapter-canon-output-repair.v1" else "3.9.20" if proof["contract_version"] == "chapter-quality-review-revalidation.v1" else "3.9.17", "CURRENT" if proof["contract_version"] in {"chapter-current-quote-repair.v1", "chapter-current-semantic-repair.v1"} else "", f"%%:canon_extraction:quality-correction:{proof.get('quality_generation', 0)}" if proof["contract_version"] in {"chapter-current-quote-repair.v1", "chapter-current-semantic-repair.v1"} else ""],
     )
     successors = cursor.fetchall()
     if len(successors) != 1:
         return
     successor, content = successors[0]
-    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1", "chapter-current-quote-repair.v1"}
+    fresh_repair = proof["contract_version"] in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2", "chapter-canon-support-coverage-repair.v1", "chapter-canon-support-reextraction.v1", "chapter-current-quote-repair.v1", "chapter-current-semantic-repair.v1"}
     derived = content.get("retained_result_repair" if fresh_repair else "retained_result_derivation") or {}
     if (
         any(
@@ -477,7 +484,7 @@ def acknowledge_retained_result(cursor, effects, root_id):
             and effect["operation_id"] == proof["source_operation_id"]
             and effect["status"] == "SUCCEEDED"
             and effect["attempt_id"] == proof["source_attempt"]["attempt_id"]
-            and effect["attempt_status"] == "FAILED_FINAL"
+            and effect["attempt_status"] == ("FAILED_RETRYABLE" if proof["contract_version"] == "chapter-current-semantic-repair.v1" else "FAILED_FINAL")
         ):
             effect["settled_candidate_superseded"] = True
             effect["successor_operation_id"] = successor

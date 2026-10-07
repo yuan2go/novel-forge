@@ -40,6 +40,13 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "COMPLETED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.chapter_authority.current_semantic_recovery import retire_semantic_frontier
+        try:
+            retire_semantic_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)
+        except KernelError as error:
+            if error.code == "CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED":
+                return error.code
+            raise
         from .retained_recovery import recover_retained_quality
         if recover_retained_quality(composition.authority,book_run_id=book_run_id,principal=composition.principal):
             book=composition.authority.require(book_run_id)
@@ -108,6 +115,14 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
                     ):
                         events({"kind": "CHAPTER_LENGTH_RETRY_PHASE", "operation_id": active})
                         continue
+                    if error.code == "CANON_GROUNDING_REEXTRACTION_REQUIRED":
+                        try:
+                            if retire_semantic_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                                break
+                        except KernelError as repair_error:
+                            if repair_error.code == "CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED":
+                                return repair_error.code
+                            raise
                     if scheduler.has_ready_quality_work(project_id=book["project_id"], root_operation_id=active):
                         continue
                     if error.code in {"MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE", "CHAPTER_LENGTH_REPAIR_INCOMPLETE", "CANON_QUOTE_LOCALIZATION_INVALID"}:

@@ -69,3 +69,21 @@ def test_retained_correction_references_cannot_replace_missing_initial_completio
     assert initial_graph_complete(complete + corrections, 22)
     corrections[0]["status"] = "UNKNOWN"
     assert not initial_graph_complete(complete + corrections, 22)
+
+
+@pytest.mark.parametrize('attempt_status,expected', [('FAILED_RETRYABLE', True), ('UNKNOWN', False), ('FAILED_FINAL', False)])
+def test_semantic_successor_acknowledges_only_the_preserved_known_failed_attempt(attempt_status, expected):
+    from novel_forge.modules.command_kernel.retained_graph import acknowledge_retained_result
+
+    proof = {'contract_version': 'chapter-current-semantic-repair.v1', 'source_operation_id': 'review',
+             'source_effect_id': 'effect', 'source_dispatch_id': 'dispatch', 'source_request_hash': 'request-hash',
+             'source_output_hash': 'output-hash', 'source_attempt': {'attempt_id': 'attempt'},
+             'quality_generation': 2, 'provider_invoked': True}
+    cursor = Mock()
+    cursor.fetchone.side_effect = [({'retained_result': proof},), ('predecessor',), None]
+    cursor.fetchall.return_value = [('successor', {'retained_result_repair': proof})]
+    effect = {'external_effect_id': 'effect', 'operation_id': 'review', 'status': 'SUCCEEDED',
+              'attempt_id': 'attempt', 'attempt_status': attempt_status}
+    acknowledge_retained_result(cursor, [effect], 'root')
+    assert bool(effect.get('settled_candidate_superseded')) == expected
+    assert effect['attempt_status'] == attempt_status

@@ -100,19 +100,26 @@ def source_graph(cursor, *, root, saga):
         [root["operation_id"]],
     )
     failed = [r[0] for r in cursor.fetchall()]
-    if (
-        len(failed) != 1
-        or failed[0]["definition_name"] != "chapter.canon.extract"
-        or failed[0]["definition_version"] != "3.9.24"
-    ):
+    if len(failed) != 1 or (
+        failed[0]["definition_name"],
+        failed[0]["definition_version"],
+    ) not in {
+        ("chapter.canon.extract", "3.9.24"),
+        ("chapter.canon.propose_changes", "3.9.23"),
+    }:
         raise KernelError(
             "CURRENT_QUOTE_RECOVERY_NOT_APPLICABLE",
             "Only the known current nonliteral quote failure may continue",
         )
     source = failed[0]
+    semantic = source["definition_name"] == "chapter.canon.propose_changes"
     match = re.fullmatch(
         re.escape(root["idempotency_key"])
-        + r":canon_extraction:quality-correction:(\d+)",
+        + (
+            r":canon_proposal:quality-correction:(\d+)"
+            if semantic
+            else r":canon_extraction:quality-correction:(\d+)"
+        ),
         source["idempotency_key"],
     )
     if (
@@ -125,47 +132,58 @@ def source_graph(cursor, *, root, saga):
             "Keep unrelated or producing Canon recovery ownership",
         )
     generation = int(match[1])
-    cursor.execute(
-        "SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s ORDER BY attempt_number",
-        [source["operation_id"]],
-    )
-    attempts = [r[0] for r in cursor.fetchall()]
-    if (
-        len(attempts) != 1
-        or attempts[0]["status"] != "FAILED_FINAL"
-        or attempts[0]["result"].get("error_code") != "CANON_QUOTE_LOCALIZATION_INVALID"
-    ):
-        raise KernelError(
-            "CURRENT_QUOTE_RECOVERY_DIAGNOSTIC_REQUIRED",
-            "Require the exact terminal host diagnostic",
-        )
-    evidence, raw = receipt(cursor, source)
-    inputs = {}
-    for binding in source["input_asset_snapshot"]:
-        kind, doc = asset(cursor, project, binding)
-        if kind in inputs:
-            raise KernelError(
-                "CURRENT_QUOTE_RECOVERY_INPUT_DRIFT",
-                "Require uniquely typed extraction inputs",
-            )
-        inputs[kind] = (binding, doc)
-    target, candidate = inputs["best_draft_candidate"]
-    context, context_doc = inputs["context_bundle"]
-    try:
-        localize_provider_quotes(
-            raw,
-            text=candidate["text"],
-            target_asset_version_id=target["asset_version_id"],
-        )
-    except KernelError as error:
-        if error.code != "CANON_QUOTE_LOCALIZATION_INVALID":
-            raise
-        diagnostic = {"code": error.code, "reason": error.message}
+    semantic_proof = None
+    excluded_operations = {source["operation_id"]}
+    if semantic:
+        from .current_semantic_recovery import semantic_source
+
+        semantic_proof, raw, extraction_op, inputs = semantic_source(cursor, source)
+        excluded_operations.add(extraction_op["operation_id"])
+        target, candidate = inputs["best_draft_candidate"]
+        context, context_doc = inputs["context_bundle"]
     else:
-        raise KernelError(
-            "CURRENT_QUOTE_RECOVERY_NOT_APPLICABLE",
-            "Do not regenerate a valid retained quote result",
+        cursor.execute(
+            "SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s ORDER BY attempt_number",
+            [source["operation_id"]],
         )
+        attempts = [r[0] for r in cursor.fetchall()]
+        if (
+            len(attempts) != 1
+            or attempts[0]["status"] != "FAILED_FINAL"
+            or attempts[0]["result"].get("error_code")
+            != "CANON_QUOTE_LOCALIZATION_INVALID"
+        ):
+            raise KernelError(
+                "CURRENT_QUOTE_RECOVERY_DIAGNOSTIC_REQUIRED",
+                "Require the exact terminal host diagnostic",
+            )
+        evidence, raw = receipt(cursor, source)
+        inputs = {}
+        for binding in source["input_asset_snapshot"]:
+            kind, doc = asset(cursor, project, binding)
+            if kind in inputs:
+                raise KernelError(
+                    "CURRENT_QUOTE_RECOVERY_INPUT_DRIFT",
+                    "Require uniquely typed extraction inputs",
+                )
+            inputs[kind] = (binding, doc)
+        target, candidate = inputs["best_draft_candidate"]
+        context, context_doc = inputs["context_bundle"]
+        try:
+            localize_provider_quotes(
+                raw,
+                text=candidate["text"],
+                target_asset_version_id=target["asset_version_id"],
+            )
+        except KernelError as error:
+            if error.code != "CANON_QUOTE_LOCALIZATION_INVALID":
+                raise
+            diagnostic = {"code": error.code, "reason": error.message}
+        else:
+            raise KernelError(
+                "CURRENT_QUOTE_RECOVERY_NOT_APPLICABLE",
+                "Do not regenerate a valid retained quote result",
+            )
     from .quality_length_requirement import freeze_requirement, require_length
 
     requirement = freeze_requirement(
@@ -264,7 +282,7 @@ def source_graph(cursor, *, root, saga):
                 "Preserve unrelated extension recovery ownership",
             )
         gen = int(parsed[2])
-        if op["operation_id"] == source["operation_id"]:
+        if op["operation_id"] in excluded_operations:
             continue
         if rewind and gen >= generation:
             continue
@@ -381,7 +399,7 @@ def source_graph(cursor, *, root, saga):
                 "CURRENT_QUOTE_RECOVERY_STEP_MISSING",
                 "Retain every completed preceding correction pass",
             )
-    proof = {
+    proof = semantic_proof or {
         "contract_version": CONTRACT,
         "source_operation_id": source["operation_id"],
         "source_attempt": attempts[0],
@@ -396,6 +414,8 @@ def source_graph(cursor, *, root, saga):
         "strict_certification_eligible": False,
         "completed_work_repeated": False,
     }
+    if semantic_proof:
+        proof.update(quality_generation=generation, length_repair=None)
     return {
         "root": root,
         "saga": saga,
@@ -536,12 +556,18 @@ def known_quote_retry(database_url, *, operation_id, attempt_id):
         cursor = uow.cursor
         cursor.execute(
             """SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s
-            AND definition_name='chapter.canon.extract' AND definition_version='3.9.29'
+            AND definition_name='chapter.canon.extract' AND definition_version IN ('3.9.29','3.9.30')
             AND definition_snapshot #>> '{policy,known_quote_repair}'='known-settled-quote-repair.v1' """,
             [operation_id],
         )
         row = cursor.fetchone()
         if not row:
+            return False
+        if ((row[0].get("command_payload") or {}).get("preparation_report") or {}).get(
+            "retained_graph_continuation", {}
+        ).get("retained_result", {}).get(
+            "contract_version"
+        ) == "chapter-current-semantic-repair.v1":
             return False
         cursor.execute(
             """SELECT e.request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect e
