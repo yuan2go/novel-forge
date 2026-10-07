@@ -605,7 +605,9 @@ run key cannot create a fresh spending allowance for the same work.
 Validation results advance internal production only with a native versioned validation
 admission receipt. Strict certification rejects missing required proofs. Omitted literary
 calibration, blind review and publication checks retain `NOT_RUN` and their reason.
-The shipped files are `config/execution_templates/creative_validation.json` and
+The default writing template is `config/execution_templates/author_first.json`;
+`config/execution_templates/creative_validation.json` remains an explicit historical strict
+validation template. Genesis inputs remain in
 `config/execution_templates/creation_inputs.json`. The first selects optional objectives,
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
 state and quality floors. `creation-request.v1` supplies the current work's brief, title,
@@ -624,6 +626,54 @@ approved original author direction. Native validation verifies its active receip
 creative candidate generation occurs on that path. The existing author page offers both. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
+Ordinary writing runs only its required stages. Review/Canon/Quality being absent from the
+graph means zero optional-stage dispatches, not deferred hidden execution. `MANUSCRIPT_READY`
+means the requested draft range is saved; it does not mean Book acceptance or literary PASS.
+Creation progress reports saved and accepted chapter counts separately. The author page shows
+saved prose immediately and permits reading/export during a later recovery checkpoint.
+
+Use the same work identity for these operations:
+
+```bash
+novel-forge authority-manuscript read --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript continue --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript pause --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript resume --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript edit --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
+  --chapter 1 --text-file "$EDITED_CHAPTER"
+novel-forge authority-manuscript diff --project-id "$PROJECT" --book-run-id "$BOOK_RUN" --chapter 1
+novel-forge authority-manuscript adopt --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
+  --chapter 1 --candidate-version "$CANDIDATE_VERSION" --reason "Author selects the local wording"
+novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
+  --output "$NEW_MANUSCRIPT_JSON"
+```
+
+Editing compares the full submitted chapter with the selected base and freezes only actual
+changed Unicode ranges. Preserve unsubmitted input on conflict, reload the selected base and
+rebase explicitly. Diff returns the original-protecting candidates, before/after edits and
+adoption decisions. Export creates a new JSON artifact containing exact source versions,
+statuses, prose and hashes; it refuses to overwrite an existing output file. `--chapters`
+selects an ordered available range, and `--versions` binds an expected version list.
+The UI also downloads a readable text manuscript with the same version/status provenance.
+Strict Edition export and external publication are separate operations.
+
+An existing idle work can request `authority-manuscript adopt-author-workflow` with the same
+Project and Book run. This automatically selects the current authorized native template and
+appends Book policy evidence. Original profiles and receipts stay frozen; no paid cap is
+increased. UNKNOWN blocks this switch until its original request is reconciled, while current
+manuscript reads/edits/exports remain independent. API clients bind the original adoption
+key and expected Book version; response recovery replays the native transaction receipt.
+
+Focused verification for this policy uses
+`tests/integration/test_author_first_manuscript_postgres.py` (controlled native production
+composition, cross-ChapterGroup writing, interrupted delivery/recovery, optional review
+outage, stale review, protected local edits and exact export), existing resource/cancellation
+and editor PostgreSQL tests, and the touched realization/template/editor unit tests.
+The controlled transport is fixture evidence only. A real-provider short journey must bind
+one implementation SHA, native receipts, optional-stage counts and actual usage separately;
+missing credentials, service or verified deployment capacity remain BLOCKED/NOT_RUN.
+No full repository or long-form literary qualification follows from these focused checks.
+
 Configure the deployment once with the existing trusted local operator, exact release,
 PostgreSQL, MinIO and authenticated Codex configuration. The operator still needs native
 Project, Book, content, Pack compiler/deployer and Agent-admin permissions in the selected
@@ -632,10 +682,14 @@ and Workspace Authorities to create missing scope; it rejects another Book's wor
 paused projects, another project's Formation and a replacement task key for an admitted
 Book. It never infers authority from the request's actor text.
 
-Set these mode selectors in that deployment configuration:
+Set these selectors once in the deployment configuration. Development and validation
+remain supported environments; the author policy is not restricted to validation. The
+historical v11 validation template still requires its original environment:
 
 ```bash
-export NOVEL_FORGE_ENVIRONMENT=validation
+export NOVEL_FORGE_ENVIRONMENT=production
+export NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID="$TRUSTED_OPERATOR"
+export NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID="$TRUSTED_EVALUATOR"
 export NOVEL_FORGE_RESOURCE_CONTROL_VERSION=billing-channel-resources.v1
 export NOVEL_FORGE_PROVIDER_ROUTER=quality-cost-v1
 export NOVEL_FORGE_ROUTER_CODEX_ESCALATION=true
@@ -1487,10 +1541,11 @@ Without an explicit model catalog, the Codex Router candidate retains its histor
 escalation semantics: two semantic failures, or HIGH risk with an explicit escalation
 reason. `NOVEL_FORGE_CODEX_ROUTER_MODELS` accepts the exact `codex-router-models.v1`
 contract with model, reasoning, role, tasks and context/output limits. Its `PRIMARY`
-and `REFERENCE` roles require a matching finite account entitlement and ordinary
-qualification. Model task scope is checked during selection, route materialization and
-Kernel reservation. Models sharing an account authorization consume the same call
-allowance; adding a model does not multiply quota. Catalog entries bind model revision
+and `REFERENCE` roles require their matching authenticated account identity.
+Historical campaign templates retain finite entitlements and ordinary qualification;
+the default author membership policy uses no cumulative call/token/money allowance. Model task scope is checked during selection, route materialization and
+Kernel reservation. Historical models sharing a finite authorization consume the same allowance;
+adding a model does not multiply that historical quota. Catalog entries bind model revision
 and the creation freeze. An unqualified primary still fails closed. This support alone
 does not establish a model panel, literary qualification or a real first-chapter run.
 Book Opening's immutable budget policy may explicitly add an `account_entitlement_lane`

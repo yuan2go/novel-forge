@@ -17,6 +17,68 @@ Capability states are ordered `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIFIED`,
 implementation-tree identity, and Documentation Reality fails when code or instruction
 identity changes without a corresponding projection update.
 
+## Ordinary author writing
+
+New Creation requests select `config/execution_templates/author_first.json` (v12).
+The default is authorized automatic direction comparison; an approved fixed direction
+and explicit author selection remain available. Formation and Opening create the existing
+Book, plans, source snapshots and Pack bindings. The native Chapter Saga uses
+`3.10.0-author-first.v1`: Plan, ExecutionIntent, Memo, Retrieval, Context and Draft.
+After the native Draft output is committed, Book Authority appends immutable manuscript
+delivery and advances the existing writing cursor. Review, revision, Canon extraction,
+support review and grouped Quality are absent from this default graph. No background
+worker schedules those stages merely because a manuscript was delivered.
+
+Delivery and formal acceptance are separate. `current_chapter` tracks delivered writing;
+`accepted_through_chapter` retains atomic formal acceptance. A complete successful Draft
+remains readable even if delivery coordination rolls back or later work is cancelled.
+Delivery recovery reuses that output and its exact request; it does not invoke Draft again.
+A manuscript is not `INTERNAL_ADMITTED`, literary PASS, complete author-requirement
+fulfilment, a selected strict Edition or authorized publication. Length observations and
+soft voice drift remain visible. Empty, truncated, corrupt, isolated or unidentified output
+fails the applicable integrity boundary.
+
+Ordinary continuation freezes exact currently selected manuscript versions in the existing
+input snapshot and Arc Working Set. A bounded recent-source projection carries actual
+prose excerpts separately from formal State/Canon and future plan intent. It grants no
+verified facts or character knowledge. Native realization contract v3 retains this working
+snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
+inventing accepted history. The source window is a bounded implementation policy; it does
+not prove long-form continuity or replace formal Canon. Author adoption uses the existing
+editor candidate/session mechanism. Book locking and source/hash checks prevent stale edits,
+late extraction or late review from replacing a newer selection. Later chapters retain
+exact predecessor dependencies and display changed versions without deleting their prose.
+
+`/product/editor/manuscripts` reads saved selected versions without a Provider call.
+`/product/editor/manuscripts/export` binds an exact version list and optional chapter range;
+it requires neither whole-book completion nor Quality PASS nor strict Edition validation.
+The export records actual review, requirement and formal-progress status. The author UI
+exposes reading, editing, differences, adoption, pause/resume and current manuscript export.
+Deep manuscript review is explicitly requested through the existing Prose Review owner.
+Its v3 windows bind current selected unreviewed prose; accepted-state relation evidence is
+not available on that source contract. An optional outage retains the manuscript and does
+not mutate Book completion. Review currentness is invalidated by changed author sources.
+Strict acceptance, Edition validation and external publication retain their own conditions.
+
+Existing production may select a traceable author workflow policy asset at a settled idle
+Book checkpoint. The native routing owner selects the successor template, inheriting any
+existing paid authorization without raising its cap; Book Authority rechecks the checkpoint
+and freezes the policy adoption. An intervening version change fails closed. Existing
+profiles, requests, accepted facts, terminal failures and consumption history remain immutable.
+Unsettled original effects or held UNKNOWN consumption prevent this switch; reading, local
+editing and exact export remain available. Older incompatible plans require their native
+projection/migration or a linked successor rather than rewritten history.
+
+The following distinctions govern implementation:
+
+| Class | Boundary |
+| --- | --- |
+| `CURRENT_PROVEN_INVARIANT` | Exact ownership, source isolation, immutable receipts, fenced commits, author CAS, original UNKNOWN reconciliation and cumulative paid cap |
+| `CONFIGURABLE_POLICY` | Review sequence, optional enhancements, voice advice, manuscript export versus strict finalization, direction selection |
+| `HISTORICAL_COMPATIBILITY` | Frozen v11 validation-only Pack/Router admission and finite campaign entitlements |
+| `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources; no literary or independent certification is inferred |
+| `UNRESOLVED_DESIGN_CONSTRAINT` | Unverified remote capacity/accounting metadata or unqualified long-form literary effectiveness cannot be promoted from local wiring |
+
 ## Generated Foundation formation
 
 The existing Formation API accepts either six exact qualified layer references or one
@@ -89,7 +151,9 @@ reason and `NOT_RUN` evidence; they cannot contribute PASS or qualification evid
 Strict production and existing frozen requests retain their original gates. Chapter
 quality retains its strict assessment and records a separate versioned internal
 validation admission. Located basic judgments, selected work thresholds, Canon and
-review closure still govern that admission. Internal export and Book acceptance bind
+review closure govern that historical admission. These are `CONFIGURABLE_POLICY`,
+not prerequisites for saving and delivering ordinary author drafts. Strict internal
+export and Book acceptance bind
 `INTERNAL_ADMITTED` / `INTERNAL_VALIDATION_FINALIZED` evidence to the native template;
 uncalibrated model judgments never become qualified literary or external-release PASS.
 
@@ -115,7 +179,9 @@ The following sections describe existing strict and historical campaign contract
 their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`, not
 requirements for the membership execution contract. The native creation CLI freezes
 `formation-generation.v5` inputs and uses the existing Formation, Opening, Chapter Saga,
-Quality, export and Book acceptance owners. Book Authority's existing worker owns the
+optional Quality, strict export and Book acceptance owners under their selected policy. The review
+sequence is a policy choice; atomic acceptance, source isolation and unknown-outcome
+reconciliation remain safety invariants. Book Authority's existing worker owns the
 reference-only `BOOK_CREATION_ADVANCE` RuntimeJob across stage handoffs. Its atomic
 completion/continuation, native leases, bounded backoff and progress snapshots survive
 worker restart. Technical waits use the original frozen work; author and owner decisions
@@ -1043,7 +1109,7 @@ draft and realization contract, and Revision/Craft use the same exact Unicode ma
 Saving, adopting, submitting native review, chapter acceptance and Book completion are
 separate actions.
 
-An adopted author candidate enters `chapter.draft.generate@3.4.1-author-input.v1` with
+For historical strict adoption, an author candidate enters `chapter.draft.generate@3.4.1-author-input.v1` with
 an exact author adoption evidence asset. This contract performs no `model.draft` effect;
 Review, Revision, ReReview, candidate selection, Quality, Canon and Book acceptance still
 run through their existing owners and gates. Already accepted historical chapters remain

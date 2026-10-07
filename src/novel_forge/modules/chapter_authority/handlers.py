@@ -413,6 +413,10 @@ class _ExecutionIntentHandler:
             for item in request.inputs
             if item.asset_type in {"story_state_snapshot", "canon_snapshot"}
         ]
+        working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+        if working:
+            from novel_forge.modules.book_authority.manuscript import verify_working_handler
+            verify_working_handler(request, working)
         return _output(
             ChapterNode.EXECUTION_INTENT,
             build_chapter_execution_intent(
@@ -424,6 +428,7 @@ class _ExecutionIntentHandler:
                 accepted_inputs=accepted_inputs,
                 work_requirements=request.work_requirements_enabled,
                 style_view=style_view,
+                accepted_through_chapter=working["accepted_through_chapter"] if working else None,
             ),
         )
 
@@ -1209,10 +1214,12 @@ class _ContextHandler:
             for source_id, documents in selected_documents.items():
                 candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents)
         host_quality_segments: list[dict[str, Any]] = []
+        working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+        working_ids = {row["asset_version_id"] for row in working["sources"]} if working else set()
         frozen_candidates = [
             item
             for item in request.inputs
-            if item is not plan
+            if item is not plan and item.asset_version_id not in working_ids
             and item.asset_type
             not in {
                 "production_input_manifest",
@@ -1457,6 +1464,10 @@ class _ContextHandler:
             "consistent": True,
             "contract_version": "context-manifest-consistency-v2",
         }
+        if working is not None:
+            from novel_forge.modules.book_authority.manuscript import verify_working_handler
+            verify_working_handler(request, working)
+            bundle["working_manuscript"] = working
         return ChapterHandlerOutput(
             asset_type=ChapterNode.CONTEXT.asset_type,
             output_key=ChapterNode.CONTEXT.output_key,
@@ -1540,7 +1551,12 @@ class _DraftHandler:
             core_policy=core_policy,
             information_policy=information_policy,
             realization_contract=realization_contract if request.effective_definition_version == "3.10.0" else None,
+            enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")),
         )
+        if (request.command.get("preparation_report") or {}).get("author_workflow"):
+            from novel_forge.modules.book_authority.manuscript import validate_complete_prose
+            validate_complete_prose({**content, **{key: generated.output[key] for key in ("truncated", "finish_reason") if key in generated.output}})
+            content["author_workflow"] = dict(request.command["preparation_report"]["author_workflow"])
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,
             "memo_content_hash": memo.content_hash,

@@ -19,7 +19,7 @@ def require_current_reader_template(cursor, *, project_id: str, book_id: str) ->
         if template
         else None
     )
-    if not selected or selected.get("version") != "creative-execution-template.v11":
+    if not selected or selected.get("version") not in {"creative-execution-template.v11", "creative-execution-template.v12"}:
         raise KernelError(
             "READER_CURRENT_TEMPLATE_REQUIRED",
             "Current Reader requires the exact frozen coordinated Book template",
@@ -68,12 +68,13 @@ def ensure_creation_reader_pack(
             JOIN authority_capability_pack_compilation compilation USING(compilation_id)
             JOIN authority_capability_pack_version version ON version.pack_id=deployment.pack_id AND version.pack_version=deployment.pack_version
             WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s
-              AND activation.target_scope_type='BOOK' AND activation.environment='validation'
+              AND activation.target_scope_type='BOOK' AND activation.environment=%s
               AND activation.workflow_definition_ref=%s AND activation.pack_id=%s FOR SHARE OF activation,deployment""",
             [
                 args.project_id,
                 args.workspace_id,
                 args.book_id,
+                settings.environment,
                 profile.workflow_ref,
                 pack_id,
             ],
@@ -114,4 +115,5 @@ def ensure_creation_reader_pack(
         agent_admin=principal,
         agent_domain="reader_outcome",
         agent_scope_type="BOOK",
+        runtime_environment=settings.environment,
     )

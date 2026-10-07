@@ -116,6 +116,7 @@ def build_arc_working_set(
     narrative_load_policy: Mapping[str, Any],
     schedule_row: Mapping[str, Any] | None = None,
     reader_intent: Mapping[str, Any] | None = None,
+    working_manuscript: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
 
     if (
@@ -131,7 +132,8 @@ def build_arc_working_set(
     projection = dict(accepted_projection or {})
     boundary = dict(projection.get("accepted_boundary") or {})
     accepted_through = int(boundary.get("chapter_number") or 0)
-    if accepted_through != chapter_number - 1:
+    working_bound = working_manuscript and working_manuscript.get("target_chapter") == chapter_number and working_manuscript.get("accepted_through_chapter") == accepted_through and working_manuscript.get("book_id") == book_id and working_manuscript.get("project_id") == project_id
+    if accepted_through != chapter_number - 1 and not (working_bound and accepted_through < chapter_number):
         raise KernelError(
             "ARC_WORKING_SET_BOUNDARY_STALE",
             "Arc working set must be computed from the immediately preceding accepted boundary",
@@ -446,6 +448,8 @@ def build_arc_working_set(
             "actual_progress_requires_accepted_chapter_outcome": True,
         },
     }
+    if working_manuscript:
+        body["working_manuscript"] = dict(working_manuscript)
     return {**body, "working_set_digest": _hash(body)}
 
 

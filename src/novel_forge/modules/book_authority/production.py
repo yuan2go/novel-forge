@@ -814,6 +814,12 @@ class PostgresBookAuthority:
             raise KernelError(
                 "BOOK_CHAPTER_OUT_OF_RANGE", "chapter exceeds Book target count"
             )
+        from .manuscript import author_first, freeze_working_context
+        if author_first(book):
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                working = freeze_working_context(uow, book, command.chapter_number)
+            command = replace(command, preparation_report={**dict(command.preparation_report or {}),
+                "author_workflow": book["author_workflow"], "working_manuscript": working})
         self._require_chapter_production_admission(book, command)
         from .control_application import PostgresBookControlApplication
         PostgresBookControlApplication(self.database_url, application_build_id=self.application_build_id, commit_sha=self.commit_sha).require_approvals(
@@ -856,6 +862,9 @@ class PostgresBookAuthority:
             existing = uow.cursor.fetchone()
             if existing is None:
                 frozen_command = asdict(command)
+                if author_first(book):
+                    from .manuscript import verify_working_context
+                    verify_working_context(uow, book, frozen_command["preparation_report"]["working_manuscript"])
                 uow.cursor.execute(
                     "SELECT version.content FROM authority_asset_version version JOIN authority_asset asset USING(asset_id) WHERE version.asset_version_id=%s AND asset.project_id=%s AND asset.asset_type='production_profile'",
                     [book["production_profile_version"], book["project_id"]],
@@ -1810,7 +1819,8 @@ class PostgresBookAuthority:
                 [book_run_id, str(book["active_longform_projection_set_id"] or "")],
             )
             unresolved_arc_followup = uow.cursor.fetchone()
-        if unresolved_arc_followup is not None:
+        from .manuscript import author_first
+        if unresolved_arc_followup is not None and not author_first(book):
             raise KernelError(
                 "ARC_CHECKPOINT_RECOVERY_REQUIRED",
                 "Book cannot resume until terminal Arc follow-up evidence is "
@@ -2402,7 +2412,11 @@ class PostgresBookAuthority:
             "input_snapshot_id",
             "input_mode",
         )
-        return dict(zip(fields, row, strict=True))
+        result = dict(zip(fields, row, strict=True))
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            from .manuscript import effective_workflow
+            result["author_workflow"] = effective_workflow(uow.cursor, result)
+        return result
 
     def _validate_input_snapshot(
         self, command: StartBookProductionCommand

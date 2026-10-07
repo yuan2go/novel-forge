@@ -105,6 +105,8 @@ def _authority_parser() -> argparse.ArgumentParser:
     add_edition_parser(subparsers)
     from novel_forge.cli.screenplay import add_screenplay_parser
     add_screenplay_parser(subparsers)
+    from novel_forge.cli.manuscript import add_manuscript_parser
+    add_manuscript_parser(subparsers)
     return parser
 
 
@@ -117,6 +119,10 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
         if args.command == "authority-runtime":
             from novel_forge.cli.runtime_control import run_runtime_control
             print(json.dumps(run_runtime_control(settings, args), ensure_ascii=False, indent=2, default=str))
+            return 0
+        if args.command == "authority-manuscript":
+            from novel_forge.cli.manuscript import run_manuscript_command
+            print(json.dumps(run_manuscript_command(settings, args), ensure_ascii=False, indent=2, default=str))
             return 0
         if args.command == "authority-screenplay":
             from novel_forge.cli.screenplay import run_screenplay_command

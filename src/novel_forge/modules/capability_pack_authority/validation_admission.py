@@ -12,6 +12,11 @@ from novel_forge.modules.production_execution.execution_template import MODE, se
 from .policy import CapabilityPackApprovalScope
 
 
+def _author_template(template: dict[str, Any] | None) -> bool:
+    return bool(template and template.get("version") == "creative-execution-template.v12"
+                and template.get("author_workflow") == {"version": "author-workflow.v1", "mode": "AUTHOR_FIRST", "deep_review": False})
+
+
 def record_validation_admission(repository: Any, command: Any, operation_id: str) -> dict[str, Any]:
     compilation = repository.require_compilation(command.compilation_id, project_id=command.project_id, for_update=True)
     book_id = str(command.payload.get("book_id") or "")
@@ -20,20 +25,22 @@ def record_validation_admission(repository: Any, command: Any, operation_id: str
     template = verify_template_provenance(repository.cursor, decision)
     current = selected_book_template(repository.cursor, project_id=command.project_id, book_id=book_id, allow_literary_required=True)
     current_template = selected_template(current["policy_snapshot"]["policy"], book_id) if current else None
-    if (compilation["runtime_profile"] != "validation"
+    author = _author_template(template) and _author_template(current_template)
+    runtime = compilation["runtime_profile"]
+    if ((runtime not in {"development", "test", "validation", "production"} if author else runtime != "validation")
             or compilation["release_channel"] != "VALIDATION" or template is None or template["mode"] != MODE
             or template.get("require_pack_human_approval", True)
             or current_template is None or current_template["require_pack_human_approval"]
             or compilation["compilation_hash"] != command.payload.get("compilation_hash")):
         raise KernelError("CREATIVE_PACK_ADMISSION_POLICY_REQUIRED", command.compilation_id)
     scope = CapabilityPackApprovalScope.from_payload(command.payload.get("scope") or {})
-    if (scope.allowed_environments != ("validation",) or scope.allowed_runtime_profiles != ("validation",)
+    if (scope.allowed_environments != (runtime,) or scope.allowed_runtime_profiles != (runtime,)
             or scope.allowed_release_channels != ("VALIDATION",)
             or scope.allowed_project_ids != (command.project_id,) or scope.allowed_book_ids != (book_id,)
             or tuple(value.value for value in scope.allowed_scope_types) != ("BOOK",)
             or scope.allow_canary or scope.allow_percentage_rollout):
         raise KernelError("CREATIVE_PACK_ADMISSION_SCOPE_INVALID", book_id)
-    checks = {key: {"status": "NOT_RUN", "reason": "creative validation template excludes this certification objective"}
+    checks = {key: {"status": "NOT_RUN", "reason": "Selected work policy does not claim independent or literary certification"}
               for key in ("human_pack_approval", "compiler_approver_separation", "production_certification")}
     admission_id = str(uuid4())
     repository.cursor.execute("""INSERT INTO authority_capability_pack_validation_admission(
@@ -50,7 +57,7 @@ def record_validation_admission(repository: Any, command: Any, operation_id: str
 
 
 def require_validation_admission(repository: Any, compilation: dict[str, Any], *, environment: str, book_id: str) -> dict[str, Any] | None:
-    if environment != "validation" or compilation["runtime_profile"] != "validation" or compilation["release_channel"] != "VALIDATION":
+    if environment != compilation["runtime_profile"] or compilation["release_channel"] != "VALIDATION":
         return None
     repository.cursor.execute("""SELECT a.admission_id,a.compilation_hash,a.project_id,a.book_id,
         a.policy_snapshot,a.admission_scope,a.checks,op.status
@@ -63,13 +70,14 @@ def require_validation_admission(repository: Any, compilation: dict[str, Any], *
     if row[1] != compilation["compilation_hash"] or row[7] != "SUCCEEDED":
         raise KernelError("CREATIVE_PACK_ADMISSION_INVALID", compilation["compilation_id"])
     template = selected_template(row[4]["policy"], book_id)
-    if not template or template["mode"] != MODE:
+    if not template or template["mode"] != MODE or (environment != "validation" and not _author_template(template)):
         raise KernelError("CREATIVE_PACK_ADMISSION_INVALID", book_id)
     decision = {"task": {"project_id": row[2], "work_id": book_id, "policy_snapshot": row[4]}}
     verify_template_provenance(repository.cursor, decision)
     current = selected_book_template(repository.cursor, project_id=row[2], book_id=book_id, allow_literary_required=True)
     current_template = selected_template(current["policy_snapshot"]["policy"], book_id) if current else None
-    if current_template is None or current_template["require_pack_human_approval"]:
+    if (current_template is None or current_template["require_pack_human_approval"]
+            or (environment != "validation" and not _author_template(current_template))):
         return None
     approval = repository.latest_approval(compilation["compilation_id"])
     if approval and approval["decision"] in {"REVOKED", "REJECTED"}:

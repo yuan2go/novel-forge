@@ -185,6 +185,15 @@ def admit_single_chapter_saga(
         model_effects_required=registry.model_effects_required,
         coordinated_contract=registry.coordinated_contract,
     )
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, AUTHOR_ROOT_VERSION
+    if (request.preparation_report or {}).get("author_workflow") == AUTHOR_WORKFLOW:
+        from novel_forge.modules.book_authority.manuscript import authorize_working_request
+        authorize_working_request(database_url, request)
+        nodes = list(ChapterNode)[:list(ChapterNode).index(ChapterNode.DRAFT)+1]
+        root_definition["definition_version"] = AUTHOR_ROOT_VERSION
+        root_definition["policy"]["expected_saga_steps"] = len(nodes)
+        root_definition["policy"]["author_workflow"] = AUTHOR_WORKFLOW
+        root_definition["completion_contract"]["required_child_operations"] = [{"definition_name": n.definition_name, "allowed_states": ["SUCCEEDED"]} for n in nodes]
     with AuthorityUnitOfWork(database_url) as uow:
         uow.repositories.definitions.register(root_definition)
         for definition in definitions:
@@ -214,7 +223,7 @@ def admit_single_chapter_saga(
                 }
                 for item in request.context_candidates
             ],
-            definition_version=definition_version,
+            definition_version=root_definition["definition_version"],
         ),
         context=admission,
     )
@@ -691,6 +700,9 @@ def _command(
     definition_version: str = CHAPTER_SLICE_DEFINITION_VERSION,
     input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_ROOT_VERSION
+    if definition_version == AUTHOR_ROOT_VERSION and definition_name != CHAPTER_SLICE_ROOT_DEFINITION_NAME:
+        definition_version = "3.10.0"
     if definition_name == ChapterNode.DRAFT.definition_name and definition_version == "3.9.0" and not (request.preparation_report or {}).get("author_draft_adoption"):
         from .definitions import CHAPTER_DRAFT_DEFINITION_VERSION
         definition_version = CHAPTER_DRAFT_DEFINITION_VERSION
@@ -1090,7 +1102,8 @@ def _bind_context_candidate_scope(request: SingleChapterRequest) -> SingleChapte
             "Chapter Context candidates disagree on their Book scope",
         )
     book_id = next(iter(declared_books), f"book:{request.project_id}")
-    expected_chapter = max(0, request.chapter - 1)
+    working = (request.preparation_report or {}).get("working_manuscript")
+    expected_chapter = int(working["accepted_through_chapter"]) if working else max(0, request.chapter - 1)
     declared_boundaries = {
         json.dumps(
             dict(item.get("accepted_boundary") or {}),

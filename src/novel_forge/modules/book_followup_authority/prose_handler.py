@@ -24,8 +24,8 @@ class LongformProseReviewHandler:
         content = source.content
         payload = request.command["payload"]
         if (
-            content.get("schema_version") not in {"longform-prose-window.v1", "longform-prose-window.v2"}
-            or content.get("source_isolation") != "ACCEPTED_PROSE_ONLY"
+            content.get("schema_version") not in {"longform-prose-window.v1", "longform-prose-window.v2", "longform-prose-window.v3"}
+            or content.get("source_isolation") not in {"ACCEPTED_PROSE_ONLY", "AUTHOR_SELECTED_UNREVIEWED_PROSE"}
             or any(
                 content.get(key) != payload.get(key)
                 for key in ("manifest_digest", "book_run_id")
@@ -40,7 +40,7 @@ class LongformProseReviewHandler:
         def assert_current(*, dispatch: bool = False) -> None:
             from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-            from .prose_coordinator import load_accepted_sources
+            from .prose_coordinator import load_review_sources
             from .prose_review import freeze_manifest
 
             with AuthorityUnitOfWork(self.model_port.database_url) as uow:
@@ -71,11 +71,11 @@ class LongformProseReviewHandler:
                     project_id=request.project_id,
                     workspace_id=request.workspace_id,
                     book_run_id=content["book_run_id"],
-                    sources=load_accepted_sources(
+                    sources=load_review_sources(
                         uow, content["book_run_id"], request.project_id
                     ),
                     policy=content["policy"],
-                    work_intent=content["schema_version"] == "longform-prose-window.v2",
+                    work_intent=content["schema_version"] in {"longform-prose-window.v2", "longform-prose-window.v3"},
                 )
                 run_id, manifest = rows[0]
                 if (

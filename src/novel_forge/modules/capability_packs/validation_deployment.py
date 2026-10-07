@@ -443,15 +443,18 @@ def _install_validation_manifest(
         not pack_id
         or not pack_version
         or not workflow_ref
-        or runtime_environment not in {"test", "validation"}
+        or runtime_environment not in {"development", "test", "validation", "production"}
     ):
         raise ValueError("Capability Pack manifest identity is incomplete")
     from novel_forge.modules.production_execution.execution_template import selected_book_template
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
     with AuthorityUnitOfWork(database_url) as uow:
         creative = selected_book_template(uow.cursor, project_id=project_id, book_id=book_id, allow_literary_required=True)
-    automatic = bool(creative and runtime_environment == "validation" and not next(
-        item for item in creative["policy_snapshot"]["policy"]["execution_templates"] if item["book_id"] == book_id)["require_pack_human_approval"])
+    template = next((item for item in creative["policy_snapshot"]["policy"]["execution_templates"]
+                     if item["book_id"] == book_id), None) if creative else None
+    from novel_forge.modules.capability_pack_authority.validation_admission import _author_template
+    automatic = bool(template and not template["require_pack_human_approval"]
+                     and (runtime_environment == "validation" or _author_template(template)))
     if not automatic and compiler.principal_id == approver.principal_id:
         raise PermissionError("Pack compiler and approver must be independent")
     scope_identity = _scope_identity(
@@ -520,7 +523,7 @@ def _install_validation_manifest(
     )
     if automatic:
         scope = {"schema_version": "CapabilityPackApprovalScope.v1",
-            "allowed_environments": ["validation"], "allowed_runtime_profiles": ["validation"],
+            "allowed_environments": [runtime_environment], "allowed_runtime_profiles": [runtime_environment],
             "allowed_release_channels": ["VALIDATION"], "allowed_scope_types": ["BOOK"],
             "allowed_project_ids": [project_id], "allowed_workspace_ids": [workspace_id], "allowed_book_ids": [book_id],
             "allowed_workflow_definition_refs": [workflow_ref], "allow_canary": False, "allow_percentage_rollout": False,

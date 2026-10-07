@@ -538,6 +538,7 @@ class NarrativeRealizationContract:
     lifecycle: NarrativeRealizationLifecycle
     contract_digest: str
     schema_version: str = NARRATIVE_REALIZATION_SCHEMA_VERSION
+    working_manuscript: dict[str, Any] | None = None
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "NarrativeRealizationContract":
@@ -561,9 +562,12 @@ class NarrativeRealizationContract:
             "proof_hash",
             "lifecycle",
         }
+        if value.get("schema_version") == "narrative-realization-contract.v3":
+            allowed.add("working_manuscript")
         if set(value) != allowed or value.get("schema_version") not in {
             NARRATIVE_REALIZATION_SCHEMA_VERSION,
             "narrative-realization-contract.v2",
+            "narrative-realization-contract.v3",
         }:
             raise KernelError(
                 "NARRATIVE_REALIZATION_INVALID",
@@ -593,7 +597,7 @@ class NarrativeRealizationContract:
         raw_proof = value.get("proof")
         if (
             not isinstance(raw_arcs, list)
-            or (not raw_arcs and value["schema_version"] != "narrative-realization-contract.v2")
+            or (not raw_arcs and value["schema_version"] not in {"narrative-realization-contract.v2", "narrative-realization-contract.v3"})
             or not isinstance(raw_events, list)
             or not raw_events
             or not isinstance(raw_boundary, Mapping)
@@ -611,7 +615,7 @@ class NarrativeRealizationContract:
                 "NARRATIVE_REALIZATION_INVALID", "Arc bindings must be unique"
             )
         work_requirements = (
-            value["schema_version"] == "narrative-realization-contract.v2"
+            value["schema_version"] in {"narrative-realization-contract.v2", "narrative-realization-contract.v3"}
         )
         events = tuple(
             NarrativeRealizationEvent.from_mapping(
@@ -641,7 +645,18 @@ class NarrativeRealizationContract:
         body = dict(value)
         contract_digest = realization_hash(body)
         accepted_boundary = AcceptedBoundaryBinding.from_mapping(raw_boundary)
-        if accepted_boundary.accepted_through_chapter != start - 1:
+        working = value.get("working_manuscript")
+        if value["schema_version"] == "narrative-realization-contract.v3" and working is None:
+            raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "The working contract requires its exact source snapshot")
+        if working is not None:
+            if (not isinstance(working, dict) or working.get("version") != "working-manuscript-context.v1"
+                    or working.get("target_chapter") != start
+                    or any(working.get(key) != value[key] for key in ("project_id", "book_id"))
+                    or working.get("accepted_through_chapter") != accepted_boundary.accepted_through_chapter
+                    or not 0 <= accepted_boundary.accepted_through_chapter < start
+                    or working.get("snapshot_hash") != realization_hash({key: item for key, item in working.items() if key != "snapshot_hash"})):
+                raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "Working realization must retain exact unreviewed sources and the separate actual formal boundary")
+        if working is None and accepted_boundary.accepted_through_chapter != start - 1:
             raise KernelError(
                 "REALIZATION_SLICE_INVALID",
                 "realization must begin immediately after its accepted boundary",
@@ -680,6 +695,7 @@ class NarrativeRealizationContract:
             lifecycle=NarrativeRealizationLifecycle(str(value.get("lifecycle") or "")),
             contract_digest=contract_digest,
             schema_version=str(value["schema_version"]),
+            working_manuscript=working,
         )
 
     @property
@@ -689,6 +705,8 @@ class NarrativeRealizationContract:
     def to_dict(self) -> dict[str, Any]:
         value = asdict(self)
         value.pop("contract_digest")
+        if self.working_manuscript is None:
+            value.pop("working_manuscript")
         value["events"] = [event.to_dict() for event in self.events]
         value["proof"] = self.proof.to_dict()
         return _json_value(value)

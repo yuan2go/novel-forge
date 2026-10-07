@@ -182,6 +182,7 @@ from . import (
     v20261007_0178_planning_reference_contract_successor,
     v20261007_0179_planning_arc_scope_revalidation,
     v20261007_0180_foundation_direction_search,
+    v20261008_0181_author_manuscript_delivery,
 )
 
 VERSION_MODULES = [
@@ -366,6 +367,7 @@ VERSION_MODULES = [
     v20261007_0178_planning_reference_contract_successor,
     v20261007_0179_planning_arc_scope_revalidation,
     v20261007_0180_foundation_direction_search,
+    v20261008_0181_author_manuscript_delivery,
 ]
 
 __all__ = ["VERSION_MODULES"]

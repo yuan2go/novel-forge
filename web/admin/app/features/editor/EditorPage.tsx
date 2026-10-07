@@ -46,7 +46,7 @@ export function EditorPage() {
   useEffect(() => {
     if (!projectId) return;
     let active = true;
-    loadEditorDrafts(projectId).then((rows) => { if (active) {const params = new URLSearchParams(window.location.search); const requested = params.get("project_id") === projectId ? params.get("book_id") : null; const scoped = requested ? rows.filter(item => item.book_id === requested) : rows; setDrafts(scoped); setDraftId(scoped.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
+    loadEditorDrafts(projectId).then((rows) => { if (active) {const params = new URLSearchParams(window.location.search); const requested = params.get("project_id") === projectId ? params.get("book_id") : null; const scoped = requested ? rows.filter(item => item.book_id === requested) : rows; setDrafts(scoped); setDraftId(scoped.find(item => item.asset_version_id === params.get("base_asset_version_id"))?.asset_version_id || scoped.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
     return () => {active = false;};
   }, [projectId]);
   useEffect(() => {
@@ -109,7 +109,7 @@ export function EditorPage() {
         const next = await loadDraftEditor(draft); setState(next); setSavedText(workingText(next));
         setEditorText(workingText(next));
       }
-      setNotice(result.editor_status === "ADOPTED_PENDING_REVIEW" ? "已采用候选，等待章节复核。尚未接纳章节或完成整书。" :
+      setNotice(result.editor_status === "ADOPTED_PENDING_REVIEW" ? "已采用候选，可继续写作并按需复核。尚未审定章节或完成整书。" :
         result.editor_status === "REJECTED" ? "已拒绝候选，原正文未改变。" : "作者实际输入已保存为独立候选。请检查修改对照后采用或拒绝。");
     } catch (caught) {
       showError(caught);
@@ -139,7 +139,7 @@ export function EditorPage() {
     } catch (caught) {showError(caught);} finally {lock.current = false; setBusy(false);}
   }
 
-  return <FeatureShell title="作者编辑器" subtitle="读取精确版本，保存真实作者输入，检查对照并采用候选，再进入章节复核。">
+  return <FeatureShell title="作者编辑器" subtitle="读取当前稿件，保存作者修改，查看差异并采用或拒绝；审读和严格定稿按需进行。">
     {notice ? <div role="status" className="noticeLine">{notice}</div> : null}
     {error ? <div role="alert" className="errorLine">{error}<button className="secondaryButton" disabled={busy} onClick={() => reload()}>重新加载并保留输入</button></div> : null}
     <section className="panel"><div className="studioActions">

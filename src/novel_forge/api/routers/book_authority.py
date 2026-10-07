@@ -1071,7 +1071,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 creative_selection = intent.pop("creative_selection")
                 arguments = SimpleNamespace(action="start", project_id=request.project_id, workspace_id=request.workspace_id,
                     book_id=book_id, input_file=None, formation_run_id="", idempotency_key=request.idempotency_key,
-                    creation_policy_file=None, execution_template_file=ctx.app_settings.root / "config/execution_templates/creative_validation.json",
+                    creation_policy_file=None, execution_template_file=ctx.app_settings.root / "config/execution_templates/author_first.json",
                     repository_root=Path(ctx.app_settings.root), maximum_ticks=100, work_window_seconds=300,
                     yield_after_window=False, foreground=False, creative_selection=creative_selection, candidate_number=None,
                     candidate_version="", candidate_hash="", reason="")

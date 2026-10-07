@@ -8,9 +8,20 @@
   ],
   "classification_rules": [
     {
+      "id": "author-first-native-manuscript",
+      "patterns": [
+        "tests/integration/test_author_first_manuscript_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "book-production-coordination",
+      "production_target": "src/novel_forge/modules/book_authority/manuscript.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
       "id": "coordinated-current-planning-controlled-wire",
       "patterns": [
-        "tests/integration/current_planning_wire_support.py",
         "tests/unit/test_synthesis_current_planning_wire.py"
       ],
       "classification": "FIXTURE_PROTOCOL",

@@ -181,6 +181,9 @@ def freeze_manifest(
         )
     if policy.get("relation_retrieval_version", "lexical.v1") not in {"lexical.v1", "accepted-state-relations.v2"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown explicit relation retrieval version")
+    if (any(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
+            and policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
+        raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
     records, windows = [], []
     previous_tail = None
     for source in sources:
@@ -188,7 +191,7 @@ def freeze_manifest(
         if not isinstance(text, str) or not text:
             raise KernelError(
                 "LONGFORM_PROSE_SOURCE_EMPTY",
-                "accepted exact prose is required; a recap cannot substitute",
+                "Exact frozen prose is required; a recap cannot substitute",
             )
         record = {
             key: source[key]
@@ -248,10 +251,11 @@ def freeze_manifest(
     if not records or len({row["chapter_number"] for row in records}) != len(records):
         raise KernelError(
             "LONGFORM_PROSE_MANIFEST_INVALID",
-            "manifest needs distinct accepted chapters",
+            "Manifest needs distinct exact source chapters",
         )
+    author_working = all(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
     body = {
-        "schema_version": "longform-prose-manifest.v2" if work_intent else "longform-prose-manifest.v1",
+        "schema_version": "longform-prose-manifest.v3" if author_working else "longform-prose-manifest.v2" if work_intent else "longform-prose-manifest.v1",
         "project_id": project_id,
         "workspace_id": workspace_id,
         "book_run_id": book_run_id,
@@ -259,6 +263,8 @@ def freeze_manifest(
         "policy": dict(policy),
         "windows": windows,
     }
+    if author_working:
+        body["source_isolation"] = "AUTHOR_SELECTED_UNREVIEWED_PROSE"
     if policy.get("relation_window_limit"):
         from .prose_relations import relation_windows
 

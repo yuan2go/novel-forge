@@ -292,7 +292,7 @@ def derive_targeted_revision_slots(
 
 
 def integrate_realization(
-    *, contract: Mapping[str, Any], artifacts: Any, text: str, separators: Any = None
+    *, contract: Mapping[str, Any], artifacts: Any, text: str, separators: Any = None, enforce_voice_contract: bool = True
 ) -> dict[str, Any]:
     if not isinstance(artifacts, list):
         raise KernelError(
@@ -438,7 +438,7 @@ def integrate_realization(
                 "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
             }
         )
-    if any(evidence["status"] == "DRIFT_DETECTED" for evidence in voice_evidence):
+    if enforce_voice_contract and any(evidence["status"] == "DRIFT_DETECTED" for evidence in voice_evidence):
         raise KernelError(
             "REALIZATION_VOICE_DRIFT", "Candidate violates its frozen style contract"
         )
@@ -569,11 +569,13 @@ def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_c
     if verify_content_hash and narrative_hash(snapshot) != asset.content_hash:
         raise KernelError("REALIZATION_ACCEPTED_SOURCE_INVALID", "Accepted source body must retain its immutable content hash")
     chapter = request.require_input("chapter_plan").content["chapter"]
+    working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+    formal_boundary = working["accepted_through_chapter"] if working else chapter - 1
     if (asset.content_hash != matches[0].get("content_hash") or asset.asset_type != "story_state_snapshot"
         or snapshot.get("project_id") != request.project_id or snapshot.get("book_id") != request.command.get("book_id")
         or snapshot.get("accepted_state_only") is not True
-        or snapshot.get("accepted_through_chapter") != chapter - 1
-        or boundary.get("accepted_through_chapter") != chapter - 1
+        or snapshot.get("accepted_through_chapter") != formal_boundary
+        or boundary.get("accepted_through_chapter") != formal_boundary
         or permissions[0].get("content_digest") != asset.content_hash
         or asset.lifecycle not in {"ACTIVE", "SUPERSEDED"} or asset.eligibility != "ELIGIBLE" or asset.governance != "CLEAR"):
         raise KernelError("REALIZATION_ACCEPTED_SOURCE_INVALID", "Accepted State hash, ownership, permission or temporal boundary changed")
@@ -592,7 +594,7 @@ def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_c
         if ref:
             facts.append({"source_ref": ref, "actor_id": actor, "source_class": "ACCEPTED_ENTRY_KNOWLEDGE" if kind == "character_knowledge" else "ACCEPTED_OWN_STATE_EVIDENCE", "fact": fact})
     return {"asset_version_id": version, "content_hash": asset.content_hash,
-        "accepted_through_chapter": chapter - 1, "facts": facts, "authority": "EXACT_ACCEPTED_SOURCE_PROJECTION"}
+        "accepted_through_chapter": formal_boundary, "facts": facts, "authority": "EXACT_ACCEPTED_SOURCE_PROJECTION"}
 
 
 def _actor_source_scopes(plan, accepted, preparation):
