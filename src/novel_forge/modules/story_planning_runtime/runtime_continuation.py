@@ -98,7 +98,7 @@ def require_source(
     )
     row = uow.cursor.fetchone()
     if row and row[0]=='SUCCEEDED' and row[5]:
-        return _planning_reference_contract_source(uow,source_operation_id=source_operation_id,row=row)
+        return (_planning_arc_scope_source if row[3].get('execution_contract_version')=='1.20.0' else _planning_reference_contract_source)(uow,source_operation_id=source_operation_id,row=row)
     if (
         row is None
         or row[0] not in {"CANCELLED", "FAILED_FINAL", "DEAD_LETTER"}
@@ -1370,6 +1370,7 @@ def register(
         )
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
+    arc_scope_revalidation = source.get('mode')=='PLANNING_ARC_SCOPE_REVALIDATION'
     reference_contract = source.get('mode')=='PLANNING_REFERENCE_CONTRACT'
     contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT","PLANNING_REFERENCE_CONTRACT"} or reference_contract
     host_revalidation = source.get("mode") in {
@@ -1377,7 +1378,7 @@ def register(
         "WORLD_HOST_PROJECTION",
     }
     recap_revalidation = source.get("mode") == "RECAP_CONTEXT_REVALIDATION"
-    local_revalidation = host_revalidation or recap_revalidation
+    local_revalidation = host_revalidation or recap_revalidation or arc_scope_revalidation
     successor = replace(
         original,
         execution_contract_version=("1.20.0" if reference_contract else "1.19.0")
@@ -1389,14 +1390,14 @@ def register(
                 "repair_result_asset_version_id": "",
                 "repair_result_diagnostic": None,
                 "repair_of_candidate_id": "",
-                "repair_reason": "WORLD_HOST_PROJECTION_SUCCESSOR"
+                "repair_reason": "PLANNING_ARC_SCOPE_SUCCESSOR" if arc_scope_revalidation else "WORLD_HOST_PROJECTION_SUCCESSOR"
                 if source.get("mode") == "WORLD_HOST_PROJECTION"
                 else "WORLD_HOST_REVALIDATION_SUCCESSOR"
                 if host_revalidation
                 else "PLANNING_REFERENCE_CONTRACT_SUCCESSOR" if reference_contract else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
                 "parent_agent_session_operation_id": "",
             }
-            if contract_change or host_revalidation
+            if contract_change or host_revalidation or arc_scope_revalidation
             else {}
         ),
         runtime_continuation_id=continuation_id,
@@ -1406,6 +1407,8 @@ def register(
     if contract_change:
         _ensure_world_agency_pack(application, source, original, successor, principal)
     target = resolve_target(application, successor)
+    if arc_scope_revalidation:
+        target={**target,'planning_host_revalidation':source['planning_host_revalidation'],'planning_capacity':source['source_planning_capacity']}
     if reference_contract:
         proof=source['reference_contract_proof']
         target={**target,'planning_reference_contract':proof,'planning_capacity':{**source['source_planning_capacity'],
@@ -1447,7 +1450,11 @@ def register(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "runtime continuation cannot switch the frozen Provider model or routing policy",
         )
-    if recap_revalidation:
+    if arc_scope_revalidation:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = _capacity_authorization(uow,source=source,successor=successor,principal=principal,target=target)
+        route_evidence={**route_evidence,'planning_host_revalidation':'planning-arc-scope-revalidation.v1','provider_dispatch_authorized':False}
+    elif recap_revalidation:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(uow, source=source, successor=successor, principal=principal, target=target)
         route_evidence = {**route_evidence, "recap_context_revalidation": "recap-context-revalidation.v1",
@@ -1595,6 +1602,11 @@ def register(
                     }
                 }
                 | {"capacity_only": True}
+            )
+            or (
+                arc_scope_revalidation
+                and _capacity_authorization(uow,source=current,successor=successor,principal=principal,target=target)
+                != {key:value for key,value in route_evidence.items() if key not in {'planning_host_revalidation','provider_dispatch_authorized'}}
             )
             or (
                 recap_revalidation
@@ -1774,7 +1786,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation", "recap_context_revalidation", "planning_reference_contract"}
+        if key not in {"planning_capacity", "world_host_revalidation", "recap_context_revalidation", "planning_reference_contract", "planning_host_revalidation"}
     }
     if (
         validate_runtime
@@ -2016,3 +2028,154 @@ def _planning_reference_contract_source(uow, *, source_operation_id, row):
         "reference_contract_proof": proof,
         "source_planning_capacity": prior[1]["planning_capacity"],
     }
+
+
+def _planning_arc_scope_source(uow, *, source_operation_id, row):
+    from .application import _command_from_payload, _validate_frozen_arc_references
+    from novel_forge.modules.hierarchical_planning.domain import (
+        validate_planning_contract,
+        PlanContractType,
+        PlanExecutionScope,
+    )
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        EffectCommandContext,
+        read_completed_operation_success,
+    )
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    command = _command_from_payload(dict(row[3]))
+    uow.cursor.execute(
+        "SELECT chain_depth,target_runtime FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",
+        [source_operation_id],
+    )
+    prior = uow.cursor.fetchone()
+    if (
+        command.generator_operation_name != "chapter_group_plan.generate"
+        or not prior
+        or prior[0] != 3
+        or not prior[1].get("planning_reference_contract")
+    ):
+        raise KernelError(
+            "PLANNING_HOST_REVALIDATION_SOURCE_INVALID",
+            "Only the exact settled selector-contract successor can receive this host correction",
+        )
+    uow.cursor.execute(
+        "SELECT report FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s ORDER BY created_at DESC,validation_report_id DESC LIMIT 1",
+        [row[5]],
+    )
+    report = uow.cursor.fetchone()
+    if (
+        not report
+        or report[0].get("error_code") != "NARRATIVE_REALIZATION_ARC_SCOPE_INVALID"
+    ):
+        raise KernelError(
+            "PLANNING_HOST_REVALIDATION_SOURCE_INVALID",
+            "Exact historical all-Arc coverage rejection required",
+        )
+    uow.cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED')
+        OR EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancel JOIN authority_story_formation_run formation USING(formation_run_id) WHERE cancel.project_id=%s AND formation.book_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND status<>'SUCCEEDED')
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status<>'SETTLED')""",
+        [
+            command.project_id,
+            command.book_id,
+            command.project_id,
+            command.book_id,
+            source_operation_id,
+            source_operation_id,
+        ],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "Cancelled or unresolved consumption forbids host revalidation",
+        )
+    query = AuthorityAssetQuery(uow.database_url)
+    candidate = query.require(project_id=command.project_id, asset_version_id=row[5])
+    evidence = candidate.content["execution_evidence"]
+    context = query.require(
+        project_id=command.project_id,
+        asset_version_id=evidence["context_bundle_asset_version_id"],
+    )
+    if context.content_hash != evidence["context_bundle_hash"]:
+        raise KernelError(
+            "PLANNING_HOST_REVALIDATION_SOURCE_INVALID", "Exact frozen Context required"
+        )
+    validate_planning_contract(
+        project_id=command.project_id,
+        book_id=command.book_id,
+        contract_type=PlanContractType.CHAPTER_GROUP,
+        asset_version_id=row[5],
+        parent_version_id=command.parent_version_id,
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=candidate.content,
+        require_current_chapter_contract=True,
+    )
+    _validate_frozen_arc_references(command, candidate.content)
+    receipt = read_completed_operation_success(
+        uow.database_url,
+        EffectCommandContext(
+            operation_id=source_operation_id,
+            project_id=command.project_id,
+            actor_id=command.actor_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        ),
+        effect_id=evidence["external_receipt_ref"],
+    )
+    if not receipt or receipt["budget_reservation_status"] != "SETTLED":
+        raise KernelError(
+            "PLANNING_HOST_REVALIDATION_SOURCE_INVALID",
+            "Exact known settled Provider receipt required",
+        )
+    expected = bind_provider_realization_selectors_for_source(
+        receipt["provider_evidence"]["result"],
+        context.content["realization_reference_contract"],
+    )
+    if expected != {
+        key: value
+        for key, value in candidate.content["candidate_payload"].items()
+        if key != "constraint_envelope"
+    }:
+        raise KernelError(
+            "PLANNING_HOST_REVALIDATION_SOURCE_INVALID",
+            "Known selectors must reproduce the complete original candidate payload",
+        )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    proof = {
+        "contract_version": "planning-arc-scope-revalidation.v1",
+        "source_operation_id": source_operation_id,
+        "candidate_asset_version_id": row[5],
+        "candidate_content_hash": candidate.content_hash,
+        "context_asset_version_id": context.asset_version_id,
+        "context_content_hash": context.content_hash,
+        "external_effect_id": evidence["external_receipt_ref"],
+        "source_raw_result_hash": canonical_hash(
+            receipt["provider_evidence"]["result"]
+        ),
+        "repair_number": command.repair_number,
+        "provider_dispatch_authorized": False,
+    }
+    return {
+        "mode": "PLANNING_ARC_SCOPE_REVALIDATION",
+        "source_operation_id": source_operation_id,
+        "command": dict(row[3]),
+        "version": int(row[1]),
+        "evidence_asset_version_id": row[5],
+        "evidence_hash": candidate.content_hash,
+        "snapshot": snapshot[0],
+        "depth": 4,
+        "planning_host_revalidation": proof,
+        "source_planning_capacity": prior[1]["planning_capacity"],
+    }
+
+
+def bind_provider_realization_selectors_for_source(raw, catalog):
+    from .execution import bind_provider_realization_selectors
+
+    return bind_provider_realization_selectors(raw, catalog)

@@ -53,6 +53,11 @@ full native validation diagnoses the identity and portfolio defects and its orig
 Effect consumption is settled. The native successor retains its two spent content
 repairs, accepted frontier, original input snapshot and resource lineage. This is a
 contract correction, not an additional content repair or author approval.
+A settled selector-contract candidate rejected solely by historical all-Arc event
+coverage can receive one native host-only scope revalidation. Every generated field
+is compared with the original receipt; only host identity is rebound. This successor
+performs no Provider dispatch, reservation, settlement or duplicate ModelCall write,
+and retains the original rejection, repair count and twelve-chapter run identity.
 Fresh unstarted Planning commands may use the exact deployed 1.20 Pack; previously
 admitted 1.19 commands keep their immutable identity and replay contract.
 Plan Change may read an exact pending structural candidate as a proposal input only

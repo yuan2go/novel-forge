@@ -230,6 +230,11 @@ class _PlanningGenerationHandler:
         if "craft_strategy" in candidate.candidate_payload:
             raise KernelError("CRAFT_PROVIDER_STRATEGY_FORBIDDEN", "Craft strategy is derived from exact governed selection after Provider translation validation")
         evidence = candidate.evidence.to_dict()
+        if command.runtime_continuation_id and self.database_url:
+            from .runtime_continuation import require_binding
+            host = require_binding(self.database_url,command.runtime_continuation_id)['target_runtime'].get('planning_host_revalidation')
+            if host:
+                evidence['planning_host_revalidation'] = host
         knowledge_policy = ""
         knowledge_refs: tuple[str, ...] = ()
         author_projection: dict[str, Any] = {}
@@ -361,6 +366,8 @@ class _PlanningGenerationHandler:
             book_id=command.book_id,
             constraint_envelope=envelope,
         )
+        if "planning_host_revalidation" in evidence:
+            content["execution_evidence"]["planning_host_revalidation"] = evidence["planning_host_revalidation"]
         if knowledge_policy:
             content["knowledge_translation_policy_version"] = knowledge_policy
         if craft_strategy is not None:
@@ -1907,10 +1914,10 @@ class StoryPlanningGenerationApplication:
                     state,
                     replayed=True,
                 )
-        if state['lifecycle']=='REJECTED' and command.runtime_continuation_id and command.execution_contract_version=='1.19.0':
+        if state['lifecycle']=='REJECTED' and command.runtime_continuation_id and command.execution_contract_version in {'1.19.0','1.20.0'}:
             from .runtime_continuation import require_binding,register,follow
             target=require_binding(self.database_url,command.runtime_continuation_id)['target_runtime']
-            if target.get('planning_capacity',{}).get('context_revalidation'):
+            if target.get('planning_capacity',{}).get('context_revalidation') and not target.get('planning_host_revalidation'):
                 with AuthorityUnitOfWork(self.database_url) as uow:
                     uow.cursor.execute('SELECT version FROM authority_operation WHERE operation_id=%s',[row[0]])
                     source_version=uow.cursor.fetchone()[0]
@@ -4147,10 +4154,23 @@ def _validate_frozen_arc_references(
             for arc_id in event.get("arc_contributions") or ()
             if str(arc_id)
         }
-        if event_arc_ids != frozen:
+        required_event_arcs = {
+            str(arc) for arc in content.get("required_arc_contributions") or ()
+        } | {
+            str(item.get("arc_plan_version_id") or "")
+            for row in content.get("chapter_function_matrix") or ()
+            for item in row.get("arc_cadence") or ()
+            if item.get("action") != "HOLD"
+        }
+        invalid_scope = (
+            not required_event_arcs <= event_arc_ids <= frozen
+            if command.execution_contract_version == "1.20.0"
+            else event_arc_ids != frozen
+        )
+        if invalid_scope:
             raise KernelError(
                 "NARRATIVE_REALIZATION_ARC_SCOPE_INVALID",
-                "causal realization events must cover only and all frozen Working Set Arcs",
+                "causal realization events must cover scheduled contributions without foreign Arcs",
             )
     else:
         if dict(content.get("narrative_realization_slice") or {}) != dict(

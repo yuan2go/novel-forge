@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0165_planning_reference_contract_successor",
+  "migration_head": "20261007_0166_planning_arc_scope_revalidation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -6440,6 +6440,11 @@
           "id": "20261007_0165_planning_reference_contract_successor",
           "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_planning_reference_contract_successor.py",
           "locator": "MIGRATION_ID = \"20261007_0165_planning_reference_contract_successor\""
+        },
+        {
+          "id": "20261007_0166_planning_arc_scope_revalidation",
+          "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_planning_arc_scope_revalidation.py",
+          "locator": "MIGRATION_ID = \"20261007_0166_planning_arc_scope_revalidation\""
         }
       ],
       "external_effects": {
@@ -9367,7 +9372,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:5e54f5e857786c7baf846912b370ba45eccba4125ea7905db705b17b26c990e3"
+    "implementation_tree_sha": "sha256:9d5e27c6e74ffda418ba3cca4f0e9132fce3640963a0f08d54311608aecc92b8"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

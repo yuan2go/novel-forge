@@ -3309,3 +3309,35 @@ def test_arc_change_evidence_retains_same_book_recap_and_future_only_scope(monke
                     {**content, "impact_scope": {"future_only": False}}):
         with pytest.raises(KernelError, match="PLANNING_GENERATION_CHANGE_EVIDENCE_INVALID"):
             application._require_arc_recap_change_evidence(command, "arc-proposal:v1", invalid)
+
+
+def test_current_group_events_cover_scheduled_arcs_without_forcing_portfolio_movement():
+    from dataclasses import replace
+    base = _command("chapter_group_plan.generate")
+    primary = base.input_versions["arc_plans"]
+    current = replace(base, execution_contract_version="1.20.0", related_arc_plan_version_ids=("arc:future",))
+    content = {
+        "primary_arc_ids": [primary], "secondary_arc_ids": ["arc:future"],
+        "required_arc_contributions": [primary],
+        "chapter_function_matrix": [{"arc_cadence": [
+            {"arc_plan_version_id": primary, "action": "ADVANCE"},
+            {"arc_plan_version_id": "arc:future", "action": "HOLD"},
+        ]}],
+        "narrative_event_chain": [{"arc_contributions": [primary]}],
+    }
+    _validate_frozen_arc_references(current, content)
+    with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_ARC_SCOPE_INVALID"):
+        _validate_frozen_arc_references(replace(current,execution_contract_version="1.19.0"), content)
+    from copy import deepcopy
+    missing = deepcopy(content)
+    missing["narrative_event_chain"][0]["arc_contributions"] = []
+    with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_ARC_SCOPE_INVALID"):
+        _validate_frozen_arc_references(current, missing)
+    foreign = deepcopy(content)
+    foreign["narrative_event_chain"][0]["arc_contributions"].append("arc:foreign")
+    with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_ARC_SCOPE_INVALID"):
+        _validate_frozen_arc_references(current, foreign)
+    inconsistent = deepcopy(content)
+    inconsistent["chapter_function_matrix"][0]["arc_cadence"][1]["action"] = "ADVANCE"
+    with pytest.raises(KernelError, match="NARRATIVE_REALIZATION_ARC_SCOPE_INVALID"):
+        _validate_frozen_arc_references(current, inconsistent)

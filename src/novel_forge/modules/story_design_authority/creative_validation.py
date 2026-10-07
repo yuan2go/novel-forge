@@ -16,7 +16,7 @@ def candidate_validation(cursor: Any, *, project_id: str, asset_version_id: str)
         FROM authority_operation_output_asset output
         JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id
         JOIN authority_asset a ON a.asset_id=v.asset_id
-        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id
+        JOIN authority_external_effect e ON e.operation_id=COALESCE(v.content#>>'{execution_evidence,planning_host_revalidation,source_operation_id}',output.operation_id) AND e.project_id=a.project_id
         WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'
           AND e.request_payload->>'stage'=v.content->>'generator_operation_name'
           AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'""",
@@ -34,6 +34,33 @@ def candidate_validation(cursor: Any, *, project_id: str, asset_version_id: str)
             or decision["task"]["operation_id"] != operation
             or content.get("book_id") != template["book_id"]):
         raise KernelError("CREATIVE_DESIGN_ADMISSION_INVALID", asset_version_id)
+    host=content.get('execution_evidence',{}).get('planning_host_revalidation')
+    if host:
+        from novel_forge.modules.story_planning_runtime.runtime_continuation import require_source
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.story_planning_runtime.execution import bind_provider_realization_selectors
+        from psycopg.conninfo import make_conninfo
+        database_url=make_conninfo(cursor.connection.info.dsn,password=cursor.connection.info.password)
+        with AuthorityUnitOfWork(database_url) as uow:
+            source=require_source(uow,source_operation_id=operation,project_id=project_id)
+        child=content['execution_evidence']['operation_id']
+        cursor.execute("SELECT target_runtime->'planning_host_revalidation' FROM authority_story_planning_runtime_continuation WHERE source_operation_id=%s AND successor_operation_id=%s AND chain_depth=4",[operation,child]);binding=cursor.fetchone()
+        if source.get('planning_host_revalidation')!=host or not binding or binding[0]!=host:
+            raise KernelError('CREATIVE_DESIGN_ADMISSION_INVALID','Exact host-only successor proof required')
+        query=AuthorityAssetQuery(database_url);context=query.require(project_id=project_id,asset_version_id=content['execution_evidence']['context_bundle_asset_version_id'])
+        original=query.require(project_id=project_id,asset_version_id=host['candidate_asset_version_id'])
+        from copy import deepcopy
+        expected=deepcopy(original.content['candidate_payload'])
+        for manifest in ('world_realization','character_realization'):
+            for entity in expected[manifest]:
+                for field in ('invariant_refs','structure_refs','state_ref','identity_ref','trajectory_ref'):
+                    rows=entity.get(field,[]);rows=rows if isinstance(rows,list) else [rows]
+                    for ref in rows:ref['frozen_by_operation_id']=child
+        expected.pop('constraint_envelope',None)
+        if expected!={key:value for key,value in content['candidate_payload'].items() if key!='constraint_envelope'}:
+            raise KernelError('CREATIVE_DESIGN_ADMISSION_INVALID','Host-only correction cannot alter generated content')
+        operation=child
     return {"version": "creative-design-admission.v1", "mode": MODE,
             "project_id": project_id, "book_id": template["book_id"],
             "asset_version_id": asset_version_id, "content_hash": digest,

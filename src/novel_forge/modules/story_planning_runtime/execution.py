@@ -3731,6 +3731,7 @@ class _PlanningPepPort:
     writer: AuthorityAssetWriter
     post_provider_fault_injector: Callable[[str], None]
     realization_selector_catalog: dict[str, Any] | None = None
+    host_revalidation: bool = False
 
     external_effect_backed = True
     production_execution_gateway_backed = True
@@ -3895,24 +3896,25 @@ class _PlanningPepPort:
         reported_amount = str(reported_value) if reported_value is not None else None
         normalized_usage = dict(settlement["usage"])
         normalized_cost = dict(settlement["cost"])
-        settle_provider_budget(
-            self.database_url,
-            reservation_id=self.reservation_id,
-            project_id=self.context.project_id,
-            actual_amount=amount,
-            actual_tokens=total_tokens,
-            evidence={
-                "provider_id": str(evidence.get("provider_id") or ""),
-                "model_id": str(evidence.get("model_id") or ""),
-                "real_model_call": real_model_call,
-                "fixture": fixture,
-                "usage_settlement_basis": usage_settlement_basis,
-                "cost_settlement_basis": cost_settlement_basis,
-                "provider_reported_cost_amount": reported_amount,
-                "accounting_basis": str(settlement.get("accounting_basis") or "PRICED"),
-                "cost_status": str(settlement.get("cost_status") or "KNOWN"),
-            },
-        )
+        if not self.host_revalidation:
+            settle_provider_budget(
+                self.database_url,
+                reservation_id=self.reservation_id,
+                project_id=self.context.project_id,
+                actual_amount=amount,
+                actual_tokens=total_tokens,
+                evidence={
+                    "provider_id": str(evidence.get("provider_id") or ""),
+                    "model_id": str(evidence.get("model_id") or ""),
+                    "real_model_call": real_model_call,
+                    "fixture": fixture,
+                    "usage_settlement_basis": usage_settlement_basis,
+                    "cost_settlement_basis": cost_settlement_basis,
+                    "provider_reported_cost_amount": reported_amount,
+                    "accounting_basis": str(settlement.get("accounting_basis") or "PRICED"),
+                    "cost_status": str(settlement.get("cost_status") or "KNOWN"),
+                },
+            )
         try:
             self.post_provider_fault_injector(
                 "after_measured_usage_before_candidate_acceptance"
@@ -3929,15 +3931,16 @@ class _PlanningPepPort:
                 failure={"code": exc.code, "message": str(exc)},
             )
             raise
-        self._record_model_evidence(
-            evidence=evidence,
-            usage=normalized_usage,
-            cost=normalized_cost,
-            amount=amount,
-            total_tokens=total_tokens,
-            accepted_candidate=False,
-            recovered_completion=recovered_completion,
-        )
+        if not self.host_revalidation:
+            self._record_model_evidence(
+                evidence=evidence,
+                usage=normalized_usage,
+                cost=normalized_cost,
+                amount=amount,
+                total_tokens=total_tokens,
+                accepted_candidate=False,
+                recovered_completion=recovered_completion,
+            )
         execution_result = production.get("execution_result")
         if not isinstance(execution_result, Mapping):
             raise KernelError(
@@ -4226,6 +4229,12 @@ class PostgresPlanningExecutionPreparer:
             )
         capability = default_capability_registry().resolve(definition.capability)
         frozen = attempt_snapshot.execution_snapshot
+        if command.runtime_continuation_id and provider_stage is None:
+            from .runtime_continuation import require_binding
+            host = require_binding(self.database_url,command.runtime_continuation_id)['target_runtime'].get('planning_host_revalidation')
+            if host:
+                return self._prepare_known_arc_result(operation_id=operation_id,attempt_id=attempt_id,fencing_token=fencing_token,
+                    worker_id=worker_id,command=command,inputs=inputs,definition=definition,frozen=frozen,capability=capability,proof=host)
         if frozen.execution_capability_id != capability.capability_id.value:
             raise KernelError(
                 "PLANNING_CAPABILITY_PACK_NODE_INVALID",
@@ -5187,6 +5196,156 @@ class PostgresPlanningExecutionPreparer:
             route_snapshot_hash=contract_documents["route"].content_hash,
             input_manifest_ref=binding.input_manifest.manifest_id,
             input_manifest_hash=contract_documents["input"].content_hash,
+            prompt_bundle_ref=frozen.prompt_bundle_ref,
+            prompt_bundle_hash=frozen.prompt_bundle_hash,
+            skill_bundle_ref=frozen.skill_bundle_ref,
+            skill_bundle_hash=frozen.skill_bundle_hash,
+            tool_permission_snapshot_ref=frozen.tool_policy_ref,
+            tool_permission_snapshot_hash=frozen.tool_policy_hash,
+            context_policy_ref=frozen.context_policy_ref,
+            context_policy_hash=frozen.context_policy_hash,
+            validation_policy_ref=frozen.evaluation_policy_ref,
+            commit_policy_ref=capability.commit_policy_ref,
+            timeout_policy_ref=capability.timeout_policy_ref,
+        )
+
+    def _prepare_known_arc_result(
+        self,
+        *,
+        operation_id,
+        attempt_id,
+        fencing_token,
+        worker_id,
+        command,
+        inputs,
+        definition,
+        frozen,
+        capability,
+        proof,
+    ):
+        from .runtime_continuation import require_source
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        from novel_forge.modules.command_kernel.external_effect_runtime import (
+            read_completed_operation_success,
+        )
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            source = require_source(
+                uow,
+                source_operation_id=proof["source_operation_id"],
+                project_id=command.project_id,
+            )
+        if source.get("planning_host_revalidation") != proof:
+            raise KernelError(
+                "PLANNING_HOST_REVALIDATION_SOURCE_DRIFT",
+                "Native known-result proof changed",
+            )
+        original = self.query.require(
+            project_id=command.project_id,
+            asset_version_id=proof["context_asset_version_id"],
+        )
+        content = self._reproject_frozen_context(
+            original.content,
+            command=command,
+            task_tokens=original.content["token_budget"],
+            operation_id=operation_id,
+        )
+        documents = tuple(
+            self.query.require(
+                project_id=command.project_id, asset_version_id=item.asset_version_id
+            )
+            for item in inputs
+        )
+        context = self._materialize_planning_context(
+            operation_id=operation_id,
+            command=command,
+            logical_ref=f"planning/context/{operation_id}",
+            documents=documents,
+            content=content,
+        )
+        receipt = read_completed_operation_success(
+            self.database_url,
+            EffectCommandContext(
+                operation_id=proof["source_operation_id"],
+                project_id=command.project_id,
+                actor_id=worker_id,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+            ),
+            effect_id=proof["external_effect_id"],
+        )
+        if not receipt or receipt["budget_reservation_status"] != "SETTLED":
+            raise KernelError(
+                "PLANNING_HOST_REVALIDATION_SOURCE_DRIFT",
+                "Known settled source required; dispatch forbidden",
+            )
+        route = self._recovered_planning_route(
+            recovered_completion=receipt,
+            project_id=command.project_id,
+            current_route=self.planning_route,
+        )
+        stable_key = f"{command.idempotency_key}:host-result:{attempt_id}"
+        binding, contracts = self._execution_binding(
+            operation_id=operation_id,
+            attempt_id=attempt_id,
+            fencing_token=fencing_token,
+            command=command,
+            definition=definition,
+            capability=capability,
+            planning_route=route,
+            context_document=context,
+            input_documents=documents,
+            effect_id=proof["external_effect_id"],
+            stable_key=stable_key,
+            reservation_id=receipt["budget_reservation_id"],
+            output_schema_ref=receipt["provider_evidence"]["capability_runtime"][
+                "output_schema_ref"
+            ],
+            frozen=frozen,
+            stage_name=command.generator_operation_name,
+            stage_identity="planning",
+        )
+        adapter = _PlanningGatewayEffectAdapter(
+            transport=self.execution_transport,
+            session=self.execution_transport.session_for_project(command.project_id),
+            binding=binding,
+        )
+        return PreparedPlanningExecution(
+            execution_port=_PlanningPepPort(
+                database_url=self.database_url,
+                worker_id=worker_id,
+                lease_seconds=self.lease_seconds,
+                context=EffectCommandContext(
+                    operation_id=operation_id,
+                    project_id=command.project_id,
+                    actor_id=worker_id,
+                    trace_id=command.trace_id,
+                    correlation_id=command.correlation_id,
+                ),
+                effect_id=proof["external_effect_id"],
+                stable_key=stable_key,
+                reservation_id=receipt["budget_reservation_id"],
+                reserved_amount=receipt["budget_reserved_amount"],
+                reserved_tokens=receipt["budget_estimated_tokens"],
+                binding=binding,
+                adapter=adapter,
+                recovered_completion=receipt,
+                writer=self.writer,
+                post_provider_fault_injector=self.post_provider_fault_injector,
+                realization_selector_catalog=context.content[
+                    "realization_reference_contract"
+                ],
+                host_revalidation=True,
+            ),
+            context_bundle_asset_version_id=context.asset_version_id,
+            context_bundle_hash=context.content_hash,
+            narrative_intelligence_selection_digest=content["narrative_intelligence"][
+                "selection_digest"
+            ],
+            route_snapshot_ref=binding.route_snapshot.route_snapshot_id,
+            route_snapshot_hash=contracts["route"].content_hash,
+            input_manifest_ref=binding.input_manifest.manifest_id,
+            input_manifest_hash=contracts["input"].content_hash,
             prompt_bundle_ref=frozen.prompt_bundle_ref,
             prompt_bundle_hash=frozen.prompt_bundle_hash,
             skill_bundle_ref=frozen.skill_bundle_ref,

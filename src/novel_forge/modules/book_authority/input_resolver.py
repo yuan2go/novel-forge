@@ -1296,7 +1296,7 @@ class BookProductionInputResolver:
                 if (
                     str(item.get("execution_capability_id") or "") != expected[node_id]
                     or str(item.get("operation_definition_ref") or "")
-                    != STORY_PLANNING_OPERATION_DEFINITION_REF
+                    not in {STORY_PLANNING_OPERATION_DEFINITION_REF, "story_planning.generate@1.20.0"}
                     or str(item.get("commit_authority") or "")
                     != "STORY_DESIGN_AUTHORITY"
                 ):
