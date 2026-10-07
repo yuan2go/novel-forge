@@ -43,7 +43,7 @@ def recover_realization_frontier(authority, *, book_run_id, principal):
         )
         source = uow.cursor.fetchone()
     if not source:
-        return False
+        return recover_quality_frontier(authority, book=book, request=request, template=template, principal=principal)
     query = AuthorityAssetQuery(authority.database_url)
     inputs = [
         query.require(
@@ -128,3 +128,62 @@ def _cancelled(cursor, book):
         [book["project_id"], book["book_id"]],
     )
     return cursor.fetchone()[0]
+
+
+def recover_quality_frontier(authority, *, book, request, template, principal):
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.command_kernel.step_successor import replace_failed_steps
+    from .receipt_recovery import _receipt
+    from .canon_contract_recovery import latest_failure_code
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("""SELECT DISTINCT o.operation_id,to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
+            JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
+            AND o.definition_name LIKE 'chapter.quality.%%.evaluate' AND o.definition_version='3.9.0'
+            AND o.status IN ('READY','FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER')
+            AND a.result->>'error_code' IN ('QUALITY_APPLICABILITY_CONFLICT','REVIEW_EVIDENCE_INVALID') ORDER BY o.operation_id""",
+            [request["chapter_root_operation_id"],book["project_id"]])
+        sources = [row[1] for row in u.cursor.fetchall()]
+        if not sources:
+            return False
+        effects = {}
+        results = {}
+        for source in sources:
+            u.cursor.execute("SELECT e.external_effect_id,e.request_hash,e.status,b.status FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.created_at", [source["operation_id"]])
+            rows = u.cursor.fetchall()
+            if not rows or any(row[2:] != ("SUCCEEDED","SETTLED") for row in rows):
+                return False
+            effects[source["operation_id"]] = [row[:2] for row in rows]
+            results[source["operation_id"]] = [_receipt(u.cursor,row[0],book["project_id"]) for row in rows]
+    corrections = []
+    for source in sources:
+        assets = [AuthorityAssetQuery(authority.database_url).require(project_id=book["project_id"], asset_version_id=a["asset_version_id"]) for a in source["input_asset_snapshot"]]
+        revision = next(a for a in assets if a.asset_type == "best_draft_candidate")
+        requirements = (revision.content.get("creative_baseline") or {}).get("method_requirements", {})
+        diagnostics = []
+        for result in results[source["operation_id"]]:
+            for row in result.output.get("dimensions", []):
+                applicability = (requirements.get(row["dimension"]) or {}).get("status", "APPLICABLE")
+                if row.get("gate_status") == "NOT_APPLICABLE" and applicability == "APPLICABLE":
+                    diagnostics.append({"dimension": row["dimension"], "constraint": "host-confirmed applicability required", "actual": "NOT_APPLICABLE"})
+                for location in row.get("evidence_locations", []):
+                    quote = location.get("quote")
+                    if not isinstance(quote,str) or quote not in revision.content["text"]:
+                        diagnostics.append({"dimension": row["dimension"], "constraint": "exact candidate span required", "actual": quote})
+        if not diagnostics:
+            return False
+        corrections.append({"predecessor_id": source["operation_id"], "target_version": "3.9.1",
+            "expected_failure_code": latest_failure_code(authority.database_url,source["operation_id"]),
+            "known_receipt_effects": tuple(effects[source["operation_id"]]),
+            "policy_evidence": {"contract_version": "chapter-quality-span-successor.v1", "book_run_id": book["book_run_id"],
+                "chapter_request_id": request["chapter_request_id"], "policy_admission": template, "repair_diagnostics": diagnostics,
+                "source_candidate_asset_version_id": revision.asset_version_id, "source_candidate_content_hash": revision.content_hash,
+                "completion_checks": "UNCHANGED"}})
+    corrections[0]["window_successor"] = {"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "quality_evidence_spans", "policy_value": "literal-source-spans.v1"}
+    def guard(u):
+        u.cursor.execute("SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
+        if (u.cursor.fetchone() != (book["version"],book["active_chapter_request_id"],book["accepted_through_chapter"])
+            or _cancelled(u.cursor,book) or selected_book_template(u.cursor,project_id=book["project_id"],book_id=book["book_id"]) != template):
+            raise KernelError("CHAPTER_CONTRACT_RECOVERY_CONFLICT", "Reload the exact Book frontier and authorization")
+    replace_failed_steps(authority.database_url, corrections=corrections, context=AdmissionContext(principal.principal_id,principal.permissions,
+        authority.chapter_port.application.registry.available_handler_keys,authority.application_build_id,authority.commit_sha), transaction_guard=guard)
+    return True

@@ -1,0 +1,36 @@
+{
+  "evidence_kind": "NATIVE_POSTGRESQL_CONTROLLED",
+  "original_root_operation_id": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "pack_version": "2.25.0",
+  "atomic_successors": [
+    {
+      "predecessor": "324cd97e-b5ca-438e-be49-e7f109e6a3dd",
+      "status": "DEAD_LETTER",
+      "successor": "7e729ffb-917d-46ba-8717-7bf2fe6f3f13",
+      "definition": "3.9.1",
+      "original_attempts": 2
+    },
+    {
+      "predecessor": "8ffbcae9-1501-4a68-b2af-be7b41ca6350",
+      "status": "FAILED_FINAL",
+      "successor": "8f558f63-baa7-49e7-b494-373ce58aff7c",
+      "definition": "3.9.1",
+      "original_attempts": 1
+    },
+    {
+      "predecessor": "aa509bf5-6523-4dac-aa7f-aa16b7326f80",
+      "status": "DEAD_LETTER",
+      "successor": "e615b43d-5cba-4d45-a163-855551259b86",
+      "definition": "3.9.1",
+      "original_attempts": 2
+    }
+  ],
+  "effects_before": 75,
+  "effects_after": 75,
+  "provider_dispatches": 0,
+  "input_units": 49249,
+  "output_reserve": 32768,
+  "accepted_chapters": 0,
+  "real_current_quality": "NOT_RUN",
+  "literary_quality": "NOT_PROVEN"
+}

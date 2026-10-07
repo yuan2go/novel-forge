@@ -2133,3 +2133,9 @@ A changed contract window may include previously reconciled failed membership ef
 when their exact completed/rejected outcomes are already recorded in immutable Kernel
 successor evidence. Settled consumption remains cumulative. Paid or ambiguous failures
 and unrecorded rejection claims still block continuation.
+
+Current Quality requests select exact candidate span identities and carry host-bound
+per-dimension applicability. Missing optional method selection never suppresses general
+consistency or source-boundary checks. Parallel failed interface tasks can receive an
+atomic Kernel successor group; all source receipts must be reconciled, and exhausted
+retryable generations retain their original Attempt history before native termination.

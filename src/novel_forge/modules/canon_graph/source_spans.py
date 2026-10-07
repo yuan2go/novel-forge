@@ -168,3 +168,45 @@ def expanded_enum_choices(schema):
             return count(definitions[ref.rsplit("/", 1)[1]], (*references, ref))
         return len(node.get("enum", [])) + sum(count(value, references) for key, value in node.items() if key not in {"$defs", "enum"})
     return count(schema)
+
+
+def quality_span_schema(schema, table, requirements):
+    result = deepcopy(schema)
+    row = result["properties"]["dimensions"]["items"]
+    location = row["properties"]["evidence_locations"]["items"]
+    location["properties"].pop("quote")
+    location["properties"]["span_id"] = {"type": "string", "pattern": "^(?:" + "|".join(re.escape(s["span_id"]) for s in table["spans"]) + ")$"}
+    location["required"] = ["span_id" if key == "quote" else key for key in location["required"]]
+    branches = []
+    for dimension, applicability in requirements.items():
+        branch = deepcopy(row)
+        fields = branch["properties"]
+        fields["dimension"] = {"type": "string", "const": dimension}
+        if applicability in {"NOT_APPLICABLE", "PROHIBITED"}:
+            fields["gate_status"]["enum"] = ["NOT_APPLICABLE"]
+            fields["score"] = {"type": "null"}
+            fields["evidence_locations"]["maxItems"] = 0
+        elif applicability == "UNDETERMINED":
+            fields["gate_status"]["enum"] = ["INSUFFICIENT_EVIDENCE"]
+            fields["score"] = {"type": "null"}
+        else:
+            fields["gate_status"]["enum"] = [v for v in fields["gate_status"]["enum"] if v != "NOT_APPLICABLE"]
+        branches.append(branch)
+    result["properties"]["dimensions"]["items"] = {"anyOf": branches}
+    result["properties"]["dimensions"]["minItems"] = len(requirements)
+    result["properties"]["dimensions"]["maxItems"] = len(requirements)
+    return _share_schema_nodes(result)
+
+
+def bind_quality_spans(locations, text):
+    table = {span["span_id"]: span for span in source_spans(text)["spans"]}
+    invalid = [location.get("span_id") for location in locations if location.get("span_id") not in table]
+    if invalid:
+        raise KernelError("QUALITY_SOURCE_SPAN_INVALID", "Evidence must belong to the exact candidate: " + str(invalid))
+    return [{"quote": table[location["span_id"]]["quote"], "claim": location["claim"]} for location in locations]
+
+
+def require_quality_dimensions(rows, expected):
+    dimensions = [row.get("dimension") for row in rows]
+    if len(dimensions) != len(expected) or set(dimensions) != set(expected):
+        raise KernelError("QUALITY_DIMENSION_COVERAGE_INVALID", "Each frozen dimension must occur exactly once")

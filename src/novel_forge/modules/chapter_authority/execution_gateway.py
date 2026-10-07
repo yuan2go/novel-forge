@@ -1269,6 +1269,10 @@ class PostgresChapterExecutionContractBinder:
             work_requirements=prompt_contract_version in {"v8", "v9"},
             allow_noop_revision=prompt_contract_version == "v9" and not bool(inputs.get("quality_edit_contract")),
         )
+        if stage.startswith("quality_") and inputs.get("quality_span_contract") == "literal-source-spans.v1":
+            from novel_forge.modules.canon_graph.source_spans import quality_span_schema
+            schema = quality_span_schema(schema, inputs["source_span_table"], inputs["dimension_applicability"])
+            schema_ref = f"schema:chapter-provider-output:{stage}:v5"
         if stage == "canon_support" and inputs.get("support_kind_contract") == "canon-claim-kinds.v1":
             schema["properties"]["claims"]["items"]["properties"]["observed_kind"] = {"enum": [
                 "OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION",
@@ -4611,6 +4615,14 @@ def _materialize_production_codex_prompt(
             "Do not invent a change, omit an observed required effect, or claim that extraction accepts the chapter.",
             required_language,
         )
+    if stage.startswith("quality_") and inputs.get("quality_span_contract") == "literal-source-spans.v1":
+        stage_semantic_contract = stage_semantic_contract.replace(
+            "PASSED and FAILED dimensions require literal candidate-prose quotes.",
+            "PASSED and FAILED dimensions require span_id selected from source_span_table; never rewrite evidence text.")
+        stage_semantic_contract += (
+            " dimension_applicability is the host's frozen scope. Only host NOT_APPLICABLE or PROHIBITED dimensions "
+            "return NOT_APPLICABLE; UNDETERMINED returns INSUFFICIENT_EVIDENCE. All other requested dimensions remain "
+            "applicable, including checks for absent conflicts. Scores are model judgments, never objective quality.")
     if stage == "canon_extraction" and inputs.get("source_span_schema_contract") == "typed-extraction-json.v1":
         stage_semantic_contract += " Return the complete extraction object encoded in payload_json. The x-host-payload-schema is the exact inner JSON contract, including its local definitions. It is not an output property. Include every required array, using [] only for absent changes; the host validates the inner object before semantic review."
     if targeted_edits_only:

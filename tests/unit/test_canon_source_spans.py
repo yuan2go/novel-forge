@@ -169,3 +169,33 @@ def test_typed_envelope_retains_full_host_contract_and_validates_before_normaliz
         "supersedes_event_id": None, "evidence_span_id": "foreign-span", "claim_kind": "OBJECTIVE_EVENT", "confidence": 0.9, "impact_type": "world_fact"}]}
     with pytest.raises(KernelError, match="CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID"):
         validate_production_structured_result("canon_extraction", schema, {"payload_json": json.dumps(foreign)}, output_schema_ref=ref)
+
+
+def test_quality_spans_and_host_applicability_preserve_exact_candidate_contract():
+    from novel_forge.modules.canon_graph.source_spans import bind_quality_spans, require_quality_dimensions
+    text = "周澄看见名字。\n🚪门关上了。"
+    table = source_spans(text)
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="quality_commercial", prompt_contract_version="v9", request_payload={"input": {
+            "quality_span_contract": "literal-source-spans.v1", "source_span_table": table,
+            "dimension_applicability": {"reward": "APPLICABLE", "golden_opening": "NOT_APPLICABLE"}}})
+    assert ref.endswith(":v5")
+    rows = [{"dimension": "reward", "gate_status": "PASSED", "score": 80,
+             "evidence_locations": [{"span_id": table["spans"][0]["span_id"], "claim": "观察获得信息"}],
+             "confidence": 0.9, "issue_codes": [], "revision_strategies": []},
+            {"dimension": "golden_opening", "gate_status": "NOT_APPLICABLE", "score": None,
+             "evidence_locations": [], "confidence": 1, "issue_codes": [], "revision_strategies": []}]
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    item_schema = schema["properties"]["dimensions"]["items"]
+    for row in rows:
+        _validate(item_schema, row, path="$", root_schema=schema)
+    bound = bind_quality_spans(rows[0]["evidence_locations"], text)
+    assert bound == [{"quote": table["spans"][0]["quote"], "claim": "观察获得信息"}]
+    require_quality_dimensions(rows, ("reward", "golden_opening"))
+    for invalid in ({**rows[0], "gate_status": "NOT_APPLICABLE"}, {**rows[1], "score": 90}):
+        with pytest.raises(ValueError):
+            _validate(item_schema, invalid, path="$", root_schema=schema)
+    with pytest.raises(KernelError, match="QUALITY_SOURCE_SPAN_INVALID"):
+        bind_quality_spans(rows[0]["evidence_locations"], text + "后来。")
+    with pytest.raises(KernelError, match="QUALITY_DIMENSION_COVERAGE_INVALID"):
+        require_quality_dimensions([rows[0], rows[0]], ("reward", "golden_opening"))

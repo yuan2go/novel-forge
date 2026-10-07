@@ -3133,3 +3133,11 @@ the existing failed-step successor. The typed transition must match its frozen i
 causes, knowledge constraints and effects before dynamic state is projected. A later
 completed malformed envelope is retained with exact process/output evidence and settled
 membership usage. Recovery never repairs that output or treats it as an accepted candidate.
+
+Quality source-span successors retain the exact selected candidate and host-frozen
+dimension applicability. Check complete, unique dimension coverage, literal span
+identity and independent judgment. A group of parallel contract failures is replaced
+atomically on the existing Saga; exhausted retries are retired through Kernel lifecycle
+commands while original Attempts and receipts remain unchanged. Unknown effects, live
+leases, cancellation and unproven interface failures prevent recovery. Verify rollback
+and replay with `tests/integration/test_failed_step_successor_postgres.py`.

@@ -2087,6 +2087,12 @@ class _QualityGroupHandler:
             getattr(self.provider, "external_effect_backed", False)
             or getattr(self.provider, "supports_quality_evaluation", False)
         ):
+            quality_span_inputs = {}
+            if request.definition_version == "3.9.1":
+                from novel_forge.modules.canon_graph.source_spans import source_spans
+                requirements = (revision.content.get("creative_baseline") or {}).get("method_requirements", {})
+                quality_span_inputs = {"quality_span_contract": "literal-source-spans.v1", "source_span_table": source_spans(revision.content["text"]),
+                    "dimension_applicability": {dimension: (requirements.get(dimension) or {}).get("status", "APPLICABLE") for dimension in QUALITY_GROUPS[self.group]}}
             generated = self.provider.invoke(
                 request,
                 stage=f"quality_{self.group}",
@@ -2094,6 +2100,7 @@ class _QualityGroupHandler:
                     "revision": revision.content,
                     "quality_context": quality_context,
                     "dimensions": list(QUALITY_GROUPS[self.group]),
+                    **quality_span_inputs,
                 },
             )
             from novel_forge.modules.chapter_quality_authority.reference_sampling import (
@@ -2114,10 +2121,17 @@ class _QualityGroupHandler:
                 (
                     f"schema:chapter-provider-output:quality_{self.group}:v3",
                     f"schema:chapter-provider-output:quality_{self.group}:v4",
+                    f"schema:chapter-provider-output:quality_{self.group}:v5",
                 )
             )
+            if schema_ref == f"schema:chapter-provider-output:quality_{self.group}:v5":
+                from novel_forge.modules.canon_graph.source_spans import require_quality_dimensions
+                require_quality_dimensions(generated.output.get("dimensions", []), QUALITY_GROUPS[self.group])
             for item in generated.output.get("dimensions", []):
                 located = list(item.get("evidence_locations") or [])
+                if schema_ref == f"schema:chapter-provider-output:quality_{self.group}:v5":
+                    from novel_forge.modules.canon_graph.source_spans import bind_quality_spans
+                    located = bind_quality_spans(located, revision.content["text"])
                 if current_quality_contract:
                     located = bind_quality_prose_evidence(
                         located,

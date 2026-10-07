@@ -1010,6 +1010,7 @@ def build_provider_task_view(
             chapter=_prose(inputs.get("revision")),
             quality_context=_compact(inputs.get("quality_context")),
             dimensions=_compact(inputs.get("dimensions")),
+            **{key: inputs[key] for key in ("quality_span_contract", "source_span_table", "dimension_applicability") if key in inputs},
         )
     if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
         return _task(stage, source_digest=inputs.get("source_digest"), candidate_digest=inputs.get("candidate_digest", ""),

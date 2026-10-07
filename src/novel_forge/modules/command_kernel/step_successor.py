@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import nullcontext
 import json
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -33,7 +34,11 @@ def replace_failed_step(
     known_receipt_effects=(),
     known_rejected_effects=(),
     window_successor=None,
+    _uow=None,
+    _group_ids=(),
 ):
+    if _group_ids and _uow is None:
+        raise KernelError("STEP_SUCCESSOR_GROUP_INVALID", "Grouped exclusions require the owning atomic transaction")
     digest = hashlib.sha256(
         json.dumps(
             {
@@ -53,7 +58,7 @@ def replace_failed_step(
             default=str,
         ).encode()
     ).hexdigest()
-    with AuthorityUnitOfWork(database_url) as uow:
+    with (nullcontext(_uow) if _uow is not None else AuthorityUnitOfWork(database_url)) as uow:
         cursor = uow.cursor
         cursor.execute(
             "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
@@ -123,8 +128,8 @@ def replace_failed_step(
             cursor.execute(
                 """SELECT EXISTS(SELECT 1 FROM authority_saga_step s
                 JOIN authority_operation o USING(operation_id) WHERE s.saga_id=%s
-                AND o.operation_id<>%s AND (o.status<>'SUCCEEDED' OR s.compensation_status<>'NOT_REQUIRED'))""",
-                [saga["saga_id"], predecessor_id],
+                AND o.operation_id<>%s AND NOT (o.operation_id=ANY(%s)) AND (o.status<>'SUCCEEDED' OR s.compensation_status<>'NOT_REQUIRED'))""",
+                [saga["saga_id"], predecessor_id, list(_group_ids)],
             )
             if cursor.fetchone()[0]:
                 raise KernelError(
@@ -341,7 +346,8 @@ def replace_failed_step(
         repo.release_coordinator(
             saga["saga_id"], context.actor_id, lease["fencing_token"]
         )
-        uow.commit()
+        if _uow is None:
+            uow.commit()
     return {"operation_id": successor, "replayed": False}
 
 
@@ -416,3 +422,42 @@ def has_domain_outputs(cursor, operation_id):
         ("routing_decision", "routing_evidence"),
     }
     return any(tuple(row) not in allowed for row in cursor.fetchall())
+
+
+def replace_failed_steps(database_url, *, corrections, context, transaction_guard=None):
+    if not 1 <= len(corrections) <= 5 or len({c["predecessor_id"] for c in corrections}) != len(corrections):
+        raise KernelError("STEP_SUCCESSOR_GROUP_INVALID", "A bounded group needs distinct failed steps")
+    from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
+    with AuthorityUnitOfWork(database_url) as uow:
+        ids = [c["predecessor_id"] for c in corrections]
+        uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=ANY(%s) ORDER BY operation_id", [ids])
+        sources = [row[0] for row in uow.cursor.fetchall()]
+        if (len(sources) != len(ids) or len({(s["project_id"],s["root_operation_id"],s["saga_id"],s["actor_id"]) for s in sources}) != 1
+            or sources[0]["actor_id"] != context.actor_id):
+            raise KernelError("STEP_SUCCESSOR_GROUP_INVALID", "Every correction must belong to the same owned graph")
+        uow.repositories.operation_graph.saga_for_update(sources[0]["saga_id"], sources[0]["project_id"])
+        uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=ANY(%s) ORDER BY operation_id FOR UPDATE", [ids])
+        sources = [row[0] for row in uow.cursor.fetchall()]
+        if transaction_guard:
+            transaction_guard(uow)
+        for source in sources:
+            if source["status"] not in {"READY", "FAILED_RETRYABLE"}:
+                continue
+            uow.cursor.execute("SELECT status,result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [source["operation_id"]])
+            attempts = uow.cursor.fetchall()
+            maximum = int(source["definition_snapshot"]["retry_policy"].get("max_attempts", 1))
+            correction = next(c for c in corrections if c["predecessor_id"] == source["operation_id"])
+            if (len(attempts) < maximum or any(a[0] not in {"FAILED_RETRYABLE", "FAILED_FINAL"} for a in attempts)
+                or attempts[-1][1] != correction["expected_failure_code"]):
+                raise KernelError("STEP_SUCCESSOR_GROUP_NOT_EXHAUSTED", "Active or non-exhausted generations retain their original owner")
+            transition_operation_in_uow(uow, OperationTransitionCommand(source["operation_id"],source["project_id"],source["version"],
+                source["status"],"DEAD_LETTER",context.actor_id,"Frozen retry budget exhausted; corrected interface successor group",
+                source["trace_id"],source["correlation_id"],source["operation_id"]))
+        group, results = set(ids), []
+        for correction in corrections:
+            result = replace_failed_step(database_url, **correction, context=context, transaction_guard=transaction_guard,
+                _uow=uow, _group_ids=group)
+            group.add(result["operation_id"])
+            results.append(result)
+        uow.commit()
+    return results

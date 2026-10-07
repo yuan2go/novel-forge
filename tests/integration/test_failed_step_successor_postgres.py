@@ -319,3 +319,52 @@ def test_schema_rejection_successor_requires_exact_domain_and_kernel_evidence(fa
         replace_failed_step(DATABASE_URL, predecessor_id=child, target_version="1.0.1", context=context,
             policy_evidence={"contract_version": "controlled-rejection"}, expected_failure_code="LOCAL_CONTRACT_DEFECT",
             known_rejected_effects=(("missing-effect", "missing-hash", "missing-receipt", "missing-hash"),))
+
+
+@pytest.mark.parametrize("invalidate_second", [False, True])
+def test_failed_step_group_is_atomic_and_replays_without_rewriting_attempts(failed_graph, invalidate_second):
+    from novel_forge.modules.command_kernel.step_successor import replace_failed_steps
+    project, root, child, saga, context = failed_graph
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("SELECT definition_name,definition_version FROM authority_operation WHERE operation_id=%s", [child])
+        name, version = u.cursor.fetchone()
+    second = admit_command(DATABASE_URL, {
+        "definition_name": name, "definition_version": version, "project_id": project,
+        "workspace_id": "workspace:" + project, "actor_id": context.actor_id,
+        "idempotency_scope": "project:operation", "idempotency_key": identifier("parallel"),
+        "trace_id": project, "span_id": project, "correlation_id": project, "causation_id": "",
+        "input": {"value": "frozen"}, "input_assets": [], "root_operation_id": root,
+        "parent_operation_id": root, "causation_operation_id": root}, context=context)["operation_id"]
+    register_saga_step(DATABASE_URL, GraphCommandContext(project, context.actor_id, project, project, ""),
+        saga, second, "parallel", 2, "")
+    transition_operation(DATABASE_URL, OperationTransitionCommand(second, project, 0, "ADMITTED", "READY",
+        context.actor_id, "parallel fixture admission", project, project, ""))
+    attempt = create_attempt(DATABASE_URL, operation_id=second, project_id=project, max_attempts=1,
+        trace_id=project, correlation_id=project)["attempt_id"]
+    queue_attempt(DATABASE_URL, attempt_id=attempt, project_id=project, trace_id=project, correlation_id=project)
+    lease = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt, project_id=project, worker_id="worker",
+        lease_seconds=30, trace_id=project, correlation_id=project)
+    worker = WorkerLeaseCommand(attempt, project, "worker", lease["fencing_token"], project, project)
+    start_attempt(DATABASE_URL, worker)
+    submit_attempt_result(DATABASE_URL, WorkerResultCommand(**worker.__dict__, expected_operation_version=2),
+        result={"error_code": "LOCAL_CONTRACT_DEFECT"}, outcome="final_failure")
+    corrections = [{"predecessor_id": identity, "target_version": "1.0.1",
+        "policy_evidence": {"contract": "parallel-interface-correction"},
+        "expected_failure_code": "LOCAL_CONTRACT_DEFECT"} for identity in (child, second)]
+    if invalidate_second:
+        corrections[1]["expected_failure_code"] = "UNPROVEN_FAILURE"
+        with pytest.raises(KernelError):
+            replace_failed_steps(DATABASE_URL, corrections=corrections, context=context)
+        with AuthorityUnitOfWork(DATABASE_URL) as u:
+            u.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=ANY(%s)", [[child, second]])
+            assert u.cursor.fetchone()[0] == 0
+            u.cursor.execute("SELECT status FROM authority_saga WHERE saga_id=%s", [saga])
+            assert u.cursor.fetchone()[0] == "MANUAL_INTERVENTION"
+    else:
+        first = replace_failed_steps(DATABASE_URL, corrections=corrections, context=context)
+        replay = replace_failed_steps(DATABASE_URL, corrections=corrections, context=context)
+        assert [r["operation_id"] for r in first] == [r["operation_id"] for r in replay]
+        assert all(r["replayed"] for r in replay)
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("SELECT status,result->>'error_code' FROM authority_attempt WHERE operation_id=ANY(%s)", [[child, second]])
+        assert u.cursor.fetchall() == [("FAILED_FINAL", "LOCAL_CONTRACT_DEFECT")] * 2
