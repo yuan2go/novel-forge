@@ -444,8 +444,8 @@ class ExternalEffectChapterModelPort:
             dict(business_payload.get("preparation_report") or {}).get("stage_context_profile_versions", {}).get("draft")
             or business_payload.get("draft_profile_version") or ""
         )
-        task_scoped = (task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
-                       or (stage == "reader_outcome" and request.definition_version == "1.3.0"))
+        task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.3.0")
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
         if task_scoped and existing_intent is not None:
@@ -607,7 +607,7 @@ class ExternalEffectChapterModelPort:
         )
         provider_admission_required = bool(
             getattr(self.adapter, "production_execution_gateway_backed", False)
-            and (route_provider != "scripted_provider_v2" or task_scoped)
+            and (route_provider != "scripted_provider_v2" or task_admission_scoped)
         )
         if self.agent_binding_required and binder is None and existing_intent is None:
             raise KernelError(

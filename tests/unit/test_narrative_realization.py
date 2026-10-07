@@ -19,6 +19,46 @@ from novel_forge.storage.narrative_realization_repositories import (
 )
 
 
+def test_semantic_realization_preserves_paraphrase_and_exact_prose_identity():
+    from novel_forge.modules.canon_graph.realization_comparison import comparison_input, validate_comparisons
+
+    planned = _contract().events[0].to_dict() if hasattr(_contract().events[0], "to_dict") else dict(_contract().events[0])
+    observed = {"planned_event_id": planned["event_id"], "grounded_claim_id": "claim:observed",
+                "observation_status": "OBSERVED", "evidence_quote": "She handed the map to the council.",
+                "observed_action": "A different description", "observed_cause_event_ids": ["same-chapter-perception"]}
+    text = "She handed the map to the council."
+    inputs = comparison_input(planned={"events": [planned]}, extraction={"realization_evidence": [observed]}, text=text)
+    result = {"realization_comparisons": [{"planned_event_id": planned["event_id"], "causality": "EQUIVALENT",
+        "required_state": "EQUIVALENT", "knowledge_boundary": "EQUIVALENT", "reason": "Intent is preserved.",
+        "evidence_quotes": [text]}]}
+    comparison = validate_comparisons(inputs=inputs, result=result, revision_asset_version_id="adopted:v1", text=text)[0]
+    comparison["support_operation_id"] = "support:exact"
+    observed["semantic_comparison"] = comparison
+    assert _realization_event_deviations(planned, observed) == ()
+    comparison["judgments"]["knowledge_boundary"] = "DEVIATED"
+    assert _realization_event_deviations(planned, observed) == ("KNOWLEDGE_BOUNDARY_DRIFT",)
+    comparison["judgments"]["knowledge_boundary"] = "UNCERTAIN"
+    assert _realization_event_deviations(planned, observed) == ("REALIZATION_COMPARISON_UNCERTAIN",)
+    planned["action"] = "Changed authorized intent"
+    with pytest.raises(KernelError, match="REALIZATION_COMPARISON_SOURCE_INVALID"):
+        _realization_event_deviations(planned, observed)
+
+
+def test_realization_comparison_rejects_unobserved_quote_and_future_event():
+    from novel_forge.modules.canon_graph.realization_comparison import comparison_input, validate_comparisons
+
+    with pytest.raises(KernelError, match="CANON_REALIZATION_EVIDENCE_INVALID"):
+        comparison_input(planned={"events": []}, extraction={"realization_evidence": [{
+            "planned_event_id": "future", "observation_status": "OBSERVED"}]}, text="Only accepted candidate")
+    inputs = {"events": [{"planned_event_id": "one", "planned_event_hash": _hash("p"), "observed_claim_id": "claim"}],
+              "evidence_quotes": ["Only accepted candidate"]}
+    with pytest.raises(KernelError, match="REALIZATION_COMPARISON_EVIDENCE_INVALID"):
+        validate_comparisons(inputs=inputs, result={"realization_comparisons": [{"planned_event_id": "one",
+            "causality": "EQUIVALENT", "required_state": "EQUIVALENT", "knowledge_boundary": "EQUIVALENT",
+            "reason": "Unsupported", "evidence_quotes": ["A fabricated improvement"]}]},
+            revision_asset_version_id="exact:v1", text="Only accepted candidate")
+
+
 def _hash(seed: str) -> str:
     return "sha256:" + (seed * 64)[:64]
 

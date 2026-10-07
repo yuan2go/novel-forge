@@ -988,6 +988,8 @@ def build_provider_task_view(
                      grounding=deepcopy(inputs.get("grounding")), claims=deepcopy(inputs.get("claims")))
         if inputs.get("support_kind_contract"):
             task["support_kind_contract"] = inputs["support_kind_contract"]
+        if inputs.get("realization_comparison") is not None:
+            task["realization_comparison"] = deepcopy(inputs["realization_comparison"])
         comparisons = [item["claim"]["actor_step_execution"] for item in inputs.get("claims") or []
                        if isinstance(item, Mapping) and isinstance(item.get("claim"), Mapping) and "actor_step_execution" in item["claim"]]
         if comparisons:

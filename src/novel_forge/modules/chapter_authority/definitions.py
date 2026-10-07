@@ -528,7 +528,7 @@ def _definition(
             **({"quality_reassessment_inputs": "exact-work-constraints.v1"} if model_effects_required and node is ChapterNode.REREVIEW and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"internal_quality_decision": "work-constraints.v2"} if model_effects_required and node is ChapterNode.QUALITY and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"quality_evidence_spans": "literal-source-spans.v1", "quality_applicability": "host-work-applicability.v1"} if model_effects_required and node in CHAPTER_QUALITY_PROVIDER_NODES and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
-            **({"canon_support_kinds": "canon-claim-kinds.v1"} if model_effects_required and node is ChapterNode.CANON_PROPOSAL and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
+            **({"canon_support_kinds": "canon-claim-kinds.v1", "realization_intent_comparison": "realization-intent-comparison.v1"} if model_effects_required and node is ChapterNode.CANON_PROPOSAL and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"known_receipt_revalidation": "chapter-known-receipt.v1", "knowledge_check_scope": "review-target-scope.v1"} if model_effects_required and node in {ChapterNode.REVIEW,ChapterNode.REREVIEW} and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"known_receipt_revalidation": "chapter-known-receipt.v1"} if node is ChapterNode.DRAFT and model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION == "3.9.2" else {}),
             **({"scene_core_projection": "scene-core-slots.v1", "scene_information_flow": "scene-information-flow.v1"} if model_effects_required and node is ChapterNode.DRAFT and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" and CHAPTER_DRAFT_DEFINITION_VERSION in {"3.9.1", "3.9.2"} else {}),
@@ -560,7 +560,7 @@ def chapter_node_definition_version(node: ChapterNode, model_effects_required: b
     if model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0":
         return {ChapterNode.DRAFT: CHAPTER_DRAFT_DEFINITION_VERSION,
             ChapterNode.REVIEW: "3.9.1", ChapterNode.REVISION: "3.9.1", ChapterNode.REREVIEW: "3.9.4",
-            ChapterNode.BEST_CANDIDATE: "3.9.1", ChapterNode.CANON: "3.9.1", ChapterNode.CANON_EXTRACTION: "3.9.8", ChapterNode.CANON_PROPOSAL: "3.9.1", ChapterNode.QUALITY: "3.9.1",
+            ChapterNode.BEST_CANDIDATE: "3.9.1", ChapterNode.CANON: "3.9.1", ChapterNode.CANON_EXTRACTION: "3.9.8", ChapterNode.CANON_PROPOSAL: "3.9.2", ChapterNode.QUALITY: "3.9.1",
             ChapterNode.PUBLISH_GATE: "3.9.1", ChapterNode.EXPORT: "3.9.1",
             **{node: "3.9.1" for node in CHAPTER_QUALITY_PROVIDER_NODES}}.get(node, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION)
     return chapter_definition_version(model_effects_required)

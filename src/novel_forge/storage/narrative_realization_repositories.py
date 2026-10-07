@@ -19,6 +19,22 @@ def _realization_event_deviations(
     planned: dict[str, Any], observed: dict[str, Any]
 ) -> tuple[str, ...]:
 
+    comparison = observed.get("semantic_comparison")
+    if comparison is not None:
+        from novel_forge.modules.canon_graph.realization_comparison import CONTRACT, DIMENSIONS, VERDICTS
+
+        if (not isinstance(comparison, dict) or comparison.get("contract_version") != CONTRACT
+            or comparison.get("planned_event_id") != planned.get("event_id")
+            or comparison.get("planned_event_hash") != realization_hash(planned)
+            or comparison.get("observed_claim_id") != observed.get("grounded_claim_id")
+            or not comparison.get("support_operation_id") or not comparison.get("reason")
+            or not comparison.get("evidence_locations")
+            or set(comparison.get("judgments") or {}) != set(DIMENSIONS)
+            or any(value not in VERDICTS for value in comparison["judgments"].values())):
+            raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Intent comparison must retain exact plan, claim and independent evidence")
+        return tuple(sorted({DIMENSIONS[key] if verdict == "DEVIATED" else "REALIZATION_COMPARISON_UNCERTAIN"
+                             for key, verdict in comparison["judgments"].items() if verdict != "EQUIVALENT"}))
+
     deviations: set[str] = set()
     if planned.get("feature_status") and any(
         field not in observed
@@ -538,6 +554,28 @@ class NarrativeRealizationRepository:
                 "NARRATIVE_REALIZATION_CONSUMPTION_INVALID",
                 "accepted Chapter does not bind a Frozen realization slice",
             )
+        comparisons = [item["semantic_comparison"] for item in realization_evidence if item.get("semantic_comparison")]
+        if comparisons:
+            self.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [chapter_outcome_asset_version_id])
+            outcome_row = self.cursor.fetchone()
+            outcome = dict(outcome_row[0]) if outcome_row else {}
+            grounding = dict(outcome.get("grounding") or {})
+            if any(item.get("candidate_asset_version_id") != outcome.get("accepted_draft_asset_version_id")
+                   or item.get("candidate_text_hash") != grounding.get("text_hash") for item in comparisons):
+                raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Comparison is not bound to the accepted prose version")
+            self.cursor.execute("""SELECT operation.operation_id,version.content FROM authority_operation operation
+                JOIN authority_operation_output_asset output USING(operation_id)
+                JOIN authority_asset_version version USING(asset_version_id)
+                JOIN authority_asset asset ON asset.asset_id=version.asset_id
+                WHERE operation.project_id=%s AND operation.operation_id=ANY(%s)
+                  AND operation.definition_name='chapter.canon.propose_changes'
+                  AND operation.definition_version='3.9.2' AND operation.status='SUCCEEDED'
+                  AND asset.asset_type='canon_change_proposal'""",
+                [project_id, list({item.get("support_operation_id") for item in comparisons})])
+            supported = {str(row[0]): dict(row[1]).get("grounding", {}).get("realization_comparisons", [])
+                         for row in self.cursor.fetchall()}
+            if any(item not in supported.get(item.get("support_operation_id"), []) for item in comparisons):
+                raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Comparison lacks its exact successful independent support output")
         planned = {
             str(row[2]): (bool(row[3]), str(row[4]), dict(row[5])) for row in rows
         }

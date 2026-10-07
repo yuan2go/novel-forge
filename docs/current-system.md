@@ -1501,8 +1501,8 @@ implicit capabilities.
 Intent comparison retains `REALIZATION_COMPARISON_UNCERTAIN` separately from a confirmed semantic deviation; both retain exact prose, plan and independent support evidence for future-only planning.
 
 Realization descriptions express planned intent. Literal equality of action, decision,
-state descriptions or disclosure prose cannot establish semantic coverage. Current
-legacy consumption retains that historical comparison contract. Its recorded deviations
+state descriptions or disclosure prose cannot establish semantic coverage. Canon Proposal `3.9.2` reuses independent Canon Support for typed intent comparison.
+Earlier consumption retains its historical literal comparison contract. Its recorded deviations
 remain immutable and require a future-only replan. A semantic comparison must bind
 the exact frozen planned event and adopted prose, with independent Canon Support
 evidence for causality, required end state and knowledge boundaries. New perceptions

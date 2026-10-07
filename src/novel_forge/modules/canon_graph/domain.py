@@ -5,6 +5,7 @@ import re
 from typing import Any, Iterable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from .realization_comparison import bind_comparisons
 from .world_reconciliation import bind_world_event_lineage, validate_observed_world_changes
 from novel_forge.modules.narrative_state.contracts import (
     atomize_character_knowledge_changes,
@@ -386,11 +387,7 @@ def build_canon_update(
             for item in extraction.get("arc_evidence") or ()
             if isinstance(item, dict)
         ],
-        "realization_evidence": [
-            dict(item)
-            for item in extraction.get("realization_evidence") or ()
-            if isinstance(item, dict)
-        ],
+        "realization_evidence": bind_comparisons(extraction),
         "rebuildable": True,
         "rollback_aware": True,
         "canon_contract_version": "canon-update-domain-v7",

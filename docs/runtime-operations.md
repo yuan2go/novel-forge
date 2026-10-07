@@ -38,6 +38,10 @@ A Book waiting for its durable Recap source must wake on followup operation prog
 a missing source is a technical dependency, not an author approval. Historical
 realization deviations and accepted prose remain immutable during future-only replan.
 Focused checks cover this wakeup, exact Reader lineage and future-only Recap requests.
+Canon Proposal `3.9.2` and Chapter Pack `2.32.0` bind independent intent comparison
+to exact planned-event hashes, adopted prose and successful support outputs. Migration
+the current migration-manifest head adds uncertainty as distinct evidence;
+it does not alter recorded deviations or accepted history.
 Reader Context projection and Provider View must both recognize the selected candidate
 asset type. A terminal contract failure is retained; recovery admits a versioned native
 followup successor with the original frozen assets, accepted frontier and Book budget.

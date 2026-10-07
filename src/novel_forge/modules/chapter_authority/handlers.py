@@ -2056,12 +2056,22 @@ class _CanonProposalHandler:
             extraction_asset_version_id=extraction.asset_version_id,
         )
         generated = None
+        comparison = None
         if extraction.content.get("grounding"):
             from novel_forge.modules.canon_graph.grounding import grounded_claims, validate_support_review
             revision = request.require_input("best_draft_candidate")
+            comparison = None
+            if request.definition_version == "3.9.2":
+                from novel_forge.modules.canon_graph.realization_comparison import comparison_input
+                context = request.require_input("context_bundle")
+                comparison = comparison_input(
+                    planned=(context.content.get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
+                    extraction=extraction.content, text=str(revision.content.get("text") or ""),
+                )
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
-                **({"support_kind_contract": "canon-claim-kinds.v1"} if request.definition_version == "3.9.1" else {}),
+                **({"support_kind_contract": "canon-claim-kinds.v1"} if request.definition_version in {"3.9.1", "3.9.2"} else {}),
+                **({"realization_comparison": comparison} if comparison is not None else {}),
                 "claims": grounded_claims(extraction.content),
             })
             if request.command.get("chapter_sampling"):
@@ -2072,7 +2082,11 @@ class _CanonProposalHandler:
             proposal["grounding"] = validate_support_review(
                 extraction=extraction.content, revision=revision.content,
                 revision_asset_version_id=revision.asset_version_id, result=generated.output,
+                realization_comparison=comparison,
             )
+        if comparison is not None:
+            for item in proposal["grounding"]["realization_comparisons"]:
+                item["support_operation_id"] = request.operation_id
         generation = int(request.command.get("canon_reextraction_generation") or 1)
         proposal["generation"] = generation
         proposal["supersedes_asset_version_id"] = str(

@@ -1278,6 +1278,10 @@ class PostgresChapterExecutionContractBinder:
                 "OBJECTIVE_EVENT", "OBJECTIVE_STATE", "KNOWLEDGE_ACQUISITION", "BELIEF", "SUSPICION",
                 "HEARSAY", "DIALOGUE_ASSERTION", "READER_DISCLOSURE", "NARRATIVE_OBSERVATION"]}
             schema_ref = "schema:chapter-provider-output:canon_support:v2"
+            if inputs.get("realization_comparison") is not None:
+                from novel_forge.modules.canon_graph.realization_comparison import comparison_schema
+                schema = comparison_schema(schema, inputs["realization_comparison"])
+                schema_ref = "schema:chapter-provider-output:canon_support:v3"
         if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
             from novel_forge.modules.canon_graph.source_spans import span_output_schema
             if inputs.get("transition_precondition_contract") == "accepted-cas.v1":
@@ -2997,6 +3001,12 @@ def default_chapter_fixture_response(
         return {
             "coverage": "COMPLETE",
             "no_change_supported": not inputs.get("claims"),
+            **({"realization_comparisons": [{"planned_event_id": item["planned_event_id"],
+                "causality": "EQUIVALENT", "required_state": "EQUIVALENT", "knowledge_boundary": "EQUIVALENT",
+                "reason": "Scripted contract evidence only; no literary or semantic proof.",
+                "evidence_quotes": [inputs["realization_comparison"]["evidence_quotes"][0]]}
+                for item in inputs["realization_comparison"]["events"]]}
+                if inputs.get("realization_comparison") is not None else {}),
             "claims": [
                 {
                     "claim_id": item["claim"]["grounded_claim_id"],
@@ -4215,7 +4225,13 @@ def _stage_semantic_contract(
             "observed_kind classifies semantic claim kind, never state_kind, impact_type or event purpose. "
             "Use the Schema taxonomy independently; SUPPORTED requires the observed kind to agree with claim_kind. "
             "Return UNSUPPORTED or UNCERTAIN when entailment is missing. Do not repair claims or supply "
-            "events from plans. Review NARRATIVE_OBSERVATION claims against prose as well; a plan is only the comparison target. Check extraction coverage; approve NO_CHANGE only when prose supports no "
+            "events from plans. Review NARRATIVE_OBSERVATION claims against prose as well; a plan is only the comparison target. "
+            "When realization_comparison is supplied, compare observed action, decision and consequence with planned intent; "
+            "semantic equivalence does not require identical wording. Assess causality, required end state and knowledge boundary "
+            "separately against final prose. Earlier same-chapter perceptions may legitimately support later actions; additional "
+            "causes are not inherently drift. State event IDs identify events, not entities. Do not certify an unsupported result "
+            "or forbidden disclosure; return DEVIATED or UNCERTAIN with exact supplied evidence quotes and reasons. "
+            "Check extraction coverage; approve NO_CHANGE only when prose supports no "
             "new canonical change. You provide evidence only; Book acceptance remains Authority."
         )
     if stage == "canon_extraction":

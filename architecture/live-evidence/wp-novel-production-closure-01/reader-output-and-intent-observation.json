@@ -1,0 +1,35 @@
+{
+  "schema_version": "wp-production-closure-observation.v1",
+  "observed_at": "2026-10-07T03:43:56.198483+00:00",
+  "book_id": "closure-original-book",
+  "accepted_chapters": 1,
+  "target_chapters": 12,
+  "runtime_sha": "b389c89fc3470095ee51349a973d1072de3faed6",
+  "reader_operation_id": "a73f643b-c7a3-455f-bd5c-b7e213b5ebcd",
+  "reader_definition_version": "1.3.0",
+  "reader_status": "SUCCEEDED",
+  "reader_effect_id": "e6198335-4d05-4432-9294-69dfa11c05a2",
+  "recap_operation_id": "1a07e3b1-6c3e-4a3d-a86f-01ade3d178d8",
+  "recap_status": "SUCCEEDED",
+  "retained_predecessors": [
+    "ce78ce09-50e7-4374-9dcf-b5aaf96f508f",
+    "b2e12b27-a04d-4e67-ae38-9a0fecaa7d30"
+  ],
+  "controlled_checks": {
+    "reader_contracts": "91 passed; reader-output-matrix-328.log",
+    "native_successor": "reader-output-preflight-327.log; zero dispatch",
+    "intent_and_persistence": "303 passed; 1302 subtests; realization-intent-pg-336.log",
+    "immutable_history_and_pack": "intent-pack-preflight-339.log",
+    "final_intent_boundaries": "20 passed; intent-final-boundary-341.log"
+  },
+  "retained_failures": {
+    "expanded_creation_matrix": "10 failed,72 passed,1 deselected; reader-successor-boundaries-319.log",
+    "partial_contract_clone": "intent-pack-preflight-337.log; immutable-definition conflict retained; real database has no corresponding conflict"
+  },
+  "real_continuous_run": "NOT_COMPLETE_1_OF_12",
+  "literary_quality": "NOT_PROVEN",
+  "served_model_identity": "UNKNOWN",
+  "requested_model": "codex-cli:gpt-6-sol:high",
+  "new_author_interventions": 0,
+  "deepseek_calls": 0
+}
