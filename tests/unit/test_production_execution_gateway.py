@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 import unittest
+import pytest
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -1638,3 +1639,44 @@ class ProductionExecutionGatewayTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@pytest.mark.parametrize("reconciliation", [False, True])
+@pytest.mark.parametrize("outcome,started,transport,usage,expected", [
+    ("TIMED_OUT", "2026-10-07T08:00:00Z", "LOCAL_CLI_REMOTE_INFERENCE", None, "unknown"),
+    ("CANCELLED", "2026-10-07T08:00:00Z", "LOCAL_CLI_REMOTE_INFERENCE", None, "unknown"),
+    ("ORPHANED", None, "LOCAL_CLI_REMOTE_INFERENCE", None, "unknown"),
+    ("TIMED_OUT", None, "LOCAL_CLI_REMOTE_INFERENCE", None, "retryable_failure"),
+    ("CANCELLED", None, "LOCAL_CLI_REMOTE_INFERENCE", None, "cancelled"),
+    ("TIMED_OUT", "2026-10-07T08:00:00Z", "REMOTE_PROVIDER_API", None, "retryable_failure"),
+    ("SUCCEEDED", "2026-10-07T08:00:00Z", "LOCAL_CLI_REMOTE_INFERENCE", "usage:1", "success"),
+])
+def test_chapter_gateway_local_termination_retains_unknown_on_original_receipt_query(
+    reconciliation, outcome, started, transport, usage, expected,
+):
+    from types import SimpleNamespace
+    from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+    from novel_forge.modules.production_execution.contracts import ExecutionOutcome, ExecutionRuntimeClass
+
+    adapter = object.__new__(ProductionExecutionGatewayExternalEffectAdapter)
+    handle = SimpleNamespace(transport=ExecutionRuntimeClass(transport), backend_execution_id="original-execution",
+        provider_request_id=None, external_request_id=None)
+    result = SimpleNamespace(outcome=ExecutionOutcome(outcome), started_at=started, usage_receipt_ref=usage)
+    gateway = MagicMock()
+    gateway.submit.return_value = handle
+    gateway.reconcile.return_value = result
+    gateway.recover_existing_execution.return_value = result
+    session = SimpleNamespace(gateway=gateway, evidence_store=SimpleNamespace(find_record=lambda _: SimpleNamespace(
+        handle=handle, raw_evidence={"submission_phase": "PROCESS_RESULT_RECORDED"})))
+    adapter._binding_and_session = lambda *args: (SimpleNamespace(request=SimpleNamespace(execution_id="original-execution")), session)
+    adapter._evidence = lambda **_: {"original_receipt": "receipt:1"}
+    adapter._record_recovery_authorization = lambda _: None
+    authorization = SimpleNamespace(action=ExecutionRecoveryAction.QUERY, recovery_fencing_token=2, recovery_worker_id="worker:reconcile") if reconciliation else None
+    observed = adapter._invoke(stable_idempotency_key="original-key", capability="chapter", request_payload={
+        "_production_execution": {}}, reconciliation=reconciliation, recovery_authorization=authorization)
+    translated = {"unknown": "ambiguous", "retryable_failure": "not_found"}.get(expected, expected) if reconciliation else expected
+    assert observed.outcome == translated
+    assert observed.evidence["original_receipt"] == "receipt:1"
+    assert observed.evidence.get("external_state_unknown", False) == (expected == "unknown")
+    assert gateway.submit.call_count == (0 if reconciliation else 1)
+    assert gateway.recover_existing_execution.call_count == (1 if reconciliation else 0)

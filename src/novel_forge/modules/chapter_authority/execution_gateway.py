@@ -49,6 +49,7 @@ from novel_forge.modules.production_execution import (
     ValidationPolicy,
     default_capability_registry,
 )
+from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
 from novel_forge.storage.database_runtime import get_database_runtime
 from novel_forge.modules.production_execution.postgres import (
     PostgresExecutionRecoveryAuthorizationStore,
@@ -5426,6 +5427,12 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             handle=handle,
             result=result,
         )
+        if local_cli_remote_outcome_unknown(transport=handle.transport, outcome=result.outcome,
+                                            started_at=result.started_at,
+                                            usage_receipt_ref=result.usage_receipt_ref):
+            outcome = "ambiguous" if reconciliation else "unknown"
+            evidence["external_state_unknown"] = True
+            evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"
         return ProviderResult(
             outcome,
             handle.backend_execution_id,

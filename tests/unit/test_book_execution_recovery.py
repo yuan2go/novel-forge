@@ -81,7 +81,8 @@ def source(monkeypatch):
     }
     error = {
         "production_execution": {
-            "execution_result": {"outcome": "TIMED_OUT", "process_receipt_ref": "receipt"},
+            "execution_result": {"outcome": "TIMED_OUT", "process_receipt_ref": "receipt", "started_at": None},
+            "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
             "process_evidence": {"failure_code": "PROCESS_TIMEOUT"},
         }
     }
@@ -118,10 +119,20 @@ def source(monkeypatch):
         "missing-attempt",
         "missing-receipt",
         "foreign-stage",
+        "local-remote-unknown",
+        "missing-start-proof",
+        "missing-transport-proof",
     ],
 )
 def test_only_known_preprose_member_timeout_is_eligible(source, monkeypatch, boundary):
     root, book, request, effect, candidate, error = source
+    if boundary == "missing-start-proof":
+        error["production_execution"]["execution_result"].pop("started_at")
+    if boundary == "missing-transport-proof":
+        error["production_execution"].pop("execution_handle")
+    if boundary == "local-remote-unknown":
+        error["production_execution"]["execution_handle"] = {"transport": "LOCAL_CLI_REMOTE_INFERENCE"}
+        error["production_execution"]["execution_result"]["started_at"] = "2026-10-07T08:00:00Z"
     if boundary == "unknown":
         effect[1] = "UNKNOWN"
     if boundary == "success":

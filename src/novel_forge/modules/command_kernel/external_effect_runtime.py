@@ -468,6 +468,8 @@ def prepare_effect_dispatch(
         _require_project(effect, context.project_id)
         if effect["effect_type"] in MODEL_DISPATCH_EFFECT_TYPES:
             require_dispatch_enabled(uow.cursor, context.project_id)
+            from .budget_runtime import require_known_cli_lineage
+            require_known_cli_lineage(uow.cursor, project_id=context.project_id, operation_id=context.operation_id)
         require_effect_retry_ready(uow.cursor, effect_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
         reconciliation_required = bool(result.get("reconciliation_required"))

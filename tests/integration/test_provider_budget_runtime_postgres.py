@@ -613,7 +613,7 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                             },
                         })
 
-                context, effect = self._effect("retryable_failure")
+                context, effect = self._effect_for_project(identifier("cli-book-project"), scenario="retryable_failure", book_id="original-book")
                 reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
                     operation_id=context.operation_id, external_effect_id=effect,
                     project_id=context.project_id, stable_idempotency_key=f"budget:{effect}",
@@ -632,6 +632,39 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                         continue
                     self.assertEqual(rows[0]["external_effect_id"], effect)
                     self.assertEqual(rows[0]["state"], "RECONCILIATION_REQUIRED")
+                    same = unresolved_cli_outcomes(cursor, context.project_id, root_operation_id=context.operation_id)
+                    self.assertEqual(same, rows)
+                    self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id, book_id="original-book"), rows)
+                    self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id, book_id="another-book"), [])
+                    from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+                    successor, _ = self._effect_for_project(context.project_id, book_id="original-book")
+                    with self.assertRaises(KernelError) as no_root_reset:
+                        require_known_cli_lineage(cursor, project_id=context.project_id, operation_id=successor.operation_id)
+                    self.assertEqual(no_root_reset.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+                    unrelated, _ = self._effect_for_project(context.project_id, book_id="another-book")
+                    require_known_cli_lineage(cursor, project_id=context.project_id, operation_id=unrelated.operation_id)
+                    self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id, root_operation_id="unrelated-root"), [])
+                    historical = cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s", [effect]).fetchone()[0]
+                    self.assertEqual(historical, "FAILED_RETRYABLE")
+                    from novel_forge.modules.command_kernel.budget_runtime import assert_provider_execution_authorized
+                    with self.assertRaises(KernelError) as no_resend:
+                        assert_provider_execution_authorized(DATABASE_URL, operation_id=context.operation_id,
+                            external_effect_id=effect, project_id=context.project_id,
+                            budget_reservation_id=rows[0].get("reservation_id", ""))
+                    self.assertEqual(no_resend.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+                    from novel_forge.modules.command_kernel.external_effect_runtime import prepare_effect_dispatch
+                    count_before = cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect]).fetchone()[0]
+                    with self.assertRaises(KernelError) as no_generation:
+                        prepare_effect_dispatch(DATABASE_URL, context, effect_id=effect)
+                    self.assertEqual(no_generation.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+                    self.assertEqual(cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect]).fetchone()[0], count_before)
+                    cursor.execute("""INSERT INTO authority_external_effect_dispatch(
+                        dispatch_id,external_effect_id,generation,status,provider,payload_hash,evidence)
+                        SELECT %s,external_effect_id,generation+1,'FAILED_RETRYABLE',provider,payload_hash,
+                        '{"request_sent":false}'::jsonb FROM authority_external_effect_dispatch
+                        WHERE external_effect_id=%s ORDER BY generation DESC LIMIT 1""",
+                        [identifier("legacy-unsent-generation"), effect])
+                    self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id), rows)
                     with self.assertRaises(KernelError) as blocked:
                         require_known_cli_outcomes(cursor, context.project_id)
                     self.assertEqual(blocked.exception.code, "SOURCE_CLI_OUTCOME_RECONCILIATION_REQUIRED")
@@ -642,7 +675,7 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         return self._effect_for_project(project_id, scenario=scenario)
 
     def _effect_for_project(
-        self, project_id: str, *, scenario: str = "success"
+        self, project_id: str, *, scenario: str = "success", book_id: str = ""
     ) -> tuple[EffectCommandContext, str]:
         operation_id = identifier("budget-operation")
         definition = identifier("budget-definition")
@@ -654,6 +687,7 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 definition_name=definition,
                 project_id=project_id,
                 status="EXECUTING",
+                command_payload={"book_id": book_id} if book_id else {},
             )
         context = EffectCommandContext(
             operation_id=operation_id,

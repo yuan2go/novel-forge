@@ -1,0 +1,104 @@
+{
+  "schema_version": "wp-novel-production-closure-01.focused-evidence.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tested_parent_sha": "4508fe0d97acb90b8eb19216dfdb8a734079d173",
+  "implementation_tree_sha": "sha256:ff74b9a26b47f60747630d250451d4c2f25a04ffa7cde7f68da6f6c1a5d95f9a",
+  "evidence_state": "EXECUTABLE",
+  "owners": [
+    "ProductionExecution Gateway",
+    "existing Command Kernel",
+    "Book Query / Supervisor / Creation Runtime"
+  ],
+  "migration_head": "0167",
+  "migration_change": "NONE",
+  "frozen_tasks_and_terminal_history": "PRESERVED",
+  "constraints": {
+    "local_timeout_is_not_remote_failure": "CURRENT_RUNTIME_FACT",
+    "new_sends_require_known_original_outcomes": "CURRENT_PROVEN_INVARIANT",
+    "member_money_token_call_cumulative_caps": "NOT_ADDED",
+    "paid_authorization": "UNCHANGED"
+  },
+  "changes": [
+    "Shared Chapter/Source local remote timeout/cancellation/orphan uncertainty classification for send and original receipt query",
+    "Original frozen Book guard across Chapter/contract successors, and Operation/Root fallback before dispatch generation and send; older uncertainty survives later unsent records; unrelated Books remain independent",
+    "Legacy pre-prose compatibility requires explicit transport and proof the process never started",
+    "Book and author status project original receipt identities and RUNTIME_OWNER reconciliation, never author approval",
+    "Pending Planning query moved from Supervisor into existing read-only Book Query"
+  ],
+  "checks": [
+    {
+      "check": "focused source/gateway/legacy recovery/supervisor and boundaries",
+      "tests": 151,
+      "subtests": 15,
+      "result": "PASS",
+      "private_evidence": "focused-545.log"
+    },
+    {
+      "check": "PostgreSQL budget, legacy receipt, pre-send/generation guard, cancellation, UNKNOWN and runtime inspection",
+      "tests": 47,
+      "subtests": 28,
+      "result": "PASS",
+      "private_evidence": "controlled-cli-544.log"
+    },
+    {
+      "check": "native original Book, Formation status and original process receipt readback",
+      "result": "PASS_NO_SEND",
+      "private_evidence": "original-unknown-native-check-545.log",
+      "scope": "live retained original ledger; no Model invocation, Book/effects/dispatch/budgets unchanged"
+    },
+    {
+      "check": "native controlled two-Chapter author expression edit/review/adoption/exact selected FORMAL export on current affected contracts",
+      "tests": 1,
+      "duration_seconds": 179.56,
+      "result": "PASS",
+      "provider": "CONTROLLED_NOT_REAL_PROVIDER",
+      "private_evidence": "controlled-cli-546.log"
+    },
+    {
+      "check": "canonical documentation and comment/docstring ratchet",
+      "result": "PASS",
+      "private_evidence": "docs-547.json"
+    }
+  ],
+  "retained_failed_checks": [
+    {
+      "private_evidence": "unit-533.log",
+      "reason": "test recovery authorization fixture omitted fencing metadata; repaired fixture"
+    },
+    {
+      "private_evidence": "boundaries-538.log",
+      "reason": "prior same-package Supervisor SQL ownership defect; moved to existing Query"
+    },
+    {
+      "private_evidence": "docs-538.json",
+      "reason": "projection writer mistakenly substituted full tree inventory; restored checked projection envelope"
+    }
+  ],
+  "real_blocker": {
+    "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "root_operation_id": "675bbe59-803c-4253-b4cc-f262c42d3edf",
+    "canon_operation_id": "8c953a04-30e7-4dd6-be2b-7e4de8df062b",
+    "accepted_chapters": 1,
+    "target_chapters": 12,
+    "effects": [
+      "d9c82f83-e779-4b00-a9b0-f3868d00ff10",
+      "b8a63e74-70ee-415b-a67b-c165afd1ad1f",
+      "2232e1cd-8640-4d56-b2cf-c481d1909ba2",
+      "975e3dc0-9d9f-4716-a5cc-e729333f91d5"
+    ],
+    "old_effect_status": "FAILED_RETRYABLE retained",
+    "derived_state": "RECONCILIATION_REQUIRED",
+    "provider_request_id": null,
+    "local_termination_only": true,
+    "original_query": "No recoverable result in either original process receipt",
+    "native_owner": "RUNTIME_OWNER / Kernel original receipt reconciliation",
+    "new_dispatches": "STOPPED",
+    "necessary_external_input": "Original upstream completion/nonexecution/cancellation proof with exact request identity; ordinary author approval cannot substitute",
+    "legacy_terminal_owner_reconciliation": "NOT_RESOLVED; no terminal proof supplied or fabricated",
+    "historical_memo_operation_id": "13d2734a-750f-4f6d-9349-ce316b40d753",
+    "current_canon_unknowns": 2,
+    "historical_memo_unknowns": 2
+  },
+  "overall": "BLOCKED_NOT_COMPLETE",
+  "literary_quality": "NOT_PROVEN"
+}

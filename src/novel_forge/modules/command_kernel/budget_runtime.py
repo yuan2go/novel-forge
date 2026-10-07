@@ -1372,6 +1372,8 @@ def assert_provider_execution_authorized(
         from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_dispatch
         from novel_forge.modules.command_kernel.creative_budget_runtime import assert_creative_budget_dispatch
 
+        require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=operation_id)
+
         assert_creative_budget_dispatch(uow.cursor, project_id=project_id,
                                        external_effect_id=external_effect_id,
                                        reservation_id=budget_reservation_id)
@@ -4171,15 +4173,30 @@ def provider_usage_accounted_sql() -> str:
         OR (status='RELEASED' AND (actual_tokens>0 OR {_STARTED_CODEX_DISPATCH_SQL})))"""
 
 
-def unresolved_cli_outcomes(cursor: Any, project_id: str) -> list[dict[str, Any]]:
+def require_known_cli_lineage(cursor: Any, *, project_id: str, operation_id: str) -> None:
+    cursor.execute("""SELECT COALESCE(NULLIF(root_operation_id,''),operation_id),
+        COALESCE(NULLIF(command_payload->>'book_id',''),NULLIF(command_payload#>>'{payload,book_id}',''),'')
+        FROM authority_operation WHERE operation_id=%s AND project_id=%s""", [operation_id, project_id])
+    lineage = cursor.fetchone()
+    if lineage and unresolved_cli_outcomes(cursor, project_id,
+        root_operation_id="" if lineage[1] else str(lineage[0]), book_id=str(lineage[1])):
+        raise KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED",
+                          "Reconcile original local-CLI receipts before another send in this execution lineage")
+
+
+def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: str = "", book_id: str = "") -> list[dict[str, Any]]:
     cursor.execute(
         """SELECT e.external_effect_id,e.operation_id,e.status,
             d.evidence #>> '{production_execution,execution_result,process_receipt_ref}'
         FROM authority_budget_reservation b
         JOIN authority_external_effect e USING(external_effect_id)
-        JOIN LATERAL (SELECT evidence FROM authority_external_effect_dispatch
-            WHERE external_effect_id=e.external_effect_id ORDER BY generation DESC LIMIT 1) d ON true
+        JOIN authority_operation o ON o.operation_id=e.operation_id
+        JOIN authority_external_effect_dispatch d ON d.external_effect_id=e.external_effect_id
         WHERE b.project_id=%s AND e.status<>'SUCCEEDED'
+          AND (%s='' OR o.operation_id=%s OR o.root_operation_id=%s)
+          AND (%s='' OR COALESCE(NULLIF(e.request_payload#>>'{_production_execution,book_id}',''),
+            NULLIF(o.command_payload->>'book_id',''),NULLIF(o.command_payload#>>'{payload,book_id}',''),
+            NULLIF(b.evidence->>'work_id',''))=%s)
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
           AND d.evidence #>> '{production_execution,execution_result,outcome}' IN ('TIMED_OUT','CANCELLED','ORPHANED')
           AND (d.evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
@@ -4187,8 +4204,8 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str) -> list[dict[str, Any]
           AND d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}' IS NULL
           AND NOT EXISTS(SELECT 1 FROM authority_effect_manual_resolution m
               WHERE m.external_effect_id=e.external_effect_id AND m.project_id=b.project_id)
-        ORDER BY e.created_at,e.external_effect_id LIMIT 20""",
-        [project_id],
+        ORDER BY e.created_at,e.external_effect_id,d.generation LIMIT 20""",
+        [project_id, root_operation_id, root_operation_id, root_operation_id, book_id, book_id],
     )
     return [dict(zip(("external_effect_id", "operation_id", "effect_status", "process_receipt_ref"), row, strict=True))
         | {"state": "RECONCILIATION_REQUIRED", "usage": "UNKNOWN"} for row in cursor.fetchall()]

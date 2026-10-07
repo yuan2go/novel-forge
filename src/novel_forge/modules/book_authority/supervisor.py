@@ -138,6 +138,9 @@ class PostgresBookProductionSupervisor:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
         semantics = book_production_state_semantics(before)
+        if (semantics.state_class is not BookProductionStateClass.TERMINAL
+                and self.query.unresolved_chapter_effects(book_run_id=book_run_id)):
+            return self._result(book_run_id, before, SupervisorAction.WAIT_EXTERNAL_RECONCILIATION)
         group_run = self._active_group_run(book)
         if (
             group_run is not None
@@ -703,7 +706,6 @@ class PostgresBookProductionSupervisor:
             )
 
     def _resume_pending_plan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
-        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
         from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
 
         chapter = int(book["accepted_through_chapter"]) + 1
@@ -714,17 +716,9 @@ class PostgresBookProductionSupervisor:
         else:
             target = BookProductionState.CHAPTER_PLAN_REQUIRED
         if target is None or active is None:
-            with AuthorityUnitOfWork(self.authority.database_url) as uow:
-                uow.cursor.execute("""SELECT generation.status,state.lifecycle,state.qualification,state.approval,
-                    version.content,report.report FROM authority_story_planning_generation generation
-                    JOIN authority_story_design_version_state state ON state.asset_version_id=generation.candidate_asset_version_id
-                    JOIN authority_asset_version version ON version.asset_version_id=state.asset_version_id
-                    LEFT JOIN LATERAL (SELECT report FROM authority_story_planning_validation_report r
-                        WHERE r.candidate_asset_version_id=state.asset_version_id ORDER BY r.created_at DESC LIMIT 1) report ON TRUE
-                    WHERE generation.project_id=%s AND generation.book_id=%s AND generation.logical_key=%s
-                    ORDER BY generation.created_at DESC LIMIT 1""",
-                    [book["project_id"], book["book_id"], f"chapter:{chapter}" if group else f"chapter-group:containing:{chapter}"])
-                pending = uow.cursor.fetchone()
+            pending = self.query.pending_plan_evidence(project_id=str(book["project_id"]),
+                book_id=str(book["book_id"]),
+                logical_key=f"chapter:{chapter}" if group else f"chapter-group:containing:{chapter}")
             if pending and pending[0] == "REJECTED":
                 if (pending[1:4] != ("MATERIALIZED", "PENDING", "NOT_REQUESTED")
                         or not uses_work_requirements(pending[4])

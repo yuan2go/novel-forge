@@ -23,6 +23,7 @@ from novel_forge.modules.story_planning_runtime import PlanningGenerationStatus
 
 def test_activated_chapter_projection_is_materialized_by_owner_once_and_resumes():
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor.principal = object()
     result = {"asset_version_id": "execution:exact", "content_hash": "hash"}
     projections = []
@@ -53,6 +54,7 @@ def test_activated_chapter_projection_is_materialized_by_owner_once_and_resumes(
 @pytest.mark.parametrize("conflicting", [False, True])
 def test_projection_recovery_does_not_replace_frozen_request_or_ambiguous_projection(conflicting):
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     calls = []
 
     def query(*args, **kwargs):
@@ -200,6 +202,7 @@ def test_supervisor_reports_planning_generation_operation_identity(
         "target_chapter_count": 3,
     }
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     transitions: list[BookProductionState] = []
     supervisor.authority = SimpleNamespace(
         require=lambda _book_run_id: dict(book),
@@ -260,6 +263,7 @@ def test_checkpoint_pending_records_accepted_checkpoint_without_dispatching() ->
         "accepted_through_chapter": 4,
     }
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor._active_group_run = lambda _book: None
     supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
     supervisor._checkpoint_if_needed = lambda _book: {
@@ -331,6 +335,7 @@ def test_replan_chapter_context_uses_only_scheduled_nondormant_arcs() -> None:
 
 def test_chapter_plan_inputs_bind_matrix_row_to_active_chapter_group() -> None:
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     snapshot = {
         "book_plan_version": "book-plan:v1",
         "character_state_version": "character-state:v1",
@@ -347,6 +352,7 @@ def test_chapter_plan_inputs_bind_matrix_row_to_active_chapter_group() -> None:
     }
     looked_up_roles: list[str] = []
     supervisor.query = SimpleNamespace(
+        unresolved_chapter_effects=lambda **_: [],
         require_input_snapshot=lambda _snapshot_id: dict(snapshot)
     )
     supervisor._active_plan = lambda *_args: {"asset_version_id": "chapter-group:v1"}
@@ -374,6 +380,7 @@ def test_chapter_plan_inputs_bind_matrix_row_to_active_chapter_group() -> None:
 
 def test_supervisor_keeps_draft_budget_separate_from_quality_evidence_budget() -> None:
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor.context_token_budget = 16_000
     supervisor.quality_context_token_budget = 28_000
     supervisor.draft_context_profile_version = "draft-context-profile-v2"
@@ -485,6 +492,7 @@ def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> Non
         }
 
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor._active_group_run = lambda _book: None
     supervisor.authority = SimpleNamespace(require=require)
     supervisor.replan = SimpleNamespace(
@@ -496,6 +504,7 @@ def test_supervisor_starts_replan_once_and_waits_for_authority_approval() -> Non
     )
     supervisor._checkpoint_if_needed = lambda _book: None
     supervisor.query = SimpleNamespace(
+        unresolved_chapter_effects=lambda **_: [],
         require_replan_source=lambda **_values: {
             "recap_asset_version_id": "recap:v1",
             "replan_request_asset_version_id": "request:v1",
@@ -534,6 +543,7 @@ def test_supervisor_activates_formally_approved_replan_and_resumes() -> None:
         return {"replan_id": replan_id, "status": "RESUMED"}
 
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor.authority = SimpleNamespace(require=require)
     supervisor.replan = SimpleNamespace(
         latest_for_book=lambda _book_run_id: {
@@ -584,6 +594,7 @@ def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> N
         ),
     )
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor._active_group_run = lambda _book: None
     supervisor.authority = SimpleNamespace(require=lambda _book_run_id: dict(book))
     supervisor.replan = replan
@@ -597,6 +608,7 @@ def test_supervisor_finishes_replan_resume_after_snapshot_binding_restart() -> N
 
 def test_edition_planning_consumes_its_exact_accepted_frontier():
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     snapshot = {key + "_version": key + ":snapshot" for key in ("book_plan", "character_state", "foreshadowing_state", "quality_trend", "reward_ledger", "promise_ledger")}
     supervisor.query = SimpleNamespace(require_input_snapshot=lambda _: snapshot)
     supervisor._active_plan = lambda *_: {"asset_version_id": "group:edition"}
@@ -613,8 +625,10 @@ def test_edition_planning_consumes_its_exact_accepted_frontier():
 
 def test_reader_planning_uses_effective_run_history_before_initial_profile():
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     calls = []
     supervisor.query = SimpleNamespace(
+        unresolved_chapter_effects=lambda **_: [],
         previous_reader_state=lambda **kwargs: calls.append(kwargs) or "reader-prefix:exact",
         latest_eligible_role_asset=lambda **kwargs: (_ for _ in ()).throw(AssertionError("Another edition's transition must not be queried")),
     )
@@ -629,6 +643,7 @@ def test_reader_planning_uses_effective_run_history_before_initial_profile():
 
 def test_explicit_profile_context_survives_process_defaults_and_new_profile_selection() -> None:
     supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor.context_token_budget = 6000
     supervisor.quality_context_token_budget = 7000
     supervisor.draft_context_profile_version = "draft-context-profile-v2"
@@ -654,3 +669,16 @@ def test_explicit_profile_context_survives_process_defaults_and_new_profile_sele
     assert new_report["chapter_context_policy"]["production_profile_version"] == "profile:new"
     assert new_report["stage_context_profile_versions"]["draft"] == "draft-context-profile-v3"
     assert new_report["stage_context_token_budgets"]["quality"] == 28000
+
+
+def test_unknown_chapter_outcome_waits_before_group_reconciliation_or_author_decision():
+    supervisor = object.__new__(PostgresBookProductionSupervisor)
+    supervisor.authority = SimpleNamespace(require=lambda _: {
+        "state": "CHAPTER_RUNNING", "book_run_id": "book-run:1"})
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [
+        {"external_effect_id": "original-effect", "effect_status": "FAILED_RETRYABLE"}])
+    supervisor._active_group_run = lambda _: pytest.fail("Unknown receipt must prevent coordination")
+    supervisor._result = lambda run, before, action: SimpleNamespace(action=action, state=before)
+    tick = supervisor.tick("book-run:1")
+    assert tick.action is SupervisorAction.WAIT_EXTERNAL_RECONCILIATION
+    assert tick.state == "CHAPTER_RUNNING"

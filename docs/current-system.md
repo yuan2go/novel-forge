@@ -1811,6 +1811,9 @@ and a candidate score are not evidence of real reader response or external-model
 
 ## Persistence, effects and recovery
 
+Book supervision reads pending planning evidence through the existing Book Query;
+coordination does not own SQL or a business transaction.
+
 PostgreSQL owns production business and execution facts. `AuthorityUnitOfWork` rolls back
 unless explicitly committed, and composed owner mutations use the declared transaction
 or savepoint boundary. The migration registry and migration manifest jointly determine
@@ -1823,6 +1826,15 @@ Attempt leases and fencing reject stale workers. Safe database retries are restr
 classified SQL states, while an unknown commit result requires evidence-based
 reconciliation. Recovery appends attempt, receipt, checkpoint or replacement lineage and
 does not rewrite terminal history.
+Local Codex timeout or cancellation after process start without a usage receipt is
+an unknown remote outcome, including during receipt query. Chapter and Source share
+this classification. Historical retryable rows with the same durable evidence remain
+unchanged but block dispatch-generation creation and new sends in their original
+Operation/Root lineage and the same frozen Book across Chapter or contract successors.
+Unrelated Books keep their own execution responsibility. Detection retains uncertainty in older dispatch generations
+even when a later unsent record exists. Book progress
+projects reconciliation ownership and original receipt identities; it must not turn
+this uncertainty into author approval or a fresh execution successor.
 
 Book acceptance is the decisive narrative mutation: one transaction advances the cursor
 and binds ChapterOutcome, accepted Canon/Narrative State inputs, long-form projections,

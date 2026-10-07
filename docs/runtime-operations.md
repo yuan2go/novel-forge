@@ -45,6 +45,16 @@ Reader Context projection and Provider View must both recognize the selected can
 asset type. A terminal contract failure is retained; recovery admits a versioned native
 followup successor with the original frozen assets, accepted frontier and Book budget.
 Unknown Effects require reconciliation before any such successor admission.
+A local Codex process timeout is not proof of remote cancellation. Query the original
+receipt without resubmitting; keep unknown usage occupied. Legacy FAILED_RETRYABLE
+rows with started local-CLI timeout/cancellation evidence and no usage remain pending
+reconciliation even if membership settlement was recorded. Do not use the historical
+pre-prose timeout successor to bypass that evidence; that compatibility path now
+requires explicit local transport and proof the process never started. If no upstream request identity
+or terminal receipt is available, preserve the checkpoint and report the external
+blocker; do not relabel it NOT_FOUND or ask for ordinary author approval.
+Focused checks cover Chapter/Source adaptation, legacy PostgreSQL receipt detection,
+pre-send lineage protection, Book progress, cancellation and original identity replay.
 For a continuing Canon capacity rejection, retain the exact routing decisions and
 verify no Effect or reservation exists. Recover only through the native contract
 successor after a corrected request is measured against the unchanged single-call

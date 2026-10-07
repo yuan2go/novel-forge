@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any, Iterable, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
 from novel_forge.modules.book_authority.production import (
     actionable_book_production_states,
     book_production_state_semantics,
@@ -81,6 +82,7 @@ class BookProgressProjection:
     authoritative_repair_next_chapter: int | None = None
     authoritative_repair_target_chapter: int | None = None
     authoritative_repair_last_error: dict[str, Any] | None = None
+    unresolved_external_effects: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -401,6 +403,24 @@ class PostgresBookProductionQuery:
             for row in rows
         )
 
+    def pending_plan_evidence(self, *, project_id: str, book_id: str, logical_key: str) -> tuple[Any, ...] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT generation.status,state.lifecycle,state.qualification,state.approval,
+                version.content,report.report FROM authority_story_planning_generation generation
+                JOIN authority_story_design_version_state state ON state.asset_version_id=generation.candidate_asset_version_id
+                JOIN authority_asset_version version ON version.asset_version_id=state.asset_version_id
+                LEFT JOIN LATERAL (SELECT report FROM authority_story_planning_validation_report r
+                    WHERE r.candidate_asset_version_id=state.asset_version_id ORDER BY r.created_at DESC LIMIT 1) report ON TRUE
+                WHERE generation.project_id=%s AND generation.book_id=%s AND generation.logical_key=%s
+                ORDER BY generation.created_at DESC LIMIT 1""", [project_id, book_id, logical_key])
+            return uow.cursor.fetchone()
+
+    def unresolved_chapter_effects(self, *, book_run_id: str) -> list[dict[str, Any]]:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT project_id,book_id FROM authority_book_production WHERE book_run_id=%s", [book_run_id])
+            row = uow.cursor.fetchone()
+            return unresolved_cli_outcomes(uow.cursor, str(row[0]), book_id=str(row[1])) if row else []
+
     def progress(self, *, book_run_id: str) -> BookProgressProjection:
 
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -413,7 +433,7 @@ class PostgresBookProductionQuery:
                        book.paused_reason, book.failure_reason, book.updated_at,
                        COALESCE(request.chapter_root_operation_id, ''),
                        COALESCE(request.status_reference, ''), request.updated_at,
-                       COALESCE(operation.status, '')
+                       COALESCE(operation.status, ''),book.book_id
                 FROM authority_book_production AS book
                 LEFT JOIN authority_book_chapter_request AS request
                   ON request.chapter_request_id=book.active_chapter_request_id
@@ -437,6 +457,7 @@ class PostgresBookProductionQuery:
                 [book_run_id],
             )
             last_narrative_progress_at = uow.cursor.fetchone()[0]
+            unresolved = unresolved_cli_outcomes(uow.cursor, str(book[1]), book_id=str(book[14]))
             next_chapter = int(book[3]) + 1
             uow.cursor.execute(
                 """
@@ -674,12 +695,12 @@ class PostgresBookProductionQuery:
             accepted_through_chapter=int(book[3]),
             target_chapter_count=int(book[4]),
             last_narrative_progress_at=last_narrative_progress_at,
-            next_expected_transition=next_expected_transition,
-            blocking_class=semantics.blocking_class,
-            blocking_reason=blocking_reason,
-            blocking_operation_id=blocking_operation_id,
+            next_expected_transition="RECONCILE_ORIGINAL_EXTERNAL_EFFECTS" if unresolved else next_expected_transition,
+            blocking_class="RECONCILIATION_REQUIRED" if unresolved else semantics.blocking_class,
+            blocking_reason="Local termination does not confirm the remote outcome; reconcile original receipts" if unresolved else blocking_reason,
+            blocking_operation_id=str(unresolved[0]["operation_id"]) if unresolved else blocking_operation_id,
             blocking_since=blocking_since,
-            wake_condition=semantics.wake_condition,
+            wake_condition="KERNEL_EXTERNAL_EFFECT_RECONCILIATION" if unresolved else semantics.wake_condition,
             retry_count=retry_count,
             max_attempts=max_attempts,
             next_retry_at=next_retry_at,
@@ -691,6 +712,7 @@ class PostgresBookProductionQuery:
             next_chapter_request_id=next_request_id,
             next_chapter_dispatch_state=next_dispatch_state,
             pending_sidecar_backlog=sidecar_backlog,
+            unresolved_external_effects=tuple(unresolved),
             authoritative_repair_status=(
                 str(projection_repair[0])
                 if projection_repair is not None

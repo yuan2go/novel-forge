@@ -47,6 +47,8 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             return "COMPLETED"
         if book["state"] in {"ABORTED", "CANCELLED"}:
             return "BOOK_PRODUCTION_TERMINAL_FAILURE" if book.get("failure_classification") == "CHAPTER_TERMINAL_FAILURE" else "CANCELLED"
+        if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
+            return "WAIT_EXTERNAL_RECONCILIATION"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
@@ -570,17 +572,24 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
         state = str((latest[4] or {}).get("wait_class") or state)
         if state == "COMPLETED":
             state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "OWNER_RECOVERY_REQUIRED"
+    from .queries import PostgresBookProductionQuery
+    unresolved = PostgresBookProductionQuery(database_url).unresolved_chapter_effects(book_run_id=production["book_run_id"]) if production and not cancellation else []
+    if unresolved:
+        state = "RECONCILIATION_REQUIRED"
     return {
         "formation_run_id": formation_run_id,
         "production": production,
         "author_state": state,
-        "next_action": "RECOVER_ORIGINAL_CREATION_AFTER_RESOLVING_RETAINED_FAILURE"
+        "unresolved_external_effects": unresolved,
+        "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS"
+        if state == "RECONCILIATION_REQUIRED"
+        else "RECOVER_ORIGINAL_CREATION_AFTER_RESOLVING_RETAINED_FAILURE"
         if state == "OWNER_RECOVERY_REQUIRED"
         else "WAIT_FOR_NATIVE_EXECUTOR"
         if state == "PRODUCING"
         else state,
         "responsible_party": "RUNTIME_OWNER"
-        if state == "OWNER_RECOVERY_REQUIRED"
+        if state in {"OWNER_RECOVERY_REQUIRED", "RECONCILIATION_REQUIRED"}
         else "AUTHOR"
         if state == "AUTHOR_DECISION"
         else "BOOK_AUTHORITY_WORKER",

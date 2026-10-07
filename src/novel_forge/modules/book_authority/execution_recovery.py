@@ -13,6 +13,7 @@ from novel_forge.modules.command_kernel.cancellation import (
     request_cancellation,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
 from novel_forge.modules.production_execution.execution_template import (
     selected_book_template,
     verify_template_provenance,
@@ -93,6 +94,12 @@ def source_evidence(cursor, *, book, request, principal):
     for effect, status, request_hash, payload, error, settlement, name, timeout, bound in effects:
         process = (error or {}).get("production_execution", {})
         result = process.get("execution_result", {})
+        if local_cli_remote_outcome_unknown(
+            transport=process.get("execution_handle", {}).get("transport", ""),
+            outcome=result.get("outcome", ""), started_at=result.get("started_at"),
+            usage_receipt_ref=result.get("usage_receipt_ref"),
+        ):
+            return None
         runtime = (payload.get("_production_execution") or {}).get("capability_runtime", {})
         decision = runtime.get("routing_decision", {})
         source_template = verify_template_provenance(cursor, decision)
@@ -106,6 +113,8 @@ def source_evidence(cursor, *, book, request, principal):
             or not str(bound).isdigit()
             or len(effects) != int(bound)
             or result.get("outcome") != "TIMED_OUT"
+            or process.get("execution_handle", {}).get("transport") != "LOCAL_CLI_REMOTE_INFERENCE"
+            or "started_at" not in result or result["started_at"] is not None
             or process.get("process_evidence", {}).get("failure_code") != "PROCESS_TIMEOUT"
             or not result.get("process_receipt_ref")
             or any(result.get(key) for key in (

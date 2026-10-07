@@ -1,0 +1,59 @@
+{
+  "schema_version": "wp-novel-production-closure-01.real-prose-evidence.v1",
+  "artifacts": [
+    {
+      "name": "chapter1-before",
+      "asset_version_id": "7a25287e-f143-444f-9ec6-b8d3e5bb9784",
+      "asset_hash": "sha256:1691f2e41d6880eecb49a369264da245d413d17fffcf4fc450bc2c6b89b7796b",
+      "prose_hash": "sha256:049812f2be9217c893e4fb66e1b1b910d5930f217e967ca18fe87f626d0e3fe3",
+      "unicode_length": 1124,
+      "classification": "PROVIDER_CANDIDATE_BEFORE_LENGTH_REVISION",
+      "private_artifact": "delivery-chapter1-before-540.txt",
+      "retained_text_artifact": "architecture/live-evidence/wp-novel-production-closure-01/prose/chapter1-before.txt"
+    },
+    {
+      "name": "chapter1-accepted",
+      "asset_version_id": "authority-output:c27c14bf-7487-49d7-b460-b38cbb7daa1c:chapter.best_candidate:v1",
+      "asset_hash": "sha256:319529e2f0cec6e294ddec65d7529e40ff1dd3a3198d34e1943e07aadd6202e3",
+      "prose_hash": "sha256:6758c9025584e941a5b930720c3c7e1d33c62634a1a7c88f1cec56ac1d9b0aa7",
+      "unicode_length": 1265,
+      "classification": "INTERNALLY_ACCEPTED",
+      "private_artifact": "delivery-chapter1-accepted-540.txt",
+      "retained_text_artifact": "architecture/live-evidence/wp-novel-production-closure-01/prose/chapter1-accepted.txt"
+    },
+    {
+      "name": "chapter2-selected-candidate",
+      "asset_version_id": "authority-output:8bb282b1-1157-4d79-b3e2-7a614fa6c3a4:chapter.best_candidate:v1",
+      "asset_hash": "sha256:d80fda5d7bc073842034f91a4e0a2b993688ba966c95967492c3d3d0e10945a0",
+      "prose_hash": "sha256:226e99fe71a820495f980ba79ca4da1263b29e64f2a87ba9c39f3928a02ee9aa",
+      "unicode_length": 1286,
+      "classification": "UNACCEPTED_CANDIDATE",
+      "private_artifact": "delivery-chapter2-selected-candidate-540.txt",
+      "retained_text_artifact": "architecture/live-evidence/wp-novel-production-closure-01/prose/chapter2-selected-candidate.txt"
+    }
+  ],
+  "first_revision": {
+    "problem": "1124 codepoints below frozen 1200 minimum",
+    "after": 1265,
+    "protected_paragraphs": "all except paragraph9 unchanged",
+    "changed_paragraphs_1based": [
+      9
+    ],
+    "objective_gain": "frozen minimum satisfied; observed page references remain distinct from unobserved origin/time/purpose",
+    "tradeoff": "141 added codepoints repeat the epistemic boundary; slower scene and more explanation",
+    "model_score_delta": -5,
+    "model_preservation": "PRESERVED",
+    "literary_improvement": "NOT_PROVEN",
+    "diff": "architecture/live-evidence/wp-novel-production-closure-01/prose/chapter1-before-after.diff"
+  },
+  "second_chapter": {
+    "unicode_length": 1286,
+    "review_operation_id": "6420e406-70ff-4102-ab4a-2e5015d6c3b6",
+    "review_issues": [],
+    "candidate_retained": "exact original prose; no mandatory revision",
+    "review_score": 94,
+    "accepted": false,
+    "readback": "actor-specific notebook/catalogue knowledge, limited witness scope and a retained humorous line; procedural exposition and similar cautious voices remain literary risks"
+  },
+  "formal_edition_export": "NOT_RUN; retained prose files are diagnostic artifacts, not a selected formal manuscript"
+}
