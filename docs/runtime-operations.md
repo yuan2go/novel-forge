@@ -32,6 +32,13 @@ The deployment in `compose.yml` includes migration, API, agent, chapter, content
 source-import, MKAOS, book, book-follow-up, outbox and maintenance processes. The checked
 worker contract is `architecture/manifests/worker-manifest.yaml`.
 
+Accepted realization deviations require the existing Book Followup worker even outside
+recap cadence. Reader evidence must consume the exact selected accepted candidate.
+A Book waiting for its durable Recap source must wake on followup operation progress;
+a missing source is a technical dependency, not an author approval. Historical
+realization deviations and accepted prose remain immutable during future-only replan.
+Focused checks cover this wakeup, exact Reader lineage and future-only Recap requests.
+
 Stop processes without deleting persistent data:
 
 ```bash

@@ -1511,8 +1511,10 @@ genre and Book-owned sections. Sections declare compilation scope and depth; the
 need not describe every category before production begins. World rules distinguish
 deterministic hard, quantitative and temporal predicates from soft causal suggestions.
 Candidate transitions declare on-camera, off-camera or undercurrent effects, exact
-story time, actor, changes and accepted causes. Known Character actions require their
-own accepted knowledge or belief predicates. The world
+story time, actor, changes and accepted causes. Character actions bind their own
+authorized Foundation knowledge, accepted knowledge or belief, or earlier evidenced
+perception in the same candidate dependency graph. Candidate-local causes remain
+unaccepted until Book acceptance; they cannot establish historical Canon. The world
 clock advances from accepted world transitions, independently of narrative flashforwards.
 
 Native Book supervision requests world preparation before Chapter planning. The

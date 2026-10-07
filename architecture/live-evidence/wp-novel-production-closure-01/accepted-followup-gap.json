@@ -1,0 +1,33 @@
+{
+  "observed_runtime_sha": "2c6e8e483dfcd6bf91fdc052201d0f6030773510",
+  "book_id": "closure-original-book",
+  "accepted_chapters": 1,
+  "target_chapters": 12,
+  "observed_state": "REPLAN_REQUIRED",
+  "root_causes": [
+    "Realization coverage compares semantic descriptions as literal strings and state event IDs as entity IDs",
+    "accepted realization deviations absent from Followup admission and Recap observations",
+    "official Followup worker absent from original launcher",
+    "Reader input resolves initial draft instead of selected accepted candidate"
+  ],
+  "owners": [
+    "Book acceptance and NarrativeRealization",
+    "BookFollowup",
+    "Book supervisor RuntimeJob coordination"
+  ],
+  "five_item_status": {
+    "continuous_production": "1/12, followup dependency blocked",
+    "creative_selection": "author-approved original reused; preauthorized automatic portfolio unfinished",
+    "revision": "real bounded length edit selected; literary improvement not proven",
+    "writer": "literal realization matching conflicts with expressive freedom",
+    "author_delivery": "NOT_RUN"
+  },
+  "verification": [
+    "exact Reader selected revision lineage",
+    "durable dependency wakeup and bounded idle",
+    "future-only native Recap and Replan",
+    "semantic realization counterexamples",
+    "original real 12-chapter continuation and exact Edition export"
+  ],
+  "historical_evidence": "RETAINED"
+}
