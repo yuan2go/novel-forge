@@ -324,8 +324,15 @@ class PostgresNarrativeSearchApplication:
                     idempotency_key=branch_command.idempotency_key,
                 )
                 if frozen_command is not None:
+                    admitted_contract = (
+                        frozen_command.execution_contract_version
+                        if branch_command.execution_contract_version == "1.19.0"
+                        and frozen_command.execution_contract_version == "1.20.0"
+                        else branch_command.execution_contract_version
+                    )
                     expected_frozen_semantics = replace(
                         branch_command,
+                        execution_contract_version=admitted_contract,
                         opening_execution_binding=(
                             frozen_command.opening_execution_binding
                         ),

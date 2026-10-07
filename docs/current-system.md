@@ -2310,3 +2310,8 @@ retains that admitted execution version. Every creative input, horizon, strategy
 search identity must still match; this compatibility cannot change a frozen story
 choice. Capacity preflight builds its proposed Context before a successor registration
 exists and does not read an unregistered continuation.
+
+A native pre-send capacity successor with zero content repairs retains its source
+lineage and single-call admission. Its source must have no external intent or
+reservation; it therefore does not masquerade as a consumed content repair.
+Contract-changing successors still require their settled result and exact diagnosis.

@@ -540,6 +540,14 @@ def _world_contract_route_receipt(
         source = require_source(
             uow, source_operation_id=source_id, project_id=command.project_id
         )
+        if source.get("mode") == "PRE_SEND_CAPACITY" and command.repair_number == 0:
+            if source["command"].get("repair_number") != 0:
+                raise KernelError(
+                    "PLANNING_ROUTING_CONTRACT_DRIFT",
+                    "Capacity succession cannot reset content repair consumption",
+                )
+            # INVARIANT: Proven zero-send capacity changes do not consume content repairs.
+            return None
         if (
             source.get("mode")
             not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
@@ -5825,7 +5833,7 @@ class PostgresPlanningExecutionPreparer:
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
-            if command.runtime_continuation_id:
+            if command.runtime_continuation_id and not preflight_only:
                 from .runtime_continuation import require_binding
                 capacity = require_binding(self.database_url, command.runtime_continuation_id)['target_runtime'].get('planning_capacity', {})
                 proof = capacity.get('context_revalidation')

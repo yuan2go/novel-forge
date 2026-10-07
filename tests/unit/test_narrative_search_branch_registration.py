@@ -959,7 +959,8 @@ def test_explore_preserves_exact_opening_fence_on_every_future_command() -> None
     )
 
 
-def test_explore_resumes_admitted_branch_with_its_frozen_outer_fence() -> None:
+@pytest.mark.parametrize("admitted_version", ["1.19.0", "1.20.0"])
+def test_explore_resumes_admitted_branch_with_its_frozen_outer_fence(admitted_version) -> None:
     search = _SearchHarness()
     request = _search_request()
     current_binding = {
@@ -992,6 +993,7 @@ def test_explore_resumes_admitted_branch_with_its_frozen_outer_fence() -> None:
     search_key, search_id, _, _ = search._search_identity(request)  # noqa: SLF001
     frozen = replace(
         request.generation,
+        execution_contract_version=admitted_version,
         idempotency_key=f"{search_key}:future-1",
         narrative_search_id=search_id,
         narrative_search_branch_key="future-1",

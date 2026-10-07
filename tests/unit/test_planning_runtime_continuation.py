@@ -638,3 +638,30 @@ def test_source_selector_contract_binds_host_identity_and_rejects_foreign_or_met
     assert value['properties']['secondary_arc_ids']['minItems']==2
     assert value['properties']['secondary_arc_ids']['maxItems']==2
     assert value['properties']['secondary_arc_ids']['uniqueItems'] is True
+
+
+@pytest.mark.parametrize("source_repair_number", [0, 1])
+def test_zero_send_capacity_route_is_not_a_content_repair(monkeypatch, source_repair_number):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime import execution, runtime_continuation
+    from novel_forge.storage import authority_uow
+    payload = {"execution_contract_version": "1.20.0"}
+    command = SimpleNamespace(runtime_continuation_id="continuation", execution_contract_version="1.20.0",
+                              project_id="project", repair_number=0)
+    monkeypatch.setattr(runtime_continuation, "require_binding", lambda *args: {
+        "successor_command": payload, "target_runtime": {"pack_snapshot": {}}, "source_operation_id": "source"})
+    monkeypatch.setattr(runtime_continuation, "require_source", lambda *args, **kwargs: {
+        "mode": "PRE_SEND_CAPACITY", "command": {"repair_number": source_repair_number}})
+    uow = Mock()
+    uow.__enter__ = Mock(return_value=uow)
+    uow.__exit__ = Mock(return_value=False)
+    monkeypatch.setattr(authority_uow, "AuthorityUnitOfWork", lambda *args: uow)
+    def receipt():
+        return execution._world_contract_route_receipt("db", command=command, payload=payload,
+                                                      task_type="chapter_group.generate", input_hash="new", lineage=("source", "successor"), maximum=2)
+    if source_repair_number:
+        with pytest.raises(KernelError, match="PLANNING_ROUTING_CONTRACT_DRIFT"):
+            receipt()
+    else:
+        assert receipt() is None
+    uow.cursor.execute.assert_not_called()
