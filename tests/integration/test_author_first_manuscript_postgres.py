@@ -36,10 +36,10 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
     transport.database_url = DATABASE_URL
-    inputs = {"version": "creation-request.v1", "title": "Author work", "target_chapters": 5,
+    inputs = {"version": "creation-request.v1", "title": "Author work", "target_chapters": 6,
         "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
-            "genre": "social mystery", "audience": "adult readers", "constraints": ["Five chapters across a ChapterGroup boundary"],
+            "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
             "source_boundaries": ["Original work"]}}
     source = tmp_path / "request.json"
     source.write_text(json.dumps(inputs))
@@ -82,16 +82,18 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [result["book_run_id"]])
         book = uow.cursor.fetchone()[0]
-        assert book["current_chapter"] == 5
+        assert book["current_chapter"] == 6
         assert book["accepted_through_chapter"] == 0
         uow.cursor.execute("SELECT definition_name,count(*) FROM authority_operation WHERE project_id=%s GROUP BY definition_name", [project])
         counts = dict(uow.cursor.fetchall())
-        assert counts["chapter.draft.generate"] == 5
+        assert counts["chapter.draft.generate"] == 6
         assert not any(count for name, count in counts.items() if name.startswith(("chapter.review.", "chapter.quality.", "chapter.canon.", "chapter.revision.")))
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     principal = build_trusted_principal_resolver().resolve_api_principal()
+    from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
+    assert not PostgresBookProductionQuery(DATABASE_URL).coordination_candidates(limit=10, book_run_id=book["book_run_id"])
     manifest = current_manuscript(DATABASE_URL, book=book, principal=principal)
-    assert len(manifest["units"]) == 5
+    assert len(manifest["units"]) == 6
     assert all(unit["quality_status"] == "NOT_VERIFIED" for unit in manifest["units"])
     from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
     from novel_forge.modules.book_followup_authority.prose_coordinator import BookProseReviewCoordinator
@@ -119,7 +121,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         coordinator.advance(**review_scope, run_id=review["run_id"], expected_version=report["expected_version"],
             idempotency_key="optional-outage", trace_id="trace-outage", correlation_id="correlation-outage")
     usable = current_manuscript(DATABASE_URL, book=book, principal=principal)
-    assert len(usable["units"]) == 5
+    assert len(usable["units"]) == 6
     assert usable["units"][0]["review_status"] == "FAILED"
     assert usable["units"][0]["asset_version_id"] == manifest["units"][0]["asset_version_id"]
     unit = manifest["units"][0]
@@ -130,15 +132,25 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     before = unit["text"]
     payload = {**scope, "base_text_hash": unit["text_hash"], "base_asset_hash": unit["content_hash"], "expected_version": opened["version"],
         "text": before + " 作者增补。", "rights_basis": "ORIGINAL_AUTHOR_INPUT", "allowed_ranges": [{"start": len(before), "end": len(before)}]}
-    saved = editor.execute(action="save", payload=payload, idempotency_key="save-local", principal=principal)
+    from novel_forge.cli.manuscript import run_manuscript_command
+    text_file = tmp_path / "author-wording.txt"
+    text_file.write_text(payload["text"], encoding="utf-8")
+    edit_args = parser.parse_args(["authority-manuscript", "edit", "--project-id", project,
+        "--book-run-id", book["book_run_id"], "--chapter", "1", "--text-file", str(text_file)])
+    saved = run_manuscript_command(settings, edit_args)
     assert saved["candidate_asset_version_id"]
-    accepted = editor.execute(action="accept", payload={**payload, "expected_version": saved["version"],
-        "candidate_asset_version_id": saved["candidate_asset_version_id"], "rationale": "Adopt local wording"}, idempotency_key="accept-local", principal=principal)
+    replay = run_manuscript_command(settings, edit_args)
+    assert replay["replayed"] and replay["operation_id"] == saved["operation_id"]
+    edit_args.action, edit_args.candidate_version = "adopt", saved["candidate_asset_version_id"]
+    accepted = run_manuscript_command(settings, edit_args)
+    replay = run_manuscript_command(settings, edit_args)
+    assert replay["replayed"] and replay["operation_id"] == accepted["operation_id"]
     assert accepted["decision_asset_version_id"]
     updated = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert updated["units"][0]["text"].endswith(" 作者增补。")
     assert updated["units"][1]["asset_version_id"] == manifest["units"][1]["asset_version_id"]
     assert updated["units"][1]["dependency_changes"]
+    assert any(change["chapter"] == 1 and "via_chapter" in change for change in updated["units"][5]["dependency_changes"])
     from novel_forge.modules.command_kernel.errors import KernelError
     with pytest.raises(KernelError, match="Export must match"):
         current_manuscript(DATABASE_URL, book=book, principal=principal, version_ids=[u["asset_version_id"] for u in manifest["units"]])
@@ -161,7 +173,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert [unit["chapter"] for unit in exported.json()["units"]] == [2]
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [project])
-        assert uow.cursor.fetchone()[0] == 5
+        assert uow.cursor.fetchone()[0] == 6
 
 
 def test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint():

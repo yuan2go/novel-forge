@@ -47,7 +47,9 @@ inventing accepted history. The source window is a bounded implementation policy
 not prove long-form continuity or replace formal Canon. Author adoption uses the existing
 editor candidate/session mechanism. Book locking and source/hash checks prevent stale edits,
 late extraction or late review from replacing a newer selection. Later chapters retain
-exact predecessor dependencies and display changed versions without deleting their prose.
+exact predecessor dependencies and display direct and transitive source changes without deleting
+their prose. The working projection carries those unresolved dependencies as uncertainty.
+A completed writing target has no runnable Book coordination tick until new work is requested.
 
 `/product/editor/manuscripts` reads saved selected versions without a Provider call.
 The API assembles Provider-dependent services on the first related operation, under one

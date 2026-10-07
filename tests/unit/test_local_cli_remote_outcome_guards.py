@@ -10,6 +10,8 @@ from novel_forge.modules.production_execution.contracts import local_cli_remote_
 
 
 @pytest.mark.parametrize("outcome,started,usage,unknown", [
+    ("UNKNOWN", "started", None, True),
+    ("UNKNOWN", "started", "original-usage", False),
     ("TIMED_OUT", "started", None, True),
     ("CANCELLED", "started", "", True),
     ("ORPHANED", None, None, True),
@@ -95,3 +97,12 @@ def test_verified_retained_receipt_preserves_membership_unknown_cost(monkeypatch
     assert proof["budget_accounting_basis"] == basis
     assert proof["budget_reservation_status"] == "SETTLED"
     assert proof["provider_evidence"] == evidence
+
+
+def test_unclassified_started_codex_exit_requires_original_receipt_reconciliation():
+    from novel_forge.modules.production_execution.backends import _codex_process_failure
+    from novel_forge.modules.production_execution.contracts import ExecutionOutcome
+    from novel_forge.modules.production_execution.process_supervisor import ProcessReceiptStatus
+
+    assert _codex_process_failure(ProcessReceiptStatus.FAILED) == ("PROCESS_EXIT_FAILURE", ExecutionOutcome.UNKNOWN)
+    assert _codex_process_failure(ProcessReceiptStatus.START_FAILED)[1] is ExecutionOutcome.RETRYABLE_FAILURE

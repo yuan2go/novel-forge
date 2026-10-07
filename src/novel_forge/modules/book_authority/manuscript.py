@@ -165,7 +165,45 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
     return source
 
 
+def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any], dict[int, list[dict[str, Any]]]]:
+    uow.cursor.execute("""SELECT DISTINCT ON (r.chapter_number) r.chapter_number, output.asset_version_id,
+            COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sources\":[]}'::jsonb)
+            FROM authority_book_chapter_request r
+            JOIN authority_operation op ON op.root_operation_id=r.chapter_root_operation_id
+            JOIN authority_operation_output_asset output USING(operation_id)
+            LEFT JOIN authority_book_manuscript_delivery d USING(chapter_request_id)
+            WHERE r.book_run_id=%s AND op.definition_name='chapter.draft.generate' AND op.status='SUCCEEDED'
+              AND output.output_key='chapter.draft' AND output.role='primary'
+            ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
+    deliveries = uow.cursor.fetchall()
+    selected = {number: version for number, version, _ in deliveries}
+    uow.cursor.execute("""SELECT l.logical_ref,v.content->>'chapter',v.content->>'selected_asset_version_id'
+        FROM authority_asset_locator l JOIN authority_asset_version v ON v.asset_version_id=l.current_asset_version_id
+        JOIN authority_asset a ON a.asset_id=v.asset_id
+        WHERE l.project_id=%s AND a.asset_type='author_edit_session' AND v.governance='CLEAR' AND v.eligibility='ELIGIBLE'
+          AND v.content->>'workspace_id'=%s AND v.content->>'book_id'=%s""",
+        [book["project_id"], book["workspace_id"], book["book_id"]])
+    for logical_ref, number, version in uow.cursor.fetchall():
+        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
+        scope["chapter"] = int(number)
+        if version and logical_ref == _session_ref(scope):
+            selected[int(number)] = version
+    changes = {}
+    for number, _, dependencies in deliveries:
+        affected = {}
+        for row in dependencies.get("sources", []):
+            predecessor = row["chapter"]
+            if selected.get(predecessor) != row["asset_version_id"]:
+                affected[predecessor] = {"chapter": predecessor, "source_asset_version_id": row["asset_version_id"],
+                    "current_asset_version_id": selected.get(predecessor)}
+            for inherited in changes.get(predecessor, []):
+                affected.setdefault(inherited["chapter"], {**inherited, "via_chapter": predecessor})
+        changes[number] = list(affected.values())
+    return [(number, dependencies) for number, _, dependencies in deliveries], changes
+
+
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int) -> dict[str, Any]:
+    _, changes = working_dependency_changes(uow, book)
     rows = []
     for number in range(max(1, chapter - 4), chapter):
         source = selected_source(uow, book, number)
@@ -174,6 +212,8 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int) -> dict
             "content_hash": source.content_hash, "text_hash": text_hash(text),
             "excerpt": text[-2400:] if number == chapter - 1 else text[-600:],
             "status": "UNREVIEWED_WORKING_PROSE", "character_knowledge": "NOT_VERIFIED"})
+        if changes.get(number):
+            rows[-1]["dependency_changes"] = changes[number]
     result = {"version": "working-manuscript-context.v1", "book_run_id": book["book_run_id"],
         "project_id": book["project_id"], "book_id": book["book_id"], "target_chapter": chapter,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
@@ -268,16 +308,7 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
         book = uow.cursor.fetchone()[0]
         uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [book["production_profile_version"]])
         requirements = uow.cursor.fetchone()[0]
-        uow.cursor.execute("""SELECT DISTINCT ON (r.chapter_number) r.chapter_number,
-            COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sources\":[]}'::jsonb)
-            FROM authority_book_chapter_request r
-            JOIN authority_operation op ON op.root_operation_id=r.chapter_root_operation_id
-            JOIN authority_operation_output_asset output USING(operation_id)
-            LEFT JOIN authority_book_manuscript_delivery d USING(chapter_request_id)
-            WHERE r.book_run_id=%s AND op.definition_name='chapter.draft.generate' AND op.status='SUCCEEDED'
-              AND output.output_key='chapter.draft' AND output.role='primary'
-            ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
-        deliveries = uow.cursor.fetchall()
+        deliveries, changes = working_dependency_changes(uow, book)
         available = [number for number, _ in deliveries]
         if chapters is not None and (not chapters or chapters != sorted(set(chapters)) or any(number not in available for number in chapters)):
             raise KernelError("MANUSCRIPT_RANGE_INVALID", "Choose an ordered, available chapter range")
@@ -291,11 +322,7 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
             actual_length = han_characters(content["text"])
             length = requirements.get("chapter_length")
             length_status = "NOT_EVALUATED" if not length else "PARTIALLY_CHECKED" if length["minimum"] <= actual_length <= length["maximum"] else "LENGTH_TARGET_UNMET"
-            impacted = []
-            for row in dependencies["sources"]:
-                selected = selected_source(uow, book, row["chapter"])
-                if selected.asset_version_id != row["asset_version_id"]:
-                    impacted.append({"chapter": row["chapter"], "source_asset_version_id": row["asset_version_id"], "current_asset_version_id": selected.asset_version_id})
+            impacted = changes[number]
             units.append({"chapter": number, "asset_version_id": source.asset_version_id,
                 "content_hash": source.content_hash, "text_hash": text_hash(content["text"]),
                 "title": content.get("title", ""), "text": content["text"],

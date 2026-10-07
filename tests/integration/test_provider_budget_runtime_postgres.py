@@ -599,12 +599,12 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import require_known_cli_outcomes
 
         for process_outcome, started, blocked_expected in [
-            ("TIMED_OUT", True, True), ("CANCELLED", False, False), ("ORPHANED", False, True)
+            ("UNKNOWN", True, True), ("TIMED_OUT", True, True), ("CANCELLED", False, False), ("ORPHANED", False, True)
         ]:
             with self.subTest(outcome=process_outcome, started=started):
                 class TimedOutCli(FakeDeterministicProvider):
                     def execute(self, **kwargs):
-                        return ProviderResult("retryable_failure", "fixture-timeout", {
+                        return ProviderResult("unknown" if process_outcome == "UNKNOWN" else "retryable_failure", "fixture-timeout", {
                             "production_execution": {
                                 "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
                                 "execution_result": {"started_at": "2026-09-11T00:00:00Z" if started else None,
@@ -625,6 +625,9 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 dispatch_external_effect(DATABASE_URL, context, effect_id=effect,
                     worker_id="fixture-worker", lease_seconds=30, adapter=TimedOutCli("retryable_failure"))
                 with transaction() as connection, connection.cursor() as cursor:
+                    if process_outcome == "UNKNOWN":
+                        cursor.execute("SELECT status,estimated_tokens FROM authority_budget_reservation WHERE external_effect_id=%s", [effect])
+                        self.assertEqual(cursor.fetchone(), ("HELD_UNKNOWN", 1200))
                     rows = unresolved_cli_outcomes(cursor, context.project_id)
                     if not blocked_expected:
                         self.assertEqual(rows, [])
@@ -646,8 +649,9 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,1,'FAILED_RETRYABLE','fixture',%s)",
                 [identifier("original-dispatch"), effect, Jsonb({"production_execution": {
                     "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
-                    "execution_result": {"outcome": "TIMED_OUT", "started_at": "2026-10-07T00:00:00Z",
-                        "usage_receipt_ref": None, "process_receipt_ref": "original-local-receipt"}}})])
+                    "execution_result": {"outcome": "RETRYABLE_FAILURE", "started_at": "2026-10-07T00:00:00Z",
+                        "usage_receipt_ref": None, "process_receipt_ref": "original-local-receipt"},
+                    "process_evidence": {"failure_code": "PROCESS_EXIT_FAILURE"}}})])
             cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,2,'PENDING','fixture','{}'::jsonb)",
                 [identifier("unsent-dispatch"), effect])
             self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id)[0]["process_receipt_ref"], "original-local-receipt")

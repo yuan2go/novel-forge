@@ -83,7 +83,7 @@ def test_author_status_projects_original_unknown_receipt_as_runtime_reconciliati
     monkeypatch.setattr(
         creation_runtime, "creation_progress", lambda *args, **kwargs: ()
     )
-    rows = iter([None, ("book-run", "CHAPTER_RUNNING", 0, 3, 1)])
+    rows = iter([None, ("book-run", "CHAPTER_RUNNING", 0, 3, 1, 0)])
     cursor = SimpleNamespace(execute=Mock(), fetchone=lambda: next(rows))
     run = {
         "project_id": "project",

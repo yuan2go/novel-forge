@@ -161,9 +161,14 @@ not substitute for the complete same-revision P0 chain. Run that chain again fro
 the actual merge SHA with a new run identity and disposable resources.
 
 Include every dispatch generation when checking local-CLI remote outcomes. A started
-timeout, cancellation or orphan without a usage receipt remains UNKNOWN even when
+timeout, cancellation, orphan or unclassified process exit without a usage receipt remains
+UNKNOWN even when
 the local Operation is terminal or its reservation is SETTLED. Only an exact later
 manual reconciliation can resolve that generation; a later unsent generation cannot.
+New ambiguous exits produce UNKNOWN and hold consumption. Historical PROCESS_EXIT_FAILURE
+retryable receipts without usage fail closed without rewriting their old classification or ledger.
+Reconcile the original execution ID and receipt; a stream disconnect with no complete result
+or usage is not proof of remote completion, cancellation or zero consumption.
 Verify immutable raw Planning results separately from host binding, current Draft
 actor-source proof before retained-prefix reuse, measured-length admission, atomic
 Root/Saga gate transitions, Reader activation replay and future PlanChange scope.

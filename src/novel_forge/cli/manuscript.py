@@ -92,4 +92,16 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         if not args.candidate_version:
             raise ValueError("Choose the exact candidate version from the diff")
         body["candidate_asset_version_id"] = args.candidate_version
-    return application.execute(action=action, payload=body, idempotency_key="author-manuscript:" + canonical_hash(body), principal=principal)
+    intent = {key: value for key, value in body.items() if key != "expected_version"}
+    if action != "save":
+        for key in ("base_asset_version_id", "base_asset_hash", "base_text_hash"):
+            intent.pop(key, None)
+    key = "author-manuscript:" + canonical_hash({"action": action, "actor_id": principal.principal_id, **intent})
+    with AuthorityUnitOfWork(settings.database_url) as uow:
+        uow.cursor.execute("""SELECT command_payload FROM authority_operation
+            WHERE project_id=%s AND idempotency_scope='chapter:author-edit' AND idempotency_key=%s AND actor_id=%s""",
+            [args.project_id, key, principal.principal_id])
+        prior = uow.cursor.fetchone()
+    if prior:
+        body = {name: value for name, value in prior[0].items() if name != "action"}
+    return application.execute(action=action, payload=body, idempotency_key=key, principal=principal)

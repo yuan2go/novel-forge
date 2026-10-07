@@ -44,7 +44,6 @@ from .production import (
 )
 from .queries import PostgresBookProductionQuery
 from .manuscript import author_first, writing_frontier, deliver_manuscript
-from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,10 +140,9 @@ class PostgresBookProductionSupervisor:
         before = str(book["state"])
         if author_first(book) and book.get("active_chapter_request_id"):
             request = self.authority.require_chapter_request(book["active_chapter_request_id"])
-            with AuthorityUnitOfWork(self.authority.database_url) as uow:
-                uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [request["chapter_root_operation_id"]])
-                row = uow.cursor.fetchone()
-            if row and row[0] == "SUCCEEDED":
+            progress = self.query.progress(book_run_id=book_run_id)
+            if (progress.active_operation_id == request["chapter_root_operation_id"]
+                    and progress.active_operation_status == "SUCCEEDED"):
                 receipt = deliver_manuscript(self.authority, request["chapter_request_id"], principal=self.principal)
                 return self._result(book_run_id, before, SupervisorAction.RECONCILE_CHAPTER, evidence_ref=receipt["source_asset_version_id"])
         semantics = book_production_state_semantics(before)

@@ -356,6 +356,10 @@ class PostgresBookProductionQuery:
                           )
                       )
                   )
+                  AND NOT (book.state='READY' AND book.current_chapter>=book.target_chapter_count
+                      AND EXISTS (SELECT 1 FROM authority_book_manuscript_delivery delivery
+                          WHERE delivery.book_run_id=book.book_run_id
+                            AND delivery.chapter_number=book.target_chapter_count))
                   AND (%s='' OR book.book_run_id=%s)
                   AND NOT EXISTS (
                       SELECT 1 FROM authority_runtime_job job WHERE job.job_kind='BOOK_COORDINATION_TICK'

@@ -4222,7 +4222,9 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: 
             NULLIF(root.command_payload->>'book_id',''),NULLIF(root.command_payload#>>'{payload,book_id}',''),
             NULLIF(b.evidence->>'work_id',''))=%s)
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
-          AND d.evidence #>> '{production_execution,execution_result,outcome}' IN ('TIMED_OUT','CANCELLED','ORPHANED')
+          AND (d.evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
+            OR (d.evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
+              AND d.evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))
           AND (d.evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
             OR NOT COALESCE(d.evidence #> '{production_execution,execution_result,started_at}'='null'::jsonb,false))
           AND NULLIF(d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}', '') IS NULL
