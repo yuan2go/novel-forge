@@ -3141,3 +3141,26 @@ atomically on the existing Saga; exhausted retries are retired through Kernel li
 commands while original Attempts and receipts remain unchanged. Unknown effects, live
 leases, cancellation and unproven interface failures prevent recovery. Verify rollback
 and replay with `tests/integration/test_failed_step_successor_postgres.py`.
+
+
+For a completed legacy Quality aggregate, the native Chapter scheduler appends a
+work-constraint reassessment using the same inputs and original operation identity
+as provenance. Technical reassessment reports the actual Saga state, not author
+approval waiting. Confirm exact chapter length, policy hash/unit and Scene edit scope
+before dispatch. ReReview and comparison still decide whether the correction helps;
+newer prose is not automatically selected. Canon CAS disagreement remains blocking
+until new extraction and support validation pass.
+
+Focused checks for this boundary:
+`tests/unit/test_creative_quality_admission.py`,
+`tests/unit/test_canon_source_spans.py`,
+`tests/unit/test_stateful_canon_domain.py`,
+`tests/unit/test_chapter_authority_definitions.py`,
+`tests/unit/test_production_execution_gateway.py`, and
+`tests/integration/test_failed_step_successor_postgres.py`.
+Use an isolated PostgreSQL database through `NOVEL_FORGE_DATABASE_URL`; never point
+pytest at the original work. Re-run native scheduling against a retained database
+clone without Provider dispatch, then resume the original Creation with
+`authority-creation recover --project-id <project> --formation-run-id <original-run>
+--idempotency-key <new-recovery-key> --reason <diagnosis> --repository-root <checkout>`.
+Keep actual runtime SHA separate from the frozen Pack release identity.

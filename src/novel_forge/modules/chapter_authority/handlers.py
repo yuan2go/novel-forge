@@ -1943,7 +1943,7 @@ class _CanonExtractionHandler:
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
-        span_contract = request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6"}
+        span_contract = request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7"}
         span_inputs = {}
         if span_contract:
             from novel_forge.modules.canon_graph.source_spans import source_spans
@@ -1952,9 +1952,13 @@ class _CanonExtractionHandler:
             from .canon_contract_recovery import repair_diagnostics
             binding = (context.content.get("chapter_execution_expectations") or {}).get("world_preparation") or {}
             events = scheduled_world_events(binding) if binding else []
+            if request.definition_version == "3.9.7":
+                from .domain_handlers import canon_history
+                baselines, _ = canon_history(context.content)
             span_inputs = {
+                **({"transition_precondition_contract": "accepted-cas.v1", "accepted_transition_baselines": baselines} if request.definition_version == "3.9.7" else {}),
                 "source_span_table": source_spans(revision.content["text"]),
-                **({"source_span_schema_contract": "typed-extraction-json.v1" if request.definition_version in {"3.9.5", "3.9.6"} else "local-evidence-pattern.v1" if request.definition_version == "3.9.4" else "local-evidence-ref.v1"} if request.definition_version in {"3.9.3", "3.9.4", "3.9.5", "3.9.6"} else {}),
+                **({"source_span_schema_contract": "typed-extraction-json.v1" if request.definition_version in {"3.9.5", "3.9.6", "3.9.7"} else "local-evidence-pattern.v1" if request.definition_version == "3.9.4" else "local-evidence-ref.v1"} if request.definition_version in {"3.9.3", "3.9.4", "3.9.5", "3.9.6", "3.9.7"} else {}),
                 "world_transition_contract": world_transition_schema(agency=any(event.get("action_mode") for event in events)),
                 "repair_diagnostics": repair_diagnostics(request),
                 "observer_transition_constraints": [
@@ -2326,6 +2330,18 @@ class _QualityGroupHandler:
 @dataclass(frozen=True, slots=True)
 class _QualityHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        source_id = request.command.get("quality_reassessment_source_operation_id")
+        if source_id:
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                uow.cursor.execute("""SELECT original.status,original.definition_name,original.definition_version,
+                    original.input_asset_snapshot=current.input_asset_snapshot,
+                    original.root_operation_id=current.root_operation_id
+                    FROM authority_operation original JOIN authority_operation current ON current.project_id=original.project_id
+                    WHERE original.operation_id=%s AND current.operation_id=%s AND current.project_id=%s""",
+                    [source_id, request.operation_id, request.project_id])
+                if uow.cursor.fetchone() != ("SUCCEEDED", "chapter.quality.evaluate", "3.9.0", True, True):
+                    raise KernelError("QUALITY_REASSESSMENT_LINEAGE_INVALID", "Reassessment must preserve the completed original fan-in and Chapter root")
         plan = request.require_input("chapter_plan")
         revision = request.require_input("best_draft_candidate")
         review = request.require_input("re_review_report")
@@ -2365,6 +2381,11 @@ class _QualityHandler:
         )
         from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
         admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id)
+        if admission is not None and request.definition_version == "3.9.1":
+            from novel_forge.modules.chapter_quality_authority.creative_validation import receipt_work_constraints, apply_work_constraint_actions
+            constraints = receipt_work_constraints(request.database_url, project_id=request.project_id, receipts=admission["receipts"], target=revision.asset_version_id)
+            admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, work_constraints=constraints)
+            content = apply_work_constraint_actions(content, admission=admission, revision=revision.content, target=revision.asset_version_id, canon=canon.content)
         if admission is not None:
             content["internal_admission"] = admission
         primary = _output(

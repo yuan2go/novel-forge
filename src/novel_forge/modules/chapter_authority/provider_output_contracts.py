@@ -1104,7 +1104,7 @@ def validate_chapter_provider_output_semantics(
 ) -> dict[str, Any]:
 
     normalized = json.loads(json.dumps(value, ensure_ascii=False))
-    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25", ":v26", ":v27"))
+    work_requirements = output_schema_ref.endswith((":v22", ":v23", ":v24", ":v25", ":v26", ":v27", ":v28"))
     if stage == "canon_extraction":
         if output_schema_ref:
             if output_schema_ref not in {
@@ -1118,13 +1118,14 @@ def validate_chapter_provider_output_semantics(
                 "schema:chapter-provider-output:canon_extraction:v25",
                 "schema:chapter-provider-output:canon_extraction:v26",
                 "schema:chapter-provider-output:canon_extraction:v27",
+        "schema:chapter-provider-output:canon_extraction:v28",
             }:
                 raise KernelError(
                     "CHAPTER_PROVIDER_OUTPUT_CONTRACT_UNSUPPORTED",
                     "unknown frozen Canon output contract",
                 )
             host_bind_known_metadata = output_schema_ref.endswith(
-                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25", ":v26", ":v27")
+                (":v20", ":v21", ":v22", ":v23", ":v24", ":v25", ":v26", ":v27", ":v28")
             )
         original_realization = {item.get("planned_event_id"): item for item in normalized.get("realization_evidence", [])}
         normalized = _without_null_object_properties(normalized)

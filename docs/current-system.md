@@ -2139,3 +2139,23 @@ per-dimension applicability. Missing optional method selection never suppresses 
 consistency or source-boundary checks. Parallel failed interface tasks can receive an
 atomic Kernel successor group; all source receipts must be reconciled, and exhausted
 retryable generations retain their original Attempt history before native termination.
+
+
+Quality work-constraint decisions use exact frozen platform bounds and the selected
+candidate's Unicode text, independently of model scores. `UNICODE_CODE_POINTS_V1`
+and explicitly selected `HAN_CHARACTERS_V1` are supported. Unitless historical
+character ranges use Unicode code points (`HISTORICAL_COMPATIBILITY`); the original
+policy remains unchanged. Insufficient policy evidence cannot invent a range.
+A failed length constraint produces a located Scene repair through existing Revision,
+ReReview and CandidateComparison. All outside text stays protected. Strict literary
+qualification remains separate. Initial legacy aggregate reassessment preserves its
+exact input snapshot and successful source operation; it is appended on the same Saga.
+
+Canon `accepted-cas.v1` restricts extracted from-values to accepted state values or
+null for an initial occurrence. Exact entity preconditions remain host validated.
+Legacy epistemic plan labels such as `KNOWN: explanation` retain their frozen wording
+while matching the typed status (`HISTORICAL_COMPATIBILITY`); the explanation does
+not create accepted knowledge. Missing baselines never imply a fabricated UNKNOWN
+state. Extraction CAS/typed-plan disagreement requests evidence reassessment, keeps
+Canon blocked, and cannot authorize editing unlocated prose. Correction inputs follow
+durable Kernel successors instead of stale predecessor IDs.

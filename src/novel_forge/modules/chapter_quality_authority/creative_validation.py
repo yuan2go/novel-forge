@@ -43,7 +43,7 @@ def model_quality_receipt(request: Any, result: Any, *, target: str) -> dict[str
             effect_id=native["external_effect_id"], target=target)
 
 
-def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str) -> dict[str, Any] | None:
+def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str, work_constraints=()) -> dict[str, Any] | None:
     receipts = [group.get("validation_receipt") for group in groups]
     if not any(receipts):
         return None
@@ -58,6 +58,13 @@ def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str) -> 
         if set(by_dimension) != set(QUALITY_GROUPS[group["group"]]):
             raise KernelError("VALIDATION_QUALITY_COVERAGE_REQUIRED", group["group"])
         for dimension, row in by_dimension.items():
+            constraint = next((item for item in work_constraints if item["dimension"] == dimension), None)
+            if constraint is not None:
+                valid = constraint["status"] == "PASSED"
+                if not valid:
+                    blocked.append(dimension)
+                observations.append({"dimension": dimension, "status": "OBSERVED" if valid else "BLOCKED", "work_constraint": constraint})
+                continue
             verdict = row.get("semantic_verdict", row["gate_status"])
             if row.get("gate_status") == "NOT_APPLICABLE" and row.get("calibration_status") == "WORK_APPLICABILITY":
                 observations.append({"dimension": dimension, "status": "NOT_APPLICABLE"})
@@ -76,14 +83,15 @@ def assess_internal_quality(*, groups: list[Mapping[str, Any]], target: str) -> 
             observations.append({"dimension": dimension, "status": "OBSERVED" if valid else "BLOCKED",
                 "semantic_verdict": verdict, "threshold_evaluation": measured,
                 "literary_qualification": "NOT_RUN"})
-    return {"version": "creative-quality-admission.v1", "mode": MODE, "target_asset_version_id": target,
+    return {"version": "creative-quality-admission.v2" if work_constraints else "creative-quality-admission.v1", "mode": MODE, "target_asset_version_id": target,
             "book_id": receipts[0]["book_id"], "status": "INTERNAL_ADMITTED" if not blocked else "BLOCKED",
             "blocked_dimensions": blocked, "observations": observations, "receipts": receipts,
+            **({"work_constraints": list(work_constraints)} if work_constraints else {}),
             "literary_qualification": "NOT_RUN", "strict_certification_eligible": False}
 
 
 def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, project_id: str, book_id: str | None = None) -> None:
-    if (admission.get("version") != "creative-quality-admission.v1" or admission.get("mode") != MODE
+    if (admission.get("version") not in {"creative-quality-admission.v1", "creative-quality-admission.v2"} or admission.get("mode") != MODE
             or admission.get("status") != "INTERNAL_ADMITTED" or not admission.get("receipts")
             or admission.get("blocked_dimensions") or admission.get("strict_certification_eligible") is not False
             or book_id is not None and admission.get("book_id") != book_id):
@@ -102,6 +110,71 @@ def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, 
             if len(rows) != 1:
                 raise KernelError("VALIDATION_QUALITY_GROUP_REQUIRED", receipt["external_effect_id"])
             groups.append(rows[0][0])
-        expected = assess_internal_quality(groups=groups, target=admission["target_asset_version_id"])
+        constraints = receipt_work_constraints(database_url, project_id=project_id, receipts=admission["receipts"], target=admission["target_asset_version_id"]) if admission["version"] == "creative-quality-admission.v2" else ()
+        expected = assess_internal_quality(groups=groups, target=admission["target_asset_version_id"], work_constraints=constraints)
         if expected != dict(admission):
             raise KernelError("VALIDATION_QUALITY_ADMISSION_TAMPERED", admission["target_asset_version_id"])
+
+
+def receipt_work_constraints(database_url, *, project_id, receipts, target):
+    import unicodedata
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    receipt = next(row for row in receipts if row["stage"] == "quality_platform")
+    with AuthorityUnitOfWork(database_url) as u:
+        if quality_receipt(u.cursor, project_id=project_id, effect_id=receipt["external_effect_id"], target=target) != receipt:
+            raise KernelError("VALIDATION_QUALITY_SCOPE_MISMATCH", target)
+        u.cursor.execute("SELECT request_payload->'input'->'quality_context'->'compiled_platform_policy' FROM authority_external_effect WHERE external_effect_id=%s", [receipt["external_effect_id"]])
+        policy = u.cursor.fetchone()[0] or {}
+    rules = policy.get("chapter_length_rules") or {}
+    if not rules or rules.get("status") == "INSUFFICIENT_EVIDENCE":
+        return ()
+    minimum, maximum = rules.get("minimum"), rules.get("maximum")
+    if type(minimum) is not int or type(maximum) is not int or not 0 < minimum <= maximum:
+        raise KernelError("CHAPTER_LENGTH_POLICY_INVALID", "Frozen bounds must be positive ordered integers")
+    unit = rules.get("unit", "UNICODE_CODE_POINTS_V1")
+    if unit not in {"UNICODE_CODE_POINTS_V1", "HAN_CHARACTERS_V1"}:
+        raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", unit)
+    text = AuthorityAssetQuery(database_url).require(project_id=project_id, asset_version_id=target).content["text"]
+    observed = len(text) if unit == "UNICODE_CODE_POINTS_V1" else sum(unicodedata.name(char, "").startswith(("CJK UNIFIED IDEOGRAPH-", "CJK COMPATIBILITY IDEOGRAPH-")) for char in text)
+    return ({"dimension": "chapter_length", "status": "PASSED" if minimum <= observed <= maximum else "FAILED",
+        "source_policy": policy["source_asset_version_id"], "policy_digest": policy["policy_digest"],
+        "target_asset_version_id": target, "unit": unit, "minimum": minimum, "maximum": maximum, "observed": observed,
+        "compatibility": "EXPLICIT_UNIT" if "unit" in rules else "LEGACY_CHARACTER_BOUNDS_UNICODE"},)
+
+
+def apply_work_constraint_actions(content, *, admission, revision, target, canon):
+    from novel_forge.modules.review.diagnostics import prose_hash
+    content["required_actions"] = [action for action in content["required_actions"]
+        if action["observation"] in admission["blocked_dimensions"] and action["observation"] != "chapter_length"]
+    conflicts = canon.get("conflicts") or []
+    interface_codes = {"NARRATIVE_TRANSITION_PRECONDITION_FAILED", "NARRATIVE_TRANSITION_BASELINE_MISSING", "PLANNED_STATE_TRANSITION_MISMATCH"}
+    if conflicts and all(row.get("conflict_code") in interface_codes for row in conflicts):
+        for action in content["required_actions"]:
+            if action["observation"] == "canon_consistency":
+                action.update(required_action="EVIDENCE_REASSESSMENT", required_authority="CANON_GRAPH_AUTHORITY",
+                    permitted_change_scope="EVIDENCE_ONLY", repair_diagnostics=[{"code": row["conflict_code"], "message": row.get("evidence", {}).get("message", ""), "recommended_resolution": row.get("recommended_resolution", "")} for row in conflicts],
+                    reassessment_reason="Typed extraction preconditions must reconcile accepted history and the active plan; no prose location establishes these interface conflicts.")
+    for constraint in admission.get("work_constraints", ()):
+        if constraint["status"] != "FAILED":
+            continue
+        text = revision["text"]
+        scenes = [item["text"] for item in revision.get("scene_artifacts", ()) if item.get("text") and item["text"] in text]
+        if not scenes:
+            raise KernelError("QUALITY_REVISION_LOCATION_REQUIRED", "A length repair requires a preserved Scene boundary")
+        scene = max(scenes, key=len)
+        start = text.index(scene)
+        report = {"dimension": constraint["dimension"], "target_asset_version_id": target,
+            "gate_status": "FAILED", "calibration_status": "DETERMINISTIC", "measurement": constraint,
+            "evidence_locations": [{"start": start, "end": start + len(scene), "quote": scene}],
+            "source": constraint["source_policy"]}
+        content["evidence_reports"] = [row for row in content["evidence_reports"] if row["dimension"] != constraint["dimension"]] + [report]
+        content["required_actions"].append({"observation": constraint["dimension"], "required_action": "LOCAL_REPAIR",
+            "required_authority": "CHAPTER_AUTHORITY", "permitted_change_scope": "CHAPTER",
+            "reevaluation_gate": "platform_quality_gate", "preserved_invariants": ["accepted_canon", "executed_chapter_history", "active_parent_plan_identity"],
+            "issue": {"code": "QUALITY_CHAPTER_LENGTH_FAILED", "status": "OPEN", "severity": "BLOCKING"},
+            "evidence_asset_version_ids": [constraint["source_policy"]], "work_constraint": constraint,
+            "repair_goal": "Meet the frozen author length range through a developed action or dialogue within the located Scene; preserve all outside text, facts, voices and causality. Avoid padding and explanatory summaries.",
+            "source_text_hash": prose_hash(text)})
+    content["decision_chain"] = {**content["decision_chain"], "required_actions": content["required_actions"],
+        "mode": MODE, "literary_qualification": "NOT_RUN"}
+    return content

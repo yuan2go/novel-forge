@@ -1280,6 +1280,9 @@ class PostgresChapterExecutionContractBinder:
             schema_ref = "schema:chapter-provider-output:canon_support:v2"
         if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
             from novel_forge.modules.canon_graph.source_spans import span_output_schema
+            if inputs.get("transition_precondition_contract") == "accepted-cas.v1":
+                from novel_forge.modules.canon_graph.source_spans import constrain_transition_preconditions
+                schema = constrain_transition_preconditions(schema, inputs["accepted_transition_baselines"])
             json_envelope = inputs.get("source_span_schema_contract") == "typed-extraction-json.v1"
             span_pattern = json_envelope or inputs.get("source_span_schema_contract") == "local-evidence-pattern.v1"
             compact = span_pattern or inputs.get("source_span_schema_contract") == "local-evidence-ref.v1"
@@ -1293,7 +1296,7 @@ class PostgresChapterExecutionContractBinder:
                 schema = {"$schema": schema["$schema"], "type": "object", "additionalProperties": False,
                     "properties": {"payload_json": {"type": "string", "minLength": 2}}, "required": ["payload_json"],
                     "x-host-payload-schema": schema}
-                schema_ref = "schema:chapter-provider-output:canon_extraction:v27"
+                schema_ref = "schema:chapter-provider-output:canon_extraction:" + ("v28" if inputs.get("transition_precondition_contract") == "accepted-cas.v1" else "v27")
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")

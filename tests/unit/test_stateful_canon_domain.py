@@ -227,3 +227,17 @@ class StatefulCanonDomainTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+def test_typed_knowledge_plan_label_preserves_cas_and_does_not_create_accepted_history():
+    from novel_forge.modules.canon_graph.domain import _validate_planned_execution
+    plan = {"required_state_transitions": [{"state_kind": "character_knowledge", "entity_key": "zhou:roster", "from_state": "UNKNOWN", "to_state": "KNOWN：亲见栏目差异"}]}
+    event = {"character_id": "zhou", "proposition_id": "roster", "status": "KNOWN", "from_status": None}
+    failures = []
+    _validate_planned_execution(failures, state={}, extraction={"character_knowledge_changes": [event]}, planned_execution=plan)
+    assert failures == []
+    for invalid in ({**event, "status": "SUSPECTED"}, {**event, "from_status": "UNKNOWN"}):
+        failures = []
+        _validate_planned_execution(failures, state={}, extraction={"character_knowledge_changes": [invalid]}, planned_execution=plan)
+        assert failures[0]["conflict_code"] == "PLANNED_STATE_TRANSITION_MISMATCH"

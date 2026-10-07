@@ -199,3 +199,21 @@ def test_quality_spans_and_host_applicability_preserve_exact_candidate_contract(
         bind_quality_spans(rows[0]["evidence_locations"], text + "后来。")
     with pytest.raises(KernelError, match="QUALITY_DIMENSION_COVERAGE_INVALID"):
         require_quality_dimensions([rows[0], rows[0]], ("reward", "golden_opening"))
+
+
+def test_extraction_preconditions_bind_accepted_values_without_inventing_genesis():
+    from novel_forge.modules.canon_graph.source_spans import constrain_transition_preconditions
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    schema, _ = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": {}}, prompt_contract_version="v9")
+    frozen = deepcopy(schema)
+    corrected = constrain_transition_preconditions(schema, {"character_knowledge": [{"status": "KNOWN"}]})
+    assert schema == frozen
+    field = corrected["properties"]["character_knowledge_changes"]["items"]["properties"]["from_status"]
+    assert field["enum"] == [None, "KNOWN"]
+    for value in (None, "KNOWN"):
+        _validate(field, value, path="$.from_status")
+    with pytest.raises(ValueError):
+        _validate(field, "UNKNOWN", path="$.from_status")
+    empty = constrain_transition_preconditions(schema, {})
+    assert empty["properties"]["character_state_changes"]["items"]["properties"]["from_state"]["enum"] == [None]

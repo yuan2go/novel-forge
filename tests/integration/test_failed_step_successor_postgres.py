@@ -365,6 +365,17 @@ def test_failed_step_group_is_atomic_and_replays_without_rewriting_attempts(fail
         replay = replace_failed_steps(DATABASE_URL, corrections=corrections, context=context)
         assert [r["operation_id"] for r in first] == [r["operation_id"] for r in replay]
         assert all(r["replayed"] for r in replay)
+        from types import SimpleNamespace
+        from novel_forge.modules.chapter_authority.scheduler import ChapterAuthorityScheduler
+        scheduler = object.__new__(ChapterAuthorityScheduler)
+        scheduler.database_url = DATABASE_URL
+        with AuthorityUnitOfWork(DATABASE_URL) as u:
+            u.cursor.execute("SELECT idempotency_key FROM authority_operation WHERE operation_id=%s", [child])
+            original_key = u.cursor.fetchone()[0]
+        active = scheduler._initial_operation(root_operation_id=root, project_id=project,
+            node=SimpleNamespace(definition_name=name), idempotency_key=original_key)
+        assert active["operation_id"] == first[0]["operation_id"]
+        assert active["status"] == "ADMITTED"
     with AuthorityUnitOfWork(DATABASE_URL) as u:
         u.cursor.execute("SELECT status,result->>'error_code' FROM authority_attempt WHERE operation_id=ANY(%s)", [[child, second]])
         assert u.cursor.fetchall() == [("FAILED_FINAL", "LOCAL_CONTRACT_DEFECT")] * 2

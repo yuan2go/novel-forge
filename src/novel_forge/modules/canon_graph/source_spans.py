@@ -210,3 +210,18 @@ def require_quality_dimensions(rows, expected):
     dimensions = [row.get("dimension") for row in rows]
     if len(dimensions) != len(expected) or set(dimensions) != set(expected):
         raise KernelError("QUALITY_DIMENSION_COVERAGE_INVALID", "Each frozen dimension must occur exactly once")
+
+
+def constrain_transition_preconditions(schema, baselines):
+    from .domain import SEMANTIC_CHANGE_FIELDS
+    result = deepcopy(schema)
+    for field, kind in SEMANTIC_CHANGE_FIELDS.items():
+        if field not in result["properties"]:
+            continue
+        properties = result["properties"][field]["items"].get("properties", {})
+        for predecessor, current in (("from_status", "status"), ("from_state", "state"),
+                ("from_stance", "stance"), ("from_stage", "stage"), ("from_tier", "tier")):
+            if predecessor in properties:
+                values = [None, *dict.fromkeys(row[current] for row in baselines.get(kind, []) if current in row)]
+                properties[predecessor]["enum"] = values
+    return result

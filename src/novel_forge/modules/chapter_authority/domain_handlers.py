@@ -749,6 +749,39 @@ def build_canon_patch(
     extraction: dict[str, Any] | None = None,
     context_bundle: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    historical_state, identity_profiles = canon_history(context_bundle or {})
+    work_extraction = (extraction or {}).get("canon_extraction_contract_version") in {
+        "canon-semantic-extraction-v6", "canon-grounded-extraction-v2"
+    }
+    accepted_boundary = ((context_bundle or {}).get("chapter_execution") or {}).get("accepted_boundary") or {}
+    confirmed_empty_baseline = (
+        work_extraction
+        and accepted_boundary.get("accepted_through_chapter") == int(revision.get("chapter", 0)) - 1
+        and bool(accepted_boundary.get("canon_snapshot_asset_version_id"))
+        and bool(accepted_boundary.get("story_state_asset_version_id"))
+    )
+    if int(revision.get("chapter", 0)) > 1 and not historical_state.get(
+        "canon_snapshot"
+    ) and not confirmed_empty_baseline:
+        raise KernelError(
+            "CANON_HISTORY_BASELINE_REQUIRED",
+            "chapters after the first require an explicit CanonSnapshot baseline",
+        )
+    return build_canon_update(
+        project_id=project_id,
+        revision=revision,
+        revision_asset_version_id=revision_asset_version_id,
+        context_bundle_version_id=context_bundle_version_id,
+        extraction=extraction,
+        historical_state=historical_state,
+        planned_execution=dict(
+            (context_bundle or {}).get("chapter_execution_expectations") or {}
+        ),
+        identity_profiles=identity_profiles,
+    )
+
+
+def canon_history(context_bundle):
     historical_state: dict[str, list[dict[str, Any]]] = {}
     identity_profiles: list[dict[str, Any]] = []
     state_aliases = {
@@ -843,35 +876,7 @@ def build_canon_patch(
                 {**entry, **entry["state"], **_entity_key_components(entry["entity_key"]), "asset_version_id": world_binding["action"]["source"]["asset_version_id"]}
                 for entry in entries
             ]
-    work_extraction = (extraction or {}).get("canon_extraction_contract_version") in {
-        "canon-semantic-extraction-v6", "canon-grounded-extraction-v2"
-    }
-    accepted_boundary = ((context_bundle or {}).get("chapter_execution") or {}).get("accepted_boundary") or {}
-    confirmed_empty_baseline = (
-        work_extraction
-        and accepted_boundary.get("accepted_through_chapter") == int(revision.get("chapter", 0)) - 1
-        and bool(accepted_boundary.get("canon_snapshot_asset_version_id"))
-        and bool(accepted_boundary.get("story_state_asset_version_id"))
-    )
-    if int(revision.get("chapter", 0)) > 1 and not historical_state.get(
-        "canon_snapshot"
-    ) and not confirmed_empty_baseline:
-        raise KernelError(
-            "CANON_HISTORY_BASELINE_REQUIRED",
-            "chapters after the first require an explicit CanonSnapshot baseline",
-        )
-    return build_canon_update(
-        project_id=project_id,
-        revision=revision,
-        revision_asset_version_id=revision_asset_version_id,
-        context_bundle_version_id=context_bundle_version_id,
-        extraction=extraction,
-        historical_state=historical_state,
-        planned_execution=dict(
-            (context_bundle or {}).get("chapter_execution_expectations") or {}
-        ),
-        identity_profiles=identity_profiles,
-    )
+    return historical_state, identity_profiles
 
 
 def _entity_key_components(entity_key: str) -> dict[str, str]:

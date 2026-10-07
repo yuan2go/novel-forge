@@ -1277,6 +1277,13 @@ def _validate_planned_execution(
             continue
         expected_from = str(planned.get("from_state") or "")
         expected_to = str(planned.get("to_state") or "")
+        if state_kind in {"character_knowledge", "character_belief"}:
+            statuses = {"UNKNOWN", "SUSPECTED", "KNOWN", "FORGOTTEN"} if state_kind == "character_knowledge" else {"BELIEVES", "DOUBTS", "DISBELIEVES", "UNCERTAIN"}
+            for separator in ("：", ":"):
+                status, delimiter, explanation = expected_to.partition(separator)
+                if delimiter and explanation.strip() and status in statuses:
+                    expected_to = status
+                    break
         accepted_candidates = [
             item
             for item in state.get(state_kind, [])

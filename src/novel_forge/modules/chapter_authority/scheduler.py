@@ -287,6 +287,27 @@ class ChapterAuthorityScheduler:
         )
         if initial_quality is None or initial_quality["status"] != "SUCCEEDED":
             return None
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT definition_version,input_asset_snapshot FROM authority_operation WHERE operation_id=%s AND project_id=%s",
+                [initial_quality["operation_id"], request.project_id])
+            version, frozen_inputs = uow.cursor.fetchone()
+        source = {**initial_quality, "definition_version": version, "input_asset_snapshot": frozen_inputs}
+        if root["definition_version"] == "3.9.0" and source["definition_version"] == "3.9.0":
+            key = f"{root_key}:{ChapterNode.QUALITY.value}:work-reassessment"
+            reassessment = self._initial_operation(root_operation_id=str(root["operation_id"]), project_id=request.project_id,
+                node=ChapterNode.QUALITY, idempotency_key=key)
+            if reassessment is None:
+                operation = self._admit_node(request=request, root=root, saga_id=str(saga["saga_id"]), children=children,
+                    node=ChapterNode.QUALITY, idempotency_suffix=":work-reassessment",
+                    input_overrides={"quality_reassessment_source_operation_id": source["operation_id"]},
+                    explicit_inputs=source["input_asset_snapshot"], timeline_step_key="quality:work-reassessment",
+                    timeline_ordinal=900, activate_immediately=True)
+                return self._generation_tick(root, saga, operation, ChapterNode.QUALITY, "quality_work_reassessment_admitted", saga_status=str(saga["status"]))
+            if reassessment["status"] != "SUCCEEDED":
+                self._execute_node(request, ChapterNode.QUALITY, reassessment)
+                return self._generation_tick(root, saga, self._child(str(reassessment["operation_id"]), request.project_id),
+                    ChapterNode.QUALITY, "quality_work_reassessment", saga_status=str(saga["status"]))
+            initial_quality = reassessment
         tasks = self._operation_outputs(
             str(initial_quality["operation_id"]),
             request.project_id,
@@ -982,6 +1003,21 @@ class ChapterAuthorityScheduler:
                 ],
             )
             row = uow.cursor.fetchone()
+            visited = set()
+            while row is not None:
+                if row[0] in visited:
+                    raise KernelError("STEP_SUCCESSOR_LINEAGE_INVALID", "A cyclic successor cannot supply correction inputs")
+                visited.add(row[0])
+                uow.cursor.execute("""SELECT o.operation_id,o.definition_name,o.status,
+                    COALESCE((o.definition_snapshot->'retry_policy'->>'max_attempts')::int,1)
+                    FROM authority_saga_step_successor s JOIN authority_operation o
+                    ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s
+                    AND s.project_id=%s AND o.root_operation_id=%s AND o.definition_name=%s""",
+                    [row[0], project_id, root_operation_id, node.definition_name])
+                successor = uow.cursor.fetchone()
+                if successor is None:
+                    break
+                row = successor
         if row is None:
             return None
         return dict(
@@ -1000,38 +1036,15 @@ class ChapterAuthorityScheduler:
         generation: int,
         root_idempotency_key: str,
     ) -> dict[ChapterNode, dict[str, Any]]:
-        expected_keys = [
-            f"{root_idempotency_key}:{node.value}:quality-correction:{generation}"
-            for node in ChapterNode
-        ]
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute(
-                """
-                SELECT operation_id, definition_name, status,
-                       COALESCE(
-                         (definition_snapshot->'retry_policy'->>'max_attempts')::int,
-                         1
-                       )
-                FROM authority_operation
-                WHERE root_operation_id=%s AND project_id=%s
-                  AND idempotency_key=ANY(%s)
-                ORDER BY created_at, operation_id
-                """,
-                [root_operation_id, project_id, expected_keys],
+        operations = {}
+        for node in ChapterNode:
+            operation = self._initial_operation(
+                root_operation_id=root_operation_id, project_id=project_id, node=node,
+                idempotency_key=f"{root_idempotency_key}:{node.value}:quality-correction:{generation}",
             )
-            rows = uow.cursor.fetchall()
-        by_definition = {node.definition_name: node for node in ChapterNode}
-        return {
-            by_definition[str(row[1])]: dict(
-                zip(
-                    ("operation_id", "definition_name", "status", "max_attempts"),
-                    row,
-                    strict=True,
-                )
-            )
-            for row in rows
-            if str(row[1]) in by_definition
-        }
+            if operation is not None:
+                operations[node] = operation
+        return operations
 
     def _operation_outputs(
         self, operation_id: str, project_id: str, *, role: str
@@ -1259,11 +1272,12 @@ class ChapterAuthorityScheduler:
         operation: dict[str, Any],
         node: ChapterNode,
         recovery: str,
+        *, saga_status: str = "WAITING_GATE",
     ) -> ChapterSchedulerTick:
         return ChapterSchedulerTick(
             root_operation_id=str(root["operation_id"]),
             saga_id=str(saga["saga_id"]),
-            saga_status="WAITING_GATE",
+            saga_status=saga_status,
             operation_id=str(operation["operation_id"]),
             node=node.value,
             operation_status=str(operation["status"]),

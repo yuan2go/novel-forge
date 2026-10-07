@@ -1,0 +1,43 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "implementation_parent_sha": "93eba97fc0376a1184abd8b52d612fec286138c6",
+  "evidence_state": "EXECUTABLE",
+  "controlled_validation": {
+    "focused_tests": 74,
+    "subtests": 39,
+    "postgres_database": "novel_forge_production_closure_test",
+    "native_clone": "novel_forge_closure_work_constraints_20261007_v2_test",
+    "provider_dispatches": 0,
+    "original_book": "closure-original-book",
+    "original_root_operation_id": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+    "length": {
+      "observed": 1124,
+      "minimum": 1200,
+      "maximum": 2400,
+      "unit": "UNICODE_CODE_POINTS_V1",
+      "historical_compatibility": "unitless character bounds"
+    },
+    "required_prose_action": "chapter_length LOCAL_REPAIR; one exact Scene; outside prose protected",
+    "canon_status": "BLOCKED; typed extraction reassessment required",
+    "rendered_revision_admission": {
+      "status": "SELECTED",
+      "input_capacity_units": 158094,
+      "output_capacity_units": 32768,
+      "context_capacity": 272000
+    }
+  },
+  "real_running": {
+    "accepted_chapters": 0,
+    "target_chapters": 12,
+    "status": "NOT_RUN_FOR_THIS_CHANGED_CONTRACT"
+  },
+  "literary_effect": "NOT_PROVEN",
+  "artifacts_private": [
+    "work-constraints-tests-242.log",
+    "work-constraints-preflight-241.log",
+    "work-constraints-controlled-241.json",
+    "work-constraints-rendered-admission-241.json",
+    "real/before-work-constraints-237.dump"
+  ]
+}
