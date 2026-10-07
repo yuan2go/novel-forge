@@ -37,6 +37,69 @@ def effective_workflow(cursor: Any, book: dict[str, Any]) -> dict[str, Any] | No
     return profile[0] if profile else None
 
 
+def blocking_working_cli_outcomes(cursor: Any, *, project_id: str, book_id: str,
+                                 outcomes: list[dict[str, Any]], operation_id: str = "",
+                                 book_run_id: str = "") -> list[dict[str, Any]]:
+    if not outcomes or not all(item.get("operation_id") for item in outcomes) or not (operation_id or book_run_id):
+        return outcomes
+    cursor.execute("""SELECT to_jsonb(b) FROM authority_book_production b
+        WHERE b.project_id=%s AND b.book_id=%s AND (%s='' OR b.book_run_id=%s)
+          AND (%s='' OR EXISTS(SELECT 1 FROM authority_operation work
+            JOIN authority_book_chapter_request request ON request.chapter_root_operation_id=
+              COALESCE(NULLIF(work.root_operation_id,''),work.operation_id)
+            JOIN authority_operation root ON root.operation_id=request.chapter_root_operation_id
+            WHERE work.project_id=b.project_id AND work.workspace_id=b.workspace_id AND work.operation_id=%s
+              AND request.book_run_id=b.book_run_id AND root.definition_version=%s)
+            OR EXISTS(SELECT 1 FROM authority_story_planning_generation generation
+              WHERE generation.project_id=b.project_id AND generation.workspace_id=b.workspace_id
+                AND generation.book_id=b.book_id AND generation.operation_id=%s))
+        ORDER BY b.created_at DESC,b.book_run_id LIMIT 1""",
+        [project_id, book_id, book_run_id, book_run_id, operation_id, operation_id, AUTHOR_ROOT_VERSION, operation_id])
+    row = cursor.fetchone()
+    if not row and operation_id:
+        cursor.execute("""SELECT to_jsonb(b),max((source->>'chapter_number')::integer)
+            FROM authority_operation review
+            JOIN authority_book_prose_review_event event ON event.content->>'operation_id'=review.operation_id
+              AND event.kind='WINDOW_ADMITTED'
+            JOIN authority_book_prose_review_run run ON run.run_id=event.run_id
+            JOIN authority_book_production b ON b.book_run_id=run.book_run_id
+            CROSS JOIN LATERAL jsonb_array_elements(run.manifest->'sources') source
+            WHERE review.project_id=%s AND review.operation_id=%s AND review.definition_name='longform.prose_review'
+              AND run.project_id=review.project_id AND run.workspace_id=review.workspace_id
+              AND b.project_id=run.project_id AND b.workspace_id=run.workspace_id AND b.book_id=%s
+              AND run.manifest->>'source_isolation'='AUTHOR_SELECTED_UNREVIEWED_PROSE'
+            GROUP BY b.book_run_id""", [project_id, operation_id, book_id])
+        review = cursor.fetchone()
+        if not review or effective_workflow(cursor, review[0]) != AUTHOR_WORKFLOW:
+            return outcomes
+        cursor.execute("""SELECT work.operation_id FROM authority_operation work
+            JOIN authority_book_chapter_request request ON request.chapter_root_operation_id=
+              COALESCE(NULLIF(work.root_operation_id,''),work.operation_id)
+            JOIN authority_operation root ON root.operation_id=request.chapter_root_operation_id
+            JOIN authority_book_production b ON b.book_run_id=request.book_run_id
+            WHERE work.project_id=%s AND b.project_id=work.project_id AND b.workspace_id=work.workspace_id
+              AND b.book_id=%s AND root.definition_version=%s AND request.chapter_number>%s
+              AND work.operation_id=ANY(%s) AND work.operation_id<>%s""",
+            [project_id, book_id, AUTHOR_ROOT_VERSION, review[1], [item["operation_id"] for item in outcomes], operation_id])
+        independent = {item[0] for item in cursor.fetchall()}
+        return [item for item in outcomes if item["operation_id"] not in independent]
+    if not row or not isinstance(row[0], dict) or effective_workflow(cursor, row[0]) != AUTHOR_WORKFLOW:
+        return outcomes
+    cursor.execute("""SELECT DISTINCT review.operation_id FROM authority_operation review
+        JOIN authority_book_prose_review_event event ON event.content->>'operation_id'=review.operation_id
+          AND event.kind='WINDOW_ADMITTED'
+        JOIN authority_book_prose_review_run run ON run.run_id=event.run_id
+        JOIN authority_book_production b ON b.book_run_id=run.book_run_id
+        WHERE review.project_id=%s AND review.definition_name='longform.prose_review'
+          AND run.project_id=review.project_id AND run.workspace_id=review.workspace_id
+          AND b.project_id=run.project_id AND b.workspace_id=run.workspace_id AND b.book_id=%s
+          AND run.manifest->>'source_isolation'='AUTHOR_SELECTED_UNREVIEWED_PROSE'
+          AND review.operation_id=ANY(%s) AND review.operation_id<>%s""",
+        [project_id, book_id, [item["operation_id"] for item in outcomes], operation_id])
+    optional = {item[0] for item in cursor.fetchall()}
+    return [item for item in outcomes if item["operation_id"] not in optional]
+
+
 def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_version: int) -> dict[str, Any]:
     uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE", [book["book_id"]])
     uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])

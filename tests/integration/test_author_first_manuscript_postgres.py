@@ -121,6 +121,22 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     with pytest.raises(KernelError, match="CONTROLLED_OPTIONAL_SERVICE_UNAVAILABLE"):
         coordinator.advance(**review_scope, run_id=review["run_id"], expected_version=report["expected_version"],
             idempotency_key="optional-outage", trace_id="trace-outage", correlation_id="correlation-outage")
+    from novel_forge.modules.book_authority.manuscript import blocking_working_cli_outcomes
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT content->>'operation_id' FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED'", [review["run_id"]])
+        review_operation = uow.cursor.fetchone()[0]
+        simulated_unknown = [{"operation_id": review_operation, "usage": "UNKNOWN"}]
+        assert not blocking_working_cli_outcomes(uow.cursor, project_id=project, book_id=book["book_id"],
+            book_run_id=book["book_run_id"], outcomes=simulated_unknown)
+        uow.cursor.execute("SELECT operation_id FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate' ORDER BY created_at DESC LIMIT 1", [project])
+        draft_operation = uow.cursor.fetchone()[0]
+        assert not blocking_working_cli_outcomes(uow.cursor, project_id=project, book_id=book["book_id"],
+            operation_id=draft_operation, outcomes=simulated_unknown)
+        assert blocking_working_cli_outcomes(uow.cursor, project_id=project, book_id=book["book_id"],
+            operation_id=review_operation, outcomes=simulated_unknown) == simulated_unknown
+        required_unknown = [{"operation_id": draft_operation, "usage": "UNKNOWN"}]
+        assert blocking_working_cli_outcomes(uow.cursor, project_id=project, book_id=book["book_id"],
+            book_run_id=book["book_run_id"], outcomes=required_unknown) == required_unknown
     usable = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert len(usable["units"]) == 6
     assert usable["units"][0]["review_status"] == "FAILED"

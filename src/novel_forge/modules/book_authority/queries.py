@@ -261,7 +261,9 @@ class PostgresBookProductionQuery:
             row = uow.cursor.fetchone()
             if row is None:
                 raise KernelError("BOOK_RUN_NOT_FOUND", "Original Book scope is required to query unresolved receipts")
-            return unresolved_cli_outcomes(uow.cursor, str(row[0]), book_id=str(row[1]))
+            from .manuscript import blocking_working_cli_outcomes
+            return blocking_working_cli_outcomes(uow.cursor, project_id=str(row[0]), book_id=str(row[1]),
+                book_run_id=book_run_id, outcomes=unresolved_cli_outcomes(uow.cursor, str(row[0]), book_id=str(row[1])))
 
     def pending_plan_generation(self, *, project_id: str, book_id: str, logical_key: str) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:

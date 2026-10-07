@@ -34,7 +34,7 @@ def test_original_book_query_uses_book_scope_across_successor_root_names(monkeyp
         book_run_id="original-run"
     ) == [receipt]
     read.assert_called_once_with(cursor, "project", book_id="original-book")
-    assert cursor.execute.call_args.args[1] == ["original-run"]
+    assert cursor.execute.call_args_list[0].args[1] == ["original-run"]
 
 
 def test_missing_book_scope_cannot_project_unknown_receipts_as_known(monkeypatch):

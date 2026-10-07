@@ -106,3 +106,33 @@ def test_unclassified_started_codex_exit_requires_original_receipt_reconciliatio
 
     assert _codex_process_failure(ProcessReceiptStatus.FAILED) == ("PROCESS_EXIT_FAILURE", ExecutionOutcome.UNKNOWN)
     assert _codex_process_failure(ProcessReceiptStatus.START_FAILED)[1] is ExecutionOutcome.RETRYABLE_FAILURE
+
+
+def test_optional_review_unknown_is_excluded_only_for_native_author_work(monkeypatch):
+    from novel_forge.modules.book_authority import manuscript
+
+    cursor = SimpleNamespace(execute=Mock(), fetchone=Mock(return_value=({'book_run_id': 'book-run'},)),
+        fetchall=Mock(return_value=[('optional-review',)]))
+    monkeypatch.setattr(manuscript, 'effective_workflow', lambda *_: manuscript.AUTHOR_WORKFLOW)
+    optional = {'operation_id': 'optional-review', 'usage': 'UNKNOWN'}
+    required = {'operation_id': 'draft', 'usage': 'UNKNOWN'}
+    original = [optional, required]
+    assert manuscript.blocking_working_cli_outcomes(cursor, project_id='project', book_id='book',
+        operation_id='next-draft', outcomes=original) == [required]
+    assert original == [optional, required]
+    monkeypatch.setattr(manuscript, 'effective_workflow', lambda *_: None)
+    assert manuscript.blocking_working_cli_outcomes(cursor, project_id='project', book_id='book',
+        operation_id='next-draft', outcomes=original) == original
+
+
+def test_author_review_of_saved_prefix_does_not_depend_on_unknown_future_chapter(monkeypatch):
+    from novel_forge.modules.book_authority import manuscript
+
+    cursor = SimpleNamespace(execute=Mock(), fetchone=Mock(side_effect=[None, ({'book_run_id': 'book-run'}, 3)]),
+        fetchall=Mock(return_value=[('future-draft',)]))
+    monkeypatch.setattr(manuscript, 'effective_workflow', lambda *_: manuscript.AUTHOR_WORKFLOW)
+    original = [{'operation_id': 'future-draft'}, {'operation_id': 'own-review'}, {'operation_id': 'prior-draft'}]
+    assert manuscript.blocking_working_cli_outcomes(cursor, project_id='project', book_id='book',
+        operation_id='own-review', outcomes=original) == original[1:]
+    assert cursor.execute.call_args.args[1][3] == 3
+    assert original[0]['operation_id'] == 'future-draft'

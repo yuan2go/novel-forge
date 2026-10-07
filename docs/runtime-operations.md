@@ -610,6 +610,15 @@ run key cannot create a fresh spending allowance for the same work.
 Validation results advance internal production only with a native versioned validation
 admission receipt. Strict certification rejects missing required proofs. Omitted literary
 calibration, blind review and publication checks retain `NOT_RUN` and their reason.
+Native author-workflow dependency scope also applies to uncertain CLI outcomes. A
+standalone review window bound to `AUTHOR_SELECTED_UNREVIEWED_PROSE` does not gate
+required Chapter or Planning dispatch. Review of a saved prefix may proceed behind an
+uncertain later Chapter only when its native frozen sources precede that Chapter.
+The original uncertain task itself remains blocked, its receipts remain visible and its
+paid reservation still occupies the inherited work ceiling. Unknown required sources,
+unproven scope and legacy strict workflows fail closed; reads, author edits and current
+manuscript export do not dispatch a Provider call.
+
 The default writing template is `config/execution_templates/author_first.json`;
 `config/execution_templates/creative_validation.json` remains an explicit historical strict
 validation template. Genesis inputs remain in
