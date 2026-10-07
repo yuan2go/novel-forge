@@ -105,6 +105,7 @@ def source_graph(cursor, *, root, saga):
         failed[0]["definition_version"],
     ) not in {
         ("chapter.canon.extract", "3.9.24"),
+        ("chapter.canon.extract", "3.9.30"),
         ("chapter.canon.propose_changes", "3.9.23"),
     }:
         raise KernelError(
@@ -400,7 +401,7 @@ def source_graph(cursor, *, root, saga):
                 "Retain every completed preceding correction pass",
             )
     proof = semantic_proof or {
-        "contract_version": CONTRACT,
+        "contract_version": "chapter-canon-reference-contract-repair.v1" if source["definition_version"] == "3.9.30" else CONTRACT,
         "source_operation_id": source["operation_id"],
         "source_attempt": attempts[0],
         **evidence,
@@ -431,7 +432,7 @@ def repair_feedback(request, *, stage):
 
     binding = (request.command.get("preparation_report") or {}).get(BINDING) or {}
     proof = binding.get("retained_result") or {}
-    if proof.get("contract_version") != CONTRACT:
+    if proof.get("contract_version") not in {CONTRACT, "chapter-canon-reference-contract-repair.v1"}:
         return None
     with AuthorityUnitOfWork(request.database_url) as uow:
         cursor = uow.cursor
@@ -494,9 +495,10 @@ def repair_feedback(request, *, stage):
             "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
             [proof["source_operation_id"]],
         )
-        _, raw = receipt(cursor, cursor.fetchone()[0])
+        original_operation = cursor.fetchone()[0]
+        _, raw = receipt(cursor, original_operation)
         target = request.require_input("best_draft_candidate")
-        return failed_quote_feedback(
+        feedback = failed_quote_feedback(
             raw,
             target.content["text"],
             target=target.asset_version_id,
@@ -510,6 +512,14 @@ def repair_feedback(request, *, stage):
             },
             continuation=True,
         )
+        inherited = ((original_operation.get("command_payload", {}).get("preparation_report") or {}).get("retained_graph_continuation") or {}).get("retained_result") or {}
+        if proof["contract_version"] == "chapter-canon-reference-contract-repair.v1" and inherited.get("contract_version") == "chapter-current-semantic-repair.v1":
+            if inherited["target_asset_version_id"] != target.asset_version_id or inherited["quality_generation"] != proof["quality_generation"]:
+                raise KernelError("CURRENT_QUOTE_RECOVERY_INPUT_DRIFT", "Retain the original candidate and independent semantic rejection")
+            feedback["independent_negative_assessments"] = inherited["negative_assessments"]
+            feedback["semantic_rejection_hash"] = inherited["source_output_hash"]
+            feedback["semantic_support"] = "REQUIRES_NEW_INDEPENDENT_REVIEW"
+        return feedback
 
 
 def failed_quote_feedback(raw, candidate, *, target, evidence, continuation=False):

@@ -161,6 +161,29 @@ else:
                 return value
             from novel_forge.modules.chapter_authority.provider_output_contracts import inline_shared_canon_schema
             result = project_schema(result, inline_shared_canon_schema(payload.output_schema))
+            if inputs.get("canon_quote_references"):
+                import re
+                corpus = inputs["canon_quote_references"]
+                text = inputs["revision"]["text"]
+                def select_reference(quote):
+                    legacy = re.fullmatch(r"chars:\d+:\d+:(.+)", quote, re.S)
+                    actual = legacy[1] if legacy else quote
+                    choices = [row["reference_id"] for row in corpus["references"] if actual in text[row["start"]:row["end"]]]
+                    assert choices, "Controlled fixture quote must bind a real current source interval"
+                    return choices[0]
+                def reference_values(value):
+                    if isinstance(value, dict):
+                        for key in ("quote", "evidence_quote"):
+                            if isinstance(value.get(key), str):
+                                value[key] = select_reference(value[key])
+                        if isinstance(value.get("resolution_evidence"), list):
+                            value["resolution_evidence"] = [select_reference(item) for item in value["resolution_evidence"]]
+                        for item in value.values():
+                            reference_values(item)
+                    elif isinstance(value, list):
+                        for item in value:
+                            reference_values(item)
+                reference_values(result)
         if stage in {"review", "rereview"}:
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):
@@ -168,7 +191,7 @@ else:
                         issue["evidence"] = {"quote": issue["evidence"]["quote"]}
         if payload.output_schema and payload.output_schema.get("additionalProperties") is False:
             result = {key: value for key, value in result.items() if key in payload.output_schema["properties"]}
-        if payload.output_schema_version in {"schema:chapter-provider-output:canon_extraction:v25", "schema:chapter-provider-output:canon_extraction:v26"}:
+        if payload.output_schema_version in {"schema:chapter-provider-output:canon_extraction:v25", "schema:chapter-provider-output:canon_extraction:v26", "schema:chapter-provider-output:canon_extraction:v27"}:
             result = {"output_json": json.dumps(result, ensure_ascii=False, allow_nan=False)}
         layout = PersistentExecutionDirectory(values["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
         layout.result_path("fixture-response.json").write_text(json.dumps(result, ensure_ascii=False))

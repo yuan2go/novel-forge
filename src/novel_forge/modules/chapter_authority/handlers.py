@@ -1995,7 +1995,8 @@ class _CanonExtractionHandler:
         repair = None
         semantic_repair = None
         quote_repair = None
-        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30"}
+        references = None
+        current_contract = request.definition_version in {"3.9.21", "3.9.22", "3.9.24", "3.9.29", "3.9.30", "3.9.31"}
         if current_contract and request.database_url:
             from .canon_output_recovery import repair_feedback
             repair = repair_feedback(request)
@@ -2008,6 +2009,12 @@ class _CanonExtractionHandler:
             if request.definition_version == "3.9.30":
                 from .current_semantic_recovery import repair_feedback as semantic_feedback
                 semantic_repair = semantic_feedback(request)
+        if request.definition_version == "3.9.31":
+            from .canon_quote_references import build_references, require_successor_send
+            references = build_references(revision.content["text"], target_asset_version_id=revision.asset_version_id)
+            quote_repair = require_successor_send(request)
+            from .current_semantic_recovery import repair_feedback as semantic_feedback
+            semantic_repair = semantic_feedback(request) if request.database_url else None
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -2020,15 +2027,20 @@ class _CanonExtractionHandler:
                     **({"canon_output_repair": repair} if repair else {}),
                     **({"canon_support_reextraction": semantic_repair} if semantic_repair else {}),
                     **({"canon_quote_repair": quote_repair} if quote_repair else {}),
+                    **({"canon_quote_references": references} if references else {}),
                     "execution_expectations": dict(
                         context.content.get("chapter_execution_expectations") or {}
                     ),
                 },
             )
             extraction_result = generated
+            if references:
+                from .canon_quote_references import resolve_references
+                resolved, reference_evidence = resolve_references(generated.output, text=revision.content["text"], target_asset_version_id=revision.asset_version_id, corpus=references)
+                extraction_result = replace(generated, output=resolved)
             if current_contract and request.database_url:
                 from .canon_output_recovery import localize_new_result
-                extraction_result, localization = localize_new_result(request, generated, revision)
+                extraction_result, localization = localize_new_result(request, extraction_result, revision)
             provider_extraction = _canon_provider_extraction(extraction_result)
         from novel_forge.modules.canon_graph.grounding import extract_grounded_candidates
         extractor = extract_grounded_candidates if generated is not None else build_canon_extraction
@@ -2047,7 +2059,9 @@ class _CanonExtractionHandler:
         )
         if localization:
             content["quote_localization"] = localization
-        if repair or semantic_repair or quote_repair and quote_repair.get("continuation_contract") == "chapter-current-quote-repair.v1":
+        if references:
+            content["canon_reference_resolution"] = reference_evidence
+        if repair or semantic_repair or quote_repair and quote_repair.get("continuation_contract") == "chapter-current-quote-repair.v1" or references and quote_repair:
             proof = request.command["preparation_report"]["retained_graph_continuation"]["retained_result"]
             content["retained_result_repair"] = {k: proof[k] for k in ("contract_version", "source_operation_id", "source_effect_id", "source_dispatch_id", "source_output_hash", "source_request_hash", "provider_invoked", "strict_certification_eligible")}
         if generated is None:

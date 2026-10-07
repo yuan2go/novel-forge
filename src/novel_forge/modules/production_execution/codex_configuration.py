@@ -84,7 +84,7 @@ CODEX_CANONICAL_JSON_CODEC = "codex-canonical-json.v1"
 
 
 def codex_output_schema(schema: dict, *, schema_ref: str = "") -> dict:
-    if schema_ref in {CODEX_CANONICAL_JSON_SCHEMA_REF, "schema:chapter-provider-output:canon_extraction:v26"}:
+    if schema_ref in {CODEX_CANONICAL_JSON_SCHEMA_REF, "schema:chapter-provider-output:canon_extraction:v26", "schema:chapter-provider-output:canon_extraction:v27"}:
         return {"type":"object","properties":{"output_json":{"type":"string"}},
             "required":["output_json"],"additionalProperties":False}
     return _codex_output_schema(schema, all_nullable=True)
@@ -104,7 +104,7 @@ def strict_codex_json_loads(text: str):
 
 
 def decode_codex_output(value, *, schema_ref: str):
-    if schema_ref not in {CODEX_CANONICAL_JSON_SCHEMA_REF, "schema:chapter-provider-output:canon_extraction:v26"}:
+    if schema_ref not in {CODEX_CANONICAL_JSON_SCHEMA_REF, "schema:chapter-provider-output:canon_extraction:v26", "schema:chapter-provider-output:canon_extraction:v27"}:
         return value, None
     if not isinstance(value, dict) or set(value)!={"output_json"} or not isinstance(value['output_json'],str):
         raise ValueError("canonical JSON transport requires exactly one output_json string")

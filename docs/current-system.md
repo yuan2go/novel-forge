@@ -2325,3 +2325,11 @@ Current creative quote-repair continuation preserves the complete pre-publicatio
 Quality revisions preserve the same frozen Platform length requirement as ordinary revisions. The new revision contract measures the composed candidate before materialization. An out-of-range response remains durable call evidence and enters bounded candidate repair instead of advancing to Canon. Strict admission and literary certification remain separate.
 
 A current independent Canon support disagreement owns semantic re-extraction, rather than another review of the same invalid claim. Creative continuation can finalize only the known settled non-producing failed support through Kernel, preserve its Attempt and extraction receipt, and reference completed prose in a successor. The new extraction consumes the exact independent negative assessments and requires a new full independent review. The correction is bounded by the original extraction retry policy across its continuation lineage; identical unresolved claims and exhausted controls retain a checkpoint.
+
+The current Canon extraction contract uses host paragraph references for literal evidence. The host derives a source-bound reference corpus from the exact candidate, renders reference markers alongside unchanged prose, and binds the Provider quote fields to those IDs. Resolution substitutes only the original frozen intervals; unknown IDs, source drift and incompatible explicit offsets fail closed. It changes neither claims nor semantic review. Legacy free-text quotation failures remain failed; a versioned reference-contract successor may repair that unaccepted frontier once without resetting old attempts or accounting.
+
+Canon 引用契约后继的恢复确认沿原图的冻结负面评估和同一候选版本追溯：成功的引用解析后继可以接替失败的语义重抽取步骤，但不将旧抽取或旧评估改为通过。独立 Canon 语义支持及章节接纳仍按当前候选重新执行。
+
+引用目录的逐段偏移由宿主保存；模型请求只携带标注正文、允许引用 ID 的 Schema 和目录摘要，避免重复传送同一目录。完整请求仍必须满足真实通道的单次上下文准入。
+
+已消耗语义重抽取额度后，仅为修正引用线协议创建的一次后继调用不补充原语义重试额度；原独立负面评估随该后继传递，后续仍不满足时记录执行控制耗尽。

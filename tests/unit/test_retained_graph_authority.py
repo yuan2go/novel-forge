@@ -87,3 +87,52 @@ def test_semantic_successor_acknowledges_only_the_preserved_known_failed_attempt
     acknowledge_retained_result(cursor, [effect], 'root')
     assert bool(effect.get('settled_candidate_superseded')) == expected
     assert effect['attempt_status'] == attempt_status
+
+
+@pytest.mark.parametrize("source_status", ["FAILED_FINAL", "UNKNOWN"])
+def test_reference_descendant_preserves_semantic_failure_without_claiming_old_extraction_success(source_status):
+    from novel_forge.modules.command_kernel.retained_graph import _reference_descendant
+    proof = {"contract_version": "chapter-current-semantic-repair.v1",
+             "target_asset_version_id": "candidate", "quality_generation": 2,
+             "source_operation_id": "negative-review"}
+    repair = {"contract_version": "chapter-canon-reference-contract-repair.v1",
+              "source_operation_id": "failed-extraction",
+              "target_asset_version_id": "candidate", "quality_generation": 2}
+    cursor = Mock()
+    cursor.fetchone.return_value = ({"preparation_report": {"retained_graph_continuation": {"retained_result": proof}}},
+                                   "3.9.30", source_status, "previous-root")
+    result = _reference_descendant(cursor, "previous-root", proof, ("new-extraction", repair))
+    assert result == ("new-extraction" if source_status == "FAILED_FINAL" else None)
+    if source_status == "FAILED_FINAL":
+        with pytest.raises(KernelError, match="RETAINED_GRAPH_EVIDENCE_DRIFT"):
+            _reference_descendant(cursor, "previous-root", proof, ("new-extraction", {**repair, "target_asset_version_id": "other-candidate"}))
+
+
+def test_reference_repair_acknowledges_chained_settled_failures_without_rewriting_history():
+    from novel_forge.modules.command_kernel.retained_graph import acknowledge_retained_result
+    def proof(contract, operation, effect, attempt):
+        return {"contract_version": contract, "source_operation_id": operation,
+                "source_effect_id": effect, "source_dispatch_id": "dispatch-" + effect,
+                "source_request_hash": "request-" + effect, "source_output_hash": "output-" + effect,
+                "source_attempt": {"attempt_id": attempt}, "target_asset_version_id": "candidate",
+                "quality_generation": 2, "provider_invoked": True}
+    semantic = proof("chapter-current-semantic-repair.v1", "review", "review-effect", "review-attempt")
+    semantic["source_extraction_operation_id"] = "original-extraction"
+    reference = proof("chapter-canon-reference-contract-repair.v1", "failed-extraction", "quote-effect", "quote-attempt")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        ({"retained_result": reference},), ("semantic-root",),
+        ({"retained_result": semantic},), ("previous-root",), ("3.9.29",),
+        ({"preparation_report": {"retained_graph_continuation": {"retained_result": semantic}}},
+         "3.9.30", "FAILED_FINAL", "semantic-root"), None,
+    ]
+    cursor.fetchall.side_effect = [[("reference-extraction", {"retained_result_repair": reference})], []]
+    effects = [{"external_effect_id": effect, "operation_id": operation, "status": "SUCCEEDED",
+                "attempt_id": attempt, "attempt_status": status}
+               for effect, operation, attempt, status in [
+                   ("review-effect", "review", "review-attempt", "FAILED_RETRYABLE"),
+                   ("quote-effect", "failed-extraction", "quote-attempt", "FAILED_FINAL")]]
+    acknowledge_retained_result(cursor, effects, "reference-root")
+    assert all(effect["settled_candidate_superseded"] for effect in effects)
+    assert all(effect["successor_operation_id"] == "reference-extraction" for effect in effects)
+    assert [effect["attempt_status"] for effect in effects] == ["FAILED_RETRYABLE", "FAILED_FINAL"]

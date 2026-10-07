@@ -20,6 +20,7 @@ def test_semantic_repair_consumes_the_original_unused_attempt_without_resetting_
             {"retained_result_repair": {"contract_version": CONTRACT}},
             [(1, "SUCCEEDED")],
         ),
+        ({"retained_result_repair": {"contract_version": "chapter-canon-reference-contract-repair.v1"}}, [(1, "SUCCEEDED")]),
     ]:
         with pytest.raises(
             KernelError, match="CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED"

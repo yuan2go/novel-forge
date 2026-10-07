@@ -107,7 +107,7 @@ def semantic_source(cursor, source):
     canonical = rows[0][0]
     if (
         canonical["definition_name"] != "chapter.canon.extract"
-        or canonical["definition_version"] not in {"3.9.29", "3.9.30"}
+        or canonical["definition_version"] not in {"3.9.29", "3.9.30", "3.9.31"}
         or canonical["status"] != "SUCCEEDED"
         or canonical["root_operation_id"] != source["root_operation_id"]
         or canonical["actor_id"] != source["actor_id"]
@@ -348,7 +348,7 @@ def repair_feedback(request):
 def require_unused_extraction_attempt(*, extraction, maximum, attempts):
     if (extraction.get("retained_result_repair") or {}).get(
         "contract_version"
-    ) == CONTRACT or attempts != [(1, "SUCCEEDED")]:
+    ) in {CONTRACT, "chapter-canon-reference-contract-repair.v1"} or attempts != [(1, "SUCCEEDED")]:
         raise KernelError(
             "CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED",
             "The original extraction consumed its repair attempt; preserve all receipts",

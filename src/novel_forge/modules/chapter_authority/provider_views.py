@@ -1033,6 +1033,17 @@ def build_provider_task_view(
             if inputs.get("canon_support_reextraction"):
                 task["contract_version"] = "provider-task-view-v4"
                 task["canon_support_reextraction"] = deepcopy(inputs["canon_support_reextraction"])
+        if inputs.get("canon_quote_references"):
+            references = inputs["canon_quote_references"]
+            task["contract_version"] = "provider-task-view-v6"
+            task["final_candidate"]["text"] = references["rendered_text"]
+            task["canon_quote_references"] = {
+                **{key: value for key, value in references.items() if key not in {"rendered_text", "references"}},
+                "reference_count": len(references["references"]),
+                "reference_corpus_hash": _projection_hash(references),
+                "interval_owner": "HOST_FROZEN_CANDIDATE",
+            }
+            task["evidence_contract"] = "Quote fields and resolution_evidence must contain current host reference IDs, never copied or paraphrased prose. Native source intervals are resolved after validation; classify actual prose independently."
         return task
     if stage.startswith("quality_"):
         return _task(
