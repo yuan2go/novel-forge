@@ -614,7 +614,7 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                         })
 
                 context, effect = self._effect("retryable_failure")
-                reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
+                reservation = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(
                     operation_id=context.operation_id, external_effect_id=effect,
                     project_id=context.project_id, stable_idempotency_key=f"budget:{effect}",
                     provider="fake_deterministic_provider", currency="UNKNOWN", estimated_amount=None,
@@ -624,6 +624,8 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 ))
                 dispatch_external_effect(DATABASE_URL, context, effect_id=effect,
                     worker_id="fixture-worker", lease_seconds=30, adapter=TimedOutCli("retryable_failure"))
+                if process_outcome == "UNKNOWN":
+                    resolve_provider_budget_failure(DATABASE_URL, reservation_id=reservation["reservation_id"], project_id=context.project_id)
                 with transaction() as connection, connection.cursor() as cursor:
                     if process_outcome == "UNKNOWN":
                         cursor.execute("SELECT status,estimated_tokens FROM authority_budget_reservation WHERE external_effect_id=%s", [effect])
@@ -652,7 +654,7 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                     "execution_result": {"outcome": "RETRYABLE_FAILURE", "started_at": "2026-10-07T00:00:00Z",
                         "usage_receipt_ref": None, "process_receipt_ref": "original-local-receipt"},
                     "process_evidence": {"failure_code": "PROCESS_EXIT_FAILURE"}}})])
-            cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,2,'PENDING','fixture','{}'::jsonb)",
+            cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,2,'CREATED','fixture','{}'::jsonb)",
                 [identifier("unsent-dispatch"), effect])
             self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id)[0]["process_receipt_ref"], "original-local-receipt")
             with self.assertRaises(KernelError) as blocked:
@@ -699,12 +701,12 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
         unrelated_workspace = identifier("unrelated-workspace")
         book_a, book_b = identifier("book-a"), identifier("book-b")
         seed_authority_project_book(project_id=project, workspace_id=workspace, book_id=book_a)
-        seed_authority_project_book(project_id=project, workspace_id=unrelated_workspace, book_id=book_b)
+        seed_authority_project_book(project_id=project, workspace_id=unrelated_workspace, book_id=book_b, seed_project=False)
         original, effect = self._effect_for_project(project, workspace_id=workspace, metadata_book_id="synthetic-wrong-book")
         replacement, replacement_effect = self._effect_for_project(project, workspace_id=workspace)
         unrelated, _ = self._effect_for_project(project, workspace_id=unrelated_workspace)
         contexts = {key: "source:fixture" for key in (
-            "volume_plan_version", "arc_plan_version", "character_state_version", "foreshadowing_state_version",
+            "volume_plan_version", "character_state_version", "foreshadowing_state_version",
             "quality_trend_version", "reward_ledger_version", "promise_ledger_version")}
         contexts["arc_plan_versions"] = ["source:fixture"]
         with transaction() as connection, connection.cursor() as cursor:

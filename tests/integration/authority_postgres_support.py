@@ -124,6 +124,7 @@ def seed_authority_project_book(
     book_id: str,
     workspace_id: str | None = None,
     production_profile: dict | None = None,
+    seed_project: bool = True,
 ) -> None:
     """Create the minimum authoritative Project/Workspace/Book scope fixture."""
     workspace_id = workspace_id or f"workspace:{project_id}"
@@ -146,6 +147,8 @@ def seed_authority_project_book(
             (workspace_asset_id, "workspace"),
             (book_asset_id, "book"),
         ):
+            if asset_type == "project" and not seed_project:
+                continue
             cursor.execute(
                 "INSERT INTO authority_asset(asset_id, project_id, asset_type) VALUES (%s, %s, %s)",
                 [asset_id, project_id, asset_type],
@@ -165,22 +168,23 @@ def seed_authority_project_book(
                     f"{asset_type}-authority.v1",
                 ],
             )
-        cursor.execute(
-            """
-            INSERT INTO authority_project(
-                project_id, primary_workspace_id, title, status, stage, health,
-                current_asset_version_id, created_by_operation_id, last_operation_id
-            ) VALUES (%s, %s, %s, 'ACTIVE', 'PLANNING', 'HEALTHY', %s, %s, %s)
-            """,
-            [
-                project_id,
-                workspace_id,
-                project_id,
-                f"{project_asset_id}:v1",
-                operation_id,
-                operation_id,
-            ],
-        )
+        if seed_project:
+            cursor.execute(
+                """
+                INSERT INTO authority_project(
+                    project_id, primary_workspace_id, title, status, stage, health,
+                    current_asset_version_id, created_by_operation_id, last_operation_id
+                ) VALUES (%s, %s, %s, 'ACTIVE', 'PLANNING', 'HEALTHY', %s, %s, %s)
+                """,
+                [
+                    project_id,
+                    workspace_id,
+                    project_id,
+                    f"{project_asset_id}:v1",
+                    operation_id,
+                    operation_id,
+                ],
+            )
         cursor.execute(
             """
             INSERT INTO authority_workspace(
