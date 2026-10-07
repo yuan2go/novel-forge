@@ -637,7 +637,17 @@ means the requested draft range is saved; it does not mean Book acceptance or li
 Creation progress reports saved and accepted chapter counts separately. The author page shows
 saved prose immediately and permits reading/export during a later recovery checkpoint.
 
-Use the same work identity for these operations:
+Start a new ordinary work without internal scope or reservation fields:
+
+```bash
+novel-forge authority-creation start --input-file "$CURRENT_WORK_REQUEST" --foreground
+```
+
+The CLI returns the native Project/Book/Formation handles. Repeating the same input location
+and author reuses its scope and original operation keys; changed inputs cannot silently
+replace a frozen request. Explicit scope and work keys remain advanced options. Once a Book
+run exists, `authority-manuscript` accepts that work handle without `--project-id`, resolving
+and authorizing its actual native Project. Use the same work identity for these operations:
 
 ```bash
 novel-forge authority-manuscript read --project-id "$PROJECT" --book-run-id "$BOOK_RUN"

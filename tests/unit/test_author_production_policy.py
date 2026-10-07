@@ -36,3 +36,26 @@ def test_actor_selection_requires_matching_bounded_world_contract():
         validate_author_configuration(value)
     value["world_production_policy"] = {"version": "world-production-policy.v3", "max_candidates": 1, "max_paths_per_candidate": 1, "max_preparation_steps": 1, "planning_window_chapters": 1, "max_provider_stages": 3}
     assert validate_author_configuration(value)["world_actor_experiment"]["actor_ids"] == ["a"]
+
+
+def test_cli_work_binding_reuses_the_original_file_identity_after_input_changes(tmp_path, monkeypatch):
+    from novel_forge.cli.authority import _authority_parser
+    from novel_forge.cli.creation import run_creation_command
+    from novel_forge.modules.book_authority import creation_runtime
+    from novel_forge.api import authority_dependencies
+    from types import SimpleNamespace
+
+    source = tmp_path / "work.json"
+    source.write_text('{"title":"first"}')
+    recorded = []
+    monkeypatch.setattr(authority_dependencies, "build_trusted_principal_resolver", lambda: SimpleNamespace(
+        resolve_api_principal=lambda: SimpleNamespace(principal_id="author")))
+    monkeypatch.setattr(creation_runtime, "execute_creation_command", lambda settings, args: recorded.append(vars(args)) or {"formation_run_id":"native-owner"})
+    parser = _authority_parser()
+    args = parser.parse_args(["authority-creation", "start", "--input-file", str(source)])
+    first = run_creation_command(None, args)
+    source.write_text('{"title":"changed while response unknown"}')
+    second = run_creation_command(None, args)
+    assert first == second
+    assert all(recorded[0][key] == recorded[1][key] and recorded[0][key] for key in ("project_id", "workspace_id", "book_id", "idempotency_key"))
+    assert args.project_id == ""

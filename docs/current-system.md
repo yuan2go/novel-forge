@@ -20,6 +20,10 @@ identity changes without a corresponding projection update.
 ## Ordinary author writing
 
 New Creation requests select `config/execution_templates/author_first.json` (v12).
+The ordinary CLI starts from an input file without Project/Workspace/Book or operation keys.
+Its native scope binding uses the author and stable input location, so editing the input after
+an uncertain response replays or conflicts with the original work rather than sending a new request.
+A current-manuscript command may resolve its Project from the selected Book run.
 The default is authorized automatic direction comparison; an approved fixed direction
 and explicit author selection remain available. Formation and Opening create the existing
 Book, plans, source snapshots and Pack bindings. The native Chapter Saga uses
@@ -60,6 +64,8 @@ usable service. Readiness reports the unavailable route separately and does not 
 it requires neither whole-book completion nor Quality PASS nor strict Edition validation.
 The export records actual review, requirement and formal-progress status. The author UI
 exposes reading, editing, differences, adoption, pause/resume and current manuscript export.
+Strict Edition and deep-review panels load after the author opens their optional workflow.
+Unconfirmed review commands survive a browser refresh with their original idempotency keys.
 Deep manuscript review is explicitly requested through the existing Prose Review owner.
 Its v3 windows bind current selected unreviewed prose; accepted-state relation evidence is
 not available on that source contract. An optional outage retains the manuscript and does
@@ -82,7 +88,7 @@ The following distinctions govern implementation:
 | `CURRENT_PROVEN_INVARIANT` | Exact ownership, source isolation, immutable receipts, fenced commits, author CAS, original UNKNOWN reconciliation and cumulative paid cap |
 | `CONFIGURABLE_POLICY` | Review sequence, optional enhancements, voice advice, manuscript export versus strict finalization, direction selection |
 | `HISTORICAL_COMPATIBILITY` | Frozen v11 validation-only Pack/Router admission and finite campaign entitlements |
-| `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources; no literary or independent certification is inferred |
+| `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources and the intact-body guard limits one manuscript to 200000 code points; neither constant is a final architectural invariant or literary certification |
 | `UNRESOLVED_DESIGN_CONSTRAINT` | Unverified remote capacity/accounting metadata or unqualified long-form literary effectiveness cannot be promoted from local wiring |
 
 ## Generated Foundation formation

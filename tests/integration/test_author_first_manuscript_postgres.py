@@ -44,9 +44,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     source = tmp_path / "request.json"
     source.write_text(json.dumps(inputs))
     parser = _authority_parser()
-    args = parser.parse_args(["authority-creation", "start", "--project-id", project,
-        "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(source),
-        "--idempotency-key", "native-create", "--repository-root", str(root), "--maximum-ticks", "100",
+    args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+        "--repository-root", str(root), "--maximum-ticks", "100",
         "--foreground"])
     settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
     from novel_forge.api import authority_dependencies
@@ -67,8 +66,10 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     principal = build_trusted_principal_resolver().resolve_api_principal()
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE project_id=%s", [project])
+        uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b")
         stopped = uow.cursor.fetchone()[0]
+        project = stopped["project_id"]
+        args.project_id, args.workspace_id, args.book_id = project, stopped["workspace_id"], stopped["book_id"]
         uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s", [project])
         formation = uow.cursor.fetchone()[0]
     retained = current_manuscript(DATABASE_URL, book=stopped, principal=principal)
@@ -135,8 +136,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.cli.manuscript import run_manuscript_command
     text_file = tmp_path / "author-wording.txt"
     text_file.write_text(payload["text"], encoding="utf-8")
-    edit_args = parser.parse_args(["authority-manuscript", "edit", "--project-id", project,
-        "--book-run-id", book["book_run_id"], "--chapter", "1", "--text-file", str(text_file)])
+    edit_args = parser.parse_args(["authority-manuscript", "edit", "--book-run-id", book["book_run_id"], "--chapter", "1", "--text-file", str(text_file)])
     saved = run_manuscript_command(settings, edit_args)
     assert saved["candidate_asset_version_id"]
     replay = run_manuscript_command(settings, edit_args)

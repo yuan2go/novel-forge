@@ -8,7 +8,7 @@ from typing import Any
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
     parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "adopt-author-workflow", "pause", "resume", "continue"))
-    parser.add_argument("--project-id", required=True)
+    parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
     parser.add_argument("--text-file", type=Path)
@@ -25,6 +25,17 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
     from novel_forge.modules.chapter_authority.author_editor import ChapterAuthorEditingApplication, edit_map
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     principal = build_trusted_principal_resolver().resolve_api_principal()
+    if not args.project_id:
+        from types import SimpleNamespace
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        with AuthorityUnitOfWork(settings.database_url) as uow:
+            uow.cursor.execute("SELECT project_id FROM authority_book_production WHERE book_run_id=%s", [args.book_run_id])
+            owned = uow.cursor.fetchone()
+        if owned is None:
+            raise ValueError("Choose an existing work")
+        args = SimpleNamespace(**vars(args))
+        args.project_id = owned[0]
+
     if args.action in {"adopt-author-workflow", "pause", "resume", "continue"}:
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
         from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
