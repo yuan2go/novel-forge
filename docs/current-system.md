@@ -108,6 +108,14 @@ review closure still govern that admission. Internal export and Book acceptance 
 `INTERNAL_ADMITTED` / `INTERNAL_VALIDATION_FINALIZED` evidence to the native template;
 uncalibrated model judgments never become qualified literary or external-release PASS.
 
+The v2 internal admission also binds deterministic length to the frozen work policy.
+Publication preparation and ChapterOutcome must recognize both receipt versions. A
+legacy review which explicitly deferred only length to independent Quality retains its
+original decision; exact, passed v2 measurement may close that deferral at admission.
+Open diagnoses, preservation damage, stale text and other uncertainty still block.
+Historical blocked publication outputs remain immutable and require a native contract
+successor before export; this compatibility path has no literary qualification effect.
+
 Resource policy follows authenticated billing identity. Codex membership execution
 has no project/book cumulative money, token or call budget and requires no budget
 contract. Usage, latency and outcome evidence remain recorded, together with per-call

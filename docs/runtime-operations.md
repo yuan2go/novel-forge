@@ -504,6 +504,11 @@ run key cannot create a fresh spending allowance for the same work.
 Validation results advance internal production only with a native versioned validation
 admission receipt. Strict certification rejects missing required proofs. Omitted literary
 calibration, blind review and publication checks retain `NOT_RUN` and their reason.
+When a historical export failed because publication understood only admission v1 or a
+review deferred a deterministic length check, retain the failed Operation and original
+review. Recover through the Book owner and a versioned export successor which rebuilds
+the publication gate from its exact frozen inputs and verifies native Quality receipts.
+No user approval or new prose generation is required to repair this interface contract.
 The shipped files are `config/execution_templates/creative_validation.json` and
 `config/execution_templates/creation_inputs.json`. The first selects optional objectives,
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
