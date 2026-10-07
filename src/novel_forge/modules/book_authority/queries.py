@@ -761,6 +761,7 @@ class PostgresBookProductionQuery:
                   ON recap.chapter_request_id=acceptance.chapter_request_id
                  AND recap.followup_type='LONGFORM_RECAP'
                 WHERE acceptance.status='COMMITTED'
+                  AND book.state NOT IN ('ABORTED','CANCELLED')
                   AND (
                       %s::text[]='{}'::text[]
                       OR acceptance.project_id=ANY(%s)
@@ -845,6 +846,34 @@ class PostgresBookProductionQuery:
             )
             for row in rows
         )
+
+    def blocked_followup_dispatch_operations(self, *, project_ids: Iterable[str]) -> tuple[str, ...]:
+        projects = list(project_ids)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT operation.operation_id FROM authority_operation operation
+                LEFT JOIN authority_book_followup_operation followup USING(operation_id)
+                LEFT JOIN authority_book_production book USING(book_run_id)
+                WHERE operation.definition_name IN ('reader_outcome.evaluate','longform.recap')
+                  AND (%s::text[]='{}'::text[] OR operation.project_id=ANY(%s))
+                  AND (book.state IN ('ABORTED','CANCELLED') OR
+                       (operation.command_payload #> '{payload,followup_contract_recovery}' IS NOT NULL
+                        AND followup.operation_id IS NULL))""", [projects,projects])
+            return tuple(str(row[0]) for row in uow.cursor.fetchall())
+
+    def reader_contract_recovery_candidates(self, *, limit: int, project_ids: Iterable[str]) -> tuple[str, ...]:
+        projects = list(project_ids)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT followup.chapter_request_id FROM authority_book_followup_operation followup
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_book_production book USING(book_run_id)
+                WHERE followup.followup_type='READER_OUTCOME' AND operation.definition_version='1.1.0'
+                  AND operation.status='FAILED_FINAL' AND book.state NOT IN ('CANCELLED','ABORTED')
+                  AND (%s::text[]='{}'::text[] OR followup.project_id=ANY(%s))
+                  AND EXISTS (SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=operation.operation_id
+                              AND attempt.result->>'error_code'='READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID')
+                  AND NOT EXISTS (SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+                ORDER BY followup.created_at,followup.followup_id LIMIT %s""", [projects,projects,limit])
+            return tuple(str(row[0]) for row in uow.cursor.fetchall())
 
     def accepted_realization_deviations(self, *, chapter_request_id: str) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

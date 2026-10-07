@@ -1,0 +1,18 @@
+{
+  "source_runtime_sha": "a49d738751c828f0bb7ba23cb479dbe7fbb23493",
+  "original_reader_operation_id": "ce78ce09-50e7-4374-9dcf-b5aaf96f508f",
+  "failure": "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
+  "model_dispatches_before_failure": 0,
+  "native_contract": "reader-contract-successor.v1",
+  "new_definition": "reader_outcome.evaluate@1.2.0",
+  "new_reader_pack_version": "1.4.0",
+  "controlled_postgresql": "PASS reader-successor-preflight-318.log",
+  "frozen_inputs_and_reader_policy": "EXACT_REUSED",
+  "old_failure": "RETAINED",
+  "book_budget_reset": false,
+  "focused_matrix": "68 PASS reader-successor-matrix-316.log",
+  "broader_cli_matrix": "RUNNING reader-successor-boundaries-319.log; failures not claimed PASS",
+  "failed_preflight": "317.log retained; workflow activation CAS identity corrected",
+  "real_run": "NOT_RUN for new contract",
+  "literary_quality": "NOT_PROVEN"
+}

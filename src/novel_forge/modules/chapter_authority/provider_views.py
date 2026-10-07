@@ -2072,7 +2072,7 @@ def _build_reader_outcome_context_view(
                 "content": projected,
             }
         )
-    if not any(item["asset_type"] == "draft_version" for item in segments):
+    if not any(item["asset_type"] in {"draft_version", "best_draft_candidate"} for item in segments):
         raise KernelError(
             "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
             "Reader Outcome Provider View requires accepted chapter prose",

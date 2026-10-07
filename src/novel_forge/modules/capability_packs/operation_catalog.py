@@ -20,7 +20,7 @@ from novel_forge.modules.chapter_authority.execution_gateway import (
 )
 from novel_forge.modules.chapter_authority.scheduler import _admission_dependencies
 from novel_forge.modules.book_followup_authority.contracts import (
-    BOOK_FOLLOWUP_DEFINITION_VERSION,
+    BOOK_FOLLOWUP_DEFINITION_VERSION, READER_OUTCOME_DEFINITION_VERSION,
     READER_OUTCOME_DEFINITION,
 )
 from novel_forge.modules.story_planning_runtime.domain import (
@@ -373,10 +373,10 @@ def world_sampling_workflow_binding_catalog(*, reference_samples: bool = False) 
         for action in (("evaluate",) if reference_samples else ("generate", "evaluate", "actor_0", "actor_1", "actor_2"))))
 
 
-def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
+def reader_outcome_workflow_binding_catalog(version: str = READER_OUTCOME_DEFINITION_VERSION) -> WorkflowBindingCatalog:
     return WorkflowBindingCatalog(
         "book_followup_reader_outcome",
-        BOOK_FOLLOWUP_DEFINITION_VERSION,
+        version,
         (
             WorkflowBinding(
                 node_id="reader_outcome",
@@ -480,6 +480,7 @@ def governed_workflow_binding_catalog(
         story_planning_workflow_binding_catalog(),
         world_sampling_workflow_binding_catalog(),
         world_sampling_workflow_binding_catalog(reference_samples=True),
+        reader_outcome_workflow_binding_catalog("1.1.0"),
         reader_outcome_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(provider_sampling=True),

@@ -217,6 +217,7 @@ def main() -> int:
                 actor_id=principal.principal_id,
                 limit=batch_size,
             )
+            coordinator.recover_reader_contracts(limit=batch_size)
             coordinator.reconcile_completed_arc_checkpoint_followups(limit=batch_size)
             schedule_book_followup_admission_jobs(
                 coordinator,
@@ -279,8 +280,9 @@ def main() -> int:
             pending = scheduler.pending_operations(
                 limit=batch_size,
                 project_ids=project_ids,
-                excluded_operation_ids=prose.blocked_dispatch_operations(
-                    project_ids=project_ids
+                excluded_operation_ids=(
+                    *prose.blocked_dispatch_operations(project_ids=project_ids),
+                    *query.blocked_followup_dispatch_operations(project_ids=project_ids),
                 ),
             )
             if pending:

@@ -73,6 +73,11 @@ class PostgresBookFollowupCoordinator:
             authority.database_url
         )
 
+    def recover_reader_contracts(self, *, limit: int) -> None:
+        projects = () if "*" in self.principal.project_scope else tuple(sorted(self.principal.project_scope))
+        for request in self.query.reader_contract_recovery_candidates(limit=limit, project_ids=projects):
+            self.authority.recover_reader_contract(request, principal=self.principal)
+
     def admission_candidates(
         self, *, limit: int
     ) -> tuple[BookFollowupAdmissionCandidate, ...]:

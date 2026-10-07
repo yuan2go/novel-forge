@@ -7,7 +7,7 @@ from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackResolutionRequest,
 )
 from novel_forge.modules.book_followup_authority.contracts import (
-    BOOK_FOLLOWUP_DEFINITION_VERSION,
+    READER_OUTCOME_DEFINITION_VERSION,
 )
 from novel_forge.modules.chapter_authority.execution_gateway import (
     PostgresChapterExecutionContractBinder,
@@ -29,7 +29,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
 ):
 
     workflow_definition_ref = (
-        f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+        f"book_followup_reader_outcome@{READER_OUTCOME_DEFINITION_VERSION}"
     )
     execution_binding_domain = "reader_outcome"
     stage_name = "reader_outcome"

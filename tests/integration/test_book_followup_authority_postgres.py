@@ -18,7 +18,7 @@ from novel_forge.modules.book_followup_authority.application import (
 )
 from novel_forge.modules.book_followup_authority.reader_policy import ReaderProxyPolicy
 from novel_forge.modules.book_followup_authority.contracts import (
-    BOOK_FOLLOWUP_DEFINITION_VERSION,
+    BOOK_FOLLOWUP_DEFINITION_VERSION, READER_OUTCOME_DEFINITION_VERSION,
     LONGFORM_RECAP_DEFINITION,
     READER_OUTCOME_DEFINITION,
 )
@@ -59,7 +59,7 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
             FROM authority_operation_definition
             WHERE name=%s AND definition_version=%s
             """,
-            [READER_OUTCOME_DEFINITION, BOOK_FOLLOWUP_DEFINITION_VERSION],
+            [READER_OUTCOME_DEFINITION, READER_OUTCOME_DEFINITION_VERSION],
         )
         definition_hash = str(uow.cursor.fetchone()[0])
         uow.commit()
@@ -71,7 +71,7 @@ def _activate_reader_outcome_pack(harness: CapabilityPackPostgresHarness) -> Non
     harness._base_manifest = profile.manifest
     harness._base_catalog = profile.artifact_catalog
     scope = harness.approval_scope()
-    scope["allowed_workflow_definition_refs"] = ["book_followup_reader_outcome@1.1.0"]
+    scope["allowed_workflow_definition_refs"] = ["book_followup_reader_outcome@1.2.0"]
     pack = harness.register_compile_approve("1.0.0", generation=1, approval_scope=scope,
         proof_skill_ref=profile.agent_skill_ref)
     harness.activate(harness.deploy(pack))
@@ -384,7 +384,7 @@ class BookFollowupAuthorityPostgresTests(unittest.TestCase):
             report = dict(uow.cursor.fetchone()[0])
         self.assertEqual(evidence[0], harness.pack_id)
         self.assertEqual(
-            evidence[1:3], ("book_followup_reader_outcome@1.1.0", "reader_outcome")
+            evidence[1:3], ("book_followup_reader_outcome@1.2.0", "reader_outcome")
         )
         self.assertTrue(str(evidence[3]).startswith("sha256:"))
         self.assertEqual(evidence[4], "SUCCEEDED")

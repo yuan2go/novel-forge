@@ -18,7 +18,7 @@ from novel_forge.modules.content_authority.scheduler import ContentAuthoritySche
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.modules.reader_judge_authority import ReaderJudgeRuntimeResolver
 
-from .contracts import BOOK_FOLLOWUP_DEFINITION_VERSION, ReaderOutcomeModelPort
+from .contracts import BOOK_FOLLOWUP_DEFINITION_VERSION, READER_OUTCOME_DEFINITION_VERSION, READER_OUTCOME_DEFINITION, ReaderOutcomeModelPort
 from .definitions import book_followup_operation_definitions
 from .registry import BookFollowupHandlerRegistry
 from .reader_policy_authority import PostgresReaderProxyPolicyAuthority
@@ -81,7 +81,7 @@ class BookFollowupAuthorityApplication:
         )
 
     def admit(
-        self, request: BookFollowupCommand, *, principal: Principal
+        self, request: BookFollowupCommand, *, principal: Principal, recovery_source_operation_id: str = ""
     ) -> BookFollowupAdmission:
         from .prose_sampling import PROSE_SAMPLE_DEFINITION
 
@@ -96,7 +96,39 @@ class BookFollowupAuthorityApplication:
         principal.require(permission, request.project_id)
         if request.actor_id != principal.principal_id:
             raise PermissionError("Book follow-up actor must be the trusted Principal")
-        policy_snapshot = {} if request.definition_name.startswith("screenplay_") else self.reader_policies.freeze_for_admission(
+        recovery = {}
+        original_policy = None
+        if recovery_source_operation_id:
+            from novel_forge.modules.command_kernel.errors import KernelError
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("""SELECT to_jsonb(operation), attempt.result->>'error_code',
+                    EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+                    FROM authority_operation operation JOIN LATERAL (SELECT result FROM authority_attempt
+                      WHERE operation_id=operation.operation_id ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+                    WHERE operation.operation_id=%s AND operation.project_id=%s""",
+                    [recovery_source_operation_id, request.project_id])
+                row = uow.cursor.fetchone()
+            source = dict(row[0]) if row else {}
+            original_input = dict(source.get("command_payload") or {})
+            if (not row or source.get("definition_name") != READER_OUTCOME_DEFINITION
+                or source.get("definition_version") != "1.1.0" or source.get("status") != "FAILED_FINAL"
+                or row[1] != "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID" or row[2]
+                or request.definition_name != READER_OUTCOME_DEFINITION
+                or source.get("workspace_id") != request.workspace_id
+                or original_input.get("payload") != request.payload
+                or list(source.get("input_asset_snapshot") or []) != list(request.input_assets)
+                or request.causation_operation_id != recovery_source_operation_id
+                or request.idempotency_key != source.get("idempotency_key", "") + ":contract-successor:" + READER_OUTCOME_DEFINITION_VERSION
+                or request.trace_id != source.get("trace_id") or request.correlation_id != source.get("correlation_id")
+                or request.root_operation_id is not None or request.parent_operation_id is not None):
+                raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_SOURCE_INVALID", "Reader successor requires an exact retained local contract failure with no external dispatch")
+            original_policy = request.payload.get("reader_proxy_policy_snapshot")
+            recovery = {"contract_version": "reader-contract-successor.v1",
+                        "predecessor_operation_id": recovery_source_operation_id,
+                        "source_definition_version": "1.1.0", "target_definition_version": READER_OUTCOME_DEFINITION_VERSION,
+                        "original_actor_id": source["actor_id"], "frozen_input_snapshot": source["input_asset_snapshot"],
+                        "book_budget_reset_allowed": False, "historical_failure_retained": True}
+        policy_snapshot = original_policy if original_policy is not None else {} if request.definition_name.startswith("screenplay_") else self.reader_policies.freeze_for_admission(
             project_id=request.project_id,
             idempotency_key=request.idempotency_key,
             actor_id=principal.principal_id,
@@ -113,7 +145,7 @@ class BookFollowupAuthorityApplication:
             self.database_url,
             {
                 "definition_name": request.definition_name,
-                "definition_version": BOOK_FOLLOWUP_DEFINITION_VERSION,
+                "definition_version": READER_OUTCOME_DEFINITION_VERSION if request.definition_name == READER_OUTCOME_DEFINITION else BOOK_FOLLOWUP_DEFINITION_VERSION,
                 "project_id": request.project_id,
                 "workspace_id": request.workspace_id,
                 "actor_id": request.actor_id,
@@ -131,6 +163,7 @@ class BookFollowupAuthorityApplication:
                     "payload": {
                         **request.payload,
                         "reader_proxy_policy_snapshot": policy_snapshot,
+                        **({"followup_contract_recovery": recovery} if recovery else {}),
                     },
                 },
                 "input_assets": list(request.input_assets),

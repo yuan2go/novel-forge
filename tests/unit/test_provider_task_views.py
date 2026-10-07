@@ -409,6 +409,12 @@ def test_reader_outcome_reads_selected_accepted_prose_without_comparison_envelop
     assert selected == project_reader_outcome_context_input("draft_version", content)
     assert selected["text"] == content["text"]
     assert "comparison_evidence" not in selected
+    context = {"schema_version": "novelos.reader_outcome_context_bundle.v2",
+               "selected_inputs": [{"asset_version_id": "best:adopted",
+                   "asset_type": "best_draft_candidate", "projection": selected}]}
+    view = build_provider_context_view("reader_outcome", context, {})
+    assert view["segments"][0]["content"]["text"] == content["text"]
+    assert view["segments"][0]["asset_version_id"] == "best:adopted"
 
 
 def test_reader_outcome_state_projection_does_not_grow_with_unrelated_history() -> None:

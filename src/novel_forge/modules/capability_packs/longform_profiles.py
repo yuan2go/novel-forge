@@ -10,7 +10,7 @@ from novel_forge.modules.capability_packs.artifacts import (
     default_chapter_artifact_resolver,
 )
 from novel_forge.modules.book_followup_authority.contracts import (
-    BOOK_FOLLOWUP_DEFINITION_VERSION,
+    BOOK_FOLLOWUP_DEFINITION_VERSION, READER_OUTCOME_DEFINITION_VERSION,
 )
 from novel_forge.modules.production_execution.capability_registry import (
     PLANNING_TIMEOUT_POLICY_VERSION,
@@ -236,7 +236,7 @@ def build_reader_outcome_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.3.0"
+    manifest["identity"]["version"] = "1.4.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]
@@ -247,7 +247,7 @@ def build_reader_outcome_pack_profile(
         node_id="reader_outcome",
         operation_name="reader_outcome.evaluate",
         operation_definition_ref=(
-            f"reader_outcome.evaluate@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+            f"reader_outcome.evaluate@{READER_OUTCOME_DEFINITION_VERSION}"
         ),
         operation_definition_hash=operation_definition_hash,
         handler_key=("novel_forge.book_followup_authority.reader_outcome.evaluate"),
@@ -270,7 +270,7 @@ def build_reader_outcome_pack_profile(
     ]
     manifest["workflow_template"].update(
         workflow_id="book_followup_reader_outcome",
-        workflow_version=BOOK_FOLLOWUP_DEFINITION_VERSION,
+        workflow_version=READER_OUTCOME_DEFINITION_VERSION,
         nodes=[node],
         completion={
             "required_terminal_nodes": ["reader_outcome"],
@@ -329,14 +329,14 @@ def build_reader_outcome_pack_profile(
             "operation_timeout_seconds": 180,
             "timeout_action": "FAIL_ATTEMPT",
             "authority_binding": (
-                f"reader_outcome.evaluate@{BOOK_FOLLOWUP_DEFINITION_VERSION}"
+                f"reader_outcome.evaluate@{READER_OUTCOME_DEFINITION_VERSION}"
             ),
         },
         "generated:reader-outcome-pack-profile",
     )
     return LongformCapabilityPackProfile(
         pack_id,
-        f"book_followup_reader_outcome@{BOOK_FOLLOWUP_DEFINITION_VERSION}",
+        f"book_followup_reader_outcome@{READER_OUTCOME_DEFINITION_VERSION}",
         manifest,
         _catalog(artifacts),
         "reader-feedback",

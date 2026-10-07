@@ -2823,6 +2823,60 @@ class PostgresBookAuthority:
             for item in asset_version_ids
         )
 
+    def recover_reader_contract(self, chapter_request_id: str, *, principal: Principal) -> bool:
+        from novel_forge.modules.chapter_authority.contract_recovery import _cancelled
+        from novel_forge.modules.production_execution.execution_template import selected_book_template
+        from novel_forge.modules.book_followup_authority.contracts import READER_OUTCOME_DEFINITION_VERSION
+
+        request = self.require_chapter_request(chapter_request_id)
+        book = self.require(request["book_run_id"])
+        principal.require("book.authority.execute", request["project_id"])
+        principal.require("book.followup:reader_outcome.evaluate", request["project_id"])
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            if _cancelled(uow.cursor, book) or not selected_book_template(uow.cursor, project_id=book["project_id"], book_id=book["book_id"], allow_literary_required=True):
+                return False
+            uow.cursor.execute("""SELECT to_jsonb(operation) FROM authority_book_followup_operation followup
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
+                JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
+                              ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+                WHERE followup.chapter_request_id=%s AND followup.followup_type='READER_OUTCOME'
+                  AND acceptance.status='COMMITTED' AND operation.definition_version='1.1.0'
+                  AND operation.status='FAILED_FINAL'
+                  AND attempt.result->>'error_code'='READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID'
+                  AND NOT EXISTS (SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+            """, [chapter_request_id])
+            row = uow.cursor.fetchone()
+        if row is None:
+            return False
+        source = dict(row[0])
+        stable_key = source["idempotency_key"] + ":contract-successor:" + READER_OUTCOME_DEFINITION_VERSION
+        admission = self.followup.admit(BookFollowupCommand(
+            definition_name=source["definition_name"], project_id=source["project_id"], workspace_id=source["workspace_id"],
+            actor_id=principal.principal_id, trace_id=source["trace_id"], correlation_id=source["correlation_id"],
+            idempotency_key=stable_key, payload=dict(source["command_payload"]["payload"]),
+            input_assets=tuple(dict(item) for item in source["input_asset_snapshot"]),
+            causation_operation_id=source["operation_id"],
+        ), principal=principal, recovery_source_operation_id=source["operation_id"])
+        def commit_successor(uow, _operation_id, checkpoint):
+            uow.cursor.execute("SELECT state FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
+            if uow.cursor.fetchone()[0] in {"ABORTED", "CANCELLED"} or _cancelled(uow.cursor, book):
+                raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_CANCELLED", "Cancelled creation cannot resume a followup")
+            uow.cursor.execute("UPDATE authority_book_followup_operation SET operation_id=%s WHERE chapter_request_id=%s AND followup_type='READER_OUTCOME' AND operation_id=%s", [admission.operation_id, chapter_request_id, source["operation_id"]])
+            if uow.cursor.rowcount != 1:
+                uow.cursor.execute("SELECT operation_id FROM authority_book_followup_operation WHERE chapter_request_id=%s AND followup_type='READER_OUTCOME'", [chapter_request_id])
+                if uow.cursor.fetchone()[0] != admission.operation_id:
+                    raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_CONFLICT", "Reader successor binding changed concurrently")
+            checkpoint("after_followup_successor_link")
+            return {"predecessor_operation_id": source["operation_id"], "followup_operation_id": admission.operation_id,
+                    "chapter_request_id": chapter_request_id, "contract_version": "reader-contract-successor.v1"}
+        self._execute_mutation(book=book, action="followup_link", event_type="book.followup.contract_successor_admitted",
+            idempotency_key=stable_key + ":book-link", actor_id=principal.principal_id,
+            trace_id=source["trace_id"], correlation_id=source["correlation_id"], causation_id=source["operation_id"],
+            payload={"chapter_request_id": chapter_request_id, "predecessor_operation_id": source["operation_id"],
+                     "successor_operation_id": admission.operation_id}, handler=commit_successor)
+        return True
+
     def _schedule_followup(
         self,
         chapter_request_id: str,

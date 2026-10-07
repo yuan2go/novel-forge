@@ -5,7 +5,7 @@ from typing import Any
 from .prose_review import PROSE_REVIEW_DEFINITION
 
 from .contracts import (
-    BOOK_FOLLOWUP_DEFINITION_VERSION,
+    BOOK_FOLLOWUP_DEFINITION_VERSION, READER_OUTCOME_DEFINITION_VERSION,
     LONGFORM_RECAP_DEFINITION,
     READER_OUTCOME_DEFINITION,
 )
@@ -81,7 +81,7 @@ def book_followup_operation_definitions(
         definitions.append(
             {
                 "name": name,
-                "definition_version": BOOK_FOLLOWUP_DEFINITION_VERSION,
+                "definition_version": READER_OUTCOME_DEFINITION_VERSION if name == READER_OUTCOME_DEFINITION else BOOK_FOLLOWUP_DEFINITION_VERSION,
                 "family": "book_followup_authority",
                 "enabled": True,
                 "definition_status": "integration_proven",

@@ -322,17 +322,23 @@ def ensure_creation_reader_pack(settings: Any, *, formation_run_id: str, princip
         scope = uow.cursor.fetchone()
         if scope is None:
             raise KernelError("CREATION_CHECKPOINT_NOT_FOUND", formation_run_id)
-        uow.cursor.execute("SELECT 1 FROM authority_capability_pack_activation WHERE project_id=%s AND workspace_id=%s AND book_id=%s AND pack_id=%s AND environment=%s", [*scope, pack_id, settings.environment])
-        if uow.cursor.fetchone() is not None:
+        uow.cursor.execute("SELECT activation.activation_version,deployment.pack_version FROM authority_capability_pack_activation activation JOIN authority_capability_pack_deployment deployment ON deployment.deployment_id=activation.active_deployment_id WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s AND activation.pack_id=%s AND activation.environment=%s AND activation.workflow_definition_ref='book_followup_reader_outcome@1.2.0'", [*scope, pack_id, settings.environment])
+        active = uow.cursor.fetchone()
+        if active and str(active[1]) == "1.4.0":
             return
+        if active and str(active[1]) != "1.3.0":
+            raise KernelError("CREATION_READER_PACK_CONTRACT_DRIFT", "Reader Pack needs an explicitly compatible deployment")
+        activation_version = int(active[0]) if active else 0
+        uow.cursor.execute("SELECT COALESCE(MAX(activation_version),0) FROM authority_capability_pack_activation WHERE project_id=%s AND workspace_id=%s AND book_id=%s AND pack_id=%s AND environment=%s", [*scope, pack_id, settings.environment])
+        agent_generation = max(activation_version, int(uow.cursor.fetchone()[0])) + 1
     principal.require("book.authority.execute", str(scope[0]))
     hashes = register_validation_runtime_definitions(settings.database_url,
         application_build_id=application_build_id, commit_sha=commit_sha)
     profile = build_reader_outcome_pack_profile(repository_root,
         operation_definition_hash=hashes["reader_proxy"], pack_id=pack_id)
     install_longform_validation_pack(settings.database_url, profile=profile,
-        pack_version=str(profile.manifest["identity"]["version"]), agent_generation=1,
-        expected_activation_version=0, project_id=str(scope[0]), workspace_id=str(scope[1]),
+        pack_version=str(profile.manifest["identity"]["version"]), agent_generation=agent_generation,
+        expected_activation_version=activation_version, project_id=str(scope[0]), workspace_id=str(scope[1]),
         book_id=str(scope[2]), application_build_id=application_build_id, commit_sha=commit_sha,
         compiler=principal, approver=principal, agent_admin=principal,
         agent_domain="book_followup", agent_scope_type="BOOK", runtime_environment=settings.environment)
