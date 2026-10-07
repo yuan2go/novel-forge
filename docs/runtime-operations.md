@@ -655,6 +655,11 @@ adoption decisions. Export creates a new JSON artifact containing exact source v
 statuses, prose and hashes; it refuses to overwrite an existing output file. `--chapters`
 selects an ordered available range, and `--versions` binds an expected version list.
 The UI also downloads a readable text manuscript with the same version/status provenance.
+An Editor link containing the Project and Book run opens the current manuscript directly.
+Provider-dependent API services assemble only for related execution operations; API restart
+with unavailable Provider or Source Import configuration does not prevent database reads,
+author edits or current manuscript export. Generation and full execution readiness still
+require their actual runtime configuration and gates.
 Strict Edition export and external publication are separate operations.
 
 An existing idle work can request `authority-manuscript adopt-author-workflow` with the same

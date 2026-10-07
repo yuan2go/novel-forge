@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+from threading import RLock
+from typing import Callable
 from typing import Any
 
 from novel_forge.api.authority_dependencies import (
@@ -138,6 +140,27 @@ def _install_database_runtime_routes(app: Any, settings: IndustrialSettings) -> 
         }
 
 
+class _DeferredService:
+    def __init__(self, factory: Callable[[], Any]):
+        self._factory = factory
+        self._value = None
+        self._lock = RLock()
+
+    def resolve(self) -> Any:
+        with self._lock:
+            if self._value is None:
+                self._value = self._factory()
+            return self._value
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.resolve(), name)
+
+    def close_if_initialized(self) -> None:
+        with self._lock:
+            if self._value is not None:
+                self._value.close()
+
+
 @dataclass(frozen=True, slots=True)
 class AuthorityApiServices:
     production_execution: ProductionExecutionComposition
@@ -189,24 +212,20 @@ def create_authority_app(settings: IndustrialSettings):
             os.environ.get("NOVEL_FORGE_POSTGRES_MAX_CONNECTIONS") or "100"
         ),
     )
-    provider_registry = build_provider_adapter_registry(
+    provider_registry = _DeferredService(lambda: build_provider_adapter_registry(
         environment=settings.environment,
-        provider_ids=configured_chapter_provider_ids(os.environ),
-        env=os.environ,
-    )
-    production_execution = build_production_execution_composition(
-        settings, provider_registry=provider_registry
-    )
-    application = build_chapter_authority_application(
-        settings, execution=production_execution
-    )
-    book_principal = build_trusted_principal_resolver().resolve_api_principal()
-    book_production = build_book_production_composition(
-        settings,
-        principal=book_principal,
-        execution=production_execution,
-        chapter_application=application,
-    )
+        provider_ids=configured_chapter_provider_ids(os.environ), env=os.environ,
+    ))
+    production_execution = _DeferredService(lambda: build_production_execution_composition(
+        settings, provider_registry=provider_registry.resolve(),
+    ))
+    application = _DeferredService(lambda: build_chapter_authority_application(
+        settings, execution=production_execution.resolve(),
+    ))
+    book_production = _DeferredService(lambda: build_book_production_composition(
+        settings, principal=build_trusted_principal_resolver().resolve_api_principal(),
+        execution=production_execution.resolve(), chapter_application=application.resolve(),
+    ))
     build_id, commit_sha = authority_release_identity()
     services = AuthorityApiServices(
         production_execution=production_execution,
@@ -218,7 +237,7 @@ def create_authority_app(settings: IndustrialSettings):
         provider_callback_service=ProviderCallbackAuthorityService(
             settings.database_url or "", provider_registry
         ),
-        book_authority_application=book_production.authority,
+        book_authority_application=_DeferredService(lambda: book_production.authority),
         book_completion_authority=PostgresBookCompletionAuthority(
             settings.database_url, application_build_id=build_id, commit_sha=commit_sha,
         ),
@@ -236,9 +255,9 @@ def create_authority_app(settings: IndustrialSettings):
             commit_sha=commit_sha,
         ),
         source_authority_query=SourceAuthorityQuery(settings.database_url),
-        source_import_application=build_source_import_application(
-            settings, execution=production_execution
-        ),
+        source_import_application=_DeferredService(lambda: build_source_import_application(
+            settings, execution=production_execution.resolve(),
+        )),
         source_import_query=SourceImportQuery(settings.database_url),
         mkaos_authority_application=MkaosAuthorityApplication(
             settings.database_url,
@@ -246,16 +265,13 @@ def create_authority_app(settings: IndustrialSettings):
             commit_sha=commit_sha,
         ),
         mkaos_authority_query=MkaosAuthorityQuery(settings.database_url),
-        book_design_authority_application=build_book_design_authority_application(
-            settings,
-            execution=production_execution,
-        ),
+        book_design_authority_application=_DeferredService(lambda: build_book_design_authority_application(
+            settings, execution=production_execution.resolve(),
+        )),
         book_design_authority_query=build_book_design_authority_query(settings),
-        agent_runtime_authority_application=(
-            build_agent_runtime_authority_application(
-                settings, execution=production_execution
-            )
-        ),
+        agent_runtime_authority_application=_DeferredService(lambda: build_agent_runtime_authority_application(
+            settings, execution=production_execution.resolve(),
+        )),
         agent_runtime_query=build_agent_runtime_query(settings),
         capability_pack_authority_application=(
             build_capability_pack_authority_application(settings)
@@ -558,7 +574,14 @@ def create_authority_app(settings: IndustrialSettings):
         except Exception as exc:
             object_store_ready = False
             object_store_error = f"{type(exc).__name__}: {exc}"
-        routes = dict(production_execution.gateway.routes)
+        provider_error = ""
+        try:
+            routes = dict(production_execution.gateway.routes)
+            chapter_handler_count = len(application.registry.available_handler_keys)
+        except Exception as exc:
+            routes = {}
+            chapter_handler_count = 0
+            provider_error = f"{type(exc).__name__}: {exc}"
         route_runtime_classes = {
             route.model_profile.runtime_class.value for route in routes.values()
         }
@@ -630,7 +653,7 @@ def create_authority_app(settings: IndustrialSettings):
             except Exception as exc:
                 pack_activation_error = f"{type(exc).__name__}: {exc}"
         definitions = {
-            "chapter_handler_count": len(application.registry.available_handler_keys),
+            "chapter_handler_count": chapter_handler_count,
             "content_definition_count": len(
                 services.content_authority_application.registry.definition_names
             ),
@@ -679,6 +702,7 @@ def create_authority_app(settings: IndustrialSettings):
             "provider": {
                 "status": provider_status,
                 "route_buildable": provider_route_buildable,
+                "error": provider_error,
                 "runtime_classes": sorted(route_runtime_classes),
                 "real_provider_qualified": False,
                 "real_provider_proven": False,
@@ -748,7 +772,7 @@ def create_authority_app(settings: IndustrialSettings):
 
     @app.on_event("shutdown")
     def shutdown_database_runtime() -> None:
-        production_execution.close()
+        production_execution.close_if_initialized()
         close_all_database_runtimes()
 
     _install_database_runtime_routes(app, settings)

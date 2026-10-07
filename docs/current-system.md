@@ -50,6 +50,10 @@ late extraction or late review from replacing a newer selection. Later chapters 
 exact predecessor dependencies and display changed versions without deleting their prose.
 
 `/product/editor/manuscripts` reads saved selected versions without a Provider call.
+The API assembles Provider-dependent services on the first related operation, under one
+process lock, while database queries and author edits remain available after restart with
+unavailable Provider or Source Import configuration. Failed assembly is not cached as a
+usable service. Readiness reports the unavailable route separately and does not qualify it.
 `/product/editor/manuscripts/export` binds an exact version list and optional chapter range;
 it requires neither whole-book completion nor Quality PASS nor strict Edition validation.
 The export records actual review, requirement and formal-progress status. The author UI

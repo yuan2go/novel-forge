@@ -10,6 +10,7 @@ import { loadEditorProjects, loadEditorDrafts, loadDraftEditor, submitEditorComm
 import { ProseReviewPanel, type ReviewSource } from "./ProseReviewPanel";
 import { exactOffset, retainExactLineEndings } from "./text";
 import { EditionPanel } from "./EditionPanel";
+import { CurrentManuscriptPanel } from "../production/CurrentManuscriptPanel";
 
 const EDITOR_COMMANDS = ["保存候选", "采用候选", "拒绝候选", "提交章节复核"];
 const storageKey = (draft: EditorDraft) => `novel-forge:author-input:${draft.project_id}:${draft.asset_version_id}`;
@@ -149,6 +150,7 @@ export function EditorPage() {
         <option value="">选择已绑定 Book 的稿件</option>{drafts.map((item) => <option disabled={!item.book_id} key={item.asset_version_id} value={item.asset_version_id}>{item.title} · {item.asset_type} · {item.asset_version_id.slice(-8)}</option>)}</select></label>
       <span>{dirty ? "有未保存修改" : "无未保存修改"}</span>
     </div></section>
+    {projectId && preferredBookRun && <CurrentManuscriptPanel project={projectId} bookRun={preferredBookRun} />}
     <section className="editorWorkbenchGrid">
       <aside className="panel"><PanelHeader title="相关资料侧栏" icon={<FileSearch size={18} />} />
         <p>项目：{state?.project_id || "—"}</p><p>工作区：{state?.workspace_id || "—"}</p><p>Book：{state?.book_id || "—"}</p>

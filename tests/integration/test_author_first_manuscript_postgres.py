@@ -147,12 +147,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
 
     stale_review = coordinator.report(**review_scope, run_id=review["run_id"])
     assert stale_review["source_current"] is False
-    from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from types import SimpleNamespace
-    from novel_forge.api.routers.chapter_editor import create_router
-    app = FastAPI()
-    app.include_router(create_router(SimpleNamespace(services=SimpleNamespace(chapter_query=SimpleNamespace(database_url=DATABASE_URL)))))
+    from novel_forge.api.authority_app import create_authority_app
+    monkeypatch.setenv("NOVEL_FORGE_CODEX_EXECUTABLE", str(tmp_path / "provider-unavailable"))
+    monkeypatch.delenv("NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT", raising=False)
+    app = create_authority_app(settings)
     client = TestClient(app)
     query = {"project_id": project, "book_run_id": book["book_run_id"]}
     assert client.get("/product/editor/manuscripts", params=query).status_code == 200
