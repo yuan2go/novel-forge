@@ -45,6 +45,11 @@ Reader Context projection and Provider View must both recognize the selected can
 asset type. A terminal contract failure is retained; recovery admits a versioned native
 followup successor with the original frozen assets, accepted frontier and Book budget.
 Unknown Effects require reconciliation before any such successor admission.
+Plan Change may read an exact pending structural candidate as a proposal input only
+when its original creative-validation admission and same-Book current state are
+verified. This does not qualify or activate the candidate. An earlier zero-effect
+input-contract failure uses a linked versioned Kernel command, retaining its frozen
+proposal inputs and original idempotency identity; cancellation forbids continuation.
 Planning frozen change evidence may already be present among typed inputs. Context
 assembly validates every reference but includes an exact role/version/hash only once;
 original input snapshots and evidence references remain unchanged.
