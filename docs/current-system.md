@@ -2298,3 +2298,8 @@ scheduled non-HOLD contributions and required contributions, and forbids foreign
 An exact settled selector-contract result rejected solely by the historical all-Arc
 coverage rule may be revalidated through a native host-only successor. The original
 rejection remains immutable, with no second Provider dispatch or resource settlement.
+
+Accepted Narrative Checkpoints resolve the input snapshot frozen by the accepted
+Chapter request. Later future-only replan bindings cannot reinterpret its historical
+Arc portfolio or accepted projection. Historical requests lacking the explicit reference
+may use only their Book binding recorded no later than request admission.
