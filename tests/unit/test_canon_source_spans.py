@@ -274,3 +274,22 @@ def test_timed_reader_disclosure_binds_only_exact_observed_span_without_authoriz
         "conflicts": [{"conflict_code": "NARRATIVE_EVENT_CAUSALITY_REQUIRED"}], "state_changes": {"disclosure_event": [row]}}
     assert reader_lineage_reassessment_required(canon)
     assert not reader_lineage_reassessment_required({**canon, "state_changes": changes})
+
+
+def test_accepted_cas_reads_object_state_payload_without_using_the_envelope_as_a_value():
+    from novel_forge.modules.canon_graph.source_spans import constrain_transition_preconditions
+    schema, _ = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": {}}, prompt_contract_version="v9")
+    baseline = {"relationship_state": [{"state": {"state": "ALLY"}}, {"state": "ALLY"}, {"state": {"bond": "unclassified"}}],
+                "character_knowledge": [{"state": {"status": "KNOWN"}, "status": "WRONG_METADATA"}],
+                "faction_state": [{"state": {"faction_id": "harbor", "alert": True}}]}
+    frozen = deepcopy(baseline)
+    corrected = constrain_transition_preconditions(schema, baseline)
+    assert baseline == frozen
+    def choices(field, predecessor):
+        return corrected["properties"][field]["items"]["properties"][predecessor]["enum"]
+    assert choices("relationship_changes", "from_state") == [None, "ALLY"]
+    assert choices("character_knowledge_changes", "from_status") == [None, "KNOWN"]
+    assert choices("faction_state_changes", "from_state") == [None]
+    with pytest.raises(KernelError, match="CANON_ACCEPTED_PRECONDITION_INVALID"):
+        constrain_transition_preconditions(schema, {"relationship_state": [{"state": {"state": {"future": "ALLY"}}}]})

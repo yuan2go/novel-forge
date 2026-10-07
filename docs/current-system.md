@@ -2330,3 +2330,5 @@ slice identity to the exact realization contract and ordered event roster. Exist
 one-label chapter bindings retain their historical identity.
 
 已批准的祖先计划变更若明确将旧 ChapterGroup 标为 IMPACTED/STALE，Book supervisor 在新的冻结组启动前调用原有 Group supersede 生命周期。退役绑定同作品、同 BookRun 的精确 PlanChange impact、批准与激活操作；存在活动 Chapter 时拒绝退役。旧计划身份保留在控制回执，失效计划不再作为生成输入；已接纳章节和 Book cursor 保持原生事实。
+
+Canon Extraction 的 accepted-cas 前态枚举读取 Story State entry 的已接纳 `state` 内容；历史扁平行保持兼容。包装对象和检索元数据不得充当状态字符串；缺少该字段保留空前态，已存在但类型非法的字段作为宿主合同错误拒绝，不让模型猜测。

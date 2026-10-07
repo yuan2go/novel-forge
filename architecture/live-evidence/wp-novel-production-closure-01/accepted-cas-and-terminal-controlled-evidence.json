@@ -1,0 +1,47 @@
+{
+  "schema_version": "wp-novel-production-closure-01.focused-evidence.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tested_parent_sha": "9bd08680e13e5bd40eda9b17ed1be63aaf661a57",
+  "checks": [
+    {
+      "check": "accepted CAS source envelope and exact scalar negative contracts",
+      "result": "PASS",
+      "tests": 19,
+      "private_evidence": "unit-cas-487.log"
+    },
+    {
+      "check": "Creation wait classes, Group retirement and supervisor",
+      "result": "PASS",
+      "tests": 70,
+      "private_evidence": "unit-terminal-488.log"
+    },
+    {
+      "check": "native PostgreSQL terminal failure classification and user cancellation",
+      "result": "PASS",
+      "tests": 2,
+      "private_evidence": "controlled-cli-489.log"
+    },
+    {
+      "check": "controlled two-Chapter author chain with local Edition edit, review and exact export",
+      "result": "PASS",
+      "tests": 1,
+      "duration_seconds": 140.51,
+      "private_evidence": "controlled-cli-487.log",
+      "provider": "CONTROLLED",
+      "scope": "engineering contract only"
+    }
+  ],
+  "contracts": {
+    "cas": "extract scalar preconditions from accepted entry state; retain flat compatibility; no fabricated predecessor",
+    "terminal_failure": "authoritative terminal Chapter checkpoint persists CHAPTER_TERMINAL_FAILURE; Creation FINAL_FAILURE cannot auto-rearm",
+    "cancellation": "original user cancellation and accepted history retained"
+  },
+  "real_production": {
+    "book_id": "closure-original-book",
+    "accepted_chapters_at_check": 1,
+    "target_chapters": 12,
+    "actual_runtime_sha": "9bd08680e13e5bd40eda9b17ed1be63aaf661a57",
+    "validation_scope": "real second Chapter World and Planning still in progress; prose and twelve-Chapter Edition export not proven"
+  },
+  "literary_effect": "NOT_PROVEN"
+}

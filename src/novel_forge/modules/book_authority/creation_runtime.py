@@ -46,7 +46,7 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
         if book["state"] == "COMPLETED":
             return "COMPLETED"
         if book["state"] in {"ABORTED", "CANCELLED"}:
-            return "CANCELLED"
+            return "BOOK_PRODUCTION_TERMINAL_FAILURE" if book.get("failure_classification") == "CHAPTER_TERMINAL_FAILURE" else "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
@@ -387,6 +387,8 @@ def creation_wait_class(reason: str) -> str:
         return "COMPLETED"
     if reason in {"CANCELLED", "ABORTED"}:
         return "CANCELLED"
+    if reason == "BOOK_PRODUCTION_TERMINAL_FAILURE":
+        return "FINAL_FAILURE"
     if reason in {"TASK_CONTEXT_MODEL_OUTPUT_CAPACITY_UNKNOWN", "TASK_CONTEXT_MODEL_CAPACITY_UNKNOWN"}:
         return "OWNER_RECOVERY_REQUIRED"
     if "RECONCILIATION" in reason or "UNKNOWN" in reason:
@@ -440,7 +442,7 @@ def schedule_creation_jobs(database_url: str, *, limit: int = 10, formation_run_
             WHERE run.frozen_stage_inputs #>> '{{generation_policy,contract_version}}' IN ('formation-generation.v5','formation-generation.v6')
               AND run.lifecycle<>'ABORTED' AND (%s='' OR run.formation_run_id=%s)
               AND COALESCE(latest.status,'')<>'CANCELLED'
-              AND COALESCE(latest.result->>'wait_class','') NOT IN ('COMPLETED','CANCELLED')
+              AND COALESCE(latest.result->>'wait_class','') NOT IN ('COMPLETED','CANCELLED','FINAL_FAILURE')
               AND (%s OR COALESCE(latest.status,'')<>'DEAD_LETTER' OR latest.input_snapshot->'progress' IS DISTINCT FROM jsonb_build_array({_CREATION_PROGRESS_COLUMNS}))
               AND (%s OR latest.result IS NULL OR latest.result->'progress' IS DISTINCT FROM jsonb_build_array({_CREATION_PROGRESS_COLUMNS}))
               AND NOT EXISTS (SELECT 1 FROM authority_runtime_job job WHERE job.job_kind='BOOK_CREATION_ADVANCE'
@@ -453,7 +455,7 @@ def schedule_creation_jobs(database_url: str, *, limit: int = 10, formation_run_
             progress = list(creation_progress(database_url, project_id=project, formation_run_id=identity))
             if status == "CANCELLED" or (not recovery_reason and status == "DEAD_LETTER" and progress == (previous or {}).get("progress")):
                 continue
-            if result and (result.get("wait_class") in {"COMPLETED", "CANCELLED"}
+            if result and (result.get("wait_class") in {"COMPLETED", "CANCELLED", "FINAL_FAILURE"}
                            or not recovery_reason and result.get("progress") == progress):
                 continue
             sequence = int((previous or {}).get("sequence", -1)) + 1

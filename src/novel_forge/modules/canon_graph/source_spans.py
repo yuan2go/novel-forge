@@ -222,7 +222,16 @@ def constrain_transition_preconditions(schema, baselines):
         for predecessor, current in (("from_status", "status"), ("from_state", "state"),
                 ("from_stance", "stance"), ("from_stage", "stage"), ("from_tier", "tier")):
             if predecessor in properties:
-                values = [None, *dict.fromkeys(row[current] for row in baselines.get(kind, []) if current in row)]
+                values = [None]
+                for row in baselines.get(kind, []):
+                    accepted = row["state"] if isinstance(row.get("state"), dict) else row
+                    value = accepted.get(current)
+                    if value is None:
+                        continue
+                    if not isinstance(value, str):
+                        raise KernelError("CANON_ACCEPTED_PRECONDITION_INVALID", f"{kind}.{current} requires an accepted scalar, not a state envelope")
+                    if value not in values:
+                        values.append(value)
                 properties[predecessor]["enum"] = values
     return result
 

@@ -1312,6 +1312,21 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         )
         self.assertEqual(resumed["state"], "CHAPTER_COMPLETED")
 
+    def test_terminal_chapter_abort_persists_failure_instead_of_user_cancellation(self) -> None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        authority, book = fixture["authority"], fixture["book"]
+        with self.assertRaisesRegex(KernelError, "BOOK_TERMINAL_FAILURE_REQUIRED"):
+            authority.cancel(book.book_run_id, reason="not terminal", principal=fixture["principal"], terminal_failure=True)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("UPDATE authority_book_production SET state='CHAPTER_FAILED_TERMINAL',version=version+1 WHERE book_run_id=%s", [book.book_run_id])
+            uow.commit()
+        failed = authority.cancel(book.book_run_id, reason="controlled terminal Chapter checkpoint", principal=fixture["principal"], terminal_failure=True)
+        self.assertEqual(failed["state"], "ABORTED")
+        self.assertEqual(failed["failure_classification"], "CHAPTER_TERMINAL_FAILURE")
+        replay = authority.cancel(book.book_run_id, reason="controlled terminal Chapter checkpoint", principal=fixture["principal"], terminal_failure=True)
+        self.assertEqual(failed, replay)
+        self.assertEqual(replay["accepted_through_chapter"], 0)
+
     def test_book_cancel_propagates_to_child(self) -> None:
         fixture = self._new_book_fixture(target_chapter_count=2)
         delegated = fixture["authority"].submit_chapter(
@@ -1328,6 +1343,7 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
             root_operation_id=delegated["chapter_root_operation_id"],
         )
         self.assertEqual(cancelled["state"], "ABORTED")
+        self.assertEqual(cancelled["failure_classification"], "")
         self.assertIn(child["status"], {"CANCELLATION_REQUESTED", "CANCELLED"})
 
     def test_book_cancel_preserves_successful_unaccepted_child(self) -> None:

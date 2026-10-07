@@ -1690,10 +1690,12 @@ class PostgresBookAuthority:
         return self.require(book_run_id)
 
     def cancel(
-        self, book_run_id: str, *, reason: str, principal: Principal
+        self, book_run_id: str, *, reason: str, principal: Principal, terminal_failure: bool = False
     ) -> dict[str, Any]:
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
+        if terminal_failure and book["state"] not in {BookProductionState.CHAPTER_FAILED_TERMINAL.value, BookProductionState.ABORTED.value}:
+            raise KernelError("BOOK_TERMINAL_FAILURE_REQUIRED", "failure termination requires the authoritative terminal Chapter checkpoint")
         if book["state"] == BookProductionState.COMPLETED.value:
             return book
         context = self._book_graph_context(book, principal.principal_id)
@@ -1758,9 +1760,12 @@ class PostgresBookAuthority:
                 paused_reason=reason or "Book production cancelled",
                 failure_reason=reason or "Book production cancelled",
             )
+            uow.cursor.execute("UPDATE authority_book_production SET failure_classification=%s WHERE book_run_id=%s",
+                ["CHAPTER_TERMINAL_FAILURE" if terminal_failure else "", book_run_id])
             return {
                 "book_run_id": book_run_id,
                 "state": BookProductionState.ABORTED.value,
+                "failure_classification": "CHAPTER_TERMINAL_FAILURE" if terminal_failure else "",
             }
 
         self._execute_mutation(
@@ -1774,7 +1779,7 @@ class PostgresBookAuthority:
             trace_id=context.trace_id,
             correlation_id=context.correlation_id,
             causation_id=str(book["root_operation_id"]),
-            payload={"reason": reason or "Book production cancelled"},
+            payload={"reason": reason or "Book production cancelled", "terminal_failure": terminal_failure},
             handler=commit_abort,
         )
         return self.require(book_run_id)

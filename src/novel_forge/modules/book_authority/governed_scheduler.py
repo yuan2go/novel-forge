@@ -89,6 +89,7 @@ class PostgresBookAuthorityScheduler:
             self.authority.cancel(
                 book_run_id,
                 reason=reason or "Chapter Authority reached a terminal failure",
+                terminal_failure=True,
                 principal=self.principal,
             )
             return self._result(book_run_id, before, "ABORT_TERMINAL_CHAPTER")

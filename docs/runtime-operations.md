@@ -3285,3 +3285,5 @@ graceful drain as crash recovery. Check the source/target command and input hash
 original deadline, derived duration, unchanged resource scope and cancellation absence.
 The focused PostgreSQL matrix includes the completed-contract cases in
 `tests/integration/test_failed_step_successor_postgres.py`.
+
+Book 在 Chapter 的权威终止失败后退役生产，持久记录 `CHAPTER_TERMINAL_FAILURE`，Creation 展示 `FINAL_FAILURE`，不再当作作者取消或自动重启。作者取消继续使用原取消合同；未对账的外部效果仍先对账。恢复不得把终止失败或已取消运行改回执行中。

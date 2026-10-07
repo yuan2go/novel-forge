@@ -312,6 +312,7 @@ class PostgresBookProductionSupervisor:
                 self.chapter_groups.cancel(
                     str(group_run["group_run_id"]),
                     reason=reason or "Chapter Authority reached a terminal failure",
+                    terminal_failure=True,
                     principal=self.principal,
                 )
                 return self._result(

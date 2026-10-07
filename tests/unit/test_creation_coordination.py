@@ -15,6 +15,7 @@ from tests.unit.test_story_formation_authorization import _input
     ("WAITING_APPROVAL", "AUTHOR_DECISION"),
     ("FORMATION_RECONCILIATION_OR_LEASE_REQUIRED", "RECONCILIATION_REQUIRED"),
     ("COMPLETED", "COMPLETED"), ("ABORTED", "CANCELLED"),
+    ("BOOK_PRODUCTION_TERMINAL_FAILURE", "FINAL_FAILURE"),
     ("SCHEMA_VALIDATION_FAILED", "OWNER_RECOVERY_REQUIRED"),
 ])
 def test_creation_distinguishes_waits_without_a_new_business_state(reason, expected):
@@ -108,3 +109,15 @@ def test_formation_v6_freezes_bounded_native_comparison(damage):
         frozen = replace(original, generation_policy=policy)
         assert StoryFormationInput.from_mapping(frozen.to_dict()).digest == frozen.digest
         assert original.generation_policy["contract_version"] == "formation-generation.v2"
+
+
+@pytest.mark.parametrize("classification,expected", [("", "CANCELLED"), ("CHAPTER_TERMINAL_FAILURE", "BOOK_PRODUCTION_TERMINAL_FAILURE")])
+def test_creation_retains_terminal_business_failure_separate_from_user_cancellation(classification, expected):
+    from types import SimpleNamespace
+    from time import monotonic
+    from novel_forge.modules.book_authority.creation_runtime import drive_book
+    composition = SimpleNamespace(authority=SimpleNamespace(database_url="unused", require=lambda identity: {
+        "state": "ABORTED", "project_id": "p", "failure_classification": classification}))
+    result = drive_book(composition=composition, chapter=None, book_run_id="b",
+                        worker=SimpleNamespace(require=lambda *args: None), maximum_ticks=1, deadline=monotonic()+1)
+    assert result == expected

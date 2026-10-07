@@ -774,7 +774,7 @@ class PostgresChapterGroupAuthority:
         return self.require(group_run_id)
 
     def cancel(
-        self, group_run_id: str, *, reason: str, principal: Principal
+        self, group_run_id: str, *, reason: str, principal: Principal, terminal_failure: bool = False
     ) -> dict[str, Any]:
         group = self.require(group_run_id)
         if group["state"] in {
@@ -783,7 +783,8 @@ class PostgresChapterGroupAuthority:
         }:
             return group
         self._control_step(group, "cancel", reason, principal)
-        self.book.cancel(group["book_run_id"], reason=reason, principal=principal)
+        self.book.cancel(group["book_run_id"], reason=reason, principal=principal,
+                         **({"terminal_failure": True} if terminal_failure else {}))
         self._request_root_cancellation(group, reason=reason, principal=principal)
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.chapter_group.set_state(
