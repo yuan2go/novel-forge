@@ -1,0 +1,63 @@
+...................F                                                     [100%]
+=================================== FAILURES ===================================
+___ test_native_overflow_compression_fidelity_draft_review_and_frozen_resume ___
+
+    def test_native_overflow_compression_fidelity_draft_review_and_frozen_resume():
+        from tests.integration.test_chapter_model_effects_postgres import (
+            ChapterModelEffectsPostgresTests,
+        )
+    
+        case = ChapterModelEffectsPostgresTests()
+>       case.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(
+            routed=True
+        )
+
+tests/integration/test_quality_context_formal_e2e_postgres.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_model_effects_postgres.py:1268: in test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+    approved = harness.register_compile_approve(
+tests/integration/capability_pack_postgres_support.py:276: in register_compile_approve
+    compilation = self.execute(
+tests/integration/capability_pack_postgres_support.py:434: in execute
+    return self.application.execute(
+src/novel_forge/modules/capability_pack_authority/application.py:496: in execute
+    prepared = self._prepare(command)
+               ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:567: in _prepare
+    return self._prepare_compilation(command)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/capability_pack_authority/application.py:608: in _prepare_compilation
+    ).load(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.capability_packs.operation_catalog.RepositoryOperationDefinitionLoader object at 0x10c14c920>
+identities = [('chapter.plan.materialize', '3.10.0'), ('chapter.execution_intent.prepare', '3.10.0'), ('chapter.memo.generate', '3....('chapter.context.retrieve', '3.10.0'), ('chapter.context.build', '3.10.0'), ('chapter.draft.generate', '3.10.0'), ...]
+commit_sha = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+
+    def load(
+        self,
+        identities: Iterable[tuple[str, str]],
+        *,
+        commit_sha: str = "",
+    ) -> InMemoryOperationDefinitionCatalog:
+        rows: list[Mapping[str, Any]] = []
+        for definition_name, definition_version in sorted(set(identities)):
+            row = (
+                self._repository.get_release(
+                    definition_name,
+                    definition_version,
+                    commit_sha=commit_sha,
+                )
+                if commit_sha
+                else self._repository.get(definition_name, definition_version)
+            )
+            if row is None:
+>               raise KeyError(
+                    f"operation definition not found: {definition_name}@{definition_version}"
+                )
+E               KeyError: 'operation definition not found: chapter.candidate.select_best@3.10.0'
+
+src/novel_forge/modules/capability_packs/operation_catalog.py:229: KeyError
+=========================== short test summary info ============================
+FAILED tests/integration/test_quality_context_formal_e2e_postgres.py::test_native_overflow_compression_fidelity_draft_review_and_frozen_resume
+1 failed, 19 passed in 6.25s

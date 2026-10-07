@@ -394,7 +394,7 @@ def run_single_chapter_slice(
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if definition_version in {"3.6.0", "3.7.0", "3.8.0", "3.9.0"}
+                        if definition_version in {"3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0"}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )

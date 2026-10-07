@@ -1,0 +1,62 @@
+{
+  "project_id": "project-b17ed368d3cf46b1a78808c0aa30438d",
+  "context_id": "authority-output:e1795624-5bfd-4c61-9319-9cececd1c087:chapter.context:v1",
+  "context_hash": "sha256:551028ed91869969eedbd77025fb0a43aaf85a4d7945c4a0b602e7aa862c80b0",
+  "before_tokens": 76309,
+  "after_tokens": 30703,
+  "assembly_budget": 32768,
+  "effects": [
+    {
+      "id": "ae06e0fe-8b03-4b18-9835-22adb1e7ace6",
+      "capability": "model.memo",
+      "status": "SUCCEEDED",
+      "task_type": "memo",
+      "producer_contract_hash": "sha256:1fda0b089539960881a49c8d716fd6392dea650471593bad5504645e52321bff"
+    },
+    {
+      "id": "66e1f4f6-68c6-40fb-81ab-4abaed997a99",
+      "capability": "model.context_compress",
+      "status": "SUCCEEDED",
+      "task_type": "context_compress",
+      "producer_contract_hash": "sha256:4f67ad487353a801ba76e69c1e909c160ed460d93827d5323fe91fbbac9375f6"
+    },
+    {
+      "id": "0e1ef33b-1e48-487f-9a7f-8114c0d7de21",
+      "capability": "model.context_fidelity",
+      "status": "SUCCEEDED",
+      "task_type": "context_fidelity",
+      "producer_contract_hash": "sha256:024cc878876bb60d07998b867a51f946948b93bfb8ccdd5952b3715a55ee9424"
+    },
+    {
+      "id": "73e97c29-1a21-4d1c-8a1f-9f81cbeceb47",
+      "capability": "model.context_fidelity",
+      "status": "SUCCEEDED",
+      "task_type": "context_fidelity",
+      "producer_contract_hash": "sha256:024cc878876bb60d07998b867a51f946948b93bfb8ccdd5952b3715a55ee9424"
+    },
+    {
+      "id": "cb35f2aa-d185-476c-b1f1-2fc27e89a4e3",
+      "capability": "model.review",
+      "status": "SUCCEEDED",
+      "task_type": "review",
+      "producer_contract_hash": "sha256:abc9884b526b7506bb52ef63ab21c82652064e2aae2848f49a1a3a01b0bfc780"
+    },
+    {
+      "id": "dd3815d0-d015-49b1-8944-fd832a1d8b74",
+      "capability": "model.context_compress",
+      "status": "SUCCEEDED",
+      "task_type": "context_compress",
+      "producer_contract_hash": "sha256:4f67ad487353a801ba76e69c1e909c160ed460d93827d5323fe91fbbac9375f6"
+    },
+    {
+      "id": "9b51c62f-8ff0-4d42-b620-02bb0dded8df",
+      "capability": "model.draft",
+      "status": "SUCCEEDED",
+      "task_type": "draft",
+      "producer_contract_hash": "sha256:5175d531ecd6ed51bf3b8e2b7e91333e00d9cfff8e605c227ba89eaf423d0020"
+    }
+  ],
+  "dispatch_count": 7,
+  "receipt_count": 7,
+  "positive_context_qualification": {}
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "publication-snapshot.v1",
+  "work_package": "WP-CONTEXT-ROUTER-MERGED-VALIDATION-01",
+  "baseline_sha": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+  "source_repair_sha": "8d8f0b21fa945d8cbe3db559adc5edb0fc5f597c",
+  "source_evidence_file_count": 64,
+  "source_hashes": "preserved verbatim in evidence-index.json",
+  "publication_tests_and_hooks": "NOT_RUN_BY_USER_REQUEST",
+  "merged_head_revalidation": "NOT_RUN",
+  "real_provider_dispatches_this_publication": 0,
+  "historical_evidence": "Tests and receipts refer to their original fixed SHA, not the forthcoming merge SHA. Original failures and BLOCKED/PARTIAL/UNKNOWN verdicts remain unchanged.",
+  "source_preservation": "Original task worktrees and evidence directory unchanged; copied runtime/build directories excluded."
+}

@@ -107,8 +107,8 @@ def test_gateway_legacy_graph_compatibility_is_bounded(monkeypatch, version, acc
             binder._operation_graph("operation", "project")
 
 
-@pytest.mark.parametrize("version", ["3.4.1", CHAPTER_MODEL_EFFECT_DEFINITION_VERSION])
-def test_pack_request_uses_original_workflow_and_operation_version(version):
+@pytest.mark.parametrize("version,workflow_version", [("3.4.1", "3.4.1"), (CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION), ("3.10.0", "3.10.0"), ("3.9.16", CHAPTER_MODEL_EFFECT_DEFINITION_VERSION)])
+def test_pack_request_uses_original_workflow_and_operation_version(version, workflow_version):
     binder = object.__new__(PostgresChapterExecutionContractBinder)
     binder.capability_pack_id = "pack"
     binder.pack_environment = "test"
@@ -124,7 +124,7 @@ def test_pack_request_uses_original_workflow_and_operation_version(version):
         graph={"definition_name": ChapterNode.DRAFT.definition_name, "definition_version": version},
     ) is expected
     request = binder.pack_resolver.freeze_attempt_snapshot.call_args.args[0]
-    assert request.workflow_definition_ref == f"chapter_authority_slice@{version}"
+    assert request.workflow_definition_ref == f"chapter_authority_slice@{workflow_version}"
     assert request.operation_definition_ref == f"{ChapterNode.DRAFT.definition_name}@{version}"
     assert request.pack_id == "pack"
 

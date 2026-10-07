@@ -1,0 +1,40 @@
+Traceback (most recent call last):
+  File "<string>", line 7, in observed
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/application.py", line 128, in run
+    return run_single_chapter_slice(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/orchestrator.py", line 492, in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/orchestrator.py", line 565, in _run_successful_attempt
+    output = execute_chapter_handler(
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/runtime.py", line 235, in execute_chapter_handler
+    return execute_authority_handler(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/authority_handler_runtime/runtime.py", line 50, in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/runtime.py", line 151, in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/handlers.py", line 437, in execute
+    generated = self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content})
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/model_effects.py", line 684, in invoke
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: PROVIDER_ADMISSION_REQUIRED: Production Execution cannot create an ExternalEffect without a frozen Provider admission receipt
+Traceback (most recent call last):
+  File "<string>", line 12, in <module>
+  File "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/tests/integration/test_chapter_model_effects_postgres.py", line 1413, in test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+    self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py", line 885, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py", line 1251, in assertMultiLineEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py", line 715, in fail
+    raise self.failureException(msg)
+AssertionError: 'PROVIDER_ADMISSION_REQUIRED' != 'CHAPTER_QUALITY_GATE_BLOCKED'
+- PROVIDER_ADMISSION_REQUIRED
++ CHAPTER_QUALITY_GATE_BLOCKED
+

@@ -128,12 +128,14 @@ class CapabilityPackPostgresHarness:
         if len(self.book_ids) > 1:
             self._seed_additional_books(self.book_ids[1:])
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            for definition in chapter_operation_definitions(
-                application_build_id=self.application_build_id,
-                commit_sha=self.release_sha,
-                model_effects_required=True,
-            ):
-                uow.repositories.definitions.register(definition)
+            for coordinated_contract in (False, True):
+                for definition in chapter_operation_definitions(
+                    application_build_id=self.application_build_id,
+                    commit_sha=self.release_sha,
+                    model_effects_required=True,
+                    coordinated_contract=coordinated_contract,
+                ):
+                    uow.repositories.definitions.register(definition)
             for definition in agent_runtime_operation_definitions(
                 application_build_id=self.application_build_id,
                 commit_sha=self.release_sha,

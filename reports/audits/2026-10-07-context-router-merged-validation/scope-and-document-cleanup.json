@@ -1,0 +1,59 @@
+{
+  "work_package": "WP-CONTEXT-ROUTER-MERGED-VALIDATION-01",
+  "baseline_sha": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+  "recorded_at": "2026-10-07T13:57:13.675288+00:00",
+  "scope": "native Chapter overflow -> context_compress -> context_fidelity -> frozen context_bundle -> draft; targeted recovery and qualification feedback",
+  "excluded": [
+    "production database or existing works",
+    "full P0 or full platform regression",
+    "deployment",
+    "new Router/Authority/Admission/qualification state"
+  ],
+  "prior_evidence": "PR132 merge f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609 published without merge verification; old report binds 2cb74ed baseline/a736a443 repair, not this main",
+  "gaps": [
+    "clean targeted tests on exact main",
+    "native PostgreSQL actual overflow and draft consumption",
+    "legal real-Provider execution and observable identity",
+    "independent fidelity calibration with blind labels"
+  ],
+  "cleanup": [
+    "mark Pack 2.7.0 as profile introduction, reference current Pack3.0/workflow3.10",
+    "clarify route-bound reasoning authorization already implemented on main",
+    "distinguish membership resource contract and absent Context bootstrap registration; native creative-validation route stays nonqualifying"
+  ],
+  "historical_records": "retained byte-for-byte; no history deletions or rewrites",
+  "read_files": [
+    {
+      "path": "docs/current-system.md",
+      "sha256": "1dcfa853d2d091c27af93285199670137e77c4fd91017d955ab87a66f50e9e7d"
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "sha256": "1e21b77bbd5737f6ec1a084ff5237b83a27fd29cdd4a3c4d5020fb3f0e18a2e5"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "010f0109ec815d6c7c96b97f32cbec919dc4caef80c17be332f3cf1e72d49740"
+    },
+    {
+      "path": "architecture/manifests/ai-instruction-manifest.yaml",
+      "sha256": "9190701019992fa24fddc8dac6250269938467c4de81ed6550add44c8bf4c2b4"
+    },
+    {
+      "path": "architecture/manifests/test-manifest.yaml",
+      "sha256": "a0c3db011325879ee173533626224e4a46295722c16d92fa88cc44fcbf2af400"
+    },
+    {
+      "path": "architecture/manifests/backend-qualification-manifest.yaml",
+      "sha256": "4999584130e0566352da43961ef20b54cf4fb982aafb706a3e645e7e3b7e091f"
+    },
+    {
+      "path": "config/capability_packs/chapter_generation_pack.json",
+      "sha256": "e258bbee6cd0c99e48718872679ce6d289e5c205f289d247296d81226f0659b5"
+    },
+    {
+      "path": "reports/audits/2026-10-07-context-router-acceptance/evidence/acceptance-result.json",
+      "sha256": "f76bbeae071b8696de49dd07bccac9e2ff89d57252e8ce467e0542c22972fc05"
+    }
+  ]
+}

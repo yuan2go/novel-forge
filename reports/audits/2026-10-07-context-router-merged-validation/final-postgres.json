@@ -1,0 +1,12 @@
+{
+  "run_id": "72469b5cfd644dbfa18da9d646e76be9",
+  "binary": "/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/opt/homebrew/Cellar/postgresql@16/16.15/bin",
+  "runtime": "/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/isolated-pg-72469b5cfd644dbfa18da9d646e76be9",
+  "socket_directory": "/tmp/nfcr-72469b5cfd644dbfa18da9d646e76be9",
+  "database": "nf_context_router_final_5b7bc08a00274092a772f5fe0b246fa7_test",
+  "port": 56579,
+  "database_url": "postgresql://nf_context_validator@127.0.0.1:56579/nf_context_router_final_5b7bc08a00274092a772f5fe0b246fa7_test",
+  "ownership": "private new cluster/database and copied toolchain; no existing server or toolchain mutation",
+  "source_sha": "8d8f0b21fa945d8cbe3db559adc5edb0fc5f597c",
+  "isolation": "new final-verification database in caller-owned private cluster; old failures retained"
+}

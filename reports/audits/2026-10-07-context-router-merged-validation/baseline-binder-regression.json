@@ -1,0 +1,16 @@
+{
+  "base_sha": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+  "production_file_sha256": "688623d93fe0e6d4c1aa99d69610f93e64e476da5e717d74309e4f6431dacbf2",
+  "fixture_scope": "new exact-workflow regression on baseline production file, remaining worktree not a clean main claim",
+  "command": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/unit/test_chapter_legacy_contract_recovery.py::test_pack_request_uses_original_workflow_and_operation_version",
+    "-k",
+    "3.10.0",
+    "--junitxml=/Users/yuan/Documents/Codex/2026-10-07/WP-CONTEXT-ROUTER-MERGED-VALIDATION-01/baseline-binder-regression.xml"
+  ],
+  "exit_code": 1
+}

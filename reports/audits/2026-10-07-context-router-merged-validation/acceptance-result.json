@@ -1,0 +1,114 @@
+{
+  "baseline_sha": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+  "final_sha": "8d8f0b21fa945d8cbe3db559adc5edb0fc5f597c",
+  "repair_branch": "codex/wp-context-router-merged-validation-01",
+  "worktree": "/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge",
+  "tree_clean": true,
+  "changed_files": [
+    {
+      "path": "architecture/reality-evidence.json",
+      "sha256": "cd6bdc5399b699d07f7e73ce65ef177c49ec4eef02990540bfa6e3ecbf48f093"
+    },
+    {
+      "path": "docs/current-system.md",
+      "sha256": "1dcfa853d2d091c27af93285199670137e77c4fd91017d955ab87a66f50e9e7d"
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "sha256": "1e21b77bbd5737f6ec1a084ff5237b83a27fd29cdd4a3c4d5020fb3f0e18a2e5"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "sha256": "3ce565183094e70adaef7970e00c172fe508f17eccf54061df30998db79acb50"
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+      "sha256": "f884649f44e488f9a2879fcd2a13aafda9a931960bbe38786444f97d20cd71c2"
+    },
+    {
+      "path": "tests/integration/capability_pack_postgres_support.py",
+      "sha256": "2afa580d8b768dc7f247af7c1f51a3847e4f5637a6db001dc97cf14b60dce1ac"
+    },
+    {
+      "path": "tests/integration/test_chapter_model_effects_postgres.py",
+      "sha256": "e3c09c76172829ceb7d41b3c1813706a9e6b53d4cda15c8fe59c19a8726805d2"
+    },
+    {
+      "path": "tests/integration/test_quality_context_formal_e2e_postgres.py",
+      "sha256": "14a3793853a1b86f1b043f689573049222057317d6fe7d45cb7d1250ebfe3232"
+    },
+    {
+      "path": "tests/unit/test_chapter_legacy_contract_recovery.py",
+      "sha256": "1b4133c1ce75d545419dde502359a8002d275e47d78996d86f4995634f3d5a9f"
+    }
+  ],
+  "historical_evidence_changed": false,
+  "targeted_tests": {
+    "baseline_units": "124 passed",
+    "baseline_postgres": "19 passed, 1 failed",
+    "final_frozen": "270 passed, 0 failed, 0 skipped",
+    "final_database_resource": "final-postgres.json",
+    "final_junit": "final-focused.xml"
+  },
+  "report_verdicts": {
+    "CODE_WIRED": {
+      "decision": "PASS",
+      "scope": "repair commit, native Scheduler plus controlled Provider",
+      "evidence_state": "EXECUTABLE",
+      "evidence_class": "SCRIPTED_FIXTURE_POSTGRES"
+    },
+    "MERGED_HEAD_VERIFIED": {
+      "decision": "FAIL",
+      "scope": "3c4d6dc5fa5370288bad6e1302b4b3fd5e80b5df",
+      "reason": "clean selected main E2E fails; current 3.10 workflow binding counterexample reproduced; repair not merged"
+    },
+    "REAL_PROVIDER_VERIFIED": {
+      "decision": "BLOCKED",
+      "reason": "native route/capacity accounting and DeepSeek paid authorization not supplied; zero actual calls"
+    },
+    "ROUTER_QUALIFIED": {
+      "decision": "NOT_PROVEN",
+      "reason": "zero reusable qualifying independent real Context observations at this producer identity; mock outcomes excluded"
+    },
+    "FIDELITY_CALIBRATED": {
+      "decision": "NOT_RUN",
+      "reason": "no blinded independent semantic calibration executed; host invariants and fidelity self-report are not calibrated model evidence"
+    }
+  },
+  "overall": "PARTIAL",
+  "static_checks": {
+    "ruff": "PASS",
+    "documentation_reality": "PASS",
+    "instruction_manifest": "PASS",
+    "worker_manifest": "PASS",
+    "migration_manifest": "PASS",
+    "required_test_manifest": {
+      "error": "test reality inventory failed: test reality pattern matches no test files: coordinated-current-planning-controlled-wire:tests/integration/current_planning_wire_support.py",
+      "kind": "tests",
+      "status": "FAIL"
+    }
+  },
+  "required_test_manifest_baseline_identity": {
+    "same_as_baseline": true,
+    "sha256": "a0c3db011325879ee173533626224e4a46295722c16d92fa88cc44fcbf2af400"
+  },
+  "out_of_scope_failure": {
+    "path": "src/novel_forge/modules/chapter_authority/handlers.py:2030",
+    "error": "ImportError canon_history from domain_handlers",
+    "evidence": "repair-e2e-5.log",
+    "handling": "preserved; native Context targeted test stops after Review; original full-slice quality-block assertion retained"
+  },
+  "real_provider_preflight": "real-provider-preflight.json",
+  "independent_fidelity_samples_used": 0,
+  "minimum_samples_not_sufficient": true,
+  "native_ledger": "final-native-ledger.json",
+  "private_database_stopped": true,
+  "scope_exclusions": [
+    "production DB/existing work",
+    "deployment",
+    "new Runtime Router/Authority/Admission",
+    "full P0/full regression",
+    "merge/publication"
+  ],
+  "post_merge_requirement": "rerun affected focused scope at exact real merge SHA; do not carry branch PASS"
+}

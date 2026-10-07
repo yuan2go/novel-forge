@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="4.533" timestamp="2026-10-07T22:14:02.938934+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_quality_context_formal_e2e_postgres" name="test_native_overflow_compression_fidelity_draft_review_and_frozen_resume" time="3.929"><failure message="ImportError: cannot import name 'canon_history' from 'novel_forge.modules.chapter_authority.domain_handlers' (/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/domain_handlers.py)">def test_native_overflow_compression_fidelity_draft_review_and_frozen_resume():
+        from tests.integration.test_chapter_model_effects_postgres import (
+            ChapterModelEffectsPostgresTests,
+        )
+    
+        case = ChapterModelEffectsPostgresTests()
+&gt;       case.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(
+            routed=True
+        )
+
+tests/integration/test_quality_context_formal_e2e_postgres.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_model_effects_postgres.py:1408: in test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+    application.run(SingleChapterRequest(
+src/novel_forge/modules/chapter_authority/application.py:128: in run
+    return run_single_chapter_slice(
+src/novel_forge/modules/chapter_authority/orchestrator.py:492: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:565: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def execute(self, request: ChapterHandlerRequest) -&gt; ChapterHandlerOutput:
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-canon-reference-resolution-revalidation.v1":
+            from .canon_reference_recovery import materialize
+            return _output(ChapterNode.CANON_EXTRACTION, materialize(request))
+        revision = request.require_input("best_draft_candidate")
+        context = request.require_input("context_bundle")
+        span_inputs = {}
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.canon_graph.source_spans import source_spans
+&gt;           from .domain_handlers import canon_history
+E           ImportError: cannot import name 'canon_history' from 'novel_forge.modules.chapter_authority.domain_handlers' (/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge/src/novel_forge/modules/chapter_authority/domain_handlers.py)
+
+src/novel_forge/modules/chapter_authority/handlers.py:2030: ImportError</failure></testcase></testsuite></testsuites>

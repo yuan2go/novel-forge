@@ -1,0 +1,108 @@
+{
+  "recorded_at": "2026-10-07T14:21:22.545745+00:00",
+  "scope": "read-only native membership observation; no database or provider state created",
+  "membership": {
+    "version": "codex-membership-identity.v1",
+    "auth_mode": "chatgpt",
+    "billing_channel": "ACCOUNT_ENTITLEMENT",
+    "account_ref": "codex-account:sha256:12b6bead40a6fa4bb545f9c2be176cc20a661583128ab079beb79d81b6ba0c86"
+  },
+  "executable": "/opt/homebrew/lib/node_modules/@openai/codex/bin/codex.js",
+  "executable_sha256": "baefc109b871e73a7bab298ee19b8bf73c8b647c4f8649a9794fc5db01db17b9",
+  "cli_version": "",
+  "models_cache_sha256": "d53548cf8ca1f0ba39683869bd696f8c3d681f26e6916452333aba009b4ed522",
+  "cached_models": [
+    {
+      "slug": "gpt-6.1-sol",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "low"
+    },
+    {
+      "slug": "gpt-6-astra",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "gpt-6-sol",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "gpt-6-luna",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "gpt-reserve",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "gpt-5.6-sol",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "low"
+    },
+    {
+      "slug": "gpt-5.6-terra",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "gpt-5.6-luna",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "gpt-5.5",
+      "context_window": 272000,
+      "max_context_window": 272000,
+      "default_reasoning_level": "medium"
+    },
+    {
+      "slug": "codex-auto-review",
+      "context_window": 272000,
+      "max_context_window": 872000,
+      "default_reasoning_level": "medium"
+    }
+  ],
+  "environment_presence_only": {
+    "NOVEL_FORGE_CODEX_ROUTER_MODELS": false,
+    "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF": false,
+    "NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF": false,
+    "NOVEL_FORGE_CODEX_MEMBERSHIP_AUTHORIZATION_REF": false,
+    "NOVEL_FORGE_CODEX_HOME": false,
+    "NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE": false,
+    "NOVEL_FORGE_DEEPSEEK_BILLING_ACCOUNT_REF": false,
+    "DEEPSEEK_API_KEY": false
+  },
+  "template": {
+    "path": "config/execution_templates/creative_validation.json",
+    "sha256": "169e56b4ae668a7330e8c0d3bdfd10ef93dc8aba2a7c1b346d207190dbd8c213"
+  },
+  "codex_status": "BLOCKED_BEFORE_SEND",
+  "codex_blockers": [
+    "No verified complete output capacity and route-bound accounting evidence; login is not Provider admission",
+    "Native isolated deployment route/configuration authorization is not supplied",
+    "Codex accounting contract bounds application-visible stdin only, final hidden remote framing remains unproven"
+  ],
+  "deepseek_status": "BLOCKED_BEFORE_SEND",
+  "deepseek_blockers": [
+    "No inherited paid budget template with explicit maximum amount and bound account/credential config supplied"
+  ],
+  "native_context_bootstrap": "Not a registered Chapter sample task; Draft/Review grants cannot be borrowed",
+  "actual_provider_dispatch_count": 0,
+  "actual_provider_tokens": 0,
+  "deepseek_incremental_spend_usd": "0",
+  "codex_monetary_cost": "NOT_ESTIMABLE_ACCOUNT_ENTITLEMENT",
+  "router_task_qualification": "NOT_PROVEN",
+  "independent_fidelity_calibration": "NOT_RUN",
+  "saved_observation_handling": "No observations were forged or written; controlled integration outcomes are excluded from positive task feedback"
+}

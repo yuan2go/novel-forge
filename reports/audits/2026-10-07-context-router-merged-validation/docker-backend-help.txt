@@ -1,0 +1,26 @@
+[2026-10-07T13:59:09.114709000Z][com.docker.backend] running monitor
+[2026-10-07T13:59:09.119046000Z][com.docker.backend.socket] listening on AF_UNIX socket: path="<HOME>/Library/Containers/com.docker.docker/Data/forkexecd.sock" len=68 cwd="<HOME>/Library/Containers/com.docker.docker/Data"
+[2026-10-07T13:59:09.187017000Z][com.docker.backend] running fork/exec server
+[2026-10-07T13:59:09.187179000Z][com.docker.backend] running services
+Usage:
+  -accept-license
+    	accept license
+  -analytics-batch-interval duration
+    	analytics batch interval
+  -analytics-port int
+    	analytics port
+  -autostart
+    	indicate that app has been started at login
+  -engine string
+    	override settings to select the local engine type (can be HyperV, WSL2, WindowsContainers)
+  -telemetry
+    	turn on system telemetry export
+  -telemetry-endpoint string
+    	OTLP/HTTP endpoint for system telemetry upload (default "https://desktop.observability-stage.docker.com")
+  -unattended
+    	unattended mode for the CI
+  -with-frontend
+    	starts electron manager (default true)
+[13:59:09.188745000Z][main                  ][W] failed to parse args:flag: help requested
+[13:59:09.189050000Z][main                  ][W] system telemetry disabled, custom otlp endpoint "https://desktop.observability-stage.docker.com" will be ignored
+[2026-10-07T14:00:51.318668000Z][com.docker.backend] monitor exited: <nil>

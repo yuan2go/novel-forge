@@ -250,7 +250,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         )
 
     def _release_evidence(
-        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = "", extra_context_candidates: tuple[dict[str, object], ...] = ()
+        self, project_id: str, *, with_mkaos: bool = False, scope_preseeded: bool = False, workspace_id: str = "", extra_context_candidates: tuple[dict[str, object], ...] = (), current_contract_inputs: bool = False
     ) -> tuple[dict[str, object], ...]:
         workspace_id = workspace_id or f"workspace:{project_id}"
         if with_mkaos and not scope_preseeded:
@@ -454,6 +454,10 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 }
             )
         candidates.extend(dict(item) for item in extra_context_candidates)
+        if current_contract_inputs:
+            from tests.integration.quality_context_state_fixture import current_state_inputs
+
+            candidates = list(current_state_inputs(project_id, candidates))
         with transaction() as connection, connection.cursor() as cursor:
             for candidate in candidates:
                 content = dict(
@@ -1256,7 +1260,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             project_id=project_id, task_type="draft", candidate=candidate,
         ), [])
 
-    def test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(self, *, routed=False) -> None:
+    def test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(self, *, routed=False, native_through_review=False) -> None:
         from unittest.mock import patch
 
         from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
@@ -1275,6 +1279,16 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
         project_id = harness.project_id
         semantic_dispatches = []
         semantic_results = []
+        draft_prompts = []
+        from novel_forge.modules.chapter_authority import execution_gateway
+
+        materialize = execution_gateway._materialize_production_codex_prompt
+
+        def retain_draft_prompt(**kwargs):
+            result = materialize(**kwargs)
+            if kwargs["stage"] == "draft":
+                draft_prompts.append(result)
+            return result
         original_context_execute = _ContextHandler.execute
 
         def fixture(stage, inputs):
@@ -1384,44 +1398,65 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "source_use_mode": "generation", "allowed_use": "generation",
                 "retrieval_reasons": ["task_related_episodic_history"],
             }
-            from tests.integration.quality_context_state_fixture import current_state_inputs
-
-            compiled_style_inputs = current_state_inputs(project_id, ())
             candidates = self._release_evidence(
                 project_id, with_mkaos=True, scope_preseeded=True, workspace_id=harness.workspace_id,
-                extra_context_candidates=(history,
-                    *compiled_style_inputs, *(
+                current_contract_inputs=True, extra_context_candidates=(history, *(
                     {"asset_version_id": f"{project_id}:{kind}:genesis", "asset_type": kind,
                      "project_id": project_id, "safe_summary": "Explicit fixture genesis boundary",
-                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary"}
+                     "structured_facts": [], "estimated_tokens": 20, "narrative_function": "accepted_boundary",
+                     "content": {"project_id": project_id, "book_id": f"book:{project_id}",
+                                 "contract_version": "story-state-snapshot-v2" if kind == "story_state_snapshot" else "canon-snapshot-v2",
+                                 "accepted_state_only": True, "accepted_through_chapter": 0,
+                                 "current_state": {}, "structured_facts": [],
+                                 "safe_summary": "Explicit fixture genesis boundary"}}
                     for kind in ("story_state_snapshot", "canon_snapshot")
                 )),
             )
             self._seed_intrinsic_semantic_commit_policy(project_id)
-            with patch.object(_ContextHandler, "execute", execute_with_semantic_subeffects):
-                with self.assertRaises(KernelError) as unresolved:
-                    application.run(SingleChapterRequest(
-                    project_id=project_id, workspace_id=harness.workspace_id, actor_id="context-semantic-worker",
-                    chapter=1, title="An Extracted Promise", premise="A public promise becomes irreversible.",
-                    trace_id=identifier("trace"), correlation_id=identifier("correlation"),
-                    application_build_id="context-semantic-test", commit_sha="e" * 40,
-                    context_candidates=candidates, context_token_budget=32_768,
-                    context_version_refs={"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
-                                          "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"},
-                    preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
-                    ))
-                self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
+            request = SingleChapterRequest(
+                project_id=project_id, workspace_id=harness.workspace_id, actor_id="context-semantic-worker",
+                chapter=1, title="An Extracted Promise", premise="A public promise becomes irreversible.",
+                trace_id=identifier("trace"), correlation_id=identifier("correlation"),
+                application_build_id="context-semantic-test", commit_sha="e" * 40,
+                context_candidates=candidates, context_token_budget=32_768,
+                context_version_refs={"story_state_snapshot_version": f"{project_id}:story_state_snapshot:genesis",
+                                      "canon_snapshot_version": f"{project_id}:canon_snapshot:genesis"},
+                preparation_report={"stage_context_profile_versions": {"draft": "draft-context-profile-v4"}},
+            )
+            with patch.object(_ContextHandler, "execute", execute_with_semantic_subeffects), patch.object(
+                execution_gateway, "_materialize_production_codex_prompt", side_effect=retain_draft_prompt
+            ):
+                if native_through_review:
+                    from novel_forge.modules.authority_security import Principal, PrincipalType
+
+                    principal = Principal(request.actor_id, PrincipalType.WORKER,
+                        frozenset({"chapter.authority.execute"}), frozenset({project_id}), "configured-test-worker")
+                    admission = application.admit(request, principal=principal)
+                    scheduler = application.scheduler(principal=principal)
+                    seen = []
+                    for _ in ChapterNode:
+                        tick = scheduler.tick(project_id=project_id, root_operation_id=admission.root_operation_id)
+                        self.assertEqual(tick.operation_status, "SUCCEEDED")
+                        seen.append(tick.node)
+                        if tick.node == ChapterNode.REVIEW.value:
+                            break
+                    self.assertEqual(seen, [node.value for node in ChapterNode][:seen.index(ChapterNode.REVIEW.value) + 1])
+                    self.assertIn(ChapterNode.CONTEXT.value, seen)
+                else:
+                    with self.assertRaises(KernelError) as unresolved:
+                        application.run(request)
+                    self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
         self.assertEqual(semantic_dispatches, ["context_compress", "context_fidelity"] * 2)
         self.assertEqual(len(semantic_results), 2)
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("""
-                SELECT version.content
+                SELECT version.content, version.asset_version_id, version.content_hash
                 FROM authority_operation_output_asset AS output
                 JOIN authority_asset_version AS version ON version.asset_version_id = output.asset_version_id
                 JOIN authority_operation AS operation ON operation.operation_id = output.operation_id
                 WHERE operation.project_id = %s AND output.output_key = 'chapter.context'
             """, [project_id])
-            context = cursor.fetchone()[0]
+            context, context_id, context_hash = cursor.fetchone()
             self.assertEqual(replay_context_bundle(context)["status"], "MATCH")
             task_receipt = context["task_context_receipt"]
             self.assertGreater(task_receipt["before_estimated_tokens"], context["token_budget"])
@@ -1435,6 +1470,26 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(task_receipt["compression_trace"][0]["source_content_hash"], source_hash)
             projected_history = next(item for item in context["stage_context_view"]["segments"] if item["asset_version_id"] == history["asset_version_id"])
             self.assertEqual(projected_history["structured_facts"], history["structured_facts"])
+            cursor.execute("SELECT request_payload FROM authority_external_effect WHERE project_id=%s AND capability='model.draft'", [project_id])
+            draft_request = cursor.fetchone()[0]
+            runtime = draft_request["_production_execution"]["capability_runtime"]
+            self.assertEqual(len(runtime["context_asset_version_ids"]), 1)
+            context_artifact = next(item for item in draft_request["_production_execution"]["input_artifacts"] if item["artifact_type"] == "context_bundle")
+            self.assertEqual(context_artifact["asset_version_id"], runtime["context_asset_version_ids"][0])
+            self.assertEqual(context_artifact["asset_version_id"], context_id)
+            self.assertEqual(context_artifact["content_hash"], context_hash)
+            cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [runtime["provider_admission_asset_version_id"]])
+            admission = cursor.fetchone()[0]["contract"]
+            self.assertEqual(len(draft_prompts), 1)
+            prompt, prompt_evidence = draft_prompts[0]
+            self.assertIn(history["structured_facts"][0]["value"], prompt)
+            self.assertEqual(prompt_evidence["fully_rendered_prompt_hash"], admission["provider_request_identity"]["input_text_hash"])
+            self.assertEqual(admission["provider_admission"]["status"], "ADMITTED")
+            memo_boundary = draft_request["input"]["chapter_memo"]["accepted_boundary"]
+            context_boundary = context["context_manifest"]["accepted_boundary"]
+            self.assertEqual(memo_boundary["accepted_through_chapter"], context_boundary["accepted_through_chapter"])
+            self.assertEqual(memo_boundary["story_state_asset_version_id"], context_boundary["story_state_snapshot_version"])
+            self.assertEqual(memo_boundary["canon_snapshot_asset_version_id"], context_boundary["canon_snapshot_version"])
         with transaction() as connection, connection.cursor() as cursor:
             cursor.execute("""
                 SELECT effect.capability, effect.status, effect.request_payload,
@@ -1466,8 +1521,9 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
             self.assertEqual(context_gate_outcomes(cursor, project_id=project_id, effect_ids=[row[0] for row in cursor.fetchall()]), {})
             cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name IN ('chapter.draft.generate','chapter.review.evaluate') AND status='SUCCEEDED'", [project_id])
             self.assertEqual(cursor.fetchone()[0], 2)
-            cursor.execute("SELECT content->'blocking_dimensions' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
-            self.assertTrue(cursor.fetchone()[0])
+            if not native_through_review:
+                cursor.execute("SELECT content->'blocking_dimensions' FROM authority_asset_version JOIN authority_asset USING(asset_id) WHERE project_id=%s AND asset_type='quality_score_report'", [project_id])
+                self.assertTrue(cursor.fetchone()[0])
 
     def test_full_chapter_slice_uses_unified_execution_gateway_and_commit_manifests(
         self,

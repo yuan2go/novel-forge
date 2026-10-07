@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.701" timestamp="2026-10-07T22:06:00.622641+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_quality_context_formal_e2e_postgres" name="test_native_overflow_compression_fidelity_draft_review_and_frozen_resume" time="1.091"><failure message="AssertionError: 'PROVIDER_ADMISSION_REQUIRED' != 'CHAPTER_QUALITY_GATE_BLOCKED'&#10;- PROVIDER_ADMISSION_REQUIRED&#10;+ CHAPTER_QUALITY_GATE_BLOCKED">def test_native_overflow_compression_fidelity_draft_review_and_frozen_resume():
+        from tests.integration.test_chapter_model_effects_postgres import (
+            ChapterModelEffectsPostgresTests,
+        )
+    
+        case = ChapterModelEffectsPostgresTests()
+&gt;       case.test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay(
+            routed=True
+        )
+
+tests/integration/test_quality_context_formal_e2e_postgres.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_chapter_model_effects_postgres.py:1413: in test_context_semantic_subeffects_use_frozen_pack_and_durable_kernel_replay
+    self.assertEqual(unresolved.exception.code, "CHAPTER_QUALITY_GATE_BLOCKED")
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py:885: in assertEqual
+    assertion_func(first, second, msg=msg)
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py:1251: in assertMultiLineEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests testMethod=runTest&gt;
+msg = "'PROVIDER_ADMISSION_REQUIRED' != 'CHAPTER_QUALITY_GATE_BLOCKED'\n- PROVIDER_ADMISSION_REQUIRED\n+ CHAPTER_QUALITY_GATE_BLOCKED\n"
+
+    def fail(self, msg=None):
+        """Fail immediately, with the given message."""
+&gt;       raise self.failureException(msg)
+E       AssertionError: 'PROVIDER_ADMISSION_REQUIRED' != 'CHAPTER_QUALITY_GATE_BLOCKED'
+E       - PROVIDER_ADMISSION_REQUIRED
+E       + CHAPTER_QUALITY_GATE_BLOCKED
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/case.py:715: AssertionError</failure></testcase></testsuite></testsuites>
