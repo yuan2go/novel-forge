@@ -1,0 +1,30 @@
+{
+  "schema_version": "publication-snapshot.v1",
+  "publication_verification": "NOT_RUN_BY_USER_REQUEST",
+  "runtime_execution": "NOT_RUN",
+  "vendored_skills": {
+    "count": 38,
+    "upstream_commit": "6fd947921b935b7e1e69293a200400f0fdd5c15f",
+    "location": "skills/",
+    "role": "coding-agent tools, not production Capability Pack bindings",
+    "initialization_scripts_executed": false
+  },
+  "production_source": {
+    "commit": "39c8b72a5180c7ff687a53d0bc123fe301f32e81",
+    "preserved_publication_commit": "c9c7fc1d",
+    "pull_request": "https://github.com/yuan2go/novel-forge/pull/135",
+    "new_non_merge_commits": 44,
+    "merge_status": "PENDING_NATIVE_CONTRACT_AND_MIGRATION_RECONCILIATION",
+    "accepted_chapters": 1,
+    "target_chapters": 12,
+    "real_run_state": "BLOCKED_1_OF_12",
+    "unknown_remote_outcomes": 4,
+    "evidence_is_not_current_main_qualification": true,
+    "copied_outputs": [
+      "production/current-delivery-projection.json",
+      "production/prose/chapter1-before-after.diff",
+      "production/prose/chapter2-selected-candidate.txt"
+    ]
+  },
+  "source_preservation": "Original source worktrees and private author/runtime state are unchanged. Prior failures and unknown outcomes are retained."
+}

@@ -79,6 +79,10 @@ Root `skills/` is the source. Generate `.claude/skills/` with `make sync-skills`
 hand-edit generated copies. Skills cannot bypass Authority, schema, storage, copyright,
 Provider, permission or quality gates.
 
+Vendored `mattpocock/skills` are coding-agent tools governed by these rules. Their
+provenance and tool boundaries are recorded in `docs/development.md`. Writing methods
+do not authorize production draft inputs or change Capability Pack bindings.
+
 ## Verification
 
 Run the smallest focused check during development and the complete applicable matrix in
