@@ -2789,6 +2789,7 @@ class _PublishGateHandler:
                 context_bundle=context.content,
                 context_bundle_version_id=context.asset_version_id,
                 project_id=request.project_id,
+                work_admission=request.definition_version == "3.9.1",
             ),
         )
 
@@ -2798,15 +2799,22 @@ class _ExportHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("best_draft_candidate")
         publish_gate = request.require_input("publish_gate_report")
-        return _output(
+        restored = None
+        if request.definition_version == "3.9.1" and publish_gate.content.get("gate") == "PUBLISH_GATE_BLOCKED":
+            from .publication_recovery import revalidate_frozen_publication
+            restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
+            publish_gate = restored
+        primary = _output(
             ChapterNode.EXPORT,
-            build_export_package(
-                revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id,
-                quality=publish_gate.content,
-                quality_asset_version_id=publish_gate.asset_version_id,
-            ),
+            build_export_package(revision=revision.content, revision_asset_version_id=revision.asset_version_id,
+                quality=publish_gate.content, quality_asset_version_id=publish_gate.asset_version_id),
         )
+        if restored is not None:
+            from dataclasses import replace
+            return replace(primary, auxiliary_outputs=(ChapterAuxiliaryOutput(asset_type="publish_gate_report",
+                output_key="chapter.export.revalidated_publish_gate", role="compatibility_evidence", content=restored.content,
+                reference_asset_version_ids=tuple(item.asset_version_id for item in request.inputs)),))
+        return primary
 
 
 @dataclass(frozen=True, slots=True)

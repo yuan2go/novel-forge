@@ -114,3 +114,30 @@ def test_objective_length_resolution_and_model_preservation_decide_together(pres
             quality_resolution_checks=tuple(checks)), minimum_net_improvement=3)
     assert comparison["selected_asset_version_id"] == selected
     assert comparison["net_improvement"] == -5 and comparison["literary_quality_proven"] is False
+
+
+@pytest.mark.parametrize("fault", [None, "stale_text", "stale_candidate", "open_issue", "other_uncertainty", "regression", "wrong_measurement", "blocked_quality", "legacy_admission"])
+def test_publication_closes_only_exact_preserved_length_deferral(fault):
+    from novel_forge.modules.publishing.domain import reviewed_work_admission
+    from novel_forge.modules.review.diagnostics import prose_hash
+    text = "她将纸递过去，却没有放开手。"
+    review = {"report_type": "ReReviewReport", "decision": "NEEDS_REVISION", "issues": [], "unresolved_issues": [],
+        "review_decision_contract": "work-review-decision.v1", "selection_review_contract": "immutable-review-projection.v1",
+        "selection_review_source_asset_version_id": "review", "revision_version_id": "revision", "target_text_hash": prose_hash(text),
+        "quality_resolution_checks": [{"observation": "chapter_length", "status": "UNCERTAIN", "preservation": "PRESERVED",
+            "target_asset_version_id": "revision", "target_text_hash": prose_hash(text)}]}
+    quality = {"target_asset_version_id": "best", "internal_admission": {"version": "creative-quality-admission.v2",
+        "status": "INTERNAL_ADMITTED", "target_asset_version_id": "best", "blocked_dimensions": [], "work_constraints": [
+            {"dimension": "chapter_length", "status": "PASSED", "minimum": 10, "maximum": 30, "observed": len(text),
+                "unit": "UNICODE_CODE_POINTS_V1", "target_asset_version_id": "best"}]}}
+    if fault == "stale_text": review["target_text_hash"] = prose_hash("另一稿")
+    if fault == "stale_candidate": review["revision_version_id"] = "other"
+    if fault == "open_issue": review["issues"] = [{"code": "causality", "severity": "major"}]
+    if fault == "other_uncertainty": review["quality_resolution_checks"][0]["observation"] = "canon_consistency"
+    if fault == "regression": review["quality_resolution_checks"][0]["preservation"] = "REGRESSED"
+    if fault == "wrong_measurement": quality["internal_admission"]["work_constraints"][0]["observed"] += 1
+    if fault == "blocked_quality": quality["internal_admission"]["blocked_dimensions"] = ["canon_consistency"]
+    if fault == "legacy_admission": quality["internal_admission"]["version"] = "creative-quality-admission.v1"
+    frozen = deepcopy(review)
+    assert reviewed_work_admission(review=review, quality=quality, text=text, source_id="revision") is (fault is None)
+    assert review == frozen and review["decision"] == "NEEDS_REVISION"

@@ -288,6 +288,26 @@ class BookToChapterAuthorityVerticalPostgresTests(unittest.TestCase):
         )
         self.assertEqual(recovered, frozen)
 
+        source_request = {"chapter_number": 1, "project_id": "grounded-contract-fixture",
+            "chapter_plan_version": logical_plan, "chapter_plan_content_hash": "sha256:logical-plan",
+            "command_payload": {"execution_chapter_plan_asset_version_id": execution_plan,
+                "execution_chapter_plan_content_hash": execution_hash}}
+        for recorded, effect_status, budget_status in ((True, "SUCCEEDED", "SETTLED"),
+                (False, "SUCCEEDED", "SETTLED"), (True, "UNKNOWN", "HELD_UNKNOWN"),
+                (True, "RECONCILIATION_REQUIRED", "SETTLED"), (True, "SUCCEEDED", "HELD_UNKNOWN")):
+            with self.subTest(recorded=recorded, effect=effect_status, budget=budget_status):
+                evidence = {"status": "SUCCEEDED", "saga": {"status": "SUCCEEDED"}, "outputs": outputs,
+                    "operations": [{"operation_id": "failed-source", "status": "FAILED_FINAL"}],
+                    "superseded_operation_ids": ["failed-source"] if recorded else [],
+                    "model_effects": [{"operation_id": "failed-source", "external_effect_id": "known-receipt",
+                        "attempt_id": "failed-attempt", "attempt_status": "FAILED_FINAL", "status": effect_status}],
+                    "budgets": [{"status": budget_status}]}
+                if recorded and effect_status == "SUCCEEDED" and budget_status == "SETTLED":
+                    self.assertEqual(_validate_chapter_acceptance_evidence(request=source_request, evidence=evidence), frozen)
+                else:
+                    with self.assertRaises(KernelError):
+                        _validate_chapter_acceptance_evidence(request=source_request, evidence=evidence)
+
         with self.assertRaisesRegex(KernelError, "effects_terminal"):
             _validate_chapter_acceptance_evidence(
                 request={

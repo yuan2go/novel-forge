@@ -7,6 +7,7 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state import materialize_canon_snapshot_v2
+from novel_forge.modules.publishing.domain import reviewed_work_admission
 
 from .contracts import CHAPTER_OUTCOME_DEFINITION_VERSION
 from .domain import build_chapter_outcome, reduce_story_state
@@ -40,7 +41,7 @@ class ChapterOutcomeCommitHandler:
         chapter_plan = inputs["chapter_plan"].content
         validation = quality.get("internal_admission")
         internal = (isinstance(validation, dict) and validation.get("status") == "INTERNAL_ADMITTED"
-            and validation.get("version") == "creative-quality-admission.v1"
+            and validation.get("version") in {"creative-quality-admission.v1", "creative-quality-admission.v2"}
             and validation.get("book_id") == payload["book_id"]
             and validation.get("target_asset_version_id") == inputs["best_draft_candidate"].asset_version_id
             and validation == final_gate.get("internal_admission")
@@ -51,7 +52,9 @@ class ChapterOutcomeCommitHandler:
             not internal and (final_gate.get("gate") != "PASSED"
                 or final_gate.get("release_status") != "INTERNAL_RELEASE_FINALIZED"
                 or quality.get("gate") not in {"PASSED", "PASSED_WITH_UNCALIBRATED"})
-            or rereview.get("decision") != "PASSED"
+            or not (reviewed_work_admission(review=rereview, quality=quality,
+                text=inputs["best_draft_candidate"].content["text"],
+                source_id=inputs["best_draft_candidate"].content.get("selected_source_asset_version_id", "")) if internal else rereview.get("decision") == "PASSED")
             or int(rereview.get("blocking_issue_count", 0)) != 0
             or release.get("release_status") != "READY_FOR_BLOB_VERIFICATION"
         ):

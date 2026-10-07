@@ -2218,3 +2218,9 @@ verifies its original active frontier; completed Canon correction also requests 
 continuation before subsequent Quality. Explicit author/business deadlines, cancellation,
 unknown effects, active leases and repeat renewal of the same contract are prohibited.
 The prior Root deadline and all terminal child history remain in immutable evidence.
+
+Saga completion evaluates the frozen Root completion contract as well as step states
+and expected count. Additional evidence steps cannot substitute for a missing final
+release child. Book admission retains all historical model calls and cumulative ledgers;
+only failed Operations with a native successor chain ending in success are historical
+execution evidence. Unsettled consumption or unknown outcomes still block admission.

@@ -3541,15 +3541,18 @@ def _validate_chapter_acceptance_evidence(
         or request["chapter_plan_content_hash"]
     )
     model_effects = list(evidence.get("model_effects") or ())
+    superseded = set(evidence.get("superseded_operation_ids") or ()) & {
+        item["operation_id"] for item in evidence.get("operations", ()) if item.get("status") in {"FAILED_FINAL", "DEAD_LETTER"}}
+    current_model_effects = [item for item in model_effects if item.get("operation_id") not in superseded]
     if model_effects or canon.get("grounding"):
         from novel_forge.modules.chapter_outcome.acceptance_contract import require_grounded_acceptance
         require_grounded_acceptance(project_id=str(request["project_id"]), selected=selected)
     effect_operation_ids = {
-        str(item.get("operation_id") or "") for item in model_effects
+        str(item.get("operation_id") or "") for item in current_model_effects
     }
     succeeded_effect_operation_ids = {
         str(item.get("operation_id") or "")
-        for item in model_effects
+        for item in current_model_effects
         if item.get("attempt_status") == "SUCCEEDED"
         and item.get("status") == "SUCCEEDED"
     }
@@ -3559,6 +3562,7 @@ def _validate_chapter_acceptance_evidence(
         and final_gate.get("internal_admission") == quality.get("internal_admission")
         and (quality.get("internal_admission") or {}).get("status") == "INTERNAL_ADMITTED"
         and (quality.get("internal_admission") or {}).get("target_asset_version_id") == selected["best_draft_candidate"]["asset_version_id"])
+    from novel_forge.modules.publishing.domain import reviewed_work_admission
     checks = {
         "final_release": internal and bool(final_gate.get("blob_receipt", {}).get("receipt_id")) or (
             final_gate.get("gate") == "PASSED"
@@ -3567,7 +3571,8 @@ def _validate_chapter_acceptance_evidence(
         ),
         "quality": internal or quality.get("gate") in {"PASSED", "PASSED_WITH_UNCALIBRATED"},
         "review": (
-            rereview.get("decision") == "PASSED"
+            (reviewed_work_admission(review=rereview, quality=quality, text=candidate.get("text", ""),
+                source_id=candidate.get("selected_source_asset_version_id", "")) if internal else rereview.get("decision") == "PASSED")
             and int(rereview.get("blocking_issue_count", 0)) == 0
         ),
         "canon": canon.get("gate") == "PASSED" and not canon.get("conflicts"),
@@ -3590,15 +3595,16 @@ def _validate_chapter_acceptance_evidence(
             for item in model_effects
         ),
         "effects_terminal": (
-            not model_effects
+            all(item.get("status") in {"SUCCEEDED", "FAILED_FINAL", "FAILED_RETRYABLE"} for item in model_effects if item.get("operation_id") in superseded)
+            and (not current_model_effects
             or (
                 effect_operation_ids == succeeded_effect_operation_ids
                 and all(
                     item.get("status") == "SUCCEEDED"
-                    for item in model_effects
+                    for item in current_model_effects
                     if item.get("attempt_status") == "SUCCEEDED"
                 )
-            )
+            ))
         ),
         "budget_settled": all(
             item.get("status") in {"SETTLED", "RELEASED"}

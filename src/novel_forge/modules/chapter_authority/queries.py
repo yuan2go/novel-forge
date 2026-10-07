@@ -277,6 +277,15 @@ class ChapterAuthorityQuery:
         )
         operation_ids = [item["operation_id"] for item in run["operations"]]
         with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""WITH RECURSIVE lineage(predecessor,successor) AS (
+                SELECT predecessor_operation_id,successor_operation_id FROM authority_saga_step_successor WHERE project_id=%s
+                UNION ALL SELECT l.predecessor,s.successor_operation_id FROM lineage l
+                JOIN authority_saga_step_successor s ON s.predecessor_operation_id=l.successor AND s.project_id=%s)
+                SELECT DISTINCT l.predecessor FROM lineage l JOIN authority_operation old ON old.operation_id=l.predecessor
+                JOIN authority_operation current ON current.operation_id=l.successor WHERE old.project_id=%s AND current.project_id=%s
+                AND old.root_operation_id=%s AND current.root_operation_id=%s AND old.status IN ('FAILED_FINAL','DEAD_LETTER')
+                AND current.status='SUCCEEDED'""", [project_id,project_id,project_id,project_id,root_operation_id,root_operation_id])
+            superseded_operation_ids = [row[0] for row in uow.cursor.fetchall()]
             uow.cursor.execute(
                 """
                 SELECT asset.asset_type, binding.output_key, binding.role,
@@ -344,6 +353,7 @@ class ChapterAuthorityQuery:
         return {
             **run,
             "outputs": outputs,
+            "superseded_operation_ids": superseded_operation_ids,
             "budgets": budgets,
             "cost_receipt_refs": cost_receipt_refs,
         }

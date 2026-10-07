@@ -1,0 +1,33 @@
+{
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "source_runtime_sha": "0930c8b0ccdf03076df246e837c6f9e90cedc316",
+  "book_id": "closure-original-book",
+  "root_operation_id": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "controlled_native_export": "EXECUTABLE",
+  "controlled_blob": "REAL_OBJECT_UPLOAD_VERIFIED",
+  "controlled_native_acceptance": "EXECUTABLE",
+  "controlled_accepted_chapters": 1,
+  "live_accepted_chapters": 0,
+  "target_chapters": 12,
+  "new_model_dispatches": 0,
+  "original_review_decision": "NEEDS_REVISION",
+  "host_admission": "EXACT_PRESERVED_LENGTH_DEFERRAL_ONLY",
+  "source_review_asset_version_id": "authority-output:511ef9bd-d27d-4302-b781-f70faff35de6:chapter.rereview:v1",
+  "quality_asset_version_id": "authority-output:ef490278-4309-4fb8-9af7-f082b977515b:chapter.quality:v1",
+  "historical_failures": "RETAINED",
+  "literary_quality": "NOT_PROVEN",
+  "author_delivery": "NOT_RUN",
+  "controlled_preflight": [
+    "publication-preflight-290.log",
+    "publication-acceptance-preflight-293.log"
+  ],
+  "failed_preflights_retained": [
+    "publication-preflight-286.log",
+    "publication-preflight-287.log",
+    "publication-acceptance-preflight-291.log"
+  ],
+  "focused_matrix": "75 passed, 3 subtests passed; publication-completion-matrix-294.log",
+  "ledger_unknown_protection": "1 passed, 5 subtests passed; publication-ledger-protection-298.log",
+  "broader_vertical_fixture_matrix": "7 FAIL, 8 PASS, 5 subtests PASS; publication-book-vertical-295.log; legacy fixture style projection requires v4",
+  "prior_runtime_fixture_recheck": "0930c8b0: cursor fixture FAIL CANON_SOURCE_SPAN_INVALID; publication-baseline-vertical-297.log"
+}

@@ -976,6 +976,7 @@ def build_publish_gate(
     context_bundle: dict[str, Any],
     context_bundle_version_id: str,
     project_id: str,
+    work_admission: bool = False,
 ) -> dict[str, Any]:
     return prepare_internal_release(
         project_id=project_id,
@@ -989,6 +990,7 @@ def build_publish_gate(
         canon_asset_version_id=canon_asset_version_id,
         context_bundle=context_bundle,
         context_bundle_version_id=context_bundle_version_id,
+        work_admission=work_admission,
     )
 
 

@@ -708,7 +708,14 @@ class ChapterAuthorityScheduler:
                     "CHAPTER_INPUT_NOT_COMPLETE",
                     f"{node.value} input {source.value} has not completed",
                 )
-            if source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE:
+            if source is ChapterNode.PUBLISH_GATE and node is ChapterNode.FINAL_RELEASE_GATE:
+                export = children[ChapterNode.EXPORT]
+                with AuthorityUnitOfWork(self.database_url) as u:
+                    u.cursor.execute("SELECT asset_version_id FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='chapter.export.revalidated_publish_gate'", [export["operation_id"]])
+                    restored = u.cursor.fetchone()
+                inputs.append(self._output_by_key(str(export["operation_id"]), root["project_id"], "chapter.export.revalidated_publish_gate")
+                    if restored else self._primary_output(str(source_operation["operation_id"]), root["project_id"]))
+            elif source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE:
                 inputs.append(self._output_by_key(
                     str(children[ChapterNode.BEST_CANDIDATE]["operation_id"]),
                     root["project_id"], "chapter.best_candidate.selected_review",

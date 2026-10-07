@@ -324,6 +324,12 @@ def terminalize_saga_from_extension(
     return {"saga_status": saga_status, "root_status": root_status, "replayed": False}
 
 
+def _root_completion_satisfied(uow, root_operation_id, project_id):
+    from .completion import evaluate_completion_in_uow
+    root = uow.repositories.completion_contracts.operation(root_operation_id, project_id, lock=True)
+    return evaluate_completion_in_uow(uow, root)["satisfied"]
+
+
 def coordinate_saga(
     database_url: str,
     context: GraphCommandContext,
@@ -473,6 +479,7 @@ def coordinate_saga(
         elif (
             steps
             and all(step["status"] == "SUCCEEDED" for step in steps)
+            and _root_completion_satisfied(uow, saga["root_operation_id"], context.project_id)
             and (
                 repository.expected_saga_step_count(saga["root_operation_id"]) == 0
                 or len(steps)

@@ -152,6 +152,31 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "SUCCEEDED")
 
+    def test_extra_successful_steps_cannot_replace_a_missing_required_child(self):
+        from psycopg.types.json import Jsonb
+        context, root, children = self._graph_fixture(2, root_status="EXECUTING")
+        final_name = identifier("required-final-definition")
+        with transaction() as connection, connection.cursor() as cursor:
+            insert_definition(cursor, final_name)
+            cursor.execute("UPDATE authority_operation SET definition_snapshot=%s,completion_contract_snapshot=%s WHERE operation_id=%s", [
+                Jsonb({"policy": {"expected_saga_steps": 2}}), Jsonb({"required_child_operations": [
+                    {"definition_name": final_name, "allowed_states": ["SUCCEEDED"]}]}), root])
+        saga = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        for ordinal, child in enumerate(children, 1):
+            register_saga_step(DATABASE_URL, context, saga, child, f"extension:{ordinal}", ordinal, "")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_operation SET status='SUCCEEDED' WHERE operation_id=ANY(%s)", [children])
+        self.assertEqual(coordinate_saga(DATABASE_URL, context, saga)["status"], "RUNNING")
+        final = identifier("required-final")
+        with transaction() as connection, connection.cursor() as cursor:
+            insert_operation(cursor, operation_id=final, definition_name=final_name, project_id=context.project_id,
+                root_operation_id=root, parent_operation_id=root)
+        register_saga_step(DATABASE_URL, context, saga, final, "final", 3, "")
+        self.assertEqual(coordinate_saga(DATABASE_URL, context, saga)["status"], "RUNNING")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_operation SET status='SUCCEEDED' WHERE operation_id=%s", [final])
+        self.assertEqual(coordinate_saga(DATABASE_URL, context, saga)["status"], "SUCCEEDED")
+
     def test_dependency_registration_serializes_with_saga_coordination(self) -> None:
         context, root, children = self._graph_fixture(2, root_status="EXECUTING")
         first, second = children
