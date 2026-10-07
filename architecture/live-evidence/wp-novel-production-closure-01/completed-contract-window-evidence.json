@@ -1,0 +1,19 @@
+{
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "source_runtime_sha": "ae0a0ed0c76c071eec5cd43aa7d06fc6200bbb41",
+  "book_id": "closure-original-book",
+  "root_operation_id": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "live_corrected_canon_operation_id": "07472110-303f-4f1e-90cb-04a53f38f5ce",
+  "live_corrected_canon_gate": "PASSED",
+  "controlled_window": "EXECUTABLE",
+  "controlled_window_provider_dispatches": 0,
+  "controlled_original_deadline": "2026-10-07T02:28:40.000906+00:00",
+  "controlled_successor_deadline": "2026-10-07T03:30:31.022832+00:00",
+  "same_contract_replay": "NO_ADDITIONAL_RENEWAL",
+  "terminal_child_history": "PRESERVED",
+  "scope_and_cumulative_consumption": "UNCHANGED",
+  "live_new_window": "NOT_RUN",
+  "accepted_chapters": 0,
+  "target_chapters": 12,
+  "quality_and_author_delivery": "NOT_PROVEN"
+}

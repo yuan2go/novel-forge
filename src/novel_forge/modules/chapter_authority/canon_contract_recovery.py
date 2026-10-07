@@ -216,3 +216,59 @@ def recover_support_contract(authority, *, book, request, template, principal):
         known_receipt_effects=tuple(row[:2] for row in effects),
         window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_support_kinds", "policy_value": "canon-claim-kinds.v1"})
     return True
+
+
+def recover_completed_canon_window(authority, *, book_run_id, principal):
+    from .scheduler import reader_lineage_reassessment_required
+    from novel_forge.modules.command_kernel.step_successor import continue_completed_contract_window
+    book = authority.require(book_run_id)
+    principal.require("book.authority.execute", book["project_id"])
+    principal.require("chapter.authority.execute", book["project_id"])
+    if book["state"] != "CHAPTER_RUNNING" or not book.get("active_chapter_request_id"):
+        return False
+    request = authority.require_chapter_request(book["active_chapter_request_id"])
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        template = selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"])
+        if not template or _cancelled(u.cursor, book) or request["chapter_number"] != book["accepted_through_chapter"] + 1:
+            return False
+        u.cursor.execute("""SELECT old.operation_id,new.operation_id,old_asset.content,new_asset.content
+            FROM authority_operation new JOIN authority_operation_dependency dep ON dep.operation_id=new.operation_id
+            JOIN authority_operation old ON old.operation_id=dep.depends_on_operation_id
+            JOIN authority_operation_output_asset old_output ON old_output.operation_id=old.operation_id AND old_output.output_key='chapter.canon'
+            JOIN authority_asset_version old_asset ON old_asset.asset_version_id=old_output.asset_version_id
+            JOIN authority_operation_output_asset new_output ON new_output.operation_id=new.operation_id AND new_output.output_key='chapter.canon'
+            JOIN authority_asset_version new_asset ON new_asset.asset_version_id=new_output.asset_version_id
+            WHERE new.root_operation_id=%s AND old.definition_name='chapter.canon.update' AND new.definition_name=old.definition_name
+            AND old.definition_version='3.9.0' AND new.definition_version='3.9.1' AND old.status='SUCCEEDED' AND new.status='SUCCEEDED'
+            AND dep.dependency_condition='ON_SUCCESS'""", [request["chapter_root_operation_id"]])
+        row = u.cursor.fetchone()
+    if not row or not reader_lineage_reassessment_required(row[2]) or row[3].get("gate") != "PASSED":
+        return False
+    def guard(u):
+        u.cursor.execute("SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book_run_id])
+        if (u.cursor.fetchone() != (book["version"], book["active_chapter_request_id"], book["accepted_through_chapter"])
+            or _cancelled(u.cursor, book) or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
+            raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload the original Book frontier and authorization")
+    try:
+        result = continue_completed_contract_window(authority.database_url, predecessor_id=row[0], successor_id=row[1],
+            context=AdmissionContext(principal.principal_id, principal.permissions,
+                authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+            policy={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "reader_observation_lineage", "policy_value": "reader-disclosure-observation.v1"},
+            transaction_guard=guard)
+    except KernelError as error:
+        if error.code == "STEP_SUCCESSOR_WINDOW_UNSETTLED":
+            return False
+        raise
+    return not result["replayed"]
+
+
+def guard_reader_window_frontier(uow, *, root_operation_id, project_id, book_id, chapter):
+    uow.cursor.execute("""SELECT to_jsonb(b),r.chapter_number FROM authority_book_production b
+        JOIN authority_book_chapter_request r ON r.chapter_request_id=b.active_chapter_request_id
+        WHERE r.chapter_root_operation_id=%s AND b.project_id=%s AND b.book_id=%s FOR UPDATE OF b""",
+        [root_operation_id, project_id, book_id])
+    row = uow.cursor.fetchone()
+    if (not row or row[0]["state"] != "CHAPTER_RUNNING" or row[1] != chapter
+        or row[0]["accepted_through_chapter"] + 1 != chapter or _cancelled(uow.cursor, row[0])
+        or not selected_book_template(uow.cursor, project_id=project_id, book_id=book_id)):
+        raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "A live authorized original Book frontier is required")

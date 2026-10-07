@@ -3199,3 +3199,15 @@ completion contract requires the persisted decision. Reuse must bind the same dr
 Review, Context hashes, creative baseline and current accepted frontier. It records
 zero improvement and no fresh Provider call. Source mismatch blocks reuse, while
 necessary prose/Quality repairs continue through the existing model path.
+
+
+After a completed reader-observation contract correction, Book coordination automatically
+requests the Kernel's bounded window continuation once. For an expired maintenance
+checkpoint created before that hook existed, start the Book worker first and verify
+`authority.operation.completed_contract_window_continued` on the original Root before
+starting the Chapter deadline scanner. This is a native recovery action; do not update
+SQL deadlines, reuse terminal identities, renew the same contract repeatedly or mark a
+graceful drain as crash recovery. Check the source/target command and input hashes,
+original deadline, derived duration, unchanged resource scope and cancellation absence.
+The focused PostgreSQL matrix includes the completed-contract cases in
+`tests/integration/test_failed_step_successor_postgres.py`.

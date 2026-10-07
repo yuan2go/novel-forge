@@ -461,3 +461,70 @@ def replace_failed_steps(database_url, *, corrections, context, transaction_guar
             results.append(result)
         uow.commit()
     return results
+
+
+def continue_completed_contract_window(database_url, *, predecessor_id, successor_id, context, policy, transaction_guard=None):
+    with AuthorityUnitOfWork(database_url) as uow:
+        cursor = uow.cursor
+        cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [predecessor_id])
+        row = cursor.fetchone()
+        if not row:
+            raise KernelError("STEP_SUCCESSOR_SOURCE_MISSING", "Missing completed contract predecessor")
+        source = row[0]
+        repo = uow.repositories.operation_graph
+        cursor.execute("SELECT saga_id FROM authority_saga WHERE root_operation_id=%s AND project_id=%s FOR UPDATE", [source["root_operation_id"], source["project_id"]])
+        saga_row = cursor.fetchone()
+        if not saga_row:
+            raise KernelError("STEP_SUCCESSOR_SOURCE_INVALID", "A native owning Saga is required")
+        saga = repo.saga_for_update(saga_row[0], source["project_id"])
+        cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s FOR UPDATE", [source["root_operation_id"]])
+        root = cursor.fetchone()[0]
+        cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s FOR SHARE", [successor_id])
+        target = cursor.fetchone()
+        if not target:
+            raise KernelError("STEP_SUCCESSOR_SOURCE_MISSING", "Missing completed contract successor")
+        target = target[0]
+        if root["actor_id"] != context.actor_id or not set(source["definition_snapshot"]["permissions"]).issubset(context.permissions):
+            raise KernelError("PERMISSION_DENIED", "Contract continuation requires the original owner and permissions")
+        key, value = policy.get("policy_key"), policy.get("policy_value")
+        cursor.execute("""SELECT payload FROM state_event WHERE aggregate_id=%s AND project_id=%s
+            AND event_type='authority.operation.completed_contract_window_continued'
+            AND payload->'execution_window'->>'policy_key'=%s AND payload->'execution_window'->>'policy_value'=%s""",
+            [root["operation_id"], source["project_id"], key, value])
+        previous = cursor.fetchone()
+        if previous:
+            if (previous[0].get("predecessor_operation_id") != predecessor_id
+                or previous[0].get("successor_operation_id") != successor_id):
+                raise KernelError("STEP_SUCCESSOR_IDEMPOTENCY_CONFLICT", "The same contract cannot renew an execution window repeatedly")
+            return {"replayed": True, "execution_window": previous[0]["execution_window"]}
+        if (root["status"] != "WAITING_CHILDREN" or saga["status"] != "RUNNING"
+            or source["status"] != "SUCCEEDED" or target["status"] != "SUCCEEDED"
+            or root["actor_id"] != context.actor_id or source["actor_id"] != context.actor_id or target["actor_id"] != context.actor_id
+            or source["project_id"] != target["project_id"] or source["root_operation_id"] != target["root_operation_id"]
+            or source["definition_name"] != target["definition_name"] or source["definition_version"] == target["definition_version"]
+            or source["input_asset_snapshot"] != target["input_asset_snapshot"] or source["command_payload"] != target["command_payload"]
+            or not set(source["definition_snapshot"]["permissions"]).issubset(context.permissions)):
+            raise KernelError("STEP_SUCCESSOR_SOURCE_INVALID", "An owned live Root and exact completed contract lineage are required")
+        for field in ("handler_key", "permissions", "command_schema", "result_schema", "completion_contract", "external_capabilities"):
+            if source["definition_snapshot"][field] != target["definition_snapshot"][field]:
+                raise KernelError("STEP_SUCCESSOR_CONTRACT_CHANGED", "Completed contract continuation cannot weaken execution requirements")
+        cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id IN (%s,%s,%s)),
+            EXISTS(SELECT 1 FROM authority_operation_dependency WHERE operation_id=%s AND depends_on_operation_id=%s AND dependency_condition='ON_SUCCESS')""",
+            [root["operation_id"], predecessor_id, successor_id, successor_id, predecessor_id])
+        cancelled, linked = cursor.fetchone()
+        if cancelled or not linked:
+            raise KernelError("STEP_SUCCESSOR_SOURCE_INVALID", "Cancellation or missing native causal linkage prevents continuation")
+        if transaction_guard is not None:
+            transaction_guard(uow)
+        window = _corrected_contract_window(cursor, root, source, target["definition_snapshot"], datetime.fromisoformat(root["business_deadline_at"]), policy)
+        cursor.execute("""UPDATE authority_operation SET business_deadline_at=%s,version=version+1,updated_at=NOW()
+            WHERE operation_id=%s AND version=%s AND status='WAITING_CHILDREN'""", [window["new_deadline"], root["operation_id"], root["version"]])
+        if cursor.rowcount != 1:
+            raise KernelError("STEP_SUCCESSOR_ROOT_CHANGED", "The execution window fence changed")
+        _record(repo, GraphCommandContext(source["project_id"], context.actor_id, root["trace_id"], root["correlation_id"], successor_id),
+            root["operation_id"], "authority.operation.completed_contract_window_continued",
+            {"contract_version": "kernel-completed-contract-window.v1", "predecessor_operation_id": predecessor_id,
+                "successor_operation_id": successor_id, "input_asset_snapshot": source["input_asset_snapshot"],
+                "execution_window": window, "domain_outputs": "PRESERVED", "resource_authorization": "UNCHANGED"})
+        uow.commit()
+    return {"replayed": False, "execution_window": window}

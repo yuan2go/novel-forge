@@ -504,6 +504,21 @@ class ChapterAuthorityScheduler:
             current = self._child(str(operation["operation_id"]), request.project_id)
             if current["status"] in {"FAILED_FINAL", "DEAD_LETTER", "CANCELLED"}:
                 return self._terminal_quality_correction(root, saga, current, node)
+            if node is ChapterNode.CANON and reader_contract_source and current["status"] == "SUCCEEDED":
+                canon_ref = self._primary_output(str(current["operation_id"]), request.project_id)
+                if self._asset_content(canon_ref["asset_version_id"], request.project_id).get("gate") == "PASSED":
+                    from .canon_contract_recovery import guard_reader_window_frontier
+                    from novel_forge.modules.command_kernel.step_successor import continue_completed_contract_window
+                    try:
+                        continue_completed_contract_window(self.database_url, predecessor_id=reader_contract_source,
+                            successor_id=str(current["operation_id"]), context=AdmissionContext(root["actor_id"], self.permissions,
+                                self.registry.available_handler_keys, root["definition_snapshot"]["application_build_id"], root["definition_snapshot"]["commit_sha"]),
+                            policy={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "reader_observation_lineage", "policy_value": "reader-disclosure-observation.v1"},
+                            transaction_guard=lambda uow: guard_reader_window_frontier(uow, root_operation_id=str(root["operation_id"]),
+                                project_id=request.project_id, book_id=request.book_id, chapter=request.chapter))
+                    except KernelError as error:
+                        if error.code != "STEP_SUCCESSOR_WINDOW_UNSETTLED":
+                            raise
             final = coordinate_saga(
                 self.database_url,
                 GraphCommandContext(

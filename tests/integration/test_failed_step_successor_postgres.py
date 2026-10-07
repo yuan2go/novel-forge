@@ -379,3 +379,73 @@ def test_failed_step_group_is_atomic_and_replays_without_rewriting_attempts(fail
     with AuthorityUnitOfWork(DATABASE_URL) as u:
         u.cursor.execute("SELECT status,result->>'error_code' FROM authority_attempt WHERE operation_id=ANY(%s)", [[child, second]])
         assert u.cursor.fetchall() == [("FAILED_FINAL", "LOCAL_CONTRACT_DEFECT")] * 2
+
+
+@pytest.fixture
+def completed_contract_graph(failed_graph, request):
+    from novel_forge.modules.command_kernel.operation_graph import add_operation_dependency
+    project, root, failed, saga, context = failed_graph
+    source = replace_failed_step(DATABASE_URL, predecessor_id=failed, target_version="1.0.1", context=context,
+        policy_evidence={"contract": "completed-contract-test"}, expected_failure_code="LOCAL_CONTRACT_DEFECT")["operation_id"]
+    def complete(operation):
+        with AuthorityUnitOfWork(DATABASE_URL) as u:
+            u.cursor.execute("SELECT status,version FROM authority_operation WHERE operation_id=%s", [operation])
+            status, version = u.cursor.fetchone()
+        if status == "ADMITTED":
+            transition_operation(DATABASE_URL, OperationTransitionCommand(operation, project, version, status, "READY",
+                context.actor_id, "controlled native completion", project, project, ""))
+        attempt = create_attempt(DATABASE_URL, operation_id=operation, project_id=project, max_attempts=1,
+            trace_id=project, correlation_id=project)["attempt_id"]
+        queue_attempt(DATABASE_URL, attempt_id=attempt, project_id=project, trace_id=project, correlation_id=project)
+        lease = acquire_attempt_lease(DATABASE_URL, attempt_id=attempt, project_id=project, worker_id="worker",
+            lease_seconds=30, trace_id=project, correlation_id=project)
+        worker = WorkerLeaseCommand(attempt, project, "worker", lease["fencing_token"], project, project)
+        start_attempt(DATABASE_URL, worker)
+        with AuthorityUnitOfWork(DATABASE_URL) as u:
+            u.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [operation]);version=u.cursor.fetchone()[0]
+        submit_attempt_result(DATABASE_URL, WorkerResultCommand(**worker.__dict__, expected_operation_version=version),
+            result={"value": "complete"}, outcome="success")
+    complete(source)
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("SELECT definition_snapshot FROM authority_operation WHERE operation_id=%s", [source]);target=deepcopy(u.cursor.fetchone()[0])
+        target["definition_version"]="1.0.2";target["policy"]["completed_contract"]="controlled.v1"
+        u.repositories.definitions.register(target);u.commit()
+    successor = admit_command(DATABASE_URL, {"definition_name": target["name"], "definition_version": "1.0.2",
+        "project_id": project, "workspace_id": "workspace:" + project, "actor_id": context.actor_id,
+        "idempotency_scope": target["idempotency_scope"], "idempotency_key": identifier("completed-contract"),
+        "trace_id": project, "span_id": project, "correlation_id": project, "causation_id": source,
+        "input": {"value": "changed" if request.node.callspec.params.get("boundary") == "input-drift" else "frozen"}, "input_assets": [], "root_operation_id": root,
+        "parent_operation_id": root, "causation_operation_id": source}, context=context)["operation_id"]
+    add_operation_dependency(DATABASE_URL, GraphCommandContext(project,context.actor_id,project,project), successor, source, "ON_SUCCESS")
+    complete(successor)
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("UPDATE authority_operation SET business_deadline_at=%s WHERE operation_id=%s", [datetime.now(timezone.utc)-timedelta(seconds=1),root]);u.commit()
+    return project,root,source,successor,context
+
+
+@pytest.mark.parametrize("boundary", ["valid", "permissions", "author-deadline", "missing-link", "input-drift", "cancelled-root"])
+def test_completed_contract_window_is_exact_bounded_and_cannot_revive_cancellation(completed_contract_graph, boundary):
+    from novel_forge.modules.command_kernel.step_successor import continue_completed_contract_window
+    project,root,source,successor,context=completed_contract_graph
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        if boundary=="author-deadline":
+            u.cursor.execute("UPDATE authority_operation SET command_payload=command_payload || '{\"author_deadline_at\":\"2026-01-01\"}'::jsonb WHERE operation_id=%s",[root])
+        elif boundary=="missing-link":
+            u.cursor.execute("DELETE FROM authority_operation_dependency WHERE operation_id=%s",[successor])
+        elif boundary=="cancelled-root":
+            u.cursor.execute("UPDATE authority_operation SET status='CANCELLED' WHERE operation_id=%s",[root])
+        u.commit()
+    if boundary=="permissions":
+        context=AdmissionContext(context.actor_id,frozenset(),context.available_handlers,context.application_build_id,context.commit_sha)
+    options=dict(predecessor_id=source,successor_id=successor,context=context,
+        policy={"contract_version":"kernel-corrected-contract-window.v1","policy_key":"completed_contract","policy_value":"controlled.v1"})
+    if boundary!="valid":
+        with pytest.raises(KernelError):continue_completed_contract_window(DATABASE_URL,**options)
+        return
+    first=continue_completed_contract_window(DATABASE_URL,**options)
+    second=continue_completed_contract_window(DATABASE_URL,**options)
+    assert not first["replayed"] and second["replayed"] and first["execution_window"]==second["execution_window"]
+    with AuthorityUnitOfWork(DATABASE_URL) as u:
+        u.cursor.execute("SELECT status,business_deadline_at FROM authority_operation WHERE operation_id=%s",[root]);status,deadline=u.cursor.fetchone()
+        assert status=="WAITING_CHILDREN" and deadline>datetime.now(timezone.utc)
+        u.cursor.execute("SELECT count(*) FROM state_event WHERE aggregate_id=%s AND event_type='authority.operation.completed_contract_window_continued'",[root]);assert u.cursor.fetchone()[0]==1

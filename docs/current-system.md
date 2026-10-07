@@ -2200,3 +2200,13 @@ fails closed. Character and world transitions retain explicit causal and epistem
 requirements; the reader observation contract cannot be applied to them. Historical
 Canon updates retain their earlier behavior; the new native update reuses the exact
 successful extraction/support inputs and preserves its blocked predecessor.
+
+
+Kernel can continue one derived execution window after a completed contract successor,
+with exact command and input snapshots, unchanged completion/permission contracts,
+explicit native predecessor dependency and settled effects. It appends state, audit and
+outbox evidence and fences the live Root version. Book coordination owns recovery and
+verifies its original active frontier; completed Canon correction also requests this
+continuation before subsequent Quality. Explicit author/business deadlines, cancellation,
+unknown effects, active leases and repeat renewal of the same contract are prohibited.
+The prior Root deadline and all terminal child history remain in immutable evidence.
