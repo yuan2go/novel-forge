@@ -55,7 +55,10 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 self.assertEqual(selector["eligibility"], "INELIGIBLE")
                 self.assertEqual(original["completion_contract"]["required_qualifications"], ["production_eligible"])
                 self.assertTrue(all(item["eligibility"] == "ELIGIBLE" for item in original["completion_contract"]["required_asset_selectors"]))
-                self.assertEqual(sample["completion_contract"]["required_external_effects"], original["completion_contract"]["required_external_effects"])
+                if original["name"] in {ChapterNode.REVISION.definition_name, ChapterNode.REREVIEW.definition_name}:
+                    self.assertEqual(len(sample["completion_contract"]["required_external_effects"]), 1)
+                else:
+                    self.assertEqual(sample["completion_contract"]["required_external_effects"], original["completion_contract"]["required_external_effects"])
                 self.assertEqual(sample["retry_policy"]["max_attempts"], 1)
 
     def test_root_definition_requires_every_node_and_is_saga_owned(self) -> None:
@@ -188,7 +191,7 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
 
         self.assertEqual(
             {item["definition_version"] for item in definitions},
-            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.9.8", "3.9.2", "3.9.1", "3.9.3"},
+            {CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, "3.9.8", "3.9.2", "3.9.1", "3.9.4"},
         )
         self.assertEqual(
             {item["handler_contract_version"] for item in definitions},
@@ -226,10 +229,14 @@ class ChapterAuthorityDefinitionTests(unittest.TestCase):
                 CHAPTER_MODEL_OPERATION_TIMEOUT_SECONDS,
             )
             self.assertIn(capability, definition["external_capabilities"])
-            self.assertIn(
-                {"capability": capability, "allowed_states": ["SUCCEEDED"]},
-                definition["completion_contract"]["required_external_effects"],
-            )
+            if node in {ChapterNode.REVISION, ChapterNode.REREVIEW}:
+                self.assertNotIn("required_external_effects", definition["completion_contract"])
+                self.assertEqual(definition["completion_contract"]["required_asset_selectors"][-1]["selector"], "revision_execution_decision")
+            else:
+                self.assertIn(
+                    {"capability": capability, "allowed_states": ["SUCCEEDED"]},
+                    definition["completion_contract"]["required_external_effects"],
+                )
         retrieval = definitions[list(ChapterNode).index(ChapterNode.RETRIEVAL)]
         self.assertEqual(
             retrieval["external_capabilities"],

@@ -2182,3 +2182,21 @@ required; selecting a label does not prove that the outcome occurred. A complete
 legacy extraction with only a character result-label mismatch can append one bounded
 Canon evidence generation within the original correction lineage, reusing selected
 prose and review. Earlier Canon gates and consumption remain immutable.
+
+
+The native Revision decision may retain an exact draft when its current work-bound
+Review is passed and has no open diagnoses. A retained draft is not a new model
+revision. ReReview may project the immutable Review only when prose, Context,
+creative baseline and accepted-source frontier remain exact; its evidence explicitly
+records reuse and zero improvement. Any changed content or necessary repair follows
+the existing Provider Revision/ReReview path. Both decisions are persisted, and Canon,
+Quality and Book acceptance remain mandatory.
+
+
+Timed reader disclosures bind host-owned observation lineage to the exact independently
+supported prose span. This records disclosure to the reader, not a character action,
+initial character knowledge or a modeled world cause. Missing or stale source evidence
+fails closed. Character and world transitions retain explicit causal and epistemic
+requirements; the reader observation contract cannot be applied to them. Historical
+Canon updates retain their earlier behavior; the new native update reuses the exact
+successful extraction/support inputs and preserves its blocked predecessor.

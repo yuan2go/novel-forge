@@ -1,0 +1,23 @@
+{
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "source_runtime_sha": "631d2a24011ba58732d79486adde898261772f5e",
+  "source_canon_operation_id": "70fe489b-f392-4d96-ba90-a05d7b68008b",
+  "source_gate": "BLOCKED",
+  "source_conflicts": [
+    "NARRATIVE_EVENT_CAUSALITY_REQUIRED"
+  ],
+  "original_root_operation_id": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "original_book_id": "closure-original-book",
+  "real_extraction_operation_id": "34afad7a-2422-4298-97f7-a39dbcb3f544",
+  "real_support_operation_id": "eee1c564-26c9-467f-bfd9-242b5d9b93fd",
+  "controlled_canon": "EXECUTABLE",
+  "controlled_canon_gate": "PASSED",
+  "controlled_native_revision_operation_id": "8a2e2f11-7ff3-4e7f-a3a5-5a9bce3bcd1e",
+  "controlled_native_rereview_operation_id": "789f111c-8734-4efe-8e3b-fe59e68e6bc4",
+  "controlled_provider_dispatches": 0,
+  "real_new_contract": "NOT_RUN",
+  "accepted_chapters": 0,
+  "target_chapters": 12,
+  "literary_effect": "NOT_PROVEN",
+  "original_receipts_history_consumption": "PRESERVED"
+}

@@ -1606,7 +1606,7 @@ class _RevisionHandler:
                     "required_actions": [item.content for item in quality_tasks],
                 },
             )
-            return _model_output(
+            return _revision_decision_output(ChapterNode.REVISION, _model_output(
                 ChapterNode.REVISION,
                 apply_quality_revision_result(
                     project_id=request.project_id,
@@ -1624,10 +1624,19 @@ class _RevisionHandler:
                 ),
                 request=request,
                 generated=revised,
-            )
+            ), {"contract_version": "revision-execution-decision.v1", "decision": "PROVIDER_REVISION", "source_quality_asset_version_id": quality.asset_version_id})
         draft = request.require_input("draft_chapter")
         review = request.require_input("review_report")
         context = request.require_input("context_bundle")
+        if request.definition_version == "3.9.1":
+            from .review_window import require_review_frontier
+            from novel_forge.modules.revision.domain import retain_reviewed_draft
+            require_review_frontier(request)
+            retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id, draft_hash=draft.content_hash,
+                review=review.content, review_id=review.asset_version_id, review_hash=review.content_hash,
+                context_id=context.asset_version_id, context_hash=context.content_hash)
+            if retained is not None:
+                return _revision_decision_output(ChapterNode.REVISION, _output(ChapterNode.REVISION, retained), retained["revision_execution_decision"])
         revised = self.provider.invoke(
             request,
             stage="revision",
@@ -1636,7 +1645,7 @@ class _RevisionHandler:
                 "review": review.content,
             },
         )
-        return _model_output(
+        return _revision_decision_output(ChapterNode.REVISION, _model_output(
             ChapterNode.REVISION,
             normalize_revision_result(
                 draft=draft.content,
@@ -1650,7 +1659,7 @@ class _RevisionHandler:
             ),
             request=request,
             generated=revised,
-        )
+        ), {"contract_version": "revision-execution-decision.v1", "decision": "PROVIDER_REVISION", "source_review_asset_version_id": review.asset_version_id})
 
 
 @dataclass(frozen=True, slots=True)
@@ -1669,7 +1678,16 @@ class _ReReviewHandler:
             review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
         from .review_window import prepare_native_review, require_review_frontier
         revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
-        if request.definition_version == "3.9.3" and revision.content.get("quality_edit_contract"):
+        if request.definition_version == "3.9.4":
+            from novel_forge.modules.revision.domain import reuse_unchanged_review
+            require_review_frontier(request)
+            reused = reuse_unchanged_review(draft=draft.content, draft_id=draft.asset_version_id, draft_hash=draft.content_hash,
+                review=review.content, review_id=review.asset_version_id, review_hash=review.content_hash,
+                revision=revision.content, revision_id=revision.asset_version_id, context_id=context.asset_version_id,
+                context_hash=context.content_hash)
+            if reused is not None:
+                return _revision_decision_output(ChapterNode.REREVIEW, _output(ChapterNode.REREVIEW, reused), reused["review_reuse_evidence"])
+        if request.definition_version in {"3.9.3", "3.9.4"} and revision.content.get("quality_edit_contract"):
             quality = request.require_input("quality_score_report")
             if quality.asset_version_id != revision.content.get("source_quality_asset_version_id"):
                 raise KernelError("QUALITY_REVISION_LINEAGE_CONFLICT", "ReReview must bind the exact source Quality")
@@ -1680,7 +1698,7 @@ class _ReReviewHandler:
             payload=payload,
         )
         require_review_frontier(request)
-        return _model_output(
+        return _revision_decision_output(ChapterNode.REREVIEW, _model_output(
             ChapterNode.REREVIEW,
             normalize_rereview_result(
                 draft_asset_version_id=draft.asset_version_id,
@@ -1696,7 +1714,7 @@ class _ReReviewHandler:
             ),
             request=request,
             generated=reviewed,
-        )
+        ), {"contract_version": "revision-execution-decision.v1", "decision": "PROVIDER_REREVIEW", "target_revision_asset_version_id": revision.asset_version_id})
 
 
 @dataclass(frozen=True, slots=True)
@@ -1889,6 +1907,7 @@ class _CanonHandler:
             context_bundle_version_id=context.asset_version_id,
             extraction=resolved_extraction,
             context_bundle=context.content,
+            reader_observation_lineage=request.definition_version == "3.9.1",
         )
         continuity_report = {
             **dict(content["deterministic_validation"]),
@@ -2110,8 +2129,7 @@ class _QualityGroupHandler:
             if request.definition_version == "3.9.1":
                 from novel_forge.modules.canon_graph.source_spans import source_spans
                 requirements = (revision.content.get("creative_baseline") or {}).get("method_requirements", {})
-                quality_span_inputs = {"quality_span_contract": "literal-source-spans.v1", **({"transition_result_contract": "canonical-plan-results.v1", "canonical_transition_results": (context.content.get("chapter_execution_expectations") or {}).get("required_state_transitions") or []} if request.definition_version == "3.9.8" else {}),
-                "source_span_table": source_spans(revision.content["text"]),
+                quality_span_inputs = {"quality_span_contract": "literal-source-spans.v1", "source_span_table": source_spans(revision.content["text"]),
                     "dimension_applicability": {dimension: (requirements.get(dimension) or {}).get("status", "APPLICABLE") for dimension in QUALITY_GROUPS[self.group]}}
             generated = self.provider.invoke(
                 request,
@@ -3080,3 +3098,9 @@ def _canon_provider_extraction(result: ModelProviderResult) -> dict[str, Any]:
         for field, values in result.output.items()
         if isinstance(values, list)},
     }
+
+
+def _revision_decision_output(node, output, evidence):
+    return replace(output, auxiliary_outputs=(*output.auxiliary_outputs, ChapterAuxiliaryOutput(
+        asset_type="revision_execution_decision", output_key=node.output_key + ".execution_decision",
+        role="completion_evidence", content=evidence)))

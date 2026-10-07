@@ -748,6 +748,7 @@ def build_canon_patch(
     context_bundle_version_id: str = "legacy-context-bundle",
     extraction: dict[str, Any] | None = None,
     context_bundle: dict[str, Any] | None = None,
+    reader_observation_lineage: bool = False,
 ) -> dict[str, Any]:
     historical_state, identity_profiles = canon_history(context_bundle or {})
     work_extraction = (extraction or {}).get("canon_extraction_contract_version") in {
@@ -778,6 +779,7 @@ def build_canon_patch(
             (context_bundle or {}).get("chapter_execution_expectations") or {}
         ),
         identity_profiles=identity_profiles,
+        reader_observation_lineage=reader_observation_lineage,
     )
 
 

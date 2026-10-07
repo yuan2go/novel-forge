@@ -342,3 +342,48 @@ def validate_quality_resolution_checks(*, revision: dict[str, Any], revision_ass
             "source_quality_asset_version_id": revision["source_quality_asset_version_id"],
             "evidence_class": "MODEL_REVIEW_PROPOSAL_REQUIRES_QUALITY_REEVALUATION"})
     return normalized
+
+
+def retain_reviewed_draft(*, draft, draft_id, draft_hash, review, review_id, review_hash, context_id, context_hash):
+    from copy import deepcopy
+    from novel_forge.modules.review.diagnostics import open_diagnoses, prose_hash, require_review_score
+    if review.get("review_decision_contract") != "work-review-decision.v1" or review.get("decision") != "PASSED" or open_diagnoses(review):
+        return None
+    require_review_score(review)
+    if (review.get("target_asset_version_id") != draft_id or review.get("context_bundle_version_id") != context_id
+        or review.get("target_text_hash") != prose_hash(draft.get("text", ""))):
+        raise KernelError("REVISION_DIAGNOSIS_STALE", "Retention requires the exact reviewed draft and Context")
+    if "creative_baseline" in draft:
+        from novel_forge.modules.chapter_authority.chapter_plan_views import validate_creative_baseline
+        if review.get("creative_baseline_digest") != validate_creative_baseline(draft["creative_baseline"])["baseline_digest"]:
+            raise KernelError("REVISION_CREATIVE_BASELINE_DRIFT", "Retention cannot reuse a different work contract")
+    proof = {"contract_version": "unchanged-reviewed-prose.v1", "decision": "NO_REPAIR_REQUIRED",
+        "source_draft_asset_version_id": draft_id, "source_draft_content_hash": draft_hash,
+        "source_review_asset_version_id": review_id, "source_review_content_hash": review_hash,
+        "context_bundle_asset_version_id": context_id, "context_bundle_content_hash": context_hash,
+        "target_text_hash": review["target_text_hash"], "provider_dispatches": 0, "improvement_claimed": False}
+    return {**deepcopy(draft), "source_draft_version_id": draft_id, "review_version_id": review_id,
+        "context_bundle_version_id": context_id, "resolved_issue_codes": [], "resolution_claimed_issue_codes": [],
+        "issue_resolutions": [], "revision_execution_decision": proof,
+        "provider_evidence": {"evidence_class": "NATIVE_RETENTION", "source_review_asset_version_id": review_id}}
+
+
+def reuse_unchanged_review(*, draft, draft_id, draft_hash, review, review_id, review_hash, revision, revision_id, context_id, context_hash):
+    from copy import deepcopy
+    expected = retain_reviewed_draft(draft=draft, draft_id=draft_id, draft_hash=draft_hash,
+        review=review, review_id=review_id, review_hash=review_hash, context_id=context_id, context_hash=context_hash)
+    if expected is None or not revision.get("revision_execution_decision"):
+        return None
+    if revision != expected:
+        raise KernelError("REREVIEW_RETENTION_DRIFT", "A changed candidate cannot reuse the original Review")
+    score = review["score"]
+    return {**deepcopy(review), "report_type": "ReReviewReport", "target_asset_version_id": revision_id,
+        "revision_version_id": revision_id, "original_draft_version_id": draft_id, "initial_review_version_id": review_id,
+        "issue_lineage": [], "resolution_checks": [], "resolved_issue_codes": [], "remaining_issue_codes": [],
+        "unresolved_issues": [], "new_issues": [], "regression_issue_codes": [],
+        "revision_quality_delta": {"before_score": score, "after_score": score, "score_delta": 0,
+            "resolved_issue_count": 0, "remaining_issue_count": 0, "new_issue_count": 0, "regression_count": 0},
+        "review_reuse_evidence": {**expected["revision_execution_decision"], "decision": "REUSED_EXACT_REVIEW",
+            "target_revision_asset_version_id": revision_id}, "provider_evidence": {
+            "evidence_class": "NATIVE_REVIEW_REUSE", "source_review_asset_version_id": review_id,
+            "source_review_provider_evidence": deepcopy(review.get("provider_evidence") or {})}}

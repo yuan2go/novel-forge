@@ -3184,3 +3184,18 @@ Revision, ReReview and comparison, then performs new extraction, support and req
 Quality. It cannot bypass missing results, epistemic conflicts or unsupported claims.
 Inspect the fully rendered v29 inner Schema and exact entity/result labels before
 Provider dispatch; original completed evidence is retained.
+
+
+When a supported legacy Canon update fails solely because a timed reader disclosure
+lacks host observation lineage, native scheduling appends `reader-lineage:3.9.1` and
+reuses successful extraction, support and selected prose. Verify exact span, candidate,
+Context, disclosure scope and unchanged world/character causality before resuming.
+The new update still reruns required Quality. No new prose repair allowance or Provider
+extraction is created for this host provenance defect.
+
+Native Revision/ReReview decisions persist either Provider execution or exact Review
+reuse. A passed Review with no open diagnoses may retain its unchanged draft; the
+completion contract requires the persisted decision. Reuse must bind the same draft,
+Review, Context hashes, creative baseline and current accepted frontier. It records
+zero improvement and no fresh Provider call. Source mismatch blocks reuse, while
+necessary prose/Quality repairs continue through the existing model path.

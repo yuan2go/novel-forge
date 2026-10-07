@@ -91,7 +91,7 @@ def prepare_native_review(
         "author_design_review_targets": draft.content.get("author_design_guidance")
         or {},
     }
-    if request.definition_version in {"3.9.1", "3.9.2", "3.9.3"}:
+    if request.definition_version in {"3.9.1", "3.9.2", "3.9.3", "3.9.4"}:
         payload["knowledge_check_scope"] = "review-target-scope.v1"
     if review is not None:
         payload.update(

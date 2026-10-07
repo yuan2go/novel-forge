@@ -363,6 +363,28 @@ class ChapterAuthorityScheduler:
                     if operation is not None:
                         corrected[node] = operation
                 correction = corrected
+        reader_contract_source = None
+        completed_canon = correction.get(ChapterNode.CANON)
+        if completed_canon is not None and completed_canon["status"] == "SUCCEEDED":
+            canon_ref = self._primary_output(str(completed_canon["operation_id"]), request.project_id)
+            canon_content = self._asset_content(canon_ref["asset_version_id"], request.project_id)
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s", [completed_canon["operation_id"]])
+                canon_version = uow.cursor.fetchone()[0]
+            if canon_version == "3.9.0" and reader_lineage_reassessment_required(canon_content):
+                reader_contract_source = str(completed_canon["operation_id"])
+                correction_suffix += ":reader-lineage:3.9.1"
+                retained = {ChapterNode.REVISION, ChapterNode.REREVIEW, ChapterNode.BEST_CANDIDATE,
+                    ChapterNode.CANON_EXTRACTION, ChapterNode.CANON_PROPOSAL}
+                corrected = {node: operation for node, operation in correction.items() if node in retained}
+                for node in ChapterNode:
+                    if node in corrected:
+                        continue
+                    operation = self._initial_operation(root_operation_id=str(root["operation_id"]), project_id=request.project_id,
+                        node=node, idempotency_key=f"{root_key}:{node.value}{correction_suffix}")
+                    if operation is not None:
+                        corrected[node] = operation
+                correction = corrected
         aggregate = correction.get(ChapterNode.QUALITY)
         if aggregate is not None and aggregate["status"] == "SUCCEEDED":
             children.update(correction)
@@ -414,6 +436,8 @@ class ChapterAuthorityScheduler:
                 if node is ChapterNode.CANON_EXTRACTION and canon_contract_source:
                     dependencies.append(canon_contract_source)
                 if node is ChapterNode.CANON:
+                    if reader_contract_source:
+                        dependencies.append(reader_contract_source)
                     proposal = correction[ChapterNode.CANON_PROPOSAL]
                     proposal_ref = self._primary_output(
                         str(proposal["operation_id"]), request.project_id
@@ -1950,3 +1974,14 @@ def canonical_result_reassessment_required(canon):
         and isinstance((conflict.get("existing_version") or {}).get("to_state"), str)
         and (conflict.get("existing_version") or {}).get("to_state")
         for conflict in conflicts))
+
+
+def reader_lineage_reassessment_required(canon):
+    conflicts = canon.get("conflicts") or []
+    unpaired = [(kind, row) for kind, rows in canon.get("state_changes", {}).items() for row in rows
+        if row.get("story_time") and not row.get("causal_batch") and not row.get("world_transition") and not row.get("causality")]
+    return bool(canon.get("gate") == "BLOCKED" and conflicts and unpaired
+        and canon.get("grounding", {}).get("semantic_status") == "SUPPORTED_CANDIDATE"
+        and all(conflict.get("conflict_code") == "NARRATIVE_EVENT_CAUSALITY_REQUIRED" for conflict in conflicts)
+        and all(kind == "disclosure_event" and row.get("extraction_evidence", {}).get("source_revision_asset_version_id")
+            and row.get("extraction_evidence", {}).get("excerpt_digest") for kind, row in unpaired))

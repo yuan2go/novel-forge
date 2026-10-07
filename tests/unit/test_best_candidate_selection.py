@@ -123,3 +123,27 @@ def test_native_selection_preserves_prose_identity_across_three_workspaces() -> 
         (ChapterInputAsset("broken", "best_draft_candidate", "hash", broken), *inputs[1:]))
     with pytest.raises(KernelError, match="BEST_CANDIDATE_EVIDENCE_REQUIRED"):
         handler.execute(request)
+
+
+def test_native_retention_reuses_exact_review_without_prose_or_score_improvement():
+    from novel_forge.modules.revision.domain import retain_reviewed_draft, reuse_unchanged_review
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from copy import deepcopy
+    import pytest
+    draft = {"text": "他没接话。", "chapter": 1, "title": "门", "scene_artifacts": []}
+    review = {"decision": "PASSED", "review_decision_contract": "work-review-decision.v1", "issues": [], "score": 60,
+        "target_asset_version_id": "draft", "target_text_hash": prose_hash(draft["text"]), "context_bundle_version_id": "context"}
+    inputs = dict(draft=draft, draft_id="draft", draft_hash="dh", review=review, review_id="review", review_hash="rh", context_id="context", context_hash="ch")
+    revision = retain_reviewed_draft(**inputs)
+    rereview = reuse_unchanged_review(**inputs, revision=revision, revision_id="revision")
+    assert revision["text"] == draft["text"]
+    assert rereview["score"] == review["score"] and rereview["revision_quality_delta"]["score_delta"] == 0
+    assert rereview["review_reuse_evidence"]["provider_dispatches"] == 0
+    changed = deepcopy(revision);changed["text"] += "他点了头。"
+    with pytest.raises(KernelError, match="REREVIEW_RETENTION_DRIFT"):
+        reuse_unchanged_review(**inputs, revision=changed, revision_id="revision")
+    with pytest.raises(KernelError, match="REVISION_DIAGNOSIS_STALE"):
+        retain_reviewed_draft(**{**inputs, "context_id": "new-context"})
+    blocked = {**review, "issues": [{"code": "contradiction", "severity": "blocking"}]}
+    assert retain_reviewed_draft(**{**inputs, "review": blocked}) is None

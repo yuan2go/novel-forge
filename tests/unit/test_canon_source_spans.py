@@ -251,3 +251,26 @@ def test_result_reassessment_is_bounded_to_native_character_label_conflict():
     for code in ("PRECONDITION_FAILED", "CAUSAL_DEPENDENCY_CYCLE", "CANON_GROUNDING_INVALID"):
         assert not canonical_result_reassessment_required({"gate": "BLOCKED", "conflicts": [conflict, {"conflict_code": code}]})
     assert not canonical_result_reassessment_required({"gate": "PASSED", "conflicts": [conflict]})
+
+
+def test_timed_reader_disclosure_binds_only_exact_observed_span_without_authorizing_an_action():
+    from novel_forge.modules.canon_graph.world_reconciliation import bind_world_event_lineage, _validate_world_actual
+    from novel_forge.modules.chapter_authority.scheduler import reader_lineage_reassessment_required
+    row = {"story_time": {"timeline_id": "t", "start_ordinal": 2, "end_ordinal": 2, "precision": "ORDERED", "label": ""},
+        "extraction_evidence": {"source_revision_asset_version_id": "draft", "excerpt_digest": "digest", "span": {"start": 0, "end": 3}}}
+    changes = {"disclosure_event": [deepcopy(row)], "character_state": [deepcopy(row)]}
+    bind_world_event_lineage(changes, reader_observation_lineage=True)
+    disclosure = changes["disclosure_event"][0]
+    assert disclosure["causality"]["cause_refs"] == ["observed:draft:0:3"]
+    assert "causality" not in changes["character_state"][0]
+    event = {"state_kind": "disclosure_event", "mutation": {"payload": disclosure}, "causality": disclosure["causality"],
+        "evidence": row["extraction_evidence"], "provenance": {"accepted_draft_asset_version_id": "draft"}}
+    _validate_world_actual(event, {}, set())
+    with pytest.raises(KernelError, match="WORLD_OBSERVED_ROOT_UNVERIFIED"):
+        _validate_world_actual({**event, "provenance": {"accepted_draft_asset_version_id": "other"}}, {}, set())
+    with pytest.raises(KernelError, match="READER_DISCLOSURE_SCOPE_INVALID"):
+        _validate_world_actual({**event, "state_kind": "character_knowledge"}, {}, set())
+    canon = {"gate": "BLOCKED", "grounding": {"semantic_status": "SUPPORTED_CANDIDATE"},
+        "conflicts": [{"conflict_code": "NARRATIVE_EVENT_CAUSALITY_REQUIRED"}], "state_changes": {"disclosure_event": [row]}}
+    assert reader_lineage_reassessment_required(canon)
+    assert not reader_lineage_reassessment_required({**canon, "state_changes": changes})

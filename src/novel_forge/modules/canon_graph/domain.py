@@ -278,6 +278,7 @@ def build_canon_update(
     historical_state: dict[str, list[dict[str, Any]]] | None = None,
     planned_execution: dict[str, Any] | None = None,
     identity_profiles: Iterable[dict[str, Any]] = (),
+    reader_observation_lineage: bool = False,
 ) -> dict[str, Any]:
     if not all((project_id, revision_asset_version_id, context_bundle_version_id)):
         raise KernelError("CANON_INPUT_INVALID", "versioned canon lineage is required")
@@ -318,6 +319,7 @@ def build_canon_update(
         planned_execution=planned_execution,
         revision_text=str((revision or {}).get("text") or ""),
         identity_profiles=identity_profiles,
+        reader_observation_lineage=reader_observation_lineage,
     )
     expected_realization_ids = {
         str(item.get("event_id") or "")
@@ -356,7 +358,7 @@ def build_canon_update(
         )
     state_changes = _narrative_state_changes(extraction, facts)
     if not any(item["severity"] == "blocking" for item in conflicts):
-        bind_world_event_lineage(state_changes)
+        bind_world_event_lineage(state_changes, reader_observation_lineage=reader_observation_lineage)
     _bind_narrative_entity_versions(state_changes, state)
     return {
         "project_id": project_id,
@@ -633,6 +635,7 @@ def validate_deterministic_continuity(
     planned_execution: dict[str, Any] | None = None,
     revision_text: str = "",
     identity_profiles: Iterable[dict[str, Any]] = (),
+    reader_observation_lineage: bool = False,
 ) -> dict[str, Any]:
 
     if chapter <= 0:
@@ -643,6 +646,7 @@ def validate_deterministic_continuity(
     conflicts: list[dict[str, Any]] = validate_observed_world_changes(
         extraction=extraction, historical_state=historical_state,
         frozen_reality=frozen_world,
+        reader_observation_lineage=reader_observation_lineage,
     )
     profiles = tuple(dict(item) for item in identity_profiles)
     conflicts.extend(
