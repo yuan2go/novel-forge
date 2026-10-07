@@ -152,6 +152,28 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone()[0], "SUCCEEDED")
 
+    def test_dependency_registration_serializes_with_saga_coordination(self) -> None:
+        context, root, children = self._graph_fixture(2, root_status="EXECUTING")
+        first, second = children
+        saga = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        register_saga_step(DATABASE_URL, context, saga, first, "first", 1, "")
+        register_saga_step(DATABASE_URL, context, saga, second, "second", 2, "")
+        barrier = Barrier(2)
+        def dependency():
+            barrier.wait(timeout=5)
+            for _ in range(10):
+                add_operation_dependency(DATABASE_URL, context, second, first, "ON_SUCCESS")
+        def coordinate():
+            barrier.wait(timeout=5)
+            for _ in range(10):
+                coordinate_saga(DATABASE_URL, context, saga)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(dependency), executor.submit(coordinate)]
+            for future in futures:
+                future.result(timeout=30)
+        graph = operation_graph(DATABASE_URL, context.project_id, root)
+        self.assertIn(second, graph["blocked"])
+
     def test_extension_terminalization_rejects_immutable_saga_outcomes(self) -> None:
         for saga_status, root_status in (
             ("SUCCEEDED", "SUCCEEDED"),

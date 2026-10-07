@@ -53,11 +53,18 @@ def add_operation_dependency(
     try:
         with AuthorityUnitOfWork(database_url) as uow:
             repository = uow.repositories.operation_graph
-            operation = repository.operation(operation_id, context.project_id, lock=True)
+            source = repository.operation(operation_id, context.project_id)
+            uow.cursor.execute(
+                "SELECT saga_id FROM authority_saga WHERE root_operation_id=%s AND project_id=%s FOR UPDATE",
+                [source["root_operation_id"], context.project_id],
+            )
+            uow.cursor.fetchone()
+            for identity in sorted({operation_id, depends_on_operation_id}):
+                repository.operation(identity, context.project_id, lock=True)
+            operation = repository.operation(operation_id, context.project_id)
             dependency = repository.operation(
                 depends_on_operation_id,
                 context.project_id,
-                lock=True,
             )
             if operation["root_operation_id"] != dependency["root_operation_id"]:
                 raise KernelError(

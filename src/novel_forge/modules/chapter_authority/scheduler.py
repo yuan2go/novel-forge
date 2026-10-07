@@ -1503,6 +1503,8 @@ class ChapterAuthorityScheduler:
                     retryable=classification is WorkerFailureClass.RETRYABLE,
                     error_code=exc.code
                     if isinstance(exc, KernelError)
+                    else "POSTGRES_TRANSACTION_RETRY"
+                    if getattr(exc, "sqlstate", None) in {"40P01", "40001"}
                     else "PROGRAMMING_BUG",
                     error_message=str(exc),
                     failure_class=classification.value,

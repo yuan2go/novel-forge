@@ -221,6 +221,8 @@ class WorkerSupervisor:
 class WorkerFailureClassifier:
     @staticmethod
     def classify(error: BaseException) -> WorkerFailureClass:
+        if getattr(error, "sqlstate", None) in {"40P01", "40001"}:
+            return WorkerFailureClass.RETRYABLE
         if not isinstance(error, KernelError):
             return WorkerFailureClass.PROGRAMMING_BUG
         code = error.code.upper()
@@ -319,6 +321,8 @@ class AuthorityWorkerExecutionBoundary:
                     error_type=type(exc).__name__,
                     error_code=exc.code
                     if isinstance(exc, KernelError)
+                    else "POSTGRES_TRANSACTION_RETRY"
+                    if getattr(exc, "sqlstate", None) in {"40P01", "40001"}
                     else "PROGRAMMING_BUG",
                     message=str(exc),
                 )

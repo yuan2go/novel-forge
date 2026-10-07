@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import unittest
+
+from psycopg.errors import DeadlockDetected, SerializationFailure, UndefinedColumn
 from datetime import datetime, timezone
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -120,6 +122,16 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
         for error, expected in cases:
             with self.subTest(error=error):
                 self.assertEqual(WorkerFailureClassifier.classify(error), expected)
+
+    def test_only_known_aborted_database_transactions_are_retryable(self) -> None:
+        for error in (DeadlockDetected("deadlock"), SerializationFailure("conflict")):
+            self.assertEqual(WorkerFailureClassifier.classify(error), WorkerFailureClass.RETRYABLE)
+            failures = AuthorityWorkerExecutionBoundary(worker_kind="chapter").execute_batch(
+                (("p", "op"),), identity=lambda item: item,
+                execute=lambda item: (_ for _ in ()).throw(error),
+            )
+            self.assertEqual(failures[0].error_code, "POSTGRES_TRANSACTION_RETRY")
+        self.assertEqual(WorkerFailureClassifier.classify(UndefinedColumn("schema bug")), WorkerFailureClass.PROGRAMMING_BUG)
 
     def test_batch_continues_after_known_task_failure(self) -> None:
         visited: list[str] = []

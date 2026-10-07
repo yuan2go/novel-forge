@@ -2074,3 +2074,8 @@ The complete Chapter Pack node set is checked against current Definition version
 hashes. A known pre-dispatch ReReview Binding Set defect can use the existing native
 failed-step successor; exhausted old Attempts remain immutable and no external effect
 is copied or resent. The new execution contract retains every frozen business input.
+
+Saga dependency mutations acquire the same Saga row lock as coordination before
+locking child Operations, preventing reverse child-lock ordering during concurrent
+admission. PostgreSQL deadlock and serialization aborts are retryable transaction
+conflicts; uncertain connection or commit outcomes retain reconciliation handling.
