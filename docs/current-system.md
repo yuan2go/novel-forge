@@ -1498,6 +1498,14 @@ implicit capabilities.
 
 ## Narrative Reality and causal production
 
+Realization descriptions express planned intent. Literal equality of action, decision,
+state descriptions or disclosure prose cannot establish semantic coverage. Current
+legacy consumption retains that historical comparison contract. Its recorded deviations
+remain immutable and require a future-only replan. A semantic comparison must bind
+the exact frozen planned event and adopted prose, with independent Canon Support
+evidence for causality, required end state and knowledge boundaries. New perceptions
+may support later same-chapter actions; unknown comparisons cannot certify coverage.
+
 `NarrativeRealityRevision` references the exact Book acceptance, ChapterOutcome,
 Narrative State, Canon and long-form projection set. Its immutable identity includes
 its parent revision and source digest. PostgreSQL requires one revision for each
