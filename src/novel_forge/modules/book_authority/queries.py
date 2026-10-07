@@ -866,11 +866,13 @@ class PostgresBookProductionQuery:
             uow.cursor.execute("""SELECT followup.chapter_request_id FROM authority_book_followup_operation followup
                 JOIN authority_operation operation USING(operation_id)
                 JOIN authority_book_production book USING(book_run_id)
-                WHERE followup.followup_type='READER_OUTCOME' AND operation.definition_version='1.1.0'
-                  AND operation.status='FAILED_FINAL' AND book.state NOT IN ('CANCELLED','ABORTED')
+                WHERE followup.followup_type='READER_OUTCOME'
+                  AND ((operation.definition_version='1.1.0' AND operation.status='FAILED_FINAL')
+                       OR (operation.definition_version='1.2.0' AND operation.status='DEAD_LETTER'))
+                  AND book.state NOT IN ('CANCELLED','ABORTED')
                   AND (%s::text[]='{}'::text[] OR followup.project_id=ANY(%s))
                   AND EXISTS (SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=operation.operation_id
-                              AND attempt.result->>'error_code'='READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID')
+                              AND attempt.result->>'error_code' IN ('READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID','PROVIDER_ROUTING_BLOCKED'))
                   AND NOT EXISTS (SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
                 ORDER BY followup.created_at,followup.followup_id LIMIT %s""", [projects,projects,limit])
             return tuple(str(row[0]) for row in uow.cursor.fetchall())

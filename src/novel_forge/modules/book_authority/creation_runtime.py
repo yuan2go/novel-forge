@@ -322,11 +322,11 @@ def ensure_creation_reader_pack(settings: Any, *, formation_run_id: str, princip
         scope = uow.cursor.fetchone()
         if scope is None:
             raise KernelError("CREATION_CHECKPOINT_NOT_FOUND", formation_run_id)
-        uow.cursor.execute("SELECT activation.activation_version,deployment.pack_version FROM authority_capability_pack_activation activation JOIN authority_capability_pack_deployment deployment ON deployment.deployment_id=activation.active_deployment_id WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s AND activation.pack_id=%s AND activation.environment=%s AND activation.workflow_definition_ref='book_followup_reader_outcome@1.2.0'", [*scope, pack_id, settings.environment])
+        uow.cursor.execute("SELECT activation.activation_version,deployment.pack_version FROM authority_capability_pack_activation activation JOIN authority_capability_pack_deployment deployment ON deployment.deployment_id=activation.active_deployment_id WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s AND activation.pack_id=%s AND activation.environment=%s AND activation.workflow_definition_ref='book_followup_reader_outcome@1.3.0'", [*scope, pack_id, settings.environment])
         active = uow.cursor.fetchone()
-        if active and str(active[1]) == "1.4.0":
+        if active and str(active[1]) == "1.5.0":
             return
-        if active and str(active[1]) != "1.3.0":
+        if active and str(active[1]) not in {"1.3.0", "1.4.0"}:
             raise KernelError("CREATION_READER_PACK_CONTRACT_DRIFT", "Reader Pack needs an explicitly compatible deployment")
         activation_version = int(active[0]) if active else 0
         uow.cursor.execute("SELECT COALESCE(MAX(activation_version),0) FROM authority_capability_pack_activation WHERE project_id=%s AND workspace_id=%s AND book_id=%s AND pack_id=%s AND environment=%s", [*scope, pack_id, settings.environment])

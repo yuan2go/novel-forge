@@ -236,7 +236,7 @@ def build_reader_outcome_pack_profile(
 ) -> LongformCapabilityPackProfile:
     root, manifest, artifacts = _base(repository_root, pack_id)
     _require_hash(operation_definition_hash)
-    manifest["identity"]["version"] = "1.4.0"
+    manifest["identity"]["version"] = "1.5.0"
     template = next(
         item
         for item in manifest["workflow_template"]["nodes"]

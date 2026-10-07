@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+
+
 import unittest
 
 from novel_forge.modules.book_followup_authority.domain import (
@@ -284,3 +286,16 @@ class ReaderOutcomeAndRecapDomainTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_reader_capacity_successor_requires_output_only_failure():
+    from novel_forge.modules.book_followup_authority.reader_recovery import output_capacity_contract_failure
+
+    decision = {"task": {"input_tokens": 16302, "output_tokens": 239232}, "candidates": [{
+        "candidate": {"output_limit": 32768, "context_limit": 272000}, "rejected_reasons": ["CONTEXT_CAPACITY_EXCEEDED"]}]}
+    assert output_capacity_contract_failure(decision)
+    decision["candidates"][0]["rejected_reasons"].append("BUDGET_EXCEEDED")
+    assert not output_capacity_contract_failure(decision)
+    decision["candidates"][0]["rejected_reasons"] = ["CONTEXT_CAPACITY_EXCEEDED"]
+    decision["task"]["output_tokens"] = 8192
+    assert not output_capacity_contract_failure(decision)

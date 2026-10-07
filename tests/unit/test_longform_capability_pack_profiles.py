@@ -196,8 +196,8 @@ def test_reader_outcome_profile_is_independent_shadow_domain_pack() -> None:
     )
 
     assert profile.pack_id == "reader_outcome_pack"
-    assert profile.workflow_ref == "book_followup_reader_outcome@1.2.0"
-    assert profile.manifest["identity"]["version"] == "1.4.0"
+    assert profile.workflow_ref == "book_followup_reader_outcome@1.3.0"
+    assert profile.manifest["identity"]["version"] == "1.5.0"
     assert profile.manifest["prompt_binding"]["template_version"] == "v2"
     assert profile.manifest["identity"]["domain"] == "book_followup"
     assert profile.manifest["prompt_binding"]["system_instruction_ref"] == (

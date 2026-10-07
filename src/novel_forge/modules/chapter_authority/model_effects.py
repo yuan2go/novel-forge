@@ -444,7 +444,8 @@ class ExternalEffectChapterModelPort:
             dict(business_payload.get("preparation_report") or {}).get("stage_context_profile_versions", {}).get("draft")
             or business_payload.get("draft_profile_version") or ""
         )
-        task_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        task_scoped = (task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+                       or (stage == "reader_outcome" and request.definition_version == "1.3.0"))
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
         if task_scoped and existing_intent is not None:

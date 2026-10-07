@@ -22,6 +22,27 @@ from novel_forge.modules.command_kernel.worker_execution import (
 )
 
 
+def test_reader_output_reserve_uses_model_output_capacity(monkeypatch):
+    from novel_forge.modules.production_execution import ExecutionRuntimeClass
+
+    route = SimpleNamespace(model_output_limit=32768, model_profile=SimpleNamespace(
+        backend_id="codex-cli", model_provider="codex-cli",
+        runtime_class=ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE))
+    adapter = SimpleNamespace(routes={"reader_outcome": route}, provider_router=object())
+    port = ExternalEffectChapterModelPort("postgresql://unit-not-connected", adapter=adapter, worker_id="worker", max_cost_per_call="2")
+    request = ChapterHandlerRequest(operation_id="operation", project_id="project", workspace_id="workspace",
+        trace_id="trace", correlation_id="correlation", command={"context_token_budget": 272000},
+        inputs=(), attempt_id="attempt", fencing_token=1, worker_id="worker", definition_version="1.3.0")
+    monkeypatch.setattr(model_effects, "read_external_effect_intent", lambda *_a, **_kw: None)
+    def inspect_reservation(*args, **kwargs):
+        assert kwargs["requested_output_token_ceiling"] == 32768
+        assert kwargs["frozen_request_token_ceiling"] == 1
+        raise KernelError("CONTROLLED_BEFORE_DISPATCH", "reservation boundary checked")
+    monkeypatch.setattr(model_effects, "resolve_provider_token_reservation_contract", inspect_reservation)
+    with pytest.raises(KernelError, match="CONTROLLED_BEFORE_DISPATCH"):
+        port.invoke(request, stage="reader_outcome", payload={})
+
+
 def _result(
     *, cost: dict[str, object], input_tokens: int = 1200
 ) -> ModelProviderResult:

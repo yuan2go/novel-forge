@@ -2835,21 +2835,15 @@ class PostgresBookAuthority:
         with AuthorityUnitOfWork(self.database_url) as uow:
             if _cancelled(uow.cursor, book) or not selected_book_template(uow.cursor, project_id=book["project_id"], book_id=book["book_id"], allow_literary_required=True):
                 return False
-            uow.cursor.execute("""SELECT to_jsonb(operation) FROM authority_book_followup_operation followup
-                JOIN authority_operation operation USING(operation_id)
+            from novel_forge.modules.book_followup_authority.reader_recovery import read_reader_recovery_source
+            uow.cursor.execute("""SELECT followup.operation_id FROM authority_book_followup_operation followup
                 JOIN authority_book_chapter_acceptance acceptance USING(chapter_request_id)
-                JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
-                              ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
                 WHERE followup.chapter_request_id=%s AND followup.followup_type='READER_OUTCOME'
-                  AND acceptance.status='COMMITTED' AND operation.definition_version='1.1.0'
-                  AND operation.status='FAILED_FINAL'
-                  AND attempt.result->>'error_code'='READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID'
-                  AND NOT EXISTS (SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
-            """, [chapter_request_id])
+                  AND acceptance.status='COMMITTED'""", [chapter_request_id])
             row = uow.cursor.fetchone()
-        if row is None:
+            source = read_reader_recovery_source(uow.cursor, str(row[0]), request["project_id"]) if row else None
+        if source is None:
             return False
-        source = dict(row[0])
         stable_key = source["idempotency_key"] + ":contract-successor:" + READER_OUTCOME_DEFINITION_VERSION
         admission = self.followup.admit(BookFollowupCommand(
             definition_name=source["definition_name"], project_id=source["project_id"], workspace_id=source["workspace_id"],

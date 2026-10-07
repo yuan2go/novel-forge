@@ -481,6 +481,7 @@ def governed_workflow_binding_catalog(
         world_sampling_workflow_binding_catalog(),
         world_sampling_workflow_binding_catalog(reference_samples=True),
         reader_outcome_workflow_binding_catalog("1.1.0"),
+        reader_outcome_workflow_binding_catalog("1.2.0"),
         reader_outcome_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(provider_sampling=True),
