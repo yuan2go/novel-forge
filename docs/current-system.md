@@ -2291,3 +2291,10 @@ The historical comparison policy retains its original weighting and replay behav
 A work-scoped comparison policy may assign dimension weights and an uncertainty margin;
 its authorized stable tie-break records uncertainty rather than claiming literary superiority.
 Model estimates, structural admission and author selection remain separate evidence.
+
+ChapterGroup portfolio membership classifies available Arcs; it does not require every
+Arc to advance in each group. Current Arc validation binds realized intent to the
+scheduled non-HOLD contributions and required contributions, and forbids foreign Arcs.
+An exact settled selector-contract result rejected solely by the historical all-Arc
+coverage rule may be revalidated through a native host-only successor. The original
+rejection remains immutable, with no second Provider dispatch or resource settlement.
