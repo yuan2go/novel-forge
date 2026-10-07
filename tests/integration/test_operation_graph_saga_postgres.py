@@ -45,6 +45,49 @@ class OperationGraphSagaPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
+    def test_cancelled_root_frontier_cannot_reopen_completed_children(self):
+        from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
+
+        context, root, children = self._graph_fixture(1, root_status="EXECUTING")
+        saga = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        register_saga_step(DATABASE_URL, context, saga, children[0], "completed", 1, "")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_operation SET status='SUCCEEDED' WHERE operation_id=%s", [children[0]])
+            cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [root])
+            version = cursor.fetchone()[0]
+        request_cancellation(DATABASE_URL, CancelCommand(root, context.project_id, context.actor_id,
+            "author cancelled future work", int(version), identifier("cancel"), context.trace_id, context.correlation_id))
+        result = coordinate_saga(DATABASE_URL, context, saga)
+        self.assertEqual(result["status"], "CANCELLED")
+        self.assertEqual(coordinate_saga(DATABASE_URL, context, saga)["status"], "CANCELLED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [root])
+            self.assertEqual(cursor.fetchone()[0], "CANCELLED")
+            cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [children[0]])
+            self.assertEqual(cursor.fetchone()[0], "SUCCEEDED")
+
+    def test_cancelled_root_waits_for_its_own_durable_external_intent(self):
+        from novel_forge.modules.command_kernel.cancellation import CancelCommand, request_cancellation
+        from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, plan_external_effect
+
+        context, root, children = self._graph_fixture(1, root_status="EXECUTING")
+        saga = start_saga(DATABASE_URL, context, root_operation_id=root)["saga_id"]
+        register_saga_step(DATABASE_URL, context, saga, children[0], "child", 1, "")
+        plan_external_effect(DATABASE_URL, EffectCommandContext(root, context.project_id, context.actor_id,
+            context.trace_id, context.correlation_id), effect_type="model.invoke", provider="fixture", capability="model.planning",
+            stable_idempotency_key=identifier("request"), request_payload={"immutable": True},
+            max_attempts=1, reversible=False)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [root])
+            version = cursor.fetchone()[0]
+        request_cancellation(DATABASE_URL, CancelCommand(root, context.project_id, context.actor_id,
+            "cancel", int(version), identifier("cancel"), context.trace_id, context.correlation_id))
+        result = coordinate_saga(DATABASE_URL, context, saga)
+        self.assertEqual(result["status"], "CANCELLATION_REQUESTED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [root])
+            self.assertEqual(cursor.fetchone()[0], "CANCELLATION_REQUESTED")
+
     def test_linear_branch_and_join_graph_discovers_only_satisfied_children(
         self,
     ) -> None:

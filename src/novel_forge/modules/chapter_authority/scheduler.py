@@ -1,6 +1,9 @@
 from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
+import json
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 from novel_forge.modules.chapter_authority.contracts import (
     QUALITY_GROUP_NODES,
@@ -70,6 +73,7 @@ from novel_forge.modules.command_kernel.operation_graph import (
     coordinate_saga,
     register_saga_step,
     terminalize_saga_from_extension,
+    transition_saga_gate,
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.command_kernel.runtime import (
@@ -78,6 +82,13 @@ from novel_forge.modules.command_kernel.runtime import (
 )
 from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+
+@lru_cache(maxsize=1)
+def _admission_implementation_identity() -> str:
+    from novel_forge.tools.implementation_tree_identity import build_implementation_tree_identity
+
+    return str(build_implementation_tree_identity(Path(__file__).resolve().parents[4])["implementation_tree_sha"])
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,7 +163,24 @@ class ChapterAuthorityScheduler:
             trace_id=root["trace_id"],
             correlation_id=root["correlation_id"],
         )
+        if root["status"] == "WAITING_GATE":
+            blocked = self._admission_gate(root_operation_id, project_id)
+            if blocked:
+                if blocked["implementation_identity"] == _admission_implementation_identity():
+                    return ChapterSchedulerTick(root_operation_id, saga["saga_id"], "WAITING_GATE", root_operation_id,
+                                                blocked["node"], "WAITING_GATE", "technical_admission_blocked")
+                self._transition_admission_gate(root, saga, context, target_status="EXECUTING",
+                                                reason="technical Chapter admission recheck after implementation change")
+                root, saga, children = self._graph_state(project_id, root_operation_id)
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
+        if coordinated["status"] == "CANCELLATION_REQUESTED":
+            cancellable = next(((node, child) for node, child in children.items()
+                                if child["status"] == "CANCELLATION_REQUESTED"), None)
+            if cancellable:
+                self._execute_node(self._request_from_root(root), *cancellable)
+                coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
+            return ChapterSchedulerTick(root_operation_id, saga["saga_id"], coordinated["status"], root_operation_id,
+                                        "", "CANCELLATION_REQUESTED", "cancel_existing_children_only")
         if any(c["status"] == "ADMITTED" for c in children.values()):
             root, saga, children = self._graph_state(project_id, root_operation_id)
         chapter_complete = all(
@@ -241,13 +269,27 @@ class ChapterAuthorityScheduler:
                     recovery_mode="canon_approval_gate",
                 )
         if operation is None:
-            operation = self._admit_node(
-                request=request,
-                root=root,
-                saga_id=saga["saga_id"],
-                children=children,
-                node=node,
-            )
+            try:
+                operation = self._admit_node(
+                    request=request,
+                    root=root,
+                    saga_id=saga["saga_id"],
+                    children=children,
+                    node=node,
+                )
+            except KernelError as error:
+                if WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
+                    raise
+                fresh_root, fresh_saga, fresh_children = self._graph_state(project_id, root_operation_id)
+                if node in fresh_children or fresh_root["status"] not in {"EXECUTING", "WAITING_CHILDREN"}:
+                    raise
+                reason = json.dumps({"gate": "chapter_technical_admission", "node": node.value,
+                                     "error_code": error.code, "error_message": error.message,
+                                     "owner": "Chapter Authority", "next_action": "recheck after implementation repair",
+                                     "implementation_identity": _admission_implementation_identity()}, sort_keys=True)
+                self._transition_admission_gate(fresh_root, fresh_saga, context, target_status="WAITING_GATE", reason=reason)
+                return ChapterSchedulerTick(root_operation_id, saga["saga_id"], "WAITING_GATE", root_operation_id,
+                                            node.value, "WAITING_GATE", "technical_admission_blocked")
             coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             operation = self._child(str(operation["operation_id"]), project_id)
         if operation["status"] == "SUCCEEDED":
@@ -616,6 +658,12 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation AS operation
                 JOIN authority_saga AS saga
                   ON saga.root_operation_id = operation.operation_id
+                LEFT JOIN LATERAL (
+                    SELECT payload->>'reason' AS reason FROM state_event
+                    WHERE aggregate_type='authority_operation' AND aggregate_id=operation.operation_id
+                      AND project_id=operation.project_id AND event_type='authority.operation.status_changed'
+                    ORDER BY sequence_number DESC LIMIT 1
+                ) AS latest_transition ON TRUE
                 WHERE (
                     (operation.definition_name = 'chapter.slice.run'
                      AND operation.status IN ('EXECUTING', 'WAITING_CHILDREN',
@@ -623,6 +671,9 @@ class ChapterAuthorityScheduler:
                     OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
                         AND operation.definition_version = ANY(%s))
                   )
+                  AND NOT (operation.status='WAITING_GATE'
+                           AND COALESCE(latest_transition.reason, '') LIKE %s
+                           AND COALESCE(latest_transition.reason, '') LIKE %s)
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
                     'MANUAL_INTERVENTION', 'CANCELLED'
@@ -636,10 +687,39 @@ class ChapterAuthorityScheduler:
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
                 """,
-                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), limit],
+                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), '%"gate": "chapter_technical_admission"%',
+                 '%"implementation_identity": "' + _admission_implementation_identity() + '"%', limit],
             )
             rows = uow.cursor.fetchall()
         return tuple((str(row[0]), str(row[1])) for row in rows)
+
+    def _admission_gate(self, operation_id: str, project_id: str) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT payload->>'reason' FROM state_event
+                WHERE aggregate_type='authority_operation' AND aggregate_id=%s AND project_id=%s
+                  AND event_type='authority.operation.status_changed'
+                ORDER BY sequence_number DESC LIMIT 1""", [operation_id, project_id],
+            )
+            row = uow.cursor.fetchone()
+        try:
+            gate = json.loads(row[0]) if row else None
+        except (TypeError, ValueError):
+            return None
+        return gate if isinstance(gate, dict) and gate.get("gate") == "chapter_technical_admission" else None
+
+    def _transition_admission_gate(self, root, saga, context, *, target_status, reason):
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            current = uow.repositories.attempt_runtime.operation_state(root["operation_id"], root["project_id"])
+        transition_operation(self.database_url, OperationTransitionCommand(
+            operation_id=root["operation_id"], project_id=root["project_id"],
+            expected_version=int(current["version"]), expected_status=str(current["status"]),
+            target_status=target_status, actor_id=self.worker_id, reason=reason,
+            trace_id=root["trace_id"], correlation_id=root["correlation_id"], causation_id=root["operation_id"],
+        ))
+        if target_status == "WAITING_GATE" or saga["status"] == "WAITING_GATE":
+            transition_saga_gate(self.database_url, context, saga["saga_id"],
+                                 target_status="WAITING_GATE" if target_status == "WAITING_GATE" else "RUNNING", reason=reason)
 
     def _current_or_next(
         self, children: dict[ChapterNode, dict[str, Any]]

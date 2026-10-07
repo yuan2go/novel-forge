@@ -1,0 +1,50 @@
+{
+  "schema_version": "wp-novel-production-closure-01.focused-evidence.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tested_parent_sha": "44883f3748294247af21788c87ccc6307c82810a",
+  "implementation_tree_sha": "sha256:53c3d2196d5904ddd7ea709f06c35befb4559f0f420c1c0089b8841d97cf5ea0",
+  "checks": [
+    {
+      "check": "Chapter plan Book identity and worker boundary unit",
+      "result": "PASS",
+      "tests": 17,
+      "subtests": 28
+    },
+    {
+      "check": "native PostgreSQL admission technical gate, cancellation, Saga and cancellation regressions",
+      "result": "PASS",
+      "tests": 28,
+      "subtests": 11,
+      "duration_seconds": 7.09,
+      "private_evidence": "controlled-cli-498.log",
+      "environment": "development for legacy synthetic adapter; no real Provider"
+    },
+    {
+      "check": "original frozen Chapter2 PLAN/Intent/Memo to exact accepted-lineage retrieval",
+      "result": "PASS",
+      "private_evidence": "retrieval-preflight-494.log and assertion readback retrieval-preflight-495.log",
+      "scope": "clone of original database backup492; native retrieval completed; Provider dispatch forbidden"
+    },
+    {
+      "check": "original frozen Chapter2 Context compilation to Writer send boundary",
+      "result": "PASS",
+      "private_evidence": "context-preflight-499.log",
+      "scope": "same original database clone; Context SUCCEEDED; draft Provider invocation intercepted before send"
+    },
+    {
+      "check": "canonical documentation, implementation identity and comment/docstring ratchet",
+      "result": "PASS",
+      "private_evidence": "docs-499.json"
+    }
+  ],
+  "preserved": {
+    "book_id": "closure-original-book",
+    "root_operation_id": "675bbe59-803c-4253-b4cc-f262c42d3edf",
+    "accepted_chapters": 1,
+    "target_chapters": 12,
+    "existing_plan_output": "authority-output:6c42a6f8-8726-40c0-8e1a-17fa9fb03ac1:chapter.plan:v1",
+    "memo_effect": "3820ff3f-85b7-4f48-b682-f2228bfc9df7"
+  },
+  "real_second_chapter_writer": "NOT_RUN",
+  "completion": "NOT_COMPLETE"
+}

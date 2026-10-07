@@ -143,10 +143,24 @@ class ChapterPlanQualificationReport:
     contract_version: str = "chapter-plan-qualification-v3"
 
 
+def resolve_chapter_plan_book_id(
+    *, project_id: str, plan: dict[str, Any], host_book_id: str = ""
+) -> str:
+    extensions = plan.get("source_extensions")
+    identities = [host_book_id, plan.get("book_id")]
+    if isinstance(extensions, dict):
+        identities.append(extensions.get("book_id"))
+    declared = {str(value).strip() for value in identities if value}
+    if len(declared) > 1:
+        raise KernelError("CHAPTER_PLAN_CROSS_BOOK", "ChapterPlan Book differs from its frozen host command")
+    return next(iter(declared)) if declared else f"book:{project_id}"
+
+
 def normalize_authoritative_chapter_plan(
     *,
     project_id: str,
     expected_chapter: int,
+    expected_book_id: str = "",
     content: dict[str, Any],
     asset_version_id: str,
     content_hash: str,
@@ -188,6 +202,7 @@ def normalize_authoritative_chapter_plan(
     normalized: dict[str, Any] = {
         "type": "AuthoritativeChapterPlan",
         "project_id": project_id,
+        "book_id": resolve_chapter_plan_book_id(project_id=project_id, plan=content, host_book_id=expected_book_id),
         "chapter": chapter,
         "title": str(content.get("title") or "").strip(),
         "premise": str(content.get("premise") or "").strip(),
@@ -207,7 +222,7 @@ def normalize_authoritative_chapter_plan(
             [] if field in LIST_FIELDS else value
         )
     normalized.update({key: content[key] for key in KNOWLEDGE_PLAN_FIELDS if key in content})
-    known = {"project_id", "chapter", "title", "premise", "objective", "beats", "scenes", "closing_hook", "schema_version", "contract_version", *PLAN_FIELDS, *KNOWLEDGE_PLAN_FIELDS}
+    known = {"project_id", "book_id", "chapter", "title", "premise", "objective", "beats", "scenes", "closing_hook", "schema_version", "contract_version", *PLAN_FIELDS, *KNOWLEDGE_PLAN_FIELDS}
     normalized["source_extensions"] = {
         key: value for key, value in content.items() if key not in known
     }

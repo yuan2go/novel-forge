@@ -56,6 +56,7 @@ from novel_forge.modules.chapter_authority.chapter_plan_views import (
     build_draft_plan_view,
     build_draft_style_view,
     normalize_authoritative_chapter_plan,
+    resolve_chapter_plan_book_id,
     qualification_profile_for_plan,
 )
 from novel_forge.modules.chapter_authority.model_effects import (
@@ -230,6 +231,7 @@ class _PlanHandler:
         plan, qualification = normalize_authoritative_chapter_plan(
             project_id=request.project_id,
             expected_chapter=chapter,
+            expected_book_id=str(request.command.get("book_id") or ""),
             content=source_plan.content,
             asset_version_id=source_plan.asset_version_id,
             content_hash=source_plan.content_hash,
@@ -537,7 +539,7 @@ class _RetrievalHandler:
             semantic_enabled = query_plan.get("semantic_policy") != "DISABLED"
             deterministic_coverage = deterministic_retrieval_coverage_fast_path(
                 project_id=request.project_id,
-                book_id=str(plan.content.get("book_id") or f"book:{request.project_id}"),
+                book_id=resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan.content, host_book_id=str(request.command.get("book_id") or "")),
                 intent_asset_version_id=intent.asset_version_id,
                 memo_asset_version_id=memo.asset_version_id,
                 query_plan=query_plan,
@@ -599,9 +601,7 @@ class _RetrievalHandler:
             frozen_union = freeze_retrieval_candidate_union(
                 request.database_url,
                 project_id=request.project_id,
-                book_id=str(
-                    plan.content.get("book_id") or f"book:{request.project_id}"
-                ),
+                book_id=resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan.content, host_book_id=str(request.command.get("book_id") or "")),
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
                 fencing_token=request.fencing_token,
@@ -640,7 +640,7 @@ class _RetrievalHandler:
         frozen_union: Any,
         discovery_rejections: tuple[dict[str, Any], ...],
     ) -> dict[str, Any]:
-        book_id = str(plan.content.get("book_id") or f"book:{request.project_id}")
+        book_id = resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan.content, host_book_id=str(request.command.get("book_id") or ""))
         policy = RetrievalCampaignPolicy(
             **dict(query_plan.get("campaign_policy") or {})
         )
@@ -1337,10 +1337,9 @@ class _ContextHandler:
             context_profile_version=stage_context_profile,
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
-            book_id=str(
-                request.command.get("book_id")
-                or plan.content.get("book_id")
-                or f"book:{request.project_id}"
+            book_id=resolve_chapter_plan_book_id(
+                project_id=request.project_id, plan=plan.content,
+                host_book_id=str(request.command.get("book_id") or ""),
             ),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(
@@ -2648,11 +2647,9 @@ class _QualityHandler:
         multiscale_quality = build_multiscale_quality_report(
             work_requirements=request.work_requirements_enabled,
             project_id=request.project_id,
-            book_id=str(
-                request.command.get("book_id")
-                or plan.content.get("book_id")
-                or context.content.get("book_id")
-                or ""
+            book_id=resolve_chapter_plan_book_id(
+                project_id=request.project_id, plan=plan.content,
+                host_book_id=str(request.command.get("book_id") or context.content.get("book_id") or ""),
             ),
             context_bundle=context.content,
             accepted_through_chapter=accepted_through_chapter,

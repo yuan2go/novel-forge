@@ -248,6 +248,65 @@ class ChapterAuthoritySchedulerPostgresTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_migrated()
 
+    def test_deterministic_admission_gate_rechecks_only_after_repair_and_keeps_root(self):
+        from unittest.mock import patch
+
+        project_id = identifier("admission-gate")
+        candidates = self._release_evidence(project_id)
+        registry = build_chapter_handler_registry(DeterministicFixtureChapterProvider())
+        request = SingleChapterRequest(
+            project_id=project_id, workspace_id=f"workspace:{project_id}", actor_id="trusted-operator",
+            chapter=1, title="Scope", premise="A visible cost", trace_id=identifier("trace"),
+            correlation_id=identifier("correlation"), application_build_id="admission-gate-test",
+            commit_sha="f" * 40, idempotency_key=f"{project_id}:chapter:1",
+            preparation_report={"decision": "READY", "fixture": True}, context_candidates=tuple(candidates),
+        )
+        admission = admit_single_chapter_saga(DATABASE_URL, request=request, registry=registry,
+                                             permissions=frozenset({"chapter.authority.execute"}))
+        scheduler = ChapterAuthorityScheduler(DATABASE_URL, registry=registry,
+            object_store_adapter=FakeDeterministicProvider("success"), worker_id="gate-worker",
+            permissions=frozenset({"chapter.authority.execute"}))
+        args = {"project_id": project_id, "root_operation_id": admission.root_operation_id}
+        self.assertEqual(scheduler.tick(**args).node, ChapterNode.PLAN.value)
+        with patch("novel_forge.modules.chapter_authority.scheduler._admission_implementation_identity", return_value="old-code"):
+            with patch.object(scheduler, "_admit_node", side_effect=KernelError("RETRIEVAL_TASK_SOURCE_BINDING_INVALID", "host source mismatch")) as admit:
+                blocked = scheduler.tick(**args)
+                self.assertEqual(blocked.recovery_mode, "technical_admission_blocked")
+                self.assertNotIn((project_id, admission.root_operation_id), scheduler.pending_roots(limit=1000))
+                replay = scheduler.tick(**args)
+                self.assertEqual(replay.recovery_mode, "technical_admission_blocked")
+                self.assertEqual(admit.call_count, 1)
+        with patch("novel_forge.modules.chapter_authority.scheduler._admission_implementation_identity", return_value="repaired-code"):
+            self.assertIn((project_id, admission.root_operation_id), scheduler.pending_roots(limit=1000))
+            resumed = scheduler.tick(**args)
+            self.assertEqual(resumed.node, ChapterNode.EXECUTION_INTENT.value)
+            self.assertEqual(resumed.operation_status, "SUCCEEDED")
+        root, _, children = scheduler._graph_state(project_id, admission.root_operation_id)
+        self.assertEqual(root["command_payload"]["chapter_idempotency_key"], request.idempotency_key)
+        self.assertEqual(len(children), 2)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT payload FROM state_event WHERE aggregate_id=%s AND event_type='authority.operation.status_changed' ORDER BY sequence_number", [admission.root_operation_id])
+            events = [row[0] for row in cursor.fetchall()]
+        failures = [json.loads(event["reason"]) for event in events if event["reason"].startswith('{"error_code"')]
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0]["error_code"], "RETRIEVAL_TASK_SOURCE_BINDING_INVALID")
+        with patch("novel_forge.modules.chapter_authority.scheduler._admission_implementation_identity", return_value="repaired-code"):
+            with patch.object(scheduler, "_admit_node", side_effect=KernelError("CONTEXT_BINDING_INVALID", "another frozen owner mismatch")):
+                self.assertEqual(scheduler.tick(**args).recovery_mode, "technical_admission_blocked")
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            version = uow.repositories.attempt_runtime.operation_state(admission.root_operation_id, project_id)["version"]
+        request_cancellation(DATABASE_URL, CancelCommand(
+            project_id=project_id, operation_id=admission.root_operation_id, expected_version=int(version),
+            idempotency_key=f"{project_id}:cancel", actor_id="trusted-operator", reason="author cancelled", trace_id=request.trace_id,
+            correlation_id=request.correlation_id, causation_id="author-cancel",
+        ))
+        with patch("novel_forge.modules.chapter_authority.scheduler._admission_implementation_identity", return_value="newer-code"):
+            scheduler.tick(**args)
+        cancelled, _, remaining = scheduler._graph_state(project_id, admission.root_operation_id)
+        self.assertEqual(cancelled["status"], "CANCELLED")
+        self.assertEqual(len(remaining), 2)
+
     def test_admission_does_not_execute_and_ticks_rebuild_full_saga(self) -> None:
         project_id = identifier("async-chapter-project")
         candidates = self._release_evidence(project_id)

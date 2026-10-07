@@ -358,10 +358,37 @@ def coordinate_saga(
             lease_seconds=30,
         )
         uow.cursor.execute(
-            "SELECT status FROM authority_operation WHERE operation_id = %s",
+            "SELECT status FROM authority_operation WHERE operation_id = %s FOR UPDATE",
             [saga["root_operation_id"]],
         )
         root_status = str(uow.cursor.fetchone()[0])
+        if root_status in {"CANCELLATION_REQUESTED", "CANCELLED"}:
+            uow.cursor.execute(
+                """SELECT EXISTS (
+                    SELECT 1 FROM authority_operation child
+                    WHERE child.root_operation_id=%s AND child.project_id=%s AND child.operation_id<>%s
+                      AND child.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','DEAD_LETTER','COMPENSATED')
+                )""", [saga["root_operation_id"], context.project_id, saga["root_operation_id"]],
+            )
+            unresolved = bool(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                """SELECT EXISTS (SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND project_id=%s
+                    AND status NOT IN ('SUCCEEDED','FAILED_FINAL','FAILED_RETRYABLE','CANCELLED'))
+                    OR EXISTS (SELECT 1 FROM authority_attempt WHERE operation_id=%s
+                    AND status IN ('RUNNING','LEASED','QUEUED','CHECKPOINTED','RESULT_SUBMITTED'))""",
+                [saga["root_operation_id"], context.project_id, saga["root_operation_id"]],
+            )
+            unresolved = unresolved or bool(uow.cursor.fetchone()[0])
+            if not unresolved:
+                repository.update_saga(saga_id, int(saga["version"]), "CANCELLED")
+                if root_status != "CANCELLED" and repository.complete_root(saga["root_operation_id"], "CANCELLED"):
+                    _record_operation_transition(repository, context, saga["root_operation_id"], "CANCELLED", lease["fencing_token"])
+                _record(repository, context, saga["root_operation_id"], "authority.saga.cancelled",
+                        {"saga_id": saga_id, "coordinator_fencing_token": lease["fencing_token"]},
+                        aggregate_type="authority_saga", aggregate_id=saga_id)
+            repository.release_coordinator(saga_id, context.actor_id, lease["fencing_token"])
+            uow.commit()
+            return _saga_result("CANCELLATION_REQUESTED" if unresolved else "CANCELLED", steps)
         if root_status == "WAITING_GATE":
             repository.release_coordinator(
                 saga_id,

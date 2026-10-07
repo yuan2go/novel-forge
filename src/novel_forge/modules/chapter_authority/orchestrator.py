@@ -3,6 +3,7 @@ from dataclasses import dataclass, replace
 import json
 from typing import Any
 from uuid import uuid4
+from novel_forge.modules.chapter_authority.chapter_plan_views import resolve_chapter_plan_book_id
 from novel_forge.modules.chapter_authority.contracts import (
     QUALITY_GROUP_NODES,
     ChapterHandlerRegistry,
@@ -949,7 +950,7 @@ def _retrieval_admission_snapshot(
     discovery = discover_accepted_retrieval_candidates(
         database_url,
         project_id=request.project_id,
-        book_id=str(plan.get("book_id") or f"book:{request.project_id}"),
+        book_id=resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan, host_book_id=request.book_id),
         query_plan=query_plan,
     )
     return list(discovery.candidate_inputs), {

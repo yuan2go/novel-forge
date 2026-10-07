@@ -6,6 +6,7 @@ from novel_forge.modules.chapter_authority.chapter_plan_views import (
     build_draft_plan_view,
     normalize_authoritative_chapter_plan,
     qualification_profile_for_plan,
+    resolve_chapter_plan_book_id,
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -329,3 +330,31 @@ class ChapterPlanFidelityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ChapterPlanBookBindingTests(unittest.TestCase):
+    def test_host_book_survives_normalization(self):
+        plan, _ = normalize_authoritative_chapter_plan(
+            project_id="project", expected_book_id="author-book", expected_chapter=1,
+            content={"chapter": 1, "book_id": "author-book", "title": "t", "premise": "p",
+                     "chapter_objective": "o", "scene_sequence": ["s"], "chapter_hook": "h"},
+            asset_version_id="plan:v1", content_hash="hash",
+        )
+        self.assertEqual(plan["book_id"], "author-book")
+        self.assertNotIn("book_id", plan["source_extensions"])
+        self.assertEqual(plan["source_chapter_plan_asset_version_id"], "plan:v1")
+
+    def test_frozen_legacy_extension_resolves_without_mutating_plan(self):
+        plan = {"source_extensions": {"book_id": "author-book"}, "normalized_digest": "old"}
+        self.assertEqual(resolve_chapter_plan_book_id(project_id="p", plan=plan, host_book_id="author-book"), "author-book")
+        self.assertEqual(plan, {"source_extensions": {"book_id": "author-book"}, "normalized_digest": "old"})
+
+    def test_conflicting_book_sources_fail_closed(self):
+        for plan in ({"book_id": "other"}, {"source_extensions": {"book_id": "other"}},
+                     {"book_id": "author-book", "source_extensions": {"book_id": "other"}}):
+            with self.assertRaises(KernelError) as exc:
+                resolve_chapter_plan_book_id(project_id="p", plan=plan, host_book_id="author-book")
+            self.assertEqual(exc.exception.code, "CHAPTER_PLAN_CROSS_BOOK")
+
+    def test_legacy_unscoped_fixture_retains_project_book(self):
+        self.assertEqual(resolve_chapter_plan_book_id(project_id="p", plan={}), "book:p")
