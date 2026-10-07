@@ -502,3 +502,28 @@ def test_terminal_noncapacity_failure_cannot_borrow_cancelled_runtime_continuati
             source_operation_id="source",
             project_id="project",
         )
+
+
+@pytest.mark.parametrize("continued", [False, True])
+def test_recap_context_successor_cannot_revive_cancelled_or_dispatched_source(monkeypatch, continued):
+    from unittest.mock import Mock
+    from novel_forge.modules.story_planning_runtime import application
+
+    command = SimpleNamespace(project_id="project", book_id="book", runtime_continuation_id="prior" if continued else None)
+    monkeypatch.setattr(application, "_command_from_payload", lambda value: command)
+    frozen = {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "execution_contract_version": "1.19.0"}
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        ("FAILED_FINAL", 8, "workspace", frozen, "book", None),
+        ("FAILED_FINAL", {}, {"error_code": "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID"}),
+        (True,),
+    ]
+    code = "BOUND_EXCEEDED" if continued else "DISPATCH_UNSAFE"
+    with pytest.raises(KernelError, match=code):
+        require_source(SimpleNamespace(cursor=cursor), source_operation_id="source", project_id="project")
+
+
+@pytest.mark.parametrize("wrong_contract", ["1.18.0", "1.20.0"])
+def test_recap_context_successor_is_exact_historical_contract_recovery(wrong_contract):
+    with pytest.raises(KernelError, match="SOURCE_INVALID"):
+        require_source(source_uow(status="FAILED_FINAL", error="PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID", command={"execution_contract_version": wrong_contract}), source_operation_id="source", project_id="project")

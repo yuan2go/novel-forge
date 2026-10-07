@@ -1803,6 +1803,8 @@ class StoryPlanningGenerationApplication:
                 uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_operation_output_asset output JOIN authority_asset_version version USING(asset_version_id) WHERE output.operation_id=%s AND version.content#>>'{contract,world_plan,disposition}'='BLOCKED' AND version.content#>'{contract,world_plan,rejected_paths}' @> '[{\"rejection\":{\"code\":\"WORLD_PERCEPTION_ACTOR_INVALID\"}}]'::jsonb)", [row[0]])
                 host_failure = bool(uow.cursor.fetchone()[0])
             if failure and (failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
+                failure[0] == "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID" and command.execution_contract_version == "1.19.0"
+            ) or (
                 failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.18.0" and agency_failure
             ) or (
                 failure[0] == "WORLD_PREPARATION_RESULT_INVALID" and command.execution_contract_version == "1.19.0" and host_failure
@@ -3005,24 +3007,8 @@ class StoryPlanningGenerationApplication:
 
     def _require_arc_recap_change_evidence(self, command: StoryPlanningGenerationCommand,
                                          asset_version_id: str, content: dict[str, Any]) -> None:
-        with AuthorityUnitOfWork(self.database_url) as uow:
-            uow.cursor.execute("""SELECT recap_version.content FROM authority_operation_output_asset request
-                JOIN authority_operation operation USING(operation_id)
-                JOIN authority_operation_output_asset recap ON recap.operation_id=operation.operation_id
-                JOIN authority_asset_version recap_version ON recap_version.asset_version_id=recap.asset_version_id
-                WHERE request.asset_version_id=%s AND request.output_key='longform.recap.replan_request'
-                  AND recap.output_key='longform.recap.report' AND recap.asset_version_id=ANY(%s)
-                  AND operation.definition_name='longform.recap' AND operation.status='SUCCEEDED'
-                  AND operation.project_id=%s""", [asset_version_id, list(command.change_evidence_version_ids), command.project_id])
-            row = uow.cursor.fetchone()
-        recap = dict(row[0]) if row else {}
-        chapter_range = recap.get("chapter_range") or []
-        if (not row or recap.get("book_id") != command.book_id
-            or content.get("type") != "ArcRevisionCandidate" or content.get("contract_version") != "arc-revision-candidate-v1"
-            or content.get("candidate_only") is not True or content.get("plan_mutation_allowed") is not False
-            or content.get("affected_scope") != "ARC" or content.get("impact_scope", {}).get("future_only") is not True
-            or len(chapter_range) != 2 or content.get("future_from_chapter") != int(chapter_range[1]) + 1):
-            raise KernelError("PLANNING_GENERATION_CHANGE_EVIDENCE_INVALID", "Arc proposal requires its exact successful same-Book Recap and future-only scope")
+        from novel_forge.modules.story_planning_runtime.recap_sources import require_arc_recap_change_evidence
+        require_arc_recap_change_evidence(self.database_url, command, asset_version_id, content)
 
     def _record_generation(
         self,

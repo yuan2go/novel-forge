@@ -2271,7 +2271,7 @@ def test_book_search_rejects_oversized_or_drifted_opening_topology_before_activa
 
     oversized = deepcopy(candidate)
     oversized["volume_skeleton"].append({"volume": 5, "goal": "poisoned outer"})
-    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT"):
         _validate_narrative_search_horizon(command, oversized)
     repaired = replace(
         command,
@@ -2283,7 +2283,7 @@ def test_book_search_rejects_oversized_or_drifted_opening_topology_before_activa
     assert repaired.narrative_search_planning_horizon == (
         command.narrative_search_planning_horizon
     )
-    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_EXCEEDED"):
+    with pytest.raises(KernelError, match="NARRATIVE_SEARCH_BOOK_TOPOLOGY_DRIFT"):
         _validate_narrative_search_horizon(repaired, oversized)
 
     drifted = replace(
@@ -3296,7 +3296,8 @@ def test_arc_change_evidence_retains_same_book_recap_and_future_only_scope(monke
             return self
         def __exit__(self, *args):
             return None
-    monkeypatch.setattr(planning_application, "AuthorityUnitOfWork", FakeUow)
+    from novel_forge.modules.story_planning_runtime import recap_sources
+    monkeypatch.setattr(recap_sources, "AuthorityUnitOfWork", FakeUow)
     application = object.__new__(StoryPlanningGenerationApplication)
     application.database_url = "postgresql://unused"
     command = SimpleNamespace(book_id="book-1", project_id="project-1", change_evidence_version_ids=("recap:v1", "arc-proposal:v1"))

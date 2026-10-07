@@ -5508,7 +5508,7 @@ class PostgresPlanningExecutionPreparer:
                 asset_version_id=asset_version_id,
             )
             if (
-                document.asset_type not in {"longform_recap", "replan_request", "longform_prose_review_report"}
+                document.asset_type not in {"longform_recap", "replan_request", "arc_revision_candidate", "longform_prose_review_report"}
                 or document.governance != "CLEAR"
                 or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
             ):
@@ -5516,13 +5516,22 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID",
                     "Planning change evidence drifted after admission",
                 )
+            if document.asset_type == "arc_revision_candidate":
+                from novel_forge.modules.story_planning_runtime.recap_sources import require_arc_recap_change_evidence
+                require_arc_recap_change_evidence(self.database_url, command, asset_version_id, dict(document.content))
             if document.asset_type == "longform_prose_review_report":
                 from novel_forge.modules.book_followup_authority.prose_change_evidence import require_prose_planning_evidence
                 require_prose_planning_evidence(self.database_url, command=command, asset_version_id=asset_version_id, commit_sha=self.planning_route.release_sha)
+            role = f"change_evidence:{ordinal}"
+            retained = [item for item in selected if item["role"] == role]
+            if retained:
+                if len(retained) != 1 or (retained[0]["asset_version_id"], retained[0]["content_hash"]) != (document.asset_version_id, document.content_hash):
+                    raise KernelError("PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID", "Frozen change evidence role differs from its exact command reference")
+                continue
             documents.append(document)
             selected.append(
                 {
-                    "role": f"change_evidence:{ordinal}",
+                    "role": role,
                     "asset_version_id": document.asset_version_id,
                     "asset_type": document.asset_type,
                     "content_hash": document.content_hash,

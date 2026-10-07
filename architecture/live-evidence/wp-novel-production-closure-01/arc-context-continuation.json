@@ -1,0 +1,38 @@
+{
+  "evidence_state": "EXECUTABLE",
+  "engineering_scope": "native future-only Arc Recap planning continuation",
+  "source_operation_id": "d817f86e-b7bc-4230-8250-4c9efd055fe7",
+  "retained_failure": "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID",
+  "controlled_database": "novel_forge_closure_arc_context_20261007_test",
+  "controlled_checks": {
+    "native_context_guards": "PASS",
+    "original_terminal_operation_unchanged": "PASS",
+    "frozen_input_snapshot_hash_preserved": "PASS",
+    "repair_number_preserved": 0,
+    "unknown_or_cancelled_source_rejected": "PASS",
+    "native_capacity_followup": {
+      "prior_task_tokens": 64000,
+      "allocated_task_tokens": 128000,
+      "single_request_ceiling": 238960
+    },
+    "full_provider_request_reached_before_dispatch": "PASS",
+    "provider_dispatches": 0
+  },
+  "observed_duplicate_context_bytes": 31355,
+  "fix": "validate every exact change evidence reference; include a role/version/hash once while preserving original frozen input snapshot",
+  "test_logs": [
+    "arc-context-boundaries-359.log",
+    "arc-context-native-preflight-356.log",
+    "arc-context-focused-364.log",
+    "arc-context-documentation-363.log"
+  ],
+  "real_status": {
+    "accepted_chapters": 1,
+    "target_chapters": 12,
+    "continuous_window": "NOT_COMPLETED",
+    "literary_effect": "NOT_PROVEN",
+    "author_edition_export": "NOT_RUN"
+  },
+  "original_book_id": "closure-original-book",
+  "original_book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920"
+}

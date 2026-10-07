@@ -149,6 +149,9 @@ def require_source(
             frozen=frozen,
             attempt=attempt,
         )
+    if (row[0] == "FAILED_FINAL" and failure_code == "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID"
+        and frozen.get("execution_contract_version") == "1.19.0"):
+        return _recap_context_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
     if (
         row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
         and failure_code == "WORLD_PREPARATION_RESULT_INVALID"
@@ -284,6 +287,82 @@ def require_source(
         "provider": str(identity["provider"]),
         "model_id": str(effects[0][3]),
         "depth": depth + 1,
+    }
+
+
+def _recap_context_source(uow, *, source_operation_id, row, frozen):
+    from .application import _command_from_payload
+    from novel_forge.modules.story_planning_runtime.recap_sources import (
+        require_arc_recap_change_evidence,
+    )
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    command = _command_from_payload(frozen)
+    if command.runtime_continuation_id:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
+            "Recap Context contract correction may occur only once",
+        )
+    uow.cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state IN ('ABORTED','CANCELLED'))
+        OR EXISTS(SELECT 1 FROM authority_story_formation_run formation JOIN authority_story_creation_cancellation cancel USING(formation_run_id)
+                  WHERE formation.project_id=%s AND formation.book_id=%s)""",
+        [
+            source_operation_id,
+            source_operation_id,
+            command.project_id,
+            command.book_id,
+            command.project_id,
+            command.book_id,
+        ],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "Recap correction requires zero intents, zero reservations and a live original creation",
+        )
+    query = AuthorityAssetQuery(uow.database_url)
+    proposals = [
+        query.require(project_id=command.project_id, asset_version_id=item)
+        for item in command.change_evidence_version_ids
+    ]
+    arcs = [item for item in proposals if item.asset_type == "arc_revision_candidate"]
+    if len(arcs) != 1:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
+            "Failure must retain one exact native Arc Recap proposal",
+        )
+    evidence = arcs[0]
+    require_arc_recap_change_evidence(
+        uow.database_url, command, evidence.asset_version_id, dict(evidence.content)
+    )
+    uow.cursor.execute(
+        "SELECT operation.definition_snapshot->>'commit_sha',generation.input_snapshot_hash FROM authority_operation operation JOIN authority_story_planning_generation generation USING(operation_id) WHERE operation.operation_id=%s",
+        [source_operation_id],
+    )
+    release, input_hash = uow.cursor.fetchone()
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    return {
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": evidence.asset_version_id,
+        "evidence_hash": evidence.content_hash,
+        "snapshot": dict(snapshot[0])
+        if snapshot
+        else {
+            "release_sha": release,
+            "pack_snapshot_status": "NOT_CREATED",
+            "input_snapshot_hash": input_hash,
+        },
+        "depth": 1,
+        "mode": "RECAP_CONTEXT_REVALIDATION",
     }
 
 
@@ -1162,6 +1241,8 @@ def register(
         "WORLD_HOST_REVALIDATION",
         "WORLD_HOST_PROJECTION",
     }
+    recap_revalidation = source.get("mode") == "RECAP_CONTEXT_REVALIDATION"
+    local_revalidation = host_revalidation or recap_revalidation
     successor = replace(
         original,
         execution_contract_version="1.19.0"
@@ -1195,11 +1276,14 @@ def register(
             **target,
             "world_host_revalidation": source["world_host_revalidation"],
         }
+    if recap_revalidation:
+        target = {**target, "recap_context_revalidation": {"contract_version": "recap-context-revalidation.v1",
+                  "source_operation_id": source_operation_id, "source_evidence_hash": source["evidence_hash"]}}
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
     if (
         not capacity
         and not contract_change
-        and not host_revalidation
+        and not local_revalidation
         and source["snapshot"]["release_sha"] == application.commit_sha
     ):
         raise KernelError(
@@ -1209,7 +1293,7 @@ def register(
     if (
         not capacity
         and not contract_change
-        and not host_revalidation
+        and not local_revalidation
         and (
             (source["provider"], source["model_id"])
             != (
@@ -1224,7 +1308,12 @@ def register(
             "PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT",
             "runtime continuation cannot switch the frozen Provider model or routing policy",
         )
-    if host_revalidation:
+    if recap_revalidation:
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = _capacity_authorization(uow, source=source, successor=successor, principal=principal, target=target)
+        route_evidence = {**route_evidence, "recap_context_revalidation": "recap-context-revalidation.v1",
+                          "preserved_repair_number": original.repair_number}
+    elif host_revalidation:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(
                 uow,
@@ -1369,9 +1458,15 @@ def register(
                 | {"capacity_only": True}
             )
             or (
+                recap_revalidation
+                and _capacity_authorization(uow, source=current, successor=successor, principal=principal, target=target)
+                != {key: value for key, value in route_evidence.items()
+                    if key not in {"recap_context_revalidation", "preserved_repair_number"}}
+            )
+            or (
                 not capacity
                 and not contract_change
-                and not host_revalidation
+                and not local_revalidation
                 and require_route_evidence(
                     uow,
                     source=current,
@@ -1540,7 +1635,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation"}
+        if key not in {"planning_capacity", "world_host_revalidation", "recap_context_revalidation"}
     }
     if (
         validate_runtime
