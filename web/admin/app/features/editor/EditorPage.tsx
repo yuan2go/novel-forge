@@ -124,7 +124,7 @@ export function EditorPage() {
     void send(command);
   }
   function decide(action: "accept" | "reject") {
-    void send({...baseCommand(action), candidate_asset_version_id: candidate?.asset_version_id, rationale});
+    void send({...baseCommand(action), candidate_asset_version_id: candidate?.asset_version_id, rationale: rationale.trim() || (action === "accept" ? "作者采用当前候选" : "作者拒绝当前候选")});
   }
   async function review() {
     if (!state || lock.current) return;
@@ -192,10 +192,10 @@ export function EditorPage() {
     <section className="panel"><PanelHeader title="修改对照与决定" icon={<GitPullRequest size={18} />} />
       {candidate?.content.edits.map((edit, index) => <div key={index}><p>基准位置 [{edit.start}, {edit.end})</p><del>{edit.before || "（插入位置）"}</del><ins>{edit.after || "（删除）"}</ins></div>)}
       <p>诊断与语义影响：新候选尚需独立复核。作者采用不代表连续性、Craft 或正文质量已通过。</p>
-      <textarea aria-label="决定理由" value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="说明采用或拒绝本候选的理由" rows={3} />
+      <textarea aria-label="决定理由" value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="可选：说明采用或拒绝本候选的理由" rows={3} />
       <div className="studioActions">
-        <button className="primaryButton" disabled={busy || !!pending || dirty || state?.session?.status !== "SAVED_CANDIDATE" || !rationale.trim()} onClick={() => decide("accept")}>{EDITOR_COMMANDS[1]}</button>
-        <button className="secondaryButton" disabled={busy || !!pending || state?.session?.status !== "SAVED_CANDIDATE" || !rationale.trim()} onClick={() => decide("reject")}>{EDITOR_COMMANDS[2]}</button>
+        <button className="primaryButton" disabled={busy || !!pending || dirty || state?.session?.status !== "SAVED_CANDIDATE"} onClick={() => decide("accept")}>{EDITOR_COMMANDS[1]}</button>
+        <button className="secondaryButton" disabled={busy || !!pending || state?.session?.status !== "SAVED_CANDIDATE"} onClick={() => decide("reject")}>{EDITOR_COMMANDS[2]}</button>
         <button className="primaryButton" disabled={busy || !!pending || dirty || !!reviewStatus || (!!state?.book_request && (!state.book_request.is_current || !state.book_request.unaccepted)) || state?.session?.status !== "ADOPTED_PENDING_REVIEW"} onClick={review}>{EDITOR_COMMANDS[3]}</button>
       </div>
     </section>

@@ -92,6 +92,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         if not args.candidate_version:
             raise ValueError("Choose the exact candidate version from the diff")
         body["candidate_asset_version_id"] = args.candidate_version
+        body["rationale"] = args.reason or ("Author adopts the exact candidate" if action == "accept" else "Author rejects the exact candidate")
     intent = {key: value for key, value in body.items() if key != "expected_version"}
     if action != "save":
         for key in ("base_asset_version_id", "base_asset_hash", "base_text_hash"):
