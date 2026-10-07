@@ -1669,6 +1669,11 @@ class _ReReviewHandler:
             review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
         from .review_window import prepare_native_review, require_review_frontier
         revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
+        if request.definition_version == "3.9.3" and revision.content.get("quality_edit_contract"):
+            quality = request.require_input("quality_score_report")
+            if quality.asset_version_id != revision.content.get("source_quality_asset_version_id"):
+                raise KernelError("QUALITY_REVISION_LINEAGE_CONFLICT", "ReReview must bind the exact source Quality")
+            payload["revision"] = {**payload["revision"], "quality_work_constraints": quality.content.get("internal_admission", {}).get("work_constraints", [])}
         reviewed = self.provider.invoke(
             request,
             stage="rereview",
@@ -1752,6 +1757,15 @@ class _BestCandidateHandler:
                     - {""}
                 )
             )
+        quality_checks = list(rereview.content.get("quality_resolution_checks") or [])
+        if prior_quality is not None and request.definition_version == "3.9.1":
+            if prior_quality.asset_version_id != revision.content.get("source_quality_asset_version_id"):
+                raise KernelError("QUALITY_REVISION_LINEAGE_CONFLICT", "Comparison must bind the exact source Quality")
+            from novel_forge.modules.chapter_quality_authority.creative_validation import candidate_work_constraint_checks
+            quality_checks = candidate_work_constraint_checks(revision=revision.content, target=revision.asset_version_id,
+                quality=prior_quality.content, checks=quality_checks)
+            previous_blockers = tuple(sorted(set(incumbent.blocker_codes if existing_best is not None else _blocking_issue_codes(previous_review.content))
+                | {str(action["observation"]) for action in prior_quality.content.get("required_actions", []) if action["required_action"] != "EVIDENCE_REASSESSMENT"}))
         generation = int(request.command.get("correction_generation") or 0)
         threshold = float(
             (request.command.get("preparation_report") or {}).get(
@@ -1777,14 +1791,14 @@ class _BestCandidateHandler:
                 content=revision.content,
                 score=require_review_score(rereview.content),
                 blocker_codes=tuple(sorted(set(_blocking_issue_codes(rereview.content)) | {
-                    check["observation"] for check in rereview.content.get("quality_resolution_checks", [])
+                    check["observation"] for check in quality_checks
                     if check["status"] != "SATISFIED" or check["preservation"] != "PRESERVED"})),
                 review_asset_version_id=rereview.asset_version_id,
                 diagnostic_contract_version=str(rereview.content.get("diagnostic_contract_version") or ""),
                 resolution_checks=tuple(rereview.content.get("resolution_checks") or []),
                 cross_chapter_review=bool(rereview.content.get("cross_chapter_window")),
                 preservation_checks=tuple(rereview.content.get("preservation_checks") or []),
-                quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
+                quality_resolution_checks=tuple(quality_checks),
             ),
             minimum_net_improvement=threshold,
             correction_generation=generation,

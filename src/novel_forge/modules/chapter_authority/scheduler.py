@@ -322,6 +322,25 @@ class ChapterAuthorityScheduler:
             generation=generation,
             root_idempotency_key=root_key,
         )
+        correction_suffix = f":quality-correction:{generation}"
+        legacy_best = correction.get(ChapterNode.BEST_CANDIDATE)
+        if legacy_best is not None and legacy_best["status"] == "SUCCEEDED":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT definition_version FROM authority_operation WHERE operation_id=%s", [legacy_best["operation_id"]])
+                legacy_version = uow.cursor.fetchone()[0]
+            quality_ref = self._primary_output(str(initial_quality["operation_id"]), request.project_id)
+            quality_content = self._asset_content(quality_ref["asset_version_id"], request.project_id)
+            if legacy_version == "3.9.0" and quality_content.get("internal_admission", {}).get("work_constraints"):
+                correction_suffix += ":work-constraints"
+                corrected = {node: operation for node, operation in correction.items() if node in {ChapterNode.REVISION, ChapterNode.REREVIEW}}
+                for node in ChapterNode:
+                    if node in corrected:
+                        continue
+                    operation = self._initial_operation(root_operation_id=str(root["operation_id"]), project_id=request.project_id,
+                        node=node, idempotency_key=f"{root_key}:{node.value}{correction_suffix}")
+                    if operation is not None:
+                        corrected[node] = operation
+                correction = corrected
         aggregate = correction.get(ChapterNode.QUALITY)
         if aggregate is not None and aggregate["status"] == "SUCCEEDED":
             children.update(correction)
@@ -411,7 +430,7 @@ class ChapterAuthorityScheduler:
                     saga_id=str(saga["saga_id"]),
                     children=children,
                     node=node,
-                    idempotency_suffix=f":quality-correction:{generation}",
+                    idempotency_suffix=correction_suffix,
                     register_step=False,
                     explicit_inputs=inputs,
                     dependency_operation_ids=dependencies,
@@ -848,6 +867,7 @@ class ChapterAuthorityScheduler:
                     common[ChapterNode.BEST_CANDIDATE],
                     revision_ref,
                     common[ChapterNode.CONTEXT],
+                    quality_ref,
                 ],
                 [str(revision_operation["operation_id"])],
             )

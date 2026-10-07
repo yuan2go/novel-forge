@@ -516,6 +516,8 @@ def _definition(
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",
             **({"canon_evidence_span": "literal-source-spans.v1", "canon_gateway_contract": "chapter-node-contracts.v1", "canon_schema_compaction": "typed-extraction-json.v1", "canon_observation_projection": "typed-observed-state.v1", "canon_transition_preconditions": "accepted-cas.v1", "known_receipt_revalidation": "chapter-known-receipt.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
+            **({"candidate_work_constraints": "objective-with-preservation.v1"} if model_effects_required and node is ChapterNode.BEST_CANDIDATE and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
+            **({"quality_reassessment_inputs": "exact-work-constraints.v1"} if model_effects_required and node is ChapterNode.REREVIEW and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"internal_quality_decision": "work-constraints.v2"} if model_effects_required and node is ChapterNode.QUALITY and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"quality_evidence_spans": "literal-source-spans.v1", "quality_applicability": "host-work-applicability.v1"} if model_effects_required and node in CHAPTER_QUALITY_PROVIDER_NODES and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"canon_support_kinds": "canon-claim-kinds.v1"} if model_effects_required and node is ChapterNode.CANON_PROPOSAL and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
@@ -549,8 +551,8 @@ def _definition_maturity_metadata() -> dict[str, Any]:
 def chapter_node_definition_version(node: ChapterNode, model_effects_required: bool) -> str:
     if model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0":
         return {ChapterNode.DRAFT: CHAPTER_DRAFT_DEFINITION_VERSION,
-            ChapterNode.REVIEW: "3.9.1", ChapterNode.REREVIEW: "3.9.2",
-            ChapterNode.CANON_EXTRACTION: "3.9.7", ChapterNode.CANON_PROPOSAL: "3.9.1", ChapterNode.QUALITY: "3.9.1",
+            ChapterNode.REVIEW: "3.9.1", ChapterNode.REREVIEW: "3.9.3",
+            ChapterNode.BEST_CANDIDATE: "3.9.1", ChapterNode.CANON_EXTRACTION: "3.9.7", ChapterNode.CANON_PROPOSAL: "3.9.1", ChapterNode.QUALITY: "3.9.1",
             **{node: "3.9.1" for node in CHAPTER_QUALITY_PROVIDER_NODES}}.get(node, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION)
     return chapter_definition_version(model_effects_required)
 

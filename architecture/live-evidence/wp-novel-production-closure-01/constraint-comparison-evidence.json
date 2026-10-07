@@ -1,0 +1,46 @@
+{
+  "work_package": "WP-NOVEL-PRODUCTION-CLOSURE-01",
+  "implementation_parent_sha": "41f0d4e991ac1552aee45492b7c25ecf74a731d4",
+  "evidence_state": "EXECUTABLE",
+  "original_book": "closure-original-book",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "original_revision": "authority-output:648c37b7-0e9b-4afd-a857-e90e03185691:chapter.revision:v1",
+  "real_revision_evidence": {
+    "runtime_sha": "41f0d4e991ac1552aee45492b7c25ecf74a731d4",
+    "source_length": 1124,
+    "revision_length": 1265,
+    "bounds": [
+      1200,
+      2400
+    ],
+    "unit": "UNICODE_CODE_POINTS_V1",
+    "model_score_delta": -5,
+    "model_preservation": "PRESERVED",
+    "model_length_status": "UNCERTAIN: frozen range omitted from old review request",
+    "selected_by_old_contract": "ORIGINAL_RETAINED",
+    "literary_improvement": "NOT_PROVEN"
+  },
+  "controlled_native_reassessment": {
+    "focused_tests": 76,
+    "subtests": 39,
+    "provider_dispatches": 0,
+    "same_successful_revision_and_review": true,
+    "selected": "REVISED: measured hard requirement satisfied; model preservation retained",
+    "resolved_prose_blocker": "chapter_length",
+    "canon_status": "requires fresh extraction and review for selected exact prose",
+    "full_rendered_canon_input_units": 219583,
+    "output_reserve": 32768,
+    "capacity": 272000,
+    "schema": "canon_extraction:v28"
+  },
+  "accepted_chapters": 0,
+  "target_chapters": 12,
+  "private_evidence": [
+    "constraint-comparison-tests-247.log",
+    "constraint-comparison-preflight-249.log",
+    "constraint-comparison-controlled-249.json",
+    "constraint-comparison-rendered-admission-249.json",
+    "real/before-constraint-comparison-248.dump"
+  ],
+  "real_running_for_new_contract": "NOT_RUN"
+}

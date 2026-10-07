@@ -117,7 +117,6 @@ def verify_internal_quality(database_url: str, admission: Mapping[str, Any], *, 
 
 
 def receipt_work_constraints(database_url, *, project_id, receipts, target):
-    import unicodedata
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
     receipt = next(row for row in receipts if row["stage"] == "quality_platform")
     with AuthorityUnitOfWork(database_url) as u:
@@ -135,7 +134,7 @@ def receipt_work_constraints(database_url, *, project_id, receipts, target):
     if unit not in {"UNICODE_CODE_POINTS_V1", "HAN_CHARACTERS_V1"}:
         raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", unit)
     text = AuthorityAssetQuery(database_url).require(project_id=project_id, asset_version_id=target).content["text"]
-    observed = len(text) if unit == "UNICODE_CODE_POINTS_V1" else sum(unicodedata.name(char, "").startswith(("CJK UNIFIED IDEOGRAPH-", "CJK COMPATIBILITY IDEOGRAPH-")) for char in text)
+    observed = measure_length(text, unit)
     return ({"dimension": "chapter_length", "status": "PASSED" if minimum <= observed <= maximum else "FAILED",
         "source_policy": policy["source_asset_version_id"], "policy_digest": policy["policy_digest"],
         "target_asset_version_id": target, "unit": unit, "minimum": minimum, "maximum": maximum, "observed": observed,
@@ -178,3 +177,35 @@ def apply_work_constraint_actions(content, *, admission, revision, target, canon
     content["decision_chain"] = {**content["decision_chain"], "required_actions": content["required_actions"],
         "mode": MODE, "literary_qualification": "NOT_RUN"}
     return content
+
+
+def measure_length(text, unit):
+    import unicodedata
+    if unit == "UNICODE_CODE_POINTS_V1":
+        return len(text)
+    if unit == "HAN_CHARACTERS_V1":
+        return sum(unicodedata.name(char, "").startswith(("CJK UNIFIED IDEOGRAPH-", "CJK COMPATIBILITY IDEOGRAPH-")) for char in text)
+    raise KernelError("CHAPTER_LENGTH_UNIT_INVALID", unit)
+
+
+def candidate_work_constraint_checks(*, revision, target, quality, checks):
+    from copy import deepcopy
+    rows = deepcopy(checks)
+    for constraint in quality.get("internal_admission", {}).get("work_constraints", ()):
+        if constraint["dimension"] not in revision.get("quality_action_observations", ()):
+            continue
+        if constraint["target_asset_version_id"] != revision.get("source_revision_asset_version_id"):
+            raise KernelError("QUALITY_REVISION_LINEAGE_CONFLICT", "Objective constraint must bind the frozen revision source")
+        if constraint["dimension"] != "chapter_length":
+            continue
+        observed = measure_length(revision["text"], constraint["unit"])
+        passing = constraint["minimum"] <= observed <= constraint["maximum"]
+        for check in rows:
+            if check["observation"] == constraint["dimension"]:
+                if check["target_asset_version_id"] != target:
+                    raise KernelError("QUALITY_REREVIEW_CHECKS_INVALID", "Measurement requires the reviewed exact candidate")
+                check.update(model_status=check["status"], status="SATISFIED" if passing else "UNRESOLVED",
+                    evidence_class="OBJECTIVE_WORK_CONSTRAINT_WITH_MODEL_PRESERVATION",
+                    objective_verification={**constraint, "target_asset_version_id": target, "observed": observed,
+                        "status": "PASSED" if passing else "FAILED"})
+    return rows

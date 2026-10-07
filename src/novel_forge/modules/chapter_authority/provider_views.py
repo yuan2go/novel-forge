@@ -940,6 +940,7 @@ def build_provider_task_view(
                         "source_edit_contract": deepcopy(
                             revision["quality_edit_contract"]
                         ),
+                        "work_constraints": deepcopy(revision.get("quality_work_constraints", [])),
                         "observations": deepcopy(
                             revision["quality_action_observations"]
                         ),

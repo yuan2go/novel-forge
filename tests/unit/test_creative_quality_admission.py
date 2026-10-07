@@ -92,3 +92,25 @@ def test_typed_canon_interface_conflicts_remain_blocking_but_do_not_authorize_pr
         corrected = apply_work_constraint_actions(content, admission=admission, revision={}, target="draft", canon={"conflicts": [{"conflict_code": code}]})
         assert corrected["required_actions"][0]["required_action"] == action
         assert admission["blocked_dimensions"] == ["canon_consistency"]
+
+
+@pytest.mark.parametrize("preservation,selected", [("PRESERVED", "revised"), ("REGRESSED", "original")])
+def test_objective_length_resolution_and_model_preservation_decide_together(preservation, selected):
+    from novel_forge.modules.chapter_quality_authority.creative_validation import candidate_work_constraint_checks
+    from novel_forge.modules.chapter_authority.candidate_selection import CandidateEvidence, compare_candidates
+    from novel_forge.modules.review.diagnostics import prose_hash
+    old, new = "行动。", "行动之后，她把手里的纸递过去。"
+    quality = {"internal_admission": {"work_constraints": [{"dimension": "chapter_length", "target_asset_version_id": "workspace",
+        "minimum": 10, "maximum": 100, "unit": "UNICODE_CODE_POINTS_V1"}]}}
+    revision = {"text": new, "source_revision_asset_version_id": "workspace", "source_quality_asset_version_id": "quality",
+        "quality_action_observations": ["chapter_length"]}
+    original_checks = [{"observation": "chapter_length", "status": "UNCERTAIN", "preservation": preservation,
+        "target_asset_version_id": "revised", "target_text_hash": prose_hash(new), "source_quality_asset_version_id": "quality"}]
+    checks = candidate_work_constraint_checks(revision=revision, target="revised", quality=quality, checks=original_checks)
+    assert original_checks[0]["status"] == "UNCERTAIN" and checks[0]["model_status"] == "UNCERTAIN"
+    comparison = compare_candidates(project_id="p", chapter_root_operation_id="root",
+        previous=CandidateEvidence("original", {"text": old}, 97, ("chapter_length",), "review-original"),
+        challenger=CandidateEvidence("revised", revision, 92, (), "review-new", diagnostic_contract_version="actionable-diagnostics.v1",
+            quality_resolution_checks=tuple(checks)), minimum_net_improvement=3)
+    assert comparison["selected_asset_version_id"] == selected
+    assert comparison["net_improvement"] == -5 and comparison["literary_quality_proven"] is False

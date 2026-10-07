@@ -3164,3 +3164,13 @@ clone without Provider dispatch, then resume the original Creation with
 `authority-creation recover --project-id <project> --formation-run-id <original-run>
 --idempotency-key <new-recovery-key> --reason <diagnosis> --repository-root <checkout>`.
 Keep actual runtime SHA separate from the frozen Pack release identity.
+
+
+When a legacy correction review reports length uncertainty because its request omitted
+the frozen range, compare the exact candidate through the native objective-constraint
+contract. Retain the original model judgment and verify preservation independently.
+The scheduler appends a `work-constraints` decision generation under the original
+correction; it reuses successful Revision/ReReview, retains the earlier comparison and
+receipts, and reevaluates extraction and Quality for the newly selected exact candidate.
+This is contract succession, not an increased prose repair allowance. Verify with
+`tests/unit/test_best_candidate_selection.py` and the work-constraint focused matrix.

@@ -2159,3 +2159,16 @@ not create accepted knowledge. Missing baselines never imply a fabricated UNKNOW
 state. Extraction CAS/typed-plan disagreement requests evidence reassessment, keeps
 Canon blocked, and cannot authorize editing unlocated prose. Correction inputs follow
 durable Kernel successors instead of stale predecessor IDs.
+
+
+Candidate comparison verifies objective work constraints against each exact candidate.
+A frozen length range is measured by the host, while model preservation findings remain
+unchanged and traceable. Original model uncertainty/score is retained alongside the
+measurement; a score decline is not concealed. Extraction-only reassessment does not
+count as a prose blocker resolved by revision. Genuine unresolved prose issues or
+regressed preservation retain the original, which still cannot bypass hard acceptance.
+Current ReReview requests include the exact source Quality and frozen work constraints.
+Legacy completed comparisons lacking those measurements receive an appended native
+decision reassessment; the already generated prose and review are reused, while a changed
+selected candidate requires its own extraction and Quality evidence. No earlier operation,
+receipt or comparison is edited, and consumption stays with the original Book.
