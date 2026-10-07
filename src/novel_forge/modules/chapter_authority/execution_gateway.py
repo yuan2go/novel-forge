@@ -2075,7 +2075,7 @@ class PostgresChapterExecutionContractBinder:
         )
 
         from .definitions import (
-            CHAPTER_DRAFT_DEFINITION_VERSION,
+            chapter_node_definition_version,
             CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
             CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
             CHAPTER_SLICE_DEFINITION_VERSION,
@@ -2092,8 +2092,7 @@ class PostgresChapterExecutionContractBinder:
             str(row[0]) in {ChapterNode.REVIEW.definition_name,ChapterNode.REREVIEW.definition_name} and str(row[1]) in {"3.9.1", "3.9.2"}
         )
         compatible = compatible or (
-            str(row[0]) == ChapterNode.DRAFT.definition_name
-            and str(row[1]) == CHAPTER_DRAFT_DEFINITION_VERSION
+            any(str(row[0]) == node.definition_name and str(row[1]) == chapter_node_definition_version(node, True) for node in ChapterNode)
         )
         if str(row[0]).startswith("chapter.") and not compatible and not chapter_sample_definition_supported(str(row[0]), str(row[1])):
             raise KernelError(

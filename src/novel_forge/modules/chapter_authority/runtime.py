@@ -19,7 +19,7 @@ from novel_forge.modules.chapter_authority.definitions import (
     CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
     CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
     CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION,
-    chapter_definition_version,
+    chapter_node_definition_version,
 )
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -44,11 +44,7 @@ def _handler_definition_version(
     expected = (
         CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION
         if author_input and node is ChapterNode.DRAFT
-        else "3.9.1" if registry.model_effects_required and node is ChapterNode.CANON_EXTRACTION
-        else "3.9.2" if registry.model_effects_required and node is ChapterNode.REREVIEW
-        else "3.9.1" if registry.model_effects_required and node is ChapterNode.REVIEW
-        else "3.9.2" if registry.model_effects_required and node is ChapterNode.DRAFT
-        else chapter_definition_version(registry.model_effects_required)
+        else chapter_node_definition_version(node, registry.model_effects_required)
     )
     if registry.model_effects_required:
         with AuthorityUnitOfWork(database_url) as uow:

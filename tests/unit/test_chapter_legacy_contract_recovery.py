@@ -107,6 +107,23 @@ def test_gateway_legacy_graph_compatibility_is_bounded(monkeypatch, version, acc
             binder._operation_graph("operation", "project")
 
 
+@pytest.mark.parametrize("node", list(ChapterNode))
+def test_gateway_accepts_every_current_node_contract(monkeypatch, node):
+    from novel_forge.modules.chapter_authority import execution_gateway
+    from novel_forge.modules.chapter_authority.definitions import chapter_node_definition_version
+    version = chapter_node_definition_version(node, True)
+    cursor = MagicMock()
+    cursor.fetchone.return_value = (node.definition_name, version, "root", "saga")
+    cursor.__enter__.return_value = cursor
+    connection = MagicMock()
+    connection.__enter__.return_value = connection
+    connection.cursor.return_value = cursor
+    monkeypatch.setattr(execution_gateway, "get_database_runtime", lambda _: SimpleNamespace(connection=lambda: connection))
+    binder = object.__new__(PostgresChapterExecutionContractBinder)
+    binder.database_url = "unused"
+    assert binder._operation_graph("operation", "project")["definition_version"] == version
+
+
 @pytest.mark.parametrize("version", ["3.4.1", CHAPTER_MODEL_EFFECT_DEFINITION_VERSION])
 def test_pack_request_uses_original_workflow_and_operation_version(version):
     binder = object.__new__(PostgresChapterExecutionContractBinder)

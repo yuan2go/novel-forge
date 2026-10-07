@@ -1,0 +1,36 @@
+{
+  "evidence_kind": "NATIVE_CANON_SOURCE_SPAN_CONTRACT_SUCCESSOR",
+  "database": "novel_forge_closure_canon_gateway_20261007_test",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "definition_version": "3.9.2",
+  "source_saga_status": "MANUAL_INTERVENTION",
+  "failure_status": "DEAD_LETTER_PRESERVED",
+  "successful_siblings": [
+    [
+      "chapter.context.build",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ]
+  ],
+  "effects_before": 60,
+  "effects_after": 60,
+  "provider_dispatches": 0,
+  "exact_inputs_preserved": true,
+  "idempotent_recovery": true,
+  "book_noop_reconciliation": true,
+  "pack_version": "2.19.0",
+  "migration_fresh_and_restore": "PASS",
+  "real_writer": "NOT_RUN",
+  "predecessor_extraction": "9138924f-1465-47a4-85a4-562169793e59",
+  "successor_extraction": "2c864956-0025-45e5-9515-9240da028583",
+  "window_renewed": false,
+  "evidence_state": "EXECUTABLE",
+  "real_provider_successor": "NOT_RUN"
+}

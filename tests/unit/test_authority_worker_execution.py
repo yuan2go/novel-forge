@@ -92,6 +92,8 @@ class AuthorityWorkerExecutionTests(unittest.TestCase):
                     WorkerFailureClass.FINAL_FAILURE,
                 )
                 for code in (
+                    "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED",
+                    "CAPABILITY_PACK_OPERATION_DEFINITION_DRIFT",
                     "BUDGET_SCOPE_CONFLICT",
                     "BUDGET_SCOPE_NOT_FOUND",
                     "BOOK_OPENING_BUDGET_EFFECT_BINDING_REQUIRED",

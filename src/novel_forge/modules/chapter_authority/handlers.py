@@ -1943,7 +1943,7 @@ class _CanonExtractionHandler:
         context = request.require_input("context_bundle")
         provider_extraction = None
         generated: ModelProviderResult | None = None
-        span_contract = request.definition_version == "3.9.1"
+        span_contract = request.definition_version in {"3.9.1", "3.9.2"}
         span_inputs = {}
         if span_contract:
             from novel_forge.modules.canon_graph.source_spans import source_spans

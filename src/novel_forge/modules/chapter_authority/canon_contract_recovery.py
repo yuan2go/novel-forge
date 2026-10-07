@@ -28,8 +28,9 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             return False
         u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
-            AND o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.0'
-            AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_INVALID'""",
+            AND o.definition_name='chapter.canon.extract'
+            AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_INVALID')
+              OR (o.definition_version='3.9.1' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED'))""",
             [request["chapter_root_operation_id"], book["project_id"]])
         row = u.cursor.fetchone()
         if not row:
@@ -37,9 +38,18 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         source = row[0]
         u.cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'", [source["operation_id"]])
         effects = u.cursor.fetchall()
-        if len(effects) != 1:
+        predispatch = source["definition_version"] == "3.9.1"
+        previous_evidence = None
+        if predispatch:
+            u.cursor.execute("SELECT policy_evidence,source_failure_snapshot FROM authority_saga_step_successor WHERE successor_operation_id=%s", [source["operation_id"]])
+            prior = u.cursor.fetchone()
+            if (not prior or prior[0].get("contract_version") != CONTRACT or effects
+                or prior[1]["operation"]["input_asset_snapshot"] != source["input_asset_snapshot"]):
+                raise KernelError("CANON_CONTRACT_SOURCE_INVALID", "Only the recorded undispatched interface successor may continue")
+            previous_evidence = prior[0]
+        elif len(effects) != 1:
             raise KernelError("CANON_CONTRACT_RECONCILIATION_REQUIRED", "One exact succeeded source receipt is required")
-        result = _receipt(u.cursor, effects[0][0], book["project_id"])
+        result = _receipt(u.cursor, (previous_evidence["source_effect_id"] if predispatch else effects[0][0]), book["project_id"])
     inputs = [AuthorityAssetQuery(authority.database_url).require(project_id=book["project_id"], asset_version_id=a["asset_version_id"]) for a in source["input_asset_snapshot"]]
     revision = next(a for a in inputs if a.asset_type == "best_draft_candidate")
     context = next(a for a in inputs if a.asset_type == "context_bundle")
@@ -52,7 +62,8 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         raise KernelError("CANON_CONTRACT_DEFECT_UNPROVEN", "The source receipt must expose the corrected interface defect")
     evidence = {"contract_version": CONTRACT, "book_run_id": book_run_id,
         "chapter_request_id": request["chapter_request_id"], "policy_admission": template,
-        "source_effect_id": effects[0][0], "source_request_hash": effects[0][1],
+        "source_effect_id": previous_evidence["source_effect_id"] if predispatch else effects[0][0],
+        "source_request_hash": previous_evidence["source_request_hash"] if predispatch else effects[0][1],
         "repair_diagnostics": diagnostics, "completion_checks": "UNCHANGED",
         "source_candidate_asset_version_id": revision.asset_version_id,
         "source_candidate_content_hash": revision.content_hash}
@@ -64,12 +75,12 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
             raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload the original Book frontier and authorization")
 
-    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.1",
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.2",
         context=AdmissionContext(principal.principal_id, principal.permissions,
             authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
-        policy_evidence=evidence, expected_failure_code="CANON_GROUNDING_INVALID", transaction_guard=guard,
+        policy_evidence=evidence, expected_failure_code="CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED" if predispatch else "CANON_GROUNDING_INVALID", transaction_guard=guard,
         known_receipt_effects=tuple(effects),
-        window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_evidence_span", "policy_value": "literal-source-spans.v1"})
+        window_successor=None if predispatch else {"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_evidence_span", "policy_value": "literal-source-spans.v1"})
     return True
 
 

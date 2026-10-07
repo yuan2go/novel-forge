@@ -1681,7 +1681,7 @@ carry actor-local knowledge. Draft requires complete slot coverage; targeted Rev
 edits one frozen candidate and deterministically derives updated Slot representation.
 Mechanical Slot joining does not establish narrative coherence. A revision retains the frozen
 contract, identifies changed slots and reruns the existing Review, Quality and Actual
-reconciliation chain. Chapter Pack 2.18.0 binds System v3, Prompt Template v9 and
+reconciliation chain. Chapter Pack 2.19.0 binds System v3, Prompt Template v9 and
 prose-generation-v4. Its renderer selects shared prose rules plus exactly one Draft,
 full Revision or targeted Revision method. Memo, Review and quality dimensions select
 their own methods. Screenplay packs select adaptation methods rather than novel Slot
@@ -2095,3 +2095,9 @@ window of its original bounded duration. Explicit author deadlines, cancellation
 unknown consumption and live leases prevent continuation; unchanged contracts and
 ordinary retries cannot renew it. Book recovery binds the exact current frontier and
 authorized template before invoking this Kernel boundary.
+
+Chapter node versions are resolved by `chapter_node_definition_version` for admission,
+handler selection and Gateway compatibility. Historical versions remain bounded by
+their existing compatibility rules. A recorded Canon predispatch version rejection can
+receive a same-Saga interface successor without renewing its existing execution window
+or sending the rejected request.
