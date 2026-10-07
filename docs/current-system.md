@@ -2156,6 +2156,20 @@ be reinterpreted as historical capability fragments. A mixed source contract nee
 structural planning rather than an implicit conversion. Edition validation still
 binds current accepted-prefix sources and reviews the exact submitted prose.
 
+The real continuing Canon request exposed a capacity defect in the current 3.9.8
+contract: CAS baselines repeated full accepted state evidence, while Context repeated
+Writer Intent, Memo, retrieval mechanics and style. These copies are not additional
+Canon authority. The correction must retain frozen source/version, scalar preconditions,
+selected history and actual prose while excluding those operational duplicates.
+Until its versioned successor passes actual extraction and acceptance, the continuing
+Canon frontier remains blocked; the earlier Chapter evidence does not prove it.
+Canon 3.9.9 / Pack 2.34 implements `canon-source-context.v1`: scalar precondition
+projection preserves the identical inner Schema and exact source identities; the
+Canon Context retains cast, plan, accepted history and Arc data, while omitting Writer
+mechanics already represented by the exact execution expectations. Malformed accepted
+preconditions still fail closed. A native zero-effect capacity successor preserves
+the failed source, settled Chapter inputs and unchanged resource/repair limits.
+
 Review 3.9.1 and ReReview 3.9.2 bind knowledge checks to the exact Context review targets.
 Their Provider Schema v7 fixes the target count and permitted identities; an empty
 target set requires an empty check array. Historical receipt revalidation preserves

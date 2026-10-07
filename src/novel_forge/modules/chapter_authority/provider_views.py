@@ -1011,7 +1011,7 @@ def build_provider_task_view(
             stage,
             final_candidate=_prose(inputs.get("revision")),
             execution_expectations=_compact(without_private_world(inputs.get("execution_expectations"))),
-            **({key: inputs[key] for key in ("source_span_table", "world_transition_contract", "observer_transition_constraints", "repair_diagnostics", "source_span_schema_contract", "transition_precondition_contract", "accepted_transition_baselines", "transition_result_contract", "canonical_transition_results") if key in inputs}
+            **({key: inputs[key] for key in ("source_span_table", "world_transition_contract", "observer_transition_constraints", "repair_diagnostics", "source_span_schema_contract", "transition_precondition_contract", "accepted_transition_baselines", "transition_result_contract", "canonical_transition_results", "canon_context_projection") if key in inputs}
                if (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1" else {}),
         )
     if stage.startswith("quality_"):
@@ -1602,6 +1602,11 @@ def build_provider_context_view(
             omitted_segments += 1
             continue
         asset_type = str(raw.get("asset_type") or "")
+        if stage == "canon_extraction" and task_view.get("canon_context_projection") == "canon-source-context.v1" and asset_type in {
+            "chapter_execution_intent", "chapter_memo", "retrieval_result", "style_policy"}:
+            omitted_segments += 1
+            omitted_facts += len(raw.get("structured_facts") or ())
+            continue
         if stage == "draft" and asset_type in {"chapter_plan", "style_policy"}:
             omitted_segments += 1
             omitted_facts += len(raw.get("structured_facts") or ())

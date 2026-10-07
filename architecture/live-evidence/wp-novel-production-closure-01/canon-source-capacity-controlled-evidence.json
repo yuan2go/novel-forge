@@ -1,0 +1,78 @@
+{
+  "schema_version": "wp-novel-production-closure-01.focused-evidence.v1",
+  "baseline_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tested_parent_sha": "66fadd91e0c5fd34fcde42d09e4d79ae6bc73513",
+  "implementation_tree_sha": "sha256:66480ce9f153dbb59013fb8c8f837bef04ed5442d51d34b474f484df14363166",
+  "definitions": {
+    "canon_extract": "3.9.9",
+    "chapter_pack": "2.34.0",
+    "migration_head": "0167"
+  },
+  "checks": [
+    {
+      "check": "scalar preconditions preserve original Schema and exact source identities; operational Context omission retains story sources",
+      "result": "PASS",
+      "tests": 111,
+      "subtests": 1302,
+      "private_evidence": "unit-527.log"
+    },
+    {
+      "check": "malformed accepted preconditions remain blocked after projection",
+      "result": "PASS",
+      "tests": 21,
+      "private_evidence": "test_canon_source_spans.py focused rerun"
+    },
+    {
+      "check": "native original restored-checkpoint same-Saga zero-effect capacity successor idempotency",
+      "result": "PASS",
+      "provider_dispatch": "FORBIDDEN",
+      "private_evidence": "canon-source-preflight-528.log"
+    },
+    {
+      "check": "controlled two-Chapter continuous production, author local Edition edit, review, selection and exact formal export",
+      "result": "PASS",
+      "tests": 1,
+      "duration_seconds": 129.83,
+      "provider": "CONTROLLED",
+      "private_evidence": "controlled-cli-527.log"
+    },
+    {
+      "check": "canonical documentation reality",
+      "result": "PASS",
+      "private_evidence": "docs-529.json"
+    }
+  ],
+  "real_failure": {
+    "operation_id": "a87512ac-7e74-49fb-9504-70b144369473",
+    "definition_version": "3.9.8",
+    "error": "PROVIDER_ROUTING_BLOCKED",
+    "input_capacity_units": 360340,
+    "output_reserve": 32768,
+    "context_limit": 272000,
+    "external_effects": 0,
+    "private_evidence": "real/chapter2-canon-routing-blocked-525.json"
+  },
+  "request_projection": {
+    "original_utf8_bytes": 360068,
+    "corrected_utf8_bytes": 204130,
+    "same_inner_schema": true,
+    "single_call_capacity": "UNCHANGED",
+    "paid_authorization": "UNCHANGED",
+    "business_inputs": "EXACT_FROZEN_VERSIONS",
+    "correction_budget": "UNCHANGED",
+    "candidate_prose": "UNCHANGED"
+  },
+  "real_production": {
+    "book_id": "closure-original-book",
+    "accepted_chapters_at_check": 1,
+    "target_chapters": 12,
+    "chapter2_draft": "a3426ab4-5d10-45e1-a424-ada57d4c19fc",
+    "chapter2_review": "6420e406-70ff-4102-ab4a-2e5015d6c3b6",
+    "actual_draft_effect": "ad3d6c78-f454-46f3-8aaa-8cd7814c3026",
+    "review_issues": [],
+    "draft_unicode_codepoints": 1286,
+    "new_canon_contract_real_run": "NOT_RUN"
+  },
+  "evidence_state": "EXECUTABLE",
+  "literary_effect": "NOT_PROVEN"
+}

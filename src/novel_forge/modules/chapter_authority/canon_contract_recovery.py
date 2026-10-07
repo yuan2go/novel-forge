@@ -32,12 +32,15 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_INVALID')
               OR (o.definition_version='3.9.1' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED')
               OR (o.definition_version='3.9.2' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED')
+              OR (o.definition_version='3.9.8' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED')
               OR (o.definition_version IN ('3.9.3','3.9.4') AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code' IN ('MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED')))""",
             [request["chapter_root_operation_id"], book["project_id"]])
         row = u.cursor.fetchone()
         if not row:
             return recover_support_contract(authority, book=book, request=request, template=template, principal=principal)
         source = row[0]
+        if source["definition_version"] == "3.9.8":
+            return _recover_source_capacity(authority, book, request, template, principal, source)
         u.cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'", [source["operation_id"]])
         effects = u.cursor.fetchall()
         predispatch = source["definition_version"] in {"3.9.1", "3.9.2", "3.9.3", "3.9.4"}
@@ -106,7 +109,7 @@ def repair_diagnostics(request):
     return row[0].get("repair_diagnostics", []) if row and row[0].get("contract_version") == CONTRACT else []
 
 
-def capacity_rejection(decision, operation_id):
+def capacity_rejection(decision, operation_id, *, schema_ref="schema:chapter-provider-output:canon_extraction:v24"):
     task = decision.get("task") or {}
     candidates = decision.get("candidates") or []
     return bool(decision.get("status") == "BLOCKED" and decision.get("selected") is None
@@ -115,8 +118,37 @@ def capacity_rejection(decision, operation_id):
             "CONTEXT_CAPACITY_EXCEEDED" in row.get("rejected_reasons", [])
             and set(row["rejected_reasons"]) <= {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
             and task.get("input_tokens", 0) + task.get("output_tokens", 0) > row["candidate"].get("context_limit", 0)
-            and (task.get("producer_contract") or {}).get("output_schema", {}).get("ref") == "schema:chapter-provider-output:canon_extraction:v24"
+            and (task.get("producer_contract") or {}).get("output_schema", {}).get("ref") == schema_ref
             for row in candidates))
+
+
+def _recover_source_capacity(authority, book, request, template, principal, source):
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)", [source["operation_id"], source["operation_id"]])
+        if u.cursor.fetchone()[0]:
+            return False
+        u.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
+            JOIN authority_asset a ON a.asset_id=o.asset_id JOIN authority_asset_version v ON v.asset_version_id=o.asset_version_id
+            WHERE o.operation_id=%s AND a.asset_type='routing_decision' AND o.role='routing_evidence'""", [source["operation_id"]])
+        decisions = [row[0] for row in u.cursor.fetchall()]
+    if not decisions or not all(capacity_rejection(d, source["operation_id"], schema_ref="schema:chapter-provider-output:canon_extraction:v29") for d in decisions):
+        return False
+    def guard(u):
+        u.cursor.execute("SELECT version,active_chapter_request_id,accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
+        if (u.cursor.fetchone() != (book["version"], book["active_chapter_request_id"], book["accepted_through_chapter"])
+            or _cancelled(u.cursor, book) or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
+            raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload exact Book frontier and original authorization")
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.9",
+        context=AdmissionContext(principal.principal_id, principal.permissions,
+            authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+        policy_evidence={"contract_version": "chapter-canon-source-capacity-successor.v1", "book_run_id": book["book_run_id"],
+            "chapter_request_id": request["chapter_request_id"], "policy_admission": template,
+            "capacity_rejection_decision_ids": [d["decision_id"] for d in decisions],
+            "input_snapshot": source["input_asset_snapshot"], "external_dispatch": "NONE", "content_repairs": "UNCHANGED",
+            "single_call_capacity": "UNCHANGED", "context_projection": "canon-source-context.v1"},
+        expected_failure_code="PROVIDER_ROUTING_BLOCKED", transaction_guard=guard,
+        window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_context_projection", "policy_value": "canon-source-context.v1"})
+    return True
 
 
 def latest_failure_code(database_url, operation_id):

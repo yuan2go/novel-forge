@@ -520,6 +520,7 @@ def _definition(
             "authority": "postgresql",
             "local_storage_writes": "forbidden",
             "handler_output_policy": "chapter-authority-output-v1",
+            **({"canon_context_projection": "canon-source-context.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"publish_work_admission": "reviewed-work-admission.v1"} if model_effects_required and node in {ChapterNode.PUBLISH_GATE, ChapterNode.EXPORT} else {}),
             **({"canon_evidence_span": "literal-source-spans.v1", "canon_gateway_contract": "chapter-node-contracts.v1", "canon_schema_compaction": "typed-extraction-json.v1", "canon_observation_projection": "typed-observed-state.v1", "canon_transition_preconditions": "accepted-cas.v1", "canon_transition_results": "canonical-plan-results.v1", "known_receipt_revalidation": "chapter-known-receipt.v1"} if model_effects_required and node is ChapterNode.CANON_EXTRACTION and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0" else {}),
             **({"reader_observation_lineage": "reader-disclosure-observation.v1"} if model_effects_required and node is ChapterNode.CANON else {}),
@@ -561,7 +562,7 @@ def chapter_node_definition_version(node: ChapterNode, model_effects_required: b
     if model_effects_required and CHAPTER_MODEL_EFFECT_DEFINITION_VERSION == "3.9.0":
         return {ChapterNode.DRAFT: CHAPTER_DRAFT_DEFINITION_VERSION,
             ChapterNode.REVIEW: "3.9.1", ChapterNode.REVISION: "3.9.1", ChapterNode.REREVIEW: "3.9.4",
-            ChapterNode.BEST_CANDIDATE: "3.9.1", ChapterNode.CANON: "3.9.1", ChapterNode.CANON_EXTRACTION: "3.9.8", ChapterNode.CANON_PROPOSAL: "3.9.2", ChapterNode.QUALITY: "3.9.1",
+            ChapterNode.BEST_CANDIDATE: "3.9.1", ChapterNode.CANON: "3.9.1", ChapterNode.CANON_EXTRACTION: "3.9.9", ChapterNode.CANON_PROPOSAL: "3.9.2", ChapterNode.QUALITY: "3.9.1",
             ChapterNode.PUBLISH_GATE: "3.9.1", ChapterNode.EXPORT: "3.9.1",
             **{node: "3.9.1" for node in CHAPTER_QUALITY_PROVIDER_NODES}}.get(node, CHAPTER_MODEL_EFFECT_DEFINITION_VERSION)
     return chapter_definition_version(model_effects_required)

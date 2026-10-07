@@ -9,6 +9,35 @@ from novel_forge.modules.chapter_authority.provider_output_contracts import vali
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
+def test_precondition_projection_preserves_exact_schema_and_source_identity():
+    from novel_forge.modules.canon_graph.source_spans import project_transition_preconditions, constrain_transition_preconditions
+    from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema
+    original = {"character_state": [{"asset_version_id": "accepted:one", "entity_key": "actor:a", "entity_version": 2,
+        "state": {"state": "waiting", "character_id": "a", "provider_evidence": {"internal": "large"}},
+        "provenance": {"request": "private"}}], "character_knowledge": [{"character_id": "a", "status": "KNOWN", "fact_id": "f", "summary": "real source"}]}
+    frozen = deepcopy(original)
+    compact = project_transition_preconditions(original)
+    assert compact["character_state"][0] == {"asset_version_id": "accepted:one", "entity_key": "actor:a", "entity_version": 2,
+        "state": "waiting", "character_id": "a"}
+    schema = chapter_provider_output_schema("canon_extraction")
+    assert constrain_transition_preconditions(schema, compact) == constrain_transition_preconditions(schema, original)
+    assert original == frozen
+    with pytest.raises(KernelError, match="CANON_ACCEPTED_PRECONDITION_INVALID"):
+        project_transition_preconditions({"character_state": [{"state": {"state": {"not": "scalar"}}}]})
+
+
+def test_canon_context_omits_only_frozen_writer_mechanics():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_context_view
+    types = ["chapter_execution_intent", "chapter_memo", "retrieval_result", "style_policy", "character_cast", "chapter_plan", "arc_plan"]
+    context = {"context_segments": [{"asset_type": kind, "asset_version_id": kind, "safe_summary": "frozen content", "structured_facts": []} for kind in types]}
+    original = deepcopy(context)
+    legacy = build_provider_context_view("canon_extraction", context, {})
+    current = build_provider_context_view("canon_extraction", context, {"canon_context_projection": "canon-source-context.v1"})
+    assert [s["asset_type"] for s in legacy["segments"]] == types
+    assert [s["asset_type"] for s in current["segments"]] == ["character_cast", "chapter_plan", "arc_plan"]
+    assert context == original
+
+
 def test_unicode_spans_bind_exact_candidate_without_rewriting_expression():
     text = "周澄看见名字。\n🚪门关上了。"
     table = source_spans(text)
