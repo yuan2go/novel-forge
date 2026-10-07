@@ -1715,7 +1715,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
 
 
 def _application(ctx: ProductRouterContext):
-    return _composition(ctx).authority
+    return ctx.services.book_authority_application
 
 
 def _composition(ctx: ProductRouterContext):
