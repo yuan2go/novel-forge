@@ -27,7 +27,7 @@ BEGIN
           AND registration.project_id=original.project_id AND registration.workspace_id=original.workspace_id
           AND registration.actor_id=original.actor_id
           AND original.command_payload #>> '{payload,execution_contract_version}'=original.definition_version
-          AND child.command_payload #>> '{payload,execution_contract_version}'='1.20.0'
+          AND child.command_payload #>> '{payload,execution_contract_version}'='1.21.0'
           AND child.causation_operation_id=original.operation_id
           AND child.project_id=r.project_id AND child.workspace_id=r.workspace_id
           AND child.actor_id=original.actor_id
@@ -51,7 +51,7 @@ BEGIN
           AND child.command_payload #>> '{payload,book_id}'=r.book_id
           AND child.command_payload #>> '{payload,logical_key}'=source.logical_key
           AND child.command_payload #>> '{payload,generator_operation_name}'=source.generator_operation_name
-          AND child.definition_name='story_planning.generate' AND child.definition_version='1.20.0'
+          AND child.definition_name='story_planning.generate' AND child.definition_version='1.21.0'
           AND original.status IN ('FAILED_FINAL','DEAD_LETTER') AND source.candidate_asset_version_id IS NULL
           AND source.generator_operation_name='chapter_plan.generate'
           AND source.planning_scope='CHAPTER'
@@ -75,7 +75,7 @@ BEGIN
               AND EXISTS (SELECT 1 FROM authority_operation_output_asset output JOIN authority_asset_version v USING(asset_version_id)
                   WHERE output.operation_id=original.operation_id AND v.content #>> '{contract,world_plan,disposition}'='BLOCKED'
                     AND (v.content #> '{contract,world_plan,candidate_futures}' @> '[{"rejection":{"code":"WORLD_CHARACTER_DECISION_BASIS_REQUIRED"}}]'::jsonb
-                      OR v.content #> '{contract,world_plan,rejected_paths}' @> '[{"rejection":{"code":"WORLD_CHARACTER_DECISION_BASIS_REQUIRED"}}]'::jsonb))) OR (mode='WORLD_HOST_REVALIDATION_SUCCESSOR' AND original.definition_version='1.20.0'
+                      OR v.content #> '{contract,world_plan,rejected_paths}' @> '[{"rejection":{"code":"WORLD_CHARACTER_DECISION_BASIS_REQUIRED"}}]'::jsonb))) OR (mode='WORLD_HOST_REVALIDATION_SUCCESSOR' AND original.definition_version='1.21.0'
               AND r.chain_depth=2 AND r.decision_evidence->>'host_revalidation'='world-host-revalidation.v1'
               AND r.target_runtime #>> '{world_host_revalidation,source_operation_id}'=original.operation_id
               AND r.target_runtime #>> '{world_host_revalidation,contract_version}'='world-host-revalidation.v1'
@@ -87,7 +87,7 @@ BEGIN
                   AND COALESCE(a.result->>'error_code',a.error->>'error_code')='WORLD_PREPARATION_RESULT_INVALID')
               AND EXISTS (SELECT 1 FROM authority_operation_output_asset output JOIN authority_asset_version v USING(asset_version_id)
                   WHERE output.operation_id=original.operation_id AND v.content #>> '{contract,world_plan,disposition}'='BLOCKED'
-                    AND v.content #> '{contract,world_plan,rejected_paths}' @> '[{"rejection":{"code":"WORLD_PERCEPTION_ACTOR_INVALID"}}]'::jsonb)) OR (mode='WORLD_HOST_PROJECTION_SUCCESSOR' AND original.definition_version='1.20.0'
+                    AND v.content #> '{contract,world_plan,rejected_paths}' @> '[{"rejection":{"code":"WORLD_PERCEPTION_ACTOR_INVALID"}}]'::jsonb)) OR (mode='WORLD_HOST_PROJECTION_SUCCESSOR' AND original.definition_version='1.21.0'
               AND source.repair_reason='WORLD_HOST_REVALIDATION_SUCCESSOR' AND r.chain_depth=3
               AND r.decision_evidence->>'projection_revalidation'='world-direction-projection.v1'
               AND EXISTS (SELECT 1 FROM authority_story_planning_runtime_continuation parent
@@ -113,6 +113,7 @@ BEGIN
     ) SELECT EXISTS (SELECT 1 FROM authority_external_effect effect JOIN lineage USING(operation_id)
         WHERE effect.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED'))
         OR EXISTS (SELECT 1 FROM authority_budget_reservation budget JOIN lineage USING(operation_id) WHERE budget.status NOT IN ('SETTLED','RELEASED'))
+        OR NOT authority_planning_cli_lineage_reconciled(source_id)
         OR EXISTS (SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
             JOIN lineage ON lineage.operation_id=attempt.operation_id WHERE lease.status='HELD'
               AND NOT (attempt.operation_id=child_id AND attempt.status='RUNNING'

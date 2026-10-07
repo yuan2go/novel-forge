@@ -388,11 +388,7 @@ def build_canon_update(
             for item in extraction.get("arc_evidence") or ()
             if isinstance(item, dict)
         ],
-        "realization_evidence": [
-            dict(item)
-            for item in extraction.get("realization_evidence") or ()
-            if isinstance(item, dict)
-        ],
+        "realization_evidence": _supported_realization_evidence(extraction),
         "rebuildable": True,
         "rollback_aware": True,
         "canon_contract_version": "canon-update-domain-v7",
@@ -1611,3 +1607,10 @@ __all__ = [
     "validate_deterministic_continuity",
     "CanonSemanticProviderPort",
 ]
+
+
+def _supported_realization_evidence(extraction):
+    if (extraction.get("grounding") or {}).get("realization_comparisons") is not None:
+        from .realization_comparison import bind_comparisons
+        return bind_comparisons(extraction)
+    return [dict(item) for item in extraction.get("realization_evidence") or () if isinstance(item, dict)]

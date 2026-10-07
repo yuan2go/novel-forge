@@ -117,7 +117,7 @@ class PostgresBookProductionQuery:
             ) SELECT run.formation_run_id,run.frozen_input_digest,
                 run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}'
                 FROM authority_story_formation_run run
-                WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}'='formation-generation.v5'
+                WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v7')
                   AND (run.formation_run_id IN (SELECT subject_id FROM subjects) OR EXISTS(SELECT 1 FROM authority_book_opening_run opening
                         WHERE opening.opening_run_id IN (SELECT subject_id FROM subjects) AND opening.project_id=run.project_id
                           AND opening.stable_idempotency_key=run.formation_run_id || ':opening')
@@ -252,6 +252,16 @@ class PostgresBookProductionQuery:
             reality = NarrativeRealityRepository(uow.cursor).require(book_run_id=book_run_id, chapter_number=int(row[0]))
             version = CausalPlanningRepository(uow.cursor).current_action(project_id=reality["project_id"], book_run_id=book_run_id, reality_revision_id=reality["revision_id"], chapter_number=chapter_number)
             return (version,) if version else ()
+
+    def unresolved_chapter_effects(self, *, book_run_id: str) -> list[dict[str, Any]]:
+        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT project_id,book_id FROM authority_book_production WHERE book_run_id=%s", [book_run_id])
+            row = uow.cursor.fetchone()
+            if row is None:
+                raise KernelError("BOOK_RUN_NOT_FOUND", "Original Book scope is required to query unresolved receipts")
+            return unresolved_cli_outcomes(uow.cursor, str(row[0]), book_id=str(row[1]))
 
     def pending_plan_generation(self, *, project_id: str, book_id: str, logical_key: str) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -735,6 +745,38 @@ class PostgresBookProductionQuery:
                         actions.append(asset_version_id)
         return tuple(actions)
 
+    def blocked_followup_dispatch_operations(self, *, project_ids: Iterable[str]) -> tuple[str, ...]:
+        projects = list(project_ids)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT operation.operation_id FROM authority_operation operation
+                LEFT JOIN authority_book_followup_operation followup USING(operation_id)
+                LEFT JOIN authority_book_production book USING(book_run_id)
+                WHERE operation.definition_name IN ('reader_outcome.evaluate','longform.recap')
+                  AND (%s::text[]='{}'::text[] OR operation.project_id=ANY(%s))
+                  AND (book.state IN ('ABORTED','CANCELLED') OR
+                       (operation.command_payload #> '{payload,followup_contract_recovery}' IS NOT NULL
+                        AND followup.operation_id IS NULL))""", [projects,projects])
+            return tuple(str(row[0]) for row in uow.cursor.fetchall())
+
+
+    def reader_contract_recovery_candidates(self, *, limit: int, project_ids: Iterable[str]) -> tuple[str, ...]:
+        projects = list(project_ids)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT followup.chapter_request_id FROM authority_book_followup_operation followup
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_book_production book USING(book_run_id)
+                WHERE followup.followup_type='READER_OUTCOME'
+                  AND ((operation.definition_version='1.1.0' AND operation.status='FAILED_FINAL')
+                       OR (operation.definition_version='1.2.0' AND operation.status='DEAD_LETTER'))
+                  AND book.state NOT IN ('CANCELLED','ABORTED')
+                  AND (%s::text[]='{}'::text[] OR followup.project_id=ANY(%s))
+                  AND EXISTS (SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=operation.operation_id
+                              AND attempt.result->>'error_code' IN ('READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID','PROVIDER_ROUTING_BLOCKED'))
+                  AND NOT EXISTS (SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+                ORDER BY followup.created_at,followup.followup_id LIMIT %s""", [projects,projects,limit])
+            return tuple(str(row[0]) for row in uow.cursor.fetchall())
+
+
     def followup_admission_candidates(
         self, *, limit: int, project_ids: Iterable[str] = ()
     ) -> tuple[BookFollowupAdmissionCandidate, ...]:
@@ -844,6 +886,15 @@ class PostgresBookProductionQuery:
             )
             for row in rows
         )
+
+    def accepted_realization_deviations(self, *, project_id: str, workspace_id: str, book_id: str,
+        chapter_request_id: str, actor_id: str) -> dict[str, Any]:
+        from novel_forge.modules.book_followup_authority.accepted_realization import read_accepted_realization_deviations
+        from .reader_pack import require_current_reader_template
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_current_reader_template(uow.cursor,project_id=project_id,book_id=book_id)
+            return read_accepted_realization_deviations(uow.cursor,project_id=project_id,workspace_id=workspace_id,
+                book_id=book_id,chapter_request_id=chapter_request_id,actor_id=actor_id)
 
     def arc_checkpoint_followup(
         self, *, book_run_id: str, chapter_number: int
@@ -1741,7 +1792,7 @@ class PostgresBookProductionQuery:
                        snapshot.book_design_version,
                        snapshot.book_plan_version,
                        snapshot.current_volume_plan_version,
-                       snapshot.current_relevant_arc_plan_versions
+                       snapshot.current_relevant_arc_plan_versions,snapshot.workspace_id
                 FROM authority_book_production_input_snapshot AS snapshot
                 WHERE snapshot.snapshot_id=%s
                 """,
@@ -1960,6 +2011,18 @@ class PostgresBookProductionQuery:
                     "Narrative Scheduling must contain one row for the target Chapter",
                 )
             schedule_row = matrix_rows[0]
+            uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_story_planning_generation generation
+                JOIN authority_operation owner ON owner.operation_id=generation.operation_id
+                WHERE generation.candidate_asset_version_id=%s AND generation.project_id=%s
+                  AND generation.workspace_id=%s AND generation.book_id=%s
+                  AND generation.generator_operation_name='chapter_plan.generate'
+                  AND owner.project_id=generation.project_id AND owner.workspace_id=generation.workspace_id
+                  AND owner.definition_name='story_planning.generate' AND owner.definition_version='1.21.0'
+                  AND owner.command_payload #>> '{payload,execution_contract_version}'='1.21.0'
+                  AND owner.status IN ('WAITING_GATE','SUCCEEDED') AND owner.operation_id=%s)""",
+                [chapter_plan_version_id,str(snapshot[0]),str(snapshot[10]),str(snapshot[1]),
+                 str((chapter_content.get("constraint_envelope") or {}).get("generation_operation_id") or "")])
+            coordinated_realization = bool(uow.cursor.fetchone()[0])
             realization = NarrativeRealizationRepository(
                 uow.cursor
             ).require_current_for_chapter(
@@ -1967,6 +2030,7 @@ class PostgresBookProductionQuery:
                 book_id=str(snapshot[1]),
                 chapter_group_plan_version_id=chapter_group_plan_version_id,
                 chapter_number=chapter_number,
+                coordinated_contract=coordinated_realization,
             )
             declared_realization = dict(
                 chapter_content.get("narrative_realization_slice") or {}

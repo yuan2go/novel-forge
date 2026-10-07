@@ -49,8 +49,8 @@ def source(monkeypatch):
         payload = {'_production_execution': {'attempt_id': f'attempt-{number}', 'capability_runtime': {
             'pack_ref': 'chapter_generation@2.26.0', 'routing_decision': {'selected': {'candidate': {
                 'provider': 'codex-cli', 'authorization_ref': 'grant', 'pricing': {'accounting_basis': 'ACCOUNT_ENTITLEMENT'}}}}}}}
-        error = {'production_execution': {'execution_result': {'outcome': 'TIMED_OUT', 'process_receipt_ref': f'process-{number}'},
-                                         'process_evidence': {'failure_code': 'PROCESS_TIMEOUT'}}}
+        error = {'production_execution': {'execution_result': {'outcome': 'TIMED_OUT', 'started_at': None, 'process_receipt_ref': f'process-{number}'},
+                                         'execution_handle': {'transport': 'LOCAL_CLI_REMOTE_INFERENCE'}, 'process_evidence': {'failure_code': 'PROCESS_TIMEOUT'}}}
         effects.append([f'effect-{number}', 'FAILED_RETRYABLE', f'hash-{number}', payload, error, 'SETTLED',
                         'chapter.memo.generate', '60', '2', 'memo', number, 'project', 'workspace', 'operator', '3.8.0'])
     return root, book, request, effects, admission
@@ -58,7 +58,7 @@ def source(monkeypatch):
 
 @pytest.mark.parametrize('boundary', ['known', 'unknown-graph', 'held-graph', 'lease-graph', 'missing-settlement',
     'output', 'missing-process-receipt', 'paid', 'foreign-effect-actor', 'foreign-request-book', 'duplicate-attempt',
-    'mixed-operation', 'mixed-pack', 'unexhausted', 'future-memo', 'different-bound', 'future-source', 'old-template', 'accepted', 'cancelled-creation'])
+    'mixed-operation', 'mixed-pack', 'unexhausted', 'future-memo', 'different-bound', 'started-remote', 'missing-start-proof', 'foreign-transport', 'future-source', 'old-template', 'accepted', 'cancelled-creation'])
 def test_only_complete_stopped_settled_prefix_can_recover(source, monkeypatch, boundary):
     root, book, request, effects, admission = source
     flags = [False, False, False]
@@ -84,6 +84,12 @@ def test_only_complete_stopped_settled_prefix_can_recover(source, monkeypatch, b
         effects[1][3]['_production_execution']['capability_runtime']['pack_ref'] = 'other@3.0.0'
     if boundary == 'unexhausted':
         effects = effects[:-1]
+    if boundary == 'started-remote':
+        effects[0][4]['production_execution']['execution_result']['started_at'] = '2026-10-07T00:00:00Z'
+    if boundary == 'missing-start-proof':
+        effects[0][4]['production_execution']['execution_result'].pop('started_at')
+    if boundary == 'foreign-transport':
+        effects[0][4]['production_execution']['execution_handle']['transport'] = 'LOCAL_PROCESS'
     if boundary == 'future-memo':
         effects[0][-1] = '3.8.1'
     if boundary == 'different-bound':

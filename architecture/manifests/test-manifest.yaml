@@ -8,6 +8,19 @@
   ],
   "classification_rules": [
     {
+      "id": "coordinated-current-planning-controlled-wire",
+      "patterns": [
+        "tests/integration/current_planning_wire_support.py",
+        "tests/unit/test_synthesis_current_planning_wire.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "story-planning-runtime",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/binder.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
       "id": "creative-planning-primary-context-identity",
       "patterns": [
         "tests/unit/test_planning_result_context_identity.py"

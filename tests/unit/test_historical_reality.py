@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from hashlib import sha256
+import pytest
 
 from novel_forge.tools.historical_reality import (
     _historical_authorization_evidence,
+    _immutable_coding_tool_examples,
     check_historical_reality,
     load_historical_reality_policy,
     validate_proof_scope,
@@ -11,6 +14,31 @@ from novel_forge.tools.historical_reality import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.mark.parametrize('damage', ['', 'bytes', 'runtime', 'path'])
+def test_coding_tool_example_exemption_requires_exact_advisory_identity(tmp_path, damage):
+    relative = 'skills/example/SKILL.md'
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_text('generic decision example')
+    digest = sha256(path.read_bytes()).hexdigest()
+    generated = tmp_path / '.claude' / relative
+    generated.parent.mkdir(parents=True)
+    generated.write_bytes(path.read_bytes())
+    source = {'path': relative, 'kind': 'CODING_AGENT_SKILL_SOURCE', 'consumer': 'coding-agent'}
+    if damage == 'bytes':
+        path.write_text('changed instruction')
+    elif damage == 'runtime':
+        source['consumer'] = 'provider-runtime'
+    elif damage == 'path':
+        relative = 'src/example.py'
+    accepted, errors = _immutable_coding_tool_examples(
+        tmp_path, {'immutable_coding_tool_examples': {relative: digest}}, {'sources': [source]})
+    if damage:
+        assert not accepted and errors
+    else:
+        assert accepted == {path, generated} and not errors
 
 
 def test_repository_has_no_historical_roadmap_authority() -> None:

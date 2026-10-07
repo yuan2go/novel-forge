@@ -13,25 +13,28 @@ HEADS = tuple(m.migration_id for m in MIGRATIONS if m.migration_id >= "20261007_
 
 
 def _schema(connection):
-    connection.execute("CREATE TEMP TABLE authority_operation(operation_id text,project_id text,workspace_id text,actor_id text,status text,command_payload jsonb,causation_operation_id text,definition_name text,definition_version text)")
+    connection.execute("CREATE TEMP TABLE authority_operation(operation_id text,project_id text,workspace_id text,actor_id text,status text,command_payload jsonb,causation_operation_id text,definition_name text,definition_version text,root_operation_id text)")
     connection.execute("CREATE TEMP TABLE authority_story_planning_generation(LIKE public.authority_story_planning_generation INCLUDING DEFAULTS)")
     connection.execute("CREATE TEMP TABLE authority_story_planning_runtime_continuation(continuation_id text,source_operation_id text,registered_by_operation_id text,project_id text,workspace_id text,book_id text,source_command jsonb,successor_command jsonb,target_runtime jsonb,successor_operation_id text,decision_evidence jsonb,chain_depth int)")
     connection.execute("CREATE TEMP TABLE authority_attempt(attempt_id text,operation_id text,attempt_number int,status text,result jsonb,error jsonb)")
     connection.execute("CREATE TEMP TABLE authority_operation_output_asset(operation_id text,asset_version_id text)")
     connection.execute("CREATE TEMP TABLE authority_asset_version(asset_version_id text,content jsonb)")
-    connection.execute("""CREATE TEMP TABLE authority_external_effect(operation_id text,status text,request_payload jsonb DEFAULT '{"stage":"world_candidates.generate"}')""")
-    connection.execute("CREATE TEMP TABLE authority_budget_reservation(operation_id text,status text)")
+    connection.execute("""CREATE TEMP TABLE authority_external_effect(operation_id text,status text,request_payload jsonb DEFAULT '{"stage":"world_candidates.generate"}',external_effect_id text DEFAULT 'source-effect',project_id text DEFAULT 'project')""")
+    connection.execute("CREATE TEMP TABLE authority_budget_reservation(operation_id text,status text,external_effect_id text DEFAULT 'source-effect',project_id text DEFAULT 'project',evidence jsonb DEFAULT '{}')")
+    connection.execute("CREATE TEMP TABLE authority_external_effect_dispatch(external_effect_id text,generation int,evidence jsonb,finished_at timestamptz,updated_at timestamptz DEFAULT NOW(),created_at timestamptz DEFAULT NOW())")
+    connection.execute("CREATE TEMP TABLE authority_effect_manual_resolution(external_effect_id text,project_id text,operation_id text,created_at timestamptz)")
     connection.execute("CREATE TEMP TABLE authority_lease_acquisition(attempt_id text,status text)")
-    connection.execute("CREATE TEMP TABLE authority_book_production(project_id text,book_id text,state text,stable_idempotency_key text)")
+    connection.execute("CREATE TEMP TABLE authority_book_production(project_id text,book_id text,state text,stable_idempotency_key text,root_operation_id text,book_run_id text,workspace_id text DEFAULT 'workspace')")
+    connection.execute("CREATE TEMP TABLE authority_book_chapter_request(project_id text,book_run_id text,chapter_root_operation_id text)")
     connection.execute("CREATE TEMP TABLE authority_story_creation_cancellation(project_id text,formation_run_id text)")
 
 
 def _seed(connection):
     source = {"book_id": "book", "logical_key": "chapter:1", "generator_operation_name": "chapter_plan.generate", "repair_number": 0, "execution_contract_version": "1.19.0", "world_preparation_request": {"book_run_id": "run", "input_snapshot_id": "snapshot", "accepted_through_chapter": 0, "story_state_version_id": "", "canon_version_id": ""}}
-    child = {**source, "execution_contract_version": "1.20.0", "repair_reason": "WORLD_AGENCY_CONTRACT_SUCCESSOR", "runtime_continuation_id": "runtime"}
+    child = {**source, "execution_contract_version": "1.21.0", "repair_reason": "WORLD_AGENCY_CONTRACT_SUCCESSOR", "runtime_continuation_id": "runtime"}
     for identity, status, payload, version, cause in [
         ("source", "FAILED_FINAL", source, "1.19.0", None),
-        ("child", "ADMITTED", child, "1.20.0", "source"),
+        ("child", "ADMITTED", child, "1.21.0", "source"),
         ("registration", "SUCCEEDED", {}, "2.0.0", None),
     ]:
         connection.execute("INSERT INTO authority_operation VALUES(%s,'project','workspace','owner',%s,%s,%s,%s,%s)", [identity, status, Jsonb({"payload": payload}), cause, "story_planning.runtime_continuation.register" if identity == "registration" else "story_planning.generate", version])
@@ -99,8 +102,8 @@ def test_world_contract_successor_preserves_scope_counters_and_lineage_guards(he
                 "UPDATE authority_budget_reservation SET status='HELD'",
                 "INSERT INTO authority_lease_acquisition VALUES('attempt','HELD')",
                 "INSERT INTO authority_book_production VALUES('project','book','ABORTED','formation:production')",
-                "INSERT INTO authority_operation VALUES('failed-successor','project','workspace','owner','FAILED_FINAL','{}','source','story_planning.generate','1.20.0'); INSERT INTO authority_budget_reservation VALUES('failed-successor','HELD')",
-                "INSERT INTO authority_operation VALUES('failed-successor','project','workspace','owner','FAILED_FINAL','{}','source','story_planning.generate','1.20.0'); INSERT INTO authority_attempt VALUES('successor-attempt','failed-successor',1,'FAILED_FINAL','{}','{}'); INSERT INTO authority_lease_acquisition VALUES('successor-attempt','HELD')",
+                "INSERT INTO authority_operation VALUES('failed-successor','project','workspace','owner','FAILED_FINAL','{}','source','story_planning.generate','1.21.0'); INSERT INTO authority_budget_reservation VALUES('failed-successor','HELD')",
+                "INSERT INTO authority_operation VALUES('failed-successor','project','workspace','owner','FAILED_FINAL','{}','source','story_planning.generate','1.21.0'); INSERT INTO authority_attempt VALUES('successor-attempt','failed-successor',1,'FAILED_FINAL','{}','{}'); INSERT INTO authority_lease_acquisition VALUES('successor-attempt','HELD')",
                 "INSERT INTO authority_operation VALUES('ancestor','project','workspace','owner','FAILED_FINAL','{}',NULL,'story_planning.generate','1.19.0'); UPDATE authority_operation SET causation_operation_id='ancestor' WHERE operation_id='source'; INSERT INTO authority_budget_reservation VALUES('ancestor','HELD')",
             ]:
                 connection.execute("SAVEPOINT guard_probe")
@@ -115,9 +118,9 @@ def test_world_contract_successor_preserves_scope_counters_and_lineage_guards(he
 def _mode(connection, generation, mode):
     successor_reason = 'WORLD_HOST_REVALIDATION_SUCCESSOR' if mode == 'host' else 'WORLD_HOST_PROJECTION_SUCCESSOR'
     source = connection.execute("SELECT command_payload->'payload' FROM authority_operation WHERE operation_id='source'").fetchone()[0]
-    source = {**source, 'execution_contract_version': '1.20.0', **({'repair_reason': 'WORLD_HOST_REVALIDATION_SUCCESSOR'} if mode == 'projection' else {'repair_reason': 'WORLD_AGENCY_CONTRACT_SUCCESSOR'})}
+    source = {**source, 'execution_contract_version': '1.21.0', **({'repair_reason': 'WORLD_HOST_REVALIDATION_SUCCESSOR'} if mode == 'projection' else {'repair_reason': 'WORLD_AGENCY_CONTRACT_SUCCESSOR'})}
     child = {**source, 'runtime_continuation_id': 'runtime', 'repair_reason': successor_reason}
-    connection.execute("UPDATE authority_operation SET definition_version='1.20.0',command_payload=%s WHERE operation_id='source'", [Jsonb({'payload': source})])
+    connection.execute("UPDATE authority_operation SET definition_version='1.21.0',command_payload=%s WHERE operation_id='source'", [Jsonb({'payload': source})])
     connection.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id='child'", [Jsonb({'payload': child})])
     proof = {'contract_version': 'world-host-revalidation.v1', 'source_operation_id': 'source', 'plan_digest': 'sha256:' + 'a' * 64}
     target = {'pack_snapshot': {'snapshot_hash': 'sha256:' + 'b' * 64}, 'world_host_revalidation': proof}
@@ -166,3 +169,95 @@ def test_world_host_and_zero_dispatch_projection_permissions_start_at_exact_head
                 connection.execute('RELEASE SAVEPOINT mode_guard')
             assert connection.execute("SELECT status FROM authority_operation WHERE operation_id='source'").fetchone() == ('FAILED_FINAL',)
             assert connection.execute("SELECT repair_number FROM authority_story_planning_generation WHERE operation_id='source'").fetchone() == (0,)
+
+
+@pytest.mark.parametrize("head", HEADS)
+@pytest.mark.parametrize("outcome,started,known", [
+    ("TIMED_OUT", "missing", False),
+    ("TIMED_OUT", "started", False),
+    ("TIMED_OUT", "null", True),
+    ("CANCELLED", "missing", False),
+    ("ORPHANED", "null", False),
+])
+def test_settled_old_effect_cannot_mask_unreconciled_cli_dispatch(head, outcome, started, known):
+    with disposable_database_at_migration(DATABASE_URL, prefix="world_cli_guard", target_migration_id=head) as url:
+        with psycopg.connect(url) as connection:
+            _schema(connection)
+            generation = _seed(connection)
+            result = {"outcome": outcome, "usage_receipt_ref": ""}
+            if started != "missing":
+                result["started_at"] = None if started == "null" else "2026-10-07T00:00:00Z"
+            receipt = {"production_execution": {"execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"}, "execution_result": result}}
+            connection.execute("INSERT INTO authority_external_effect_dispatch(external_effect_id,generation,evidence,finished_at) VALUES('source-effect',1,%s,NOW())", [Jsonb(receipt)])
+            connection.execute("INSERT INTO authority_external_effect_dispatch(external_effect_id,generation,evidence,finished_at) VALUES('source-effect',2,'{}',NOW())")
+            assert _admitted(connection, generation) is known
+            if known:
+                return
+            for project, operation, timestamp in [
+                ("foreign", "source", "NOW()"),
+                ("project", "foreign", "NOW()"),
+                ("project", "source", "NOW()-interval '1 day'"),
+            ]:
+                connection.execute("SAVEPOINT reconciliation_guard")
+                connection.execute(f"INSERT INTO authority_effect_manual_resolution VALUES('source-effect',%s,%s,{timestamp})", [project, operation])
+                assert not _admitted(connection, generation)
+                connection.execute("ROLLBACK TO SAVEPOINT reconciliation_guard")
+                connection.execute("RELEASE SAVEPOINT reconciliation_guard")
+            connection.execute("INSERT INTO authority_effect_manual_resolution VALUES('source-effect','project','source',NOW())")
+            assert _admitted(connection, generation)
+            assert connection.execute("SELECT status FROM authority_external_effect").fetchall() == [("SUCCEEDED",)]
+            assert connection.execute("SELECT status FROM authority_budget_reservation").fetchall() == [("SETTLED",)]
+            assert connection.execute("SELECT count(*) FROM authority_external_effect_dispatch").fetchone() == (2,)
+
+
+@pytest.mark.parametrize("head", HEADS)
+@pytest.mark.parametrize("binding", ["chapter", "book"])
+@pytest.mark.parametrize("historical_workspace", ["workspace", "foreign"])
+def test_canonical_book_binding_blocks_other_root_cli_unknown_without_payload_book(head, binding, historical_workspace):
+    with disposable_database_at_migration(DATABASE_URL, prefix="world_book_cli_guard", target_migration_id=head) as url:
+        with psycopg.connect(url) as connection:
+            _schema(connection)
+            generation = _seed(connection)
+            connection.execute("INSERT INTO authority_operation VALUES('other','project','workspace','owner','FAILED_FINAL','{}',NULL,'chapter.draft.generate','3.10.0','other-root')")
+            if binding == "chapter":
+                connection.execute("INSERT INTO authority_book_production VALUES('project','book','CHAPTER_PLAN_REQUIRED','original',NULL,'book-run','workspace')")
+                connection.execute("INSERT INTO authority_book_chapter_request VALUES('project','book-run','other-root')")
+            else:
+                connection.execute("INSERT INTO authority_book_production VALUES('project','book','CHAPTER_PLAN_REQUIRED','original','other-root','book-run','workspace')")
+            connection.execute("UPDATE authority_operation SET workspace_id=%s, command_payload=%s WHERE operation_id='other'", [historical_workspace, Jsonb({"book_id": "book:project"})])
+            connection.execute("INSERT INTO authority_external_effect(operation_id,status,request_payload,external_effect_id) VALUES('other','SUCCEEDED','{}','other-effect')")
+            connection.execute("INSERT INTO authority_budget_reservation(operation_id,status,external_effect_id) VALUES('other','SETTLED','other-effect')")
+            receipt = {"production_execution": {"execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"}, "execution_result": {"outcome": "TIMED_OUT", "usage_receipt_ref": ""}}}
+            connection.execute("INSERT INTO authority_external_effect_dispatch(external_effect_id,generation,evidence,finished_at) VALUES('other-effect',1,%s,NOW())", [Jsonb(receipt)])
+            assert not _admitted(connection, generation)
+            connection.execute("INSERT INTO authority_effect_manual_resolution VALUES('other-effect','project','other',NOW())")
+            assert _admitted(connection, generation)
+            assert connection.execute("SELECT status FROM authority_operation WHERE operation_id='other'").fetchone() == ("FAILED_FINAL",)
+
+
+@pytest.mark.parametrize("head", HEADS)
+def test_current_source_cannot_hide_foreign_canonical_book_workspace_in_metadata(head):
+    with disposable_database_at_migration(DATABASE_URL, prefix="world_source_book_scope", target_migration_id=head) as url:
+        with psycopg.connect(url) as connection:
+            _schema(connection)
+            generation = _seed(connection)
+            connection.execute("UPDATE authority_operation SET root_operation_id='source-root' WHERE operation_id='source'")
+            connection.execute("INSERT INTO authority_book_production VALUES('project','book','CHAPTER_PLAN_REQUIRED','original',NULL,'book-run','foreign')")
+            connection.execute("INSERT INTO authority_book_chapter_request VALUES('project','book-run','source-root')")
+            assert not _admitted(connection, generation)
+            connection.execute("UPDATE authority_book_production SET workspace_id='workspace'")
+            assert _admitted(connection, generation)
+
+
+@pytest.mark.parametrize("head", HEADS)
+def test_current_source_cannot_use_a_different_canonical_book_to_scan_cli_lineage(head):
+    with disposable_database_at_migration(DATABASE_URL, prefix="world_source_book_drift", target_migration_id=head) as url:
+        with psycopg.connect(url) as connection:
+            _schema(connection)
+            generation = _seed(connection)
+            connection.execute("UPDATE authority_operation SET root_operation_id='source-root' WHERE operation_id='source'")
+            connection.execute("INSERT INTO authority_book_production VALUES('project','other-book','CHAPTER_PLAN_REQUIRED','original',NULL,'book-run','workspace')")
+            connection.execute("INSERT INTO authority_book_chapter_request VALUES('project','book-run','source-root')")
+            assert not _admitted(connection, generation)
+            connection.execute("UPDATE authority_book_production SET book_id='book'")
+            assert _admitted(connection, generation)

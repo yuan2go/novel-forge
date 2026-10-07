@@ -44,12 +44,12 @@ def test_main_world_reader_and_runtime_registration_identity_are_exact():
 
 def test_current_planning_contract_keeps_main_serialization_and_adds_explicit_world_schema():
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "b" * 64)
-    assert profile.manifest["identity"]["version"] == "2.12.0"
-    assert {node["operation_definition_ref"] for node in profile.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.20.0"}
-    assert profile.manifest["prompt_binding"]["system_instruction_version"] == "v10"
-    system = next(item for item in profile.artifact_catalog["artifacts"] if item["ref"] == "prompt-system:story-planning-pack" and item["version"] == "v10")
+    assert profile.manifest["identity"]["version"] == "2.13.0"
+    assert {node["operation_definition_ref"] for node in profile.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.21.0"}
+    assert profile.manifest["prompt_binding"]["system_instruction_version"] == "v11"
+    system = next(item for item in profile.artifact_catalog["artifacts"] if item["ref"] == "prompt-system:story-planning-pack" and item["version"] == "v11")
     assert "CHARACTER_INITIATED" in system["content"]["text"]
-    assert foundation_output_schema_ref("creative.candidates.generate", execution_contract_version="1.20.0").endswith(":v4")
+    assert foundation_output_schema_ref("creative.candidates.generate", execution_contract_version="1.21.0").endswith(":v4")
     current = world_generation_schema(WorldProductionPolicy(), agency=True)
     assert "action_mode" in json.loads(current["properties"]["candidates"]["items"]["properties"]["transition"]["properties"]["payload_json"]["description"].split(": ", 1)[1])["properties"]
     assert "action_mode" not in world_transition_schema()["properties"]
@@ -63,14 +63,14 @@ def test_world_contract_pack_upgrade_preserves_source_policies_and_history(versi
     successor, generation = _world_agency_pack_profile(frozen, "sha256:" + "b" * 64, repository_root=ROOT)
     assert frozen == before
     assert generation == 1
-    assert successor.manifest["identity"]["version"] == "2.12.0"
+    assert successor.manifest["identity"]["version"] == "2.13.0"
     for key in ("context_sources", "routing_policy", "tool_permissions", "skill_binding"):
         if key in frozen["manifest"]:
             assert successor.manifest[key] == frozen["manifest"][key]
-    assert successor.manifest["prompt_binding"]["system_instruction_version"] == "v10"
+    assert successor.manifest["prompt_binding"]["system_instruction_version"] == "v11"
     assert successor.artifact_catalog["artifacts"][:-1] == frozen["artifact_catalog"]["artifacts"]
     for original, current in zip(frozen["manifest"]["workflow_template"]["nodes"], successor.manifest["workflow_template"]["nodes"], strict=True):
-        expected = {**original, "operation_definition_ref": "story_planning.generate@1.20.0", "operation_definition_hash": "sha256:" + "b" * 64}
+        expected = {**original, "operation_definition_ref": "story_planning.generate@1.21.0", "operation_definition_hash": "sha256:" + "b" * 64}
         assert current == expected
 
 

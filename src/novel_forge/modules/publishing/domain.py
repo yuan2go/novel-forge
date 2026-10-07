@@ -8,6 +8,42 @@ from novel_forge.modules.chapter_quality_authority import QUALITY_DIMENSIONS
 from novel_forge.modules.review.diagnostics import review_covers_candidate
 
 
+def reviewed_work_admission(*, review, quality, text, source_id):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, prose_hash
+    if not source_id or not review_covers_candidate(review, text=text, source_id=source_id) or review.get("blocking_issue_count", 0):
+        return False
+    if review.get("target_text_hash") != prose_hash(text) or review.get("revision_version_id") != source_id:
+        return False
+    if review.get("decision") == "PASSED":
+        return True
+    admission = quality.get("internal_admission") or {}
+    checks = review.get("quality_resolution_checks") or []
+    constraints = admission.get("work_constraints") or []
+    if (review.get("decision") != "NEEDS_REVISION" or review.get("review_decision_contract") != "work-review-decision.v1"
+        or review.get("target_text_hash") != prose_hash(text) or review.get("revision_version_id") != source_id
+        or open_diagnoses(review) or review.get("regression_issue_codes")
+        or admission.get("version") != "creative-quality-admission.v3" or admission.get("status") != "INTERNAL_ADMITTED"
+        or admission.get("blocked_dimensions") or admission.get("target_asset_version_id") != quality.get("target_asset_version_id")
+        or not checks or any(c.get("observation") != "chapter_length" or c.get("status") != "UNCERTAIN"
+            or c.get("preservation") != "PRESERVED" or c.get("target_asset_version_id") != source_id
+            or c.get("target_text_hash") != prose_hash(text) for c in checks)):
+        return False
+    from novel_forge.modules.chapter_quality_authority.creative_validation import measure_length
+    if len(constraints) != 1:
+        return False
+    constraint = constraints[0]
+    if (constraint.get("dimension") != "chapter_length" or constraint.get("status") != "PASSED"
+        or constraint.get("target_asset_version_id") != quality.get("target_asset_version_id")
+        or type(constraint.get("minimum")) is not int or type(constraint.get("maximum")) is not int
+        or type(constraint.get("observed")) is not int
+        or not 0 <= constraint["minimum"] <= constraint["observed"] <= constraint["maximum"]):
+        return False
+    try:
+        return constraint["observed"] == measure_length(text, constraint["unit"])
+    except (KeyError, KernelError, ValueError):
+        return False
+
+
 def prepare_internal_release(
     *,
     project_id: str,
@@ -21,6 +57,7 @@ def prepare_internal_release(
     canon_asset_version_id: str,
     context_bundle: dict[str, Any],
     context_bundle_version_id: str,
+    work_admission: bool = False,
 ) -> dict[str, Any]:
     dimensions = quality.get("dimensions", [])
     required_dimensions = set(QUALITY_DIMENSIONS)
@@ -135,10 +172,11 @@ def prepare_internal_release(
     strict_checks = dict(checks)
     validation = quality.get("internal_admission")
     if validation is not None:
-        checks = {"quality_internal_admission": validation.get("version") in {"creative-quality-admission.v1", "creative-quality-admission.v2", "creative-quality-admission.v3"}
+        checks = {"quality_internal_admission": validation.get("version") in ({"creative-quality-admission.v1", "creative-quality-admission.v2", "creative-quality-admission.v3"} if work_admission else {"creative-quality-admission.v1", "creative-quality-admission.v2"})
                 and validation.get("status") == "INTERNAL_ADMITTED" and not validation.get("blocked_dimensions")
                 and validation.get("target_asset_version_id") == revision_asset_version_id,
-            "latest_rereview_passed": strict_checks["latest_rereview_passed"],
+            "latest_rereview_passed": reviewed_work_admission(review=review, quality=quality, text=str(revision.get("text") or ""),
+                source_id=str(revision.get("selected_source_asset_version_id") or "")) if work_admission else strict_checks["latest_rereview_passed"],
             "canon_consistent": strict_checks["canon_consistent"]}
     if not project_id or not all(checks.values()):
         failed = sorted(key for key, passed in checks.items() if not passed)
@@ -163,6 +201,9 @@ def prepare_internal_release(
         "project_id": project_id,
         "chapter": revision["chapter"],
         "gate": "INTERNAL_ADMITTED" if validation is not None else "PASSED",
+        **({"review_admission": {"contract_version": "reviewed-work-admission.v2", "review_asset_version_id": review_asset_version_id,
+            "quality_asset_version_id": quality_asset_version_id, "candidate_asset_version_id": revision_asset_version_id,
+            "source_review_decision": review.get("decision"), "host_admission": "PASSED", "literary_quality_proven": False}} if work_admission else {}),
         **({"internal_admission": validation, "strict_publish_checks": strict_checks,
             "omitted_checks": {"publication_approval": {"status": "NOT_RUN", "reason": "internal creative validation"},
                 "literary_calibration": {"status": "NOT_RUN", "reason": "native template excludes literary calibration"}}} if validation is not None else {}),
@@ -280,6 +321,7 @@ def finalize_blob_verified_release(
     canon: dict[str, Any],
     canon_asset_version_id: str,
     context_bundle_version_id: str,
+    work_admission: bool = False,
 ) -> dict[str, Any]:
     content_blobs = [item for item in export_blobs if item.get("role") == "content"]
     if len(content_blobs) != 1:
@@ -302,7 +344,8 @@ def finalize_blob_verified_release(
         },
         "latest_rereview_passed": (
             review_covers_candidate(review, text=str(export_package.get("rendered_text") or ""), source_id=str(export_package.get("selected_source_asset_version_id") or ""))
-            and review.get("decision") == "PASSED"
+            and (reviewed_work_admission(review=review, quality=quality, text=str(export_package.get("rendered_text") or ""),
+                source_id=str(export_package.get("selected_source_asset_version_id") or "")) if work_admission and publish_gate.get("review_admission", {}).get("contract_version") == "reviewed-work-admission.v2" else review.get("decision") == "PASSED")
             and int(review.get("blocking_issue_count", 0)) == 0
         ),
         "canon_consistent": canon.get("gate") == "PASSED"
@@ -346,6 +389,7 @@ def finalize_blob_verified_release(
         "project_id": project_id,
         "chapter": export_package["chapter"],
         "gate": "INTERNAL_ADMITTED" if internal else "PASSED",
+        **({"review_admission": publish_gate["review_admission"]} if work_admission and publish_gate.get("review_admission", {}).get("contract_version") == "reviewed-work-admission.v2" else {}),
         "release_status": "INTERNAL_VALIDATION_FINALIZED" if internal else "INTERNAL_RELEASE_FINALIZED",
         **({"internal_admission": validation, "final_gate_contract_version": "creative-internal-finalize.v1",
             "strict_certification_eligible": False} if internal else {}),

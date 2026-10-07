@@ -521,7 +521,7 @@ def build_provider_task_view(
         command = inputs.get("planning_command")
         frozen = inputs.get("frozen_inputs")
         task = inputs.get("foundation_task")
-        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") == "1.19.0"):
+        if not isinstance(command, Mapping) or command.get("planning_scope") != "NOT_APPLICABLE" or not isinstance(frozen, list) or {item.get("role") for item in frozen if isinstance(item, Mapping)} != set(FOUNDATION_INPUT_ROLES[stage]) or task != foundation_task(stage, work_requirements=command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}, aligned_methods=command.get("creative_requirements_contract") == "work-requirements.v2", rfc6901_paths=command.get("execution_contract_version") in {"1.19.0", "1.21.0"}, narrative_search=command.get("execution_contract_version") == "1.21.0" and bool(command.get("narrative_search_id"))):
             raise KernelError("FOUNDATION_PROVIDER_TASK_INVALID", "Foundation Provider task requires exact frozen roles and stage instructions")
         return _task(stage, planning_command=_compact(command), frozen_inputs=_compact(frozen), foundation_task=_compact(task), narrative_intelligence=_compact(inputs.get("narrative_intelligence")))
     if stage in _PLANNING_STAGES:
@@ -710,6 +710,7 @@ def build_provider_task_view(
             **craft_provider_task(inputs.get("draft") or {}),
             **_cross_chapter_task(inputs),
             chapter=_prose(inputs.get("draft")),
+            **_realization_source_review(inputs.get("draft") or {}),
             creative_execution=deepcopy(
                 (inputs.get("draft") or {}).get("creative_execution") or {}
             ),
@@ -810,7 +811,7 @@ def build_provider_task_view(
             )
             if (source.get("realization_contract") or {}).get(
                 "contract_version"
-            ) == "scene-realization-composition.v2":
+            ) in {"scene-realization-composition.v2", "scene-realization-composition.v3"}:
                 payload["targeted_editing"] = {
                     "mode": "DIAGNOSIS_DIRECTED_ONLY",
                     "tasks": [
@@ -930,6 +931,7 @@ def build_provider_task_view(
             **craft_provider_task(revision or {}, inputs.get("review") or {}),
             **_cross_chapter_task(inputs),
             revised_chapter=_prose(revision),
+            **_realization_source_review(revision or {}),
             **(
                 {
                     "creative_baseline": deepcopy(
@@ -992,6 +994,8 @@ def build_provider_task_view(
     if stage == "canon_support":
         task = _task(stage, final_candidate=_prose(inputs.get("revision")),
                      grounding=deepcopy(inputs.get("grounding")), claims=deepcopy(inputs.get("claims")))
+        if inputs.get("realization_comparison") is not None:
+            task["realization_comparison"] = deepcopy(inputs["realization_comparison"])
         comparisons = [item["claim"]["actor_step_execution"] for item in inputs.get("claims") or []
                        if isinstance(item, Mapping) and isinstance(item.get("claim"), Mapping) and "actor_step_execution" in item["claim"]]
         if comparisons:
@@ -1594,6 +1598,11 @@ def build_provider_context_view(
             omitted_segments += 1
             continue
         asset_type = str(raw.get("asset_type") or "")
+        if stage == "canon_extraction" and task_view.get("canon_context_projection") == "canon-source-context.v1" and asset_type in {
+            "chapter_execution_intent", "chapter_memo", "retrieval_result", "style_policy"}:
+            omitted_segments += 1
+            omitted_facts += len(raw.get("structured_facts") or ())
+            continue
         if stage == "draft" and asset_type in {"chapter_plan", "style_policy"}:
             omitted_segments += 1
             omitted_facts += len(raw.get("structured_facts") or ())
@@ -1944,6 +1953,7 @@ def _is_exact_sha256(value: Any) -> bool:
 def project_reader_outcome_context_input(
     asset_type: str,
     content: Mapping[str, Any],
+    *, coordinated_contract: bool = False,
 ) -> dict[str, Any]:
     """INVARIANT: Project one accepted Reader Outcome input without Authority envelopes.
 
@@ -1952,7 +1962,7 @@ def project_reader_outcome_context_input(
     bounded view of current reader-facing state.  Empty projections preserve the
     immutable input reference without sending that asset to the Provider.
     """
-    if asset_type == "draft_version":
+    if asset_type == "draft_version" or coordinated_contract and asset_type == "best_draft_candidate":
         return _prose(content)
     if asset_type == "reader_contract":
         return _pick(content, "contract_id", "safe_summary")
@@ -2026,6 +2036,7 @@ def _build_reader_outcome_context_view(
     if schema_version not in {
         "novelos.reader_outcome_context_bundle.v1",
         "novelos.reader_outcome_context_bundle.v2",
+        "novelos.reader_outcome_context_bundle.v3",
     }:
         raise KernelError(
             "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
@@ -2060,7 +2071,8 @@ def _build_reader_outcome_context_view(
                     "Reader Outcome frozen input has no typed projection",
                 )
             projection = project_reader_outcome_context_input(
-                asset_type, legacy_content
+                asset_type, legacy_content,
+                coordinated_contract=schema_version == "novelos.reader_outcome_context_bundle.v3",
             )
         projected = _compact(projection)
         if not projected:
@@ -2073,13 +2085,14 @@ def _build_reader_outcome_context_view(
                 "content": projected,
             }
         )
-    if not any(item["asset_type"] == "draft_version" for item in segments):
+    prose_type = "best_draft_candidate" if schema_version == "novelos.reader_outcome_context_bundle.v3" else "draft_version"
+    if not any(item["asset_type"] == prose_type for item in segments):
         raise KernelError(
             "READER_OUTCOME_PROVIDER_CONTEXT_VIEW_INVALID",
             "Reader Outcome Provider View requires accepted chapter prose",
         )
     view = {
-        "contract_version": "provider-context-view-v2",
+        "contract_version": "provider-context-view-v3" if schema_version == "novelos.reader_outcome_context_bundle.v3" else "provider-context-view-v2",
         "stage": "reader_outcome",
         "accepted_state_boundary": {
             "accepted_through_chapter": max(
@@ -2093,7 +2106,7 @@ def _build_reader_outcome_context_view(
         },
         "segments": segments,
         "selection_explanation": {
-            "policy": "minimum-sufficient-reader-outcome-context-v1",
+            "policy": "accepted-best-candidate-reader-outcome-context-v2" if schema_version == "novelos.reader_outcome_context_bundle.v3" else "minimum-sufficient-reader-outcome-context-v1",
             "included_segment_count": len(segments),
             "omitted_segment_count": omitted,
             "maximum_segments": _MAX_SEGMENTS,
@@ -2128,6 +2141,7 @@ def _build_planning_context_view(
     if capacity_policy is not None and capacity_policy != _PLANNING_TASK_CAPACITY_POLICY:
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
     task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
+    typed_arc_sources = context_bundle.get("planning_contract_version") == "1.21.0"
     frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
     if isinstance(frozen, Mapping) and "compiled_view" in frozen:
         view = frozen["compiled_view"]
@@ -2192,6 +2206,7 @@ def _build_planning_context_view(
             loss_records=losses,
             source=raw,
             task_capacity=task_capacity,
+            typed_arc_sources=typed_arc_sources,
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -2210,6 +2225,7 @@ def _build_planning_context_view(
     view = {
         "contract_version": "provider-context-view-v4" if task_capacity else "provider-context-view-v2",
         "stage": stage,
+        **({"typed_arc_projection_version": "typed-arc-context-projection.v2"} if typed_arc_sources else {}),
         "narrative_position": {
             "book_id": str(context_bundle.get("book_id") or ""),
             "logical_key": str(context_bundle.get("logical_key") or ""),
@@ -2285,6 +2301,7 @@ def _build_planning_context_view(
             loss_records=losses,
             source=source,
             task_capacity=task_capacity,
+            typed_arc_sources=typed_arc_sources,
         )
         repair_view = {
             "contract_version": str(repair_context.get("contract_version") or ""),
@@ -2668,6 +2685,7 @@ def _project_planning_content(
     loss_records: list[dict[str, Any]] | None = None,
     source: Mapping[str, Any] | None = None,
     task_capacity: bool = False,
+    typed_arc_sources: bool = False,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2755,7 +2773,8 @@ def _project_planning_content(
         if loss_records is not None:
             loss_records.append(_loss_record(source or {"role": role}, path="/" + field, value=value, reason=reason))
 
-    allowed_fields = _PLANNING_ROLE_FIELDS.get(role)
+    typed_role = "arc_plans" if typed_arc_sources and role.startswith(("related_arc:", "dependent_arc:")) else role
+    allowed_fields = _PLANNING_ROLE_FIELDS.get(typed_role)
     if allowed_fields is not None:
         admitted_fields = {*allowed_fields, *_REQUIRED_PLANNING_FIELDS, *_OPTIONAL_PLANNING_FIELDS}
         for field, value in compacted.items():
@@ -3068,3 +3087,13 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
         "frozen_prose": projection,
         "instruction": "审读实际提供的原书正文，按每个来源章节冻结的 creative_baseline 检查题材、风格、受众、人物、结构与已选技法。作者有意的稳定、观察、开放结尾或重复不是默认缺陷；选择了变化、压力、伏笔或兑现时才检查相应承诺。UNKNOWN_LEGACY_BASELINE 表示作品目标未知，只判断可由原文证明的客观问题，不能推定玄幻、武侠、转化或商业节奏。逐项区分客观错误、作品目标偏差与审美建议；未到兑现期、合理变化及证据不足不能要求补写。只引用给定原文 Unicode code-point 坐标和精确 quote，不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。relation_hypothesis 是未核验关系假设，ISSUE 或 INTENTIONAL 判断必须分别引用两个给定片段，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见，不得修改正文、Canon 或计划。",
     }
+
+
+def _realization_source_review(draft):
+    contract = draft.get("realization_contract") or {}
+    if contract.get("contract_version") != "scene-realization-composition.v3":
+        return {}
+    return {"realization_source_evidence": {"accepted_sources": deepcopy(contract["accepted_sources"]),
+        "information_flow": deepcopy(contract["information_flow"]),
+        "candidate_uses": [{key: deepcopy(row[key]) for key in ("slot_id", "used_fact_ids", "character_source_uses")} for row in draft["scene_artifacts"]],
+        "review_requirement": "Read the actual prose to check actor ownership, observation/communication before dependent use, future leakage and testimony versus objective fact. These declared references are evidence, not proof of occurrence or successful realization. Accepted source versions are read-only; planned sources are not accepted history."}}

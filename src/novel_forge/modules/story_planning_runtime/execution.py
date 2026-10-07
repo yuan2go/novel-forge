@@ -355,7 +355,7 @@ def planning_repair_route_receipt(
         if row is None:
             return None
         payload = row[0]
-        contract_successor = bool(payload.get("runtime_continuation_id")) and payload.get("execution_contract_version") == "1.20.0" and payload.get("repair_reason") == "WORLD_AGENCY_CONTRACT_SUCCESSOR"
+        contract_successor = bool(payload.get("runtime_continuation_id")) and payload.get("execution_contract_version") == "1.21.0" and payload.get("repair_reason") == "WORLD_AGENCY_CONTRACT_SUCCESSOR"
         if contract_successor:
             return _world_contract_route_receipt(database_url, command=_command_from_payload(payload), payload=payload, task_type=task_type, input_hash=input_hash, lineage=lineage)
         if not row[1]:
@@ -878,6 +878,7 @@ def _realization_reference_contract(
     book_id: str,
     frozen_by_operation_id: str,
     inputs: tuple[FrozenPlanningInput, ...],
+    selectors_only: bool = False,
 ) -> dict[str, Any]:
 
     references: dict[str, list[dict[str, str]]] = {}
@@ -910,7 +911,7 @@ def _realization_reference_contract(
         references[domain_type] = eligible
     return {
         "contract_version": "planning-realization-reference-contract-v1",
-        "instruction": (
+        "instruction": "Select only asset_version_id from the matching frozen domain list; host binds scope, type, hash and Operation identity." if selectors_only else (
             "Copy one complete reference object from the matching domain list; "
             "never invent or reinterpret authority_role, asset_type, identity, "
             "or lineage."
@@ -3646,6 +3647,7 @@ class _PlanningPepPort:
     recovered_completion: dict[str, Any] | None
     writer: AuthorityAssetWriter
     post_provider_fault_injector: Callable[[str], None]
+    realization_selector_catalog: dict[str, Any] | None = None
 
     external_effect_backed = True
     production_execution_gateway_backed = True
@@ -4210,8 +4212,9 @@ class PostgresPlanningExecutionPreparer:
         output_schema = (
             foundation_output_schema(
                 command.generator_operation_name,
-                rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
+                rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
             )
             if command.generator_operation_name in FOUNDATION_GENERATORS
             else planning_provider_output_schema(
@@ -4230,9 +4233,9 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
-                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
-                serialization_contract=command.execution_contract_version in {"1.19.0", "1.20.0"},
+                work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+                serialization_contract=command.execution_contract_version in {"1.19.0", "1.21.0"},
             )
         )
         if (
@@ -4272,9 +4275,16 @@ class PostgresPlanningExecutionPreparer:
             )
         )
         if command.generator_operation_name in FOUNDATION_GENERATORS:
-            output_schema_ref = foundation_output_schema_ref(command.generator_operation_name, execution_contract_version=command.execution_contract_version)
-        if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
-            output_schema_ref += ":work-v4" if command.execution_contract_version in {"1.19.0", "1.20.0"} else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"} else ":work-v2"
+            output_schema_ref = foundation_output_schema_ref(command.generator_operation_name, execution_contract_version=command.execution_contract_version, narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0")
+        if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            output_schema_ref += ":work-v4" if command.execution_contract_version in {"1.19.0", "1.21.0"} else ":work-v3" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else ":work-v2"
+        if command.execution_contract_version == "1.21.0" and command.generator_operation_name not in FOUNDATION_GENERATORS and provider_stage is None:
+            output_schema = bind_realization_selector_schema(
+                output_schema, context_document.content["realization_reference_contract"],
+                primary_arc_id=str(command.input_versions.get("arc_plans") or ""),
+                related_arc_ids=command.related_arc_plan_version_ids,
+            )
+            output_schema_ref += ":host-selectors-v2"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4408,9 +4418,9 @@ class PostgresPlanningExecutionPreparer:
             },
             candidate_payload={},
             arc_working_set=command.arc_working_set,
-            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
-            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
+            work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
         )
         try:
             context_policy = json.loads(frozen.context_policy_payload_json)
@@ -4431,17 +4441,18 @@ class PostgresPlanningExecutionPreparer:
                         "foundation_task": foundation_task(
                             command.generator_operation_name,
                             work_requirements=command.execution_contract_version
-                            in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-                            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
-                            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
+                            in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                            aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+                            rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                            narrative_search=command.execution_contract_version == "1.21.0" and bool(command.narrative_search_id),
                         )
                     }
                     if command.generator_operation_name in FOUNDATION_GENERATORS
                     else {}
                 ),
                 "planning_command": {
-                    **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version in {"1.19.0", "1.20.0"} else {}),
-                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"} else {}),
+                    **({"execution_contract_version": command.execution_contract_version} if command.execution_contract_version in {"1.19.0", "1.21.0"} else {}),
+                    **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
                     "generation_operation_id": operation_id,
@@ -5088,6 +5099,7 @@ class PostgresPlanningExecutionPreparer:
                 binding=binding,
                 adapter=adapter,
                 recovered_completion=recovered_completion,
+                realization_selector_catalog=context_document.content.get("realization_reference_contract") if command.execution_contract_version == "1.21.0" and provider_stage is None else None,
                 writer=self.writer,
                 post_provider_fault_injector=self.post_provider_fault_injector,
             ),
@@ -5510,7 +5522,7 @@ class PostgresPlanningExecutionPreparer:
                 asset_version_id=asset_version_id,
             )
             if (
-                document.asset_type not in {"longform_recap", "replan_request", "longform_prose_review_report"}
+                document.asset_type not in ({"longform_recap", "replan_request", "longform_prose_review_report", "arc_revision_candidate"} if command.execution_contract_version == "1.21.0" else {"longform_recap", "replan_request", "longform_prose_review_report"})
                 or document.governance != "CLEAR"
                 or document.eligibility not in {"ELIGIBLE", "PRODUCTION_ELIGIBLE"}
             ):
@@ -5518,9 +5530,18 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID",
                     "Planning change evidence drifted after admission",
                 )
+            if document.asset_type == "arc_revision_candidate":
+                from .recap_sources import require_arc_recap_change_evidence
+                require_arc_recap_change_evidence(self.database_url, command, asset_version_id, dict(document.content))
             if document.asset_type == "longform_prose_review_report":
                 from novel_forge.modules.book_followup_authority.prose_change_evidence import require_prose_planning_evidence
                 require_prose_planning_evidence(self.database_url, command=command, asset_version_id=asset_version_id, commit_sha=self.planning_route.release_sha)
+            if command.execution_contract_version == "1.21.0":
+                retained = [item for item in selected if item["role"] == f"change_evidence:{ordinal}"]
+                if retained:
+                    if len(retained) != 1 or (retained[0]["asset_version_id"], retained[0]["content_hash"]) != (document.asset_version_id, document.content_hash):
+                        raise KernelError("PLANNING_CONTEXT_CHANGE_EVIDENCE_INVALID", "Frozen change evidence role differs from exact command reference")
+                    continue
             documents.append(document)
             selected.append(
                 {
@@ -5570,6 +5591,18 @@ class PostgresPlanningExecutionPreparer:
         except KernelError as exc:
             if exc.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
+            if command.runtime_continuation_id and command.execution_contract_version == "1.21.0" and not preflight_only:
+                from .runtime_continuation import require_binding
+                runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
+                proof = runtime.get("planning_capacity", {}).get("context_revalidation")
+                if runtime.get("planning_reference_contract") and proof:
+                    original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
+                    if original.content_hash != proof["context_content_hash"]:
+                        raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
+                    self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected, context_policy_ref=context_policy_ref)
+                    self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
+                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id)
+                    return self._materialize_planning_context(operation_id=operation_id, command=command, logical_ref=logical_ref, documents=documents, content=content), tuple(documents)
         else:
             self._validate_frozen_context_retry(
                 context=frozen_context,
@@ -5704,6 +5737,7 @@ class PostgresPlanningExecutionPreparer:
             )
         content = {
             "schema_version": "novelos.planning_context_bundle.v1",
+            **({"planning_contract_version": "1.21.0"} if command.execution_contract_version == "1.21.0" else {}),
             "project_id": command.project_id,
             "workspace_id": command.workspace_id,
             "book_id": command.book_id,
@@ -5740,9 +5774,10 @@ class PostgresPlanningExecutionPreparer:
                     "foundation_task": foundation_task(
                         command.generator_operation_name,
                         work_requirements=command.execution_contract_version
-                        in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-                        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
-                        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
+                        in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+                        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                        narrative_search=command.execution_contract_version == "1.21.0" and bool(command.narrative_search_id),
                     )
                 }
                 if command.generator_operation_name in FOUNDATION_GENERATORS
@@ -5752,6 +5787,7 @@ class PostgresPlanningExecutionPreparer:
                         book_id=command.book_id,
                         frozen_by_operation_id=operation_id,
                         inputs=inputs,
+                        selectors_only=command.execution_contract_version == "1.21.0",
                     )
                 }
             ),
@@ -5778,8 +5814,8 @@ class PostgresPlanningExecutionPreparer:
                 }
                 for profile in required_qualification_profiles(
                     command.generator_operation_name,
-                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-                    profile_version="3.0.0" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"} else "2.0.0",
+                    work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                    profile_version="3.0.0" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else "2.0.0",
                 )
             ],
             "trace_id": command.trace_id,
@@ -5825,6 +5861,61 @@ class PostgresPlanningExecutionPreparer:
             )
         )
         return context, tuple(documents)
+
+
+
+    def _reproject_frozen_context(self, source, *, command, task_tokens, operation_id=None):
+        from copy import deepcopy
+
+        content = deepcopy(dict(source))
+        content["token_budget"] = task_tokens
+        if command.execution_contract_version == "1.21.0":
+            content["planning_contract_version"] = "1.21.0"
+        if operation_id and "realization_reference_contract" in content:
+            for rows in content["realization_reference_contract"][
+                "references_by_domain"
+            ].values():
+                for ref in rows:
+                    ref["frozen_by_operation_id"] = operation_id
+        if (
+            command.execution_contract_version == "1.21.0"
+            and "realization_reference_contract" in content
+        ):
+            content["realization_reference_contract"]["instruction"] = (
+                "Select only asset_version_id from the matching domain list. The host binds scope, type, hash and Operation identity."
+            )
+        content.pop("context_manifest", None)
+        content["context_manifest"] = self._planning_context_manifest(
+            command=command, selected_inputs=content["input_versions"], content=content
+        )
+        content["estimated_tokens"] = int(
+            content["context_manifest"]["token_accounting"]["accepted_tokens"]
+        )
+        return content
+
+
+    def _materialize_planning_context(
+        self, *, operation_id, command, logical_ref, documents, content
+    ):
+        return self.writer.materialize_output(
+            AuthorityAssetWriteCommand(
+                operation_id=operation_id,
+                project_id=command.project_id,
+                asset_id=f"planning-context:{operation_id}",
+                asset_type="context_bundle",
+                schema_version="novelos.planning_context_bundle.v1",
+                logical_ref=logical_ref,
+                category="planning_context",
+                output_key="planning.context_bundle",
+                role="context_bundle",
+                content=content,
+                qualification_policy="planning-context-source-isolation-v1",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                reference_asset_ids=tuple(document.asset_id for document in documents),
+            )
+        )
+
 
     def _world_context_bundle(self, *, operation_id, command, base, stage, calibration_sample=False):
         source = self.query.require(
@@ -6597,9 +6688,10 @@ __all__ = [
 
 
 def _world_contract_route_receipt(database_url, *, command, payload, task_type, input_hash, lineage):
-    if task_type not in {"world_candidates.generate", "world_candidates.evaluate"}:
+    reference_contract = command.repair_reason == "PLANNING_REFERENCE_CONTRACT_SUCCESSOR" and task_type == "chapter_group_plan.generate"
+    if task_type not in {"world_candidates.generate", "world_candidates.evaluate"} and not reference_contract:
         return None
-    if not command.runtime_continuation_id or command.execution_contract_version != "1.20.0":
+    if not command.runtime_continuation_id or command.execution_contract_version != "1.21.0":
         return None
     from .runtime_continuation import require_binding, require_source
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -6609,7 +6701,7 @@ def _world_contract_route_receipt(database_url, *, command, payload, task_type, 
     source_id = binding["source_operation_id"]
     with AuthorityUnitOfWork(database_url) as uow:
         source = require_source(uow, source_operation_id=source_id, project_id=command.project_id, active_successor_operation_id=lineage[-1])
-        if source.get("mode") != "WORLD_AGENCY_CONTRACT" or source["command"].get("repair_number") != command.repair_number:
+        if source.get("mode") != ("PLANNING_REFERENCE_CONTRACT" if reference_contract else "WORLD_AGENCY_CONTRACT") or source["command"].get("repair_number") != command.repair_number:
             raise KernelError("PLANNING_ROUTING_CONTRACT_DRIFT", "contract succession cannot reset content repair consumption")
         uow.cursor.execute("SELECT request_payload #>> '{_production_execution,capability_runtime,routing_decision,task,input_hash}' FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED' AND request_payload->>'stage'=%s", [source_id, task_type])
         previous = uow.cursor.fetchall()
@@ -6626,9 +6718,110 @@ def _world_contract_route_receipt(database_url, *, command, payload, task_type, 
         if receipt is None or receipt["budget_reservation_status"] != "SETTLED" or receipt["provider_evidence"].get("result") != current.content["contract"]["output"]:
             raise KernelError("PLANNING_ROUTING_DEPENDENCY_UNSETTLED", "new Director request requires current known settled generation")
         dependency = {"dependent_evaluation": {"generation": {"asset_version_id": current.asset_version_id, "content_hash": current.content_hash}, "external_effect_id": evidence["external_receipt_ref"]}}
-    return {"contract_version": "planning-route-contract-successor.v1", **dependency, "operation_id": lineage[-1],
+    return {"contract_version": "planning-route-contract-successor.v2" if reference_contract else "planning-route-contract-successor.v1", **dependency, "operation_id": lineage[-1],
         "source_operation_id": source_id, "source_asset_version_id": source["evidence_asset_version_id"],
         "diagnosis_hash": canonical_hash(source["diagnostic"]), "repair_number": command.repair_number,
         "maximum_repairs": 4, "contract_chain_depth": source["depth"], "source_input_hash": previous[0][0], "input_hash": input_hash,
         "command_hash": canonical_hash(payload), "authorized_history_operation_ids": list(lineage[:-1]),
-        "accepted_history_mutation_allowed": False, "changed_contract": "world-agency.v2"}
+        "accepted_history_mutation_allowed": False, "changed_contract": "planning-host-source-selectors.v2" if reference_contract else "world-agency.v2"}
+
+def bind_provider_realization_selectors(payload, catalog):
+    from copy import deepcopy
+
+    value = deepcopy(dict(payload))
+    fields = {
+        "world_realization": {
+            "invariant_refs": "WORLD_INVARIANT",
+            "structure_refs": "WORLD_STRUCTURE",
+            "state_ref": "WORLD_STATE",
+        },
+        "character_realization": {
+            "identity_ref": "CHARACTER_IDENTITY",
+            "state_ref": "CHARACTER_STATE",
+            "trajectory_ref": "CHARACTER_TRAJECTORY",
+        },
+    }
+    for manifest, domains in fields.items():
+        for entity in value.get(manifest, []):
+            for field, domain in domains.items():
+                raw = entity[field]
+                selectors = raw if isinstance(raw, list) else [raw]
+                references = []
+                for selector in selectors:
+                    if not isinstance(selector, dict) or set(selector) != {
+                        "asset_version_id"
+                    }:
+                        raise KernelError(
+                            "PLANNING_REALIZATION_SELECTOR_INVALID",
+                            "Model selects a frozen source; host owns its identity, type, hash and lineage",
+                        )
+                    matches = [
+                        ref
+                        for ref in catalog["references_by_domain"][domain]
+                        if ref["asset_version_id"] == selector["asset_version_id"]
+                    ]
+                    if len(matches) != 1:
+                        raise KernelError(
+                            "PLANNING_REALIZATION_SELECTOR_INVALID",
+                            "Source must belong to the exact frozen domain catalogue",
+                        )
+                    references.append(deepcopy(matches[0]))
+                entity[field] = references if isinstance(raw, list) else references[0]
+    return value
+
+
+def bind_realization_selector_schema(
+    schema, catalog, *, primary_arc_id, related_arc_ids
+):
+    from copy import deepcopy
+
+    value = deepcopy(schema)
+    fields = {
+        "world_realization": {
+            "invariant_refs": "WORLD_INVARIANT",
+            "structure_refs": "WORLD_STRUCTURE",
+            "state_ref": "WORLD_STATE",
+        },
+        "character_realization": {
+            "identity_ref": "CHARACTER_IDENTITY",
+            "state_ref": "CHARACTER_STATE",
+            "trajectory_ref": "CHARACTER_TRAJECTORY",
+        },
+    }
+    for manifest, domains in fields.items():
+        for field, domain in domains.items():
+            refs = catalog["references_by_domain"][domain]
+            selector = _strict_object(
+                {
+                    "asset_version_id": {
+                        "type": "string",
+                        "enum": [ref["asset_version_id"] for ref in refs],
+                        "description": "Select one supplied source in this domain. The host binds all identity, hash, type and Operation fields.",
+                    }
+                }
+            )
+            properties = value["properties"][manifest]["items"]["properties"]
+            if field.endswith("_refs"):
+                properties[field]["items"] = selector
+            else:
+                properties[field] = selector
+    if "primary_arc_ids" in value["properties"]:
+        value["properties"]["primary_arc_ids"] = {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {"type": "string", "const": primary_arc_id},
+            "description": "The frozen primary Arc for this request.",
+        }
+        value["properties"]["secondary_arc_ids"] = {
+            "type": "array",
+            "minItems": len(related_arc_ids),
+            "maxItems": len(related_arc_ids),
+            "uniqueItems": True,
+            "items": {
+                "type": "string",
+                "enum": list(related_arc_ids) or ["NO_RELATED_ARC"],
+            },
+            "description": "Classify every frozen related Arc exactly once. Membership does not require movement in this chapter; HOLD and future setup remain possible.",
+        }
+    return value

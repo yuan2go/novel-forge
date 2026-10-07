@@ -854,7 +854,7 @@ class StoryFormationRepository:
         if self.stage_input(formation_run_id, layer.role) != layer:
             raise KernelError("STORY_FORMATION_STAGE_INPUT_DRIFT", "A retry cannot replace the committed generated layer")
 
-    def generated_layer(self, *, formation_run_id: str, project_id: str, book_id: str, candidate_id: str, candidates: tuple[str, ...], reasons: tuple[str, ...]) -> FormationLayerInput:
+    def generated_layer(self, *, formation_run_id: str, project_id: str, book_id: str, candidate_id: str, candidates: tuple[str, ...], reasons: tuple[str, ...], comparison_search_id: str = "") -> FormationLayerInput:
         self.cursor.execute(
             """
             SELECT generation.generator_operation_name, version.content_hash, version.schema_version,
@@ -906,12 +906,82 @@ class StoryFormationRepository:
             content_hash=row[1], schema_version=row[2], generation_operation_id=row[3],
             qualification_evidence_asset_version_id=row[4], qualification_hash=row[5],
             activation_operation_id=row[6], candidate_asset_version_ids=candidates, selection_reason=reasons,
-            selection_basis="AUTHOR_AVAILABLE_ALTERNATIVE" if creative and len(candidates)==1 and row[0]=='creative.candidates.generate' else "TEMPLATE_VALIDATION" if creative else "AUTHOR_COMPARISON" if supervised else "INDEPENDENT_COMPARISON",
+            selection_basis="AUTO_COMPARISON" if comparison_search_id else "AUTHOR_AVAILABLE_ALTERNATIVE" if creative and len(candidates)==1 and row[0]=='creative.candidates.generate' else "TEMPLATE_VALIDATION" if creative else "AUTHOR_COMPARISON" if supervised else "INDEPENDENT_COMPARISON",
         )
+        if comparison_search_id:
+            proof = self._require_automatic_comparison(formation_run_id, layer)
+            if proof["search_id"] != comparison_search_id:
+                raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "Formation comparison differs from its native Search")
         if layer.selection_basis == "AUTHOR_AVAILABLE_ALTERNATIVE":
             self._require_available_alternative(formation_run_id, layer)
         self._require_qualification(project_id, layer)
         return layer
+
+    def _require_automatic_comparison(self, formation_run_id: str, selected: FormationLayerInput) -> dict[str, Any]:
+        return self.require_automatic_comparison_selection(formation_run_id,
+            generation_operation_id=selected.generation_operation_id,
+            candidate_asset_version_id=selected.asset_version_id, candidate_content_hash=selected.content_hash,
+            candidate_asset_version_ids=selected.candidate_asset_version_ids)
+
+    def require_automatic_comparison_selection(self, formation_run_id: str, *, generation_operation_id: str,
+        candidate_asset_version_id: str, candidate_content_hash: str,
+        candidate_asset_version_ids: tuple[str, ...], search_id: str = "") -> dict[str, Any]:
+        from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+        run = self.require(formation_run_id)
+        frozen = StoryFormationInput.from_mapping(run["frozen_input"])
+        policy = frozen.generation_policy or {}
+        authorization = frozen.auto_authorization
+        if (frozen.digest != run["frozen_input_digest"] or policy.get("contract_version") != "formation-generation.v7"
+                or policy.get("creative_selection") != "AUTO_COMPARISON" or policy.get("approval_mode") != "AUTO"
+                or any(authorization.get(key) != run[key] for key in ("project_id", "workspace_id", "book_id", "formation_run_id"))
+                or not {"story_planning.candidate.approve", "story_planning.candidate.activate"} <= set(authorization.get("allowed_actions", []))
+                or run["lifecycle"] in {"ABORTED", "FAILED_FINAL"} or self.cancellation(formation_run_id)):
+            raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "Automatic comparison requires its unchanged scoped original authorization")
+        self.cursor.execute("""SELECT search.search_id,search.project_id,search.book_id,search.generator_operation_name,
+            search.desired_transformation,search.strategy_directives,decision.selected_candidate_asset_version_id,
+            decision.comparison,decision.comparison_hash,search.logical_key,search.planning_horizon,
+            search.workspace_id,search.accepted_through_chapter,search.book_run_id,
+            search.parent_version_id,search.parent_state_asset_version_id,search.status,
+            generation.workspace_id,generation.project_id,generation.book_id,generation.generator_operation_name,
+            version.content_hash
+            FROM authority_story_planning_generation generation
+            JOIN authority_story_narrative_search search ON search.search_id=generation.narrative_search_id
+            JOIN authority_story_narrative_search_decision decision USING(search_id)
+            JOIN authority_asset_version version ON version.asset_version_id=generation.candidate_asset_version_id
+            WHERE generation.operation_id=%s""", [generation_operation_id])
+        row = self.cursor.fetchone()
+        if (row is None or policy.get("contract_version") != "formation-generation.v7"
+                or policy.get("creative_selection") != "AUTO_COMPARISON"
+                or row[1:4] != (run["project_id"], run["book_id"], "creative.candidates.generate")
+                or row[4].get("selection_policy") != policy["selection_policy"]
+                or row[4].get("author_brief") != {"asset_version_id": run["frozen_input"]["creative_brief_asset_version_id"], "content_hash": run["frozen_input"]["creative_brief_content_hash"]}
+                or row[9] != f"{formation_run_id}:CREATIVE_FOUNDATION:comparison"
+                or row[10] != {"level": "CREATIVE_FOUNDATION", "target_chapters": policy["target_chapters"]}
+                or row[5] != policy["strategy_directives"] or row[6] != candidate_asset_version_id
+                or canonical_hash(row[7]) != row[8]
+                or search_id and row[0] != search_id
+                or row[11] != run["workspace_id"] or row[12] != 0 or any(row[13:16])
+                or row[16] not in {"SELECTED", "ACTIVATED"}
+                or row[17:21] != (run["workspace_id"], run["project_id"], run["book_id"], "creative.candidates.generate")
+                or row[21] != candidate_content_hash):
+            raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "Automatic direction needs its exact authorized native comparison")
+        self.cursor.execute("""SELECT member.candidate_asset_version_id,version.content_hash,
+            operation.command_payload#>>'{payload,narrative_search_strategy_directive}',state.freshness,version.governance,state.qualification
+            FROM authority_story_narrative_search_candidate member
+            JOIN authority_asset_version version ON version.asset_version_id=member.candidate_asset_version_id
+            JOIN authority_story_planning_generation generation ON generation.operation_id=member.generation_operation_id
+            JOIN authority_operation operation ON operation.operation_id=generation.operation_id
+            JOIN authority_story_design_version_state state ON state.asset_version_id=version.asset_version_id AND state.project_id=generation.project_id
+            WHERE member.search_id=%s AND generation.project_id=%s AND generation.book_id=%s AND generation.workspace_id=%s AND operation.project_id=generation.project_id""",
+            [row[0],run["project_id"],run["book_id"],run["workspace_id"]])
+        members = self.cursor.fetchall()
+        if (len(members) != policy["creative_candidates"] or len(members) < 2
+                or {member[0] for member in members} != set(candidate_asset_version_ids)
+                or {member[2] for member in members} != set(policy["strategy_directives"])
+                or any(member[3:5] != ("CURRENT", "CLEAR") or member[5] not in {"QUALIFIED", "STRUCTURALLY_VALID"} for member in members)
+                or not any(member[:2] == (candidate_asset_version_id, candidate_content_hash) for member in members)):
+            raise KernelError("CREATIVE_SEARCH_CANDIDATE_EVIDENCE_INVALID", "Automatic comparison cannot substitute a candidate or sole survivor")
+        return {"search_id": row[0], "comparison_hash": row[8], "comparison": row[7]}
 
     def _require_available_alternative(self, formation_run_id: str, selected: FormationLayerInput) -> None:
         run = self.require(formation_run_id)
@@ -951,6 +1021,7 @@ class StoryFormationRepository:
     def _record_creative_search(
         self, formation_run_id: str, selected: FormationLayerInput
     ) -> None:
+        automatic_proof = self._require_automatic_comparison(formation_run_id, selected) if selected.selection_basis == "AUTO_COMPARISON" else None
         requested = tuple(selected.candidate_asset_version_ids)
         self.cursor.execute(
             """
@@ -984,7 +1055,7 @@ class StoryFormationRepository:
             approved = approved_validation_design(self.cursor, project_id=project_id, book_id=book_id, asset_version_id=selected.asset_version_id)
             if approved is None or approved["lifecycle"] != "ACTIVE":
                 raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "Validation selection is not active")
-        elif selected.selection_basis != "INDEPENDENT_COMPARISON":
+        elif selected.selection_basis not in {"INDEPENDENT_COMPARISON", "AUTO_COMPARISON"}:
             from novel_forge.modules.story_design_authority.author_supervision import candidate_supervision, approved_design_receipt
             self.cursor.execute("SELECT project_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s", [formation_run_id])
             project_id, book_id = self.cursor.fetchone()
@@ -1003,7 +1074,7 @@ class StoryFormationRepository:
                     asset_version_id=selected.asset_version_id, content_hash=selected.content_hash)
                 if checked != selected or len(requested) != 1:
                     raise KernelError("CREATIVE_SEARCH_SELECTION_DRIFT", "Author direction is one exact approved original input")
-        else:
+        elif selected.selection_basis == "INDEPENDENT_COMPARISON":
             if set(rows) != set(requested) or any(
                 tuple(str(item) for item in row[1:4])
                 != (FoundationRole.CREATIVE_FOUNDATION.value, "QUALIFIED", "CURRENT")
@@ -1064,7 +1135,7 @@ class StoryFormationRepository:
                         "selection_reason": list(selected.selection_reason),
                     }
                 ),
-                Jsonb({"comparison": "LIMITED_BY_FAILED_ALTERNATIVES" if selected.selection_basis == "AUTHOR_AVAILABLE_ALTERNATIVE" else "FROZEN", **({"selection_basis": selected.selection_basis, "literary_qualification": "NOT_PROVEN"} if selected.selection_basis != "INDEPENDENT_COMPARISON" else {})}),
+                Jsonb({**({"narrative_search": automatic_proof} if automatic_proof else {}), "comparison": "LIMITED_BY_FAILED_ALTERNATIVES" if selected.selection_basis == "AUTHOR_AVAILABLE_ALTERNATIVE" else "FROZEN", **({"selection_basis": selected.selection_basis, "literary_qualification": "NOT_PROVEN"} if selected.selection_basis != "INDEPENDENT_COMPARISON" else {})}),
             ],
         )
 

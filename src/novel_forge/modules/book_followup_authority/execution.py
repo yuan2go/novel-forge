@@ -133,7 +133,8 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     project_id=project_id,
                     workspace_id=workspace_id,
                     book_id=book_id,
-                    workflow_definition_ref=self.workflow_definition_ref,
+                    workflow_definition_ref=("book_followup_reader_outcome@" + graph["definition_version"]
+                        if self.execution_binding_domain == "reader_outcome" else self.workflow_definition_ref),
                     workflow_node_id=self.stage_name,
                     environment=self.pack_environment,
                     runtime_profile=self.pack_runtime_profile,
@@ -177,6 +178,18 @@ class PostgresReaderOutcomeExecutionContractBinder(
                 "READER_OUTCOME_EXECUTION_METADATA_INVALID",
                 "Reader context identity is incomplete",
             )
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        current_reader = False
+        if self.execution_binding_domain == "reader_outcome":
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT definition_version,workspace_id,actor_id,command_payload FROM authority_operation WHERE operation_id=%s AND project_id=%s AND definition_name='reader_outcome.evaluate'", [operation_id, project_id])
+                row = uow.cursor.fetchone()
+                current_reader = bool(row and row[0] == "1.4.0")
+                if current_reader:
+                    from .reader_recovery import require_reader_book_scope
+                    require_reader_book_scope(uow.cursor,project_id=project_id,workspace_id=row[1],actor_id=row[2],
+                        payload=row[3].get("payload") or {},source_operation_id=operation_id)
+        context_schema = "novelos.reader_outcome_context_bundle.v3" if current_reader else self.context_schema
         selected: list[dict[str, Any]] = []
         asset_ids: list[str] = []
         for raw in artifacts:
@@ -204,15 +217,14 @@ class PostgresReaderOutcomeExecutionContractBinder(
                     "asset_version_id": document.asset_version_id,
                     "asset_type": document.asset_type,
                     "content_hash": document.content_hash,
-                    "projection": self._project_context_input(
-                        document.asset_type, document.content
-                    ),
+                    "projection": (project_reader_outcome_context_input(document.asset_type, document.content, coordinated_contract=True)
+                        if current_reader else self._project_context_input(document.asset_type, document.content)),
                 }
             )
             asset_ids.append(document.asset_id)
         logical_ref = f"{self.stage_name}/context_bundles/{operation_id}-{attempt_id}.json"
         content = {
-            "schema_version": self.context_schema,
+            "schema_version": context_schema,
             "project_id": project_id,
             "operation_id": operation_id,
             "attempt_id": attempt_id,
@@ -256,7 +268,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
                 project_id=project_id,
                 asset_id=f"{self.stage_name}-context:{attempt_id}",
                 asset_type="context_bundle",
-                schema_version=self.context_schema,
+                schema_version=context_schema,
                 logical_ref=logical_ref,
                 category="reader_outcome_context",
                 output_key=f"{self.stage_name}.context_bundle",

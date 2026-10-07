@@ -12,12 +12,15 @@ def test_coordinated_contract_has_explicit_root_and_exact_node_versions():
     root = chapter_root_operation_definition(**IDENTITY, coordinated_contract=True)
     assert root["definition_version"] == "3.10.0"
     assert root["policy"]["node_definition_versions"] == {
-        node.definition_name: "3.9.16" if node is ChapterNode.PLAN else "3.10.0"
+        node.definition_name: "3.10.0"
         for node in ChapterNode
     }
     for old, new in zip(legacy, current, strict=True):
         if old["name"] == ChapterNode.PLAN.definition_name:
-            assert new == old
+            assert new["definition_version"] == "3.10.0"
+            assert new["policy"]["chapter_plan_book_scope"] == "host-book-plan.v1"
+            assert old["definition_version"] == "3.9.16"
+            assert new["completion_contract"] == old["completion_contract"]
         else:
             assert new["definition_version"] == "3.10.0"
             assert new["policy"]["coordinated_chapter_contract"] == "chapter-coordinated-production.v1"

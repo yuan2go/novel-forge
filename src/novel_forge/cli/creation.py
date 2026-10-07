@@ -20,7 +20,7 @@ def add_creation_parser(subparsers: Any) -> None:
     parser.add_argument("--work-window-seconds", type=int, default=300)
     parser.add_argument("--yield-after-window", action="store_true")
     parser.add_argument("--foreground", action="store_true", help="drive a bounded local window as well as durable worker ownership")
-    parser.add_argument("--creative-selection", choices=("AUTHOR_COMPARISON", "FIRST_ADMITTED"), default="AUTHOR_COMPARISON")
+    parser.add_argument("--creative-selection", choices=("AUTHOR_COMPARISON", "AUTO_COMPARISON", "FIRST_ADMITTED"), default="AUTHOR_COMPARISON")
     parser.add_argument("--candidate-number", type=int)
     parser.add_argument("--candidate-version", default="")
     parser.add_argument("--candidate-hash", default="")

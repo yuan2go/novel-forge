@@ -68,6 +68,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             raise _RecoveryCheckpoint("CANCELLED")
         if monotonic() >= deadline or recovery_actions >= maximum_ticks:
             raise _RecoveryCheckpoint("YIELDED_CHECKPOINT")
+        if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
+            raise _RecoveryCheckpoint("WAIT_EXTERNAL_RECONCILIATION")
         changed = action()
         if changed:
             recovery_actions += 1
@@ -86,6 +88,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
+            return "WAIT_EXTERNAL_RECONCILIATION"
         from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract, recover_completed_canon_window
         recover(lambda: recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         recover(lambda: recover_completed_canon_window(composition.authority, book_run_id=book_run_id, principal=composition.principal))
@@ -216,7 +220,7 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             return {"formation_run_id": formation_run_id, "stop_reason": reason, "checkpoint": run}
         formation.resume(formation_run_id, expected_version=run["version"], principal=composition.principal)
     if (run["lifecycle"] == "WAITING_APPROVAL"
-            and policy.get("contract_version") == "formation-generation.v5"
+            and policy.get("contract_version") in {"formation-generation.v5", "formation-generation.v7"}
             and run.get("recovery_instruction", {}).get("author_selection", {}).get("decision") == "APPROVE"):
         formation.resume(formation_run_id, expected_version=run["version"], principal=composition.principal)
     jobs = RuntimeJobAuthority(composition.authority.database_url)
@@ -401,6 +405,8 @@ def creation_runtime_environment(project_id: str, values: dict[str, str] | None 
     scope = hashlib.sha256(project_id.encode()).hexdigest()[:24]
     result.setdefault("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", "chapter_generation_pack.creative." + scope)
     result.setdefault("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "story_planning_pack.creative." + scope)
+    result.setdefault("NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID", "reader_outcome_pack.creative." + scope)
+    result.setdefault("NOVEL_FORGE_COORDINATED_READER_CONTRACT", "reader-accepted-context.v3")
     return result
 
 
@@ -488,7 +494,7 @@ def schedule_creation_jobs(database_url: str, *, limit: int = 10, formation_run_
                 WHERE job.job_kind='BOOK_CREATION_ADVANCE' AND job.subject_id=run.formation_run_id
                   AND job.project_id=run.project_id ORDER BY job.created_at DESC,job.runtime_job_id DESC LIMIT 1
             ) latest ON TRUE
-            WHERE run.frozen_stage_inputs #>> '{{generation_policy,contract_version}}'='formation-generation.v5'
+            WHERE run.frozen_stage_inputs #>> '{{generation_policy,contract_version}}' IN ('formation-generation.v5','formation-generation.v7')
               AND run.lifecycle<>'ABORTED' AND (%s='' OR run.formation_run_id=%s)
               AND COALESCE(latest.status,'')<>'CANCELLED'
               AND COALESCE(latest.result->>'wait_class','') NOT IN ('COMPLETED','CANCELLED')
@@ -619,17 +625,25 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
         state = str((latest[4] or {}).get("wait_class") or state)
         if state == "COMPLETED":
             state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "OWNER_RECOVERY_REQUIRED"
+    from .queries import PostgresBookProductionQuery
+
+    unresolved = PostgresBookProductionQuery(database_url).unresolved_chapter_effects(book_run_id=production["book_run_id"]) if production and not cancellation else []
+    if unresolved:
+        state = "RECONCILIATION_REQUIRED"
     return {
         "formation_run_id": formation_run_id,
         "production": production,
         "author_state": state,
-        "next_action": "RECOVER_ORIGINAL_CREATION_AFTER_RESOLVING_RETAINED_FAILURE"
+        "unresolved_external_effects": unresolved,
+        "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS"
+        if state == "RECONCILIATION_REQUIRED"
+        else "RECOVER_ORIGINAL_CREATION_AFTER_RESOLVING_RETAINED_FAILURE"
         if state == "OWNER_RECOVERY_REQUIRED"
         else "WAIT_FOR_NATIVE_EXECUTOR"
         if state == "PRODUCING"
         else state,
         "responsible_party": "RUNTIME_OWNER"
-        if state == "OWNER_RECOVERY_REQUIRED"
+        if state in {"OWNER_RECOVERY_REQUIRED", "RECONCILIATION_REQUIRED"}
         else "AUTHOR"
         if state == "AUTHOR_DECISION"
         else "BOOK_AUTHORITY_WORKER",
@@ -704,7 +718,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             raise ValueError("Start requires current work input, exact Book scope and stable idempotency key")
         inputs = deepcopy(request_input) if request_input is not None else json.loads(args.input_file.read_text())
         required = {"version", "brief", "title", "target_chapters", "language_contract"}
-        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation"} or inputs["version"] != "creation-request.v1":
+        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy"} or inputs["version"] != "creation-request.v1":
             raise ValueError("Creation input must declare current brief, title, scope and language")
         if (not isinstance(inputs["target_chapters"], int) or isinstance(inputs["target_chapters"], bool)
                 or not 1 <= inputs["target_chapters"] <= 10000 or not isinstance(inputs["brief"], dict)
@@ -714,6 +728,14 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 or not inputs["language_contract"]["required_language"].strip()):
             raise ValueError("Creation requires a typed current work request")
         author_direction = inputs.get("author_creative_foundation")
+        automatic_comparison = args.creative_selection == "AUTO_COMPARISON" and not author_direction
+        from novel_forge.modules.story_planning_runtime.narrative_search import CREATIVE_INTELLIGENCE_DIMENSIONS, validate_search_selection_policy
+        comparison_policy = validate_search_selection_policy(inputs.get("comparison_policy") or {
+            "contract_version": "narrative-search-comparison.v2",
+            "dimension_weights": {dimension: 1 for dimension in CREATIVE_INTELLIGENCE_DIMENSIONS},
+            "uncertainty_margin": 0.05, "tie_break": "STABLE_ID"}) if automatic_comparison else None
+        if inputs.get("comparison_policy") and not automatic_comparison:
+            raise ValueError("Comparison policy requires automatic direction comparison")
         candidate_count = 1 if author_direction else inputs.get("creative_candidates", 2)
         if not isinstance(candidate_count, int) or isinstance(candidate_count, bool) or not (1 if author_direction else 2) <= candidate_count <= 4:
             raise ValueError("Creative direction comparison requires two to four bounded alternatives")
@@ -738,6 +760,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                     or inputs["language_contract"] != profile.get("language_contract")
                     or candidate_count != policy.get("creative_candidates")
                     or author_direction != policy.get("author_creative_foundation")
+                    or automatic_comparison != (policy.get("creative_selection") == "AUTO_COMPARISON")
+                    or comparison_policy != policy.get("selection_policy")
                     or "chapter_length" in inputs and inputs["chapter_length"] != profile.get("chapter_length")
                     or brief_source and brief_source != (original.creative_brief_asset_version_id, original.creative_brief_content_hash)):
                 raise ValueError("CREATION_FROZEN_INPUT_DRIFT")
@@ -808,8 +832,14 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 correlation_id=formation_id, idempotency_key=args.idempotency_key + ":brief", payload={"brief": inputs["brief"]}), principal=principal)
         frozen = StoryFormationInput(creative_brief_asset_version_id=brief.asset_version_id,
             creative_brief_content_hash=brief.content_hash, generation_policy={
-                "contract_version": "formation-generation.v5" if args.creative_selection == "AUTHOR_COMPARISON" else "formation-generation.v4",
-                **({"creative_selection": "AUTHOR_DIRECTION" if author_direction else "AUTHOR_COMPARISON"} if args.creative_selection == "AUTHOR_COMPARISON" else {}),
+                "contract_version": "formation-generation.v7" if automatic_comparison else "formation-generation.v5" if args.creative_selection == "AUTHOR_COMPARISON" or author_direction else "formation-generation.v4",
+                **({"creative_selection": "AUTHOR_DIRECTION" if author_direction else "AUTO_COMPARISON" if automatic_comparison else "AUTHOR_COMPARISON"} if args.creative_selection in {"AUTHOR_COMPARISON", "AUTO_COMPARISON"} or author_direction else {}),
+                **({"selection_policy": comparison_policy, "strategy_directives": [
+                    "Explore the author's central promise through a coherent causal direction with room for later development",
+                    "Explore a distinct direction through character motivations and relationships while respecting the author's constraints",
+                    "Explore a distinct conflict mechanism and differentiation suited to the intended length and reader experience",
+                    "Explore a distinct pacing and information structure preserving the author's intended tone and future writability",
+                ][:candidate_count]} if automatic_comparison else {}),
                 **({"author_creative_foundation": author_direction} if author_direction else {}),
                 "approval_mode": "AUTO", "creative_candidates": candidate_count,
                 "target_chapters": inputs["target_chapters"], "title": inputs["title"], "creation_input_policy": profiles,
@@ -838,7 +868,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"])
             profile = build_story_planning_pack_profile(repository_root, operation_definition_hash=hashes["planning"],
             pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"])
-            install_longform_validation_pack(settings.database_url, profile=profile, pack_version="1.1.0", agent_generation=1,
+            install_longform_validation_pack(settings.database_url, profile=profile, pack_version=str(profile.manifest["identity"]["version"]), agent_generation=1,
             expected_activation_version=0, project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
             agent_domain="story_planning", agent_scope_type="BOOK")
@@ -869,6 +899,12 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             schedule_creation_jobs(settings.database_url, limit=1, formation_run_id=formation_id)
             return {"stop_reason": "CANCELLED", **creation_status(settings.database_url,
                 project_id=args.project_id, formation_run_id=formation_id, principal=principal)}
+        from .reader_pack import ensure_creation_reader_pack
+
+        ensure_creation_reader_pack(settings, SimpleNamespace(project_id=run["project_id"],
+            workspace_id=run["workspace_id"], book_id=run["book_id"],
+            repository_root=args.repository_root), principal=principal, build_id=build_id, sha=sha,
+            pack_id=runtime_values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"])
         if args.action == "recover":
             if not args.reason.strip():
                 raise ValueError("Recovery requires a reason describing the resolved blocker")
@@ -897,7 +933,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             composition.formation.author_decision(formation_id, expected_version=decision_version,
                 candidate_asset_version_id=args.candidate_version, candidate_content_hash=args.candidate_hash,
                 decision="APPROVE", reason=args.reason, idempotency_key=args.idempotency_key, principal=principal)
-        if (composition.formation.frozen_input(formation_id).generation_policy or {}).get("contract_version") == "formation-generation.v5":
+        if (composition.formation.frozen_input(formation_id).generation_policy or {}).get("contract_version") in {"formation-generation.v5", "formation-generation.v7"}:
             scheduled = schedule_creation_jobs(settings.database_url, limit=1, formation_run_id=formation_id,
                 recovery_reason=args.reason if args.action == "recover" else "", recovery_key=args.idempotency_key if args.action == "recover" else "")
             if not args.foreground:

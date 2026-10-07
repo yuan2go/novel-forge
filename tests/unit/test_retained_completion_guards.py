@@ -27,6 +27,16 @@ def test_exact_reference_does_not_claim_another_provider_call_or_certification()
     _validate_proof(*identities())
 
 
+def test_historical_paid_draft_cannot_imply_current_actor_and_continuous_scene_proof():
+    proof, output, source, current = identities()
+    source["definition_name"] = current["definition_name"] = "chapter.draft.generate"
+    source["definition_version"] = "3.9.1"
+    with pytest.raises(KernelError, match="RETAINED_COMPLETION_EVIDENCE_INVALID"):
+        _validate_proof(proof, output, source, current)
+    source["definition_version"] = "3.10.0"
+    _validate_proof(proof, output, source, current)
+
+
 @pytest.mark.parametrize("field,value", [
     ("provider_invoked", True), ("strict_certification_eligible", True),
     ("source_operation_id", "unrelated"), ("source_effect_id", "replacement-effect"),

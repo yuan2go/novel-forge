@@ -59,6 +59,7 @@ class BookFollowupAuthorityApplication:
         screenplay_model_ports: dict[str, ReaderOutcomeModelPort] | None = None,
         reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         worker_id: str = "book-followup-authority-worker",
+        coordinated_reader: bool = False,
     ) -> None:
         if not database_url or not application_build_id or len(commit_sha) != 40:
             raise ValueError("PostgreSQL, build id, and full commit SHA are required")
@@ -74,6 +75,7 @@ class BookFollowupAuthorityApplication:
             screenplay_model_ports,
         )
         self.worker_id = worker_id
+        self.coordinated_reader = coordinated_reader
         self.reader_policies = PostgresReaderProxyPolicyAuthority(
             database_url,
             application_build_id=application_build_id,
@@ -81,7 +83,7 @@ class BookFollowupAuthorityApplication:
         )
 
     def admit(
-        self, request: BookFollowupCommand, *, principal: Principal
+        self, request: BookFollowupCommand, *, principal: Principal, recovery_source_operation_id: str = ""
     ) -> BookFollowupAdmission:
         from .prose_sampling import PROSE_SAMPLE_DEFINITION
 
@@ -96,7 +98,63 @@ class BookFollowupAuthorityApplication:
         principal.require(permission, request.project_id)
         if request.actor_id != principal.principal_id:
             raise PermissionError("Book follow-up actor must be the trusted Principal")
-        policy_snapshot = {} if request.definition_name.startswith("screenplay_") else self.reader_policies.freeze_for_admission(
+        from .contracts import READER_OUTCOME_DEFINITION, READER_OUTCOME_DEFINITION_VERSION
+        from .definitions import reader_outcome_definition
+        from novel_forge.modules.capability_packs.schema import canonical_json
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        recovery = {}
+        original_policy = None
+        if recovery_source_operation_id:
+            from .reader_recovery import read_reader_recovery_source
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                source = read_reader_recovery_source(uow.cursor, recovery_source_operation_id, request.project_id)
+            source = source or {}
+            original = dict(source.get("command_payload") or {})
+            if (not source or request.definition_name != READER_OUTCOME_DEFINITION
+                or source.get("actor_id") != request.actor_id or source.get("workspace_id") != request.workspace_id
+                or canonical_json(original.get("payload")) != canonical_json(request.payload)
+                or canonical_json(source.get("input_asset_snapshot")) != canonical_json(list(request.input_assets))
+                or request.causation_operation_id != recovery_source_operation_id
+                or request.idempotency_key != source.get("idempotency_key", "") + ":contract-successor:" + READER_OUTCOME_DEFINITION_VERSION
+                or request.trace_id != source.get("trace_id") or request.correlation_id != source.get("correlation_id")
+                or request.root_operation_id is not None or request.parent_operation_id is not None):
+                raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_SOURCE_INVALID", "Retain exact original Reader owner, frozen inputs and no-intent failure")
+            original_policy = request.payload.get("reader_proxy_policy_snapshot")
+            if not isinstance(original_policy, dict):
+                raise KernelError("BOOK_FOLLOWUP_SUCCESSOR_SOURCE_INVALID", "Retain the frozen original Reader policy")
+            recovery = {"contract_version": "reader-contract-successor.v2",
+                        "predecessor_operation_id": recovery_source_operation_id,
+                        "source_definition_version": source["definition_version"], "target_definition_version": READER_OUTCOME_DEFINITION_VERSION,
+                        "original_actor_id": source["actor_id"], "frozen_input_snapshot": source["input_asset_snapshot"],
+                        "book_budget_reset_allowed": False, "historical_failure_retained": True}
+        current_reader = request.definition_name == READER_OUTCOME_DEFINITION and (self.coordinated_reader or bool(recovery))
+        from .contracts import LONGFORM_RECAP_DEFINITION, LONGFORM_RECAP_DEFINITION_VERSION
+        from .definitions import longform_recap_definition
+        current_recap = request.definition_name == LONGFORM_RECAP_DEFINITION and self.coordinated_reader
+        if current_recap:
+            from .accepted_realization import read_accepted_realization_deviations
+            from novel_forge.modules.book_authority.reader_pack import require_current_reader_template
+            observation = (request.payload.get("observations") or {}).get("accepted_realization_deviations")
+            if not isinstance(observation,dict):
+                raise KernelError("RECAP_ACCEPTED_REALIZATION_SCOPE_INVALID","Current Recap must carry exact native accepted observations")
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                require_current_reader_template(uow.cursor,project_id=request.project_id,book_id=request.payload["book_id"])
+                actual = read_accepted_realization_deviations(uow.cursor,project_id=request.project_id,
+                    workspace_id=request.workspace_id,book_id=request.payload["book_id"],
+                    chapter_request_id=str(observation.get("chapter_request_id") or ""),actor_id=request.actor_id)
+            if (canonical_json(actual)!=canonical_json(observation)
+                or actual["acceptance_operation_id"]!=request.payload.get("acceptance_operation_id")
+                or actual["book_production_input_snapshot_id"]!=request.payload.get("book_production_input_snapshot_id")
+                or actual["chapter_number"]!=request.payload.get("observed_through_chapter")
+                or actual["chapter_number"]!=(request.payload.get("chapter_range") or [None])[-1]):
+                raise KernelError("RECAP_ACCEPTED_REALIZATION_EVIDENCE_INVALID","Current Recap observations differ from exact immutable native evidence")
+        if current_reader:
+            from .reader_recovery import require_reader_book_scope
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                require_reader_book_scope(uow.cursor, project_id=request.project_id, workspace_id=request.workspace_id,
+                    actor_id=request.actor_id, payload=request.payload, source_operation_id=recovery_source_operation_id)
+        policy_snapshot = original_policy if original_policy is not None else {} if request.definition_name.startswith("screenplay_") else self.reader_policies.freeze_for_admission(
             project_id=request.project_id,
             idempotency_key=request.idempotency_key,
             actor_id=principal.principal_id,
@@ -105,6 +163,10 @@ class BookFollowupAuthorityApplication:
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha,
         )
+        if current_reader:
+            definitions += (reader_outcome_definition(application_build_id=self.application_build_id, commit_sha=self.commit_sha),)
+        if current_recap:
+            definitions += (longform_recap_definition(application_build_id=self.application_build_id,commit_sha=self.commit_sha),)
         with AuthorityUnitOfWork(self.database_url) as uow:
             for definition in definitions:
                 uow.repositories.definitions.register(definition)
@@ -113,7 +175,7 @@ class BookFollowupAuthorityApplication:
             self.database_url,
             {
                 "definition_name": request.definition_name,
-                "definition_version": BOOK_FOLLOWUP_DEFINITION_VERSION,
+                "definition_version": READER_OUTCOME_DEFINITION_VERSION if current_reader else LONGFORM_RECAP_DEFINITION_VERSION if current_recap else BOOK_FOLLOWUP_DEFINITION_VERSION,
                 "project_id": request.project_id,
                 "workspace_id": request.workspace_id,
                 "actor_id": request.actor_id,
@@ -131,6 +193,7 @@ class BookFollowupAuthorityApplication:
                     "payload": {
                         **request.payload,
                         "reader_proxy_policy_snapshot": policy_snapshot,
+                        **({"reader_contract_recovery": recovery} if recovery else {}),
                     },
                 },
                 "input_assets": list(request.input_assets),

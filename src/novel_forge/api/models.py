@@ -1089,6 +1089,8 @@ class StoryCreationDirectionRequest(BaseModel):
 
 class StoryCreationIntentRequest(BaseModel):
     model_config = {"extra": "forbid"}
+    creative_selection: Literal["AUTHOR_COMPARISON", "AUTO_COMPARISON"] = "AUTHOR_COMPARISON"
+    comparison_policy: dict[str, Any] | None = None
     title: str = Field(min_length=1)
     target_chapters: int = Field(ge=1, le=10000, strict=True)
     creative_candidates: int = Field(default=2, ge=2, le=4, strict=True)

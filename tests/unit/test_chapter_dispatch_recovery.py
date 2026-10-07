@@ -50,6 +50,7 @@ def test_supervisor_recovers_group_link_before_reconciliation():
     supervisor.authority = SimpleNamespace(require=lambda _: book,
         require_chapter_request=lambda _: {**request, "chapter_root_operation_id": "same-root"})
     supervisor.principal = None
+    supervisor.query = SimpleNamespace(unresolved_chapter_effects=lambda **_: [])
     supervisor._active_group_run = lambda _: group
     recovered = {**group, "active_chapter_request_id": "request", "state": "CHAPTER_RUNNING"}
     calls = []

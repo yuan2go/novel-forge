@@ -65,7 +65,9 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
                 or root["root_operation_id"] != root_id or saga["project_id"] != project_id):
             raise KernelError("RETAINED_GRAPH_SOURCE_INVALID", "Require the original authorized Chapter actor and project")
         from novel_forge.modules.chapter_authority.current_quote_recovery import source_graph as current_quote_graph
-        return current_quote_graph(cursor, root=root, saga=saga)
+        graph = current_quote_graph(cursor, root=root, saga=saga)
+        _require_current_completed_draft(cursor, graph)
+        return graph
     incomplete_completion = (root['status'] == 'SUCCEEDED' and saga['status'] == 'SUCCEEDED'
         and ((root.get('command_payload') or {}).get('preparation_report') or {}).get(BINDING, {}).get('retained_result', {}).get('contract_version') == 'chapter-canon-output-repair.v1')
     if (
@@ -239,13 +241,42 @@ def source_graph(cursor, *, root_id, project_id, actor_id):
         raise KernelError(
             "RETAINED_GRAPH_STEP_MISSING", "Retain the complete pre-publication graph"
         )
-    return {
+    graph = {
         "root": root,
         "saga": saga,
         "steps": steps,
         "effects": effects,
         "retained_result": proof,
     }
+    _require_current_completed_draft(cursor, graph)
+    return graph
+
+
+def _require_current_completed_draft(cursor, graph):
+    from novel_forge.modules.chapter_authority.retained_draft_validation import require_current_completed_draft
+    from novel_forge.modules.chapter_authority.receipt_recovery import _require_current_receipt_family
+    from novel_forge.storage.authority_asset_store import AuthorityAssetDocumentRepository
+
+    drafts = [step for step in graph["steps"] if step["operation"]["definition_name"] == "chapter.draft.generate"]
+    if len(drafts) != 1:
+        raise KernelError("RETAINED_GRAPH_DRAFT_AMBIGUOUS", "Retain one exact completed current Draft")
+    draft = drafts[0]
+    source, root = draft["operation"], graph["root"]
+    _require_current_receipt_family(source)
+    if (source["status"] != "SUCCEEDED"
+            or any(source[key] != root[key] for key in ("project_id", "workspace_id", "actor_id"))):
+        raise KernelError("RETAINED_GRAPH_DRAFT_SCOPE_INVALID", "Completed Draft cannot cross the original actor or Chapter scope")
+    outputs = [row for row in draft["outputs"] if row[0]["role"] == "primary"]
+    if len(outputs) != 1 or outputs[0][0]["output_key"] != "chapter.draft":
+        raise KernelError("RETAINED_GRAPH_DRAFT_OUTPUT_INVALID", "Retain the exact primary Draft output")
+    reader = AuthorityAssetDocumentRepository(cursor)
+    asset = reader.require(project_id=root["project_id"], asset_version_id=outputs[0][0]["asset_version_id"])
+    if (asset.asset_type != "draft_chapter" or asset.content_hash != outputs[0][1]
+            or outputs[0][0].get("content_hash") != asset.content_hash
+            or snapshot_hash(asset.content) != asset.content_hash
+            or (asset.lifecycle, asset.eligibility, asset.governance) != ("ACTIVE", "ELIGIBLE", "CLEAR")):
+        raise KernelError("RETAINED_GRAPH_DRAFT_OUTPUT_INVALID", "Completed Draft output hash and governance must remain exact")
+    require_current_completed_draft(source, asset.content, asset_reader=reader)
 
 
 def continue_graph_in_uow(uow, *, source, request, context):
@@ -255,6 +286,7 @@ def continue_graph_in_uow(uow, *, source, request, context):
     )
 
     c = uow.cursor
+    _require_current_completed_draft(c, source)
     original = source_graph(
         c,
         root_id=source["root"]["operation_id"],
@@ -564,6 +596,7 @@ def acknowledge_retained_result(cursor, effects, root_id, *, descendant=None):
         or root["actor_id"] != frozen["root"]["actor_id"]
         or binding.get("retained_result") != frozen.get("retained_result")):
         raise KernelError("RETAINED_GRAPH_CONTRACT_INVALID", "Require exact current graph and original owner")
+    _require_current_completed_draft(cursor, frozen)
     proof = binding["retained_result"]
     cursor.execute("""SELECT o.operation_id,v.content FROM authority_operation o
         JOIN authority_operation_output_asset output USING(operation_id)

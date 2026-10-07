@@ -144,10 +144,12 @@ class BookReplanCoordinator:
         principal: Principal,
         fault_injector: Any | None = None,
         narrative_search: PostgresNarrativeSearchApplication | None = None,
+        coordinated_contract: bool = False,
     ) -> None:
         if not database_url:
             raise ValueError("Book Replan requires PostgreSQL")
         self.database_url = database_url
+        self.coordinated_contract = coordinated_contract
         self.book = book_authority
         self.planning = planning
         self.plan_change = plan_change
@@ -227,6 +229,7 @@ class BookReplanCoordinator:
         }:
             related_arc_plan_version_ids = frozen_related_arc_plan_version_ids
         generation = StoryPlanningGenerationCommand(
+            **({"execution_contract_version":"1.21.0"} if self.coordinated_contract else {}),
             project_id=command.project_id,
             workspace_id=command.workspace_id,
             book_id=command.book_id,
@@ -551,6 +554,189 @@ class BookReplanCoordinator:
             }
         )
 
+    def try_auto_approve(self, replan_id: str) -> dict[str, Any] | None:
+        from novel_forge.modules.production_execution.execution_template import (
+            selected_book_template,
+        )
+        from novel_forge.modules.story_design_authority.creative_validation import (
+            candidate_validation,
+        )
+        from novel_forge.modules.authority_security import (
+            canonical_formation_auto_authorization,
+        )
+        from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+        if not getattr(self,"coordinated_contract",False) or not getattr(self.plan_change,"coordinated_contract",False):
+            return None
+        replan = self.require(replan_id)
+        book = self.book.require(replan["book_run_id"])
+        if (
+            replan["status"] != "APPROVAL_PENDING"
+            or book["state"] != "REPLAN_APPROVAL_PENDING"
+            or not replan["future_only"]
+            or replan["affected_scope"]
+            not in {"ARC", "ARC_SEGMENT", "CHAPTER_GROUP", "CHAPTER"}
+        ):
+            return None
+        query = AuthorityAssetQuery(self.database_url)
+        recap = query.require(
+            project_id=replan["project_id"],
+            asset_version_id=replan["source_recap_asset_version_id"],
+        )
+        request = query.require(
+            project_id=replan["project_id"],
+            asset_version_id=replan["replan_request_asset_version_id"],
+        )
+        source = self._require_recap_lineage(
+            CoordinateBookReplanCommand(
+                project_id=replan["project_id"],
+                workspace_id=book["workspace_id"],
+                book_id=replan["book_id"],
+                book_run_id=replan["book_run_id"],
+                source_recap_asset_version_id=recap.asset_version_id,
+                replan_request_asset_version_id=request.asset_version_id,
+                affected_scope=replan["affected_scope"],
+                idempotency_key=replan["stable_idempotency_key"],
+                trace_id=replan_id,
+                correlation_id=replan_id,
+            )
+        )
+        proposal = source["replan_request"]
+        lineage = recap.content.get("accepted_input_lineage") or {}
+        if (
+            proposal.get("required_authority") != "PLAN_CHANGE_AUTHORITY"
+            or proposal.get("future_from_chapter")
+            != int(book["accepted_through_chapter"]) + 1
+            or proposal.get("impact_scope", {}).get("future_only") is not True
+            or recap.content.get("book_id") != book["book_id"]
+            or lineage.get("observed_through_chapter")
+            != book["accepted_through_chapter"]
+            or lineage.get("accepted_story_state_version")
+            != book["active_story_state_version_id"]
+            or lineage.get("accepted_canon_snapshot_version")
+            != book["active_canon_snapshot_version_id"]
+        ):
+            return None
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute(
+                """SELECT formation_run_id,frozen_stage_inputs,frozen_input_digest,lifecycle
+                FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s
+                AND %s=formation_run_id || ':production'""",
+                [book["project_id"], book["book_id"], book["stable_idempotency_key"]],
+            )
+            formation = uow.cursor.fetchone()
+            if not formation or formation[3] != "READY":
+                return None
+            policy = formation[1].get("generation_policy") or {}
+            if policy.get("approval_mode") != "AUTO" or not policy.get(
+                "auto_authorization"
+            ):
+                return None
+            if "plan_change.future_only.approve" not in (policy["auto_authorization"].get("allowed_actions") or []):
+                return None
+            authorization = canonical_formation_auto_authorization(
+                policy["auto_authorization"]
+            )
+            if any(
+                authorization.get(key) != value
+                for key, value in {
+                    "project_id": book["project_id"],
+                    "workspace_id": book["workspace_id"],
+                    "book_id": book["book_id"],
+                    "formation_run_id": formation[0],
+                    "authorized_by_principal_id": self.principal.principal_id,
+                }.items()
+            ) or not {
+                "story_planning.candidate.approve",
+                "story_planning.candidate.activate",
+            } <= set(authorization["allowed_actions"]):
+                return None
+            uow.cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM authority_story_creation_cancellation WHERE formation_run_id=%s)",
+                [formation[0]],
+            )
+            if uow.cursor.fetchone()[0]:
+                return None
+            admission = selected_book_template(
+                uow.cursor, project_id=book["project_id"], book_id=book["book_id"]
+            )
+            validation = candidate_validation(
+                uow.cursor,
+                project_id=book["project_id"],
+                asset_version_id=replan["replacement_candidate_asset_version_id"],
+            )
+            if (
+                not admission
+                or not validation
+                or admission["policy_snapshot"] != validation["policy_snapshot"]
+            ):
+                return None
+            uow.cursor.execute(
+                """SELECT decision.comparison,decision.comparison_hash,search.input_snapshot_hash,
+                search.accepted_through_chapter,search.parent_state_asset_version_id,search.desired_transformation
+                FROM authority_story_planning_generation generation
+                JOIN authority_story_narrative_search search ON search.search_id=generation.narrative_search_id
+                JOIN authority_story_narrative_search_decision decision ON decision.search_id=search.search_id
+                WHERE generation.operation_id=%s AND decision.selected_candidate_asset_version_id=%s""",
+                [
+                    replan["generation_operation_id"],
+                    replan["replacement_candidate_asset_version_id"],
+                ],
+            )
+            selection = uow.cursor.fetchone()
+            if (
+                not selection
+                or canonical_hash(selection[0]) != selection[1]
+                or selection[3] != book["accepted_through_chapter"]
+                or selection[4] != book["active_story_state_version_id"]
+                or selection[5].get("replan_request_asset_version_id")
+                != request.asset_version_id
+                or selection[5].get("target_asset_version_id")
+                != replan["target_asset_version_id"]
+            ):
+                return None
+        self.principal.require("book.authority.approve_replan", book["project_id"])
+        return self.approve(
+            replan_id,
+            authority_type="PLAN_CHANGE_AUTHORITY",
+            authority_version="book-authorized-future-correction.v2",
+            evidence={
+                "contract_version": "book-authorized-future-correction.v2",
+                "authorization": authorization,
+                "formation_input_digest": formation[2],
+                "book_version":int(book["version"]),
+                "book_input_snapshot_id":book["input_snapshot_id"],
+                "accepted_through_chapter": book["accepted_through_chapter"],
+                "accepted_story_state_version_id": book[
+                    "active_story_state_version_id"
+                ],
+                "accepted_canon_snapshot_version_id": book[
+                    "active_canon_snapshot_version_id"
+                ],
+                "source_recap": {
+                    "asset_version_id": recap.asset_version_id,
+                    "content_hash": recap.content_hash,
+                },
+                "replan_request": {
+                    "asset_version_id": request.asset_version_id,
+                    "content_hash": request.content_hash,
+                },
+                "candidate": {
+                    "asset_version_id": validation["asset_version_id"],
+                    "content_hash": validation["content_hash"],
+                },
+                "comparison_hash": selection[1],
+                "search_input_snapshot_hash": selection[2],
+                "comparison_uncertainty": selection[0]
+                .get("selection_evidence", {})
+                .get("uncertainty", "LEGACY_MODEL_ESTIMATE"),
+                "literary_superiority": "NOT_PROVEN",
+                "human_decision_claimed": False,
+                "reason": "Continue the original authorized work using a native future-only correction; accepted history and author intent remain authoritative.",
+            },
+        )
+
     def approve(
         self,
         replan_id: str,
@@ -591,6 +777,9 @@ class BookReplanCoordinator:
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
             checkpoint("after_domain_validation")
+            if evidence.get("contract_version") == "book-authorized-future-correction.v2":
+                from .auto_authorization import require_auto_replan_proof
+                require_auto_replan_proof(uow.cursor,project_id=replan["project_id"],proposal_id=replan["plan_change_proposal_id"],actor_id=self.principal.principal_id,evidence={**evidence,"book_replan_id":replan_id})
             uow.cursor.execute(
                 """
                 UPDATE authority_book_replan
@@ -1231,6 +1420,18 @@ class BookReplanCoordinator:
         ]
         arc_plan_ids = [str(item) for item in snapshot["arc_portfolio_plan_versions"]]
         group_plan_id = str(snapshot["current_chapter_group_plan_version"])
+        if self.coordinated_contract and not group_plan_id:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+                require_known_cli_lineage(uow.cursor,project_id=book["project_id"],operation_id=book["root_operation_id"])
+                uow.cursor.execute("""SELECT group_plan_version_id FROM authority_chapter_group_production
+                    WHERE project_id=%s AND book_run_id=%s AND chapter_start<=%s AND chapter_end>=%s
+                      AND state NOT IN ('COMPLETED','ABORTED','FAILED') AND active_chapter_request_id IS NULL""",
+                    [book["project_id"],book["book_run_id"],int(book["accepted_through_chapter"])+1,int(book["accepted_through_chapter"])+1])
+                groups=uow.cursor.fetchall()
+            if len(groups)!=1:
+                raise KernelError("BOOK_REPLAN_GROUP_BOUNDARY_AMBIGUOUS","Use one same-run idle future window at the accepted cursor")
+            group_plan_id=str(groups[0][0])
         volume_replacements = {item: item for item in volume_plan_ids}
         if approved_scope == "BOOK":
             book_plan_id = replacement_id
@@ -1609,6 +1810,7 @@ class BookReplanCoordinator:
         suffix = generator.removesuffix(".generate").replace("_", "-")
         result = self.planning.generate(
             StoryPlanningGenerationCommand(
+                **({"execution_contract_version":"1.21.0"} if self.coordinated_contract else {}),
                 project_id=replan["project_id"],
                 workspace_id=str(book["workspace_id"]),
                 book_id=replan["book_id"],
@@ -1652,6 +1854,18 @@ class BookReplanCoordinator:
             trace_id=f"{replan['replan_id']}:regenerate:{suffix}:approve",
             correlation_id=proposal["activation_operation_id"],
         )
+        binding_predecessor=expected_active_asset_version_id
+        if self.coordinated_contract and binding_predecessor:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM active_story_plan_version WHERE project_id=%s AND book_id=%s AND logical_key=%s),
+                    EXISTS(SELECT 1 FROM authority_plan_change_impact impact JOIN authority_plan_change_proposal approved USING(proposal_id)
+                        WHERE impact.proposal_id=%s AND impact.project_id=%s AND approved.book_id=%s AND approved.status='ACTIVE'
+                          AND approved.approval_operation_id IS NOT NULL AND approved.activation_operation_id IS NOT NULL
+                          AND impact.impacted_asset_version_id=%s AND impact.target_freshness IN ('IMPACTED','STALE'))""",
+                    [replan["project_id"],replan["book_id"],logical_key,proposal["proposal_id"],replan["project_id"],replan["book_id"],binding_predecessor])
+                active,invalidated=uow.cursor.fetchone()
+            if not active and invalidated:
+                binding_predecessor=""
         self.planning.activate_candidate(
             result.candidate_asset_version_id,
             principal=self.principal,
@@ -1661,7 +1875,7 @@ class BookReplanCoordinator:
             ),
             trace_id=f"{replan['replan_id']}:regenerate:{suffix}:activate",
             correlation_id=proposal["activation_operation_id"],
-            expected_active_asset_version_id=expected_active_asset_version_id,
+            expected_active_asset_version_id=binding_predecessor,
             replacement_approved=bool(expected_active_asset_version_id),
             decision_evidence=(
                 {
@@ -1669,6 +1883,7 @@ class BookReplanCoordinator:
                     "plan_change_proposal_id": proposal["proposal_id"],
                     "activation_operation_id": proposal["activation_operation_id"],
                     "approved_scope": replan["affected_scope"],
+                    **({"invalidated_source_asset_version_id":expected_active_asset_version_id} if self.coordinated_contract else {}),
                     "downstream_requalification": True,
                 }
                 if expected_active_asset_version_id
@@ -1907,6 +2122,11 @@ class BookReplanCoordinator:
             "previous_chapter_outcome": book.get("last_chapter_outcome_version_id"),
             **overrides,
         }
+        if self.coordinated_contract:
+            accepted_refs = book.get("longform_context_versions") or {}
+            for role in ("character_state","foreshadowing_state","quality_trend","reward_ledger","promise_ledger"):
+                if accepted_refs.get(role + "_version"):
+                    fixed[role] = accepted_refs[role + "_version"]
         from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
         observed_reader = PostgresBookProductionQuery(self.database_url).previous_reader_state(
             book_run_id=str(book["book_run_id"]), chapter_number=int(book["accepted_through_chapter"]) + 1)

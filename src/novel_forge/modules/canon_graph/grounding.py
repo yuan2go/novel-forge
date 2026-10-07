@@ -238,6 +238,7 @@ def grounded_claims(extraction: dict[str, Any]) -> list[dict[str, Any]]:
 def validate_support_review(
     *, extraction: dict[str, Any], revision: dict[str, Any],
     revision_asset_version_id: str, result: dict[str, Any],
+    realization_comparison: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     binding = dict(extraction.get("grounding") or {})
     if (binding.get("contract_version") != "grounded-canon.v1"
@@ -259,8 +260,13 @@ def validate_support_review(
             raise KernelError("CANON_GROUNDING_REEXTRACTION_REQUIRED", "unsupported or uncertain claim requires repair; a matching span is insufficient")
     if binding["extraction_status"] == "NO_CHANGE" and result.get("no_change_supported") is not True:
         raise KernelError("CANON_GROUNDING_REEXTRACTION_REQUIRED", "empty extraction has not passed semantic coverage review")
+    compared = {}
+    if realization_comparison is not None:
+        from .realization_comparison import validate_comparisons
+        compared["realization_comparisons"] = validate_comparisons(inputs=realization_comparison,
+            result=result, revision_asset_version_id=revision_asset_version_id, text=str(revision.get("text") or ""))
     return {
-        **binding, "semantic_status": "SUPPORTED_CANDIDATE",
+        **binding, **compared, "semantic_status": "SUPPORTED_CANDIDATE",
         "support_review": result,
         "claim_set_hash": text_hash(json.dumps(grounded_claims(extraction), ensure_ascii=False, sort_keys=True)),
     }

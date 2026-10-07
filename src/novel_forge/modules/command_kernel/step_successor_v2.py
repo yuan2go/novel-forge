@@ -540,6 +540,13 @@ def continue_completed_contract_window(database_url, *, predecessor_id, successo
 
 
 def _require_reconciled_graph(cursor, *, root_id, predecessor_id):
+    from .budget_runtime import require_known_cli_lineage
+
+    cursor.execute("SELECT project_id FROM authority_operation WHERE operation_id=%s", [root_id])
+    owner = cursor.fetchone()
+    if not owner:
+        raise KernelError("STEP_SUCCESSOR_GRAPH_UNRECONCILED", "The original graph scope is missing")
+    require_known_cli_lineage(cursor, project_id=str(owner[0]), operation_id=root_id)
     cursor.execute(
         """SELECT EXISTS(SELECT 1 FROM authority_external_effect e
         JOIN authority_operation o USING(operation_id)

@@ -138,6 +138,9 @@ class PostgresBookProductionSupervisor:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
         semantics = book_production_state_semantics(before)
+        if (semantics.state_class is not BookProductionStateClass.TERMINAL
+                and self.query.unresolved_chapter_effects(book_run_id=book_run_id)):
+            return self._result(book_run_id, before, SupervisorAction.WAIT_EXTERNAL_RECONCILIATION)
         group_run = self._active_group_run(book)
         if (
             group_run is not None

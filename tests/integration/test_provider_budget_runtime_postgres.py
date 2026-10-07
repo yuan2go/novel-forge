@@ -637,12 +637,107 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                     self.assertEqual(blocked.exception.code, "SOURCE_CLI_OUTCOME_RECONCILIATION_REQUIRED")
                     require_known_cli_outcomes(cursor, identifier("another-project"))
 
+    def test_unknown_cli_generation_cannot_be_hidden_by_a_later_unsent_generation(self) -> None:
+        from psycopg.types.json import Jsonb
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage, unresolved_cli_outcomes
+
+        context, effect = self._effect("retryable_failure")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,1,'FAILED_RETRYABLE','fixture',%s)",
+                [identifier("original-dispatch"), effect, Jsonb({"production_execution": {
+                    "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
+                    "execution_result": {"outcome": "TIMED_OUT", "started_at": "2026-10-07T00:00:00Z",
+                        "usage_receipt_ref": None, "process_receipt_ref": "original-local-receipt"}}})])
+            cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,2,'PENDING','fixture','{}'::jsonb)",
+                [identifier("unsent-dispatch"), effect])
+            self.assertEqual(unresolved_cli_outcomes(cursor, context.project_id)[0]["process_receipt_ref"], "original-local-receipt")
+            with self.assertRaises(KernelError) as blocked:
+                require_known_cli_lineage(cursor, project_id=context.project_id, operation_id=context.operation_id)
+            self.assertEqual(blocked.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+
+    def test_same_book_successor_send_rechecks_original_receipt_scope(self) -> None:
+        from psycopg.types.json import Jsonb
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage, unresolved_cli_outcomes
+        from novel_forge.modules.command_kernel.external_effect_runtime import prepare_effect_dispatch
+
+        original, effect = self._effect("retryable_failure")
+        replacement, replacement_effect = self._effect_for_project(original.project_id)
+        unrelated, _ = self._effect_for_project(original.project_id)
+        with transaction() as connection, connection.cursor() as cursor:
+            for context, book in ((original, "original-book"), (replacement, "original-book"), (unrelated, "unrelated-book")):
+                cursor.execute("UPDATE authority_operation SET command_payload=%s WHERE operation_id=%s", [Jsonb({"book_id": book}), context.operation_id])
+            cursor.execute("INSERT INTO authority_external_effect_dispatch (dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,1,'FAILED_RETRYABLE','fixture',%s)",
+                [identifier("missing-start-dispatch"), effect, Jsonb({"production_execution": {
+                    "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
+                    "execution_result": {"outcome": "TIMED_OUT", "usage_receipt_ref": "",
+                        "process_receipt_ref": "missing-start-proof"}}})])
+            self.assertEqual(len(unresolved_cli_outcomes(cursor, original.project_id, book_id="original-book")), 1)
+            self.assertEqual(unresolved_cli_outcomes(cursor, original.project_id, book_id="unrelated-book"), [])
+            require_known_cli_lineage(cursor, project_id=unrelated.project_id, operation_id=unrelated.operation_id)
+        with self.assertRaises(KernelError) as blocked:
+            prepare_effect_dispatch(DATABASE_URL, replacement, effect_id=replacement_effect)
+        self.assertEqual(blocked.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [replacement_effect])
+            self.assertEqual(cursor.fetchone()[0], 0)
+
     def _effect(self, scenario: str) -> tuple[EffectCommandContext, str]:
         project_id = identifier("budget-project")
         return self._effect_for_project(project_id, scenario=scenario)
 
+    def test_canonical_book_request_blocks_a_new_root_without_book_payload(self) -> None:
+        from psycopg.types.json import Jsonb
+        from tests.integration.authority_postgres_support import seed_authority_project_book
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+        from novel_forge.modules.command_kernel.external_effect_runtime import prepare_effect_dispatch
+
+        project, workspace = identifier("canonical-project"), identifier("canonical-workspace")
+        unrelated_workspace = identifier("unrelated-workspace")
+        book_a, book_b = identifier("book-a"), identifier("book-b")
+        seed_authority_project_book(project_id=project, workspace_id=workspace, book_id=book_a)
+        seed_authority_project_book(project_id=project, workspace_id=unrelated_workspace, book_id=book_b)
+        original, effect = self._effect_for_project(project, workspace_id=workspace, metadata_book_id="synthetic-wrong-book")
+        replacement, replacement_effect = self._effect_for_project(project, workspace_id=workspace)
+        unrelated, _ = self._effect_for_project(project, workspace_id=unrelated_workspace)
+        contexts = {key: "source:fixture" for key in (
+            "volume_plan_version", "arc_plan_version", "character_state_version", "foreshadowing_state_version",
+            "quality_trend_version", "reward_ledger_version", "promise_ledger_version")}
+        contexts["arc_plan_versions"] = ["source:fixture"]
+        with transaction() as connection, connection.cursor() as cursor:
+            for book, book_workspace, roots in ((book_a, workspace, (original, replacement)),
+                    (book_b, unrelated_workspace, (unrelated,))):
+                owner, _ = self._effect_for_project(project, workspace_id=book_workspace)
+                run, saga = identifier("canonical-run"), identifier("canonical-saga")
+                cursor.execute("INSERT INTO authority_saga(saga_id,root_operation_id,project_id,status,trace_id,correlation_id) VALUES (%s,%s,%s,'RUNNING',%s,%s)",
+                    [saga, owner.operation_id, project, owner.trace_id, owner.correlation_id])
+                cursor.execute("""INSERT INTO authority_book_production(book_run_id,project_id,workspace_id,book_id,
+                    book_design_version,book_plan_version,production_profile_version,longform_context_versions,
+                    root_operation_id,saga_id,stable_idempotency_key,state,target_chapter_count,light_recap_cadence,
+                    formal_recap_cadence,input_mode) VALUES (%s,%s,%s,%s,'design:fixture','plan:fixture','profile:fixture',
+                    %s,%s,%s,%s,'READY',3,1,1,'LEGACY_FIXTURE_INPUT_MODE')""",
+                    [run, project, book_workspace, book, Jsonb(contexts), owner.operation_id, saga, run])
+                for chapter, root in enumerate(roots, 1):
+                    request = identifier("canonical-request")
+                    cursor.execute("""INSERT INTO authority_book_chapter_request(chapter_request_id,book_run_id,
+                        project_id,chapter_number,chapter_plan_version,chapter_plan_content_hash,production_profile_version,
+                        stable_idempotency_key,command_payload,chapter_root_operation_id,status_reference)
+                        VALUES (%s,%s,%s,%s,'plan:fixture','hash:fixture','profile:fixture',%s,'{}'::jsonb,%s,'ADMITTED')""",
+                        [request, run, project, chapter, request, root.operation_id])
+            cursor.execute("INSERT INTO authority_external_effect_dispatch(dispatch_id,external_effect_id,generation,status,payload_hash,evidence) VALUES (%s,%s,1,'FAILED_RETRYABLE','fixture',%s)",
+                [identifier("canonical-unknown"), effect, Jsonb({"production_execution": {
+                    "execution_handle": {"transport": "LOCAL_CLI_REMOTE_INFERENCE"},
+                    "execution_result": {"outcome": "TIMED_OUT", "started_at": "2026-10-07T00:00:00Z",
+                        "usage_receipt_ref": None, "process_receipt_ref": "canonical-original"}}})])
+            require_known_cli_lineage(cursor, project_id=project, operation_id=unrelated.operation_id)
+        with self.assertRaises(KernelError) as blocked:
+            prepare_effect_dispatch(DATABASE_URL, replacement, effect_id=replacement_effect)
+        self.assertEqual(blocked.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [replacement_effect])
+            self.assertEqual(cursor.fetchone()[0], 0)
+
     def _effect_for_project(
-        self, project_id: str, *, scenario: str = "success"
+        self, project_id: str, *, scenario: str = "success", workspace_id: str = "legacy-unknown", metadata_book_id: str | None = None
     ) -> tuple[EffectCommandContext, str]:
         operation_id = identifier("budget-operation")
         definition = identifier("budget-definition")
@@ -653,6 +748,7 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
                 operation_id=operation_id,
                 definition_name=definition,
                 project_id=project_id,
+                workspace_id=workspace_id,
                 status="EXECUTING",
             )
         context = EffectCommandContext(
@@ -669,7 +765,8 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             provider="fake_deterministic_provider",
             capability="model.fixture",
             stable_idempotency_key=identifier("effect-key"),
-            request_payload={"scenario": scenario},
+            request_payload={"scenario": scenario, **(
+                {"_production_execution": {"book_id": metadata_book_id}} if metadata_book_id else {})},
             max_attempts=2,
             reversible=False,
             completion_policy="synchronous_final",

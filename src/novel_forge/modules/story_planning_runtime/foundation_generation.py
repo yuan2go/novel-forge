@@ -144,9 +144,11 @@ def validate_foundation_applicability(
 
 
 def foundation_output_schema(
-    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True, rfc6901_paths: bool = False
+    generator: str, *, work_requirements: bool = False, provider_path_constraints: bool = True, rfc6901_paths: bool = False, narrative_search: bool = False
 ) -> dict[str, Any]:
     role = FOUNDATION_GENERATORS[generator]
+    if narrative_search and role is not FoundationRole.CREATIVE_FOUNDATION:
+        raise ValueError("Foundation search is limited to direction selection")
     properties: dict[str, Any] = {
         "objective": _text(),
         "constraints": _texts(),
@@ -244,20 +246,29 @@ def foundation_output_schema(
         )
     if work_requirements:
         _apply_work_schema(properties, role, provider_path_constraints=provider_path_constraints, rfc6901_paths=rfc6901_paths)
+    if narrative_search:
+        from .narrative_search import narrative_search_projection_schema
+        properties["narrative_search_projection"] = narrative_search_projection_schema()
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         **_object(properties),
     }
 
 
-def foundation_output_schema_ref(generator: str, *, execution_contract_version: str) -> str:
-    version = {"1.17.0": 2, "1.18.0": 3, "1.19.0": 4, "1.20.0": 4}.get(execution_contract_version, 1)
+def foundation_output_schema_ref(generator: str, *, execution_contract_version: str, narrative_search: bool = False) -> str:
+    version = {"1.17.0": 2, "1.18.0": 3, "1.19.0": 4, "1.21.0": 4}.get(execution_contract_version, 1)
+    if narrative_search:
+        if execution_contract_version != "1.21.0" or generator != "creative.candidates.generate":
+            raise ValueError("Foundation direction search schema requires current creative contract")
+        version = 5
     return f"schema:foundation-provider-output:{FOUNDATION_GENERATORS[generator].value.lower()}:v{version}"
 
 
 def foundation_task(
-    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False
+    generator: str, *, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False
 ) -> dict[str, Any]:
+    if narrative_search and (generator != "creative.candidates.generate" or not rfc6901_paths):
+        raise ValueError("Foundation search requires the current creative contract")
     role = FOUNDATION_GENERATORS[generator]
     tasks = {
         FoundationRole.CREATIVE_FOUNDATION: "Develop a distinctive, sustainable conflict from the brief. Explain reader value, choices and costs; create original operational style examples, never imitate reference prose.",
@@ -277,11 +288,12 @@ def foundation_task(
             FoundationRole.CHARACTER_CAST: "Design characters suitable for this work and distinct voices grounded in their circumstances. Wounds, false beliefs, secrets and transformation are optional, not mandatory identities. Preserve exact references, capabilities, knowledge and approved initial conditions; never invent accepted history.",
         }
     return {
-        "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
+        "contract_version": "foundation-generation.v5" if narrative_search else "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2"
         if work_requirements
         else "foundation-generation.v1",
         "role": role.value,
         "task": tasks[role],
+        **({"narrative_search_contract": "Return the frozen strategy's distinct future direction and the required narrative_search_projection. Comparison estimates remain model support, not literary qualification or accepted story state."} if narrative_search else {}),
         "parent_roles": [parent.value for parent in role.required_parents],
         "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
         **(
@@ -363,8 +375,8 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload["world_foundation_json"] = json.dumps(
             world, ensure_ascii=False, separators=(",", ":")
         )
-    work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}
-    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False)
+    work_requirements = envelope.get("contract_version") in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4", "foundation-generation.v5"}
+    schema = foundation_output_schema(generator, work_requirements=work_requirements, provider_path_constraints=False, narrative_search=envelope.get("contract_version") == "foundation-generation.v5")
     if envelope.get("author_design"):
         from novel_forge.modules.story_design_authority.author_input import add_author_decision_contract, frozen_author_projection, validate_author_decisions
         projection = frozen_author_projection({"constraint_envelope": envelope}, generator=generator, logical_key=str(content.get("logical_key") or ""))
@@ -387,7 +399,7 @@ def validate_foundation_payload(generator: str, content: Mapping[str, Any]) -> N
         payload.pop("knowledge_translations")
     validate_chapter_provider_output_against_schema(generator, schema, payload)
     if work_requirements:
-        validate_foundation_applicability(payload, schema, rfc6901_paths=envelope.get("contract_version") == "foundation-generation.v4")
+        validate_foundation_applicability(payload, schema, rfc6901_paths=envelope.get("contract_version") in {"foundation-generation.v4", "foundation-generation.v5"})
     if generator == "character.cast.generate":
         ids = [character["character_id"] for character in payload["characters"]]
         if len(ids) != len(set(ids)) or any(

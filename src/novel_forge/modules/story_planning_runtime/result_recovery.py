@@ -46,7 +46,7 @@ class PlanningResultValidationError(KernelError):
 
 
 def validate_raw_result(
-    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False
 ) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise KernelError(
@@ -73,6 +73,8 @@ def validate_raw_result(
             if key not in {"author_design_decisions", "knowledge_translations"}
         }
         envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
+        if narrative_search:
+            envelope["contract_version"] = "foundation-generation.v5"
         if compiled_scope and generator == "world.design.generate":
             envelope["world_compilation"] = {"compiled_scope": compiled_scope}
         structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
@@ -285,7 +287,11 @@ def require_result_repair_source(
     if ((evidence.get("context_bundle_asset_version_id") and evidence["context_bundle_asset_version_id"] != str(context_id))
             or (evidence.get("context_bundle_hash") and evidence["context_bundle_hash"] != context_hash)):
         raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair cannot substitute another author projection")
+    validated_result = raw
     try:
+        if command.execution_contract_version == "1.21.0" and not world_generation and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            from .execution import bind_provider_realization_selectors
+            validated_result = bind_provider_realization_selectors(raw, context_content.get("realization_reference_contract") or {})
         if world_generation:
             from .world_preparation import PlanningWorldPreparation
 
@@ -297,18 +303,19 @@ def require_result_repair_source(
         else:
             validate_raw_result(
                 command.generator_operation_name,
-                raw,
+                validated_result,
                 work_requirements=command.execution_contract_version
-                in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
-                rfc6901_paths=(result_validation_contract_version or command.execution_contract_version) in {"1.19.0", "1.20.0"},
+                in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+                rfc6901_paths=(result_validation_contract_version or command.execution_contract_version) in {"1.19.0", "1.21.0"},
+                narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
                 compiled_scope="BOOK"
                 if command.generator_operation_name == "world.design.generate"
                 else None,
             )
         if not world_generation:
             from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
-            validate_author_decisions(raw, context_content.get("author_design_projection") or {})
+            validate_author_decisions(validated_result, context_content.get("author_design_projection") or {})
         if source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"][
             "error_code"
         ].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
@@ -324,9 +331,9 @@ def require_result_repair_source(
             selection = context.content["narrative_intelligence"]
             if (context.content_hash != evidence["context_bundle_hash"] or selection["selection_digest"] != evidence["narrative_intelligence_selection_digest"]):
                 raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Concrete failure must retain its exact frozen selection")
-            validate_knowledge_translations(raw, selection)
-            validate_concrete_selection(raw, selection)
-            build_craft_strategy(raw, selection)
+            validate_knowledge_translations(validated_result, selection)
+            validate_concrete_selection(validated_result, selection)
+            build_craft_strategy(validated_result, selection)
     except KernelError as error:
         if require_valid_result:
             raise KernelError("PLANNING_RESULT_ADMISSION_INVALID", error.message) from error
@@ -360,6 +367,7 @@ def require_result_repair_source(
         "content_hash": source.content_hash,
         "source_operation_id": operation_id,
         "raw_result": raw,
+        **({"candidate_result": validated_result} if validated_result is not raw else {}),
         "diagnostic": diagnostic,
         "execution_evidence": evidence,
         "schema_version": "planning-result-repair-context.v1",

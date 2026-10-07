@@ -153,43 +153,54 @@ def transition_saga_gate(
     The coordinator lease, state mutation, StateEvent, AuditLog, and Outbox write are
     committed in one transaction.
     """
+    with AuthorityUnitOfWork(database_url) as uow:
+        result = transition_saga_gate_in_uow(uow, context, saga_id, target_status=target_status, reason=reason)
+        if not result["replayed"]:
+            uow.commit()
+        return result
+
+
+def transition_saga_gate_in_uow(
+    uow: AuthorityUnitOfWork,
+    context: GraphCommandContext,
+    saga_id: str,
+    *, target_status: str, reason: str,
+) -> dict[str, Any]:
     _validate_context(context)
     if target_status not in {"WAITING_GATE", "RUNNING"} or not reason.strip():
         raise KernelError("SAGA_GATE_COMMAND_INVALID", "valid gate status and reason are required")
-    with AuthorityUnitOfWork(database_url) as uow:
-        repository = uow.repositories.operation_graph
-        saga = repository.saga_for_update(saga_id, context.project_id)
-        if saga["status"] == target_status:
-            return {"status": target_status, "version": int(saga["version"]), "replayed": True}
-        allowed = {
-            ("RUNNING", "WAITING_GATE"),
-            ("FORWARD_RECOVERY", "WAITING_GATE"),
-            ("WAITING_GATE", "RUNNING"),
-        }
-        if (str(saga["status"]), target_status) not in allowed:
-            raise KernelError("SAGA_STATUS_CONFLICT", "Saga cannot perform the requested gate transition")
-        lease = repository.acquire_coordinator(
-            saga, owner=context.actor_id, lease_id=str(uuid4()), lease_seconds=30
-        )
-        repository.update_saga(saga_id, int(saga["version"]), target_status)
-        _record(
-            repository,
-            context,
-            str(saga["root_operation_id"]),
-            "authority.saga.gate_transitioned",
-            {
-                "saga_id": saga_id,
-                "previous_status": saga["status"],
-                "target_status": target_status,
-                "reason": reason,
-                "coordinator_fencing_token": lease["fencing_token"],
-            },
-            aggregate_type="authority_saga",
-            aggregate_id=saga_id,
-        )
-        repository.release_coordinator(saga_id, context.actor_id, lease["fencing_token"])
-        uow.commit()
-        return {"status": target_status, "version": int(saga["version"]) + 1, "replayed": False}
+    repository = uow.repositories.operation_graph
+    saga = repository.saga_for_update(saga_id, context.project_id)
+    if saga["status"] == target_status:
+        return {"status": target_status, "version": int(saga["version"]), "replayed": True}
+    allowed = {
+        ("RUNNING", "WAITING_GATE"),
+        ("FORWARD_RECOVERY", "WAITING_GATE"),
+        ("WAITING_GATE", "RUNNING"),
+    }
+    if (str(saga["status"]), target_status) not in allowed:
+        raise KernelError("SAGA_STATUS_CONFLICT", "Saga cannot perform the requested gate transition")
+    lease = repository.acquire_coordinator(
+        saga, owner=context.actor_id, lease_id=str(uuid4()), lease_seconds=30
+    )
+    repository.update_saga(saga_id, int(saga["version"]), target_status)
+    _record(
+        repository,
+        context,
+        str(saga["root_operation_id"]),
+        "authority.saga.gate_transitioned",
+        {
+            "saga_id": saga_id,
+            "previous_status": saga["status"],
+            "target_status": target_status,
+            "reason": reason,
+            "coordinator_fencing_token": lease["fencing_token"],
+        },
+        aggregate_type="authority_saga",
+        aggregate_id=saga_id,
+    )
+    repository.release_coordinator(saga_id, context.actor_id, lease["fencing_token"])
+    return {"status": target_status, "version": int(saga["version"]) + 1, "replayed": False}
 
 
 def register_saga_step(

@@ -1,6 +1,9 @@
 from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import json
+from pathlib import Path
 from typing import Any
 from novel_forge.modules.chapter_authority.contracts import (
     QUALITY_GROUP_NODES,
@@ -70,14 +73,21 @@ from novel_forge.modules.command_kernel.operation_graph import (
     coordinate_saga,
     register_saga_step,
     terminalize_saga_from_extension,
+    transition_saga_gate_in_uow,
 )
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
     transition_operation,
+    transition_operation_in_uow,
 )
 from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+
+def _admission_implementation_identity() -> str:
+    from novel_forge.tools.implementation_tree_identity import build_implementation_tree_identity
+    return str(build_implementation_tree_identity(Path(__file__).resolve().parents[4])["implementation_tree_sha"])
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +164,27 @@ class ChapterAuthorityScheduler:
             trace_id=root["trace_id"],
             correlation_id=root["correlation_id"],
         )
+        if root["definition_version"] == "3.10.0" and root["status"] == "CANCELLATION_REQUESTED":
+            coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
+            _, _, existing = self._graph_state(project_id, root_operation_id)
+            cancellable = next(((node, child) for node, child in existing.items()
+                if child["status"] == "CANCELLATION_REQUESTED"), None)
+            if cancellable:
+                self._execute_node(self._request_from_root(root), *cancellable)
+                coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
+            return ChapterSchedulerTick(root_operation_id, saga["saga_id"], coordinated["status"], root_operation_id,
+                "", "CANCELLATION_REQUESTED", "cancel_existing_children_only")
+        if root["definition_version"] == "3.10.0" and root["status"] == "WAITING_GATE":
+            blocked = self._admission_gate(root_operation_id, project_id)
+            if blocked:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    self._require_technical_gate_frontier(uow, root, saga)
+                if blocked["implementation_identity"] == _admission_implementation_identity():
+                    return ChapterSchedulerTick(root_operation_id, saga["saga_id"], "WAITING_GATE", root_operation_id,
+                        blocked["node"], "WAITING_GATE", "technical_admission_blocked")
+                self._transition_admission_gate(root, saga, context, target_status="EXECUTING",
+                    reason="technical Chapter admission recheck after implementation change")
+                root, saga, children = self._graph_state(project_id, root_operation_id)
         canon = children.get(ChapterNode.CANON)
         if canon and canon['status'] in {'READY','FAILED_RETRYABLE'}:
             with AuthorityUnitOfWork(self.database_url) as uow:
@@ -264,13 +295,25 @@ class ChapterAuthorityScheduler:
                     recovery_mode="canon_approval_gate",
                 )
         if operation is None:
-            operation = self._admit_node(
-                request=request,
-                root=root,
-                saga_id=saga["saga_id"],
-                children=children,
-                node=node,
-            )
+            try:
+                operation = self._admit_node(
+                    request=request,
+                    root=root,
+                    saga_id=saga["saga_id"],
+                    children=children,
+                    node=node,
+                )
+            except KernelError as error:
+                if root["definition_version"] != "3.10.0" or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
+                    raise
+                fresh_root, fresh_saga, fresh_children = self._graph_state(project_id, root_operation_id)
+                if node in fresh_children or fresh_root["status"] not in {"EXECUTING", "WAITING_CHILDREN"}:
+                    raise
+                reason = json.dumps({"gate": "chapter_technical_admission.v2", "node": node.value,
+                    "error_code": error.code, "error_message": error.message, "implementation_identity": _admission_implementation_identity()}, sort_keys=True)
+                self._transition_admission_gate(fresh_root, fresh_saga, context, target_status="WAITING_GATE", reason=reason)
+                return ChapterSchedulerTick(root_operation_id, saga["saga_id"], "WAITING_GATE", root_operation_id,
+                    node.value, "WAITING_GATE", "technical_admission_blocked")
             coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             operation = self._child(str(operation["operation_id"]), project_id)
         if operation["status"] == "SUCCEEDED":
@@ -825,6 +868,10 @@ class ChapterAuthorityScheduler:
                 FROM authority_operation AS operation
                 JOIN authority_saga AS saga
                   ON saga.root_operation_id = operation.operation_id
+                LEFT JOIN LATERAL (SELECT payload->>'reason' AS reason FROM state_event
+                    WHERE aggregate_type='authority_operation' AND aggregate_id=operation.operation_id
+                    AND project_id=operation.project_id AND event_type='authority.operation.status_changed'
+                    ORDER BY sequence_number DESC LIMIT 1) AS latest_transition ON TRUE
                 WHERE (
                     (operation.definition_name = 'chapter.slice.run'
                      AND operation.status IN ('EXECUTING', 'WAITING_CHILDREN',
@@ -832,6 +879,8 @@ class ChapterAuthorityScheduler:
                     OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
                         AND operation.definition_version = ANY(%s))
                   )
+                  AND NOT (operation.definition_version='3.10.0' AND operation.status='WAITING_GATE'
+                    AND COALESCE(latest_transition.reason, '') LIKE %s AND COALESCE(latest_transition.reason, '') LIKE %s)
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
                     'MANUAL_INTERVENTION', 'CANCELLED'
@@ -839,10 +888,56 @@ class ChapterAuthorityScheduler:
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
                 """,
-                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), limit],
+                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), '%"gate": "chapter_technical_admission.v2"%',
+                    '%"implementation_identity": "' + _admission_implementation_identity() + '"%', limit],
             )
             rows = uow.cursor.fetchall()
         return tuple((str(row[0]), str(row[1])) for row in rows)
+
+    def _admission_gate(self, operation_id: str, project_id: str) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT payload->>'reason' FROM state_event WHERE aggregate_type='authority_operation'
+                AND aggregate_id=%s AND project_id=%s AND event_type='authority.operation.status_changed'
+                ORDER BY sequence_number DESC LIMIT 1""", [operation_id, project_id])
+            row = uow.cursor.fetchone()
+        try:
+            gate = json.loads(row[0]) if row else None
+        except (TypeError, ValueError):
+            return None
+        return gate if (isinstance(gate, dict) and gate.get("gate") == "chapter_technical_admission.v2"
+            and gate.get("implementation_identity") and gate.get("node") in {item.value for item in ChapterNode}) else None
+
+    def _require_technical_gate_frontier(self, uow, root, saga):
+        from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
+        from novel_forge.modules.command_kernel.step_successor_v2 import _require_reconciled_graph
+        from novel_forge.modules.command_kernel.derived_step_revalidation import _settled_graph
+        actual_saga = uow.repositories.operation_graph.saga_for_update(saga["saga_id"], root["project_id"])
+        if actual_saga["root_operation_id"] != root["operation_id"]:
+            raise KernelError("CHAPTER_TECHNICAL_GATE_SCOPE_DRIFT", "Technical admission must retain the Root-owned Saga")
+        uow.cursor.execute("SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s AND project_id=%s FOR UPDATE",
+            [root["operation_id"], root["project_id"]])
+        row = uow.cursor.fetchone()
+        if (not row or row[0]["definition_version"] != "3.10.0" or row[0]["definition_name"] != "chapter.slice.run"
+            or row[0]["status"] not in {"EXECUTING", "WAITING_CHILDREN", "WAITING_GATE"}
+            or any(row[0].get(key) != root.get(key) for key in ("workspace_id", "actor_id", "command_payload", "input_asset_snapshot", "definition_snapshot"))):
+            raise KernelError("CHAPTER_TECHNICAL_GATE_SCOPE_DRIFT", "Technical admission may only retain its exact unfinished native Root")
+        if row[1] is not None and row[1] <= datetime.now(timezone.utc):
+            raise KernelError("OPERATION_BUSINESS_TIMEOUT", "Technical repair cannot renew the frozen Root or author deadline")
+        require_live_chapter_frontier(uow.cursor, root_id=root["operation_id"], project_id=root["project_id"])
+        _require_reconciled_graph(uow.cursor, root_id=root["operation_id"], predecessor_id=root["operation_id"])
+        _settled_graph(uow.cursor, root["operation_id"])
+        return row[0]
+
+    def _transition_admission_gate(self, root, saga, context, *, target_status, reason):
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            current = self._require_technical_gate_frontier(uow, root, saga)
+            transition_operation_in_uow(uow, OperationTransitionCommand(
+                operation_id=root["operation_id"], project_id=root["project_id"], expected_version=int(current["version"]),
+                expected_status=str(current["status"]), target_status=target_status, actor_id=self.worker_id, reason=reason,
+                trace_id=root["trace_id"], correlation_id=root["correlation_id"], causation_id=root["operation_id"]))
+            transition_saga_gate_in_uow(uow, context, saga["saga_id"],
+                target_status="WAITING_GATE" if target_status == "WAITING_GATE" else "RUNNING", reason=reason)
+            uow.commit()
 
     def _current_or_next(
         self, children: dict[ChapterNode, dict[str, Any]]
@@ -911,7 +1006,16 @@ class ChapterAuthorityScheduler:
                     "CHAPTER_INPUT_NOT_COMPLETE",
                     f"{node.value} input {source.value} has not completed",
                 )
-            if source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE:
+            if source is ChapterNode.PUBLISH_GATE and node is ChapterNode.FINAL_RELEASE_GATE and root["definition_version"] == "3.10.0":
+                export = children[ChapterNode.EXPORT]
+                with AuthorityUnitOfWork(self.database_url) as u:
+                    u.cursor.execute("SELECT asset_version_id FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='chapter.export.revalidated_publish_gate' AND role='completion_evidence'", [export["operation_id"]])
+                    restored = u.cursor.fetchall()
+                if len(restored) > 1:
+                    raise KernelError("PUBLICATION_RECOVERY_SOURCE_INVALID", "One governed restored gate is required")
+                inputs.append(self._output_by_key(str(export["operation_id"]), root["project_id"], "chapter.export.revalidated_publish_gate")
+                    if restored else self._primary_output(str(source_operation["operation_id"]), root["project_id"]))
+            elif source is ChapterNode.REREVIEW and node is not ChapterNode.BEST_CANDIDATE:
                 inputs.append(self._output_by_key(
                     str(children[ChapterNode.BEST_CANDIDATE]["operation_id"]),
                     root["project_id"], "chapter.best_candidate.selected_review",

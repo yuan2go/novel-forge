@@ -55,6 +55,7 @@ from .policy import PostgresChapterGroupExecutionPolicyAuthority
 
 
 DEFINITION_VERSION = "1.0.0"
+REPLAN_RETIREMENT_VERSION = "1.1.0"
 ROOT_DEFINITION = "chapter_group.production.run"
 STEP_DEFINITIONS = (
     "chapter_group.prepare",
@@ -90,6 +91,9 @@ class StartChapterGroupCommand:
 
 
 class _StepHandler:
+    def __init__(self, database_url: str = "") -> None:
+        self.database_url = database_url
+
     def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
         payload = request.command.get("payload")
         if not isinstance(payload, dict):
@@ -97,6 +101,10 @@ class _StepHandler:
                 "CHAPTER_GROUP_STEP_INPUT_INVALID",
                 "ChapterGroup step payload must be an object",
             )
+        if request.definition_name=="chapter_group.production.supersede" and request.definition_version==REPLAN_RETIREMENT_VERSION:
+            from .replan_retirement import require_replan_retirement
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                require_replan_retirement(uow.cursor,project_id=request.project_id,payload=payload,current_operation_id=request.operation_id)
         sources = tuple(item.asset_version_id for item in request.inputs)
         if request.definition_name == "chapter_group.plan_vs_actual.evaluate":
             asset_type = "plan_vs_actual_report"
@@ -155,9 +163,9 @@ class _StepHandler:
 
 
 class _Registry:
-    def __init__(self) -> None:
+    def __init__(self, database_url: str = "") -> None:
         self._registrations: dict[tuple[str, str], AuthorityHandlerRegistration] = {}
-        handler = _StepHandler()
+        handler = _StepHandler(database_url)
         for definition_name in STEP_DEFINITIONS:
             asset_type, output_key = _output_contract(definition_name)
             self._registrations[(definition_name, DEFINITION_VERSION)] = (
@@ -173,6 +181,10 @@ class _Registry:
                     handler=handler,
                 )
             )
+
+        registration=self._registrations[("chapter_group.production.supersede",DEFINITION_VERSION)]
+        from dataclasses import replace
+        self._registrations[("chapter_group.production.supersede",REPLAN_RETIREMENT_VERSION)] = replace(registration,definition_version=REPLAN_RETIREMENT_VERSION)
 
     @property
     def available_handler_keys(self) -> frozenset[str]:
@@ -205,7 +217,7 @@ class PostgresChapterGroupAuthority:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
-        self.registry = _Registry()
+        self.registry = _Registry(database_url)
         self.execution_policies = PostgresChapterGroupExecutionPolicyAuthority(
             database_url,
             application_build_id=application_build_id,
@@ -829,9 +841,21 @@ class PostgresChapterGroupAuthority:
                 "approved Replan cannot supersede a ChapterGroup with an active child",
             )
         reason = f"superseded by approved Book Replan {replan_id}"
-        self._control_step(group, "supersede", reason, principal)
+        payload={"reason":reason,"group_run_id":group_run_id,"replan_id":replan_id,
+            "retired_group_plan_version_id":target_group_plan_version_id,"expected_group_version":int(group["version"])}
+        from .replan_retirement import require_replan_retirement
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            impact=require_replan_retirement(uow.cursor,project_id=group["project_id"],payload=payload)
+        payload.update(plan_change_impact_id=impact[0],plan_change_proposal_id=impact[1],approval_operation_id=impact[2],activation_operation_id=impact[3])
+        retirement_operation_id = self._run_step(group,definition="chapter_group.production.supersede",definition_version=REPLAN_RETIREMENT_VERSION,
+            suffix=f"version:{group['version']}:approved-impact:{impact[0]}",ordinal=10000+int(group["version"]),
+            payload=payload,input_assets=(),principal=principal)
         self._request_root_cancellation(group, reason=reason, principal=principal)
         with AuthorityUnitOfWork(self.database_url) as uow:
+            final_impact = require_replan_retirement(uow.cursor,project_id=group["project_id"],payload=payload,
+                retirement_operation_id=retirement_operation_id)
+            if final_impact != impact:
+                raise KernelError("CHAPTER_GROUP_REPLAN_IMPACT_DRIFT","Approved retirement evidence changed before final mutation")
             uow.repositories.chapter_group.set_state(
                 group_run_id,
                 expected=(
@@ -860,6 +884,7 @@ class PostgresChapterGroupAuthority:
         payload: dict[str, Any],
         input_assets: tuple[dict[str, str], ...],
         principal: Principal,
+        definition_version: str = DEFINITION_VERSION,
     ) -> str:
         if definition not in STEP_DEFINITIONS:
             raise ValueError(f"unsupported ChapterGroup step: {definition}")
@@ -871,7 +896,7 @@ class PostgresChapterGroupAuthority:
             self.database_url,
             {
                 "definition_name": definition,
-                "definition_version": DEFINITION_VERSION,
+                "definition_version": definition_version,
                 "project_id": group["project_id"],
                 "workspace_id": self.book.require(group["book_run_id"])["workspace_id"],
                 "actor_id": principal.principal_id,
@@ -1257,6 +1282,8 @@ class PostgresChapterGroupAuthority:
                         commit_sha=self.commit_sha,
                     )
                 )
+            uow.repositories.definitions.register(_definition("chapter_group.production.supersede",
+                application_build_id=self.application_build_id,commit_sha=self.commit_sha,definition_version=REPLAN_RETIREMENT_VERSION))
             uow.commit()
 
     def _admission_context(self, principal: Principal) -> AdmissionContext:
@@ -1308,7 +1335,7 @@ def _output_contract(definition_name: str) -> tuple[str, str]:
 
 
 def _definition(
-    name: str, *, application_build_id: str, commit_sha: str
+    name: str, *, application_build_id: str, commit_sha: str, definition_version: str = DEFINITION_VERSION
 ) -> dict[str, Any]:
     schema = {"type": "object"}
     is_root = name == ROOT_DEFINITION
@@ -1319,10 +1346,10 @@ def _definition(
     )
     return {
         "name": name,
-        "definition_version": DEFINITION_VERSION,
+        "definition_version": definition_version,
         "family": "chapter_group_authority",
         "enabled": True,
-        "definition_status": "integration_proven",
+        "definition_status": "implemented_validation_pending" if definition_version==REPLAN_RETIREMENT_VERSION else "integration_proven",
         "command_schema_version": f"{name}.command.v1",
         "result_schema_version": f"{name}.result.v1",
         "command_schema": schema,

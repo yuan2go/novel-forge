@@ -574,6 +574,7 @@ def normalize_draft_result(
     work_requirements: bool = False,
     core_policy: str = "EXPLICIT_SKELETON_V1",
     information_policy: str = "ENTRY_ONLY_V1",
+    realization_contract: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     from .realization_composition import prose_from_output
 
@@ -621,7 +622,7 @@ def normalize_draft_result(
     from .chapter_plan_views import build_draft_style_view
 
     composition = integrate_realization(
-        contract=compile_realization_contract(
+        contract=realization_contract or compile_realization_contract(
             plan,
             build_draft_style_view(
                 context_content or {}, work_requirements=work_requirements
@@ -976,9 +977,11 @@ def build_publish_gate(
     context_bundle: dict[str, Any],
     context_bundle_version_id: str,
     project_id: str,
+    work_admission: bool = False,
 ) -> dict[str, Any]:
     return prepare_internal_release(
         project_id=project_id,
+        work_admission=work_admission,
         revision=revision,
         revision_asset_version_id=revision_asset_version_id,
         quality=quality,
@@ -1022,6 +1025,7 @@ def build_final_release_gate(
     canon: dict[str, Any],
     canon_asset_version_id: str,
     context_bundle_version_id: str,
+    work_admission: bool = False,
 ) -> dict[str, Any]:
     return finalize_blob_verified_release(
         project_id=project_id,
@@ -1037,6 +1041,7 @@ def build_final_release_gate(
         canon=canon,
         canon_asset_version_id=canon_asset_version_id,
         context_bundle_version_id=context_bundle_version_id,
+        work_admission=work_admission,
     )
 
 

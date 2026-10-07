@@ -1372,6 +1372,7 @@ def assert_provider_execution_authorized(
         from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_dispatch
         from novel_forge.modules.command_kernel.creative_budget_runtime import assert_creative_budget_dispatch
 
+        require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=operation_id)
         assert_creative_budget_dispatch(uow.cursor, project_id=project_id,
                                        external_effect_id=external_effect_id,
                                        reservation_id=budget_reservation_id)
@@ -4171,24 +4172,65 @@ def provider_usage_accounted_sql() -> str:
         OR (status='RELEASED' AND (actual_tokens>0 OR {_STARTED_CODEX_DISPATCH_SQL})))"""
 
 
-def unresolved_cli_outcomes(cursor: Any, project_id: str) -> list[dict[str, Any]]:
+def require_known_cli_lineage(cursor: Any, *, project_id: str, operation_id: str) -> None:
+    cursor.execute(
+        """SELECT COALESCE(NULLIF(o.root_operation_id,''),o.operation_id),
+            COALESCE(request_book.book_id,production.book_id,NULLIF(o.command_payload->>'book_id',''),
+                NULLIF(o.command_payload#>>'{payload,book_id}',''),
+                NULLIF(root.command_payload->>'book_id',''),
+                NULLIF(root.command_payload#>>'{payload,book_id}',''),'')
+        FROM authority_operation o LEFT JOIN authority_operation root
+          ON root.operation_id=o.root_operation_id AND root.project_id=o.project_id
+        LEFT JOIN authority_book_chapter_request request ON request.project_id=o.project_id
+          AND request.chapter_root_operation_id=COALESCE(NULLIF(o.root_operation_id,''),o.operation_id)
+        LEFT JOIN authority_book_production request_book ON request_book.book_run_id=request.book_run_id
+          AND request_book.project_id=o.project_id
+        LEFT JOIN authority_book_production production ON production.project_id=o.project_id
+          AND production.root_operation_id=COALESCE(NULLIF(o.root_operation_id,''),o.operation_id)
+        WHERE o.operation_id=%s AND o.project_id=%s
+          AND (request.chapter_request_id IS NULL OR request_book.workspace_id=o.workspace_id)
+          AND (production.book_run_id IS NULL OR production.workspace_id=o.workspace_id)""", [operation_id, project_id],
+    )
+    lineage = cursor.fetchone()
+    if lineage is None:
+        raise KernelError("CROSS_PROJECT_REFERENCE", "Provider dispatch Operation scope is missing")
+    if unresolved_cli_outcomes(cursor, project_id,
+        root_operation_id="" if lineage[1] else str(lineage[0]), book_id=str(lineage[1])):
+        raise KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED",
+            "Reconcile original local-CLI receipts before another send in this execution lineage")
+
+
+def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: str = "", book_id: str = "") -> list[dict[str, Any]]:
     cursor.execute(
         """SELECT e.external_effect_id,e.operation_id,e.status,
             d.evidence #>> '{production_execution,execution_result,process_receipt_ref}'
-        FROM authority_budget_reservation b
-        JOIN authority_external_effect e USING(external_effect_id)
-        JOIN LATERAL (SELECT evidence FROM authority_external_effect_dispatch
-            WHERE external_effect_id=e.external_effect_id ORDER BY generation DESC LIMIT 1) d ON true
-        WHERE b.project_id=%s AND e.status<>'SUCCEEDED'
+        FROM authority_external_effect e
+        JOIN authority_operation o ON o.operation_id=e.operation_id AND o.project_id=e.project_id
+        LEFT JOIN authority_operation root ON root.operation_id=o.root_operation_id AND root.project_id=o.project_id
+        LEFT JOIN authority_book_chapter_request request ON request.project_id=o.project_id
+          AND request.chapter_root_operation_id=COALESCE(NULLIF(o.root_operation_id,''),o.operation_id)
+        LEFT JOIN authority_book_production request_book ON request_book.book_run_id=request.book_run_id
+          AND request_book.project_id=o.project_id
+        LEFT JOIN authority_book_production production ON production.project_id=o.project_id
+          AND production.root_operation_id=COALESCE(NULLIF(o.root_operation_id,''),o.operation_id)
+        LEFT JOIN authority_budget_reservation b ON b.external_effect_id=e.external_effect_id AND b.project_id=e.project_id
+        JOIN authority_external_effect_dispatch d ON d.external_effect_id=e.external_effect_id
+        WHERE e.project_id=%s
+          AND (%s='' OR o.operation_id=%s OR o.root_operation_id=%s)
+          AND (%s='' OR COALESCE(request_book.book_id,production.book_id,NULLIF(e.request_payload#>>'{_production_execution,book_id}',''),
+            NULLIF(o.command_payload->>'book_id',''),NULLIF(o.command_payload#>>'{payload,book_id}',''),
+            NULLIF(root.command_payload->>'book_id',''),NULLIF(root.command_payload#>>'{payload,book_id}',''),
+            NULLIF(b.evidence->>'work_id',''))=%s)
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
           AND d.evidence #>> '{production_execution,execution_result,outcome}' IN ('TIMED_OUT','CANCELLED','ORPHANED')
           AND (d.evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
-            OR NULLIF(d.evidence #>> '{production_execution,execution_result,started_at}', '') IS NOT NULL)
-          AND d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}' IS NULL
+            OR NOT COALESCE(d.evidence #> '{production_execution,execution_result,started_at}'='null'::jsonb,false))
+          AND NULLIF(d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}', '') IS NULL
           AND NOT EXISTS(SELECT 1 FROM authority_effect_manual_resolution m
-              WHERE m.external_effect_id=e.external_effect_id AND m.project_id=b.project_id)
-        ORDER BY e.created_at,e.external_effect_id LIMIT 20""",
-        [project_id],
+              WHERE m.external_effect_id=e.external_effect_id AND m.project_id=e.project_id
+                AND m.operation_id=e.operation_id AND m.created_at>=COALESCE(d.finished_at,d.updated_at,d.created_at))
+        ORDER BY e.created_at,e.external_effect_id,d.generation LIMIT 20""",
+        [project_id, root_operation_id, root_operation_id, root_operation_id, book_id, book_id],
     )
     return [dict(zip(("external_effect_id", "operation_id", "effect_status", "process_receipt_ref"), row, strict=True))
         | {"state": "RECONCILIATION_REQUIRED", "usage": "UNKNOWN"} for row in cursor.fetchall()]

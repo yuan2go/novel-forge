@@ -1,0 +1,281 @@
+{
+  "source_sha": "9d39320838e28ceec70a309374797a253c18b15d",
+  "arguments": {
+    "application_build_id": "coordinated-tests",
+    "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "definitions": {
+    "1.0.0": {
+      "name": "book.chapter.accept",
+      "definition_version": "1.0.0",
+      "family": "book_authority",
+      "command_schema_version": "book.chapter.accept.command.v1",
+      "result_schema_version": "book.chapter.accept.result.v1",
+      "enabled": true,
+      "definition_status": "integration_proven",
+      "command_schema": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "input_asset_version_ids": {
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "result_schema": {
+        "type": "object"
+      },
+      "input_contract": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "input_asset_version_ids": {
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_contract": {
+        "asset_type": "chapter_outcome",
+        "output_key": "chapter.outcome",
+        "auxiliary_asset_types": [
+          "story_state_snapshot",
+          "canon_snapshot"
+        ]
+      },
+      "handler_key": "novel_forge.chapter_outcome.commit",
+      "handler_contract_version": "chapter-outcome-handler-v1",
+      "application_build_id": "coordinated-tests",
+      "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "execution_mode": "worker",
+      "permissions": [
+        "book.authority.execute"
+      ],
+      "approval_policy": {
+        "required": false
+      },
+      "policy": {
+        "frozen_inputs_required": true,
+        "chapter_acceptance_evidence_required": true,
+        "deterministic_story_state_reducer": true,
+        "body_mutation_allowed": false
+      },
+      "idempotency_scope": "project:book-chapter-acceptance",
+      "concurrency_key_template": "project:{project_id}:book-chapter-acceptance",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "compensation_policy": {
+        "supported": false,
+        "reason": "append-only ChapterOutcome and Story State"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "external_capabilities": [],
+      "projection_consumers": [
+        "book_authority_checkpoint"
+      ],
+      "migration_owner": "chapter-outcome-authority",
+      "completion_contract": {
+        "version": "book.chapter.accept.completion.v1",
+        "required_asset_selectors": [
+          {
+            "selector": "chapter_outcome",
+            "output_key": "chapter.outcome",
+            "role": "primary",
+            "lifecycle": "ACTIVE",
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR"
+          },
+          {
+            "selector": "story_state_snapshot",
+            "output_key": "chapter.story_state",
+            "role": "story_state",
+            "lifecycle": "ACTIVE",
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR"
+          },
+          {
+            "selector": "canon_snapshot",
+            "output_key": "chapter.canon.current",
+            "role": "canon_truth",
+            "lifecycle": "ACTIVE",
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "book.chapter.accepted"
+        ]
+      }
+    },
+    "1.1.0": {
+      "name": "book.chapter.accept",
+      "definition_version": "1.1.0",
+      "family": "book_authority",
+      "command_schema_version": "book.chapter.accept.command.v1",
+      "result_schema_version": "book.chapter.accept.result.v1",
+      "enabled": true,
+      "definition_status": "integration_proven",
+      "command_schema": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "input_asset_version_ids": {
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "result_schema": {
+        "type": "object"
+      },
+      "input_contract": {
+        "type": "object",
+        "required": [
+          "project_id",
+          "input_asset_version_ids",
+          "payload"
+        ],
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "input_asset_version_ids": {
+            "type": "array"
+          },
+          "payload": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "output_contract": {
+        "asset_type": "chapter_outcome",
+        "output_key": "chapter.outcome",
+        "auxiliary_asset_types": [
+          "story_state_snapshot",
+          "canon_snapshot"
+        ]
+      },
+      "handler_key": "novel_forge.chapter_outcome.commit",
+      "handler_contract_version": "chapter-outcome-handler-v2",
+      "application_build_id": "coordinated-tests",
+      "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "execution_mode": "worker",
+      "permissions": [
+        "book.authority.execute"
+      ],
+      "approval_policy": {
+        "required": false
+      },
+      "policy": {
+        "frozen_inputs_required": true,
+        "chapter_acceptance_evidence_required": true,
+        "deterministic_story_state_reducer": true,
+        "body_mutation_allowed": false
+      },
+      "idempotency_scope": "project:book-chapter-acceptance",
+      "concurrency_key_template": "project:{project_id}:book-chapter-acceptance",
+      "retry_policy": {
+        "max_attempts": 2
+      },
+      "timeout_policy": {
+        "operation_timeout_seconds": 120
+      },
+      "cancellation_policy": {
+        "mode": "cancel_active_attempt"
+      },
+      "compensation_policy": {
+        "supported": false,
+        "reason": "append-only ChapterOutcome and Story State"
+      },
+      "irreversible_effect_policy": {
+        "allowed": false
+      },
+      "external_capabilities": [],
+      "projection_consumers": [
+        "book_authority_checkpoint"
+      ],
+      "migration_owner": "chapter-outcome-authority",
+      "completion_contract": {
+        "version": "book.chapter.accept.completion.v1",
+        "required_asset_selectors": [
+          {
+            "selector": "chapter_outcome",
+            "output_key": "chapter.outcome",
+            "role": "primary",
+            "lifecycle": "ACTIVE",
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR"
+          },
+          {
+            "selector": "story_state_snapshot",
+            "output_key": "chapter.story_state",
+            "role": "story_state",
+            "lifecycle": "ACTIVE",
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR"
+          },
+          {
+            "selector": "canon_snapshot",
+            "output_key": "chapter.canon.current",
+            "role": "canon_truth",
+            "lifecycle": "ACTIVE",
+            "eligibility": "ELIGIBLE",
+            "governance": "CLEAR"
+          }
+        ],
+        "required_evidence": [
+          "trace",
+          "audit"
+        ],
+        "required_outbox_events": [
+          "book.chapter.accepted"
+        ]
+      }
+    }
+  }
+}

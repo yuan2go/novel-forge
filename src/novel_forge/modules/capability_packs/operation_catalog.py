@@ -373,10 +373,12 @@ def world_sampling_workflow_binding_catalog(*, reference_samples: bool = False) 
         for action in (("evaluate",) if reference_samples else ("generate", "evaluate", "actor_0", "actor_1", "actor_2"))))
 
 
-def reader_outcome_workflow_binding_catalog() -> WorkflowBindingCatalog:
+def reader_outcome_workflow_binding_catalog(version: str = BOOK_FOLLOWUP_DEFINITION_VERSION) -> WorkflowBindingCatalog:
+    if version not in {"1.1.0", "1.2.0", "1.3.0", "1.4.0"}:
+        raise ValueError("Reader workflow requires an explicit supported contract")
     return WorkflowBindingCatalog(
         "book_followup_reader_outcome",
-        BOOK_FOLLOWUP_DEFINITION_VERSION,
+        version,
         (
             WorkflowBinding(
                 node_id="reader_outcome",
@@ -485,6 +487,9 @@ def governed_workflow_binding_catalog(
         world_sampling_workflow_binding_catalog(),
         world_sampling_workflow_binding_catalog(reference_samples=True),
         reader_outcome_workflow_binding_catalog(),
+        reader_outcome_workflow_binding_catalog("1.2.0"),
+        reader_outcome_workflow_binding_catalog("1.3.0"),
+        reader_outcome_workflow_binding_catalog("1.4.0"),
         longform_prose_review_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(provider_sampling=True),
         *(screenplay_workflow_binding_catalog(stage, provider_sampling=sample) for stage in ("screenplay_generate", "screenplay_review", "screenplay_revision") for sample in (False, True)),
@@ -516,7 +521,7 @@ def chapter_operation_definition_catalog(
         ), *(item for item in chapter_operation_definitions(
             application_build_id=application_build_id, commit_sha=release_sha,
             model_effects_required=True, coordinated_contract=True,
-        ) if item["name"] != ChapterNode.PLAN.definition_name), *chapter_provider_sample_definitions(
+        )), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=release_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=release_sha, reference_samples=True,

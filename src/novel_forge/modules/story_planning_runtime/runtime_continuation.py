@@ -104,8 +104,7 @@ def require_source(
     row = uow.cursor.fetchone()
     if (
         row is None
-        or row[0] not in {"CANCELLED", "FAILED_FINAL", "DEAD_LETTER"}
-        or row[5]
+        or not ((row[0] in {"CANCELLED", "FAILED_FINAL", "DEAD_LETTER"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
@@ -134,12 +133,21 @@ def require_source(
         if attempt
         else ""
     )
+    if row[0] == "SUCCEEDED":
+        if not attempt or attempt[0] != "SUCCEEDED" or frozen.get("execution_contract_version") != "1.19.0":
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID", "Only exact settled historical reference source is admitted")
+        _require_world_lineage_settled(uow, source_operation_id=source_operation_id, project_id=project_id, book_id=str(row[4]), active_successor_operation_id=active_successor_operation_id)
+        native = _require_rejected_reference_owner(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
+        source = _planning_reference_contract_source(uow, source_operation_id=source_operation_id, row=row)
+        source["reference_contract_proof"].update(native)
+        source["diagnostic"] = source["reference_contract_proof"]
+        return source
     if attempt and attempt[0] == "FAILED_FINAL":
         mode = None
-        if row[0] == "FAILED_FINAL" and failure_code == "PROGRAMMING_BUG" and dict(attempt[2] or {}).get("error_message") == "'frozen_source'" and frozen.get("repair_reason") == "WORLD_HOST_REVALIDATION_SUCCESSOR" and frozen.get("execution_contract_version") == "1.20.0":
+        if row[0] == "FAILED_FINAL" and failure_code == "PROGRAMMING_BUG" and dict(attempt[2] or {}).get("error_message") == "'frozen_source'" and frozen.get("repair_reason") == "WORLD_HOST_REVALIDATION_SUCCESSOR" and frozen.get("execution_contract_version") == "1.21.0":
             mode = _world_projection_source
         elif row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "WORLD_PREPARATION_RESULT_INVALID":
-            if frozen.get("execution_contract_version") == "1.20.0":
+            if frozen.get("execution_contract_version") == "1.21.0":
                 mode = _world_host_source
             elif frozen.get("execution_contract_version") in {"1.18.0", "1.19.0"}:
                 mode = _world_agency_source
@@ -516,7 +524,7 @@ def _world_agency_pack_profile(version, operation_hash, *, repository_root):
     )
 
     manifest = deepcopy(version["manifest"])
-    manifest["identity"]["version"] = "2.12.0"
+    manifest["identity"]["version"] = "2.13.0"
     nodes = manifest["workflow_template"]["nodes"]
     generation = (
         max(
@@ -535,17 +543,17 @@ def _world_agency_pack_profile(version, operation_hash, *, repository_root):
                 "PLANNING_WORLD_CONTRACT_PACK_INVALID",
                 "source Pack must contain only the affected native Planning contract",
             )
-        node["operation_definition_ref"] = "story_planning.generate@1.20.0"
+        node["operation_definition_ref"] = "story_planning.generate@1.21.0"
         node["operation_definition_hash"] = operation_hash
         if node.get("agent_definition_ref"):
             node["agent_definition_ref"] = (
                 f"{node['agent_definition_ref'].rpartition('@')[0]}@{generation}"
             )
     from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
-    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.20.0")
+    current = build_story_planning_pack_profile(repository_root, operation_definition_hash=operation_hash, execution_contract_version="1.21.0")
     manifest["prompt_binding"] = {**manifest["prompt_binding"], **{key: current.manifest["prompt_binding"][key] for key in ("system_instruction_ref", "system_instruction_version", "system_instruction_hash")}}
     catalog = deepcopy(version["artifact_catalog"])
-    system = next(item for item in current.artifact_catalog["artifacts"] if item["ref"] == manifest["prompt_binding"]["system_instruction_ref"] and item["version"] == "v10")
+    system = next(item for item in current.artifact_catalog["artifacts"] if item["ref"] == manifest["prompt_binding"]["system_instruction_ref"] and item["version"] == "v11")
     catalog["artifacts"].append(deepcopy(system))
     workflow = manifest["workflow_template"]
     return LongformCapabilityPackProfile(
@@ -744,7 +752,7 @@ def _capacity_authorization(
     )
 
     uow.cursor.execute(
-        "SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND frozen_stage_inputs #>> '{generation_policy,contract_version}'='formation-generation.v5'",
+        "SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v7')",
         [successor.project_id, successor.book_id],
     )
     formations = uow.cursor.fetchall()
@@ -783,12 +791,12 @@ def _capacity_authorization(
             "PLANNING_CAPACITY_CONTINUATION_AUTHORIZATION_REQUIRED",
             "Allocation must retain the original author, active membership authorization and allowed route",
         )
-    if source.get("mode") == "WORLD_AGENCY_CONTRACT":
+    if source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}:
         _require_world_agency_pack(uow, source=source, successor=successor, target=target)
     if any(
         source["snapshot"].get(key) != target["pack_snapshot"].get(key)
         for key in (
-            *(("manifest_hash", "prompt_bundle_hash") if source.get("mode") != "WORLD_AGENCY_CONTRACT" else ()),
+            *(("manifest_hash", "prompt_bundle_hash") if source.get("mode") not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"} else ()),
             "route_policy_hash",
             "context_policy_hash",
             "skill_bundle_hash",
@@ -1186,14 +1194,15 @@ def register(
         )
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
-    contract_change = source.get("mode") == "WORLD_AGENCY_CONTRACT"
+    reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
+    contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
     host_revalidation = source.get("mode") in {
         "WORLD_HOST_REVALIDATION",
         "WORLD_HOST_PROJECTION",
     }
     successor = replace(
         original,
-        execution_contract_version="1.20.0"
+        execution_contract_version="1.21.0"
         if contract_change
         else original.execution_contract_version,
         **(
@@ -1206,7 +1215,7 @@ def register(
                 if source.get("mode") == "WORLD_HOST_PROJECTION"
                 else "WORLD_HOST_REVALIDATION_SUCCESSOR"
                 if host_revalidation
-                else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
+                else "PLANNING_REFERENCE_CONTRACT_SUCCESSOR" if reference_contract else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
                 "parent_agent_session_operation_id": "",
             }
             if contract_change or host_revalidation
@@ -1224,6 +1233,8 @@ def register(
             **target,
             "world_host_revalidation": source["world_host_revalidation"],
         }
+    if reference_contract:
+        target = {**target, "planning_reference_contract": source["reference_contract_proof"], "planning_capacity": source["source_planning_capacity"]}
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
     if (
         not capacity
@@ -1289,10 +1300,10 @@ def register(
         route_evidence = {
             **route_evidence,
             "capacity_only": False,
-            "changed_contract": "world-agency.v2",
+            "changed_contract": "planning-host-source-selectors.v2" if reference_contract else "world-agency.v2",
             "preserved_repair_number": original.repair_number,
             "original_diagnostic": source["diagnostic"],
-            "source_world": source["source_world"],
+            **({} if reference_contract else {"source_world": source["source_world"]}),
         }
     elif capacity:
         target, route_evidence = _capacity_target(
@@ -1344,6 +1355,8 @@ def register(
     }
 
     def materialize(uow, registration_operation_id, checkpoint):
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+        require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=source_operation_id)
         current = require_source(
             uow, source_operation_id=source_operation_id, project_id=project_id
         )
@@ -1574,7 +1587,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation"}
+        if key not in {"planning_capacity", "world_host_revalidation", "planning_reference_contract"}
     }
     if (
         validate_runtime
@@ -1647,12 +1660,11 @@ def attach_successor(
 
 def _require_world_lineage_settled(uow, *, source_operation_id, project_id, book_id, active_successor_operation_id=""):
     uow.cursor.execute("""WITH RECURSIVE lineage(operation_id) AS (
-        SELECT operation_id FROM authority_story_planning_generation
-        WHERE operation_id=%s AND project_id=%s AND book_id=%s
-        UNION SELECT g.operation_id FROM authority_story_planning_generation g
-        JOIN authority_operation o ON o.operation_id=g.operation_id
+        SELECT operation_id FROM authority_operation
+        WHERE operation_id=%s AND project_id=%s AND command_payload #>> '{payload,book_id}'=%s
+        UNION SELECT o.operation_id FROM authority_operation o
         JOIN lineage l ON (o.causation_operation_id=l.operation_id OR o.operation_id=(SELECT causation_operation_id FROM authority_operation WHERE operation_id=l.operation_id))
-        WHERE g.project_id=%s AND g.book_id=%s)
+        WHERE o.definition_name='story_planning.generate' AND o.project_id=%s AND o.command_payload #>> '{payload,book_id}'=%s)
         SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN lineage l USING(operation_id)
             WHERE e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED'))
         OR EXISTS(SELECT 1 FROM authority_budget_reservation b JOIN lineage l USING(operation_id)
@@ -1674,3 +1686,200 @@ def _require_world_lineage_settled(uow, *, source_operation_id, project_id, book
         """, [source_operation_id, project_id, book_id, project_id, book_id, active_successor_operation_id, source_operation_id, project_id, book_id, source_operation_id, project_id, book_id, project_id, book_id])
     if uow.cursor.fetchone()[0]:
         raise KernelError("PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE", "World contract succession requires settled live lineage; only the exact registered running child may hold its execution lease")
+    from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+    require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=source_operation_id)
+
+def _planning_reference_contract_source(uow, *, source_operation_id, row):
+    from copy import deepcopy
+    from .application import _command_from_payload, _validate_frozen_arc_references
+    from novel_forge.modules.command_kernel.external_effect_runtime import (
+        EffectCommandContext,
+        read_completed_operation_success,
+    )
+    from novel_forge.modules.hierarchical_planning.domain import (
+        validate_planning_contract,
+        PlanContractType,
+        PlanExecutionScope,
+    )
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+
+    frozen = dict(row[3])
+    command = _command_from_payload(frozen)
+    uow.cursor.execute(
+        "SELECT chain_depth,target_runtime FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s",
+        [source_operation_id],
+    )
+    prior = uow.cursor.fetchone()
+    if (
+        command.execution_contract_version != "1.19.0"
+        or command.generator_operation_name != "chapter_group_plan.generate"
+        or not prior
+        or prior[0] != 2
+        or not prior[1].get("planning_capacity", {}).get("context_revalidation")
+    ):
+        raise KernelError(
+            "PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID",
+            "Only the exact historical second Arc Context successor can change this contract",
+        )
+    uow.cursor.execute(
+        "SELECT report FROM authority_story_planning_validation_report WHERE candidate_asset_version_id=%s ORDER BY created_at DESC,validation_report_id DESC LIMIT 1",
+        [row[5]],
+    )
+    report = uow.cursor.fetchone()
+    if (
+        not report
+        or report[0].get("error_code") != "WORLD_REALIZATION_REFERENCE_INVALID"
+    ):
+        raise KernelError(
+            "PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID",
+            "Source must retain the exact host identity failure",
+        )
+    uow.cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM authority_book_production WHERE project_id=%s AND book_id=%s AND state='ABORTED')
+        OR EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancel JOIN authority_story_formation_run formation USING(formation_run_id)
+            WHERE cancel.project_id=%s AND formation.book_id=%s)
+        OR EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s AND status<>'SUCCEEDED')
+        OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s AND status<>'SETTLED')""",
+        [
+            command.project_id,
+            command.book_id,
+            command.project_id,
+            command.book_id,
+            source_operation_id,
+            source_operation_id,
+        ],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "Cancellation and unresolved original consumption prohibit contract succession",
+        )
+    query = AuthorityAssetQuery(uow.database_url)
+    candidate = query.require(project_id=command.project_id, asset_version_id=row[5])
+    evidence = candidate.content["execution_evidence"]
+    context = query.require(
+        project_id=command.project_id,
+        asset_version_id=evidence["context_bundle_asset_version_id"],
+    )
+    catalog = context.content["realization_reference_contract"]["references_by_domain"]
+    parent = command.runtime_continuation_id.removeprefix(
+        "planning-runtime-continuation:"
+    )
+    if context.content_hash != evidence["context_bundle_hash"] or {
+        ref["frozen_by_operation_id"] for refs in catalog.values() for ref in refs
+    } != {parent}:
+        raise KernelError(
+            "PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID",
+            "Frozen Context must reproduce its parent identity defect",
+        )
+    corrected = deepcopy(candidate.content)
+    for manifest in ("world_realization", "character_realization"):
+        for entity in corrected[manifest]:
+            for field in (
+                "invariant_refs",
+                "structure_refs",
+                "state_ref",
+                "identity_ref",
+                "trajectory_ref",
+            ):
+                rows = entity.get(field, [])
+                rows = rows if isinstance(rows, list) else [rows]
+                for reference in rows:
+                    if reference not in catalog.get(reference.get("domain_type"), []):
+                        raise KernelError(
+                            "PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID",
+                            "Content cannot borrow a different source as a host defect",
+                        )
+                    reference["frozen_by_operation_id"] = source_operation_id
+    validate_planning_contract(
+        project_id=command.project_id,
+        book_id=command.book_id,
+        contract_type=PlanContractType.CHAPTER_GROUP,
+        asset_version_id=row[5],
+        parent_version_id=command.parent_version_id,
+        execution_scope=PlanExecutionScope.PLANNED,
+        content=corrected,
+        require_current_chapter_contract=True,
+    )
+    try:
+        _validate_frozen_arc_references(command, corrected)
+    except KernelError as error:
+        if error.code != "PLANNING_ARC_PORTFOLIO_MISMATCH":
+            raise
+        portfolio_error = error.code
+    else:
+        raise KernelError(
+            "PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID",
+            "Host-only materialization must not dispatch when no content correction is needed",
+        )
+    receipt = read_completed_operation_success(
+        uow.database_url,
+        EffectCommandContext(
+            operation_id=source_operation_id,
+            project_id=command.project_id,
+            actor_id=command.actor_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        ),
+        effect_id=evidence["external_receipt_ref"],
+    )
+    if not receipt or receipt["budget_reservation_status"] != "SETTLED":
+        raise KernelError(
+            "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
+            "Exact verified original receipt and settled consumption required",
+        )
+    uow.cursor.execute(
+        "SELECT snapshot_payload FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s ORDER BY created_at DESC LIMIT 1",
+        [source_operation_id],
+    )
+    snapshot = uow.cursor.fetchone()
+    if not snapshot:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_SNAPSHOT_MISSING", "Reference recovery retains the original Pack")
+    proof = {
+        "contract_version": "planning-reference-contract-successor.v2",
+        "context_asset_version_id": context.asset_version_id,
+        "context_content_hash": context.content_hash,
+        "source_external_effect_id": evidence["external_receipt_ref"],
+        "source_raw_result_hash": canonical_hash(
+            receipt["provider_evidence"]["result"]
+        ),
+        "diagnosed_errors": ["WORLD_REALIZATION_REFERENCE_INVALID", portfolio_error],
+        "required_arc_ids": [
+            command.input_versions["arc_plans"],
+            *command.related_arc_plan_version_ids,
+        ],
+        "repair_number": command.repair_number,
+        "provider_model_unchanged": True,
+    }
+    return {
+        "mode": "PLANNING_REFERENCE_CONTRACT",
+        "source_operation_id": source_operation_id,
+        "command": frozen,
+        "version": int(row[1]),
+        "evidence_asset_version_id": row[5],
+        "evidence_hash": candidate.content_hash,
+        "snapshot": snapshot[0],
+        "depth": 3,
+        "diagnostic": proof,
+        "reference_contract_proof": proof,
+        "source_planning_capacity": prior[1]["planning_capacity"],
+    }
+
+
+def _require_rejected_reference_owner(uow, *, source_operation_id, row, frozen):
+    uow.cursor.execute("""SELECT owner.lifecycle,owner.qualification,owner.approval,owner.freshness,owner.created_by_operation_id,
+        candidate.content_hash,report.status,report.report,report.report_hash
+        FROM authority_story_design_version_state owner JOIN authority_asset_version candidate USING(asset_version_id)
+        JOIN LATERAL (SELECT status,report,report_hash,generation_operation_id FROM authority_story_planning_validation_report
+            WHERE candidate_asset_version_id=owner.asset_version_id ORDER BY created_at DESC,validation_report_id DESC LIMIT 1) report ON TRUE
+        WHERE owner.project_id=%s AND owner.asset_version_id=%s AND report.generation_operation_id=%s FOR SHARE OF owner,candidate""", [frozen["project_id"],row[5],source_operation_id])
+    owner = uow.cursor.fetchone()
+    if not owner or owner[:2] != ("REJECTED", "FAILED") or owner[2] not in {"NOT_REQUESTED","PENDING"} or owner[3] != "CURRENT" or owner[4] != source_operation_id or owner[6] != "FAIL" or owner[7].get("error_code") != "WORLD_REALIZATION_REFERENCE_INVALID":
+        raise KernelError("PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID", "Exact latest native validation rejection required; author disposition is preserved")
+    uow.cursor.execute("""SELECT jsonb_build_object('book_run_id',book_run_id,'accepted_through_chapter',accepted_through_chapter,'current_chapter',current_chapter,
+        'book_plan_version',book_plan_version,'longform_context_versions',longform_context_versions,'active_chapter_request_id',active_chapter_request_id)
+        FROM authority_book_production WHERE project_id=%s AND workspace_id=%s AND book_id=%s FOR SHARE""", [frozen["project_id"],frozen["workspace_id"],frozen["book_id"]])
+    books = uow.cursor.fetchall()
+    if len(books) > 1:
+        raise KernelError("PLANNING_REFERENCE_CONTRACT_SOURCE_INVALID", "Host recovery cannot choose an ambiguous Book edition frontier")
+    return {"source_candidate_hash": owner[5], "validation_report_hash": owner[8], "source_book_frontier": books[0][0] if books else None}

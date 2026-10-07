@@ -9,8 +9,17 @@ from novel_forge.modules.command_kernel.errors import KernelError
 @pytest.mark.parametrize("facts", [(True, False, False), (False, True, False), (False, False, True)])
 def test_unknown_accounting_lease_or_cancellation_prevents_successor_mutation(facts):
     cursor = Mock()
-    cursor.fetchone.return_value = facts
+    cursor.fetchone.side_effect = [("project",), ("root", ""), facts]
+    cursor.fetchall.return_value = []
     with pytest.raises(KernelError, match="STEP_SUCCESSOR_GRAPH_UNRECONCILED"):
+        recovery._require_reconciled_graph(cursor, root_id="root", predecessor_id="source")
+
+
+def test_old_settled_local_timeout_cannot_enable_a_pure_host_successor():
+    cursor = Mock()
+    cursor.fetchone.side_effect = [("project",), ("root", "original-book")]
+    cursor.fetchall.return_value = [("old-effect", "old-operation", "FAILED_RETRYABLE", "old-process")]
+    with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
         recovery._require_reconciled_graph(cursor, root_id="root", predecessor_id="source")
 
 

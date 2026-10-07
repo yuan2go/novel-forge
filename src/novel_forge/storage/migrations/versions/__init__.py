@@ -178,6 +178,10 @@ from . import (
     v20261007_0174_quality_review_namespace,
     v20261007_0175_canon_output_repair,
     v20261007_0176_quality_correction_control,
+    v20261007_0177_realization_comparison_uncertainty,
+    v20261007_0178_planning_reference_contract_successor,
+    v20261007_0179_planning_arc_scope_revalidation,
+    v20261007_0180_foundation_direction_search,
 )
 
 VERSION_MODULES = [
@@ -358,6 +362,10 @@ VERSION_MODULES = [
     v20261007_0174_quality_review_namespace,
     v20261007_0175_canon_output_repair,
     v20261007_0176_quality_correction_control,
+    v20261007_0177_realization_comparison_uncertainty,
+    v20261007_0178_planning_reference_contract_successor,
+    v20261007_0179_planning_arc_scope_revalidation,
+    v20261007_0180_foundation_direction_search,
 ]
 
 __all__ = ["VERSION_MODULES"]

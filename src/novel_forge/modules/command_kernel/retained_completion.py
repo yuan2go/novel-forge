@@ -36,6 +36,7 @@ def _validate_proof(proof, output_proof, source, current):
         or proof["strict_certification_eligible"] is not False
         or source.get("operation_id") != proof["source_operation_id"]
         or source.get("definition_name") != current.get("definition_name")
+        or source.get("definition_name") == "chapter.draft.generate" and source.get("definition_version") != "3.10.0"
         or any(source.get(key) != current.get(key) for key in ("project_id", "workspace_id", "actor_id"))
         or not source.get("actor_id")
         or source.get("status") not in {"FAILED_FINAL", "FAILED_RETRYABLE", "DEAD_LETTER"}):
@@ -145,6 +146,9 @@ def retained_completion_evidence(uow: Any, operation: dict[str, Any], own_effect
 
 
 def _require_settled_lineage(cursor, current, source):
+    from .budget_runtime import require_known_cli_lineage
+
+    require_known_cli_lineage(cursor, project_id=current["project_id"], operation_id=current["operation_id"])
     roots = sorted({current["root_operation_id"], source["root_operation_id"]})
     cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect e
         JOIN authority_operation o USING(operation_id)

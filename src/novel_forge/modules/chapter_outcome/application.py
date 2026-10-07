@@ -20,6 +20,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .contracts import (
     CHAPTER_OUTCOME_COMMIT_DEFINITION,
     CHAPTER_OUTCOME_DEFINITION_VERSION,
+    CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION,
     CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION,
     CHAPTER_OUTCOME_HANDLER_KEY,
 )
@@ -54,13 +55,13 @@ class _ChapterOutcomeRegistry:
             definition_name=CHAPTER_OUTCOME_COMMIT_DEFINITION,
             definition_version=version,
             handler_key=CHAPTER_OUTCOME_HANDLER_KEY,
-            handler_contract_version="chapter-outcome-handler-v2" if version == CHAPTER_OUTCOME_DEFINITION_VERSION else "chapter-outcome-handler-v1",
+            handler_contract_version="chapter-outcome-handler-v3" if version == CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION else "chapter-outcome-handler-v2" if version == CHAPTER_OUTCOME_DEFINITION_VERSION else "chapter-outcome-handler-v1",
             output_asset_type="chapter_outcome",
             output_key="chapter.outcome",
             role="primary",
             completion_topic="book.chapter.accepted",
             handler=ChapterOutcomeCommitHandler(),
-        ) for version in (CHAPTER_OUTCOME_DEFINITION_VERSION, CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION)}
+        ) for version in (CHAPTER_OUTCOME_DEFINITION_VERSION, CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION, CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION)}
 
     def registration(
         self, definition_name: str, definition_version: str
@@ -102,6 +103,7 @@ class ChapterOutcomeAuthorityApplication:
         definition = chapter_outcome_operation_definition(
             application_build_id=self.application_build_id,
             commit_sha=self.commit_sha, work_requirements=work_requirements,
+            coordinated_contract=command.payload.get("chapter_acceptance_contract") == "coordinated-chapter-acceptance.v1",
         )
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.repositories.definitions.register(definition)
@@ -267,8 +269,10 @@ class ChapterOutcomeAuthorityApplication:
 
 
 def chapter_outcome_operation_definition(
-    *, application_build_id: str, commit_sha: str, work_requirements: bool = True
+    *, application_build_id: str, commit_sha: str, work_requirements: bool = True, coordinated_contract: bool = False
 ) -> dict[str, Any]:
+    if coordinated_contract and not work_requirements:
+        raise ValueError("Coordinated Chapter acceptance requires frozen work requirements")
     command_schema = {
         "type": "object",
         "required": ["project_id", "input_asset_version_ids", "payload"],
@@ -281,7 +285,7 @@ def chapter_outcome_operation_definition(
     }
     return {
         "name": CHAPTER_OUTCOME_COMMIT_DEFINITION,
-        "definition_version": CHAPTER_OUTCOME_DEFINITION_VERSION if work_requirements else CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION,
+        "definition_version": CHAPTER_OUTCOME_COORDINATED_DEFINITION_VERSION if coordinated_contract else CHAPTER_OUTCOME_DEFINITION_VERSION if work_requirements else CHAPTER_OUTCOME_LEGACY_DEFINITION_VERSION,
         "family": "book_authority",
         "command_schema_version": "book.chapter.accept.command.v1",
         "result_schema_version": "book.chapter.accept.result.v1",
@@ -296,7 +300,7 @@ def chapter_outcome_operation_definition(
             "auxiliary_asset_types": ["story_state_snapshot", "canon_snapshot"],
         },
         "handler_key": CHAPTER_OUTCOME_HANDLER_KEY,
-        "handler_contract_version": "chapter-outcome-handler-v2" if work_requirements else "chapter-outcome-handler-v1",
+        "handler_contract_version": "chapter-outcome-handler-v3" if coordinated_contract else "chapter-outcome-handler-v2" if work_requirements else "chapter-outcome-handler-v1",
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "worker",
@@ -307,6 +311,9 @@ def chapter_outcome_operation_definition(
             "chapter_acceptance_evidence_required": True,
             "deterministic_story_state_reducer": True,
             "body_mutation_allowed": False,
+            **({"chapter_acceptance_contract": "coordinated-chapter-acceptance.v1",
+                "internal_quality_input_contract": "creative-quality-admission.v3",
+                "reviewed_work_admission": "reviewed-work-admission.v2"} if coordinated_contract else {}),
         },
         "idempotency_scope": "project:book-chapter-acceptance",
         "concurrency_key_template": "project:{project_id}:book-chapter-acceptance",

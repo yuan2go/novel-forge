@@ -9,6 +9,8 @@ from novel_forge.modules.chapter_authority.model_effects import ModelProviderRes
 READER_OUTCOME_DEFINITION = "reader_outcome.evaluate"
 LONGFORM_RECAP_DEFINITION = "longform.recap"
 BOOK_FOLLOWUP_DEFINITION_VERSION = "1.1.0"
+READER_OUTCOME_DEFINITION_VERSION = "1.4.0"
+LONGFORM_RECAP_DEFINITION_VERSION = "1.2.0"
 
 
 class ReaderOutcomeModelPort(Protocol):

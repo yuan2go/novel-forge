@@ -247,7 +247,7 @@ class PostgresBookNarrativeCheckpointAuthority:
         cursor.execute(
             """
             SELECT book.project_id, book.workspace_id, book.book_id,
-                   book.input_snapshot_id, request.chapter_number,
+                   snapshot.snapshot_id, request.chapter_number,
                    book.target_chapter_count, snapshot.book_plan_version,
                    snapshot.current_volume_plan_version,
                    snapshot.current_relevant_arc_plan_versions,
@@ -259,17 +259,29 @@ class PostgresBookNarrativeCheckpointAuthority:
                    , snapshot.arc_portfolio_plan_versions
                    , acceptance.longform_projection_set_id
             FROM authority_book_production AS book
-            JOIN authority_book_production_input_snapshot AS snapshot
-              ON snapshot.snapshot_id=book.input_snapshot_id
             JOIN authority_book_chapter_request AS request
               ON request.book_run_id=book.book_run_id
             JOIN authority_book_chapter_acceptance AS acceptance
               ON acceptance.chapter_request_id=request.chapter_request_id
+            JOIN authority_operation AS chapter_root ON chapter_root.operation_id=request.chapter_root_operation_id
+              AND chapter_root.project_id=book.project_id
+            JOIN authority_book_production_input_snapshot AS snapshot
+              ON snapshot.snapshot_id=COALESCE(
+                  NULLIF(request.command_payload #>> '{context_version_refs,book_production_input_snapshot_id}', ''),
+                  NULLIF(acceptance.evidence #>> '{followup_snapshot,book_production_input_snapshot_id}', ''),
+                  CASE WHEN chapter_root.definition_version<>'3.10.0' THEN
+                    (SELECT binding.snapshot_id FROM authority_book_production_input_binding binding
+                     WHERE binding.book_run_id=book.book_run_id AND binding.created_at<=request.created_at
+                     ORDER BY binding.binding_version DESC LIMIT 1) END)
+             AND snapshot.project_id=book.project_id AND snapshot.workspace_id=book.workspace_id AND snapshot.book_id=book.book_id
             JOIN authority_asset_version AS plan
               ON plan.asset_version_id=request.chapter_plan_version
             JOIN authority_asset_version AS outcome
               ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id
-            WHERE book.book_run_id=%s AND request.chapter_request_id=%s
+            WHERE book.book_run_id=%s AND request.chapter_request_id=%s AND acceptance.status='COMMITTED'
+              AND (NULLIF(request.command_payload #>> '{context_version_refs,book_production_input_snapshot_id}', '') IS NULL
+                OR NULLIF(acceptance.evidence #>> '{followup_snapshot,book_production_input_snapshot_id}', '') IS NULL
+                OR request.command_payload #>> '{context_version_refs,book_production_input_snapshot_id}'=acceptance.evidence #>> '{followup_snapshot,book_production_input_snapshot_id}')
             """,
             [book_run_id, request_id],
         )

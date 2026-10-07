@@ -276,3 +276,23 @@ def bind_quality_applicability_spans(schema, table):
         elif statuses == ["INSUFFICIENT_EVIDENCE"]:
             fields["score"] = {"type": "null"}
     return _share_schema_nodes(result)
+
+
+def project_transition_preconditions(baselines):
+    fields = {"asset_version_id", "source_event_id", "entity_key", "entity_version",
+        "character_id", "source_id", "target_id", "fact_id", "proposition_id", "obligation_id",
+        "thread_id", "promise_id", "rule_id", "entity_id", "arc_id", "status", "state", "stance", "stage", "tier"}
+    result = {}
+    for kind, rows in baselines.items():
+        projected = []
+        for row in rows:
+            state = row["state"] if isinstance(row.get("state"), dict) else row
+            for key in ("status", "state", "stance", "stage", "tier"):
+                if state.get(key) is not None and not isinstance(state[key], str):
+                    raise KernelError("CANON_ACCEPTED_PRECONDITION_INVALID", f"{kind}.{key} requires an accepted scalar")
+            scalars = {key: deepcopy(value) for key, value in state.items()
+                if key in fields and (value is None or type(value) in {str, int, float, bool})}
+            projected.append({**{key: deepcopy(row[key]) for key in fields & row.keys()
+                if key not in {"state", "status", "stance", "stage", "tier"}}, **scalars})
+        result[kind] = projected
+    return result

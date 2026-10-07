@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261007_0176_quality_correction_control",
+  "head": "20261007_0180_foundation_direction_search",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -179,6 +179,10 @@
     "20261007_0173_retained_graph_continuation",
     "20261007_0174_quality_review_namespace",
     "20261007_0175_canon_output_repair",
-    "20261007_0176_quality_correction_control"
+    "20261007_0176_quality_correction_control",
+    "20261007_0177_realization_comparison_uncertainty",
+    "20261007_0178_planning_reference_contract_successor",
+    "20261007_0179_planning_arc_scope_revalidation",
+    "20261007_0180_foundation_direction_search"
   ]
 }

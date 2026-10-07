@@ -194,7 +194,7 @@ class DeterministicFixtureChapterProvider:
         text = str(output["text"])
         if stage == "draft":
             artifacts = [
-                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": []}
+                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": [], **({"character_source_uses": []} if (payload.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3" else {})}
                 for index, slot in enumerate((payload.get("realization_contract") or {}).get("slots", []))
             ]
         else:
@@ -229,7 +229,7 @@ class _PlanHandler:
                 and source_plan.content.get("runtime_projection_version") != "2.0.0"):
             raise KernelError("CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED",
                 "Current production cannot select a legacy projection with fabricated work methods")
-        if (request.effective_definition_version == '3.9.16'
+        if (request.effective_definition_version in {'3.9.16','3.10.0'}
                 and source_plan.content.get('source_planning_candidate_asset_version_id')
                 and ((source_plan.content.get('runtime_projection_version'), source_plan.content.get('chapter_contract_schema_version'))
                      not in {('2.0.0','chapter-mission-scene.v3'), ('3.0.0','chapter-mission-scene.v4')})):
@@ -238,6 +238,8 @@ class _PlanHandler:
         plan, qualification = normalize_authoritative_chapter_plan(
             project_id=request.project_id,
             expected_chapter=chapter,
+            expected_book_id=str(request.command.get("book_id") or ""),
+            include_book_identity=request.effective_definition_version == "3.10.0",
             content=source_plan.content,
             asset_version_id=source_plan.asset_version_id,
             content_hash=source_plan.content_hash,
@@ -545,7 +547,7 @@ class _RetrievalHandler:
             semantic_enabled = query_plan.get("semantic_policy") != "DISABLED"
             deterministic_coverage = deterministic_retrieval_coverage_fast_path(
                 project_id=request.project_id,
-                book_id=str(plan.content.get("book_id") or f"book:{request.project_id}"),
+                book_id=_book_identity(request, plan.content),
                 intent_asset_version_id=intent.asset_version_id,
                 memo_asset_version_id=memo.asset_version_id,
                 query_plan=query_plan,
@@ -607,9 +609,7 @@ class _RetrievalHandler:
             frozen_union = freeze_retrieval_candidate_union(
                 request.database_url,
                 project_id=request.project_id,
-                book_id=str(
-                    plan.content.get("book_id") or f"book:{request.project_id}"
-                ),
+                book_id=_book_identity(request, plan.content),
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
                 fencing_token=request.fencing_token,
@@ -648,7 +648,7 @@ class _RetrievalHandler:
         frozen_union: Any,
         discovery_rejections: tuple[dict[str, Any], ...],
     ) -> dict[str, Any]:
-        book_id = str(plan.content.get("book_id") or f"book:{request.project_id}")
+        book_id = _book_identity(request, plan.content)
         policy = RetrievalCampaignPolicy(
             **dict(query_plan.get("campaign_policy") or {})
         )
@@ -1345,11 +1345,7 @@ class _ContextHandler:
             context_profile_version=stage_context_profile,
             context_model_call=context_model_call,
             compression_input_tokens=compression_allocation,
-            book_id=str(
-                request.command.get("book_id")
-                or plan.content.get("book_id")
-                or f"book:{request.project_id}"
-            ),
+            book_id=_book_identity(request, plan.content),
             target_capability_id="prose.chapter.draft",
             capability_pack_snapshot_ref=str(
                 request.command.get("capability_pack_snapshot_ref") or ""
@@ -1512,7 +1508,13 @@ class _DraftHandler:
         )
         core_policy = "scene-core-slots.v1" if request.effective_definition_version in {"3.9.1", "3.9.2", "3.10.0"} else "EXPLICIT_SKELETON_V1"
         information_policy = "scene-information-flow.v1" if request.effective_definition_version in {"3.9.2", "3.10.0"} else "ENTRY_ONLY_V1"
-        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy)
+        source_arguments = {}
+        if request.effective_definition_version == "3.10.0":
+            from .realization_composition import resolve_accepted_realization_sources
+            core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
+            source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                "world_preparation": context.content.get("chapter_execution_expectations", {}).get("world_preparation", {})}
+        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy, **source_arguments)
         if not realization_contract["slots"]:
             raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
         generated = _invoke_with_known_receipt(self.provider,
@@ -1537,6 +1539,7 @@ class _DraftHandler:
             work_requirements=request.work_requirements_enabled,
             core_policy=core_policy,
             information_policy=information_policy,
+            realization_contract=realization_contract if request.effective_definition_version == "3.10.0" else None,
         )
         content["creative_execution"] = {
             "memo_asset_version_id": memo.asset_version_id,
@@ -2041,6 +2044,10 @@ class _CanonExtractionHandler:
                 "canonical_transition_results": (context.content.get("chapter_execution_expectations") or {}).get("required_state_transitions") or []}
         provider_extraction = None
         generated: ModelProviderResult | None = None
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.canon_graph.source_spans import project_transition_preconditions
+            span_inputs["accepted_transition_baselines"] = project_transition_preconditions(span_inputs["accepted_transition_baselines"])
+            span_inputs["canon_context_projection"] = "canon-source-context.v1"
         if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
             getattr(self.provider, "supports_semantic_extraction", False)
         ):
@@ -2103,15 +2110,22 @@ class _CanonProposalHandler:
             extraction_asset_version_id=extraction.asset_version_id,
         )
         generated = None
+        comparison = None
         if extraction.content.get("grounding"):
             from novel_forge.modules.canon_graph.grounding import grounded_claims, validate_support_review
             revision = request.require_input("best_draft_candidate")
             retained = None
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.realization_comparison import comparison_input
+                context = request.require_input("context_bundle")
+                comparison = comparison_input(planned=(context.content.get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
+                    extraction=extraction.content, text=str(revision.content.get("text") or ""))
             if request.effective_definition_version == "3.10.0" and request.database_url:
                 from .canon_support_coverage import retained_review
                 retained = retained_review(request)
             generated = self.provider.invoke(request, stage="canon_support", payload={
                 "revision": revision.content, "grounding": extraction.content["grounding"],
+                **({"realization_comparison": comparison} if comparison is not None else {}),
                 "claims": retained[0]["unresolved_claims"] if retained else grounded_claims(extraction.content),
                 **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.effective_definition_version) in {"3.9.8", "3.10.0"} else {}),
             })
@@ -2127,8 +2141,11 @@ class _CanonProposalHandler:
                 proposal["retained_result_repair"] = _result_evidence_fields(retained[0])
             proposal["grounding"] = validate_support_review(
                 extraction=extraction.content, revision=revision.content,
-                revision_asset_version_id=revision.asset_version_id, result=support,
+                revision_asset_version_id=revision.asset_version_id, result=support, realization_comparison=comparison,
             )
+        if comparison is not None:
+            for item in proposal["grounding"]["realization_comparisons"]:
+                item["support_operation_id"] = request.operation_id
         generation = int(request.command.get("canon_reextraction_generation") or 1)
         proposal["generation"] = generation
         proposal["supersedes_asset_version_id"] = str(
@@ -2478,7 +2495,8 @@ class _QualityHandler:
             content["required_actions"] = internal_required_actions(admission=admission,
                 evidence_reports=content["evidence_reports"], target=revision.asset_version_id)
             content = apply_work_constraint_actions(content, admission=admission, revision=revision.content,
-                target=revision.asset_version_id, canon=canon.content)
+                target=revision.asset_version_id, canon=canon.content,
+                bounded_single_scene=request.effective_definition_version == "3.10.0")
         if admission is not None:
             content["internal_admission"] = admission
         primary = _output(
@@ -2853,6 +2871,7 @@ class _PublishGateHandler:
                 context_bundle=context.content,
                 context_bundle_version_id=context.asset_version_id,
                 project_id=request.project_id,
+                work_admission=request.effective_definition_version == "3.10.0",
             ),
         )
 
@@ -2862,7 +2881,12 @@ class _ExportHandler:
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         revision = request.require_input("best_draft_candidate")
         publish_gate = request.require_input("publish_gate_report")
-        return _output(
+        restored = None
+        if request.definition_version == "3.10.0" and publish_gate.content.get("gate") == "PUBLISH_GATE_BLOCKED":
+            from .publication_recovery import revalidate_frozen_publication
+            restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
+            publish_gate = restored
+        output = _output(
             ChapterNode.EXPORT,
             build_export_package(
                 revision=revision.content,
@@ -2871,6 +2895,11 @@ class _ExportHandler:
                 quality_asset_version_id=publish_gate.asset_version_id,
             ),
         )
+        if restored is not None:
+            output = replace(output, auxiliary_outputs=(ChapterAuxiliaryOutput(
+                "publish_gate_report", "chapter.export.revalidated_publish_gate", "completion_evidence", restored.content,
+                reference_asset_version_ids=(request.require_input("publish_gate_report").asset_version_id, revision.asset_version_id)),))
+        return output
 
 
 @dataclass(frozen=True, slots=True)
@@ -2886,6 +2915,7 @@ class _FinalReleaseGateHandler:
             ChapterNode.FINAL_RELEASE_GATE,
             build_final_release_gate(
                 project_id=request.project_id,
+                work_admission=request.effective_definition_version == "3.10.0",
                 export_package=export.content,
                 export_asset_version_id=export.asset_version_id,
                 export_blobs=export.blobs,
@@ -3223,3 +3253,11 @@ def _invoke_with_known_receipt(provider, request, *, stage, payload):
         from .receipt_recovery import consume_known_draft_receipt
         retained = consume_known_draft_receipt(request)
     return retained if retained is not None else provider.invoke(request, stage=stage, payload=payload)
+
+
+def _book_identity(request, plan):
+    if request.effective_definition_version == "3.10.0":
+        from .chapter_plan_views import resolve_chapter_plan_book_id
+        return resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan,
+            host_book_id=str(request.command.get("book_id") or ""))
+    return str(request.command.get("book_id") or plan.get("book_id") or f"book:{request.project_id}")

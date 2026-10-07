@@ -232,6 +232,7 @@ def build_longform_recap_outputs(
     checkpoint_type: LongformCheckpointType,
     observations: Mapping[str, Any],
     reader_policy: ReaderProxyPolicy = ReaderProxyPolicy(),
+    coordinated_contract: bool = False,
 ) -> dict[str, Any]:
     start, end = chapter_range
     if not project_id or not book_id or start <= 0 or end < start:
@@ -264,6 +265,13 @@ def build_longform_recap_outputs(
     promises = _mapping(observations.get("promise_ledger"))
     ending_reachability = _mapping(observations.get("ending_reachability"))
     arc_checkpoint = _mapping(observations.get("accepted_arc_checkpoint"))
+    if coordinated_contract:
+        realization = _mapping(observations.get("accepted_realization_deviations"))
+        if (realization.get("contract_version")!="accepted-realization-deviations.v2"
+            or realization.get("project_id")!=project_id or realization.get("book_id")!=book_id
+            or realization.get("chapter_number")!=end or realization.get("accepted_history_mutation_allowed") is not False):
+            raise ValueError("Recap requires its exact immutable accepted realization observation")
+        _add_if(deviations,bool(realization.get("deviations")),"ACCEPTED_REALIZATION_DEVIATION","BLOCKING",realization)
     _add_if(
         deviations, bool(canon.get("conflicts")), "CANON_CONFLICT", "BLOCKING", canon
     )
@@ -352,7 +360,7 @@ def build_longform_recap_outputs(
 
     blocking = [item for item in deviations if item["severity"] == "BLOCKING"]
     recap = {
-        "contract_version": "longform-recap-v1",
+        "contract_version": "longform-recap-v2" if coordinated_contract else "longform-recap-v1",
         "project_id": project_id,
         "book_id": book_id,
         "chapter_range": [start, end],
@@ -364,7 +372,7 @@ def build_longform_recap_outputs(
         "reader_outcome_consumption": reader_consumption,
     }
     deviation_report = {
-        "contract_version": "longform-deviation-report-v1",
+        "contract_version": "longform-deviation-report-v2" if coordinated_contract else "longform-deviation-report-v1",
         "deviations": deviations,
         "blocking_count": len(blocking),
     }

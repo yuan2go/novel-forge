@@ -18,6 +18,7 @@ from novel_forge.modules.agent_runtime.application import (
 from novel_forge.modules.authority_security import Principal
 from novel_forge.modules.book_followup_authority.definitions import (
     book_followup_operation_definitions,
+    reader_outcome_definition,
 )
 from novel_forge.modules.capability_pack_authority.application import (
     CapabilityPackAuthorityApplication,
@@ -80,6 +81,7 @@ def register_validation_runtime_definitions(
         )
         if item["name"] == "reader_outcome.evaluate"
     )
+    current_reader = reader_outcome_definition(application_build_id=application_build_id, commit_sha=commit_sha)
     prose_review = next(item for item in book_followup_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha) if item["name"] == "longform.prose_review")
     from novel_forge.modules.book_followup_authority.prose_sampling import prose_sample_definition
 
@@ -95,11 +97,15 @@ def register_validation_runtime_definitions(
             model_effects_required=True,
         )
     )
+    current_chapter = tuple(chapter_operation_definitions(
+        application_build_id=application_build_id, commit_sha=commit_sha,
+        model_effects_required=True, coordinated_contract=True,
+    ))
     from novel_forge.modules.story_planning_runtime.world_sampling import world_sample_definitions
     from novel_forge.modules.chapter_quality_authority.model_reference_execution import model_reference_creation_definitions
 
     with AuthorityUnitOfWork(database_url) as uow:
-        for item in (planning, reader, prose_review, prose_sample, narrative_evaluation, *chapter, *chapter_provider_sample_definitions(
+        for item in (planning, reader, current_reader, prose_review, prose_sample, narrative_evaluation, *chapter, *current_chapter, *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,
@@ -115,6 +121,7 @@ def register_validation_runtime_definitions(
     return {
         "planning": definition_hash(planning),
         "reader_proxy": definition_hash(reader),
+        "reader_proxy_current": definition_hash(current_reader),
         "prose_review": definition_hash(prose_review),
         "prose_sample": definition_hash(prose_sample),
         "narrative_evaluation": definition_hash(narrative_evaluation),

@@ -78,7 +78,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
         u.cursor.execute(
             """SELECT DISTINCT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s
-            AND o.status='FAILED_FINAL' AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.9.1' AND a.result->>'error_code'='PROGRAMMING_BUG') OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID') OR (o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.5' AND a.result->>'error_code'='MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'))""",
+            AND o.status='FAILED_FINAL' AND ((o.definition_name='chapter.draft.generate' AND o.definition_version='3.10.0' AND a.result->>'error_code'='PROGRAMMING_BUG') OR (o.definition_name='chapter.review.evaluate' AND o.definition_version='3.9.0' AND a.result->>'error_code'='REVIEW_KNOWLEDGE_CHECK_INVALID') OR (o.definition_name='chapter.canon.extract' AND o.definition_version='3.9.5' AND a.result->>'error_code'='MODEL_EFFECT_FINAL_OUTPUT_SCHEMA_FAILURE'))""",
             [request["chapter_root_operation_id"], book["project_id"]],
         )
         rows = u.cursor.fetchall()
@@ -87,6 +87,7 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
         if len(rows) != 1:
             raise KernelError("KNOWN_RECEIPT_SOURCE_AMBIGUOUS", "Exactly one immutable stopped source is required")
         source = rows[0][0]
+        _require_current_receipt_family(source)
         if source["actor_id"] != principal.principal_id or has_domain_outputs(
             u.cursor, source["operation_id"]
         ):
@@ -185,6 +186,16 @@ def recover_known_draft_receipt(authority, *, book_run_id, principal):
     return True
 
 
+def _require_current_receipt_family(source):
+    if source.get("definition_name") != "chapter.draft.generate":
+        return
+    policy = (source.get("definition_snapshot") or {}).get("policy") or {}
+    if (source.get("definition_version") != "3.10.0"
+            or policy.get("scene_core_projection") != "continuous-scene.v1"
+            or policy.get("scene_information_flow") != "actor-source-scope.v1"):
+        raise KernelError("KNOWN_RECEIPT_HISTORICAL_CONTRACT_BLOCKED", "Historical Draft receipt does not prove the mandatory current continuous-scene and actor-source contract")
+
+
 def _consume_known_draft_receipt(request):
     if request.definition_version != "3.10.0" or not request.database_url:
         return None
@@ -198,6 +209,7 @@ def _consume_known_draft_receipt(request):
             return None
         policy, failure = row
         source = failure["operation"]
+        _require_current_receipt_family(source)
         u.cursor.execute(
             "SELECT command_payload,input_asset_snapshot,actor_id FROM authority_operation WHERE operation_id=%s AND project_id=%s",
             [request.operation_id, request.project_id],

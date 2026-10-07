@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
 
 from decimal import Decimal
 
@@ -281,11 +282,9 @@ def _source_gateway_provider_result(
         ExecutionOutcome.FINAL_FAILURE: "final_failure",
         ExecutionOutcome.CANCELLED: "cancelled",
     }.get(result.outcome, "unknown")
-    if (
-        handle.transport is ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
-        and result.outcome in {ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED}
-        and result.started_at is not None
-        and not result.usage_receipt_ref
+    if local_cli_remote_outcome_unknown(
+        transport=handle.transport, outcome=result.outcome,
+        started_at=result.started_at, usage_receipt_ref=result.usage_receipt_ref,
     ):
         evidence["external_state_unknown"] = True
         evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"

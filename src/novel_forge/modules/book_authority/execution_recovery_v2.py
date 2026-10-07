@@ -95,6 +95,8 @@ def _timeout_effects(cursor, *, root, target_template):
             or bound != "2" or len(effects) != 2 or type(number) is not int
             or (project, workspace, actor) != (root["project_id"], root["workspace_id"], root["actor_id"])
             or result.get("outcome") != "TIMED_OUT"
+            or process.get("execution_handle", {}).get("transport") != "LOCAL_CLI_REMOTE_INFERENCE"
+            or "started_at" not in result or result["started_at"] is not None
             or process.get("process_evidence", {}).get("failure_code") != "PROCESS_TIMEOUT"
             or not result.get("process_receipt_ref")
             or any(result.get(key) for key in ("output_manifest_ref", "normalized_output_ref", "raw_output_ref", "provider_receipt_ref", "external_receipt_ref"))

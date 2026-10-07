@@ -204,40 +204,47 @@ def chapter_operation_definitions(
         from copy import deepcopy
         definitions = tuple(deepcopy(item) for item in definitions)
         for item in definitions:
-            if item["name"] != ChapterNode.PLAN.definition_name:
-                item["definition_version"] = CHAPTER_COORDINATED_DEFINITION_VERSION
-                item["handler_contract_version"] = CHAPTER_COORDINATED_DEFINITION_VERSION
-                item["policy"]["coordinated_chapter_contract"] = "chapter-coordinated-production.v1"
-                if item["name"] in {node.definition_name for node in CHAPTER_QUALITY_PROVIDER_NODES}:
-                    item["policy"]["quality_evidence_spans"] = "literal-source-spans.v1"
-                if item["name"] in {ChapterNode.DRAFT.definition_name, ChapterNode.REVIEW.definition_name, ChapterNode.CANON_EXTRACTION.definition_name}:
-                    item["policy"]["known_receipt_recovery"] = "chapter-known-receipt.v2"
-                if item["name"] == ChapterNode.CANON_EXTRACTION.definition_name:
-                    item["policy"]["retained_result_derivation"] = "kernel-retained-graph-continuation.v2"
-                if item["name"] == ChapterNode.CANON.definition_name:
-                    item["policy"]["reader_observation_lineage"] = "reader-disclosure-observation.v1"
-                if item["name"] == ChapterNode.CANON_EXTRACTION.definition_name:
-                    item["policy"].pop("canon_wire_projection", None)
-                    item["policy"].pop("canon_schema_projection", None)
-                    item["policy"].update(canon_evidence_span="literal-source-spans.v1",
-                        canon_schema_compaction="typed-extraction-json.v2", canon_transition_preconditions="accepted-cas.v1",
-                        canon_transition_results="canonical-plan-results.v1")
-                if item["name"] in {ChapterNode.PUBLISH_GATE.definition_name, ChapterNode.EXPORT.definition_name, ChapterNode.FINAL_RELEASE_GATE.definition_name}:
-                    item["policy"]["internal_quality_input_contract"] = "creative-quality-admission.v3"
-                if item["name"] == ChapterNode.QUALITY.definition_name:
-                    item["policy"]["internal_quality_disposition"] = "creative-quality-disposition.v3"
-                if item["name"] in {ChapterNode.DRAFT.definition_name, ChapterNode.REVISION.definition_name}:
-                    item["policy"]["candidate_retry_feedback"] = "chapter-candidate-retry-feedback.v2"
-                if item["name"] in {ChapterNode.REVISION.definition_name, ChapterNode.REREVIEW.definition_name}:
-                    item["policy"]["revision_execution_decision"] = "exact-review-or-provider.v1"
-                    if item["name"] == ChapterNode.REVISION.definition_name:
-                        item["policy"]["quality_range_policy"] = "NAMED_DIAGNOSIS_UNION_V1"
-                    item["completion_contract"].pop("required_external_effects", None)
-                    node = next(node for node in ChapterNode if node.definition_name == item["name"])
-                    item["completion_contract"]["required_asset_selectors"].append({
-                        "selector": "revision_execution_decision", "output_key": node.output_key + ".execution_decision",
-                        "role": "completion_evidence", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR",
-                    })
+            item["definition_version"] = CHAPTER_COORDINATED_DEFINITION_VERSION
+            item["handler_contract_version"] = CHAPTER_COORDINATED_DEFINITION_VERSION
+            item["policy"]["coordinated_chapter_contract"] = "chapter-coordinated-production.v1"
+            if item["name"] == ChapterNode.PLAN.definition_name:
+                item["policy"]["chapter_plan_book_scope"] = "host-book-plan.v1"
+            if item["name"] in {node.definition_name for node in CHAPTER_QUALITY_PROVIDER_NODES}:
+                item["policy"]["quality_evidence_spans"] = "literal-source-spans.v1"
+            if item["name"] in {ChapterNode.DRAFT.definition_name, ChapterNode.REVIEW.definition_name, ChapterNode.CANON_EXTRACTION.definition_name}:
+                item["policy"]["known_receipt_recovery"] = "chapter-known-receipt.v2"
+            if item["name"] == ChapterNode.DRAFT.definition_name:
+                item["policy"].update(scene_core_projection="continuous-scene.v1", scene_information_flow="actor-source-scope.v1")
+            if item["name"] == ChapterNode.CANON_PROPOSAL.definition_name:
+                item["policy"]["realization_intent_comparison"] = "realization-intent-comparison.v1"
+            if item["name"] == ChapterNode.CANON_EXTRACTION.definition_name:
+                item["policy"]["canon_context_projection"] = "canon-source-context.v1"
+                item["policy"]["retained_result_derivation"] = "kernel-retained-graph-continuation.v2"
+            if item["name"] == ChapterNode.CANON.definition_name:
+                item["policy"]["reader_observation_lineage"] = "reader-disclosure-observation.v1"
+            if item["name"] == ChapterNode.CANON_EXTRACTION.definition_name:
+                item["policy"].pop("canon_wire_projection", None)
+                item["policy"].pop("canon_schema_projection", None)
+                item["policy"].update(canon_evidence_span="literal-source-spans.v1",
+                    canon_schema_compaction="typed-extraction-json.v2", canon_transition_preconditions="accepted-cas.v1",
+                    canon_transition_results="canonical-plan-results.v1")
+            if item["name"] in {ChapterNode.PUBLISH_GATE.definition_name, ChapterNode.EXPORT.definition_name, ChapterNode.FINAL_RELEASE_GATE.definition_name}:
+                item["policy"]["internal_quality_input_contract"] = "creative-quality-admission.v3"
+                item["policy"]["reviewed_work_admission"] = "reviewed-work-admission.v2"
+            if item["name"] == ChapterNode.QUALITY.definition_name:
+                item["policy"]["internal_quality_disposition"] = "creative-quality-disposition.v3"
+            if item["name"] in {ChapterNode.DRAFT.definition_name, ChapterNode.REVISION.definition_name}:
+                item["policy"]["candidate_retry_feedback"] = "chapter-candidate-retry-feedback.v2"
+            if item["name"] in {ChapterNode.REVISION.definition_name, ChapterNode.REREVIEW.definition_name}:
+                item["policy"]["revision_execution_decision"] = "exact-review-or-provider.v1"
+                if item["name"] == ChapterNode.REVISION.definition_name:
+                    item["policy"]["quality_range_policy"] = "NAMED_DIAGNOSIS_UNION_V1"
+                item["completion_contract"].pop("required_external_effects", None)
+                node = next(node for node in ChapterNode if node.definition_name == item["name"])
+                item["completion_contract"]["required_asset_selectors"].append({
+                    "selector": "revision_execution_decision", "output_key": node.output_key + ".execution_decision",
+                    "role": "completion_evidence", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR",
+                })
     if not author_input:
         return definitions
     from copy import deepcopy
@@ -306,7 +313,7 @@ def chapter_root_operation_definition(
             "expected_saga_steps": len(ChapterNode),
             **({"coordinated_chapter_contract": "chapter-coordinated-production.v1",
                 "node_definition_versions": {
-                    node.definition_name: CHAPTER_PLAN_DEFINITION_VERSION if node is ChapterNode.PLAN else CHAPTER_COORDINATED_DEFINITION_VERSION
+                    node.definition_name: CHAPTER_COORDINATED_DEFINITION_VERSION
                     for node in ChapterNode
                 }} if model_effects_required and coordinated_contract else {}),
         },

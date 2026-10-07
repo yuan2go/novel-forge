@@ -29,6 +29,7 @@ from novel_forge.modules.production_execution.rejected_output import read_retain
 from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .binder import PlanningCapabilityBinding, _identity
+from .foundation_generation import FOUNDATION_GENERATORS
 from .domain import (
     FrozenPlanningInput,
     PlanningExecutionEvidence,
@@ -250,15 +251,6 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
     raw, null_paths, process_doc, raw_doc = retained_output(
         query, project_id=command.project_id, provider=provider, request=request
     )
-    from .result_recovery import validate_raw_result
-
-    validate_raw_result(
-        command.generator_operation_name,
-        raw,
-        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.20.0"},
-        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.20.0"},
-        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.20.0"},
-    )
     snapshot = CapabilityPackRuntimeResolver(
         application.database_url
     ).require_attempt_snapshot(
@@ -287,6 +279,20 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             "PLANNING_GATEWAY_RESULT_CONTEXT_DRIFT",
             "Retain the exact dispatched Context",
         )
+    candidate_result = raw
+    if command.execution_contract_version == "1.21.0" and command.generator_operation_name not in FOUNDATION_GENERATORS:
+        from .execution import bind_provider_realization_selectors
+        candidate_result = bind_provider_realization_selectors(raw, context.content.get("realization_reference_contract") or {})
+    from .result_recovery import validate_raw_result
+
+    validate_raw_result(
+        command.generator_operation_name,
+        candidate_result,
+        work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+        aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+        rfc6901_paths=command.execution_contract_version in {"1.19.0", "1.21.0"},
+        narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
+    )
     inputs = tuple(FrozenPlanningInput(**i) for i in source[2])
     documents = [
         query.require(
@@ -360,6 +366,8 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         uow.commit()
 
     def materialize(uow, registration_id, checkpoint):
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+        require_known_cli_lineage(uow.cursor, project_id=command.project_id, operation_id=operation_id)
         uow.cursor.execute(
             "SELECT status FROM authority_operation WHERE operation_id=%s FOR UPDATE",
             [operation_id],
@@ -435,7 +443,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             command.generator_operation_name,
             command.planning_scope,
             command.logical_key,
-            raw,
+            candidate_result,
             inputs,
             pep,
             raw,

@@ -58,7 +58,8 @@ def combine_review(extraction, prior, fresh):
             or {item.get("claim_id") for item in values} != expected):
         raise KernelError("CANON_GROUNDING_INVALID", "Fresh support must cover each unresolved exact claim once")
     return {"coverage": "COMPLETE", "no_change_supported": False,
-            "claims": partition["retained_assessments"] + deepcopy(values)}
+            "claims": partition["retained_assessments"] + deepcopy(values),
+            **({"realization_comparisons": deepcopy(fresh["realization_comparisons"])} if "realization_comparisons" in fresh else {})}
 
 
 def retained_support_output(cursor, source, *, semantic_reextraction=False):

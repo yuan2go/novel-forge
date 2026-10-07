@@ -60,7 +60,7 @@ def require_world_host_revalidation(
         for row in action["world_plan"]["rejected_paths"]
     }
     if (
-        command.execution_contract_version != "1.20.0"
+        command.execution_contract_version != "1.21.0"
         or source["reality"].get("epistemic_contract") != "world-agency.v2"
         or source.get("actor_experiment")
         or source["request"] != dict(command.world_preparation_request)
@@ -341,7 +341,7 @@ class PlanningWorldPreparation:
                     contract_version="world-preparation-source.v1"
                     if command.execution_contract_version == "1.12.0"
                     else "world-preparation-source.v2",
-                    epistemic_contract="world-agency.v2" if command.execution_contract_version == "1.20.0" else "world-agency.v1",
+                    epistemic_contract="world-agency.v2" if command.execution_contract_version == "1.21.0" else "world-agency.v1",
                 )
             source_document = self._store(
                 command,

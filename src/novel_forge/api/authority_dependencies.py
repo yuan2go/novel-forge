@@ -1944,6 +1944,7 @@ def build_book_followup_authority_application(
         settings.database_url,
         application_build_id=build_id,
         commit_sha=commit_sha,
+        coordinated_reader=settings.environment == "validation" and values.get("NOVEL_FORGE_COORDINATED_READER_CONTRACT") == "reader-accepted-context.v3",
         model_port=build_reader_outcome_model_port(
             settings,
             execution=execution,
@@ -2075,6 +2076,7 @@ def build_book_production_composition(
         planning=planning.planning,
         application_build_id=authority.application_build_id,
         commit_sha=authority.commit_sha,
+        coordinated_contract=settings.environment == "validation" and values.get("NOVEL_FORGE_COORDINATED_READER_CONTRACT") == "reader-accepted-context.v3",
         worker_id=str(
             values.get("NOVEL_FORGE_PLAN_CHANGE_WORKER_ID")
             or "plan-change-authority-worker"
@@ -2114,6 +2116,7 @@ def build_book_production_composition(
         input_resolver=input_resolver,
         principal=principal,
         narrative_search=narrative_search,
+        coordinated_contract=settings.environment == "validation" and values.get("NOVEL_FORGE_COORDINATED_READER_CONTRACT") == "reader-accepted-context.v3",
     )
     supervisor = PostgresBookProductionSupervisor(
         authority,
@@ -2177,7 +2180,7 @@ def build_book_production_composition(
             application_build_id=authority.application_build_id,
             commit_sha=authority.commit_sha,
             generation=FormationGeneration(
-                planning,
+                planning, narrative_search=narrative_search,
                 book_design=build_book_design_authority_application(
                     settings, execution=execution, env=values
                 ),

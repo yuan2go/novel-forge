@@ -1,5 +1,6 @@
 from __future__ import annotations
 from novel_forge.modules.production_execution.cost_routing import producer_contract_identity
+from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
 from dataclasses import dataclass, replace
 import hashlib
 import json
@@ -1320,10 +1321,22 @@ class PostgresChapterExecutionContractBinder:
             from .provider_output_contracts import shared_canon_schema
             schema = shared_canon_schema(schema)
             schema_ref = "schema:chapter-provider-output:canon_extraction:v25" if prompt_contract_version=="v11" else "schema:chapter-provider-output:canon_extraction:v24"
+        if stage == "draft" and (inputs.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
+            from .realization_composition import scoped_realization_schema
+            schema = scoped_realization_schema(schema, inputs["realization_contract"])
+            schema_ref = "schema:chapter-provider-output:draft:v4"
+        if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
+            from .realization_composition import scoped_realization_schema
+            schema = scoped_realization_schema(schema, inputs["draft"]["realization_contract"])
+            schema_ref = "schema:chapter-provider-output:revision:v6"
         if stage == "canon_support" and inputs.get("support_kind_contract")=="canon-support-kinds.v2":
             from novel_forge.modules.canon_graph.grounding import SUPPORT_CLAIM_KINDS
             schema['properties']['claims']['items']['properties']['observed_kind']={'type':'string','enum':list(SUPPORT_CLAIM_KINDS)}
             schema_ref="schema:chapter-provider-output:canon_support:v2"
+            if inputs.get("realization_comparison") is not None:
+                from novel_forge.modules.canon_graph.realization_comparison import comparison_schema
+                schema = comparison_schema(schema, inputs["realization_comparison"])
+                schema_ref = "schema:chapter-provider-output:canon_support:v3"
         if stage.startswith("quality_") and inputs.get("quality_applicability_contract")=="quality-host-applicability.v1":
             from novel_forge.modules.chapter_quality_authority.applicability_contract import bind_quality_applicability_schema
             schema=bind_quality_applicability_schema(schema,inputs["quality_context"]["creative_baseline"],stage.removeprefix("quality_"))
@@ -2929,6 +2942,7 @@ def default_chapter_fixture_response(
                 if index == 0
                 else f"The scene carries its {slot['capability'].lower()} contribution forward.",
                 "used_fact_ids": [],
+                **({"character_source_uses": []} if contract.get("contract_version") == "scene-realization-composition.v3" else {}),
             }
             for index, slot in enumerate(contract.get("slots", []))
         ]
@@ -3010,6 +3024,11 @@ def default_chapter_fixture_response(
         return {
             "coverage": "COMPLETE",
             "no_change_supported": not inputs.get("claims"),
+            **({"realization_comparisons": [{"planned_event_id": item["planned_event_id"],
+                "causality": "EQUIVALENT", "required_state": "EQUIVALENT", "knowledge_boundary": "EQUIVALENT",
+                "reason": "Scripted contract evidence only; no literary or semantic proof.",
+                "evidence_quotes": [inputs["realization_comparison"]["evidence_quotes"][0]]}
+                for item in inputs["realization_comparison"]["events"]]} if inputs.get("realization_comparison") is not None else {}),
             "claims": [
                 {
                     "claim_id": item["claim"]["grounded_claim_id"],
@@ -5385,6 +5404,13 @@ class ProductionExecutionGatewayExternalEffectAdapter:
             handle=handle,
             result=result,
         )
+        if local_cli_remote_outcome_unknown(
+            transport=handle.transport, outcome=result.outcome,
+            started_at=result.started_at, usage_receipt_ref=result.usage_receipt_ref,
+        ):
+            evidence["external_state_unknown"] = True
+            evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"
+            outcome = "ambiguous" if reconciliation else "unknown"
         return ProviderResult(
             outcome,
             handle.backend_execution_id,

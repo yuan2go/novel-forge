@@ -58,13 +58,13 @@ from novel_forge.modules.story_planning_runtime import (
 HASH = "sha256:" + "a" * 64
 
 
-@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.20.0"])
+@pytest.mark.parametrize("version", ["1.16.0", "1.17.0", "1.18.0", "1.19.0", "1.21.0"])
 def test_planning_handler_retains_exact_frozen_supported_version(version):
     registry = planning_application.StoryPlanningGenerationHandlerRegistry(SimpleNamespace(), "postgresql://unused")
     assert registry.registration("story_planning.generate", version).definition_version == version
 
 
-@pytest.mark.parametrize("version", ["1.21.0", "1.170.0", "1.17.0-extra"])
+@pytest.mark.parametrize("version", ["1.20.0", "1.22.0", "1.170.0", "1.17.0-extra"])
 def test_planning_handler_rejects_adjacent_unregistered_versions(version):
     registry = planning_application.StoryPlanningGenerationHandlerRegistry(SimpleNamespace(), "postgresql://unused")
     with pytest.raises(KeyError):

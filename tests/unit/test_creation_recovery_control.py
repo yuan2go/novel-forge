@@ -14,7 +14,7 @@ def drive(monkeypatch):
     from novel_forge.modules.book_authority import retained_recovery
 
     authority = SimpleNamespace(database_url="unused", require=Mock(return_value={"state": "RUNNING", "project_id": "p"}), cancel=Mock())
-    composition = SimpleNamespace(authority=authority, principal=object())
+    composition = SimpleNamespace(authority=authority, principal=object(), query=SimpleNamespace(unresolved_chapter_effects=Mock(return_value=[])))
     for name in (
         "recover_quality_frontier", "recover_support_frontier", "recover_information_frontier",
         "recover_review_frontier", "recover_length_frontier", "recover_length_retry_phase",
@@ -126,4 +126,26 @@ def test_lost_execution_lease_between_hooks_propagates_before_next_mutation(driv
     candidates.recover_quality_frontier.side_effect = repair
     with pytest.raises(KernelError, match="lease lost"):
         drive_book(**arguments, execution_probe=probe)
+    candidates.recover_support_frontier.assert_not_called()
+
+
+def test_original_unknown_remote_receipt_blocks_all_recovery_hooks(drive):
+    arguments, candidates, derived = drive
+    arguments['composition'].query.unresolved_chapter_effects.return_value = [{'external_effect_id': 'original', 'usage': 'UNKNOWN'}]
+    assert drive_book(**arguments) == 'WAIT_EXTERNAL_RECONCILIATION'
+    candidates.recover_quality_frontier.assert_not_called()
+    derived.recover_derived_frontier.assert_not_called()
+
+
+def test_remote_uncertainty_between_hooks_blocks_next_action(drive):
+    arguments, candidates, _ = drive
+    query = arguments['composition'].query.unresolved_chapter_effects
+
+    def new_uncertainty(*_, **__):
+        query.return_value = [{'external_effect_id': 'original', 'usage': 'UNKNOWN'}]
+        return True
+
+    candidates.recover_quality_frontier.side_effect = new_uncertainty
+    assert drive_book(**arguments) == 'WAIT_EXTERNAL_RECONCILIATION'
+    candidates.recover_quality_frontier.assert_called_once()
     candidates.recover_support_frontier.assert_not_called()

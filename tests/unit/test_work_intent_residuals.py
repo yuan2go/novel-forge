@@ -277,7 +277,7 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
 
     current = build_story_planning_pack_profile(
         ROOT, operation_definition_hash="sha256:" + "a" * 64,
-        execution_contract_version="1.20.0",
+        execution_contract_version="1.21.0",
     )
     old = build_story_planning_pack_profile(
         ROOT,
@@ -288,10 +288,10 @@ def test_actual_pack_selects_aligned_stage_method_and_retains_frozen_predecessor
         ROOT, operation_definition_hash="sha256:" + "a" * 64,
         execution_contract_version="1.19.0",
     )
-    assert current.manifest["identity"]["version"] == "2.12.0"
+    assert current.manifest["identity"]["version"] == "2.13.0"
     assert frozen_main.manifest["identity"]["version"] == "2.11.0"
     assert old.manifest["identity"]["version"] == "2.9.0"
-    assert {node["operation_definition_ref"] for node in current.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.20.0"}
+    assert {node["operation_definition_ref"] for node in current.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.21.0"}
     assert {node["operation_definition_ref"] for node in frozen_main.manifest["workflow_template"]["nodes"]} == {"story_planning.generate@1.19.0"}
 
     def select(profile):

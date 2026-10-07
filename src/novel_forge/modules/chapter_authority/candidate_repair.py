@@ -248,11 +248,14 @@ def recover_length_retry_phase(authority, *, book_run_id, principal):
         template = selected_template(admission['policy_snapshot']['policy'],book['book_id']) if admission else None
         if not template or template.get('chapter_contract_recovery') != 'KNOWN_SETTLED_CONTRACT_REPAIR':
             return False
-        uow.cursor.execute("""SELECT o.operation_id,o.actor_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int,a.result->>'error_code'
+        uow.cursor.execute("""SELECT o.operation_id,o.actor_id,a.attempt_number,(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int,a.result->>'error_code',o.definition_version
             FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             JOIN LATERAL (SELECT * FROM authority_attempt WHERE operation_id=o.operation_id ORDER BY attempt_number DESC LIMIT 1) a ON TRUE
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.revision.apply'
-            AND o.definition_version='3.9.4' AND o.status='FAILED_RETRYABLE'
+            AND (o.definition_version='3.9.4' OR (o.definition_version='3.10.0'
+                AND o.definition_snapshot #>> '{policy,quality_range_policy}'='NAMED_DIAGNOSIS_UNION_V1'
+                AND o.definition_snapshot #>> '{policy,candidate_retry_feedback}'='chapter-candidate-retry-feedback.v2'))
+            AND o.status='FAILED_RETRYABLE'
             AND a.result->>'error_code' IN ('CHAPTER_LENGTH_REPAIR_INCOMPLETE','OPERATION_BUSINESS_TIMEOUT')
             ORDER BY a.attempt_number DESC LIMIT 1""",[request['chapter_root_operation_id'],book['project_id']])
         row = uow.cursor.fetchone()
@@ -270,7 +273,7 @@ def recover_length_retry_phase(authority, *, book_run_id, principal):
             raise KernelError('CHAPTER_LENGTH_RETRY_ACTOR_INVALID','Retry requires the original actor')
     from novel_forge.modules.command_kernel.execution_window import continue_candidate_execution_window
     continue_candidate_execution_window(authority.database_url,root_id=request['chapter_root_operation_id'],
-        predecessor_id=row[0],target_version='3.9.4',book_run_id=book_run_id,principal=principal,start_repair_phase=True)
+        predecessor_id=row[0],target_version=row[5],book_run_id=book_run_id,principal=principal,start_repair_phase=True)
     return True
 
 

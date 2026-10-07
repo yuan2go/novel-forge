@@ -19,6 +19,22 @@ def _realization_event_deviations(
     planned: dict[str, Any], observed: dict[str, Any]
 ) -> tuple[str, ...]:
 
+    comparison = observed.get("semantic_comparison")
+    if comparison is not None:
+        from novel_forge.modules.canon_graph.realization_comparison import CONTRACT, DIMENSIONS, VERDICTS
+
+        if (not isinstance(comparison, dict) or comparison.get("contract_version") != CONTRACT
+            or comparison.get("planned_event_id") != planned.get("event_id")
+            or comparison.get("planned_event_hash") != realization_hash(planned)
+            or comparison.get("observed_claim_id") != observed.get("grounded_claim_id")
+            or not comparison.get("support_operation_id") or not comparison.get("reason")
+            or not comparison.get("evidence_locations")
+            or set(comparison.get("judgments") or {}) != set(DIMENSIONS)
+            or any(value not in VERDICTS for value in comparison["judgments"].values())):
+            raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Intent comparison must retain exact plan, claim and independent evidence")
+        return tuple(sorted({DIMENSIONS[key] if verdict == "DEVIATED" else "REALIZATION_COMPARISON_UNCERTAIN"
+                             for key, verdict in comparison["judgments"].items() if verdict != "EQUIVALENT"}))
+
     deviations: set[str] = set()
     if planned.get("feature_status") and any(
         field not in observed
@@ -429,6 +445,7 @@ class NarrativeRealizationRepository:
         book_id: str,
         chapter_group_plan_version_id: str,
         chapter_number: int,
+        coordinated_contract: bool = False,
     ) -> dict[str, Any]:
         self.cursor.execute(
             """
@@ -477,18 +494,24 @@ class NarrativeRealizationRepository:
             chapter_number=chapter_number,
         )
         slice_ids = {str(row[9]) for row in rows}
-        if len(slice_ids) != 1:
+        if len(slice_ids) != 1 and not coordinated_contract:
             raise KernelError(
                 "REALIZATION_SLICE_INVALID",
                 "one Chapter may consume only one realization slice",
             )
         events = [dict(row[11]) for row in rows]
+        slice_id = next(iter(slice_ids)) if len(slice_ids) == 1 else (
+            "realization-chapter-slice:" + realization_hash({
+                "realization_id": identity[0], "contract_digest": identity[1], "chapter_number": chapter_number,
+                "event_ids": [str(row[10]) for row in rows], "source_slice_ids": sorted(slice_ids),
+            }).split(":", 1)[1]
+        )
         return {
             "realization_id": str(rows[0][0]),
             "contract_digest": str(rows[0][1]),
             "chapter_group_plan_version_id": chapter_group_plan_version_id,
             "chapter_group_content_hash": str(rows[0][2]),
-            "slice_id": slice_ids.pop(),
+            "slice_id": slice_id,
             "chapter_number": chapter_number,
             "event_ids": [str(row[10]) for row in rows],
             "events": events,
@@ -538,6 +561,34 @@ class NarrativeRealizationRepository:
                 "NARRATIVE_REALIZATION_CONSUMPTION_INVALID",
                 "accepted Chapter does not bind a Frozen realization slice",
             )
+        comparisons = [item["semantic_comparison"] for item in realization_evidence if item.get("semantic_comparison")]
+        if comparisons:
+            self.cursor.execute("SELECT v.content FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE v.asset_version_id=%s AND a.project_id=%s AND a.asset_type='chapter_outcome'", [chapter_outcome_asset_version_id, project_id])
+            outcome_row = self.cursor.fetchone()
+            outcome = dict(outcome_row[0]) if outcome_row else {}
+            grounding = dict(outcome.get("grounding") or {})
+            if (outcome.get("book_id") != book_id or outcome.get("chapter_number") != chapter_number
+                or outcome.get("chapter_plan_version_id") != chapter_plan_asset_version_id):
+                raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Comparison must bind the exact accepted Book, Chapter and plan")
+            if any(item.get("candidate_asset_version_id") != outcome.get("accepted_draft_asset_version_id")
+                   or item.get("candidate_text_hash") != grounding.get("text_hash") for item in comparisons):
+                raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Comparison is not bound to the accepted prose version")
+            self.cursor.execute("""SELECT operation.operation_id,version.content FROM authority_operation operation
+                JOIN authority_operation_output_asset output USING(operation_id)
+                JOIN authority_asset_version version USING(asset_version_id)
+                JOIN authority_asset asset ON asset.asset_id=version.asset_id
+                WHERE operation.project_id=%s AND operation.operation_id=ANY(%s)
+                  AND operation.definition_name='chapter.canon.propose_changes'
+                  AND operation.definition_version='3.10.0' AND operation.status='SUCCEEDED'
+                  AND operation.command_payload->>'book_id'=%s AND operation.command_payload->>'chapter'=%s
+                  AND output.role='primary' AND output.output_key='chapter.canon_proposal'
+                  AND asset.asset_type='canon_change_proposal' AND version.lifecycle='ACTIVE'
+                  AND version.eligibility='ELIGIBLE' AND version.governance='CLEAR'""",
+                [project_id, list({item.get("support_operation_id") for item in comparisons}), book_id, str(chapter_number)])
+            supported = {str(row[0]): dict(row[1]).get("grounding", {}).get("realization_comparisons", [])
+                         for row in self.cursor.fetchall()}
+            if any(item not in supported.get(item.get("support_operation_id"), []) for item in comparisons):
+                raise KernelError("REALIZATION_COMPARISON_SOURCE_INVALID", "Comparison lacks its exact successful independent support output")
         planned = {
             str(row[2]): (bool(row[3]), str(row[4]), dict(row[5])) for row in rows
         }

@@ -822,15 +822,19 @@ class CostAwareRouter:
             raise ValueError("ROUTING_DUPLICATE_CANDIDATE")
         repair = task.declared_requirements.get("governed_repair", {})
         contract_successor = (
-            repair.get("contract_version") == "planning-route-contract-successor.v1"
-            and task.task_type in {"world_candidates.generate", "world_candidates.evaluate"}
+            ((repair.get("contract_version") == "planning-route-contract-successor.v1"
+                and task.task_type in {"world_candidates.generate", "world_candidates.evaluate"}
+                and repair.get("changed_contract") == "world-agency.v2"
+                and repair.get("contract_chain_depth") == 1)
+             or (repair.get("contract_version") == "planning-route-contract-successor.v2"
+                and task.task_type == "chapter_group_plan.generate"
+                and repair.get("changed_contract") == "planning-host-source-selectors.v2"
+                and repair.get("contract_chain_depth") == 3))
             and repair.get("operation_id") == task.operation_id
             and repair.get("input_hash") == task.input_hash
             and repair.get("source_input_hash")
             and repair.get("source_input_hash") != task.input_hash
-            and repair.get("changed_contract") == "world-agency.v2"
             and type(repair.get("contract_chain_depth")) is int
-            and repair.get("contract_chain_depth") == 1
             and type(repair.get("repair_number")) is int
             and 0 <= repair["repair_number"] <= 4
             and type(repair.get("maximum_repairs")) is int
