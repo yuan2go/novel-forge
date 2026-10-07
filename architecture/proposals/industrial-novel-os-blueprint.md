@@ -8,8 +8,8 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `578d59b08ef79fdd51836dd9e214913125f38b9d`
-Baseline implementation identity: `sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147`
+Current-reality baseline: `b484551d1d128075b67784c2b4bed489d1119397`
+Baseline implementation identity: `sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de`
 
 2026-10-07 scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
@@ -22,8 +22,8 @@ real-Provider qualification or literary quality.
   "reviewed_on": "2026-10-07",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
-    "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
+    "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+    "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
