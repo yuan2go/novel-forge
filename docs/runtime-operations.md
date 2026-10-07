@@ -713,7 +713,12 @@ required when selected; resource shortage cannot replace it with ineligible self
 
 Narrative Search may freeze a work-scoped `selection_policy` in its desired transformation.
 It carries dimension weights, an uncertainty margin and authorized stable tie-breaking;
-changing it changes the Search input identity. Existing decisions replay their original
+changing it changes the Search input identity.
+The existing Book worker may approve a native future-only correction under the original
+AUTO Formation authorization, exact selected validation template and current accepted
+frontier. It binds the durable candidate comparison and both frozen source versions;
+no author-intent replacement or accepted-history mutation is authorized by this path.
+Other replans retain the existing author decision workflow. Existing decisions replay their original
 comparison policy and remain immutable. A small model-score gap is uncertain evidence.
 
 Historical Formation v4 freezes first-admitted selection. Repeating an existing v4/v5
