@@ -706,6 +706,11 @@ has no cumulative money/token/call cap. Paid DeepSeek still uses the existing in
 Book ceiling, including retries, restarts and UNKNOWN occupancy. Independent review remains
 required when selected; resource shortage cannot replace it with ineligible self-review.
 
+Narrative Search may freeze a work-scoped `selection_policy` in its desired transformation.
+It carries dimension weights, an uncertainty margin and authorized stable tie-breaking;
+changing it changes the Search input identity. Existing decisions replay their original
+comparison policy and remain immutable. A small model-score gap is uncertain evidence.
+
 Historical Formation v4 freezes first-admitted selection. Repeating an existing v4/v5
 start validates the original work request and consumes its saved profiles, without
 installing new Packs or changing its selection policy. `--creative-selection FIRST_ADMITTED`

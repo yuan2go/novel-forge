@@ -2238,3 +2238,9 @@ and expected count. Additional evidence steps cannot substitute for a missing fi
 release child. Book admission retains all historical model calls and cumulative ledgers;
 only failed Operations with a native successor chain ending in success are historical
 execution evidence. Unsettled consumption or unknown outcomes still block admission.
+
+Narrative Search comparison policies are frozen with their work and stage goals.
+The historical comparison policy retains its original weighting and replay behavior.
+A work-scoped comparison policy may assign dimension weights and an uncertainty margin;
+its authorized stable tie-break records uncertainty rather than claiming literary superiority.
+Model estimates, structural admission and author selection remain separate evidence.
