@@ -3116,3 +3116,9 @@ A recorded source-span request rejected before dispatch for exact context capaci
 can receive a same-Saga compact-Schema successor after verifying its routing evidence,
 zero effects and unchanged candidate/context. Preserve the refused contract outputs and
 Attempts. This successor does not renew the execution window or relax capacity.
+
+For Codex Schema rejection, inspect the bound process receipt and typed service error.
+A missing HTTP status does not make `invalid_request_error` with `invalid_json_schema` transient.
+Keep the original failed dispatches and conservative usage; never resend the refused
+Schema or change an unknown paid reservation. Validate expanded enum limits before
+new contract dispatch, even when the serialized Schema uses shared definitions.

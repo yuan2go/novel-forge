@@ -126,3 +126,20 @@ def test_capacity_successor_does_not_admit_other_routing_blocks():
     for reason in ("TEMPLATE_MODEL_UNAUTHORIZED", "PROVIDER_UNAVAILABLE", "QUALITY_FLOOR_NOT_MET"):
         blocked = deepcopy(decision);blocked["candidates"][0]["rejected_reasons"].append(reason)
         assert not capacity_rejection(blocked, "op")
+
+
+def test_exact_span_pattern_accepts_only_current_table_and_avoids_expanded_enum_growth():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import _validate
+    table = source_spans("周澄看见名字。\n🚪门关上了。")
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage="canon_extraction", request_payload={"input": {"source_span_table": table, "source_span_schema_contract": "local-evidence-pattern.v1"}}, prompt_contract_version="v9")
+    assert ref.endswith(":v26")
+    identity = schema["$defs"]["candidateEvidenceSpan"]
+    assert "enum" not in identity
+    from novel_forge.modules.canon_graph.source_spans import expanded_enum_choices
+    assert expanded_enum_choices(schema) < 1000
+    for span in table["spans"]:
+        _validate(identity, span["span_id"], path="$")
+    for invalid in ("foreign", table["spans"][0]["span_id"] + "suffix"):
+        with pytest.raises(ValueError):
+            _validate(identity, invalid, path="$")

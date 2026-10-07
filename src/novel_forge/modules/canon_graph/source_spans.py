@@ -27,9 +27,11 @@ def source_spans(text: str) -> dict:
     }
 
 
-def span_output_schema(schema: dict, table: dict, *, compact: bool = False) -> dict:
+def span_output_schema(schema: dict, table: dict, *, compact: bool = False, span_pattern: bool = False) -> dict:
     result = deepcopy(schema)
     identity = {"type": "string", "enum": [s["span_id"] for s in table["spans"]]}
+    if span_pattern:
+        identity = {"type": "string", "pattern": "^(?:" + "|".join(re.escape(value) for value in identity["enum"]) + ")$"}
     if compact:
         result["$defs"] = {"candidateEvidenceSpan": identity}
         identity = {"$ref": "#/$defs/candidateEvidenceSpan"}
@@ -150,3 +152,19 @@ def bind_source_spans(extraction: dict, text: str) -> dict:
         raise KernelError("CANON_SOURCE_SPAN_INVALID", str(defects))
     result["source_span_binding"] = {"contract_version": CONTRACT, "source_text_hash": table["source_text_hash"]}
     return result
+
+
+def expanded_enum_choices(schema):
+    definitions = schema.get("$defs", {})
+    def count(node, references=()):
+        if isinstance(node, list):
+            return sum(count(value, references) for value in node)
+        if not isinstance(node, dict):
+            return 0
+        if "$ref" in node:
+            ref = node["$ref"]
+            if ref in references or not ref.startswith("#/$defs/") or ref.rsplit("/", 1)[1] not in definitions:
+                raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "Bounded local Schema references are required")
+            return count(definitions[ref.rsplit("/", 1)[1]], (*references, ref))
+        return len(node.get("enum", [])) + sum(count(value, references) for key, value in node.items() if key not in {"$defs", "enum"})
+    return count(schema)

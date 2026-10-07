@@ -1271,9 +1271,14 @@ class PostgresChapterExecutionContractBinder:
         )
         if stage == "canon_extraction" and (inputs.get("source_span_table") or {}).get("contract_version") == "literal-source-spans.v1":
             from novel_forge.modules.canon_graph.source_spans import span_output_schema
-            compact = inputs.get("source_span_schema_contract") == "local-evidence-ref.v1"
-            schema = span_output_schema(schema, inputs["source_span_table"], compact=compact)
-            schema_ref = "schema:chapter-provider-output:canon_extraction:" + ("v25" if compact else "v24")
+            span_pattern = inputs.get("source_span_schema_contract") == "local-evidence-pattern.v1"
+            compact = span_pattern or inputs.get("source_span_schema_contract") == "local-evidence-ref.v1"
+            schema = span_output_schema(schema, inputs["source_span_table"], compact=compact, span_pattern=span_pattern)
+            schema_ref = "schema:chapter-provider-output:canon_extraction:" + ("v26" if span_pattern else "v25" if compact else "v24")
+            if span_pattern:
+                from novel_forge.modules.canon_graph.source_spans import expanded_enum_choices
+                if expanded_enum_choices(schema) > 1000:
+                    raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "The current Codex structured-output contract permits at most 1000 expanded enum choices")
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")

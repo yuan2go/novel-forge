@@ -31,6 +31,7 @@ def replace_failed_step(
     expected_failure_code,
     transaction_guard=None,
     known_receipt_effects=(),
+    known_rejected_effects=(),
     window_successor=None,
 ):
     digest = hashlib.sha256(
@@ -40,6 +41,7 @@ def replace_failed_step(
                 "target": target_version,
                 "policy": policy_evidence,
                 "failure_code": expected_failure_code,
+                **({"known_rejected_effects": known_rejected_effects} if known_rejected_effects else {}),
                 **({"window_successor": window_successor} if window_successor else {}),
                 **(
                     {"known_receipt_effects": known_receipt_effects}
@@ -170,6 +172,28 @@ def replace_failed_step(
                     "STEP_SUCCESSOR_RECEIPT_UNSETTLED",
                     "Exact succeeded settled receipts are required",
                 )
+            external = False
+            output = has_domain_outputs(cursor, predecessor_id)
+        if known_rejected_effects:
+            cursor.execute("""SELECT e.external_effect_id,e.request_hash,e.status,b.status,b.accounting_basis,
+                e.last_error->'production_execution'->'execution_result'->>'process_receipt_ref'
+                FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id)
+                WHERE e.operation_id=%s ORDER BY e.external_effect_id""", [predecessor_id])
+            rejected = cursor.fetchall()
+            proofs = policy_evidence.get("schema_rejection_receipts", [])
+            if (len(proofs) != len(known_rejected_effects) or any(proof.get("outcome") != "PROVIDER_SCHEMA_REJECTED" for proof in proofs)
+                or {(proof.get("external_effect_id"), proof.get("process_receipt_asset_version_id"), proof.get("process_receipt_hash")) for proof in proofs}
+                != {(effect, receipt, receipt_hash) for effect, digest, receipt, receipt_hash in known_rejected_effects}):
+                raise KernelError("STEP_SUCCESSOR_REJECTION_UNRECONCILED", "Domain reconciliation must bind each typed Schema rejection")
+            if (known_receipt_effects or len(rejected) != len(known_rejected_effects)
+                or any((row[0], row[1], row[5]) != (effect, digest, "authority-asset-version:" + receipt)
+                    or row[2] not in {"FAILED_RETRYABLE", "FAILED_FINAL"} or row[3:5] != ("SETTLED", "ACCOUNT_ENTITLEMENT")
+                    for row, (effect, digest, receipt, receipt_hash) in zip(rejected, sorted(known_rejected_effects)))):
+                raise KernelError("STEP_SUCCESSOR_REJECTION_UNRECONCILED", "Exact terminal membership rejection receipts are required")
+            for effect, digest, receipt, receipt_hash in known_rejected_effects:
+                cursor.execute("SELECT v.content_hash FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE v.asset_version_id=%s AND a.project_id=%s", [receipt, project])
+                if cursor.fetchone() != (receipt_hash,):
+                    raise KernelError("STEP_SUCCESSOR_REJECTION_UNRECONCILED", "Immutable process receipt identity changed")
             external = False
             output = has_domain_outputs(cursor, predecessor_id)
         if external or output or dependent or live_lease:
@@ -381,6 +405,7 @@ def has_domain_outputs(cursor, operation_id):
         ("cost_ledger", "cost_evidence"),
         ("execution_recovery_session", "execution_recovery_projection"),
         ("model_call_log", "model_evidence"),
+        ("model_call_log", "model_failure_evidence"),
         ("routing_decision", "routing_evidence"),
     }
     return any(tuple(row) not in allowed for row in cursor.fetchall())

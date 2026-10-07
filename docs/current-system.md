@@ -2104,3 +2104,9 @@ handler selection and Gateway compatibility. Historical versions remain bounded 
 their existing compatibility rules. A recorded Canon predispatch version rejection can
 receive a same-Saga interface successor without renewing its existing execution window
 or sending the rejected request.
+
+Span selection may use an exact anchored pattern instead of a repeated enum when the
+structured-output Provider counts enum choices after reference expansion. The host
+still resolves only IDs present in the exact candidate table. A recorded service Schema
+rejection can receive a corrected contract successor while retaining failed effects,
+receipts and their original membership consumption; unknown paid outcomes cannot.

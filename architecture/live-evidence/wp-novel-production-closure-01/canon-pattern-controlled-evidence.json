@@ -1,0 +1,48 @@
+{
+  "evidence_kind": "NATIVE_CANON_SOURCE_SPAN_CONTRACT_SUCCESSOR",
+  "database": "novel_forge_closure_canon_pattern_20261007_test",
+  "original_root": "9e0e31b2-7ff1-457c-bad6-122f86ac7be0",
+  "definition_version": "3.9.4",
+  "source_saga_status": "MANUAL_INTERVENTION",
+  "failure_status": "DEAD_LETTER_PRESERVED",
+  "successful_siblings": [
+    [
+      "chapter.context.build",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ]
+  ],
+  "effects_before": 62,
+  "effects_after": 62,
+  "provider_dispatches": 0,
+  "exact_inputs_preserved": true,
+  "idempotent_recovery": true,
+  "book_noop_reconciliation": true,
+  "pack_version": "2.21.0",
+  "migration_fresh_and_restore": "PASS",
+  "real_writer": "NOT_RUN",
+  "evidence_state": "EXECUTABLE",
+  "actual_runtime_parent_sha": "0efb8d52a2fbbff85022b6aada4ed5978f5ce02e",
+  "full_rendered_admission": {
+    "status": "SELECTED",
+    "input_capacity_units": 215533,
+    "output_reserve": 32768,
+    "context_capacity": 272000,
+    "input_hash": "sha256:bdde15d0c376bea887380cccfd8e5636695daa04c5ee1798aad9a88b98ce874f",
+    "output_schema_ref": "schema:chapter-provider-output:canon_extraction:v26",
+    "measurement": "APPLICATION_UTF8_BYTES_UPPER_BOUND"
+  },
+  "original_membership_failure_consumption": "PRESERVED; 2 x 248382 conservative reservation ceiling; money UNKNOWN",
+  "service_rejection_reason_detail": "NOT_PROVEN; response only invalid_json_schema",
+  "real_execution": "NOT_RUN",
+  "literary_effect": "NOT_PROVEN",
+  "predecessor_extraction": "4562a16f-382f-40fa-9307-07a88fd025eb",
+  "successor_extraction": "ff27a2a7-f615-471f-b44e-ef8a244701ca"
+}

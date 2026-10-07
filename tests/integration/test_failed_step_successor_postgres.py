@@ -311,3 +311,11 @@ def test_known_receipt_successor_rejects_unproven_effects(failed_graph):
             expected_failure_code="LOCAL_CONTRACT_DEFECT",
             known_receipt_effects=(("unproven-effect", "unproven-hash"),),
         )
+
+
+def test_schema_rejection_successor_requires_exact_domain_and_kernel_evidence(failed_graph):
+    project, root, child, saga, context = failed_graph
+    with pytest.raises(KernelError, match="STEP_SUCCESSOR_REJECTION_UNRECONCILED"):
+        replace_failed_step(DATABASE_URL, predecessor_id=child, target_version="1.0.1", context=context,
+            policy_evidence={"contract_version": "controlled-rejection"}, expected_failure_code="LOCAL_CONTRACT_DEFECT",
+            known_rejected_effects=(("missing-effect", "missing-hash", "missing-receipt", "missing-hash"),))

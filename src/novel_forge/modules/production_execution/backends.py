@@ -1469,9 +1469,9 @@ def codex_protocol_failure(stdout: str) -> str | None:
                 continue
             message = event.get("message") if event.get("type") == "error" else None
             detail = json.loads(message) if isinstance(message, str) else {}
-            if (isinstance(detail, dict) and detail.get("status") == 400
-                and isinstance(detail.get("error"), dict)
-                and detail["error"].get("code") == "invalid_json_schema"):
+            error = detail.get("error") if isinstance(detail, dict) else None
+            if (isinstance(error, dict) and error.get("code") == "invalid_json_schema"
+                and (detail.get("status") == 400 or (detail.get("status") is None and error.get("type") == "invalid_request_error"))):
                 return "PROVIDER_SCHEMA_REJECTED"
         except (ValueError, TypeError):
             continue

@@ -677,7 +677,9 @@ def test_codex_protocol_schema_rejection_is_distinct_from_transient_failure():
     rejected = {"type": "error", "message": json.dumps({"status": 400,
         "error": {"code": "invalid_json_schema", "message": "uniqueItems is not permitted"}})}
     assert codex_protocol_failure(json.dumps(rejected)) == "PROVIDER_SCHEMA_REJECTED"
-    for value in ("[]", "not json", json.dumps({"type": "error", "message": "timeout"}),
+    omitted_status = {"type": "error", "message": json.dumps({"error": {"type": "invalid_request_error", "code": "invalid_json_schema"}})}
+    assert codex_protocol_failure(json.dumps(omitted_status)) == "PROVIDER_SCHEMA_REJECTED"
+    for value in ("[]", "not json", json.dumps({"type": "error", "message": json.dumps({"error": ["invalid_json_schema"]})}), json.dumps({"type": "error", "message": "timeout"}),
         json.dumps({"type": "error", "message": json.dumps({"status": 429, "error": {"code": "rate_limit"}})})):
         assert codex_protocol_failure(value) is None
 

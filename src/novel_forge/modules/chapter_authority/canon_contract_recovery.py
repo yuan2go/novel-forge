@@ -31,7 +31,8 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             AND o.definition_name='chapter.canon.extract'
             AND ((o.definition_version='3.9.0' AND o.status='FAILED_FINAL' AND a.result->>'error_code'='CANON_GROUNDING_INVALID')
               OR (o.definition_version='3.9.1' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED')
-              OR (o.definition_version='3.9.2' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED'))""",
+              OR (o.definition_version='3.9.2' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code'='PROVIDER_ROUTING_BLOCKED')
+              OR (o.definition_version='3.9.3' AND o.status IN ('DEAD_LETTER','FAILED_FINAL') AND a.result->>'error_code' IN ('MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE','MODEL_EFFECT_FINAL_PROVIDER_SCHEMA_REJECTED')))""",
             [request["chapter_root_operation_id"], book["project_id"]])
         row = u.cursor.fetchone()
         if not row:
@@ -39,7 +40,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         source = row[0]
         u.cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s AND status='SUCCEEDED'", [source["operation_id"]])
         effects = u.cursor.fetchall()
-        predispatch = source["definition_version"] in {"3.9.1", "3.9.2"}
+        predispatch = source["definition_version"] in {"3.9.1", "3.9.2", "3.9.3"}
         capacity_evidence = []
         if source["definition_version"] == "3.9.2":
             u.cursor.execute("""SELECT v.content FROM authority_operation_output_asset o
@@ -59,6 +60,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         elif len(effects) != 1:
             raise KernelError("CANON_CONTRACT_RECONCILIATION_REQUIRED", "One exact succeeded source receipt is required")
         result = _receipt(u.cursor, (previous_evidence["source_effect_id"] if predispatch else effects[0][0]), book["project_id"])
+    rejected_effects, rejection_proof = schema_rejection_receipts(authority.database_url, source) if source["definition_version"] == "3.9.3" else ((), [])
     inputs = [AuthorityAssetQuery(authority.database_url).require(project_id=book["project_id"], asset_version_id=a["asset_version_id"]) for a in source["input_asset_snapshot"]]
     revision = next(a for a in inputs if a.asset_type == "best_draft_candidate")
     context = next(a for a in inputs if a.asset_type == "context_bundle")
@@ -76,6 +78,7 @@ def recover_canon_contract(authority, *, book_run_id, principal):
         "repair_diagnostics": diagnostics, "completion_checks": "UNCHANGED",
         "source_candidate_asset_version_id": revision.asset_version_id,
         "source_candidate_content_hash": revision.content_hash,
+        **({"schema_rejection_receipts": rejection_proof} if rejection_proof else {}),
         **({"capacity_rejection_decision_ids": [row["decision_id"] for row in capacity_evidence]} if capacity_evidence else {})}
 
     def guard(u):
@@ -85,11 +88,11 @@ def recover_canon_contract(authority, *, book_run_id, principal):
             or selected_book_template(u.cursor, project_id=book["project_id"], book_id=book["book_id"]) != template):
             raise KernelError("CANON_CONTRACT_FRONTIER_CHANGED", "Reload the original Book frontier and authorization")
 
-    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.3",
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version="3.9.4",
         context=AdmissionContext(principal.principal_id, principal.permissions,
             authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
-        policy_evidence=evidence, expected_failure_code=("PROVIDER_ROUTING_BLOCKED" if capacity_evidence else "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED" if predispatch else "CANON_GROUNDING_INVALID"), transaction_guard=guard,
-        known_receipt_effects=tuple(effects),
+        policy_evidence=evidence, expected_failure_code=(latest_failure_code(authority.database_url, source["operation_id"]) if rejection_proof else "PROVIDER_ROUTING_BLOCKED" if capacity_evidence else "CHAPTER_EXECUTION_CONTRACT_REBUILD_REQUIRED" if predispatch else "CANON_GROUNDING_INVALID"), transaction_guard=guard,
+        known_receipt_effects=tuple(effects), known_rejected_effects=rejected_effects,
         window_successor=None if predispatch else {"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "canon_evidence_span", "policy_value": "literal-source-spans.v1"})
     return True
 
@@ -114,3 +117,51 @@ def capacity_rejection(decision, operation_id):
             and task.get("input_tokens", 0) + task.get("output_tokens", 0) > row["candidate"].get("context_limit", 0)
             and (task.get("producer_contract") or {}).get("output_schema", {}).get("ref") == "schema:chapter-provider-output:canon_extraction:v24"
             for row in candidates))
+
+
+def latest_failure_code(database_url, operation_id):
+    with AuthorityUnitOfWork(database_url) as u:
+        u.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [operation_id])
+        return u.cursor.fetchone()[0]
+
+
+def schema_rejection_receipts(database_url, source):
+    from hashlib import sha256
+    from pathlib import Path
+    from novel_forge.modules.production_execution.backends import codex_protocol_failure
+    query = AuthorityAssetQuery(database_url)
+    with AuthorityUnitOfWork(database_url) as u:
+        u.cursor.execute("""SELECT to_jsonb(e),b.status,b.accounting_basis FROM authority_external_effect e
+            JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id""", [source["operation_id"]])
+        effects = u.cursor.fetchall()
+    identities, proofs = [], []
+    for effect, settled, accounting in effects:
+        production = (effect.get("last_error") or {}).get("production_execution") or {}
+        result = production.get("execution_result") or {}
+        ref = result.get("process_receipt_ref") or ""
+        if (effect["status"] not in {"FAILED_RETRYABLE", "FAILED_FINAL"} or settled != "SETTLED"
+            or accounting != "ACCOUNT_ENTITLEMENT"
+            or (effect.get("last_error") or {}).get("provider_id") != "codex-cli"
+            or not ref.startswith("authority-asset-version:")):
+            raise KernelError("CANON_SCHEMA_REJECTION_UNRECONCILED", "Reconcile every exact rejection; paid unknown outcomes remain occupied")
+        receipt = query.require(project_id=source["project_id"], asset_version_id=ref.removeprefix("authority-asset-version:"))
+        if receipt.content.get("kind") != "process-receipt" or receipt.content.get("contract_version") != "authority-execution-evidence.v1":
+            raise KernelError("CANON_SCHEMA_REJECTION_UNRECONCILED", "Native immutable process evidence is required")
+        content = receipt.content["payload"]
+        expected = ((effect["request_payload"].get("_production_execution") or {}).get("capability_runtime") or {}).get("provider_admission", {}).get("input_component_hashes", {}).get("fully_rendered_prompt", "")
+        directory = Path(content["execution_directory"]).resolve()
+        stdout = Path(content["stdout_path"]).resolve()
+        if (content.get("status") != "FAILED" or content.get("operation_id") != source["operation_id"]
+            or content.get("execution_id") != "chapter-execution:" + effect["external_effect_id"]
+            or "sha256:" + str(content.get("input_sha256")) != expected or stdout.parent != directory):
+            raise KernelError("CANON_SCHEMA_REJECTION_UNRECONCILED", "The process receipt must bind the exact failed execution and rendered input")
+        raw = stdout.read_bytes()
+        if len(raw) > 262144 or codex_protocol_failure(raw.decode("utf-8")) != "PROVIDER_SCHEMA_REJECTED":
+            raise KernelError("CANON_SCHEMA_REJECTION_UNRECONCILED", "Only a typed service Schema rejection supports corrected-contract continuation")
+        identities.append((effect["external_effect_id"], effect["request_hash"], receipt.asset_version_id, receipt.content_hash))
+        proofs.append({"external_effect_id": effect["external_effect_id"], "process_receipt_asset_version_id": receipt.asset_version_id,
+            "process_receipt_hash": receipt.content_hash, "stdout_hash": "sha256:" + sha256(raw).hexdigest(),
+            "outcome": "PROVIDER_SCHEMA_REJECTED", "consumption": "ORIGINAL_CONSERVATIVE_MEMBERSHIP_USAGE_PRESERVED"})
+    if not identities:
+        raise KernelError("CANON_SCHEMA_REJECTION_UNRECONCILED", "A recorded rejection is required")
+    return tuple(identities), proofs
