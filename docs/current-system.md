@@ -1234,6 +1234,13 @@ realization even for imported candidates. Older binding definitions support froz
 receipt replay, not new production admission. Mission, scene, obligation, Arc schedule,
 state-transition and realization changes participate in semantic diff and future-only
 invalidation. Accepted and executed history remains outside replan mutation scope.
+The existing lineage owner traverses affected vertices in breadth-first order, rather
+than enumerating every dependency path. Converging paths and cycles must terminate
+without removing source, semantic-dimension or immutable-history checks. An immune
+edge stops its own route; a separately reachable mutable route retains its impact.
+Traversal depth is the shortest affected distance. This correction addresses the
+observed activation timeout; successful activation and downstream regeneration still
+require PostgreSQL and real-run evidence.
 
 ## Creative requirements and compatibility boundary
 
