@@ -1,0 +1,15 @@
+................................................................ [ 52%]
+...... [ 57%]
+......................................F.............         [100%]
+=================================== FAILURES ===================================
+____ CapabilityPackValidatorTests.test_valid_chapter_generation_pack_passes ____
+tests/unit/test_capability_pack_validator.py:58: in test_valid_chapter_generation_pack_passes
+    self.assertEqual(report.version, "2.25.0")
+E   AssertionError: '2.26.0' != '2.25.0'
+E   - 2.26.0
+E   ?    ^
+E   + 2.25.0
+E   ?    ^
+=========================== short test summary info ============================
+FAILED tests/unit/test_capability_pack_validator.py::CapabilityPackValidatorTests::test_valid_chapter_generation_pack_passes
+1 failed, 121 passed, 1310 subtests passed in 21.91s

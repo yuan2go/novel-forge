@@ -1,0 +1,541 @@
+{
+  "checkpoint_sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+  "checkpoint_identity": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147",
+  "snapshot": "REVIEWED_IMPLEMENTATION_CHECKPOINT_NOT_QUALIFICATION",
+  "real_provider": "NOT_RUN",
+  "final_p0": "NOT_RUN",
+  "proposals": [
+    {
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "original_proposal_sha256": "3370da777bf5cae745c344351b376644077cb9ecd7a2fd69c6dbbf838dd1209f",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "checkpoint_matches_current_declared_scope": true,
+      "reviewed_changed_paths": [
+        "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+        "config/capability_packs/artifacts/chapter_generation_template_v10.md",
+        "config/capability_packs/artifacts/chapter_generation_template_v11.md",
+        "config/capability_packs/artifacts/model_reference_system_instruction_v1.md",
+        "config/capability_packs/artifacts/model_reference_template_v1.md",
+        "config/capability_packs/artifacts/story_planning_system_instruction_v9.md",
+        "config/capability_packs/chapter_generation_pack.json",
+        "config/execution_templates/creation_inputs.json",
+        "config/execution_templates/creative_validation.json",
+        "src/novel_forge/api/authority_dependencies.py",
+        "src/novel_forge/modules/book_design_authority/application.py",
+        "src/novel_forge/modules/book_design_authority/creative_validation.py",
+        "src/novel_forge/modules/book_design_authority/formation.py",
+        "src/novel_forge/modules/book_design_authority/formation_domain.py",
+        "src/novel_forge/modules/book_design_authority/formation_generation.py",
+        "src/novel_forge/modules/book_design_authority/foundation_validation.py",
+        "src/novel_forge/modules/command_kernel/budget_runtime.py",
+        "src/novel_forge/modules/production_execution/backends.py",
+        "src/novel_forge/modules/production_execution/capabilities.py",
+        "src/novel_forge/modules/production_execution/capability_registry.py",
+        "src/novel_forge/modules/production_execution/codex_configuration.py",
+        "src/novel_forge/modules/production_execution/codex_model_catalog.py",
+        "src/novel_forge/modules/production_execution/cost_routing.py",
+        "src/novel_forge/modules/production_execution/execution_template.py",
+        "src/novel_forge/modules/production_execution/membership_identity.py",
+        "src/novel_forge/modules/production_execution/provider_admission.py",
+        "src/novel_forge/modules/production_execution/rejected_output.py",
+        "src/novel_forge/modules/production_execution/resource_planning.py",
+        "src/novel_forge/modules/production_execution/routing_policy.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "src/novel_forge/modules/story_planning_runtime/application.py",
+        "src/novel_forge/modules/story_planning_runtime/binder.py",
+        "src/novel_forge/modules/story_planning_runtime/domain.py",
+        "src/novel_forge/modules/story_planning_runtime/execution.py",
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+        "src/novel_forge/modules/story_planning_runtime/gateway_result_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/planning_repair_routing.py",
+        "src/novel_forge/modules/story_planning_runtime/preflight_continuation.py",
+        "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+        "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+        "src/novel_forge/modules/story_planning_runtime/search_application.py",
+        "src/novel_forge/modules/story_planning_runtime/stage_repairs.py",
+        "src/novel_forge/modules/story_planning_runtime/world_optional.py",
+        "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+        "src/novel_forge/modules/story_planning_runtime/world_result_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py",
+        "src/novel_forge/storage/book_control_repositories.py",
+        "src/novel_forge/storage/book_design_authority_repositories.py",
+        "src/novel_forge/storage/capability_pack_authority_repositories.py",
+        "src/novel_forge/storage/causal_planning_repositories.py",
+        "src/novel_forge/storage/foundation_repositories.py",
+        "src/novel_forge/storage/migrations/runner.py",
+        "src/novel_forge/storage/migrations/versions/__init__.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0150_creative_pack_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0152_validation_realization_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0153_resource_opening_successor.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0154_opening_resource_policy_succession.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0155_unsent_resource_route_succession.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0156_resource_journal_indexes.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0157_creation_continuation_control.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0158_planning_capacity_causation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0159_planning_dead_letter_result_recovery.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py",
+        "src/novel_forge/storage/narrative_realization_repositories.py",
+        "src/novel_forge/storage/story_design_repositories.py",
+        "src/novel_forge/storage/story_formation_repositories.py",
+        "src/novel_forge/storage/world_preparation_repositories.py",
+        "src/novel_forge/workers/book_authority.py"
+      ],
+      "all_existing_evidence_refs_resolve": true,
+      "remaining_ids": [
+        "g3-bounded-analysis-and-consumption",
+        "g4-creative-comparison-and-recovery"
+      ],
+      "review_findings": {
+        "applicability": "RETAIN_PARTIAL",
+        "reason": "Forward Foundation v4, exact Pack/Context admission and bounded native recovery change execution contracts; none establishes G3 twenty-work exact consumption or G4 isolated four-arm real comparison.",
+        "preserved_constraints": [
+          "G3 twenty-work consumption remains incomplete",
+          "G4 four-arm real comparison remains incomplete",
+          "decision_free_since 2026-09-08 unchanged; closure window ends 2026-10-08",
+          "No real Provider or literary qualification"
+        ]
+      },
+      "updated_proposal_sha256": "95ad6e45821878d699c491272cd46031cd9e97bbca5d7c0ed1a29c6d6f6f9c4e",
+      "updated_remaining_ids": [
+        "g3-bounded-analysis-and-consumption",
+        "g4-creative-comparison-and-recovery"
+      ],
+      "new_superseding_refs": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+          "symbol": "foundation_output_schema_ref"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/binder.py",
+          "symbol": "CapabilityPackBackedPlanningExecutionBinder"
+        },
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+          "symbol": "require_settled_failed_lineage"
+        }
+      ],
+      "reviewed_on": "2026-10-07",
+      "review_due": "2026-10-30",
+      "latest_reviewed_baseline": {
+        "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+        "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+      }
+    },
+    {
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "original_proposal_sha256": "943bd31bd035fe54529efb80a9dc550a61a4bf9cb95c54f8590108f9e3c627b2",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "checkpoint_matches_current_declared_scope": true,
+      "reviewed_changed_paths": [
+        "src/novel_forge/modules/book_authority/creation_runtime.py",
+        "src/novel_forge/modules/book_authority/edition_application.py",
+        "src/novel_forge/modules/book_authority/execution_recovery.py",
+        "src/novel_forge/modules/book_authority/input_resolver.py",
+        "src/novel_forge/modules/book_authority/opening.py",
+        "src/novel_forge/modules/book_authority/opening_progress.py",
+        "src/novel_forge/modules/book_authority/opening_workflow.py",
+        "src/novel_forge/modules/book_authority/production.py",
+        "src/novel_forge/modules/book_authority/queries.py",
+        "src/novel_forge/modules/book_authority/resource_succession.py",
+        "src/novel_forge/modules/book_design_authority/application.py",
+        "src/novel_forge/modules/book_design_authority/creative_validation.py",
+        "src/novel_forge/modules/book_design_authority/formation.py",
+        "src/novel_forge/modules/book_design_authority/formation_domain.py",
+        "src/novel_forge/modules/book_design_authority/formation_generation.py",
+        "src/novel_forge/modules/book_design_authority/foundation_validation.py",
+        "src/novel_forge/modules/chapter_group_authority/author_revision.py",
+        "src/novel_forge/modules/hierarchical_planning/application.py",
+        "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+        "src/novel_forge/modules/hierarchical_planning/domain.py",
+        "src/novel_forge/modules/hierarchical_planning/realization_application.py",
+        "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
+        "src/novel_forge/modules/story_design_authority/application.py",
+        "src/novel_forge/modules/story_design_authority/author_input.py",
+        "src/novel_forge/modules/story_design_authority/author_supervision.py",
+        "src/novel_forge/modules/story_design_authority/creative_validation.py",
+        "src/novel_forge/modules/story_design_authority/evaluation_reference.py",
+        "src/novel_forge/modules/story_design_authority/evaluation_runtime.py",
+        "src/novel_forge/modules/story_design_authority/qualification.py",
+        "src/novel_forge/modules/worldbuilding/production_planning.py",
+        "src/novel_forge/modules/worldbuilding/production_schema.py",
+        "src/novel_forge/storage/migrations/runner.py",
+        "src/novel_forge/storage/migrations/versions/__init__.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0150_creative_pack_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0152_validation_realization_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0153_resource_opening_successor.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0154_opening_resource_policy_succession.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0155_unsent_resource_route_succession.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0156_resource_journal_indexes.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0157_creation_continuation_control.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0158_planning_capacity_causation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0159_planning_dead_letter_result_recovery.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py"
+      ],
+      "all_existing_evidence_refs_resolve": true,
+      "remaining_ids": [
+        "optional-volume",
+        "segment-boundaries",
+        "trajectory-storage",
+        "strategic-approval-risk",
+        "completion-human-quorum",
+        "reader-data-policy",
+        "retrospective-correction",
+        "closure-authorized-pilot-and-exploration",
+        "craft-independent-effect-evaluation",
+        "actor-isolation-controlled-benefit",
+        "closure02-backend",
+        "closure02-global-editor",
+        "closure02-inferred-impact",
+        "closure02-continuous-actors",
+        "closure02-generator-admission",
+        "closure02-native-hierarchy"
+      ],
+      "review_findings": {
+        "applicability": "RETAIN_PARTIAL_WITH_RESOLVED_IMPLEMENTATION_ITEM",
+        "reason": "Native BookEdition validation/select and unchanged-prefix inheritance implement the decided immutable edition direction. This does not resolve Narrative Segment boundary identity or the six remaining design choices.",
+        "resolved_remaining_decisions": [
+          "retrospective-correction"
+        ],
+        "added_remaining_work": [
+          "edition-current-release-qualification"
+        ],
+        "restored_remaining_decision": "segment-boundaries now describes actual unresolved Segment identity and accepted-boundary change policy instead of duplicating implemented edition work",
+        "preserved_constraints": [
+          "Six unresolved domain/policy choices remain",
+          "Nine existing evidence/qualification work items remain",
+          "Edition current-release and authorized real-editorial evidence remain unverified",
+          "Accepted originals immutable; old inflight settles in original Book run"
+        ]
+      },
+      "updated_proposal_sha256": "91a111a47f32ce2b4b19658da808425c32eaf07ad322fa2724ad58405ec73fbe",
+      "updated_remaining_ids": [
+        "optional-volume",
+        "segment-boundaries",
+        "trajectory-storage",
+        "strategic-approval-risk",
+        "completion-human-quorum",
+        "reader-data-policy",
+        "closure-authorized-pilot-and-exploration",
+        "craft-independent-effect-evaluation",
+        "actor-isolation-controlled-benefit",
+        "closure02-backend",
+        "closure02-global-editor",
+        "closure02-inferred-impact",
+        "closure02-continuous-actors",
+        "closure02-generator-admission",
+        "closure02-native-hierarchy",
+        "edition-current-release-qualification"
+      ],
+      "new_superseding_refs": [
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "symbol": "BookEditionApplication._validate"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_application.py",
+          "symbol": "BookEditionApplication._select"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/edition_runtime.py",
+          "symbol": "inherit_unchanged_prefix"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+          "symbol": "drive_book"
+        }
+      ],
+      "reviewed_on": "2026-10-07",
+      "review_due": "2026-10-30",
+      "latest_reviewed_baseline": {
+        "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+        "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+      }
+    },
+    {
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "original_proposal_sha256": "05e3e3921bf75866c28dc8bc00fba6375adbc26408b0ea8178a4a92780d1791c",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "checkpoint_matches_current_declared_scope": true,
+      "reviewed_changed_paths": [
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+        "src/novel_forge/modules/production_execution/backends.py",
+        "src/novel_forge/modules/production_execution/capabilities.py",
+        "src/novel_forge/modules/production_execution/capability_registry.py",
+        "src/novel_forge/modules/production_execution/codex_configuration.py",
+        "src/novel_forge/modules/production_execution/codex_model_catalog.py",
+        "src/novel_forge/modules/production_execution/cost_routing.py",
+        "src/novel_forge/modules/production_execution/execution_template.py",
+        "src/novel_forge/modules/production_execution/membership_identity.py",
+        "src/novel_forge/modules/production_execution/provider_admission.py",
+        "src/novel_forge/modules/production_execution/rejected_output.py",
+        "src/novel_forge/modules/production_execution/resource_planning.py",
+        "src/novel_forge/modules/production_execution/routing_policy.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "src/novel_forge/storage/migrations/runner.py",
+        "src/novel_forge/storage/migrations/versions/__init__.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0150_creative_pack_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0152_validation_realization_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0153_resource_opening_successor.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0154_opening_resource_policy_succession.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0155_unsent_resource_route_succession.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0156_resource_journal_indexes.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0157_creation_continuation_control.py",
+        "src/novel_forge/storage/migrations/versions/v20261006_0158_planning_capacity_causation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0159_planning_dead_letter_result_recovery.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+        "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py"
+      ],
+      "all_existing_evidence_refs_resolve": true,
+      "remaining_ids": [
+        "digest-consumer-contract",
+        "diagnostic-retention-policy",
+        "representation-cutover-policy",
+        "gate-b-digest",
+        "gate-c-retention",
+        "gate-d-generations",
+        "gate-e-derived-lifecycle"
+      ],
+      "review_findings": {
+        "applicability": "RETAIN_PARTIAL",
+        "reason": "Exact frozen Context and protected failed-output readers are implemented. Recovery journals do not add Digest freshness, diagnostic retention/GC, active read generations or destructive representation cutover.",
+        "preserved_constraints": [
+          "Three remaining design decisions retained",
+          "Gates B-E remaining work retained",
+          "No destructive purge or cutover authorization inferred",
+          "Protected source and failed/UNKNOWN evidence remain protected"
+        ]
+      },
+      "updated_proposal_sha256": "13992221d4d80509fd6887473bf52399b8b2dc42511a20e700e74aa2bfc9716f",
+      "updated_remaining_ids": [
+        "digest-consumer-contract",
+        "diagnostic-retention-policy",
+        "representation-cutover-policy",
+        "gate-b-digest",
+        "gate-c-retention",
+        "gate-d-generations",
+        "gate-e-derived-lifecycle"
+      ],
+      "new_superseding_refs": [
+        {
+          "path": "src/novel_forge/modules/production_execution/rejected_output.py",
+          "symbol": "read_retained_rejected_output"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+          "symbol": "replace_derived_step"
+        }
+      ],
+      "reviewed_on": "2026-10-07",
+      "review_due": "2026-10-30",
+      "latest_reviewed_baseline": {
+        "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+        "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+      }
+    },
+    {
+      "path": "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+      "original_proposal_sha256": "45be4198de21823db0a18f324987ecf695a3afeaa0a1f3a30b601de616eababa",
+      "status": "PARTIALLY_IMPLEMENTED",
+      "checkpoint_matches_current_declared_scope": true,
+      "reviewed_changed_paths": [
+        "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+        "config/capability_packs/artifacts/chapter_generation_template_v10.md",
+        "config/capability_packs/artifacts/chapter_generation_template_v11.md",
+        "config/capability_packs/artifacts/model_reference_system_instruction_v1.md",
+        "config/capability_packs/artifacts/model_reference_template_v1.md",
+        "config/capability_packs/artifacts/story_planning_system_instruction_v9.md",
+        "config/capability_packs/chapter_generation_pack.json",
+        "src/novel_forge/modules/canon_graph/domain.py",
+        "src/novel_forge/modules/canon_graph/grounding.py",
+        "src/novel_forge/modules/canon_graph/support_recovery.py",
+        "src/novel_forge/modules/canon_graph/validation_recovery.py",
+        "src/novel_forge/modules/chapter_authority/candidate_repair.py",
+        "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+        "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+        "src/novel_forge/modules/chapter_authority/context_compression_provider.py",
+        "src/novel_forge/modules/chapter_authority/contract_recovery.py",
+        "src/novel_forge/modules/chapter_authority/contracts.py",
+        "src/novel_forge/modules/chapter_authority/definitions.py",
+        "src/novel_forge/modules/chapter_authority/derived_recovery.py",
+        "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+        "src/novel_forge/modules/chapter_authority/execution_artifacts.py",
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+        "src/novel_forge/modules/chapter_authority/handlers.py",
+        "src/novel_forge/modules/chapter_authority/model_effects.py",
+        "src/novel_forge/modules/chapter_authority/orchestrator.py",
+        "src/novel_forge/modules/chapter_authority/provider_output_contracts.py",
+        "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/chapter_authority/queries.py",
+        "src/novel_forge/modules/chapter_authority/realization_composition.py",
+        "src/novel_forge/modules/chapter_authority/review_window.py",
+        "src/novel_forge/modules/chapter_authority/runtime.py",
+        "src/novel_forge/modules/chapter_authority/scheduler.py",
+        "src/novel_forge/modules/production_execution/backends.py",
+        "src/novel_forge/modules/production_execution/capabilities.py",
+        "src/novel_forge/modules/production_execution/capability_registry.py",
+        "src/novel_forge/modules/production_execution/codex_configuration.py",
+        "src/novel_forge/modules/production_execution/codex_model_catalog.py",
+        "src/novel_forge/modules/production_execution/cost_routing.py",
+        "src/novel_forge/modules/production_execution/execution_template.py",
+        "src/novel_forge/modules/production_execution/membership_identity.py",
+        "src/novel_forge/modules/production_execution/provider_admission.py",
+        "src/novel_forge/modules/production_execution/rejected_output.py",
+        "src/novel_forge/modules/production_execution/resource_planning.py",
+        "src/novel_forge/modules/production_execution/routing_policy.py",
+        "src/novel_forge/modules/production_execution/routing_runtime.py",
+        "src/novel_forge/modules/review/diagnostics.py",
+        "src/novel_forge/modules/revision/domain.py",
+        "src/novel_forge/modules/story_planning_runtime/application.py",
+        "src/novel_forge/modules/story_planning_runtime/binder.py",
+        "src/novel_forge/modules/story_planning_runtime/domain.py",
+        "src/novel_forge/modules/story_planning_runtime/execution.py",
+        "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+        "src/novel_forge/modules/story_planning_runtime/gateway_result_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/planning_repair_routing.py",
+        "src/novel_forge/modules/story_planning_runtime/preflight_continuation.py",
+        "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+        "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+        "src/novel_forge/modules/story_planning_runtime/search_application.py",
+        "src/novel_forge/modules/story_planning_runtime/stage_repairs.py",
+        "src/novel_forge/modules/story_planning_runtime/world_optional.py",
+        "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+        "src/novel_forge/modules/story_planning_runtime/world_result_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/world_sampling.py"
+      ],
+      "all_existing_evidence_refs_resolve": true,
+      "remaining_ids": [
+        "real-provider-and-editorial-validation",
+        "applicable-engineering-qualification"
+      ],
+      "review_findings": {
+        "applicability": "RETAIN_PARTIAL",
+        "reason": "Versioned current Planning/Foundation v4 and Chapter Plan/view forward contracts preserve historical schemas and append bounded recovery. Actual current manuscript/editorial before-after evidence is absent and final P0 remains NOT_RUN.",
+        "preserved_constraints": [
+          "Real Provider and editorial validation retained",
+          "Applicable final engineering qualification retained",
+          "Historical twelve-chapter evidence and frozen grants not rewritten",
+          "decision_free_since 2026-09-30 unchanged"
+        ]
+      },
+      "updated_proposal_sha256": "d0b855680d3209b3bfa56c96693afdbcdb82969f163dd6c099ef71d4ad832774",
+      "updated_remaining_ids": [
+        "real-provider-and-editorial-validation",
+        "applicable-engineering-qualification"
+      ],
+      "new_superseding_refs": [
+        {
+          "path": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+          "symbol": "foundation_output_schema_ref"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+          "symbol": "build_draft_plan_view"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+          "symbol": "ChapterHandlerRequest"
+        },
+        {
+          "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+          "symbol": "replace_failed_step"
+        }
+      ],
+      "reviewed_on": "2026-10-07",
+      "review_due": "2026-10-30",
+      "latest_reviewed_baseline": {
+        "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+        "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
+      }
+    }
+  ],
+  "focused_checker": {
+    "command": "PYTHONPATH=src:. python -m novel_forge.tools.proposal_lifecycle --repo-root .",
+    "status": "PASS",
+    "proposal_count": 4,
+    "errors": [],
+    "log": "/tmp/novel-forge-pr133-audit-20261007/implementation/proposal-reviewed-checkpoint-check.json"
+  },
+  "scope_preserved": true,
+  "published_history_rewritten": false,
+  "source_config_edits": [],
+  "stage_commit": "NOT_PERFORMED",
+  "final_candidate_projection": {
+    "candidate_sha": "e1bd3aa84728257f44437795cfc2a7fbdcd87274",
+    "candidate_tree": "b3532627648c885bd2aac7c70c3d149b3f1edf98",
+    "implementation_identity": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de",
+    "reason": "Three proposal source scopes include only the new supporting-index delta and were reviewed at b484551d with f940 identity; remaining decisions/work/dates unchanged. Prompt scope remains exact at 578d59b. No final qualification upgrade.",
+    "final_p0": "RUNNING",
+    "real_provider": "NOT_RUN",
+    "merge_sha_verification": "NOT_RUN",
+    "proposal_index_scope_review": "/tmp/novel-forge-pr133-audit-20261007/implementation/proposal-index-scope-review.json",
+    "proposal_review_checkpoints": {
+      "architecture/proposals/classical-corpus-codex-validation.md": {
+        "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+        "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+      },
+      "architecture/proposals/industrial-novel-os-blueprint.md": {
+        "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+        "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+      },
+      "architecture/proposals/narrative-memory-context-lifecycle-closure.md": {
+        "sha": "b484551d1d128075b67784c2b4bed489d1119397",
+        "implementation_tree_sha": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de"
+      },
+      "architecture/proposals/prompt-and-generation-contract-convergence-01.md": {
+        "sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+        "implementation_tree_sha": "sha256:e647f389ead8bafdb192b0da3cec1ff2ab77c22f1616f581f36fd3e90a2c6147"
+      }
+    }
+  },
+  "retained_candidate_projection_history": [
+    {
+      "candidate_sha": "042f44671ad4f7c47eb7cd0b69d1ff226e116aa2",
+      "candidate_tree": "2f7dd40de56f5dd9b4b1ac33f5848bb4737562d8",
+      "implementation_identity": "sha256:acd05223f7948cf6ab11a09040067c35992acd421efc6b14dc1896506fb70c85",
+      "proposal_review_checkpoint_unchanged": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+      "reason": "Candidate adds controlled historical integration fixture corrections; reviewed source/config scopes remain at the implementation checkpoint. Proposal baseline is not a final-P0 qualification.",
+      "final_p0": "RUNNING",
+      "real_provider": "NOT_RUN",
+      "merge_sha_verification": "NOT_RUN"
+    },
+    {
+      "candidate_sha": "e1bd3aa84728257f44437795cfc2a7fbdcd87274",
+      "candidate_tree": "b3532627648c885bd2aac7c70c3d149b3f1edf98",
+      "implementation_identity": "sha256:f940dcaf98a51fe1ed805f610a84e6f640b6c20af8bebb7df3db813ae1eb65de",
+      "proposal_review_checkpoint_unchanged": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+      "reason": "Three proposal source scopes include only the new supporting-index delta and were reviewed at b484551d with f940 identity; remaining decisions/work/dates unchanged. Prompt scope remains exact at 578d59b. No final qualification upgrade.",
+      "final_p0": "RUNNING",
+      "real_provider": "NOT_RUN",
+      "merge_sha_verification": "NOT_RUN",
+      "proposal_index_scope_review": "/tmp/novel-forge-pr133-audit-20261007/implementation/proposal-index-scope-review.json"
+    }
+  ]
+}

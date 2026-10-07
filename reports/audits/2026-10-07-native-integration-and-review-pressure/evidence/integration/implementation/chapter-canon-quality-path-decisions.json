@@ -1,0 +1,351 @@
+{
+  "main_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "source_sha": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+  "common_ancestor": "e2064ede68920f680204c40486bf69f1901fb770",
+  "paths": [
+    {
+      "path": "config/capability_packs/artifacts/chapter_generation_contract_catalog.json",
+      "source_blob": "5a702e96e89f5a3f15824bbeecd9255cb05dd16f",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v10.md",
+      "source_blob": "86c927971c2c9c1e3ff96ace2157fca32b823708",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v11.md",
+      "source_blob": "b0dfe417237280a6408d8d74540a2256fa66de91",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "config/capability_packs/chapter_generation_pack.json",
+      "source_blob": "f4cccf547f1c2d7fbbc62651e23edd92633cebef",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/api/authority_dependencies.py",
+      "source_blob": "a74929afe08fbf0e9858192ecc89e1b2175a94e7",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/domain.py",
+      "source_blob": "4cd4d74effaddf9c4c3299f2eba52c76a3f112be",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/grounding.py",
+      "source_blob": "1bcf29deffe95cf9a0016c6227a3b1286898ea58",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/support_recovery.py",
+      "source_blob": "57ad919e912f9c434306a8a3fa480c6807995b4c",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/canon_graph/validation_recovery.py",
+      "source_blob": "08bdbf5da65e4406287562ea478c35b8224f65c3",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/artifacts.py",
+      "source_blob": "1cc7dd32d0734e321692d2bbbb84b20c76cd968e",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/longform_profiles.py",
+      "source_blob": "0ba6b77c24d2179a925a596e571d447b817589df",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/operation_catalog.py",
+      "source_blob": "1beb5eff88aa294e0a4aa8b80012a903759ac418",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/protocol.py",
+      "source_blob": "eccb1b19ab8764323251cc339531c5bb856938ef",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/schema.py",
+      "source_blob": "c83b81a109498924d620cccc4d8f37514cd730c8",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/semantic.py",
+      "source_blob": "3e013376f464a09d56f1c0a4701edb81ce575c9a",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/capability_packs/validator.py",
+      "source_blob": "07ebf4e10c6a16a079136a705754e45d25ea2f94",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/candidate_repair.py",
+      "source_blob": "fbfed1dedfac3120e470ddb681d0c009d5996113",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/contract_recovery.py",
+      "source_blob": "3040e2452f39fdae3e79890b70f4b1ec5fa45e39",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/contracts.py",
+      "source_blob": "439fade9cd6a094b2a03786a9e6e4672384aa186",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/definitions.py",
+      "source_blob": "3b0d0dbfc1adf725d5b3f25a452e4cbd84be5e88",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/derived_recovery.py",
+      "source_blob": "482480b13db741c9381807788f90657f1f69fe16",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+      "source_blob": "bc8f9ae020b54e7f3bbd713c40e1f84e1534d936",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "source_blob": "8906bed16d27e9ea1e3664f08231fe55b34d5b76",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+      "source_blob": "7b3d0f006c264f14e5cd072963cce364ab1aaae9",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+      "source_blob": "25162d44b01414fb47fa9591ec401800ba94767e",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/provider_output_contracts.py",
+      "source_blob": "a27ea25f99ca2a24f1dd2dad3e5f65c26725f4fa",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "source_blob": "2e92a49877df7ea2c052ca351d017482c47d9c88",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/queries.py",
+      "source_blob": "eec7674088d6d73ec8bd69be25baf26a3e4289ff",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": true
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "source_blob": "6097242c2a951b073ab578a6dab26d6f14ed2126",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/review_window.py",
+      "source_blob": "f1998e4927c88078180e080715142ff087662af3",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/runtime.py",
+      "source_blob": "3f1d92700bfe9b469cb3a8f91dd32fd85e3e1f73",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+      "source_blob": "5c30c7cd6e9b527b36cd809b3a613819a7a9d99f",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/author_revision.py",
+      "source_blob": "bdd760a933960dfce36e041dd689144d0a6aee3e",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_outcome/handlers.py",
+      "source_blob": "bf2ed102b046a4d212e4b4ef28f31d3dbb325c8d",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/applicability_contract.py",
+      "source_blob": "c89be0c397e355026c60520d3b3437a73222e8b0",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/context_views.py",
+      "source_blob": "9769bfdfe6705e4ce7078468b1fac1fa812b4a26",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+      "source_blob": "dbd8b74757a8573c98fe3ee9b72090bcc2e70dc8",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/domain.py",
+      "source_blob": "c18dcfd6136ac5ddd67aed3f5e8851c5059bb998",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/foundation_context.py",
+      "source_blob": "1e37f1f9b8a74b8e75cfabdc80940d3f385d8b09",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_quality_authority/revalidation.py",
+      "source_blob": "49423db5ce4e8e8deb6ff02071b7d563ede6ff65",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/asset_commands.py",
+      "source_blob": "4284785094745b9ac1cd79f484eea208efa04c5c",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/attempt_runtime.py",
+      "source_blob": "063d04692f4ff6c44a033ebc78790f52cb284182",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+      "source_blob": "c74c9d2a62b2e4f0fb80a3546243b0d7c3a50a61",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/execution_window.py",
+      "source_blob": "731e9c92696c6f87aacde3af7a9e92e7adc5f6e1",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": true
+    },
+    {
+      "path": "src/novel_forge/modules/command_kernel/step_successor.py",
+      "source_blob": "416492ccb49c4ad89e0d782afd54bd09bcbdab57",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": true
+    },
+    {
+      "path": "src/novel_forge/modules/publishing/domain.py",
+      "source_blob": "5222df4ef74a57b10c629cd15b89a92873454e87",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/review/diagnostics.py",
+      "source_blob": "8aa448548162d00c0a808b4c03e543f18562d309",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    },
+    {
+      "path": "src/novel_forge/modules/revision/domain.py",
+      "source_blob": "11e50e5298dbcdcf4cdd5550838b8cc9f26db2f6",
+      "main_changed_from_common_ancestor": false,
+      "decision": "PORT_REQUIRED_NATIVE_INCREMENT",
+      "integration_hardening": false
+    }
+  ],
+  "baseline": "chapter-baseline-failure.log",
+  "offline_final": "chapter-canon-quality-offline-final.log",
+  "preserved_main_only_paths": [
+    "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "src/novel_forge/modules/chapter_quality_authority/reference_sampling.py"
+  ],
+  "evidence_ceiling": "SYNTHETIC_OFFLINE_UNIT",
+  "real_provider": "NOT_RUN"
+}

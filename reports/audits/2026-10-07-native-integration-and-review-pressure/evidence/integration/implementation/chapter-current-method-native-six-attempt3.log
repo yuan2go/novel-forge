@@ -1,0 +1,16 @@
+F
+=================================== FAILURES ===================================
+_ test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts _
+tests/integration/test_synthesis_formation_postgres.py:2167: in test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+    test_native_formation_generates_foundation_from_author_brief(tmp_path,monkeypatch,
+tests/integration/test_synthesis_formation_postgres.py:1280: in test_native_formation_generates_foundation_from_author_brief
+    assert first['stop_reason']=='MODEL_EFFECT_TIMEOUT', first
+E   AssertionError: {'opening_run_id': 'book-opening:7dac4a036861522d4db764afe830ac2d48e92a2152f93c6300dedee97ba6b286', 'stop_reason': 'BO...ce_id': 'workspace-ef95c5736d494b12be7415b4d96b0778', 'book_id': 'book:project-ef95c5736d494b12be7415b4d96b0778', ...}}
+E   assert 'BOOK_PRODUCT..._INCOMPATIBLE' == 'MODEL_EFFECT_TIMEOUT'
+E     
+E     - MODEL_EFFECT_TIMEOUT
+E     + BOOK_PRODUCTION_CAPABILITY_PACK_INCOMPATIBLE
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_known_preprose_memo_timeout_successor_preserves_history_and_accepts
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 51.72s

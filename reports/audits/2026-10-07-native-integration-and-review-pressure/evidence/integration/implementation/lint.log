@@ -1,0 +1,4 @@
+ruff check src/novel_forge/modules/agent_runtime src/novel_forge/modules/agent_collaboration src/novel_forge/modules/command_kernel src/novel_forge/modules/production_execution src/novel_forge/modules/chapter_authority
+All checks passed!
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_ruff_ratchet.py --ruff ruff
+ruff-ratchet: PASS current=97 baseline=515 legacy_files=73

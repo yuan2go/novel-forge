@@ -1,0 +1,106 @@
+.F.........F.....FF..                                                    [100%]
+=================================== FAILURES ===================================
+_ RepositoryExecutionBoundaryTests.test_repository_ast_execution_boundary_has_no_business_violation _
+
+self = <test_repository_execution_boundaries.RepositoryExecutionBoundaryTests testMethod=test_repository_ast_execution_boundary_has_no_business_violation>
+
+    def test_repository_ast_execution_boundary_has_no_business_violation(
+        self,
+    ) -> None:
+>       self.assertEqual(scan_repository_execution_boundaries(ROOT), [])
+E       AssertionError: Lists differ: [{'code': 'AST_PARSE_ERROR', 'source_file'[1153 chars]7)'}] != []
+E       
+E       First list contains 5 additional elements.
+E       First extra element 0:
+E       {'code': 'AST_PARSE_ERROR', 'source_file': 'src/novel_forge/modules/story_planning_runtime/application.py', 'source_symbol': '<module>', 'line': 301, 'detail': 'positional argument follows keyword argument (application.py, line 301)'}
+E       
+E       Diff is 1385 characters long. Set self.maxDiff to None to see it.
+
+tests/architecture/test_repository_execution_boundaries.py:38: AssertionError
+_______ test_membership_opening_has_workload_without_cumulative_capacity _______
+
+    def test_membership_opening_has_workload_without_cumulative_capacity():
+        from novel_forge.modules.command_kernel.budget_runtime import canonical_budget_policy, next_provider_budget_allowance
+>       from novel_forge.modules.book_authority.opening_workflow import assess_book_opening_topology_budget
+
+tests/unit/test_creative_execution_template.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/book_authority/__init__.py:14: in <module>
+    from .input_resolver import (
+src/novel_forge/modules/book_authority/input_resolver.py:25: in <module>
+    from novel_forge.modules.story_planning_runtime import (
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   from .binder import (
+        CapabilityPackBackedPlanningExecutionBinder,
+        PlanningExecutionBinder,
+        PlanningExecutionBundle,
+        PlanningExecutionBundleResolver,
+        PlanningExecutionPreparer,
+        PostgresPlanningExecutionBundleResolver,
+        PreparedPlanningExecution,
+    )
+E     File "/Users/yuan/.codex/worktrees/pr133-native-integration/novel-forge/src/novel_forge/modules/story_planning_runtime/binder.py", line 446
+E       )
+E       ^
+E   SyntaxError: positional argument follows keyword argument
+
+src/novel_forge/modules/story_planning_runtime/__init__.py:1: SyntaxError
+_ test_optional_world_policy_cannot_defer_independent_or_accepted_commitments[actor_experiment] _
+
+field = 'actor_experiment'
+
+    @pytest.mark.parametrize("field", ["actor_experiment", "preparation_sources"])
+    def test_optional_world_policy_cannot_defer_independent_or_accepted_commitments(field):
+>       from novel_forge.modules.story_planning_runtime.world_optional import require_optional_source
+
+tests/unit/test_creative_execution_template.py:185: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   from .binder import (
+        CapabilityPackBackedPlanningExecutionBinder,
+        PlanningExecutionBinder,
+        PlanningExecutionBundle,
+        PlanningExecutionBundleResolver,
+        PlanningExecutionPreparer,
+        PostgresPlanningExecutionBundleResolver,
+        PreparedPlanningExecution,
+    )
+E     File "/Users/yuan/.codex/worktrees/pr133-native-integration/novel-forge/src/novel_forge/modules/story_planning_runtime/binder.py", line 446
+E       )
+E       ^
+E   SyntaxError: positional argument follows keyword argument
+
+src/novel_forge/modules/story_planning_runtime/__init__.py:1: SyntaxError
+_ test_optional_world_policy_cannot_defer_independent_or_accepted_commitments[preparation_sources] _
+
+field = 'preparation_sources'
+
+    @pytest.mark.parametrize("field", ["actor_experiment", "preparation_sources"])
+    def test_optional_world_policy_cannot_defer_independent_or_accepted_commitments(field):
+>       from novel_forge.modules.story_planning_runtime.world_optional import require_optional_source
+
+tests/unit/test_creative_execution_template.py:185: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   from .binder import (
+        CapabilityPackBackedPlanningExecutionBinder,
+        PlanningExecutionBinder,
+        PlanningExecutionBundle,
+        PlanningExecutionBundleResolver,
+        PlanningExecutionPreparer,
+        PostgresPlanningExecutionBundleResolver,
+        PreparedPlanningExecution,
+    )
+E     File "/Users/yuan/.codex/worktrees/pr133-native-integration/novel-forge/src/novel_forge/modules/story_planning_runtime/binder.py", line 446
+E       )
+E       ^
+E   SyntaxError: positional argument follows keyword argument
+
+src/novel_forge/modules/story_planning_runtime/__init__.py:1: SyntaxError
+=========================== short test summary info ============================
+FAILED tests/architecture/test_repository_execution_boundaries.py::RepositoryExecutionBoundaryTests::test_repository_ast_execution_boundary_has_no_business_violation
+FAILED tests/unit/test_creative_execution_template.py::test_membership_opening_has_workload_without_cumulative_capacity
+FAILED tests/unit/test_creative_execution_template.py::test_optional_world_policy_cannot_defer_independent_or_accepted_commitments[actor_experiment]
+FAILED tests/unit/test_creative_execution_template.py::test_optional_world_policy_cannot_defer_independent_or_accepted_commitments[preparation_sources]
+4 failed, 17 passed in 6.09s

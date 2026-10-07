@@ -1,0 +1,1752 @@
+F
+=================================== FAILURES ===================================
+_ test_native_formation_generates_foundation_from_author_brief[current-production] _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-966/test_native_formation_generate0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dd2dfa0>
+author_guided = False, result_repair = False, runtime_recovery = False
+evaluation_recovery = False, manual_review = False, advice_only = False
+target_chapters = 3, complete_after_result_repair = False
+creative_validation = False, author_result_repair = False
+valid_result_admission = False, capacity_continuation = False
+semantic_repair = False, route_continuation = False
+input_order_continuation = False, world_result_repair = False
+world_disabled = False, world_optional_recovery = False
+gateway_null_recovery = False, stage_repair_recovery = False
+memo_timeout_recovery = False, scene_core_recovery = False
+scene_information_recovery = False, review_knowledge_recovery = False
+length_scope_recovery = False
+
+    @pytest.mark.parametrize(
+        "author_guided,result_repair,runtime_recovery,evaluation_recovery,manual_review,advice_only,target_chapters",
+        [
+            pytest.param(False, False, False, False, False, False, 3, id="current-production"),
+            pytest.param(True, False, False, False, False, False, 3, id="author-guided"),
+            pytest.param(False, True, False, False, False, False, 3, id="result-repair"),
+            pytest.param(False, False, True, False, False, False, 3, id="legacy-runtime-recovery"),
+            pytest.param(False, False, False, True, False, False, 3, id="evaluation-recovery"),
+            pytest.param(False, False, False, False, True, False, 3, id="manual-second-candidate"),
+            pytest.param(False, False, False, False, False, True, 3, id="advice-only-production"),
+            pytest.param(False, False, False, False, False, False, 1, id="single-chapter-production"),
+        ],
+    )
+    def test_native_formation_generates_foundation_from_author_brief(
+        tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
+        evaluation_recovery, manual_review, advice_only, target_chapters,
+        *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, scene_core_recovery=False, scene_information_recovery=False, review_knowledge_recovery=False, length_scope_recovery=False,
+    ):
+        if scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
+            from novel_forge.modules.chapter_authority import definitions as scene_definitions
+            saved_draft_version = scene_definitions.CHAPTER_DRAFT_DEFINITION_VERSION
+            saved_review_version = scene_definitions.CHAPTER_REVIEW_DEFINITION_VERSION
+            saved_canon_version = scene_definitions.CHAPTER_CANON_DEFINITION_VERSION
+            saved_revision_version = scene_definitions.CHAPTER_REVISION_DEFINITION_VERSION
+            saved_support_version = scene_definitions.CHAPTER_SUPPORT_DEFINITION_VERSION
+            if length_scope_recovery:
+                monkeypatch.setattr(scene_definitions, "CHAPTER_CANON_DEFINITION_VERSION", "3.9.0")
+                monkeypatch.setattr(scene_definitions, "CHAPTER_SUPPORT_DEFINITION_VERSION", "3.9.0")
+                monkeypatch.setattr(scene_definitions, "CHAPTER_REVISION_DEFINITION_VERSION", "3.9.0")
+            elif review_knowledge_recovery:
+                monkeypatch.setattr(scene_definitions, 'CHAPTER_REVIEW_DEFINITION_VERSION', '3.9.0')
+            else:
+                monkeypatch.setattr(scene_definitions, 'CHAPTER_DRAFT_DEFINITION_VERSION', '3.9.1' if scene_information_recovery else '3.9.0')
+            normal_scene_read = Path.read_text
+            def legacy_scene_manifest(path, *args, **kwargs):
+                value = normal_scene_read(path, *args, **kwargs)
+                if path.name != 'chapter_generation_pack.json':
+                    return value
+                from novel_forge.storage.authority_repositories import definition_hash
+                value = json.loads(value)
+                value['identity']['version'] = '2.16.0' if length_scope_recovery else '2.15.0' if review_knowledge_recovery else '2.14.0' if scene_information_recovery else '2.13.0'
+                definitions = {d['name']: d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-scene-fixture', commit_sha='0'*40, model_effects_required=True)}
+                for node in value['workflow_template']['nodes']:
+                    node['operation_definition_ref'] = node['operation_name'] + '@' + definitions[node['operation_name']]['definition_version']
+                    node['operation_definition_hash'] = definition_hash(definitions[node['operation_name']])
+                return json.dumps(value)
+            monkeypatch.setattr(Path, 'read_text', legacy_scene_manifest)
+        if memo_timeout_recovery:
+            from novel_forge.modules.chapter_authority import execution_gateway as memo_gateway
+            from novel_forge.modules.capability_packs import operation_catalog as memo_catalog
+            from novel_forge.modules.production_execution import CapabilityId
+            monkeypatch.setitem(memo_gateway._STAGE_CAPABILITIES, 'memo', CapabilityId.PLANNING_CHAPTER_GENERATE)
+            monkeypatch.setitem(memo_catalog._NON_PROVIDER_CAPABILITIES, 'memo', 'planning.chapter.generate')
+            normal_read_text=Path.read_text
+            def legacy_manifest(path,*args,**kwargs):
+                value=normal_read_text(path,*args,**kwargs)
+                if path.name!='chapter_generation_pack.json':
+                    return value
+                from novel_forge.modules.chapter_authority.definitions import chapter_operation_definitions
+                from novel_forge.storage.authority_repositories import definition_hash
+                value=json.loads(value.replace('3.9.0','3.8.0').replace('2.13.0','2.12.0'))
+                definitions={d['name']:d for d in chapter_operation_definitions(application_build_id='legacy-fixture',commit_sha='0'*40,model_effects_required=True)}
+                for node in value['workflow_template']['nodes']:
+                    node['operation_definition_hash']=definition_hash(definitions[node['operation_name']])
+                    if node['node_id']=='memo':
+                        node['timeout_policy_ref']='timeout:planning-chapter-generate:v1'
+                        node['capability_id']='planning.chapter.generate'
+                return json.dumps(value)
+            monkeypatch.setattr(Path,'read_text',legacy_manifest)
+        old_chapter_constants = {}
+        if memo_timeout_recovery:
+            from novel_forge.modules.chapter_authority import definitions as chapter_definitions
+            from novel_forge.modules.chapter_authority.contracts import ChapterNode
+            for key,value in {
+                'CHAPTER_MODEL_EFFECT_DEFINITION_VERSION':'3.8.0',
+                'CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION':'3.8.0-author-input.v2',
+                'CHAPTER_MODEL_WORKFLOW_DEFINITION_VERSION':'3.8.0',
+                'CHAPTER_MODEL_WORKFLOW_DEFINITION_REF':'chapter_authority_slice@3.8.0',
+                'CHAPTER_LONG_TIMEOUT_POLICY_NODES':chapter_definitions.CHAPTER_LONG_TIMEOUT_POLICY_NODES-{ChapterNode.MEMO},
+            }.items():
+                old_chapter_constants[key]=getattr(chapter_definitions,key)
+                monkeypatch.setattr(chapter_definitions,key,value)
+        fixture_production_profile = {"world_production_policy": {"context_token_budget": 16000},
+            "chapter_context_policy": {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4", "draft_token_budget": 128000, "quality_token_budget": 128000}}
+        if advice_only:
+            from novel_forge.modules.review.prose_window import WINDOW_POLICY
+    
+            fixture_production_profile["cross_chapter_review_policy"] = {
+                "version": WINDOW_POLICY, "source_token_budget": 8000,
+            }
+        harness = CapabilityPackPostgresHarness(
+            "synthesis-formation-author" if author_guided else "synthesis-formation",
+            production_profile=fixture_production_profile,
+        )
+        from copy import copy
+    
+        chapter_pack = copy(harness)
+        chapter_pack.pack_id += "-chapter"
+        if creative_validation:
+            from tests.integration.creative_validation_production_support import prepare_native_template
+            template_actor = prepare_native_template(harness, chapter_pack, bounded_repairs=(semantic_repair or world_result_repair) and not route_continuation,world_disabled=world_disabled,contract_recovery=scene_information_recovery or review_knowledge_recovery or length_scope_recovery)
+        else:
+            approved_chapter = chapter_pack.register_compile_approve(
+                "1.0.0",
+                generation=1,
+                approval_scope=chapter_pack.approval_scope(
+                    environments=("test",), runtime_profiles=("test",)
+                ),
+                target_runtime_profile="test",
+            )
+            chapter_pack.register_agents(approved_chapter.compiled)
+            chapter_deployment = chapter_pack.deploy(
+                approved_chapter, environment="test", runtime_profile="test"
+            )
+            chapter_pack.activate(chapter_deployment, environment="test")
+        from tests.integration.test_postgresql_only_chapter_slice import (
+            PostgreSQLOnlyChapterSliceTests,
+        )
+    
+        PostgreSQLOnlyChapterSliceTests.release_evidence(harness.project_id)
+        historical = pytest.MonkeyPatch() if runtime_recovery else None
+        if historical:
+            import novel_forge.modules.capability_packs.longform_profiles as profiles
+            import novel_forge.modules.story_planning_runtime.application as planning_module
+            import novel_forge.modules.book_design_authority.formation_generation as formation_generation
+            original_command = formation_generation.StoryPlanningGenerationCommand
+            historical.setattr(profiles, "STORY_PLANNING_OPERATION_DEFINITION_REF", "story_planning.generate@1.15.0")
+            historical.setattr(planning_module, "STORY_PLANNING_GENERATION_VERSION", "1.15.0")
+            historical.setattr(formation_generation, "StoryPlanningGenerationCommand", lambda **values: replace(original_command(**values), execution_contract_version="1.15.0"))
+        definition = story_planning_generation_definition(
+            application_build_id="synthesis-formation", commit_sha=RELEASE_SHA,
+            definition_version="1.15.0" if runtime_recovery else "1.18.0",
+        )
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.repositories.definitions.register(definition)
+            uow.cursor.execute(
+                "SELECT definition_hash FROM authority_operation_definition WHERE name=%s AND definition_version=%s",
+                [definition["name"], definition["definition_version"]],
+            )
+            digest = str(uow.cursor.fetchone()[0])
+            uow.commit()
+        profile = build_story_planning_pack_profile(
+            Path(__file__).resolve().parents[2],
+            operation_definition_hash=digest,
+            pack_id=harness.pack_id,
+        )
+        harness._base_manifest, harness._base_catalog = (
+            profile.manifest,
+            profile.artifact_catalog,
+        )
+        approval = harness.approval_scope(
+            environments=("test",), runtime_profiles=("test",)
+        )
+        approval["allowed_workflow_definition_refs"] = [profile.workflow_ref]
+        if creative_validation:
+            from tests.integration.creative_validation_production_support import install_planning
+            install_planning(harness, profile, template_actor)
+        else:
+            approved = harness.register_compile_approve(
+                "1.1.0",
+                generation=1,
+                approval_scope=approval,
+                target_runtime_profile="test",
+                proof_skill_ref=profile.agent_skill_ref,
+            )
+            harness.register_agents(approved.compiled)
+            deployment = harness.deploy(approved, environment="test", runtime_profile="test")
+            harness.activate(deployment, environment="test")
+        principal = _principal(harness.project_id)
+        principal = replace(
+            principal,
+            permissions=principal.permissions
+            | {
+                "content.authority.execute",
+                *(f"content.operation:{name}" for name in CONTENT_CODECS),
+            },
+        )
+        content = ContentAuthorityApplication(
+            DATABASE_URL,
+            application_build_id="synthesis-formation",
+            commit_sha=RELEASE_SHA,
+            integration_proven=CONTENT_CODECS,
+            trusted_only=True,
+        )
+        from tests.integration.synthesis_author_input_support import author_fixture, AuthorSynthesisTransport
+        author = author_fixture(harness.project_id, harness.book_ids[0]) if author_guided else None
+        brief = content.execute(
+            ContentOperationRequest(
+                definition_name="creative.brief.create",
+                project_id=harness.project_id,
+                workspace_id=harness.workspace_id,
+                actor_id=principal.principal_id,
+                trace_id="trace:synthesis-brief",
+                correlation_id=harness.project_id,
+                idempotency_key=f"{harness.project_id}:synthesis:brief",
+                payload={
+                    "brief": {
+                        "creative_brief_contract_version": "creative-brief-v3" if author_guided else "creative-brief-v2",
+                        **({"author_design": author} if author_guided else {}),
+                        "idea": "一名制图学徒发现街区正在被公共档案抹去，她必须决定是否公开会牵连证人的不完整证据。",
+                        "genre": "speculative mystery",
+                        "audience": "adult mystery readers",
+                        "constraints": ["知识有来源；每次公开发现都需付出代价"],
+                        "source_boundaries": [
+                            "Only original expression; no reference prose"
+                        ],
+                    }
+                },
+            ),
+            principal=principal,
+        )
+        env = {
+            "NOVEL_FORGE_ENVIRONMENT": "test",
+            "NOVEL_FORGE_TEST_ALLOW_SCRIPTED_NARRATIVE_EVALUATION_FIXTURE": "true",
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": "synthesis-formation",
+            "NOVEL_FORGE_COMMIT_SHA": RELEASE_SHA,
+            "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "scripted_provider_v2",
+            "NOVEL_FORGE_PLANNING_MODEL": "synthesis-scripted",
+            "NOVEL_FORGE_PLANNING_REASONING_EFFORT": "high",
+            "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(tmp_path),
+            "NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID": harness.pack_id,
+            "NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": chapter_pack.pack_id,
+            "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": harness.project_id,
+        }
+        settings = IndustrialSettings(
+            root=str(tmp_path),
+            environment="test",
+            storage_authority="postgresql",
+            database_url=DATABASE_URL,
+        )
+        registry = ProviderAdapterRegistry()
+        transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
+        if valid_result_admission:
+            from novel_forge.modules.story_planning_runtime import result_recovery
+            from novel_forge.modules.command_kernel.errors import KernelError
+            normal_validation = result_recovery.validate_raw_result
+            old_parser_rejected = False
+            def reject_valid_result_once(generator, raw, **kwargs):
+                nonlocal old_parser_rejected
+                if generator == "world.design.generate" and not old_parser_rejected:
+                    old_parser_rejected = True
+                    raise KernelError("FOUNDATION_APPLICABILITY_INVALID", "old parser rejected an exact optional field path")
+                return normal_validation(generator, raw, **kwargs)
+            monkeypatch.setattr(result_recovery, "validate_raw_result", reject_valid_result_once)
+            monkeypatch.setattr(result_recovery, "MAXIMUM_RESULT_REPAIRS", 0)
+        if author_result_repair:
+            original_author_planning = transport.planning
+            damaged_author_decision = False
+    
+            def malformed_author_once(stage, inputs):
+                nonlocal damaged_author_decision
+                result = original_author_planning(stage, inputs)
+                if stage == "reader.promise.generate" and not damaged_author_decision:
+                    damaged_author_decision = True
+                    result["author_design_decisions"][0]["realization_excerpt"] = "不存在的作者采纳摘录"
+                return result
+    
+            transport.planning = malformed_author_once
+        if advice_only:
+            from tests.integration.synthesis_production_support import AdviceOnlySynthesisChapterTransport
+    
+            transport.chapter = AdviceOnlySynthesisChapterTransport()
+        if result_repair:
+            normal_planning = transport.planning
+            damaged_world = False
+    
+            def malformed_once(stage, inputs):
+                nonlocal damaged_world
+                result = normal_planning(stage, inputs)
+                if stage == "world.design.generate" and not damaged_world:
+                    damaged_world = True
+                    world = json.loads(result["world_foundation_json"])
+                    world["compiled_scope"] = ["BOOK", "VOLUME", "ARC"]
+                    result["world_foundation_json"] = json.dumps(world)
+                return result
+    
+            transport.planning = malformed_once
+        if creative_validation:
+            normal_planning = transport.planning
+            def consistent_fixture(stage, inputs):
+                result = normal_planning(stage, inputs)
+                if stage == "creative.candidates.generate":
+                    result["serialization_potential"] = None
+                    for declaration in result.get("applicability", []):
+                        if declaration["field_path"] == "$.serialization_potential":
+                            declaration.update(status="NOT_APPLICABLE", rationale="Bounded fixture work")
+                def bounded_serialization(value):
+                    if isinstance(value, dict):
+                        for key, child in value.items():
+                            if key == "serialization_function":
+                                value[key] = None
+                            else:
+                                bounded_serialization(child)
+                    elif isinstance(value, list):
+                        for child in value:
+                            bounded_serialization(child)
+                bounded_serialization(result)
+                return result
+            transport.planning = consistent_fixture
+        if world_optional_recovery:
+            normal_world = transport.planning
+            def unsupported_world_future(stage, inputs):
+                result = normal_world(stage, inputs)
+                if stage == 'world_candidates.generate':
+                    for candidate in result['candidates']:
+                        payload = json.loads(candidate['transition']['payload_json'])
+                        payload['cause_refs'] = ['unknown:event']
+                        candidate['transition']['payload_json'] = json.dumps(payload)
+                return result
+            transport.planning = unsupported_world_future
+            from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass
+            classify = WorkerFailureClassifier.classify
+            monkeypatch.setattr(WorkerFailureClassifier,'classify',staticmethod(lambda error:
+                WorkerFailureClass.RETRYABLE if getattr(error,'code','') == 'WORLD_PREPARATION_BLOCKED' else classify(error)))
+        if world_result_repair:
+            if world_result_repair == "reference-checkpoint":
+                from copy import deepcopy
+                from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation, PlanningProviderStage
+                from novel_forge.modules.command_kernel.worker_execution import WorkerFailureClassifier, WorkerFailureClass
+                normal_stage = PlanningWorldPreparation.generation_stage
+                normal_classify = WorkerFailureClassifier.classify
+                old_stage_used = False
+                old_classification_used = False
+                def legacy_world_stage(*args, **kwargs):
+                    nonlocal old_stage_used
+                    stage = normal_stage(*args, **kwargs)
+                    if old_stage_used:
+                        return stage
+                    old_stage_used = True
+                    schema = deepcopy(stage.output_schema)
+                    refs = schema["properties"]["candidates"]["items"]["properties"]["arc_refs"]
+                    refs.pop("maxItems", None)
+                    refs["items"].pop("enum", None)
+                    return PlanningProviderStage(stage.name, stage.task, schema)
+                def legacy_world_classify(error):
+                    nonlocal old_classification_used
+                    if getattr(error, "code", "") == "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN" and not old_classification_used:
+                        old_classification_used = True
+                        return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
+                    return normal_classify(error)
+                monkeypatch.setattr(PlanningWorldPreparation, "generation_stage", staticmethod(legacy_world_stage))
+                monkeypatch.setattr(WorkerFailureClassifier, "classify", staticmethod(legacy_world_classify))
+            normal_world_planning = transport.planning
+            damaged_world_transition = 0
+            def invalid_world_payload_once(stage, inputs):
+                nonlocal damaged_world_transition
+                result = normal_world_planning(stage, inputs)
+                if stage == "world_candidates.generate":
+                    task = inputs["world_preparation"]
+                    assert task["transition_contract"]["payload_schema"]["properties"]["story_time"]["type"] == "object"
+                    if damaged_world_transition < (2 if stage_repair_recovery else 1) and result["candidates"]:
+                        damaged_world_transition += 1
+                        if world_result_repair == "reference-checkpoint":
+                            result["candidates"][0]["arc_refs"] = ["unknown:arc"]
+                        else:
+                            transition = json.loads(result["candidates"][0]["transition"]["payload_json"])
+                            transition["story_time"] = "chapter:1:morning"
+                            result["candidates"][0]["transition"]["payload_json"] = json.dumps(transition)
+                    else:
+                        assert task["result_repair"]["diagnostic"]["error_code"] == (
+                            "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN" if world_result_repair == "reference-checkpoint"
+                            else "WORLD_PROVIDER_TRANSITION_INVALID")
+                return result
+            transport.planning = invalid_world_payload_once
+        if semantic_repair:
+            normal_group_planning = transport.planning
+            damaged_group = 0
+    
+            def invalid_cause_once(stage, inputs):
+                nonlocal damaged_group
+                result = normal_group_planning(stage, inputs)
+                if stage == "chapter_group_plan.generate" and damaged_group < (2 if input_order_continuation else 1):
+                    damaged_group += 1
+                    result["narrative_event_chain"][0]["causes"] = ["absent-causal-event"]
+                return result
+    
+            transport.planning = invalid_cause_once
+        if input_order_continuation:
+            from novel_forge.modules.story_planning_runtime import application as planning_module
+            from novel_forge.modules.production_execution import planning_repair_routing as routing_module
+            original_record = planning_module.StoryPlanningGenerationApplication._record_generation
+            original_replay = planning_module._replay_generation_input_snapshot
+            original_evidence = routing_module.native_planning_repair
+            old_failure_injected = False
+    
+            def historical_unordered_record(app, *, operation_id, command, inputs):
+                if command.repair_number == 2 and not command.runtime_continuation_id:
+                    with monkeypatch.context() as old:
+                        old.setattr(planning_module, "_replay_generation_input_snapshot",
+                            lambda *args: list(reversed(original_replay(*args))))
+                        return original_record(app, operation_id=operation_id, command=command, inputs=inputs)
+                return original_record(app, operation_id=operation_id, command=command, inputs=inputs)
+    
+            def historical_exact_order_guard(cursor, **kwargs):
+                nonlocal old_failure_injected
+                cursor.execute("SELECT repair_number,runtime_continuation_id FROM authority_story_planning_generation WHERE operation_id=%s", [kwargs["operation_id"]])
+                current = cursor.fetchone()
+                if current == (2, None) and not old_failure_injected:
+                    old_failure_injected = True
+                    kwargs["evidence_version"] = routing_module.LEGACY_REPAIR_VERSION
+                return original_evidence(cursor, **kwargs)
+    
+            monkeypatch.setattr(planning_module.StoryPlanningGenerationApplication, "_record_generation", historical_unordered_record)
+            monkeypatch.setattr(routing_module, "native_planning_repair", historical_exact_order_guard)
+        if gateway_null_recovery:
+            from novel_forge.modules.story_planning_runtime import execution as planning_execution
+            from novel_forge.api import authority_dependencies as dependencies
+            from novel_forge.modules.command_kernel.errors import KernelError
+            original_schema = planning_execution.planning_provider_output_schema
+            original_validation = dependencies.validate_production_structured_result
+            historical_rejection = False
+            null_planning = transport.planning
+            def retained_null_field(stage, inputs):
+                value = null_planning(stage,inputs)
+                if stage == "chapter_plan.generate":
+                    value["local_contract_nullable_probe"] = None
+                return value
+            transport.planning = retained_null_field
+            def literal_null_schema(*args, **kwargs):
+                schema = original_schema(*args, **kwargs)
+                def project(value):
+                    if isinstance(value, dict):
+                        if value.get("type") == ["string", "null"] and "enum" not in value and "const" not in value:
+                            value["anyOf"] = [{"type":"null"}, {**value,"type":"string"}]
+                            value.pop("type")
+                            return
+                        for child in value.values():
+                            project(child)
+                    elif isinstance(value, list):
+                        for child in value:
+                            project(child)
+                project(schema)
+                if "scene_plan" in schema.get("properties", {}):
+                    schema["properties"]["local_contract_nullable_probe"] = {"type":"null"}
+                    schema["required"].append("local_contract_nullable_probe")
+                return schema
+            def historical_null_validator(stage, schema, value, *, output_schema_ref=""):
+                nonlocal historical_rejection
+                if stage == "chapter_plan.generate" and not historical_rejection:
+                    historical_rejection = True
+                    from novel_forge.modules.story_planning_runtime.gateway_result_recovery import literal_null_paths
+                    assert literal_null_paths(schema,value)
+                    raise KernelError("CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID", "$.serialization_function uses unsupported schema type null")
+                return original_validation(stage, schema, value, output_schema_ref=output_schema_ref)
+            monkeypatch.setattr(planning_execution,"planning_provider_output_schema",literal_null_schema)
+            monkeypatch.setattr(dependencies,"validate_production_structured_result",historical_null_validator)
+        if stage_repair_recovery:
+            known_planning=transport.planning
+            damaged_knowledge=False
+            def invalid_knowledge_once(stage,inputs):
+                nonlocal damaged_knowledge
+                value=known_planning(stage,inputs)
+                if stage=='chapter_plan.generate' and not damaged_knowledge:
+                    damaged_knowledge=True
+                    value['character_participation'][0]['known_fact_ids']=['unknown:fact']
+                return value
+            transport.planning=invalid_knowledge_once
+        if scene_core_recovery or scene_information_recovery:
+            original_scene_planning = transport.planning
+            def selected_specialisms_only(stage, inputs):
+                value = original_scene_planning(stage, inputs)
+                if stage == 'chapter_plan.generate':
+                    for scene in value['scene_plan']:
+                        scene['realization_capabilities'] = ['SKELETON','ACTION'] if scene_information_recovery else ['ACTION']
+                return value
+            transport.planning = selected_specialisms_only
+        if scene_information_recovery:
+            original_information_draft = transport.chapter
+            information_call_count = 0
+            def information_draft(stage, inputs):
+                nonlocal information_call_count
+                value = original_information_draft(stage, inputs)
+                if stage == 'draft':
+                    information_call_count += 1
+                    if information_call_count == 1:
+                        value['scene_artifacts'][0]['used_fact_ids'] = ['fact:hidden-cost']
+                    else:
+                        assert inputs.get('candidate_repair', {}).get('source_effect_id')
+                        if information_call_count == 2:
+                            value['scene_artifacts'][0]['used_fact_ids'] = ['fact:undeclared']
+                        else:
+                            assert inputs['candidate_repair']['contract_version'] == 'chapter-candidate-output-repair.v1'
+                return value
+            class InformationDraftTransport:
+                def __call__(self, stage, inputs):
+                    return information_draft(stage, inputs)
+                def __getattr__(self, name):
+                    return getattr(original_information_draft, name)
+            transport.chapter = InformationDraftTransport()
+        if review_knowledge_recovery:
+            original_review_transport = transport.chapter
+            review_scope_calls = 0
+            def scoped_review(stage, inputs):
+                nonlocal review_scope_calls
+                value = original_review_transport(stage, inputs)
+                if stage == 'review':
+                    review_scope_calls += 1
+                    if review_scope_calls == 1:
+                        value['knowledge_checks'].append({'knowledge_card_asset_version_id':'knowledge:not-delivered',
+                            'status':'NOT_USED','reason':'retained incorrect catalog judgment','evidence':None,
+                            'conditions_checked':[],'exceptions_checked':[],'issue_codes':[]})
+                    else:
+                        assert inputs['candidate_repair']['contract_version'] == 'chapter-review-output-repair.v1'
+                        assert inputs['candidate_repair']['diagnostic']['error_code'] == 'REVIEW_KNOWLEDGE_CHECK_INVALID'
+                        assert inputs['review_knowledge_scope_contract'] == 'delivered-card-scope.v1'
+                return value
+            class ScopedReviewTransport:
+                def __call__(self, stage, inputs):
+                    return scoped_review(stage, inputs)
+                def __getattr__(self, name):
+                    return getattr(original_review_transport, name)
+            transport.chapter = ScopedReviewTransport()
+        if length_scope_recovery:
+            original_length_transport = transport.chapter
+            length_revision_calls = 0
+            support_calls = 0
+            def measured_length_response(stage, inputs):
+                nonlocal length_revision_calls, support_calls
+                value = original_length_transport(stage, inputs)
+                if stage == 'draft':
+                    value['scene_artifacts'][0]['text'] += '甲'
+                elif stage == 'review':
+                    value['issues'][0]['evidence'] = {'quote':inputs['draft']['scene_artifacts'][-1]['text']}
+                elif stage == 'revision':
+                    length_revision_calls += 1
+                    value['scene_artifacts'][0]['text'] += '乙' if length_revision_calls == 2 else '乙丙丁'
+                    if length_revision_calls == 2:
+                        assert inputs['candidate_repair']['contract_version'] == 'chapter-length-output-repair.v1'
+                        assert inputs['chapter_length_repair_scope']['source_han_characters'] == 1
+                    elif length_revision_calls == 3:
+                        assert inputs['candidate_repair']['contract_version'] == 'chapter-candidate-output-repair.v1'
+                        assert inputs['candidate_repair']['diagnostic']['error_code'] == 'CHAPTER_LENGTH_REPAIR_INCOMPLETE'
+                        assert inputs['candidate_repair']['length_observation']['observed'] == 2
+                        assert '2' in inputs['candidate_repair']['diagnostic']['error_message']
+                if stage == 'canon_support':
+                    support_calls += 1
+                    if support_calls == 1:
+                        for claim in value['claims']:
+                            claim['observed_kind']='DOCUMENT_CONTENT'
+                    else:
+                        assert inputs['support_kind_contract']=='canon-support-kinds.v2'
+                if stage in {'draft','revision'}:
+                    from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
+                    value['text'] = serialize_realization(value['scene_artifacts'])
+                return value
+            class MeasuredLengthTransport:
+                def __call__(self, stage, inputs):
+                    return measured_length_response(stage, inputs)
+                def __getattr__(self, name):
+                    return getattr(original_length_transport, name)
+            transport.chapter = MeasuredLengthTransport()
+        registry.register(transport)
+        if creative_validation:
+            from tests.integration.creative_validation_production_support import controlled_member_environment
+            env = controlled_member_environment(tmp_path, env, monkeypatch, transport)
+            if memo_timeout_recovery:
+                from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+                from novel_forge.modules.production_execution.process_supervisor import CodexProcessSupervisor, ProcessTimeout, PersistentExecutionDirectory
+                import hashlib
+                executable=Path(env['NOVEL_FORGE_CODEX_EXECUTABLE'])
+                script=executable.read_text().replace('import json,pathlib,sys','import json,pathlib,sys,time').replace(
+                    ' target.write_bytes(', ' if target.with_name("memo-timeout-fixture").exists(): time.sleep(1000)\n target.write_bytes(')
+                executable.write_text(script)
+                env['NOVEL_FORGE_CODEX_EXECUTABLE_SHA256']='sha256:'+hashlib.sha256(executable.read_bytes()).hexdigest()
+                normal_resolve=PostgresProductionExecutionPayloadResolver.resolve
+                normal_run=CodexProcessSupervisor.run
+                delayed=False
+                def delayed_memo(resolver,request,admission):
+                    nonlocal delayed
+                    payload=normal_resolve(resolver,request,admission)
+                    if request.stage=='memo' and not delayed:
+                        delayed=True
+                        layout=PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
+                        layout.result_path('memo-timeout-fixture').write_text('controlled timeout; no real Provider')
+                    return payload
+                def short_controlled_timeout(supervisor,request,**kwargs):
+                    layout=supervisor.execution_directory.prepare(request.execution_id)
+                    if layout.result_path('memo-timeout-fixture').exists():
+                        request=replace(request,timeout=ProcessTimeout(0.05,poll_interval_seconds=0.01,termination_grace_seconds=1))
+                    return normal_run(supervisor,request,**kwargs)
+                monkeypatch.setattr(PostgresProductionExecutionPayloadResolver,'resolve',delayed_memo)
+                monkeypatch.setattr(CodexProcessSupervisor,'run',short_controlled_timeout)
+            settings = replace(settings, environment="validation", root=Path(__file__).resolve().parents[2])
+        execution = build_production_execution_composition(
+            settings,
+            env=env,
+            provider_registry=registry,
+            planning_fixture_factory=transport.planning,
+            chapter_fixture_factory=transport.chapter,
+        )
+        try:
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            composition = build_book_production_composition(
+                settings,
+                principal=principal,
+                execution=execution,
+                chapter_application=chapter,
+                env=env,
+            )
+            formation = composition.formation
+            assert formation is not None
+            formation_worker = TrustedPrincipalResolver(
+                environment="test",
+                configured_project_scope=frozenset({harness.project_id}),
+            ).resolve_book_formation_worker_principal("synthesis-worker")
+            formation_key = f"{harness.project_id}:synthesis:formation"
+            formation_run_id = deterministic_story_formation_run_id(
+                project_id=harness.project_id,
+                book_id=harness.book_ids[0],
+                stable_idempotency_key=formation_key,
+            )
+            admitted = formation.admit(
+                StartStoryFormationCommand(
+                    project_id=harness.project_id,
+                    workspace_id=harness.workspace_id,
+                    book_id=harness.book_ids[0],
+                    actor_id=principal.principal_id,
+                    expected_book_version=1,
+                    stable_idempotency_key=formation_key,
+                    trace_id="trace:synthesis-formation",
+                    correlation_id=harness.project_id,
+                    frozen_input=StoryFormationInput(
+                        creative_brief_asset_version_id=brief.asset_version_id,
+                        creative_brief_content_hash=brief.content_hash,
+                        generation_policy={
+                            "contract_version": "formation-generation.v2",
+                            "approval_mode": "REVIEW_PLAN" if manual_review else "AUTO",
+                            "creative_candidates": 2,
+                            "target_chapters": target_chapters,
+                            "title": "Witness Map",
+                            **({} if manual_review else {"auto_authorization": {
+                                "contract_version": "formation-auto-authorization.v1",
+                                "policy_version": "formation-auto-policy.v1",
+                                "authorization_ref": "test:synthesis-formation",
+                                "authorized_by_principal_id": principal.principal_id,
+                                "project_id": harness.project_id,
+                                "workspace_id": harness.workspace_id,
+                                "book_id": harness.book_ids[0],
+                                "formation_run_id": formation_run_id,
+                                "allowed_actions": [
+                                    "book_design.candidate.activate",
+                                    "book_design.candidate.decide",
+                                    "story_planning.candidate.activate",
+                                    "story_planning.candidate.approve",
+                                ],
+                            }}),
+                        },
+                    ),
+                ),
+                principal=principal,
+            )
+            projection_checkpoints = []
+            recovered_activation = False
+    
+            def fail_activation(checkpoint):
+                if checkpoint == "after_business_projection_update":
+                    projection_checkpoints.append(checkpoint)
+                    if len(projection_checkpoints) == 3:
+                        raise RuntimeError("simulated activation projection crash")
+    
+            formation.generation.book_design.fault_injector = None if manual_review else fail_activation
+            evaluation_failed = False
+            concurrent_recovery_heads = []
+            if evaluation_recovery:
+                from novel_forge.modules.story_design_authority.evaluation_runtime import NarrativeSemanticEvaluationHandler, NarrativeSemanticEvaluationApplication
+                original_evaluation = NarrativeSemanticEvaluationHandler.execute
+                original_admission = NarrativeSemanticEvaluationApplication._admit_candidate_once
+    
+                def fail_evaluation_preflight_once(handler, request):
+                    nonlocal evaluation_failed
+                    if request.command["payload"]["generator_operation_name"] == "book_design.propose" and not evaluation_failed:
+                        from novel_forge.modules.command_kernel.errors import KernelError
+                        evaluation_failed = True
+                        raise KernelError("NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID", "retained preflight failure before any Effect")
+                    return original_evaluation(handler, request)
+    
+                monkeypatch.setattr(NarrativeSemanticEvaluationHandler, "execute", fail_evaluation_preflight_once)
+    
+                def admit_concurrently_once(application, command, admission_command):
+                    if evaluation_failed and not concurrent_recovery_heads and command.generator_operation_name == "book_design.propose":
+                        from concurrent.futures import ThreadPoolExecutor
+                        with ThreadPoolExecutor(max_workers=2) as pool:
+                            concurrent_recovery_heads.extend(pool.map(lambda _: original_admission(application, command, admission_command), range(2)))
+                        return concurrent_recovery_heads[0]
+                    return original_admission(application, command, admission_command)
+    
+                monkeypatch.setattr(NarrativeSemanticEvaluationApplication, "_admit_candidate_once", admit_concurrently_once)
+            runtime_recovered = False
+            capacity_failed = False
+            if capacity_continuation:
+                resolver = formation.generation.planning.execution_binder.resolver.execution_preparer
+                original_context = resolver._context_bundle
+                def fail_capacity_once(**kwargs):
+                    nonlocal capacity_failed
+                    if kwargs["command"].repair_of_operation_id and not capacity_failed:
+                        from novel_forge.modules.command_kernel.errors import KernelError
+                        capacity_failed = True
+                        raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "retained zero-dispatch capacity failure")
+                    return original_context(**kwargs)
+                resolver._context_bundle = fail_capacity_once
+            if runtime_recovery:
+                preparer = formation.generation.planning.execution_binder.resolver.execution_preparer
+                def profile_collision(**_):
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    raise KernelError("EXECUTION_CONTRACT_FROZEN_CONFLICT", "retained legacy schema conflicts before dispatch")
+                preparer._execution_binding = profile_collision
+            selected_creative = ""
+            for _ in range(24 if manual_review else 12):
+                formation.schedule_candidates(
+                    limit=1,
+                    project_id=harness.project_id,
+                    formation_run_id=admitted.formation_run_id,
+                )
+                claim = formation.runtime_jobs.claim(
+                    runtime_group="story_formation",
+                    worker_id="synthesis-worker",
+                    lease_seconds=60,
+                    job_kinds=("STORY_FORMATION_ADVANCE",),
+                    project_id=harness.project_id,
+                )
+                if claim is None:
+                    break
+                try:
+                    execute_story_formation_claim(
+                        formation.runtime_jobs,
+                        formation,
+                        formation_worker,
+                        claim,
+                        lease_seconds=60,
+                    )
+                except Exception as exc:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    if capacity_continuation and isinstance(exc, KernelError) and exc.code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+                        execution.close()
+                        formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
+                            chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings, env=env, registry=registry,
+                            transport=transport, admitted=admitted, monkeypatch=monkeypatch)
+                        formation.generation.book_design.fault_injector = fail_activation
+                        continue
+                    if valid_result_admission and isinstance(exc, KernelError) and exc.code == "PLANNING_RESULT_REPAIR_BOUND_EXCEEDED":
+                        from concurrent.futures import ThreadPoolExecutor
+                        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+                        planning = formation.generation.planning
+                        failures = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id, asset_type="planning_generation_result_failure")
+                        assert len(failures) == 1
+                        failure = failures[0]
+                        source = failure.content["operation_id"]
+                        before = len(transport.calls)
+                        def register(actor=principal):
+                            return planning.register_result_admission_recovery(source,project_id=harness.project_id,
+                                source_asset_version_id=failure.asset_version_id,reason="compatible parser repair; retain original result",principal=actor)
+                        with pytest.raises(PermissionError):
+                            register(formation_worker)
+                        from novel_forge.modules.story_planning_runtime import result_admission
+                        with monkeypatch.context() as strict:
+                            verified = result_admission.verify_template_provenance
+                            strict.setattr(result_admission,"verify_template_provenance",lambda *args: {**verified(*args),"mode":"STRICT_PRODUCTION"})
+                            with pytest.raises(KernelError,match="PLANNING_RESULT_ADMISSION_POLICY_REQUIRED"):
+                                register()
+                        with ThreadPoolExecutor(max_workers=2) as pool:
+                            recoveries = list(pool.map(lambda _:register(), range(2)))
+                        assert len({r["asset_version_id"] for r in recoveries}) == 1
+                        assert register()["replayed"] and len(transport.calls) == before
+                        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                            uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s",[source])
+                            assert uow.cursor.fetchone()[0] == "FAILED_FINAL"
+                            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s",[recoveries[0]["operation_id"]])
+                            assert uow.cursor.fetchone()[0] == 0
+                        failed = formation.require(admitted.formation_run_id)
+                        formation.resume(admitted.formation_run_id,expected_version=failed["version"],principal=principal)
+                        continue
+                    if evaluation_recovery and isinstance(exc, KernelError) and exc.code == "NARRATIVE_EVALUATION_PROVIDER_CONTEXT_INVALID":
+                        failed = formation.require(admitted.formation_run_id)
+                        assert failed["lifecycle"] == "FAILED"
+                        formation.resume(admitted.formation_run_id, expected_version=failed["version"], principal=principal)
+                        continue
+                    if isinstance(exc, KernelError) and exc.code == "EXECUTION_CONTRACT_FROZEN_CONFLICT" and runtime_recovery and not runtime_recovered:
+                        historical.undo()
+                        historical = None
+                        execution.close()
+                        formation, execution = _recover_runtime_profile_formation(
+                            harness=harness, chapter_pack=chapter_pack, formation=formation,
+                            principal=principal, settings=settings, env=env, registry=registry,
+                            transport=transport, admitted=admitted,
+                        )
+                        formation.generation.book_design.fault_injector = fail_activation
+                        runtime_recovered = True
+                        continue
+                    assert (
+                        str(exc) == "simulated activation projection crash"
+                        and not recovered_activation
+                    )
+                    from novel_forge.modules.book_design_authority.query import (
+                        BookDesignAuthorityQuery,
+                    )
+                    from novel_forge.storage.authority_asset_store import (
+                        AuthorityAssetQuery,
+                    )
+    
+                    assert not BookDesignAuthorityQuery(DATABASE_URL).require_book(
+                        project_id=harness.project_id, book_id=harness.book_ids[0]
+                    )["active_book_design_version_id"]
+                    assert not AuthorityAssetQuery(DATABASE_URL).list(
+                        project_id=harness.project_id, asset_type="character_arc_portfolio"
+                    )
+                    calls_before_recovery = len(transport.calls)
+                    execution.close()
+                    execution = build_production_execution_composition(
+                        settings,
+                        env=env,
+                        provider_registry=registry,
+                        planning_fixture_factory=transport.planning,
+                        chapter_fixture_factory=transport.chapter,
+                    )
+                    chapter = build_chapter_authority_application(
+                        settings, execution=execution, env=env
+                    )
+                    composition = build_book_production_composition(
+                        settings,
+                        principal=principal,
+                        execution=execution,
+                        chapter_application=chapter,
+                        env=env,
+                    )
+                    formation = composition.formation
+                    failed = formation.require(admitted.formation_run_id)
+                    formation.resume(
+                        admitted.formation_run_id,
+                        expected_version=failed["version"],
+                        principal=principal,
+                    )
+                    recovered_activation = True
+    
+                waiting = formation.require(admitted.formation_run_id)
+                if manual_review and waiting["lifecycle"] == "WAITING_APPROVAL":
+                    from novel_forge.modules.command_kernel.errors import KernelError
+    
+                    reviewer = replace(principal, permissions=principal.permissions | {"book.authority.query"})
+                    review = formation.review_candidates(admitted.formation_run_id, principal=reviewer)
+                    candidates = review["candidates"]
+                    target = candidates[1] if len(candidates) > 1 else candidates[0]
+                    if len(candidates) > 1:
+                        with pytest.raises(KernelError, match="outside the frozen comparison"):
+                            formation.author_decision(
+                                admitted.formation_run_id, expected_version=review["version"],
+                                candidate_asset_version_id=brief.asset_version_id,
+                                candidate_content_hash=brief.content_hash, decision="SELECT",
+                                reason="Invalid cross-role selection must not change the comparison",
+                                idempotency_key="manual:outside-candidate-set", principal=reviewer,
+                            )
+                        assert formation.require(admitted.formation_run_id)["version"] == review["version"]
+                        rejected = formation.author_decision(
+                            admitted.formation_run_id, expected_version=review["version"],
+                            candidate_asset_version_id=candidates[0]["asset_version_id"],
+                            candidate_content_hash=candidates[0]["content_hash"],
+                            decision="REJECT", reason="Fixture author rejects first branch; preserve alternatives",
+                            idempotency_key="manual:reject-first", principal=reviewer,
+                        )
+                        with pytest.raises(KernelError, match="Select and approve"):
+                            formation.resume(admitted.formation_run_id, expected_version=rejected["version"], principal=reviewer)
+                        review = rejected
+                        selected_creative = target["asset_version_id"]
+                    args = dict(expected_version=review["version"],
+                                candidate_asset_version_id=target["asset_version_id"],
+                                candidate_content_hash=target["content_hash"], decision="APPROVE",
+                                reason="Fixture author preserves witness conflict and selects this exact branch",
+                                idempotency_key=f"manual:approve:{waiting['current_stage']}", principal=reviewer)
+                    approved = formation.author_decision(admitted.formation_run_id, **args)
+                    repeated = formation.author_decision(admitted.formation_run_id, **args)
+                    assert repeated["version"] == approved["version"]
+                    assert repeated["recovery_instruction"]["candidate_asset_version_id"] == target["asset_version_id"]
+                    formation.resume(admitted.formation_run_id, expected_version=approved["version"], principal=reviewer)
+    
+                if formation.require(admitted.formation_run_id)["lifecycle"] == "READY":
+                    break
+            result = formation.require(admitted.formation_run_id)
+            assert result["lifecycle"] == "READY", result
+            if manual_review:
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT asset_version_id FROM authority_book_foundation_binding WHERE formation_run_id=%s AND foundation_role='CREATIVE_FOUNDATION' AND freshness='CURRENT'", [admitted.formation_run_id])
+                    assert str(uow.cursor.fetchone()[0]) == selected_creative
+                    uow.cursor.execute("SELECT operation.input_asset_snapshot FROM authority_story_planning_generation generation JOIN authority_operation operation ON operation.operation_id=generation.operation_id WHERE generation.project_id=%s AND generation.generator_operation_name='theme.candidates.generate'", [harness.project_id])
+                    parents = uow.cursor.fetchall()
+                    assert parents and all(any(item["asset_version_id"] == selected_creative for item in row[0]) for row in parents)
+                    uow.cursor.execute("SELECT checkpoint->'author_decisions' FROM authority_story_formation_stage WHERE formation_run_id=%s AND stage='CREATIVE_SEARCH'", [admitted.formation_run_id])
+                    decisions = uow.cursor.fetchone()[0]
+                    assert [item["decision"] for item in decisions] == ["REJECT", "APPROVE"]
+                return
+            if evaluation_recovery:
+                assert evaluation_failed
+                assert len(concurrent_recovery_heads) == 2
+                assert len({head["operation_id"] for head in concurrent_recovery_heads}) == 1
+                assert {head["generation"] for head in concurrent_recovery_heads} == {2}
+                with AuthorityUnitOfWork(DATABASE_URL) as recovery_uow:
+                    recovery_uow.cursor.execute("""
+                        SELECT source.status,successor.status,source.command_payload=successor.command_payload,
+                               successor.causation_operation_id=source.operation_id,recovery.candidate_asset_version_id,
+                               source_execution.candidate_asset_version_id,successor_execution.candidate_asset_version_id,
+                               source_execution.lifecycle,successor_execution.lifecycle,
+                               (SELECT count(*) FROM authority_external_effect WHERE operation_id=source.operation_id)
+                        FROM authority_narrative_formation_recovery recovery
+                        JOIN authority_operation source ON source.operation_id=recovery.source_operation_id
+                        JOIN authority_operation successor ON successor.operation_id=recovery.successor_operation_id
+                        JOIN authority_narrative_evaluation_execution source_execution ON source_execution.operation_id=source.operation_id
+                        JOIN authority_narrative_evaluation_execution successor_execution ON successor_execution.operation_id=successor.operation_id
+                        WHERE recovery.project_id=%s
+                    """, [harness.project_id])
+                    continuations = recovery_uow.cursor.fetchall()
+                assert len(continuations) == 1
+                recovery = continuations[0]
+                assert recovery[:4] == ("FAILED_FINAL", "SUCCEEDED", True, True)
+                assert recovery[4] == recovery[5] == recovery[6]
+                assert recovery[7:] == ("FAILED", "SUCCEEDED", 0)
+                with AuthorityUnitOfWork(DATABASE_URL) as recovery_uow:
+                    recovery_uow.cursor.execute("SELECT authority_narrative_formation_gate_is_open(successor_operation_id,project_id,recovery_id) FROM authority_narrative_formation_recovery WHERE project_id=%s", [harness.project_id])
+                    assert recovery_uow.cursor.fetchone()[0] is False
+            assert runtime_recovered is runtime_recovery
+            if runtime_recovery:
+                _assert_runtime_continuation_once(formation, harness, transport, principal)
+            creative_candidates = [
+                item
+                for item in AuthorityAssetQuery(DATABASE_URL).list_versions(
+                    project_id=harness.project_id,
+                    asset_type="planning_generation_candidate",
+                )
+                if item.content.get("generator_operation_name")
+                == "creative.candidates.generate"
+            ]
+            assert sorted(item.lifecycle for item in creative_candidates) == [
+                "ACTIVE",
+                "CANDIDATE",
+            ]
+            from novel_forge.modules.story_design_authority.evaluation_execution import (
+                PostgresNarrativeEvaluationExecutionContractBinder,
+            )
+    
+            asset_query = AuthorityAssetQuery(DATABASE_URL)
+            book_design = next(
+                item for item in asset_query.list_versions(
+                    project_id=harness.project_id, asset_type="book_design"
+                ) if item.lifecycle == "ACTIVE"
+            )
+            if not creative_validation:
+                binder = object.__new__(PostgresNarrativeEvaluationExecutionContractBinder)
+                binder.evaluation_query = asset_query
+                dependencies = binder._canonical_dependencies(
+                    book_design, book_id=harness.book_ids[0]
+                )
+                assert len(dependencies) == 6
+                assert all(
+                    source.asset_type == "planning_generation_candidate"
+                    and source.content["book_id"] == harness.book_ids[0]
+                    and qualification.content["candidate_content_hash"] == source.content_hash
+                    for _, source, qualification in dependencies
+                )
+            assert (
+                recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair or author_result_repair else 7)
+            )
+            assert {call["stage"] for call in transport.calls} == {
+                "creative.candidates.generate",
+                "theme.candidates.generate",
+                "ending.intent.generate",
+                "reader.promise.generate",
+                "world.design.generate",
+                "character.cast.generate",
+            }
+            if result_repair:
+                from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                from concurrent.futures import ThreadPoolExecutor
+    
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT op.operation_id, op.status, op.command_payload->'payload', op.causation_operation_id, g.candidate_asset_version_id FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND g.generator_operation_name='world.design.generate' ORDER BY op.created_at", [harness.project_id])
+                    generations = uow.cursor.fetchall()
+                assert len(generations) == 2
+                failed, repaired = generations
+                assert failed[1] == "FAILED_FINAL" and not failed[4]
+                assert repaired[1] == "SUCCEEDED" and repaired[4]
+                assert str(repaired[3]) == str(failed[0])
+                failures = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id, asset_type="planning_generation_result_failure")
+                assert len(failures) == 1 and failures[0].eligibility == "INELIGIBLE"
+                assert failures[0].content["candidate_status"] == "NOT_MATERIALIZED"
+                assert failures[0].content["diagnostic"]["error_code"] == "WORLD_FOUNDATION_SCHEMA_INVALID"
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    frozen_failure = [{"asset_version_id": failures[0].asset_version_id, "content_hash": failures[0].content_hash}]
+                    with pytest.raises(KernelError, match="AUTHORITY_INPUT_NOT_ELIGIBLE"):
+                        uow.repositories.chapter_authority.frozen_inputs(harness.project_id, frozen_failure)
+                    readable_failure = uow.repositories.chapter_authority.frozen_inputs(harness.project_id, frozen_failure, repair_result_asset_version_id=failures[0].asset_version_id)
+                    assert readable_failure[0]["asset_type"] == "planning_generation_result_failure"
+                before = len(transport.calls)
+                planning = formation.generation.planning
+                original = _command_from_payload(dict(failed[2]))
+                from novel_forge.modules.story_planning_runtime.result_recovery import require_result_repair_source
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) WHERE output.operation_id=%s AND asset.asset_type='model_call_log'", [failed[0]])
+                    legacy_result_asset = str(uow.cursor.fetchone()[0])
+                retained = require_result_repair_source(DATABASE_URL, command=original, operation_id=str(failed[0]), source_asset_version_id=legacy_result_asset)
+                assert retained["diagnostic"] == failures[0].content["diagnostic"]
+                assert retained["raw_result"] == failures[0].content["raw_result"]
+                with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_INPUT_DRIFT"):
+                    require_result_repair_source(DATABASE_URL, command=replace(original, auto_approve_low_risk=True), operation_id=str(failed[0]))
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    replayed = list(pool.map(lambda _: planning.generate(original, principal=formation_worker), range(2)))
+                assert {item.candidate_asset_version_id for item in replayed} == {str(repaired[4])}
+                assert len(transport.calls) == before
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [failed[0]])
+                    assert uow.cursor.fetchone()[0] == "FAILED_FINAL"
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id IN (%s,%s)", [failed[0], repaired[0]])
+                    assert uow.cursor.fetchone()[0] == 2
+                if not complete_after_result_repair:
+                    return
+            if author_result_repair and not capacity_continuation:
+                from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                from novel_forge.modules.story_planning_runtime.result_recovery import require_result_repair_source
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT op.operation_id,op.status,op.command_payload->'payload',op.causation_operation_id,g.candidate_asset_version_id FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.project_id=%s AND g.generator_operation_name='reader.promise.generate' ORDER BY op.created_at", [harness.project_id])
+                    failed, repaired = uow.cursor.fetchall()
+                    uow.cursor.execute("SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) WHERE output.operation_id=%s AND asset.asset_type='model_call_log'", [failed[0]])
+                    legacy_result_asset = str(uow.cursor.fetchone()[0])
+                assert failed[1] == "FAILED_FINAL" and not failed[4]
+                assert repaired[1] == "SUCCEEDED" and repaired[3] == failed[0]
+                failures = asset_query.list_versions(project_id=harness.project_id, asset_type="planning_generation_result_failure")
+                assert len(failures) == 1 and failures[0].eligibility == "INELIGIBLE"
+                assert failures[0].content["diagnostic"]["error_code"] == "AUTHOR_DESIGN_INPUT_INVALID"
+                original = _command_from_payload(dict(failed[2]))
+                retained = require_result_repair_source(DATABASE_URL, command=original, operation_id=str(failed[0]), source_asset_version_id=legacy_result_asset)
+                assert retained["diagnostic"] == failures[0].content["diagnostic"]
+                before = len(transport.calls)
+                replayed = formation.generation.planning.generate(original, principal=formation_worker)
+                assert replayed.candidate_asset_version_id == str(repaired[4])
+                assert len(transport.calls) == before
+                return
+            from novel_forge.modules.book_authority.creation_inputs import (
+                prepare_creation_inputs,
+            )
+            from novel_forge.modules.book_authority.opening import (
+                OpenBookProductionRequest,
+                _OPENING_INPUT_ROLES,
+            )
+            from novel_forge.modules.runtime_job import RuntimeJobAuthority
+            from novel_forge.workers.book_authority import execute_book_opening_claim
+    
+            policy = json.loads(
+                (
+                    Path(__file__).resolve().parents[2]
+                    / "config/production/short-arc-creation.json"
+                ).read_text()
+            )
+            if length_scope_recovery:
+                for fact in policy["profiles"]["platform_profile"]["content"]["structured_facts"]:
+                    if fact["key"] == "platform_rules":
+                        fact["value"]["chapter_length"] = {"unit":"HAN_CHARACTERS_V1","minimum":3,"maximum":4}
+            policy["profiles"]["production_profile"]["content"].update(fixture_production_profile)
+            policy["profiles"]["production_profile"]["content"]["target_chapter_count"] = target_chapters
+            if creative_validation:
+                from novel_forge.modules.book_authority.creation_runtime import continue_creation
+                from novel_forge.modules.authority_security import PrincipalType
+                from types import SimpleNamespace
+                import time
+    
+                worker = replace(principal, principal_type=PrincipalType.WORKER,
+                    principal_id="creation-book" if stage_repair_recovery else principal.principal_id,
+                    permissions=principal.permissions - {"book.authority.approve_replan"})
+                if route_continuation or input_order_continuation:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    with pytest.raises(KernelError, match="NATIVE_PLANNING_REPAIR_SOURCE_INVALID" if input_order_continuation else "PROVIDER_ROUTING_BLOCKED"):
+                        continue_creation(composition=composition, content=content, chapter=chapter,
+                            formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                            book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                    execution.close()
+                    formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
+                        chapter_pack=chapter_pack, principal=principal, pack_actor=template_actor, settings=settings,
+                        env=env, registry=registry, transport=transport, admitted=admitted, monkeypatch=monkeypatch,
+                        routing=True, input_order=input_order_continuation)
+                if gateway_null_recovery:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    with pytest.raises(KernelError,match="MODEL_EFFECT_FINAL_PLANNING"):
+                        continue_creation(composition=composition,content=content,chapter=chapter,
+                            formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                            maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT e.external_effect_id,e.operation_id,e.last_error FROM authority_external_effect e WHERE e.project_id=%s AND e.status='FAILED_FINAL'",[harness.project_id])
+                        rejected = uow.cursor.fetchone()
+                        assert rejected and rejected[2]['production_execution']['execution_result']['outcome']=='FINAL_FAILURE'
+                        uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s",[rejected[1]])
+                        retained_attempt = uow.cursor.fetchone()[0]
+                    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext,read_rejected_structured_completion
+                    from novel_forge.modules.story_planning_runtime.gateway_result_recovery import retained_output
+                    request = rejected[2]['production_execution']['execution_request']
+                    context = EffectCommandContext(operation_id=rejected[1],project_id=harness.project_id,
+                        actor_id=worker.principal_id,trace_id='trace:revalidation',correlation_id=harness.project_id)
+                    with pytest.raises(KernelError,match='EFFECT_REJECTED_RESULT_OWNER_INVALID'):
+                        read_rejected_structured_completion(DATABASE_URL,replace(context,actor_id='unauthorized:actor'),effect_id=rejected[0])
+                    with pytest.raises(KernelError,match='EFFECT_REJECTED_RESULT_OWNER_INVALID'):
+                        read_rejected_structured_completion(DATABASE_URL,replace(context,project_id='foreign:project'),effect_id=rejected[0])
+                    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+                    query = AuthorityAssetQuery(DATABASE_URL)
+                    receipt_ref=rejected[2]['production_execution']['execution_result']['process_receipt_ref'].split(':',1)[1]
+                    receipt=query.require(project_id=harness.project_id,asset_version_id=receipt_ref)
+                    raw_path=Path(receipt.content['payload']['result_path'])
+                    exact_raw = raw_path.read_bytes()
+                    try:
+                        raw_path.write_bytes(exact_raw+b' ')
+                        with pytest.raises(KernelError,match='PLANNING_GATEWAY_RESULT_HASH_DRIFT'):
+                            retained_output(query,project_id=harness.project_id,provider=rejected[2],request=request)
+                    finally:
+                        raw_path.write_bytes(exact_raw)
+                    before_local_calls = len(transport.chapter.calls)
+                if world_optional_recovery:
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    with pytest.raises(KernelError,match='WORLD_PREPARATION_BLOCKED'):
+                        continue_creation(composition=composition,content=content,chapter=chapter,
+                            formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                            maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    execution.close()
+                    formation,execution,chapter,composition = _recover_capacity_formation(harness=harness,chapter_pack=chapter_pack,
+                        principal=principal,pack_actor=template_actor,settings=settings,env=env,registry=registry,
+                        transport=transport,admitted=admitted,monkeypatch=monkeypatch,world_optional=True)
+                if world_result_repair == "reference-checkpoint":
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    with pytest.raises(KernelError, match="PLANNING_RESULT_REPAIR_SOURCE_INVALID"):
+                        continue_creation(composition=composition, content=content, chapter=chapter,
+                            formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                            book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("""SELECT o.operation_id FROM authority_operation o
+                            JOIN authority_story_planning_generation g USING(operation_id)
+                            WHERE o.project_id=%s AND o.status='WAITING_EXTERNAL_RESULT'
+                            AND g.generator_operation_name='chapter_plan.generate'""", [harness.project_id])
+                        checkpoint_operation = uow.cursor.fetchone()[0]
+                        uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [checkpoint_operation])
+                        assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
+                        uow.cursor.execute("SELECT status,checkpoint->>'error_code' FROM authority_attempt WHERE operation_id=%s", [checkpoint_operation])
+                        assert uow.cursor.fetchall() == [("CHECKPOINTED", "WORLD_GENERATION_PLAN_REFERENCE_UNKNOWN")]
+                if scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
+                    stopped = continue_creation(composition=composition, content=content, chapter=chapter,
+                        formation_run_id=admitted.formation_run_id, formation_worker=formation_worker, book_worker=worker,
+                        maximum_ticks=80, deadline=time.monotonic()+240, creation_policy=policy)
+                    assert stopped['stop_reason'] == ('REVISION_OUTSIDE_DIAGNOSIS_SCOPE' if length_scope_recovery else 'REVIEW_KNOWLEDGE_CHECK_INVALID' if review_knowledge_recovery else 'REALIZATION_EPISTEMIC_SCOPE_VIOLATION' if scene_information_recovery else 'REALIZATION_CAPABILITY_INVALID'), stopped
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.project_id=%s AND o.definition_name=%s AND o.status IN ('FAILED_FINAL','FAILED_RETRYABLE')", [harness.project_id,'chapter.revision.apply' if length_scope_recovery else 'chapter.review.evaluate' if review_knowledge_recovery else 'chapter.draft.generate'])
+                        failed_scene_step = uow.cursor.fetchone()
+                        uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.project_id=%s ORDER BY e.external_effect_id", [harness.project_id])
+                        completed_scene_calls = uow.cursor.fetchall()
+                    monkeypatch.setattr(scene_definitions, 'CHAPTER_DRAFT_DEFINITION_VERSION', saved_draft_version)
+                    monkeypatch.setattr(scene_definitions, 'CHAPTER_REVIEW_DEFINITION_VERSION', saved_review_version)
+                    monkeypatch.setattr(scene_definitions, 'CHAPTER_REVISION_DEFINITION_VERSION', saved_revision_version)
+                    monkeypatch.setattr(Path, 'read_text', normal_scene_read)
+                    if length_scope_recovery:
+                        def old_canon_pack(path, *args, **kwargs):
+                            value = normal_scene_read(path, *args, **kwargs)
+                            if path.name != 'chapter_generation_pack.json':
+                                return value
+                            from novel_forge.modules.capability_packs.artifacts import artifact_content_hash
+                            from novel_forge.storage.authority_repositories import definition_hash
+                            value = json.loads(value)
+                            value['identity']['version'] = '2.18.0'
+                            value['prompt_binding'].update(template_version='v9', compiler_version='chapter-prompt-compiler:v9',
+                                template_hash=artifact_content_hash({'text':normal_scene_read(path.parent/'artifacts/chapter_generation_template_v9.md')}))
+                            canon_definition = next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-canon-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.extract')
+                            node = next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.extract')
+                            node.update(operation_definition_ref='chapter.canon.extract@3.9.0',operation_definition_hash=definition_hash(canon_definition))
+                            support_definition=next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='legacy-canon-fixture',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.propose_changes')
+                            support_node=next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.propose_changes')
+                            support_node.update(operation_definition_ref='chapter.canon.propose_changes@3.9.0',operation_definition_hash=definition_hash(support_definition))
+                            return json.dumps(value)
+                        monkeypatch.setattr(Path,'read_text',old_canon_pack)
+                    execution.close()
+                    from tests.integration.creative_validation_production_support import install_planning
+                    from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+                    harness.release_sha = 'e'*40
+                    hashes = register_validation_runtime_definitions(DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
+                    harness.pack_id += '.scene-core-successor'
+                    chapter_pack.pack_id += '.scene-core-successor'
+                    install_chapter_validation_pack(DATABASE_URL, repository_root=Path(__file__).resolve().parents[2], project_id=harness.project_id,
+                        workspace_id=harness.workspace_id, book_id=harness.book_ids[0], application_build_id=harness.application_build_id,
+                        commit_sha=harness.release_sha, compiler=template_actor, approver=template_actor, agent_admin=template_actor, pack_id_override=chapter_pack.pack_id)
+                    install_planning(harness, build_story_planning_pack_profile(Path(__file__).resolve().parents[2], operation_definition_hash=hashes['planning'], pack_id=harness.pack_id), template_actor)
+                    env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha, NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id, NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                    execution = build_production_execution_composition(settings, env=env, provider_registry=registry, planning_fixture_factory=transport.planning, chapter_fixture_factory=transport.chapter)
+                    chapter = build_chapter_authority_application(settings, execution=execution, env=env)
+                    composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, env=env)
+                    from novel_forge.modules.command_kernel.step_successor import replace_failed_step
+                    from novel_forge.modules.command_kernel.service import AdmissionContext
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    recovery_context = AdmissionContext(principal.principal_id, principal.permissions,
+                        chapter.registry.available_handler_keys, harness.application_build_id, harness.release_sha)
+                    for invalid_context, error_code in (
+                        (replace(recovery_context, actor_id='foreign:actor'), 'STEP_SUCCESSOR_SOURCE_INVALID'),
+                        (replace(recovery_context, permissions=frozenset()), 'PERMISSION_DENIED'),
+                    ):
+                        with pytest.raises(KernelError, match=error_code):
+                            replace_failed_step(DATABASE_URL, predecessor_id=failed_scene_step[0]['operation_id'],
+                                target_version='3.9.4' if length_scope_recovery else '3.9.3' if review_knowledge_recovery else '3.9.2', context=invalid_context, policy_evidence={},
+                                expected_failure_code='REALIZATION_CAPABILITY_INVALID')
+                if memo_timeout_recovery:
+                    first=continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    assert first['stop_reason']=='MODEL_EFFECT_TIMEOUT', first
+                    old_book=composition.authority.require(first['book_run_id'])
+                    old_request=composition.authority.require_chapter_request(old_book['active_chapter_request_id'])
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) JOIN authority_operation o ON o.operation_id=e.operation_id WHERE o.root_operation_id=%s',[old_request['chapter_root_operation_id']])
+                        stopped_io=uow.cursor.fetchone()
+                        assert stopped_io[0]['status']=='FAILED_RETRYABLE' and stopped_io[1]['status']=='SETTLED'
+                    for key,value in old_chapter_constants.items():
+                        monkeypatch.setattr(chapter_definitions,key,value)
+                    monkeypatch.setattr(Path,'read_text',normal_read_text)
+                    monkeypatch.setitem(memo_gateway._STAGE_CAPABILITIES, 'memo', CapabilityId.PLANNING_CHAPTER_MEMO)
+                    monkeypatch.setitem(memo_catalog._NON_PROVIDER_CAPABILITIES, 'memo', 'planning.chapter.memo')
+                    execution.close()
+                    from tests.integration.creative_validation_production_support import install_planning
+                    from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+                    harness.release_sha='f'*40
+                    hashes=register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
+                    harness.pack_id+='.memo-successor'
+                    chapter_pack.pack_id+='.memo-successor'
+                    install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+                        workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,
+                        commit_sha=harness.release_sha,compiler=template_actor,approver=template_actor,agent_admin=template_actor,pack_id_override=chapter_pack.pack_id)
+                    install_planning(harness,build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes['planning'],pack_id=harness.pack_id),template_actor)
+                    env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                    execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+                    chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+                    composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+                if stage_repair_recovery:
+                    stopped=continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    assert stopped['book_run_id']
+                    waiting=composition.authority.require(stopped['book_run_id'])
+                    assert waiting['state']=='PLAN_APPROVAL_PENDING'
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT operation_id,candidate_asset_version_id FROM authority_story_planning_generation WHERE project_id=%s AND generator_operation_name='chapter_plan.generate' AND status='REJECTED'",[harness.project_id])
+                        rejected_stage = uow.cursor.fetchone()
+                        assert rejected_stage
+                    execution.close()
+                    formation,execution,chapter,composition=_recover_capacity_formation(harness=harness,chapter_pack=chapter_pack,
+                        principal=principal,pack_actor=template_actor,settings=settings,env=env,registry=registry,
+                        transport=transport,admitted=admitted,monkeypatch=monkeypatch,stage_repairs=True)
+                if scene_information_recovery or length_scope_recovery:
+                    from datetime import timedelta
+                    from novel_forge.modules.command_kernel import execution_window
+                    original_window = execution_window.continue_candidate_execution_window
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s', [failed_scene_step[0]['root_operation_id']])
+                        frozen_scene_deadline = uow.cursor.fetchone()[0]
+                    def expired_window(url, **kwargs):
+                        source_deadline = frozen_scene_deadline
+                        if kwargs['target_version'] in {'3.9.7','3.9.8'}:
+                            with AuthorityUnitOfWork(url) as uow:
+                                uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s',[kwargs['root_id']])
+                                source_deadline = uow.cursor.fetchone()[0]
+                        first = original_window(url, **kwargs, clock=lambda: source_deadline+timedelta(seconds=1))
+                        assert first['continued'] and not first['replayed']
+                        replay = original_window(url, **kwargs, clock=lambda: first['deadline']+timedelta(seconds=1))
+                        assert replay['replayed'] and replay['deadline'] == first['deadline'].isoformat()
+                        if kwargs.get('start_repair_phase'):
+                            with AuthorityUnitOfWork(url) as uow:
+                                uow.cursor.execute('SELECT business_deadline_at FROM authority_operation WHERE operation_id=%s',[kwargs['predecessor_id']])
+                                assert uow.cursor.fetchone()[0] > frozen_scene_deadline+timedelta(seconds=1)
+                        return first
+                    monkeypatch.setattr(execution_window,'continue_candidate_execution_window',expired_window)
+                    if length_scope_recovery:
+                        from novel_forge.modules.chapter_authority import scheduler as scheduler_module
+                        from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+                        from novel_forge.modules.production_execution.routing_runtime import ProductionProviderRouter
+                        from novel_forge.modules.command_kernel.errors import KernelError
+                        from novel_forge.modules.chapter_authority import candidate_repair
+                        original_canon_recovery = candidate_repair.recover_canon_capacity_frontier
+                        monkeypatch.setattr(candidate_repair,'recover_canon_capacity_frontier',lambda *a,**k: False)
+                        normal_canon_contract = PostgresChapterExecutionContractBinder._provider_output_contract
+                        normal_route = ProductionProviderRouter.select
+                        canon_capacity_rejected = False
+                        def inline_first_canon(**kwargs):
+                            if kwargs['stage']=='canon_extraction' and not canon_capacity_rejected:
+                                kwargs['prompt_contract_version']='v9'
+                            return normal_canon_contract(**kwargs)
+                        def controlled_capacity_route(router, base, **kwargs):
+                            nonlocal canon_capacity_rejected
+                            candidates = router.candidates
+                            if kwargs['task_type']=='canon_extraction' and not canon_capacity_rejected:
+                                canon_capacity_rejected = True
+                                router.candidates = tuple(replace(c,context_limit=kwargs['input_tokens']+kwargs['output_tokens']-1) for c in candidates)
+                            try:
+                                return normal_route(router,base,**kwargs)
+                            finally:
+                                router.candidates=candidates
+                        monkeypatch.setattr(PostgresChapterExecutionContractBinder,'_provider_output_contract',staticmethod(inline_first_canon))
+                        monkeypatch.setattr(ProductionProviderRouter,'select',controlled_capacity_route)
+                        normal_probe = scheduler_module.probe_operation_execution
+                        no_send_timeout = False
+                        def controlled_no_send_timeout(url, *, operation_id, project_id):
+                            nonlocal no_send_timeout
+                            with AuthorityUnitOfWork(url) as uow:
+                                uow.cursor.execute("SELECT o.definition_version,a.attempt_number FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.operation_id=%s AND a.status='RUNNING'",[operation_id])
+                                current = uow.cursor.fetchone()
+                            if current == ('3.9.4',2) and not no_send_timeout:
+                                no_send_timeout = True
+                                raise KernelError('OPERATION_BUSINESS_TIMEOUT','Controlled pre-dispatch child deadline failure; no Provider call')
+                            return normal_probe(url,operation_id=operation_id,project_id=project_id)
+                        monkeypatch.setattr(scheduler_module,'probe_operation_execution',controlled_no_send_timeout)
+                creation_result = continue_creation(composition=composition, content=content, chapter=chapter,
+                    formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                    book_worker=worker, maximum_ticks=80, deadline=time.monotonic() + 240, creation_policy=policy)
+                if length_scope_recovery:
+                    assert creation_result['stop_reason']=='PROVIDER_ROUTING_BLOCKED', creation_result
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract'",[failed_scene_step[0]['root_operation_id']])
+                        retained_canon = uow.cursor.fetchone()
+                        uow.cursor.execute('SELECT to_jsonb(s) FROM authority_attempt_capability_pack_snapshot s WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
+                        retained_canon_pack = uow.cursor.fetchone()
+                        uow.cursor.execute('SELECT count(*) FROM authority_external_effect WHERE operation_id=%s',[retained_canon[0]['operation_id']])
+                        assert uow.cursor.fetchone()==(0,)
+                    monkeypatch.setattr(scene_definitions,'CHAPTER_CANON_DEFINITION_VERSION',saved_canon_version)
+                    def current_canon_legacy_support_pack(path,*args,**kwargs):
+                        value=normal_scene_read(path,*args,**kwargs)
+                        if path.name!='chapter_generation_pack.json':
+                            return value
+                        from novel_forge.storage.authority_repositories import definition_hash
+                        value=json.loads(value)
+                        value['identity']['version']='2.21.0'
+                        definition=next(d for d in scene_definitions.chapter_operation_definitions(application_build_id='retained-support',commit_sha='0'*40,model_effects_required=True) if d['name']=='chapter.canon.propose_changes')
+                        node=next(n for n in value['workflow_template']['nodes'] if n['operation_name']=='chapter.canon.propose_changes')
+                        node.update(operation_definition_ref='chapter.canon.propose_changes@3.9.0',operation_definition_hash=definition_hash(definition))
+                        return json.dumps(value)
+                    monkeypatch.setattr(Path,'read_text',current_canon_legacy_support_pack)
+                    monkeypatch.setattr(candidate_repair,'recover_canon_capacity_frontier',original_canon_recovery)
+                    execution.close()
+                    harness.release_sha = 'd'*40
+                    hashes = register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
+                    harness.pack_id += '.canon-successor'
+                    chapter_pack.pack_id += '.canon-successor'
+                    install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+                        workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,
+                        commit_sha=harness.release_sha,compiler=template_actor,approver=template_actor,agent_admin=template_actor,pack_id_override=chapter_pack.pack_id)
+                    install_planning(harness,build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes['planning'],pack_id=harness.pack_id),template_actor)
+                    env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                    execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+                    chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+                    composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+                    creation_result=continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    assert creation_result['stop_reason']=='CANON_GROUNDING_REEXTRACTION_REQUIRED',creation_result
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT o.operation_id,to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.propose_changes' AND o.definition_version='3.9.0'",[failed_scene_step[0]['root_operation_id']])
+                        old_support=uow.cursor.fetchone()
+                    monkeypatch.setattr(scene_definitions,'CHAPTER_SUPPORT_DEFINITION_VERSION',saved_support_version)
+                    monkeypatch.setattr(Path,'read_text',normal_scene_read)
+                    execution.close()
+                    harness.release_sha='c'*40
+                    hashes=register_validation_runtime_definitions(DATABASE_URL,application_build_id=harness.application_build_id,commit_sha=harness.release_sha)
+                    harness.pack_id += '.support-successor'
+                    chapter_pack.pack_id += '.support-successor'
+                    install_chapter_validation_pack(DATABASE_URL,repository_root=Path(__file__).resolve().parents[2],project_id=harness.project_id,
+                        workspace_id=harness.workspace_id,book_id=harness.book_ids[0],application_build_id=harness.application_build_id,
+                        commit_sha=harness.release_sha,compiler=template_actor,approver=template_actor,agent_admin=template_actor,pack_id_override=chapter_pack.pack_id)
+                    install_planning(harness,build_story_planning_pack_profile(Path(__file__).resolve().parents[2],operation_definition_hash=hashes['planning'],pack_id=harness.pack_id),template_actor)
+                    env.update(NOVEL_FORGE_COMMIT_SHA=harness.release_sha,NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                    execution=build_production_execution_composition(settings,env=env,provider_registry=registry,planning_fixture_factory=transport.planning,chapter_fixture_factory=transport.chapter)
+                    chapter=build_chapter_authority_application(settings,execution=execution,env=env)
+                    composition=build_book_production_composition(settings,principal=principal,execution=execution,chapter_application=chapter,env=env)
+                    creation_result=continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    assert support_calls==2
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute('SELECT to_jsonb(a) FROM authority_attempt a WHERE attempt_id=%s',[old_support[1]['attempt_id']])
+                        assert uow.cursor.fetchone()==(old_support[1],)
+                        uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[old_support[0]])
+                        assert uow.cursor.fetchone()==('CANCELLED',)
+                        uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s",[old_support[0]])
+                        assert uow.cursor.fetchone()==('SUCCEEDED','3.9.8')
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute('SELECT to_jsonb(a) FROM authority_attempt a WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
+                        assert uow.cursor.fetchone()==(retained_canon[1],)
+                        uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[retained_canon[0]['operation_id']])
+                        assert uow.cursor.fetchone()==('CANCELLED',)
+                        uow.cursor.execute('SELECT to_jsonb(s) FROM authority_attempt_capability_pack_snapshot s WHERE attempt_id=%s',[retained_canon[1]['attempt_id']])
+                        assert uow.cursor.fetchone()==retained_canon_pack
+                        uow.cursor.execute('SELECT count(*) FROM authority_external_effect WHERE operation_id=%s',[retained_canon[0]['operation_id']])
+                        assert uow.cursor.fetchone()==(0,)
+                        uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s",[retained_canon[0]['operation_id']])
+                        assert uow.cursor.fetchone()==('SUCCEEDED','3.9.7')
+                if scene_information_recovery:
+                    assert creation_result['stop_reason'] == 'REALIZATION_EPISTEMIC_SCOPE_VIOLATION', creation_result
+                    creation_result = continue_creation(composition=composition,content=content,chapter=chapter,
+                        formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
+                        maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
+                    assert information_call_count == 3
+                assert creation_result["stop_reason"] == "COMPLETED", creation_result
+                if scene_core_recovery or scene_information_recovery or review_knowledge_recovery or length_scope_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT to_jsonb(o),to_jsonb(a) FROM authority_operation o JOIN authority_attempt a USING(operation_id) WHERE o.operation_id=%s", [failed_scene_step[0]['operation_id']])
+                        retained = uow.cursor.fetchone()
+                        assert retained[1] == failed_scene_step[1]
+                        assert retained[0]['definition_snapshot'] == failed_scene_step[0]['definition_snapshot']
+                        assert retained[0]['input_asset_snapshot'] == failed_scene_step[0]['input_asset_snapshot']
+                        if scene_information_recovery or length_scope_recovery:
+                            assert retained[0]['status'] == 'CANCELLED'
+                        else:
+                            assert retained == failed_scene_step
+                        for effect, reservation in completed_scene_calls:
+                            uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.external_effect_id=%s", [effect['external_effect_id']])
+                            assert uow.cursor.fetchone() == (effect, reservation)
+                        uow.cursor.execute("SELECT o.status,o.definition_version FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE s.predecessor_operation_id=%s", [failed_scene_step[0]['operation_id']])
+                        assert uow.cursor.fetchone() == ('SUCCEEDED','3.9.4' if length_scope_recovery else '3.9.3' if review_knowledge_recovery else '3.9.2')
+                        if review_knowledge_recovery:
+                            assert review_scope_calls == 2
+                        if length_scope_recovery:
+                            assert length_revision_calls == 3
+                            assert no_send_timeout
+                            assert canon_capacity_rejected
+                            uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_version='3.9.4' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
+                            assert uow.cursor.fetchall() == [(1,'FAILED_RETRYABLE','CHAPTER_LENGTH_REPAIR_INCOMPLETE'),(2,'FAILED_RETRYABLE','OPERATION_BUSINESS_TIMEOUT'),(3,'SUCCEEDED',None)]
+                            uow.cursor.execute("SELECT a.attempt_number,a.status,a.result->>'error_code' FROM authority_attempt a JOIN authority_saga_step s USING(operation_id) JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s AND o.definition_name='chapter.canon.extract' ORDER BY a.attempt_number",[failed_scene_step[0]['root_operation_id']])
+                            assert uow.cursor.fetchall() == [(1,'SUCCEEDED',None)]
+                if memo_timeout_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute('SELECT to_jsonb(e),to_jsonb(r) FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE external_effect_id=%s',[stopped_io[0]['external_effect_id']])
+                        assert uow.cursor.fetchone()==stopped_io
+                        uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[old_request['chapter_root_operation_id']])
+                        assert uow.cursor.fetchone()==('CANCELLED',)
+                        uow.cursor.execute('SELECT generation,predecessor_request_id FROM authority_book_chapter_request WHERE predecessor_request_id=%s',[old_request['chapter_request_id']])
+                        assert uow.cursor.fetchone()==(2,old_request['chapter_request_id'])
+                if stage_repair_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT g.repair_number,g.status,o.status FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE g.project_id=%s AND g.generator_operation_name='chapter_plan.generate' ORDER BY g.created_at",[harness.project_id])
+                        assert uow.cursor.fetchall()==[(0,'ADMITTED','FAILED_FINAL'),(1,'ADMITTED','FAILED_FINAL'),(2,'REJECTED','FAILED_FINAL'),(3,'ACTIVE','SUCCEEDED')]
+                        uow.cursor.execute("SELECT request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect WHERE project_id=%s AND request_payload->>'stage'='chapter_plan.generate' ORDER BY created_at DESC LIMIT 1",[harness.project_id])
+                        stage_decision=uow.cursor.fetchone()[0]
+                        assert stage_decision['task']['declared_requirements']['native_planning_repair']['stage_repair_number']==1
+                        assert stage_decision['task']['declared_requirements']['native_planning_repair']['repair_number']==3
+                if gateway_null_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s",[rejected[0]])
+                        assert uow.cursor.fetchone()==('FAILED_FINAL',)
+                        uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s",[rejected[1]])
+                        assert uow.cursor.fetchone()[0]==retained_attempt
+                        uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s",[rejected[0]])
+                        assert uow.cursor.fetchone()==('SETTLED',)
+                        uow.cursor.execute("SELECT o.status,g.status,g.repair_number FROM authority_operation o JOIN authority_story_planning_generation g USING(operation_id) WHERE o.operation_id=%s",[rejected[1]])
+                        assert uow.cursor.fetchone()==('FAILED_FINAL','REJECTED' if stage_repair_recovery else 'ACTIVE',2 if stage_repair_recovery else 0)
+                        uow.cursor.execute("SELECT r.evidence,o.status FROM authority_planning_result_admission r JOIN authority_operation o ON o.operation_id=r.recovery_operation_id WHERE r.source_operation_id=%s",[rejected[1]])
+                        local = uow.cursor.fetchone()
+                        assert local[1]=='SUCCEEDED' and local[0]['provider_invoked'] is False
+                        assert local[0]['current_result_validation']=='VALID' and local[0]['literary_qualification']=='NOT_RUN'
+                        uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage'='chapter_plan.generate'",[rejected[1]])
+                        assert uow.cursor.fetchone()==(1,)
+                    assert len([c for c in transport.chapter.calls if c['stage']=='chapter_plan.generate'])==(2 if stage_repair_recovery else 1)
+                    assert len(transport.chapter.calls)>before_local_calls
+                if world_disabled or world_optional_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT e.status,r.status FROM authority_external_effect e JOIN authority_budget_reservation r USING(external_effect_id) WHERE e.project_id=%s AND e.request_payload->>'stage' IN ('world_candidates.generate','world_candidates.evaluate')", [harness.project_id])
+                        assert uow.cursor.fetchall() == ([('SUCCEEDED','SETTLED')]*2 if world_optional_recovery else [])
+                    actions = AuthorityAssetQuery(DATABASE_URL).list_versions(project_id=harness.project_id,asset_type='narrative_governance_action')
+                    deferred = [a for a in actions if a.content.get('contract',{}).get('optional_preparation')]
+                    assert deferred and all(a.content['contract']['world_plan']['disposition']=='DEFER' for a in deferred)
+                    assert all(a.content['contract']['optional_preparation']['status']=='NOT_RUN' for a in deferred)
+                    if world_optional_recovery:
+                        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                            uow.cursor.execute("SELECT g.repair_number,o.status FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE g.generator_operation_name='chapter_plan.generate' AND o.project_id=%s ORDER BY o.created_at",[harness.project_id])
+                            assert uow.cursor.fetchall() == [(0,'FAILED_FINAL'),(0,'SUCCEEDED')]
+                if world_result_repair and not stage_repair_recovery:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id,g.operation_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_plan.generate' ORDER BY o.created_at", [harness.project_id])
+                        world_generations = uow.cursor.fetchall()
+                        assert [row[:2] for row in world_generations] == [(0, "FAILED_FINAL"), (1, "SUCCEEDED")]
+                        assert world_generations[0][2] is None and world_generations[1][2]
+                        uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [world_generations[0][3]])
+                        assert uow.cursor.fetchall() == [("SUCCEEDED", 1)]
+                        uow.cursor.execute("SELECT command_payload->'payload' FROM authority_operation WHERE operation_id=%s", [world_generations[0][3]])
+                        world_original = uow.cursor.fetchone()[0]
+                    from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                    world_call_count = len(transport.calls), len(transport.chapter.calls)
+                    world_replay = formation.generation.planning.generate(_command_from_payload(world_original), principal=worker)
+                    assert world_replay.candidate_asset_version_id == world_generations[1][2]
+                    assert world_call_count == (len(transport.calls), len(transport.chapter.calls))
+                if semantic_repair:
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT g.repair_number,o.status,g.candidate_asset_version_id FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' ORDER BY o.created_at", [harness.project_id])
+                        groups = uow.cursor.fetchall()
+                        expected = [0, 1, 2, 2, 0, 0] if input_order_continuation else [0, 1, 1, 0, 0] if route_continuation else [0, 1, 0, 0]
+                        assert [row[0] for row in groups] == expected
+                        assert all(row[1] == "SUCCEEDED" and row[2] for row in groups if row[1] not in {"CANCELLED","FAILED_FINAL"})
+                        if route_continuation:
+                            assert groups[1][1:] == ("CANCELLED", None)
+                        if input_order_continuation:
+                            assert groups[2][1:] == ("FAILED_FINAL", None)
+                        uow.cursor.execute("SELECT e.request_payload #> '{_production_execution,capability_runtime,routing_decision}' FROM authority_external_effect e JOIN authority_story_planning_generation g USING(operation_id) WHERE e.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' AND g.repair_number=%s", [harness.project_id,2 if input_order_continuation else 1])
+                        decision = uow.cursor.fetchone()[0]
+                        assert decision["selected"]["native_repair_admission"]["status"] == "BOUNDED_REPAIR_ADMITTED"
+                        assert decision["selected"]["native_repair_admission"]["retained_failed_outcomes"][0]["failure_class"] == "SCHEMA_REJECTION"
+                book_run = SimpleNamespace(book_run_id=creation_result["book_run_id"])
+                calls = len(transport.calls), len(transport.chapter.calls)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT count(*),sum(actual_tokens) FROM authority_budget_reservation WHERE project_id=%s", [harness.project_id])
+                    ledger = uow.cursor.fetchone()
+                    uow.cursor.execute("SELECT count(*) FROM authority_capability_pack_approval approval JOIN authority_operation op ON op.operation_id=approval.decided_by_operation_id WHERE op.project_id=%s", [harness.project_id])
+                    assert uow.cursor.fetchone()[0] == 0
+                execution.close()
+                if route_continuation:
+                    from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions, install_chapter_validation_pack
+                    from tests.integration.creative_validation_production_support import install_planning
+                    sha = "c" * 40
+                    hashes = register_validation_runtime_definitions(DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=sha)
+                    harness.release_sha = sha
+                    harness.pack_id += ".replay"
+                    chapter_pack.pack_id += ".replay"
+                    install_chapter_validation_pack(DATABASE_URL, repository_root=Path(__file__).resolve().parents[2],
+                        project_id=harness.project_id, workspace_id=harness.workspace_id, book_id=harness.book_ids[0],
+                        application_build_id=harness.application_build_id, commit_sha=sha, compiler=template_actor,
+                        approver=template_actor, agent_admin=template_actor, pack_id_override=chapter_pack.pack_id)
+                    profile = build_story_planning_pack_profile(Path(__file__).resolve().parents[2],
+                        operation_definition_hash=hashes["planning"], pack_id=harness.pack_id)
+                    install_planning(harness, profile, template_actor)
+                    env.update(NOVEL_FORGE_COMMIT_SHA=sha, NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID=harness.pack_id,
+                        NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID=chapter_pack.pack_id)
+                execution = build_production_execution_composition(settings, env=env, provider_registry=registry,
+                    planning_fixture_factory=transport.planning, chapter_fixture_factory=transport.chapter)
+                chapter = build_chapter_authority_application(settings, execution=execution, env=env)
+                rebuilt = build_book_production_composition(settings, principal=principal, execution=execution,
+                    chapter_application=chapter, env=env)
+                if route_continuation:
+                    from novel_forge.modules.story_planning_runtime.application import _command_from_payload
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT o.command_payload->'payload' FROM authority_story_planning_generation g JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND g.generator_operation_name='chapter_group_plan.generate' AND g.repair_number=0 ORDER BY o.created_at LIMIT 1", [harness.project_id])
+                        original = _command_from_payload(uow.cursor.fetchone()[0])
+                    replayed = rebuilt.formation.generation.planning.generate(original, principal=principal)
+                    assert replayed.candidate_asset_version_id
+                    assert (len(transport.calls), len(transport.chapter.calls)) == calls
+                resumed = continue_creation(composition=rebuilt, content=content, chapter=chapter,
+                    formation_run_id=admitted.formation_run_id, formation_worker=formation_worker,
+                    book_worker=worker, maximum_ticks=5, deadline=time.monotonic() + 30, creation_policy=policy)
+                assert resumed["stop_reason"] == "COMPLETED" and resumed["book_run_id"] == book_run.book_run_id
+                assert (len(transport.calls), len(transport.chapter.calls)) == calls
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT count(*),sum(actual_tokens) FROM authority_budget_reservation WHERE project_id=%s", [harness.project_id])
+                    assert uow.cursor.fetchone() == ledger
+            else:
+                prepared = prepare_creation_inputs(
+                    composition=composition,
+                    content=content,
+                    formation_run_id=admitted.formation_run_id,
+                    policy=policy,
+                )
+                versions = prepared["versions"]
+                opening_request = OpenBookProductionRequest(
+                    project_id=harness.project_id,
+                    workspace_id=harness.workspace_id,
+                    book_id=harness.book_ids[0],
+                    actor_id=principal.principal_id,
+                    expected_book_version=prepared["book_version"],
+                    production_profile=versions["production_profile"],
+                    planning_input_versions={
+                        role: versions[role] for role in _OPENING_INPUT_ROLES
+                    },
+                    arc_logical_keys=("arc:central", "arc:relationship"),
+                    idempotency_key=f"{harness.project_id}:synthesis:opening",
+                    trace_id="trace:synthesis:opening",
+                    correlation_id=harness.project_id,
+                    initial_story_state_version=versions["story_state"],
+                    initial_canon_snapshot_version=versions["canon_snapshot"],
+                )
+                opening = composition.open_book(opening_request)
+                assert opening.opening_run_id
+                claim = composition.opening.claim_next_execution(
+                    worker_id="synthesis-opening",
+                    lease_seconds=60,
+                    project_id=harness.project_id,
+                )
+                assert claim is not None
+                opened = execute_book_opening_claim(
+                    RuntimeJobAuthority(DATABASE_URL),
+                    composition.opening,
+                    principal,
+                    claim,
+                    lease_seconds=60,
+                )
+                snapshot = composition.input_resolver.require(opened["input_snapshot_id"])
+                if creative_validation:
+                    from novel_forge.modules.book_authority.creation_runtime import drive_book as drive, resolved_book_command as start_command
+                else:
+                    from scripts.run_world_production_smoke import drive, start_command
+                from novel_forge.modules.authority_security import PrincipalType
+                import time
+    
+                book_run = composition.authority.start(
+                    start_command(
+                        snapshot,
+                        actor=principal.principal_id,
+                        run_key=f"{harness.project_id}:synthesis:production",
+                        chapters=target_chapters,
+                    ),
+                    principal=principal,
+                )
+                worker = replace(
+                    principal,
+                    principal_type=PrincipalType.WORKER,
+                    permissions=principal.permissions - {"book.authority.approve_replan"},
+                )
+                ticks = []
+>               stop = drive(
+                    composition=composition,
+                    chapter=chapter,
+                    book_run_id=book_run.book_run_id,
+                    worker=worker,
+                    events=ticks.append,
+                    maximum_ticks=80,
+                    deadline=time.monotonic() + 240,
+                )
+
+tests/integration/test_synthesis_formation_postgres.py:1655: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_world_production_smoke.py:291: in drive
+    result = scheduler.tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:279: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1419: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:231: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:147: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1547: in execute
+    content["creative_baseline"] = build_creative_baseline(
+src/novel_forge/modules/chapter_authority/chapter_plan_views.py:473: in build_creative_baseline
+    "method_requirements": _method_requirements(plan, context_bundle),
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+plan = {'cast': [], 'type': 'AuthoritativeChapterPlan', 'title': 'Chapter 1: The Door Closes', 'setups': [{'action': 'PLANT', 'obligation_id': 'setup:consequence'}], ...}
+context_bundle = {'goal': 'Governed objective for chapter:1', 'stage': 'draft', 'book_id': 'book:project-50ffe772dc3c49c98cf56a21b149bd76', 'chapter': 1, ...}
+
+    def _method_requirements(plan: dict[str, Any], context_bundle: dict[str, Any]) -> dict[str, Any]:
+        fields = {
+            "golden_opening": ("golden_opening",),
+            "reader_promise": ("promise_action", "reader_promise_actions"),
+            "reward": ("reward_action", "reward_setup", "reward_payoff"),
+            "protagonist_charm": ("protagonist_charm_mechanism",),
+            "antagonist_pressure": ("antagonist_pressure", "antagonist_actions"),
+            "chapter_hook": ("ending_hook", "chapter_hook"),
+            "suspense_progression": ("suspense_curve",),
+            "emotional_curve": ("emotional_curve",),
+            "serialization_function": ("serialization_function",),
+        }
+        source = {**dict(plan.get("source_extensions") or {}), **plan}
+        result = {}
+        for dimension, aliases in fields.items():
+            present = [name for name in aliases if name in source]
+            selected = [name for name in present if source[name] not in (None, "", [], {})]
+            if (
+                dimension == "golden_opening"
+                and source.get("chapter_contract_schema_version")
+                == "chapter-mission-scene.v3"
+            ):
+                selected = (
+                    ["primary_function"]
+                    if source.get("primary_function") == "golden_opening"
+                    else []
+                )
+                present = ["primary_function"]
+            confirmed = plan.get(
+                "chapter_contract_schema_version"
+            ) == "chapter-mission-scene.v3" and bool(present)
+            result[dimension] = {
+                "status": "APPLICABLE"
+                if selected
+                else "NOT_APPLICABLE"
+                if confirmed
+                else "UNDETERMINED",
+                "source_fields": present,
+                **({"selected_values": {name: source[name] for name in present}}
+                   if source.get("runtime_projection_version") == "2.0.0" else {}),
+            }
+        aliases = {"$.serialization_potential": "serialization_function"}
+        selected_style = context_bundle.get("production_input_manifest", {}).get("style_policy_version_id")
+        book_id = context_bundle.get("book_id") or plan.get("book_id")
+        bound_styles = [segment for segment in context_bundle.get("context_segments", [])
+                        if segment.get("asset_type") == "style_policy" and segment.get("asset_version_id") == selected_style]
+        if len(bound_styles) > 1:
+            raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Selected style must have one exact Context projection")
+        for segment in context_bundle.get("context_segments", []):
+            if segment.get("asset_type") != "style_policy":
+                continue
+            for fact in segment.get("structured_facts", []):
+                if fact.get("key") != "work_applicability":
+                    continue
+                binding = fact.get("value") or {}
+                if segment not in bound_styles:
+                    raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Unselected style cannot declare work requirements")
+                if (not binding.get("source_asset_version_id") or not binding.get("source_content_hash")
+                        or binding.get("scope") != "BOOK" or not book_id or binding.get("book_id") != book_id
+                        or {"asset_version_id": binding.get("source_asset_version_id"),
+                            "content_hash": binding.get("source_content_hash")} not in binding.get("source_bindings", [])):
+                    raise KernelError("WORK_APPLICABILITY_SOURCE_INVALID", "Work choices need exact approved Foundation provenance")
+                for declaration in binding.get("declarations", []):
+                    dimension = aliases.get(declaration.get("field_path"))
+                    if not dimension:
+                        continue
+                    status = declaration.get("status")
+                    if status not in {"APPLICABLE", "NOT_APPLICABLE", "PROHIBITED", "UNDETERMINED"}:
+                        raise KernelError("WORK_APPLICABILITY_INVALID", "Unknown work method choice")
+                    local = result[dimension]
+                    prior = local.get("work_requirement")
+                    if prior and prior["status"] != status:
+                        raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Frozen work decisions contradict each other")
+                    local["work_requirement"] = {**declaration, **{key: binding[key] for key in ("scope", "source_asset_version_id", "source_content_hash")}}
+                    if status in {"PROHIBITED", "NOT_APPLICABLE", "UNDETERMINED"}:
+                        if local["status"] == "APPLICABLE":
+                            raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter selection contradicts the frozen work method decision")
+                        local["status"] = status
+                    elif status == "APPLICABLE":
+                        if local["status"] == "NOT_APPLICABLE":
+>                           raise KernelError("QUALITY_APPLICABILITY_CONFLICT", "Chapter omission contradicts the frozen work requirement")
+E                           novel_forge.modules.command_kernel.errors.KernelError: QUALITY_APPLICABILITY_CONFLICT: Chapter omission contradicts the frozen work requirement
+
+src/novel_forge/modules/chapter_authority/chapter_plan_views.py:452: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 96.88s (0:01:36)

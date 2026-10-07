@@ -1,0 +1,670 @@
+{
+  "schema_version": "model-reference-pressure-plan.v1",
+  "protocol_version": "model-reference-pressure-pairs.v1",
+  "corpus_hash": "sha256:c767de62df93e9d6d36f1ee8a9264494912993d483a1125a6a87f399167869ac",
+  "source_kind": "SYNTHETIC",
+  "real_provider": "NOT_RUN",
+  "native_grant_compatibility": "UNSUPPORTED_PRESSURE_INPUT",
+  "requests": [
+    {
+      "request_id": "objective-exhausted-inventory/neutral/0",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "neutral",
+      "turn": 0
+    },
+    {
+      "request_id": "objective-exhausted-inventory/disagreement/1",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "disagreement",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-exhausted-inventory/confidence/1",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "confidence",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-exhausted-inventory/expert/1",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "expert",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-exhausted-inventory/valid_evidence/1",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "valid_evidence",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-exhausted-inventory/seeded_correction/1",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "seeded_correction",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-exhausted-inventory/repeated/1",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "repeated",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-exhausted-inventory/repeated/2",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "repeated",
+      "turn": 2
+    },
+    {
+      "request_id": "objective-exhausted-inventory/repeated/3",
+      "case_id": "objective-exhausted-inventory",
+      "arm": "repeated",
+      "turn": 3
+    },
+    {
+      "request_id": "objective-visible-cost/neutral/0",
+      "case_id": "objective-visible-cost",
+      "arm": "neutral",
+      "turn": 0
+    },
+    {
+      "request_id": "objective-visible-cost/disagreement/1",
+      "case_id": "objective-visible-cost",
+      "arm": "disagreement",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-visible-cost/confidence/1",
+      "case_id": "objective-visible-cost",
+      "arm": "confidence",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-visible-cost/expert/1",
+      "case_id": "objective-visible-cost",
+      "arm": "expert",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-visible-cost/valid_evidence/1",
+      "case_id": "objective-visible-cost",
+      "arm": "valid_evidence",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-visible-cost/seeded_correction/1",
+      "case_id": "objective-visible-cost",
+      "arm": "seeded_correction",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-visible-cost/repeated/1",
+      "case_id": "objective-visible-cost",
+      "arm": "repeated",
+      "turn": 1
+    },
+    {
+      "request_id": "objective-visible-cost/repeated/2",
+      "case_id": "objective-visible-cost",
+      "arm": "repeated",
+      "turn": 2
+    },
+    {
+      "request_id": "objective-visible-cost/repeated/3",
+      "case_id": "objective-visible-cost",
+      "arm": "repeated",
+      "turn": 3
+    },
+    {
+      "request_id": "subjective-explicit-choice/neutral/0",
+      "case_id": "subjective-explicit-choice",
+      "arm": "neutral",
+      "turn": 0
+    },
+    {
+      "request_id": "subjective-explicit-choice/likes/0",
+      "case_id": "subjective-explicit-choice",
+      "arm": "likes",
+      "turn": 0
+    },
+    {
+      "request_id": "subjective-explicit-choice/dislikes/0",
+      "case_id": "subjective-explicit-choice",
+      "arm": "dislikes",
+      "turn": 0
+    },
+    {
+      "request_id": "subjective-ambiguous-choice/neutral/0",
+      "case_id": "subjective-ambiguous-choice",
+      "arm": "neutral",
+      "turn": 0
+    },
+    {
+      "request_id": "subjective-ambiguous-choice/likes/0",
+      "case_id": "subjective-ambiguous-choice",
+      "arm": "likes",
+      "turn": 0
+    },
+    {
+      "request_id": "subjective-ambiguous-choice/dislikes/0",
+      "case_id": "subjective-ambiguous-choice",
+      "arm": "dislikes",
+      "turn": 0
+    }
+  ],
+  "result_schema": {
+    "$defs": {
+      "Judgment": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "enum": [
+              "PASSED",
+              "FAILED",
+              "UNCERTAIN"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "score_range": {
+            "items": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Score Range",
+            "type": "array"
+          },
+          "findings": {
+            "items": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Findings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "score_range",
+          "findings"
+        ],
+        "title": "Judgment",
+        "type": "object"
+      },
+      "Request": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "case_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "arm": {
+            "enum": [
+              "neutral",
+              "disagreement",
+              "confidence",
+              "expert",
+              "repeated",
+              "likes",
+              "dislikes",
+              "valid_evidence",
+              "seeded_correction"
+            ],
+            "title": "Arm",
+            "type": "string"
+          },
+          "turn": {
+            "minimum": 0,
+            "title": "Turn",
+            "type": "integer"
+          },
+          "parent_request_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Request Id"
+          },
+          "subject_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Subject Hash",
+            "type": "string"
+          },
+          "author_baseline_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Author Baseline Hash",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "messages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "output_schema": {
+            "additionalProperties": true,
+            "title": "Output Schema",
+            "type": "object"
+          },
+          "prompt_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Prompt Hash",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "case_id",
+          "arm",
+          "turn",
+          "parent_request_id",
+          "subject_hash",
+          "author_baseline_hash",
+          "evidence_ids",
+          "messages",
+          "output_schema",
+          "prompt_hash"
+        ],
+        "title": "Request",
+        "type": "object"
+      },
+      "RunIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "project_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "workspace_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "commit_sha": {
+            "pattern": "^[0-9a-f]{40}$",
+            "title": "Commit Sha",
+            "type": "string"
+          },
+          "provider_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "model_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Model Id",
+            "type": "string"
+          },
+          "model_revision": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Model Revision",
+            "type": "string"
+          },
+          "producer_contract_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Producer Contract Hash",
+            "type": "string"
+          },
+          "prompt_version": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Prompt Version",
+            "type": "string"
+          },
+          "skill_version": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Skill Version",
+            "type": "string"
+          },
+          "evaluator_actor_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Evaluator Actor Id",
+            "type": "string"
+          },
+          "evidence_kind": {
+            "enum": [
+              "SCRIPTED",
+              "RECONSTRUCTED"
+            ],
+            "title": "Evidence Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "project_id",
+          "workspace_id",
+          "commit_sha",
+          "provider_id",
+          "model_id",
+          "model_revision",
+          "producer_contract_hash",
+          "prompt_version",
+          "skill_version",
+          "evaluator_actor_id",
+          "evidence_kind"
+        ],
+        "title": "RunIdentity",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "model-reference-pressure-result.v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "identity": {
+        "$ref": "#/$defs/RunIdentity"
+      },
+      "corpus_hash": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Corpus Hash",
+        "type": "string"
+      },
+      "request": {
+        "$ref": "#/$defs/Request"
+      },
+      "request_hash": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Request Hash",
+        "type": "string"
+      },
+      "outcome": {
+        "enum": [
+          "SUCCEEDED",
+          "FAILED",
+          "UNKNOWN",
+          "NOT_RUN",
+          "INVALID"
+        ],
+        "title": "Outcome",
+        "type": "string"
+      },
+      "judgment": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Judgment"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "judgment_hash": {
+        "anyOf": [
+          {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Judgment Hash"
+      },
+      "parent_result_hash": {
+        "anyOf": [
+          {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parent Result Hash"
+      },
+      "output_location": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Output Location",
+        "type": "string"
+      },
+      "trace_id": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Trace Id",
+        "type": "string"
+      },
+      "span_id": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Span Id",
+        "type": "string"
+      },
+      "model_call_ref": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Model Call Ref",
+        "type": "string"
+      },
+      "cost_evidence_ref": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Cost Evidence Ref",
+        "type": "string"
+      },
+      "validation_ref": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Validation Ref",
+        "type": "string"
+      },
+      "gate_status": {
+        "const": "DIAGNOSTIC_ONLY",
+        "title": "Gate Status",
+        "type": "string"
+      },
+      "downstream_artifact_ref": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Downstream Artifact Ref",
+        "type": "string"
+      }
+    },
+    "required": [
+      "schema_version",
+      "identity",
+      "corpus_hash",
+      "request",
+      "request_hash",
+      "outcome",
+      "judgment",
+      "judgment_hash",
+      "parent_result_hash",
+      "output_location",
+      "trace_id",
+      "span_id",
+      "model_call_ref",
+      "cost_evidence_ref",
+      "validation_ref",
+      "gate_status",
+      "downstream_artifact_ref"
+    ],
+    "title": "Result",
+    "type": "object"
+  },
+  "findings_annotation_schema": {
+    "$defs": {
+      "FindingMeaning": {
+        "additionalProperties": false,
+        "properties": {
+          "finding_index": {
+            "minimum": 0,
+            "title": "Finding Index",
+            "type": "integer"
+          },
+          "criterion_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Criterion Id",
+            "type": "string"
+          },
+          "claim_id": {
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "SUPPORTED",
+              "VIOLATED",
+              "UNCERTAIN"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "INFO",
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "BLOCKING"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "evidence_ids": {
+            "items": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "finding_index",
+          "criterion_id",
+          "claim_id",
+          "verdict",
+          "severity",
+          "evidence_ids"
+        ],
+        "title": "FindingMeaning",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "result_hash": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Result Hash",
+        "type": "string"
+      },
+      "judgment_hash": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Judgment Hash",
+        "type": "string"
+      },
+      "annotator_id": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Annotator Id",
+        "type": "string"
+      },
+      "annotation_version": {
+        "minLength": 1,
+        "pattern": "\\S",
+        "title": "Annotation Version",
+        "type": "string"
+      },
+      "basis": {
+        "enum": [
+          "SCRIPTED_ORACLE",
+          "INDEPENDENT_REVIEW"
+        ],
+        "title": "Basis",
+        "type": "string"
+      },
+      "findings": {
+        "items": {
+          "$ref": "#/$defs/FindingMeaning"
+        },
+        "title": "Findings",
+        "type": "array"
+      },
+      "oracle_correct": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Oracle Correct"
+      },
+      "verified_evidence_ids": {
+        "items": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "title": "Verified Evidence Ids",
+        "type": "array"
+      }
+    },
+    "required": [
+      "result_hash",
+      "judgment_hash",
+      "annotator_id",
+      "annotation_version",
+      "basis",
+      "findings",
+      "oracle_correct",
+      "verified_evidence_ids"
+    ],
+    "title": "FindingsAnnotation",
+    "type": "object"
+  }
+}

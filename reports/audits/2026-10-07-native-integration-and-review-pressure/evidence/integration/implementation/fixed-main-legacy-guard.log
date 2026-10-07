@@ -1,0 +1,14 @@
+{
+  "frozen_main": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "tests": 1,
+  "success": false,
+  "database_read_calls": 1,
+  "failures": [
+    [
+      "test_controlled_external_effect_blocks_legacy_before_database (tests.architecture.test_repository_execution_boundaries.RepositoryExecutionBoundaryTests.test_controlled_external_effect_blocks_legacy_before_database)",
+      "Traceback (most recent call last):\n  File \"/private/tmp/novel-forge-pr133-audit-20261007/main-baseline-worktree/tests/architecture/test_repository_execution_boundaries.py\", line 126, in test_controlled_external_effect_blocks_legacy_before_database\n    dispatch_external_effect(\n  File \"/private/tmp/novel-forge-pr133-audit-20261007/main-baseline-worktree/src/novel_forge/modules/command_kernel/external_effect_runtime.py\", line 536, in dispatch_external_effect\n    effect = _read_effect(database_url, effect_id, context.project_id)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py\", line 1134, in __call__\n    return self._mock_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py\", line 1138, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py\", line 1193, in _execute_mock_call\n    raise effect\nAssertionError: BASELINE_DATABASE_READ_BEFORE_LEGACY_DENIAL\n"
+    ]
+  ],
+  "errors": [],
+  "external_io": "NOT_RUN"
+}

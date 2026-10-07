@@ -1,0 +1,59 @@
+...................................... [ 16%]
+.....................................................................FF. [ 47%]
+.................FFF.................................................... [ 78%]
+...................................................                      [100%]
+=================================== FAILURES ===================================
+_ test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts[False-2.4.0] _
+tests/unit/test_chapter_sample_contract_versions.py:50: in test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts
+    assert {item["definition_version"] for item in definitions} == {version}
+E   AssertionError: assert {'2.2.0'} == {'2.4.0'}
+E     
+E     Extra items in the left set:
+E     '2.2.0'
+E     Extra items in the right set:
+E     '2.4.0'
+E     Use -v to get more diff
+_ test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts[True-2.5.0] _
+tests/unit/test_chapter_sample_contract_versions.py:50: in test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts
+    assert {item["definition_version"] for item in definitions} == {version}
+E   AssertionError: assert {'2.3.0'} == {'2.5.0'}
+E     
+E     Extra items in the left set:
+E     '2.3.0'
+E     Extra items in the right set:
+E     '2.5.0'
+E     Use -v to get more diff
+_ test_new_derived_pack_has_an_immutable_exact_semver_identity[False-False-chapter_provider_sampling@2.4.0] _
+tests/unit/test_chapter_sample_contract_versions.py:172: in test_new_derived_pack_has_an_immutable_exact_semver_identity
+    assert template["workflow_id"] + "@" + template["workflow_version"] == workflow
+E   AssertionError: assert 'chapter_prov...ampling@2.2.0' == 'chapter_prov...ampling@2.4.0'
+E     
+E     - chapter_provider_sampling@2.4.0
+E     ?                             ^
+E     + chapter_provider_sampling@2.2.0
+E     ?                             ^
+_ test_new_derived_pack_has_an_immutable_exact_semver_identity[True-False-chapter_reference_sampling@2.4.0] _
+tests/unit/test_chapter_sample_contract_versions.py:172: in test_new_derived_pack_has_an_immutable_exact_semver_identity
+    assert template["workflow_id"] + "@" + template["workflow_version"] == workflow
+E   AssertionError: assert 'chapter_refe...ampling@2.2.0' == 'chapter_refe...ampling@2.4.0'
+E     
+E     - chapter_reference_sampling@2.4.0
+E     ?                              ^
+E     + chapter_reference_sampling@2.2.0
+E     ?                              ^
+_ test_new_derived_pack_has_an_immutable_exact_semver_identity[True-True-chapter_reference_sampling@2.5.0] _
+tests/unit/test_chapter_sample_contract_versions.py:172: in test_new_derived_pack_has_an_immutable_exact_semver_identity
+    assert template["workflow_id"] + "@" + template["workflow_version"] == workflow
+E   AssertionError: assert 'chapter_refe...ampling@2.3.0' == 'chapter_refe...ampling@2.5.0'
+E     
+E     - chapter_reference_sampling@2.5.0
+E     ?                              ^
+E     + chapter_reference_sampling@2.3.0
+E     ?                              ^
+=========================== short test summary info ============================
+FAILED tests/unit/test_chapter_sample_contract_versions.py::test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts[False-2.4.0]
+FAILED tests/unit/test_chapter_sample_contract_versions.py::test_new_sample_definitions_have_a_distinct_version_and_explicit_source_contracts[True-2.5.0]
+FAILED tests/unit/test_chapter_sample_contract_versions.py::test_new_derived_pack_has_an_immutable_exact_semver_identity[False-False-chapter_provider_sampling@2.4.0]
+FAILED tests/unit/test_chapter_sample_contract_versions.py::test_new_derived_pack_has_an_immutable_exact_semver_identity[True-False-chapter_reference_sampling@2.4.0]
+FAILED tests/unit/test_chapter_sample_contract_versions.py::test_new_derived_pack_has_an_immutable_exact_semver_identity[True-True-chapter_reference_sampling@2.5.0]
+5 failed, 228 passed, 34 subtests passed in 1.49s

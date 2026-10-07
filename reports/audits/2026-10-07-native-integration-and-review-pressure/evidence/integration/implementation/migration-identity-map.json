@@ -1,0 +1,65 @@
+[
+  {
+    "old_id": "20261006_0157_planning_result_admission",
+    "new_id": "20261007_0160_planning_result_admission",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "6bc775251a7e175c8ab5320cd87758d9972fad73",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0158_planning_capacity_lineage",
+    "new_id": "20261007_0161_planning_capacity_lineage",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "4fdd2bec7d77ebbfadace970cf15043902ef8478",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0159_planning_input_order_recovery",
+    "new_id": "20261007_0162_planning_input_order_recovery",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "8fa85adbdbf4076db59ed109506edecdfc7c711d",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0160_optional_world_continuation",
+    "new_id": "20261007_0163_optional_world_continuation",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "84f0a1f85d3bd71f900d3cd328fc1698a218fd27",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0161_gateway_result_revalidation",
+    "new_id": "20261007_0164_gateway_result_revalidation",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "dba1a42fb11921fbe55ad94b44cd78c783091f0d",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0162_stage_repair_policy",
+    "new_id": "20261007_0165_stage_repair_policy",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "780aa31878aca8df110dcfe3924c6cd4c8dfcc4d",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0163_failed_step_successor",
+    "new_id": "20261007_0166_failed_step_successor",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "af238debdfdda6f0a86bed01980045ee6bd63875",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261006_0164_execution_contract_continuation",
+    "new_id": "20261007_0167_execution_contract_continuation",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "f99689822abab0fcafccfbb9ad966e35f861487d",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  },
+  {
+    "old_id": "20261007_0165_derived_step_revalidation",
+    "new_id": "20261007_0168_derived_step_revalidation",
+    "source_commit": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+    "source_blob": "c068b3216c03f360cc89ede4b56579a5f84af55d",
+    "disposition": "PORT_DELTA_COMPOSE_MAIN_GUARDS"
+  }
+]

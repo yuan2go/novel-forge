@@ -1,0 +1,24 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_foreign_branch_ledger_rejected_before_returning_pending_ddl _______
+
+    def test_foreign_branch_ledger_rejected_before_returning_pending_ddl():
+        applied = {m.migration_id for m in MIGRATIONS}
+        applied.add('20261006_0157_planning_result_admission')
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE ValueError
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_migration_ledger_preflight.py:8: Failed
+____________ test_hole_ledger_rejected_before_returning_pending_ddl ____________
+
+    def test_hole_ledger_rejected_before_returning_pending_ddl():
+        applied = {m.migration_id for m in MIGRATIONS}
+        applied.remove(MIGRATIONS[1].migration_id)
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE ValueError
+
+/tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_migration_ledger_preflight.py:15: Failed
+=========================== short test summary info ============================
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_migration_ledger_preflight.py::test_foreign_branch_ledger_rejected_before_returning_pending_ddl
+FAILED ../../../../tmp/novel-forge-pr133-audit-20261007/implementation/baseline-tests/test_migration_ledger_preflight.py::test_hole_ledger_rejected_before_returning_pending_ddl
+2 failed in 0.07s

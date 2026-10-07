@@ -1,0 +1,37 @@
+{
+  "errors": [],
+  "proposal_count": 4,
+  "proposals": [
+    {
+      "baseline_sha": "b484551d1d128075b67784c2b4bed489d1119397",
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "b484551d1d128075b67784c2b4bed489d1119397",
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "remaining_decisions": 6,
+      "remaining_work": 10,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "b484551d1d128075b67784c2b4bed489d1119397",
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "remaining_decisions": 3,
+      "remaining_work": 4,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "578d59b08ef79fdd51836dd9e214913125f38b9d",
+      "path": "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    }
+  ],
+  "retained_terminal_count": 0,
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "PASS"
+}

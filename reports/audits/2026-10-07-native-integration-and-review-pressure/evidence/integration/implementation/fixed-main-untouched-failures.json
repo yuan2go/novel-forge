@@ -1,0 +1,92 @@
+[
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_returns_durable_evidence",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_replays_exact_evidence",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_rejects_conflicting_membership",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[10-narrative-search-branch-evidence.v2]",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_rejects_stored_evidence_contract_drift[11-sha256:9999999999999999999999999999999999999999999999999999999999999999]",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_requires_reconciliation_for_legacy_row",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_reconcile_legacy_branch_in_uow_appends_exact_sidecar_evidence",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_reconcile_legacy_branch_in_uow_is_exactly_idempotent",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_reconcile_legacy_branch_rejects_outer_execution_drift",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_narrative_search_branch_registration",
+    "test": "test_register_qualified_branch_in_uow_rejects_other_unique_conflict",
+    "message": "AssertionError: SELECT v.content_hash,e.request_payload #> '{_production_execution,capability_runtime,routing_decision}',\n        e.external_effect_id,e.operation_id,v.content\n        FROM authority_operation_output_asset output\n        JOIN authority_asset_version v ON v.asset_version_id=output.asset_version_id\n        JOIN authority_asset a ON a.asset_id=v.asset_id\n        JOIN authority_external_effect e ON e.operation_id=output.operation_id AND e.project_id=a.project_id\n        WHERE a.project_id=%s AND v.asset_version_id=%s AND e.status='SUCCEEDED'\n          AND e.request_payload->>'stage'=v.content->>'generator_operation_name'\n          AND e.request_payload #>> '{_production_execution,capability_runtime,routing_decision,mode}'='CREATIVE_VALIDATION'"
+  },
+  {
+    "class": "tests.unit.test_cross_chapter_prose_review",
+    "test": "test_high_score_cannot_replace_unresolved_or_regressed_candidate",
+    "message": "AssertionError: assert 'a' == 'b'\n  \n  - b\n  + a"
+  },
+  {
+    "class": "tests.unit.test_runtime_dispatch_control",
+    "test": "test_formation_pause_waits_without_recording_business_failure",
+    "message": "TypeError: 'Mock' object is not subscriptable"
+  },
+  {
+    "class": "tests.unit.test_story_formation_worker_wait",
+    "test": "test_manual_approval_completes_technical_job_without_retry_or_failure",
+    "message": "AttributeError: 'Formation' object has no attribute 'require'"
+  },
+  {
+    "class": "tests.unit.test_chapter_agent_binding_boundary",
+    "test": "test_legacy_binding_surface_tracks_model_capability_stages",
+    "message": "AssertionError: assert frozenset({'a...dicate', ...}) == {'agent_sessi...mercial', ...}\n  \n  Extra items in the left set:\n  'model_reference_adjudicate'\n  'model_reference_evaluate'\n  Use -v to get more diff"
+  },
+  {
+    "class": "tests.unit.test_creation_runner_settings",
+    "test": "test_native_creation_runners_preserve_isolated_object_store_configuration[run_creation_synthesis]",
+    "message": "assert 0 == 1\n +  where 0 = len([])"
+  },
+  {
+    "class": "tests.unit.test_prose_reviewer_sampling",
+    "test": "test_sample_pack_keeps_formal_producer_artifacts_and_ineligible_output",
+    "message": "AssertionError: assert '1.3.0' == '1.2.0'\n  \n  - 1.2.0\n  ?   ^\n  + 1.3.0\n  ?   ^"
+  },
+  {
+    "class": "tests.architecture.test_repository_execution_boundaries.RepositoryExecutionBoundaryTests",
+    "test": "test_execution_plane_imports_no_business_domain_module",
+    "message": "AssertionError: Lists differ: [('routing_runtime.py', 'novel_forge.modul[125 chars]ds')] != []\n\nFirst list contains 2 additional elements.\nFirst extra element 0:\n('routing_runtime.py', 'novel_forge.modules.story_planning_runtime.execution')\n\n+ []\n- [('routing_runtime.py', 'novel_forge.modules.story_planning_runtime.execution'),\n-  ('execution_template.py',\n-   'novel_forge.modules.authority_handler_runtime.policy_commands')]"
+  },
+  {
+    "class": "tests.architecture.test_capability_pack_authority_boundaries",
+    "test": "test_rollout_approval_dependency_and_ownership_fitness_rules_are_closed",
+    "message": "assert 'CapabilityPackApprovalScope.from_payload' in 'from __future__ import annotations\\n\\nfrom dataclasses import asdict, dataclass\\nimport json\\nfrom typing import Any,...ilityPackRuntimeResolver\",\\n    \"chapter_node_binding_from_snapshot\",\\n    \"materialize_registered_pack_version\",\\n]\\n'"
+  }
+]

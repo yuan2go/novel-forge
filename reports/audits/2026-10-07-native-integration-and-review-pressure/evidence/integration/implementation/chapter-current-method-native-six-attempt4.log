@@ -1,0 +1,38 @@
+.....F
+=================================== FAILURES ===================================
+_ BookToChapterAuthorityVerticalPostgresTests.test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership _
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:438: in test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership
+    request = authority.submit_chapter(chapter_command, principal=principal)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/production.py:938: in submit_chapter
+    return self._dispatch_reserved_chapter(str(existing[0]), principal=principal)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/production.py:963: in _dispatch_reserved_chapter
+    admission = self.chapter_port.submit(chapter_command, principal=principal)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:69: in submit
+    result = self.application.run(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/application.py:128: in run
+    return run_single_chapter_slice(
+src/novel_forge/modules/chapter_authority/orchestrator.py:488: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:561: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:232: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:148: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1507: in execute
+    style = build_draft_style_view(
+src/novel_forge/modules/chapter_authority/chapter_plan_views.py:338: in build_draft_style_view
+    raise KernelError("WORK_STYLE_SELECTION_INVALID", "The work baseline needs exactly its selected style version")
+E   novel_forge.modules.command_kernel.errors.KernelError: WORK_STYLE_SELECTION_INVALID: The work baseline needs exactly its selected style version
+=========================== short test summary info ============================
+FAILED tests/integration/test_book_to_chapter_authority_vertical_postgres.py::BookToChapterAuthorityVerticalPostgresTests::test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 5 passed in 461.24s (0:07:41)

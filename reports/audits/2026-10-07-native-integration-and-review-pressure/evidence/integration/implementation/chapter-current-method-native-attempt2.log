@@ -1,0 +1,23 @@
+F
+=================================== FAILURES ===================================
+_ test_native_formation_generates_foundation_from_author_brief[current-production] _
+tests/integration/test_synthesis_formation_postgres.py:138: in test_native_formation_generates_foundation_from_author_brief
+    harness = CapabilityPackPostgresHarness(
+tests/integration/capability_pack_postgres_support.py:111: in __init__
+    ensure_migrated()
+tests/integration/authority_postgres_support.py:38: in ensure_migrated
+    status = run_migrations(DATABASE_URL)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/storage/migrations/runner.py:81: in run_migrations
+    with _connect(database_url) as connection:
+         ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/storage/migrations/runner.py:183: in _connect
+    return psycopg.connect(database_url, connect_timeout=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: in connect
+    raise last_ex.with_traceback(None)
+E   psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+=========================== short test summary info ============================
+FAILED tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.73s

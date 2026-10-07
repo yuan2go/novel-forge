@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "container_id": "c3574e24b445afd5b0fe1930b86a3b51b0ddcb75a39845a20c4bd9b9af4813e9",
+  "container_name": "nf-pr133-integration-debug2-20261007",
+  "ownership_label": "pr133-native-integration-debug2",
+  "remaining_owned_container_count": 0,
+  "scope": "115-test diagnostic compatibility run and isolated agent targets only"
+}

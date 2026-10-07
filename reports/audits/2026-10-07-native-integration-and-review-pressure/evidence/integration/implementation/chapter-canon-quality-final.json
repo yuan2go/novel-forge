@@ -1,0 +1,31 @@
+{
+  "status": "SOURCE_FROZEN",
+  "base_main_sha": "f9e1ee5e115fd47b8bb9d97a35aa2813b7e04609",
+  "source_pr_sha": "ad1c229d4b17db45fa14c73dcc6569e8655c82c9",
+  "real_provider_calls": 0,
+  "commit_or_stage_performed_by_agent": false,
+  "changes": [
+    "Required PR133 Chapter/Canon/Quality deltas ported from common-ancestor comparison, preserving main-only candidate selection/reference sampling",
+    "Recovery live frontier and original creation cancellation guards; exact root/request/project/workspace/actor journal and receipt binding",
+    "Book settled preprose Memo successor gates before source/reserve/resume/submit/link/dispatch; immutable source evidence and native scopes",
+    "Current-only Planning method codec bridge to chapter-mission-scene.v4 / activated-chapter-plan.v3 / runtime projection3.0; Plan3.9.16 / Pack2.26.0",
+    "Exact Plan3.9.16 semantic mapping and selected-style fallback manifest preserve work gates; historical3.8 and unknown future17 counterexamples",
+    "Frozen independent World qualification resolves native evaluation PASS plus exact approval and activation; freezes approval as Chapter input"
+  ],
+  "offline": {
+    "owned_matrix": "451 passed, 1344 subtests passed",
+    "owned_matrix_log": "chapter-owned-offline-final.log",
+    "later_mapping_and_plan_checks": "40 passed, 34 subtests passed",
+    "later_fallback_checks": "35 passed",
+    "ruff": "PASS"
+  },
+  "native_postgres": {
+    "database": "nf_pr133_chapter_test",
+    "port": 49856,
+    "current_production_three_chapters": "PASS; 113.15s; chapter-current-method-native-attempt4.log",
+    "five_recovery_nodes": "PASS; chapter-current-method-native-six-attempt4.log; full invocation ended 5 passed, 1 failed due last vertical fallback",
+    "vertical_acceptance_after_fix": "PASS; 9.60s; chapter-native-vertical-final.log",
+    "limitation": "These are isolated intermediate-tree synthetic/native database checks. The five-node process loaded contracts before Plan3.9.16 semantic mapping changed. Parent fresh-process complete P0 and post-merge SHA verification remain required. Prior failed attempts retained; no historical or pre-merge evidence is post-merge verification."
+  },
+  "delegated_shared_fixture_blocks": "Planning agent owns historical input-order routing callback, current governed-repair assertions, and native retry-wait scheduling adaptation. Parent owns shared SynthesisChapterTransport current method protocol."
+}
