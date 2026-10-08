@@ -1,0 +1,93 @@
+[
+  {
+    "effect_id": "f6f81bcd-40b8-47c7-ba21-8cf7620afd77",
+    "status": "SUCCEEDED",
+    "stage": "creative.candidates.generate",
+    "rendered_prompt_sha256": "sha256:a29b67fcb21f9912ecfd17521ad170619381579d0270a413ed4c933cff4039eb",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-00-creative.candidates.generate.txt"
+  },
+  {
+    "effect_id": "3727e7e8-944f-47aa-be0d-2b3f986a2033",
+    "status": "SUCCEEDED",
+    "stage": "creative.candidates.generate",
+    "rendered_prompt_sha256": "sha256:fe818973845ab2116856b9c8e3ea2babe0d01889046e04164570c206c28e4758",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-01-creative.candidates.generate.txt"
+  },
+  {
+    "effect_id": "8bae959b-cc0e-42a5-b46c-f71460e851fd",
+    "status": "SUCCEEDED",
+    "stage": "theme.candidates.generate",
+    "rendered_prompt_sha256": "sha256:416ddc145d28dadb798f8b3116dc37d5fb7904c31b12be1028720848d40e953e",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-02-theme.candidates.generate.txt"
+  },
+  {
+    "effect_id": "c8ac35b0-b352-4fa1-80ac-b4db2cc68f62",
+    "status": "SUCCEEDED",
+    "stage": "ending.intent.generate",
+    "rendered_prompt_sha256": "sha256:c121442958970a3445e94d75e1348c008ed764dacc2792680aeeac8b57fc7e48",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-03-ending.intent.generate.txt"
+  },
+  {
+    "effect_id": "83f8bbe9-c458-4d64-b1af-27e513c57c41",
+    "status": "SUCCEEDED",
+    "stage": "reader.promise.generate",
+    "rendered_prompt_sha256": "sha256:3cbe37c658fc1f75f84da1d320a6391f4621bee329ece15f63f9b8b6a1104672",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-04-reader.promise.generate.txt"
+  },
+  {
+    "effect_id": "91374d3a-f0e5-4cb8-9caf-216f9654dfa5",
+    "status": "SUCCEEDED",
+    "stage": "world.design.generate",
+    "rendered_prompt_sha256": "sha256:039b6bd1d57dc420d34f2ad3adece2c881f4d8d7006bd7f901a2aa4186ca55e5",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-05-world.design.generate.txt"
+  },
+  {
+    "effect_id": "948504d1-b418-4068-9aa3-ae9263a64532",
+    "status": "SUCCEEDED",
+    "stage": "character.cast.generate",
+    "rendered_prompt_sha256": "sha256:2b1056827df15faa9ccb16e859563d9d24e3d40ebd9e59ae8e1fe1776a67e3bc",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/stage-comedy/request-06-character.cast.generate.txt"
+  }
+]

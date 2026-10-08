@@ -1,0 +1,864 @@
+{
+  "source_sha": "908c9fe57ef3b9ea45e023d326d01f1c006f598e",
+  "publication_tests_and_hooks": "NOT_RUN_BY_USER_REQUEST",
+  "merged_head_validation": "NOT_RUN",
+  "provider_calls_this_publication": 0,
+  "work_package": "PARTIALLY_COMPLETE",
+  "prose_samples": "NOT_RUN",
+  "original_source_files_unchanged": true,
+  "redacted_files": [],
+  "files": [
+    {
+      "path": "archive-suspense/assets.json",
+      "source_sha256": "969455ab3adeb479dc6929f40023699a59f99a83648d7c800b44e1ebe164e28d",
+      "published_sha256": "969455ab3adeb479dc6929f40023699a59f99a83648d7c800b44e1ebe164e28d",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/candidates.json",
+      "source_sha256": "b53a21871ea5ec28d8120249becf6b81808c08091f7083dfd4f43f769ed14d7f",
+      "published_sha256": "b53a21871ea5ec28d8120249becf6b81808c08091f7083dfd4f43f769ed14d7f",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/capacity-continuation.json",
+      "source_sha256": "1e4c3648784a69008f1d6dbcac098c572d298a8e18104e8c670855bc94186f49",
+      "published_sha256": "1e4c3648784a69008f1d6dbcac098c572d298a8e18104e8c670855bc94186f49",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-00.json",
+      "source_sha256": "e50a2c3f27881fe76c20308c2ff3bfface242e23ce91b0e7727a1b5879ea9da0",
+      "published_sha256": "e50a2c3f27881fe76c20308c2ff3bfface242e23ce91b0e7727a1b5879ea9da0",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-01.json",
+      "source_sha256": "7b4e1c6e10d34d013727d21851cfc59eb37110de7f348bf6e048156d7c79626f",
+      "published_sha256": "7b4e1c6e10d34d013727d21851cfc59eb37110de7f348bf6e048156d7c79626f",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-02.json",
+      "source_sha256": "f07534b573c519b66f367abcc88ff8ff8bd6b869e316e7e61c091b23028659e5",
+      "published_sha256": "f07534b573c519b66f367abcc88ff8ff8bd6b869e316e7e61c091b23028659e5",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-03.json",
+      "source_sha256": "aba9b4510a2da58376d8176b7396534b9422c7f17172e71c51ee587e32c33450",
+      "published_sha256": "aba9b4510a2da58376d8176b7396534b9422c7f17172e71c51ee587e32c33450",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-04.json",
+      "source_sha256": "370dcb2ee9737a1ecfde9f987698827459cc551ba6ba6a87392806f051a1b597",
+      "published_sha256": "370dcb2ee9737a1ecfde9f987698827459cc551ba6ba6a87392806f051a1b597",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-05.json",
+      "source_sha256": "1a9b39595f7f6a7d77959e3580171d882ce0012959a25a586402b0bf3fa3bf07",
+      "published_sha256": "1a9b39595f7f6a7d77959e3580171d882ce0012959a25a586402b0bf3fa3bf07",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-06.json",
+      "source_sha256": "fc56675aad30ffdf70039d618360ca78fbe7b9d3fb0d0e60dd356dab8ede7ce7",
+      "published_sha256": "fc56675aad30ffdf70039d618360ca78fbe7b9d3fb0d0e60dd356dab8ede7ce7",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-07.json",
+      "source_sha256": "e704c7c7296eec9db32cb592b1238e5a6ee3601cd2f1a97caf4bdadf516cc179",
+      "published_sha256": "e704c7c7296eec9db32cb592b1238e5a6ee3601cd2f1a97caf4bdadf516cc179",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-08.json",
+      "source_sha256": "4ff898fdc0f53eb5e839bf73cb65cedf98cbf7d61002d005eb0ca93628c0b6f5",
+      "published_sha256": "4ff898fdc0f53eb5e839bf73cb65cedf98cbf7d61002d005eb0ca93628c0b6f5",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-09.json",
+      "source_sha256": "139e714fe38dfc3756bc740c69460a63cd7b38d4c0f994323ef8609061dbfbec",
+      "published_sha256": "139e714fe38dfc3756bc740c69460a63cd7b38d4c0f994323ef8609061dbfbec",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-10.json",
+      "source_sha256": "b190bba832da640e9a7b9000dcc8e85e07e722ef51fa219660db26464a111d55",
+      "published_sha256": "b190bba832da640e9a7b9000dcc8e85e07e722ef51fa219660db26464a111d55",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-11.json",
+      "source_sha256": "15fe279097fd261330b13dd1b666ae123fcc3f043f69c1bd40a7c4ffcecc72fe",
+      "published_sha256": "15fe279097fd261330b13dd1b666ae123fcc3f043f69c1bd40a7c4ffcecc72fe",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-12.json",
+      "source_sha256": "295f3fc7669125177ecfd43f609fb805ea671a7ffc3b039229e25989ad4a6e2d",
+      "published_sha256": "295f3fc7669125177ecfd43f609fb805ea671a7ffc3b039229e25989ad4a6e2d",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-13.json",
+      "source_sha256": "f109b50a4c6ef22c9fa6dbdcc04a4710ec58db14e12d2db21aaba20b2c2b86c9",
+      "published_sha256": "f109b50a4c6ef22c9fa6dbdcc04a4710ec58db14e12d2db21aaba20b2c2b86c9",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-14.json",
+      "source_sha256": "20e1b1547ea7d80e18fbf8f4865ea56b259d465e87b98fd23b789b9811ed3e57",
+      "published_sha256": "20e1b1547ea7d80e18fbf8f4865ea56b259d465e87b98fd23b789b9811ed3e57",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-15.json",
+      "source_sha256": "15012bfc98c845223ee4653fc73872061791899759e3c6dbebb5bcadbeaf9427",
+      "published_sha256": "15012bfc98c845223ee4653fc73872061791899759e3c6dbebb5bcadbeaf9427",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-16.json",
+      "source_sha256": "2f7bca243a2b94e218e091e64149624421549a2390abfd24e43901c91814c06e",
+      "published_sha256": "2f7bca243a2b94e218e091e64149624421549a2390abfd24e43901c91814c06e",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-17.json",
+      "source_sha256": "5302318482e14a66ad5674223334bc86daa97df831b23816de28e792fdf2f8d0",
+      "published_sha256": "5302318482e14a66ad5674223334bc86daa97df831b23816de28e792fdf2f8d0",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-18.json",
+      "source_sha256": "52c0c435820c8c9af1f40362791c412363ce9e13ed3a43266c46502f2727a8c6",
+      "published_sha256": "52c0c435820c8c9af1f40362791c412363ce9e13ed3a43266c46502f2727a8c6",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-19.json",
+      "source_sha256": "c7afca379001f98960fd12217994b96556ba4e2804bb7c54f0eb67d74a6d89f9",
+      "published_sha256": "c7afca379001f98960fd12217994b96556ba4e2804bb7c54f0eb67d74a6d89f9",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-20.json",
+      "source_sha256": "113782a03629b524f63984e96c6cec693ff2e7cdf97559abb035bbe7fb830ff3",
+      "published_sha256": "113782a03629b524f63984e96c6cec693ff2e7cdf97559abb035bbe7fb830ff3",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-21.json",
+      "source_sha256": "00db0517e3f3acdbdb436325beffb1556cfc3c32aa1eec4531043330b1b94c62",
+      "published_sha256": "00db0517e3f3acdbdb436325beffb1556cfc3c32aa1eec4531043330b1b94c62",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-22.json",
+      "source_sha256": "715c810f0bee98dccc313b7311f5a514f2be14ecef31bd0240014f981a1ae1ef",
+      "published_sha256": "715c810f0bee98dccc313b7311f5a514f2be14ecef31bd0240014f981a1ae1ef",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-23.json",
+      "source_sha256": "31101ee885264b33fae53937bf247a6dc840cbda102e4dc5bfe858a7a6781a32",
+      "published_sha256": "31101ee885264b33fae53937bf247a6dc840cbda102e4dc5bfe858a7a6781a32",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-24.json",
+      "source_sha256": "8ec36d57feeee13d3c99fb01b52be141f4b4da984c3d7d8cf649bef8f7311509",
+      "published_sha256": "8ec36d57feeee13d3c99fb01b52be141f4b4da984c3d7d8cf649bef8f7311509",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-25.json",
+      "source_sha256": "0e501fc3c958ac766152da0b5edda7d54b4316b1f828f37d341c63ed098175cd",
+      "published_sha256": "0e501fc3c958ac766152da0b5edda7d54b4316b1f828f37d341c63ed098175cd",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-26.json",
+      "source_sha256": "fa1dab0a7d79ffa17f10446eaf819faa78acb3ed0dfa8e7b2358ff13597832ea",
+      "published_sha256": "fa1dab0a7d79ffa17f10446eaf819faa78acb3ed0dfa8e7b2358ff13597832ea",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/context-27.json",
+      "source_sha256": "48dab672b273d9451dffce9f3e459c495b63a090e93d61e0550f670fd50415c7",
+      "published_sha256": "48dab672b273d9451dffce9f3e459c495b63a090e93d61e0550f670fd50415c7",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/effects.json",
+      "source_sha256": "4128f44b1d8d64ca5c9350e6033e386d05b8b853ec5b959a26bd7a52aebbe298",
+      "published_sha256": "4128f44b1d8d64ca5c9350e6033e386d05b8b853ec5b959a26bd7a52aebbe298",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/formation.json",
+      "source_sha256": "9409c42d7a0e976ae46142f7e1af327aa739c58f31205c1116133d936cfd88c8",
+      "published_sha256": "9409c42d7a0e976ae46142f7e1af327aa739c58f31205c1116133d936cfd88c8",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/operations.json",
+      "source_sha256": "d337196df2f05fdb994fa8d934b38cf8e517caf2ccf244c0938b241902d89774",
+      "published_sha256": "d337196df2f05fdb994fa8d934b38cf8e517caf2ccf244c0938b241902d89774",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/proposal-excerpts.txt",
+      "source_sha256": "b5966aedaa1ef61cea06670aadd9c58d9889103576ef534773233fa1154ab0ff",
+      "published_sha256": "b5966aedaa1ef61cea06670aadd9c58d9889103576ef534773233fa1154ab0ff",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-00-creative.candidates.generate.txt",
+      "source_sha256": "f7d4e1abc30bd749d3ec957bf587a40e63aafb308de5e80b886e069ee1aae559",
+      "published_sha256": "f7d4e1abc30bd749d3ec957bf587a40e63aafb308de5e80b886e069ee1aae559",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-01-creative.candidates.generate.txt",
+      "source_sha256": "ff15632fe26afa63ef44dff074d4565c077848fdd2da5493990a2ecea1adf4b8",
+      "published_sha256": "ff15632fe26afa63ef44dff074d4565c077848fdd2da5493990a2ecea1adf4b8",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-02-theme.candidates.generate.txt",
+      "source_sha256": "e9b2de5990d1ac5d0522537e6b468a242d419a24855a93e4e18350770087f209",
+      "published_sha256": "e9b2de5990d1ac5d0522537e6b468a242d419a24855a93e4e18350770087f209",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-03-ending.intent.generate.txt",
+      "source_sha256": "c9c624488ad527aafbdd9a2959811d860dfc1a0a2f93a1914f2f2141fe7ef1d8",
+      "published_sha256": "c9c624488ad527aafbdd9a2959811d860dfc1a0a2f93a1914f2f2141fe7ef1d8",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-04-reader.promise.generate.txt",
+      "source_sha256": "fddca7175c95afa1d48b6b9002e35717fd734bbe422d5ef92776396a89fea116",
+      "published_sha256": "fddca7175c95afa1d48b6b9002e35717fd734bbe422d5ef92776396a89fea116",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-05-world.design.generate.txt",
+      "source_sha256": "9d823ef320cf14d3caa1d93862d62aec0f2d2ffdf99c788113a81c2bd633a829",
+      "published_sha256": "9d823ef320cf14d3caa1d93862d62aec0f2d2ffdf99c788113a81c2bd633a829",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-06-character.cast.generate.txt",
+      "source_sha256": "58e28c6dff6cd966336d2dce2c50aa6e307057875d9da940ba532eded8b93911",
+      "published_sha256": "58e28c6dff6cd966336d2dce2c50aa6e307057875d9da940ba532eded8b93911",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-07-book_plan.generate.txt",
+      "source_sha256": "8a7ac9bfac99ec28b75510adfc9528af1a35991b1550bb935db7cfbf3ebd99f7",
+      "published_sha256": "8a7ac9bfac99ec28b75510adfc9528af1a35991b1550bb935db7cfbf3ebd99f7",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-08-book_plan.generate.txt",
+      "source_sha256": "6950e9f5a3a905c86839cb42af76cb1c89bbf6bf5b386fdbd7706536bacac635",
+      "published_sha256": "6950e9f5a3a905c86839cb42af76cb1c89bbf6bf5b386fdbd7706536bacac635",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-09-book_plan.generate.txt",
+      "source_sha256": "0a9b959fab4bbbd1cd66fc8b634769890526eb17971c2d6e91817072164d0d58",
+      "published_sha256": "0a9b959fab4bbbd1cd66fc8b634769890526eb17971c2d6e91817072164d0d58",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-10-volume_plan.generate.txt",
+      "source_sha256": "d399a678bb8956f7fbe2ad2da9414a6fdc05d2846c3d8162c0fb64ced5f9c5be",
+      "published_sha256": "d399a678bb8956f7fbe2ad2da9414a6fdc05d2846c3d8162c0fb64ced5f9c5be",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-11-volume_plan.generate.txt",
+      "source_sha256": "87111a0462d2d98725557ae2e226c2d89b2f2422712311a636107d869a3d27fe",
+      "published_sha256": "87111a0462d2d98725557ae2e226c2d89b2f2422712311a636107d869a3d27fe",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-12-volume_plan.generate.txt",
+      "source_sha256": "b4cb37afea36f6241600fb0201786d362ae4f5186accedb62735f92e8b16a284",
+      "published_sha256": "b4cb37afea36f6241600fb0201786d362ae4f5186accedb62735f92e8b16a284",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-13-arc_plan.generate.txt",
+      "source_sha256": "5793d8b6de7af4f67e19276235ff1be16085cf54c17a495ffda8649a4484e24d",
+      "published_sha256": "5793d8b6de7af4f67e19276235ff1be16085cf54c17a495ffda8649a4484e24d",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-14-arc_plan.generate.txt",
+      "source_sha256": "c421ebd0d9e7545bfc0b985462068e7cbccac57a31777dc5f19ef77e23f244c2",
+      "published_sha256": "c421ebd0d9e7545bfc0b985462068e7cbccac57a31777dc5f19ef77e23f244c2",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-15-arc_plan.generate.txt",
+      "source_sha256": "0cbc090109e32d1b313f973d2a4529526c314b715a1bad5d45e1c3c996328553",
+      "published_sha256": "0cbc090109e32d1b313f973d2a4529526c314b715a1bad5d45e1c3c996328553",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-16-arc_plan.generate.txt",
+      "source_sha256": "6655b68741a088ac62e6db17d4181abd855e2cc3f3fd0cd4cb06f6637c418b57",
+      "published_sha256": "6655b68741a088ac62e6db17d4181abd855e2cc3f3fd0cd4cb06f6637c418b57",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-17-arc_plan.generate.txt",
+      "source_sha256": "d188cdb59fb0bf64cc50477f22dab7a04da15245ed120df51f7b8b7839e791c8",
+      "published_sha256": "d188cdb59fb0bf64cc50477f22dab7a04da15245ed120df51f7b8b7839e791c8",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-18-arc_plan.generate.txt",
+      "source_sha256": "b083dd1aed9f6d5d9c7d587ea6cd9cfbf5e9338d376554b329c547ac7e4cdeca",
+      "published_sha256": "b083dd1aed9f6d5d9c7d587ea6cd9cfbf5e9338d376554b329c547ac7e4cdeca",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-19-arc_plan.generate.txt",
+      "source_sha256": "c439826204017526814398087bc4ebd623dce53d82d5cd69674c8c149b7c52e6",
+      "published_sha256": "c439826204017526814398087bc4ebd623dce53d82d5cd69674c8c149b7c52e6",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-20-arc_plan.generate.txt",
+      "source_sha256": "d4c5bf134ef146065d99e8b163b672544a33d134d07b073ca1d99bff310c0955",
+      "published_sha256": "d4c5bf134ef146065d99e8b163b672544a33d134d07b073ca1d99bff310c0955",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-21-arc_plan.generate.txt",
+      "source_sha256": "0af8e35b1cce7cd8aaf6b4a0974e563686327d785d70a3e712647eb199d7f6e9",
+      "published_sha256": "0af8e35b1cce7cd8aaf6b4a0974e563686327d785d70a3e712647eb199d7f6e9",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-22-arc_plan.generate.txt",
+      "source_sha256": "c63654bb546f51e7135a5f8fc7bf250e3292202bdf28d4083e580f5d19203f29",
+      "published_sha256": "c63654bb546f51e7135a5f8fc7bf250e3292202bdf28d4083e580f5d19203f29",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-23-arc_plan.generate.txt",
+      "source_sha256": "eeb86b29f92448f79a89a3615ee8de70b80588772be0c69a6d0c0429bda76778",
+      "published_sha256": "eeb86b29f92448f79a89a3615ee8de70b80588772be0c69a6d0c0429bda76778",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-24-arc_plan.generate.txt",
+      "source_sha256": "54f470d09b48b967f71e7ca4e9d2f1928db3c4b63394e960b10e743eb152c10e",
+      "published_sha256": "54f470d09b48b967f71e7ca4e9d2f1928db3c4b63394e960b10e743eb152c10e",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-25-chapter_group_plan.generate.txt",
+      "source_sha256": "efe91d6a8e54118a576c7142bd618dbb0051865ce17011af8a452f603fdba93f",
+      "published_sha256": "efe91d6a8e54118a576c7142bd618dbb0051865ce17011af8a452f603fdba93f",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-26-chapter_group_plan.generate.txt",
+      "source_sha256": "d04c54af8c7833f14d2b34b30b71deb3b0528b2367716675ecff628eb63446e2",
+      "published_sha256": "d04c54af8c7833f14d2b34b30b71deb3b0528b2367716675ecff628eb63446e2",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-27-chapter_group_plan.generate.txt",
+      "source_sha256": "cd7be5272624adccde10ff70e646e2d680446b81f0ae1494451d2c2d70aac731",
+      "published_sha256": "cd7be5272624adccde10ff70e646e2d680446b81f0ae1494451d2c2d70aac731",
+      "redacted": false
+    },
+    {
+      "path": "archive-suspense/request-lineage.json",
+      "source_sha256": "df1410926a30416f9aff329dbd4a7e98db6504b8cc9931e575c86d9da5358c44",
+      "published_sha256": "df1410926a30416f9aff329dbd4a7e98db6504b8cc9931e575c86d9da5358c44",
+      "redacted": false
+    },
+    {
+      "path": "baseline-author-budget.log",
+      "source_sha256": "496f28049d7990e6ac18dd284f61b1ff162754ff4431006f61fa0f58f9865854",
+      "published_sha256": "496f28049d7990e6ac18dd284f61b1ff162754ff4431006f61fa0f58f9865854",
+      "redacted": false
+    },
+    {
+      "path": "baseline-native-timeout.log",
+      "source_sha256": "9585e10c30b6dfdc37f6bed8e425147e59c083be75d0e2ff91c7162b6bf134c9",
+      "published_sha256": "9585e10c30b6dfdc37f6bed8e425147e59c083be75d0e2ff91c7162b6bf134c9",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-creative-author-focused-v2.log",
+      "source_sha256": "ad240907256ebc33ed22d7fc4105607a01aea8414451bd8a1cdd42af00906f7a",
+      "published_sha256": "ad240907256ebc33ed22d7fc4105607a01aea8414451bd8a1cdd42af00906f7a",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-creative-input-baseline.log",
+      "source_sha256": "4b381a79aac089a734636fb1722c33819872cc4f03b320aeb3d0ccf47fd0d366",
+      "published_sha256": "4b381a79aac089a734636fb1722c33819872cc4f03b320aeb3d0ccf47fd0d366",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-baseline-other-failures.log",
+      "source_sha256": "5af5f32de0a2182e49528a5516c439a7b239a20c2f317dce2cbaaab3c1c2d654",
+      "published_sha256": "5af5f32de0a2182e49528a5516c439a7b239a20c2f317dce2cbaaab3c1c2d654",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-doc-final-head.json",
+      "source_sha256": "e7fcf614ad1df30f63c0ff153d17b8f923c63b579472fe3f62344268c23e11a5",
+      "published_sha256": "e7fcf614ad1df30f63c0ff153d17b8f923c63b579472fe3f62344268c23e11a5",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-documentation-delivery.json",
+      "source_sha256": "a077281c1ea7e1730fda39222e97572e012b54fdf6e754b4b57dbb075264f2e4",
+      "published_sha256": "a077281c1ea7e1730fda39222e97572e012b54fdf6e754b4b57dbb075264f2e4",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-final-checks.log",
+      "source_sha256": "2427cef6d475dee37337097c33f0ec9b048e275bf8f394cc4d50125f17f19070",
+      "published_sha256": "2427cef6d475dee37337097c33f0ec9b048e275bf8f394cc4d50125f17f19070",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-historical-delivery.json",
+      "source_sha256": "67bf97218314c8f52c15f28a18ec0aab0c923b7d92fceefac1f668ef28d999bf",
+      "published_sha256": "67bf97218314c8f52c15f28a18ec0aab0c923b7d92fceefac1f668ef28d999bf",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-history.json",
+      "source_sha256": "67bf97218314c8f52c15f28a18ec0aab0c923b7d92fceefac1f668ef28d999bf",
+      "published_sha256": "67bf97218314c8f52c15f28a18ec0aab0c923b7d92fceefac1f668ef28d999bf",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-instruction-baseline.json",
+      "source_sha256": "8dcbc64e646154be1a899da90d1a652469a2e320a3aa05f78ed9c6b4cb41b419",
+      "published_sha256": "8dcbc64e646154be1a899da90d1a652469a2e320a3aa05f78ed9c6b4cb41b419",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-instruction.json",
+      "source_sha256": "04aa9daa622bae21ec3a80657b429b7ef2d38e7229fa0f674cd304252b8ee77e",
+      "published_sha256": "04aa9daa622bae21ec3a80657b429b7ef2d38e7229fa0f674cd304252b8ee77e",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-native-delivery.log",
+      "source_sha256": "08b65af44b3e601ecb616b840f75d2fd0fe2ed5c60a82b6b94abd95e15800f26",
+      "published_sha256": "08b65af44b3e601ecb616b840f75d2fd0fe2ed5c60a82b6b94abd95e15800f26",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-runner-final.log",
+      "source_sha256": "00313f812180a456ffe7937fb2b03b4b821aaf1ef4e4604dbf9ca8f66d21b731",
+      "published_sha256": "00313f812180a456ffe7937fb2b03b4b821aaf1ef4e4604dbf9ca8f66d21b731",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-test-final-head.json",
+      "source_sha256": "7f6c83224892f439b96d4487a1826759fca5e5b618bf1d5c364f486428f48fef",
+      "published_sha256": "7f6c83224892f439b96d4487a1826759fca5e5b618bf1d5c364f486428f48fef",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-test-reality.json",
+      "source_sha256": "e8257288a21baec1d7fcc07b43a1d2384295ebde1645f108a8ffc3e3188f8ddc",
+      "published_sha256": "e8257288a21baec1d7fcc07b43a1d2384295ebde1645f108a8ffc3e3188f8ddc",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-web-lint.log",
+      "source_sha256": "be73f7e26a6446ddcef5a3a3eb2c8cea5df60c3b5530890682ec14fadd19436c",
+      "published_sha256": "be73f7e26a6446ddcef5a3a3eb2c8cea5df60c3b5530890682ec14fadd19436c",
+      "redacted": false
+    },
+    {
+      "path": "checks/wp-input-web-test.log",
+      "source_sha256": "c15b73b4dfc7afaf985bb9f9e5708058661c7de55688e0bd65d4e091e4bfb9ef",
+      "published_sha256": "c15b73b4dfc7afaf985bb9f9e5708058661c7de55688e0bd65d4e091e4bfb9ef",
+      "redacted": false
+    },
+    {
+      "path": "documentation-exact-head.json",
+      "source_sha256": "a9efbc0f5c8071f38bdd7d496dc2f00ca6411bf8741dc6ce552a674973e49328",
+      "published_sha256": "a9efbc0f5c8071f38bdd7d496dc2f00ca6411bf8741dc6ce552a674973e49328",
+      "redacted": false
+    },
+    {
+      "path": "evidence.json",
+      "source_sha256": "db419134e0901bc303f6dc339f9ccdb46fa31f567b39c2760647383209385648",
+      "published_sha256": "db419134e0901bc303f6dc339f9ccdb46fa31f567b39c2760647383209385648",
+      "redacted": false
+    },
+    {
+      "path": "export-executor.py",
+      "source_sha256": "eb869fda4a72ca9de7702f79650acb0551df81bddec99a5acd5904563ff3cb3b",
+      "published_sha256": "eb869fda4a72ca9de7702f79650acb0551df81bddec99a5acd5904563ff3cb3b",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/assets.json",
+      "source_sha256": "c628051f529c0dbb1a9c45cfa46b938632bb600b34301b05da97ab11e74ede02",
+      "published_sha256": "c628051f529c0dbb1a9c45cfa46b938632bb600b34301b05da97ab11e74ede02",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/candidates.json",
+      "source_sha256": "c902ff5f856ff0e1d52653bfdee86a4863913063ef5afc6fc9a54ec3664fdbb8",
+      "published_sha256": "c902ff5f856ff0e1d52653bfdee86a4863913063ef5afc6fc9a54ec3664fdbb8",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-00.json",
+      "source_sha256": "828285564d39579dcf28dd0d79969e4b1f63445884125ff66045603b5ecac3fa",
+      "published_sha256": "828285564d39579dcf28dd0d79969e4b1f63445884125ff66045603b5ecac3fa",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-01.json",
+      "source_sha256": "53bd3e8cfe241ec6bdd5e0d02b29c8b78349f912f7eea11667c34e2b209ae2e0",
+      "published_sha256": "53bd3e8cfe241ec6bdd5e0d02b29c8b78349f912f7eea11667c34e2b209ae2e0",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-02.json",
+      "source_sha256": "2f9c39b77fa8f529bf13f38aaa6c15cdf552d3a5484f94e63f1f79fd8fa5b9ba",
+      "published_sha256": "2f9c39b77fa8f529bf13f38aaa6c15cdf552d3a5484f94e63f1f79fd8fa5b9ba",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-03.json",
+      "source_sha256": "823b837559f2c6a8d931355ddc9e1cabf9e8aaf86484871025bbd4fdf744c745",
+      "published_sha256": "823b837559f2c6a8d931355ddc9e1cabf9e8aaf86484871025bbd4fdf744c745",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-04.json",
+      "source_sha256": "77fa604bf39790b0442f99b85d841b2516cf1613348f3b80a565d13569ec944a",
+      "published_sha256": "77fa604bf39790b0442f99b85d841b2516cf1613348f3b80a565d13569ec944a",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-05.json",
+      "source_sha256": "60da65d21bd8985342d012655623121b4ab32a9b14df70c66463229f9ea3901c",
+      "published_sha256": "60da65d21bd8985342d012655623121b4ab32a9b14df70c66463229f9ea3901c",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/context-06.json",
+      "source_sha256": "d264fc578c7b826b892d413cdde586e929d316dda493564bf733da56ae0ed61b",
+      "published_sha256": "d264fc578c7b826b892d413cdde586e929d316dda493564bf733da56ae0ed61b",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/effects.json",
+      "source_sha256": "86ee5d91be5b1299bde067177c679be11dc58071d5f7b8fe820f6983c0eecb80",
+      "published_sha256": "86ee5d91be5b1299bde067177c679be11dc58071d5f7b8fe820f6983c0eecb80",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/formation.json",
+      "source_sha256": "22e07321290098cb64f99e833e93ba05705e021c0072b568154c579b4774d592",
+      "published_sha256": "22e07321290098cb64f99e833e93ba05705e021c0072b568154c579b4774d592",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/operations.json",
+      "source_sha256": "881f363061f59fdb234f679187f164043d8d0beb5ff8c08798c5e5308c850350",
+      "published_sha256": "881f363061f59fdb234f679187f164043d8d0beb5ff8c08798c5e5308c850350",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/original-effect-reconciliation.json",
+      "source_sha256": "7a9a4b8ea96783120bf2cbfc18bd24580de9fbe1305a3a71116986a4524e068c",
+      "published_sha256": "7a9a4b8ea96783120bf2cbfc18bd24580de9fbe1305a3a71116986a4524e068c",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/proposal-excerpts.txt",
+      "source_sha256": "b5cd977e4dab4f30379ea231b995c8f96eec46c72a562887712d9eaf7781849d",
+      "published_sha256": "b5cd977e4dab4f30379ea231b995c8f96eec46c72a562887712d9eaf7781849d",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-00-creative.candidates.generate.txt",
+      "source_sha256": "81d3e9795c5799568571913275ade827737989c9d6b0299d83bcca0bca7a98d2",
+      "published_sha256": "81d3e9795c5799568571913275ade827737989c9d6b0299d83bcca0bca7a98d2",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-01-creative.candidates.generate.txt",
+      "source_sha256": "07e951d4c9b8ff253ae62c1c978e2822a043f2f563ba661467637eb88ec3deb0",
+      "published_sha256": "07e951d4c9b8ff253ae62c1c978e2822a043f2f563ba661467637eb88ec3deb0",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-02-theme.candidates.generate.txt",
+      "source_sha256": "2c2b1c0a31f6ae2a96e1c6ae032f19668dc61359fc54c025117ee53b39e62303",
+      "published_sha256": "2c2b1c0a31f6ae2a96e1c6ae032f19668dc61359fc54c025117ee53b39e62303",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-03-ending.intent.generate.txt",
+      "source_sha256": "26cfa13d594af609f9932a68f29f2def3ff3713966c44d012ae6502b1cb5e33b",
+      "published_sha256": "26cfa13d594af609f9932a68f29f2def3ff3713966c44d012ae6502b1cb5e33b",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-04-reader.promise.generate.txt",
+      "source_sha256": "34d0465269ca24e8f2db0e149a08f04a3417c6062193da53e8913dddee3feb74",
+      "published_sha256": "34d0465269ca24e8f2db0e149a08f04a3417c6062193da53e8913dddee3feb74",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-05-world.design.generate.txt",
+      "source_sha256": "a75da09c4fe6ee0910bfa2ce46466159031dffdec4fe9ba696ffa60dce087d10",
+      "published_sha256": "a75da09c4fe6ee0910bfa2ce46466159031dffdec4fe9ba696ffa60dce087d10",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-06-character.cast.generate.txt",
+      "source_sha256": "3d2338678d601c1cac4dd89daf2ad27b6b63517a7e64d0dc694e55f095fb708d",
+      "published_sha256": "3d2338678d601c1cac4dd89daf2ad27b6b63517a7e64d0dc694e55f095fb708d",
+      "redacted": false
+    },
+    {
+      "path": "fantasy-cooking/request-lineage.json",
+      "source_sha256": "15b28eb6c118e32fc5f9a7c82a681b17751c37c27e4b476f246bab005f044a3f",
+      "published_sha256": "15b28eb6c118e32fc5f9a7c82a681b17751c37c27e4b476f246bab005f044a3f",
+      "redacted": false
+    },
+    {
+      "path": "final-boundaries.log",
+      "source_sha256": "912b0c804eade5f9d7df499d3cf068160ef4867f01fade58ee87587199967aa7",
+      "published_sha256": "912b0c804eade5f9d7df499d3cf068160ef4867f01fade58ee87587199967aa7",
+      "redacted": false
+    },
+    {
+      "path": "final-native-entrypoints.log",
+      "source_sha256": "8d0d73de8258b4f5dc72fec6944c116dc63be12538fa591c0cb24bf171d3ad0b",
+      "published_sha256": "8d0d73de8258b4f5dc72fec6944c116dc63be12538fa591c0cb24bf171d3ad0b",
+      "redacted": false
+    },
+    {
+      "path": "fresh-native-author.log",
+      "source_sha256": "5b9763d7b866918acec137d0f90a4b8e6079c41c585645569de1703791512d71",
+      "published_sha256": "5b9763d7b866918acec137d0f90a4b8e6079c41c585645569de1703791512d71",
+      "redacted": false
+    },
+    {
+      "path": "historical-byte-verification.json",
+      "source_sha256": "f959456e1bd544439cd81122c2d95f5b6cf73ffdb20068e73cf18e725cf15df2",
+      "published_sha256": "f959456e1bd544439cd81122c2d95f5b6cf73ffdb20068e73cf18e725cf15df2",
+      "redacted": false
+    },
+    {
+      "path": "historical-reality-final.log",
+      "source_sha256": "66b61ef4f6c04b26476a531de8430ef4ae35e3964192155d5fd6099a21d2f35f",
+      "published_sha256": "66b61ef4f6c04b26476a531de8430ef4ae35e3964192155d5fd6099a21d2f35f",
+      "redacted": false
+    },
+    {
+      "path": "instruction-surface.json",
+      "source_sha256": "39d632e4483b497ecf5527f92a1b519550ebbbf4f00490b23f59e818517a4e20",
+      "published_sha256": "39d632e4483b497ecf5527f92a1b519550ebbbf4f00490b23f59e818517a4e20",
+      "redacted": false
+    },
+    {
+      "path": "live-status.json",
+      "source_sha256": "836af80f540f47f51d511f9487fb01e40e7bfa5eeba483ec0631853e89c68d94",
+      "published_sha256": "836af80f540f47f51d511f9487fb01e40e7bfa5eeba483ec0631853e89c68d94",
+      "redacted": false
+    },
+    {
+      "path": "native-continuation-resolved.log",
+      "source_sha256": "1eb6b7c0091c6aa6beae252b5fc95113062fde34fcec3c00210614785882fe55",
+      "published_sha256": "1eb6b7c0091c6aa6beae252b5fc95113062fde34fcec3c00210614785882fe55",
+      "redacted": false
+    },
+    {
+      "path": "native-continuation.log",
+      "source_sha256": "0027b76950724d10c04d5fb1d4f8e3db46134b324fae9b80f8a6afe6cafd3542",
+      "published_sha256": "0027b76950724d10c04d5fb1d4f8e3db46134b324fae9b80f8a6afe6cafd3542",
+      "redacted": false
+    },
+    {
+      "path": "pack-compatibility.log",
+      "source_sha256": "186c19ffd26f40cb3e4599212e3e9160acf3a6cbd850bcc2f5280ffcc368f226",
+      "published_sha256": "186c19ffd26f40cb3e4599212e3e9160acf3a6cbd850bcc2f5280ffcc368f226",
+      "redacted": false
+    },
+    {
+      "path": "source-path-check.log",
+      "source_sha256": "2e0d2dfc67e96a8650c53fa82aff33fd22c323552aa715e2cdc23b26bd57c6e7",
+      "published_sha256": "2e0d2dfc67e96a8650c53fa82aff33fd22c323552aa715e2cdc23b26bd57c6e7",
+      "redacted": false
+    },
+    {
+      "path": "source-path-world-check.log",
+      "source_sha256": "d97924381cbecf0a233e5b454409169f244f2b3b671f09796968c41d67f146f6",
+      "published_sha256": "d97924381cbecf0a233e5b454409169f244f2b3b671f09796968c41d67f146f6",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/assets.json",
+      "source_sha256": "795b366f9157fe641e0f020bb68367b03a633081329ebf4f1c700aecbe07ab4d",
+      "published_sha256": "795b366f9157fe641e0f020bb68367b03a633081329ebf4f1c700aecbe07ab4d",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/candidates.json",
+      "source_sha256": "304736957dbe070dfaa24422a99785c5959b6959a3aeb0cf6f1d077b9b8edcb8",
+      "published_sha256": "304736957dbe070dfaa24422a99785c5959b6959a3aeb0cf6f1d077b9b8edcb8",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-00.json",
+      "source_sha256": "f61e63a8d1d3ffd6d18ab7cfb26b0d063555a981096c203037ddce7873f06055",
+      "published_sha256": "f61e63a8d1d3ffd6d18ab7cfb26b0d063555a981096c203037ddce7873f06055",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-01.json",
+      "source_sha256": "f16dfa7d12a69a5ab7638112747e307de113bc713d7820dfb0f53e93b13b287f",
+      "published_sha256": "f16dfa7d12a69a5ab7638112747e307de113bc713d7820dfb0f53e93b13b287f",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-02.json",
+      "source_sha256": "f4fce9d50661ff359f47568fd97b17fe20f49c2ef6f63420764ea025c0ccda71",
+      "published_sha256": "f4fce9d50661ff359f47568fd97b17fe20f49c2ef6f63420764ea025c0ccda71",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-03.json",
+      "source_sha256": "cba98126a1f6183fb0593947dfd29d4ac2010ada926187873f94f4f54ab2b9f1",
+      "published_sha256": "cba98126a1f6183fb0593947dfd29d4ac2010ada926187873f94f4f54ab2b9f1",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-04.json",
+      "source_sha256": "4cbea76bb4caa45977c95d29f86e30fa75b5d3252b39e8b890d04ef4c54a5fac",
+      "published_sha256": "4cbea76bb4caa45977c95d29f86e30fa75b5d3252b39e8b890d04ef4c54a5fac",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-05.json",
+      "source_sha256": "d420b67cd74c10a8754aad3532bc1cbecbaef1122067d069a53747b89798c768",
+      "published_sha256": "d420b67cd74c10a8754aad3532bc1cbecbaef1122067d069a53747b89798c768",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/context-06.json",
+      "source_sha256": "9cdb8297d0c9678032c7b493e96cb72149d6ce1e8506ef0b297c9ca6880cc843",
+      "published_sha256": "9cdb8297d0c9678032c7b493e96cb72149d6ce1e8506ef0b297c9ca6880cc843",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/effects.json",
+      "source_sha256": "5f9f89ce9a3666811f7a2279c7109834d6429180184ee6fd981fd318097ec764",
+      "published_sha256": "5f9f89ce9a3666811f7a2279c7109834d6429180184ee6fd981fd318097ec764",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/formation.json",
+      "source_sha256": "bea37c5892186eecd48f54ed5b9d9639376e3937d691ed3c8a8c4c41d8d0f913",
+      "published_sha256": "bea37c5892186eecd48f54ed5b9d9639376e3937d691ed3c8a8c4c41d8d0f913",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/operations.json",
+      "source_sha256": "543d4867872b506006845568b399dddcd459f31531c8aa0f62da712a1b90c3f6",
+      "published_sha256": "543d4867872b506006845568b399dddcd459f31531c8aa0f62da712a1b90c3f6",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/proposal-excerpts.txt",
+      "source_sha256": "939a4f54309f20da0fcd601fd9a08d26a13de9d39d557e9ead12ba023d5b474d",
+      "published_sha256": "939a4f54309f20da0fcd601fd9a08d26a13de9d39d557e9ead12ba023d5b474d",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-00-creative.candidates.generate.txt",
+      "source_sha256": "a29b67fcb21f9912ecfd17521ad170619381579d0270a413ed4c933cff4039eb",
+      "published_sha256": "a29b67fcb21f9912ecfd17521ad170619381579d0270a413ed4c933cff4039eb",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-01-creative.candidates.generate.txt",
+      "source_sha256": "fe818973845ab2116856b9c8e3ea2babe0d01889046e04164570c206c28e4758",
+      "published_sha256": "fe818973845ab2116856b9c8e3ea2babe0d01889046e04164570c206c28e4758",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-02-theme.candidates.generate.txt",
+      "source_sha256": "416ddc145d28dadb798f8b3116dc37d5fb7904c31b12be1028720848d40e953e",
+      "published_sha256": "416ddc145d28dadb798f8b3116dc37d5fb7904c31b12be1028720848d40e953e",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-03-ending.intent.generate.txt",
+      "source_sha256": "c121442958970a3445e94d75e1348c008ed764dacc2792680aeeac8b57fc7e48",
+      "published_sha256": "c121442958970a3445e94d75e1348c008ed764dacc2792680aeeac8b57fc7e48",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-04-reader.promise.generate.txt",
+      "source_sha256": "3cbe37c658fc1f75f84da1d320a6391f4621bee329ece15f63f9b8b6a1104672",
+      "published_sha256": "3cbe37c658fc1f75f84da1d320a6391f4621bee329ece15f63f9b8b6a1104672",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-05-world.design.generate.txt",
+      "source_sha256": "039b6bd1d57dc420d34f2ad3adece2c881f4d8d7006bd7f901a2aa4186ca55e5",
+      "published_sha256": "039b6bd1d57dc420d34f2ad3adece2c881f4d8d7006bd7f901a2aa4186ca55e5",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-06-character.cast.generate.txt",
+      "source_sha256": "2b1056827df15faa9ccb16e859563d9d24e3d40ebd9e59ae8e1fe1776a67e3bc",
+      "published_sha256": "2b1056827df15faa9ccb16e859563d9d24e3d40ebd9e59ae8e1fe1776a67e3bc",
+      "redacted": false
+    },
+    {
+      "path": "stage-comedy/request-lineage.json",
+      "source_sha256": "1ba71303f56ac2ca766b9871fef909aff7a07d543e70be81feac1706703df9ef",
+      "published_sha256": "1ba71303f56ac2ca766b9871fef909aff7a07d543e70be81feac1706703df9ef",
+      "redacted": false
+    },
+    {
+      "path": "test-inventory-exact-head.log",
+      "source_sha256": "b5058548b818edae05fcbd2a98cd041fe196ff896d7d5dabe037bd894616a449",
+      "published_sha256": "b5058548b818edae05fcbd2a98cd041fe196ff896d7d5dabe037bd894616a449",
+      "redacted": false
+    },
+    {
+      "path": "validation-executor.py",
+      "source_sha256": "36a74e8617ca73a624bd5ae5c9efbf3be73b654c5dd2fbd822d30fec597a7153",
+      "published_sha256": "36a74e8617ca73a624bd5ae5c9efbf3be73b654c5dd2fbd822d30fec597a7153",
+      "redacted": false
+    }
+  ]
+}

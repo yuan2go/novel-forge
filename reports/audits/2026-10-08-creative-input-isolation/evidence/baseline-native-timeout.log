@@ -1,0 +1,148 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________ test_native_author_first_cross_chapter_edit_and_export ____________
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-1205/test_native_author_first_cross0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109b385c0>
+
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": "Author work", "target_chapters": 6,
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+>           started = run_creation_command(settings, args)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_first_manuscript_postgres.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/cli/creation.py:54: in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_runtime.py:964: in execute_creation_command
+    result = continue_creation(composition=composition, content=content, chapter=chapter, formation_run_id=formation_id,
+src/novel_forge/modules/book_authority/creation_runtime.py:323: in continue_creation
+    execute_book_opening_claim(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1889: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:402: in execute
+    bundle = self.resolver.resolve(
+src/novel_forge/modules/story_planning_runtime/binder.py:258: in resolve
+    prepared = prepare(
+src/novel_forge/modules/story_planning_runtime/execution.py:4144: in prepare
+    return self._prepare_stage(**arguments, world_action=action)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:4729: in _prepare_stage
+    planning_route, routing_decision = provider_router.select(
+src/novel_forge/modules/production_execution/routing_runtime.py:1043: in select
+    candidate.candidate_id: self.registry.observations(
+src/novel_forge/modules/production_execution/routing_runtime.py:101: in observations
+    observations = self._local_observations(project_id=project_id, task_type=task_type,
+src/novel_forge/modules/production_execution/routing_runtime.py:238: in _local_observations
+    self.outcome_projection(
+src/novel_forge/modules/authority_handler_runtime/routing_feedback.py:451: in domain_gate_outcomes
+    **source_gate_outcomes(cursor, project_id=project_id, effect_ids=effect_ids),
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/authority_handler_runtime/routing_feedback.py:302: in source_gate_outcomes
+    cursor.execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <psycopg.Cursor [closed] [IDLE] (user=yuan database=nf_creative_input_baseline_20261008_test) at 0x10a00bdd0>
+query = "SELECT generator.external_effect_id,target.asset_version_id,target.content_hash,target.content,\n                  re...\n             AND generator.external_effect_id=ANY(%s)\n           ORDER BY review.created_at,review.asset_version_id"
+params = ['project:author:1d3ac389a9bee083cfd1e2f903c51684729e367a65a91a918c3093f2e7054bfd', ['d2297ccf-e788-4e1e-81c6-cab595f2...c2f3cf7e-b542-4a71-985f-ae2d59c4f5f6', 'e07eba88-82e0-47c4-9e27-fbb4337e1d28', '1adaf086-476d-4af4-a0e2-73ca30e1d7dd']]
+prepare = None, binary = None
+
+    def execute(
+        self,
+        query: Query,
+        params: Params | None = None,
+        *,
+        prepare: bool | None = None,
+        binary: bool | None = None,
+    ) -> Self:
+        """
+        Execute a query or command to the database.
+        """
+        try:
+            with self._conn.lock:
+                self._conn.wait(
+                    self._execute_gen(query, params, prepare=prepare, binary=binary)
+                )
+        except e._NO_TRACEBACK as ex:
+>           raise ex.with_traceback(None)
+E           psycopg.errors.QueryCanceled: canceling statement due to statement timeout
+
+/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/cursor.py:117: QueryCanceled
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export
+1 failed in 233.52s (0:03:53)

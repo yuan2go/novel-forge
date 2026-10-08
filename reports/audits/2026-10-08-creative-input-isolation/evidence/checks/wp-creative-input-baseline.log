@@ -1,0 +1,114 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_native_start_freezes_current_work_and_reuses_original_formation[controlled-process-main-chain] _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-1187/test_native_start_freezes_curr0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dfd3fe0>
+full_creation = True
+
+    @pytest.mark.parametrize("full_creation", [False, True], ids=["admission-boundaries", "controlled-process-main-chain"])
+    def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_path, monkeypatch, full_creation):
+        harness = CapabilityPackPostgresHarness("creation-cli-full" if full_creation else "creation-cli-admission")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        from tests.integration.synthesis_production_support import SynthesisTransport
+        transport = SynthesisTransport() if full_creation else None
+        if full_creation:
+            from novel_forge.api import authority_dependencies
+            build_book = authority_dependencies.build_book_production_composition
+            checkpoints = []
+            def fail_once(checkpoint):
+                if checkpoint == "after_business_projection_update":
+                    checkpoints.append(checkpoint)
+                    if len(checkpoints) == 3:
+                        raise RuntimeError("controlled projection interruption")
+            def recovering_book(*values, **options):
+                composition = build_book(*values, **options)
+                composition.formation.generation.book_design.fault_injector = fail_once
+                return composition
+            monkeypatch.setattr(authority_dependencies, "build_book_production_composition", recovering_book)
+            from novel_forge.modules.chapter_authority.model_effects import ExternalEffectChapterModelPort
+            from novel_forge.modules.command_kernel.errors import KernelError
+            invoke = ExternalEffectChapterModelPort.invoke
+            quality_order = []
+            def unavailable_once(port, request, *, stage, **options):
+                if stage.startswith("quality_"):
+                    quality_order.append(stage)
+                    if quality_order == ["quality_structural"]:
+                        raise KernelError("PROVIDER_ROUTING_BLOCKED", "controlled independent task temporarily unavailable")
+                return invoke(port, request, stage=stage, **options)
+            monkeypatch.setattr(ExternalEffectChapterModelPort, "invoke", unavailable_once)
+            normal = transport.planning
+            def bounded_fixture(stage, values):
+                result = normal(stage, values)
+                if stage == "creative.candidates.generate":
+                    result["serialization_potential"] = None
+                    for declaration in result.get("applicability", []):
+                        if declaration["field_path"] == "$.serialization_potential":
+                            declaration.update(status="NOT_APPLICABLE", rationale="Bounded controlled fixture")
+                def visit(value):
+                    if isinstance(value, dict):
+                        for key, child in value.items():
+                            if key == "serialization_function":
+                                value[key] = None
+                            else:
+                                visit(child)
+                    elif isinstance(value, list):
+                        for child in value:
+                            visit(child)
+                visit(result)
+                return result
+            transport.planning = bounded_fixture
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+            "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": project,
+        }, monkeypatch, transport)
+        if full_creation:
+            catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+            for model in catalog["models"]:
+                model["reasoning"] = "medium"
+            env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+            env["NOVEL_FORGE_CODEX_ROUTER_REASONING_EFFORT"] = "medium"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_ROUTER_PROVIDERS", "codex-cli,deepseek")
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "missing-paid-template.json"))
+        inputs = {"version": "creation-request.v1", "title": "Current author work", "target_chapters": 1 if full_creation else 17,
+            "chapter_length": {"minimum": 800, "maximum": 4000},
+            "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist confronts contradictory accounts of a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Preserve the author's intended scope."],
+                "source_boundaries": ["Original work; do not copy protected expression."]}}
+        input_file = tmp_path / "request.json"
+        input_file.write_text(json.dumps(inputs))
+        book = project + "-new-book"
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--project-id", project,
+            "--workspace-id", harness.workspace_id + "-new", "--book-id", book, "--input-file", str(input_file),
+            "--idempotency-key", "native-create", "--repository-root", str(root), "--maximum-ticks", "100",
+            "--creative-selection", "FIRST_ADMITTED", "--foreground", "--execution-template-file", str(root / "config/execution_templates/creative_validation.json")])
+        if not full_creation:
+            args.yield_after_window = True
+            monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",
+                lambda **values: {"formation_run_id": values["formation_run_id"], "stop_reason": "YIELDED_CHECKPOINT"})
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="validation")
+        if transport is not None:
+            transport.database_url = settings.database_url
+        first = run_creation_command(settings, args)
+        if full_creation:
+>           assert first["stop_reason"] == "FORMATION_FAILED", first
+E           AssertionError: {'formation_run_id': 'story-formation:c7812f1677f152013fff1e4eed2a367cce7e5706e3cd756633a47d8892cbc81d', 'stop_reason'...6c7b942be88456bb5de8db94674ffcb-new', 'book_id': 'project-d6c7b942be88456bb5de8db94674ffcb-native-new-book', ...}, ...}
+E           assert 'FORMATION_OW...VERY_REQUIRED' == 'FORMATION_FAILED'
+E             
+E             - FORMATION_FAILED
+E             + FORMATION_OWNER_RECOVERY_REQUIRED
+
+/tmp/wp-creative-input-baseline/tests/integration/test_creation_cli_postgres.py:110: AssertionError
+=========================== short test summary info ============================
+FAILED ../../../../../../tmp/wp-creative-input-baseline/tests/integration/test_creation_cli_postgres.py::test_native_start_freezes_current_work_and_reuses_original_formation[controlled-process-main-chain]
+1 failed in 65.84s (0:01:05)

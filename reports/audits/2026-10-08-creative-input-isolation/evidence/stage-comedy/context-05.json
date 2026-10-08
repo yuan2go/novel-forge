@@ -1,0 +1,2718 @@
+{
+  "book_id": "book:input-isolation-01:stage-comedy",
+  "trace_id": "trace:story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+  "project_id": "project:input-isolation-01:stage-comedy",
+  "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:WORLD_BIBLE:0",
+  "token_budget": 64000,
+  "workspace_id": "workspace:input-isolation-01:stage-comedy",
+  "input_versions": [
+    {
+      "role": "ending_intent",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:stage-comedy",
+        "objective": "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+        "project_id": "project:input-isolation-01:stage-comedy",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+          "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+          "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+          "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+          "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+          "笑点之后呈现行动带来的分工、局势或关系变化。",
+          "结尾形式以露天共同试演为候选收束方向；具体人选、规模与操作安排须由此前建立的条件支持，近期规划可据此调整。"
+        ],
+        "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:ENDING_INTENT:0",
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "我从急于证明导演能力走向提出请求、接受条件并完成协作，需要承担修改安排、兑现补位承诺和交出部分调度的具体代价；不要求不可逆损失或牺牲。",
+            "field_path": "$.protagonist_cost"
+          }
+        ],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "ending_direction": "拟在九章范围内，以一轮规模朴素、能够完整走下来的露天共同试演收束。我仍想把戏排好，也仍会忍不住解释自己的安排，但在最后一次分工遇到异议时，能够先问对方愿意承担什么，把自己的请求说清楚，并接受由此带来的修改。妹妹让大家轻松参与的愿望也须落实为有人接手、有人兑现的工作，她可以判断失误，也可以向我求助。最终谁站台前，取决于此前说清并试过的条件；我的导演能力通过使这些配合实际运转而变得可见，无须由众人授予称号。收束的暖意来自有限承诺被完成，笑意来自我对导演派头的偏袒再次被现场结果修正。试演结束后，我对认可的在意与我们对安排的分歧可以继续存在；当前这场小戏得到交代，不预设正式公演、事业跃升或续篇。",
+        "protagonist_cost": "我需要放下独自决定站位、出场和替补的便利，花时间重谈已经解释过的安排，并兑现自己答应的补位或台后工作；当我亲自承担任务时，须把部分调度交给妹妹或已明确愿意接手的人。接受参与条件可能使小戏比我最初设想的简单，也使我不能始终站在台外展示指挥的样子。这些代价来自具体选择，不预设受伤、损失名声或永久退出台前。",
+        "candidate_payload": {
+          "objective": "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+            "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+            "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+            "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+            "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+            "笑点之后呈现行动带来的分工、局势或关系变化。",
+            "结尾形式以露天共同试演为候选收束方向；具体人选、规模与操作安排须由此前建立的条件支持，近期规划可据此调整。"
+          ],
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "我从急于证明导演能力走向提出请求、接受条件并完成协作，需要承担修改安排、兑现补位承诺和交出部分调度的具体代价；不要求不可逆损失或牺牲。",
+              "field_path": "$.protagonist_cost"
+            }
+          ],
+          "ending_direction": "拟在九章范围内，以一轮规模朴素、能够完整走下来的露天共同试演收束。我仍想把戏排好，也仍会忍不住解释自己的安排，但在最后一次分工遇到异议时，能够先问对方愿意承担什么，把自己的请求说清楚，并接受由此带来的修改。妹妹让大家轻松参与的愿望也须落实为有人接手、有人兑现的工作，她可以判断失误，也可以向我求助。最终谁站台前，取决于此前说清并试过的条件；我的导演能力通过使这些配合实际运转而变得可见，无须由众人授予称号。收束的暖意来自有限承诺被完成，笑意来自我对导演派头的偏袒再次被现场结果修正。试演结束后，我对认可的在意与我们对安排的分歧可以继续存在；当前这场小戏得到交代，不预设正式公演、事业跃升或续篇。",
+          "protagonist_cost": "我需要放下独自决定站位、出场和替补的便利，花时间重谈已经解释过的安排，并兑现自己答应的补位或台后工作；当我亲自承担任务时，须把部分调度交给妹妹或已明确愿意接手的人。接受参与条件可能使小戏比我最初设想的简单，也使我不能始终站在台外展示指挥的样子。这些代价来自具体选择，不预设受伤、损失名声或永久退出台前。",
+          "closure_conditions": [
+            "结尾拟完成一轮按当面商定的分工进行的露天共同试演，使小戏在参与者能够承担的规模内得到完整呈现；不以观众数量或一致喝彩衡量是否做成。",
+            "结尾使用的参与条件、台前人选、替补办法和台后职责须在此前通过我参与的交谈与试演建立，不能到最后才宣布人人愿意配合。",
+            "第一场排练的灯架故障须先停止使用，再依据已建立的能力处理；结尾若需照明，须有可用依据，否则采用不依赖故障灯架的呈现条件。",
+            "演员临时退场留下的空缺须通过协商调整角色、台词或补位安排得到回应；不要求退场者返回，也不把返回作为成功条件。",
+            "我须在一次影响最终试演的具体安排中先提出请求，听取参与条件，再完成自己承诺的工作；成长由可见行动体现。",
+            "妹妹须承担自己作出的参与承诺，遇到无法兼顾的工作时明确求助或重谈分工；我也须提供一次实际有效的支持。",
+            "此前建立的一项小配合，如短台词、站位或台后提醒，须在结尾发挥作用；具体选项留待后续规划，不将示例视为既定事件。",
+            "结尾保留我仍在意认可、兄妹或姐妹仍会争论安排的余地，但当前小戏的协作责任须有交代，不靠下一部作品补完。"
+          ],
+          "constraint_envelope": {
+            "role": "ENDING_INTENT",
+            "creative_brief": {
+              "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+              "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+                "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+            "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+            "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+            "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+            "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+            "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+            "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+            "把候选发展写成已接受历史，或擅自扩大九章方向。",
+            "把我的转变写成彻底放弃导演愿望，或以包办全部工作证明协作成功。",
+            "为制造结局分量强加不可逆牺牲，或以续篇承诺替代当前小戏的收束。"
+          ],
+          "unacceptable_shortcuts": [
+            "用结尾独白宣布我已经学会尊重所有人，替代一次有请求、有条件、有兑现的协作。",
+            "用一致喝彩、专业人士认证或突然获得的资源证明我有导演能力。",
+            "让妹妹替我解决全部分工，再由我接受成果和认可。",
+            "让村民在没有说明原因和条件的情况下统一改变意愿。",
+            "把此前明确提出的时间、胆量或手艺限制当作最后必须克服的缺点。",
+            "靠新事故连续加码制造高潮，绕开前次承诺留下的责任。",
+            "直接复用上游风格例句作为已发生事件或最终场景。",
+            "提前锁定未建立的退场原因、最终演员名单或灯架修复办法来填补因果缺口。"
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+              "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+            }
+          }
+        },
+        "closure_conditions": [
+          "结尾拟完成一轮按当面商定的分工进行的露天共同试演，使小戏在参与者能够承担的规模内得到完整呈现；不以观众数量或一致喝彩衡量是否做成。",
+          "结尾使用的参与条件、台前人选、替补办法和台后职责须在此前通过我参与的交谈与试演建立，不能到最后才宣布人人愿意配合。",
+          "第一场排练的灯架故障须先停止使用，再依据已建立的能力处理；结尾若需照明，须有可用依据，否则采用不依赖故障灯架的呈现条件。",
+          "演员临时退场留下的空缺须通过协商调整角色、台词或补位安排得到回应；不要求退场者返回，也不把返回作为成功条件。",
+          "我须在一次影响最终试演的具体安排中先提出请求，听取参与条件，再完成自己承诺的工作；成长由可见行动体现。",
+          "妹妹须承担自己作出的参与承诺，遇到无法兼顾的工作时明确求助或重谈分工；我也须提供一次实际有效的支持。",
+          "此前建立的一项小配合，如短台词、站位或台后提醒，须在结尾发挥作用；具体选项留待后续规划，不将示例视为既定事件。",
+          "结尾保留我仍在意认可、兄妹或姐妹仍会争论安排的余地，但当前小戏的协作责任须有交代，不靠下一部作品补完。"
+        ],
+        "execution_evidence": {
+          "attempt_id": "e6cf29fe-c4b6-4a49-a249-1c0fb56e83ce",
+          "operation_id": "5f281bb2-b145-45c5-bf62-5f48113e3935",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:dc8ef839-bcd7-4cee-9a52-0b343e9f35f9",
+          "route_snapshot_id": "production_execution/routes/b369f27f45cfed6fd6fd",
+          "usage_receipt_ref": "authority-asset-version:cb228e5a-fc4e-4768-baff-dda676019d3c",
+          "input_manifest_ref": "production_execution/inputs/b369f27f45cfed6fd6fd",
+          "context_bundle_hash": "sha256:f0d4e8feeacf8c5123609006656eb51b7d4f0222d92e600321fab03052b4532e",
+          "output_manifest_ref": "authority-asset-version:6a5bc3cb-cfa6-4dc9-b421-2ff9e0ea1dff",
+          "production_verified": false,
+          "external_receipt_ref": "c8ac35b0-b352-4fa1-80ac-b4db2cc68f62",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:025cf16b-2c0c-43ad-afd4-c697e3d89246",
+          "capability_execution_ref": "1f352ae3-ef91-5169-98bf-3a18f7ef2719",
+          "capability_execution_hash": "sha256:b300318c0eb8b8786418359146e1c50415f1e78bb5ca4fb56f58740315e4c7c3",
+          "capability_runtime_binding_ref": "sha256:8ffc12535bb5e1c5f8e6ab8b05c779b7d78584efe7aa55ddf8cda540791394f9",
+          "capability_runtime_binding_hash": "sha256:7a8db50a5f9a79783ca1609819f0230ce619f8e34896564e71ca3e301e24aacd",
+          "context_bundle_asset_version_id": "484821e7-18a0-44ec-8ff3-7b3ffcafbc4a",
+          "capability_pack_attempt_snapshot_id": "sha256:8ffc12535bb5e1c5f8e6ab8b05c779b7d78584efe7aa55ddf8cda540791394f9",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:7a8db50a5f9a79783ca1609819f0230ce619f8e34896564e71ca3e301e24aacd",
+          "narrative_intelligence_selection_digest": "sha256:aa964d2215cbeae3ff77de03466ea04c441dfa2bce62ede89c81e5ba250d8ac1"
+        },
+        "constraint_envelope": {
+          "role": "ENDING_INTENT",
+          "creative_brief": {
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+              "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+          "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+          "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+          "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+          "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+          "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+          "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+          "把候选发展写成已接受历史，或擅自扩大九章方向。",
+          "把我的转变写成彻底放弃导演愿望，或以包办全部工作证明协作成功。",
+          "为制造结局分量强加不可逆牺牲，或以续篇承诺替代当前小戏的收束。"
+        ],
+        "unacceptable_shortcuts": [
+          "用结尾独白宣布我已经学会尊重所有人，替代一次有请求、有条件、有兑现的协作。",
+          "用一致喝彩、专业人士认证或突然获得的资源证明我有导演能力。",
+          "让妹妹替我解决全部分工，再由我接受成果和认可。",
+          "让村民在没有说明原因和条件的情况下统一改变意愿。",
+          "把此前明确提出的时间、胆量或手艺限制当作最后必须克服的缺点。",
+          "靠新事故连续加码制造高潮，绕开前次承诺留下的责任。",
+          "直接复用上游风格例句作为已发生事件或最终场景。",
+          "提前锁定未建立的退场原因、最终演员名单或灯架修复办法来填补因果缺口。"
+        ],
+        "generator_operation_name": "ending.intent.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:55e9b92200c4b0b20c069bb482cfe0645f0928ed120cfb917612af733ff6f508",
+      "asset_version_id": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1"
+    },
+    {
+      "role": "creative_brief",
+      "content": {
+        "idea": "我和妹妹带着村民排练一场露天小戏。我们对谁来站在台前争执不休，第一场排练偏偏撞上灯架坏了和演员临时退场。我想证明自己能当导演，妹妹想让大家轻松上台。让人物通过修灯、分工和试演中的具体选择形成冲突并改变关系。",
+        "genre": "第一人称生活喜剧",
+        "audience": "成年中文读者",
+        "project_id": "project:input-isolation-01:stage-comedy",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+        ],
+        "source_boundaries": [
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+        ],
+        "creative_input_selection": {
+          "book_id": "book:input-isolation-01:stage-comedy",
+          "purpose": "CREATIVE_EVALUATION",
+          "intent_ref": "WP-CREATIVE-INPUT-ISOLATION-01:authorized-distinct-narrative-validation",
+          "project_id": "project:input-isolation-01:stage-comedy",
+          "source_kind": "TASK_GENERATED",
+          "parent_input": {
+            "content_hash": "sha256:234d0026cca4de43cd9d75ca8651dc8e53645b77b0aa4a706d79c849afc1570b",
+            "asset_version_id": "authority-output:fafe8a8f-f469-4f4b-9afc-c6dad7b998ff:creative.brief:v1"
+          },
+          "workspace_id": "workspace:input-isolation-01:stage-comedy",
+          "contract_version": "creative-input-selection.v1",
+          "selected_by_actor_id": "author-first-native-operator",
+          "selection_operation_id": "29a562da-5f7e-443c-ba59-75601b948c0c"
+        },
+        "creative_brief_contract_version": "creative-brief-v2"
+      },
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+      "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+    },
+    {
+      "role": "reader_promise",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:stage-comedy",
+        "objective": "为成年中文读者确立九章方向的第一人称生活喜剧体验：从我急于证明导演能力的认真与错位中获得笑意，在我与妹妹、村民反复商量分工并兑现约定的过程中获得温暖，期待我逐渐能提出请求、接受条件，与大家一起把小戏推进到共同呈现。",
+        "project_id": "project:input-isolation-01:stage-comedy",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+          "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+          "参与条件、退场原因及具体演出条件通过我能接触的言行建立，不预先补成既定事实。",
+          "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+          "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+          "笑点之后呈现行动带来的分工、局势或关系变化。",
+          "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+          "最终共同呈现可采用较完整的露天演出或朴素的共同试演；不在本阶段固定台前人选、演出规模或章节悬念频率。"
+        ],
+        "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:READER_PROMISE:0",
+        "applicability": [],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "reader_promise": "读者会跟着一个急于证明自己能当导演的我，走进与妹妹、村民共同排练露天小戏的现场。笑意来自认真安排与实际需要之间的错位、对白里的停顿，以及我不得不亲手修改自己主张的时刻；温暖来自有人明确说出条件，有人接下具体工作，也有人允许别人再试一次。持续的期待是：这次谁愿意站台前，谁接住台后的空缺，我们答应的事到下次试演还能否做到。后续需要用可见的选择和协作，挣得我从急于被认可到能够请求帮助、接受限制的转变，也让妹妹承担让大家轻松参与的实际责任。收束的满足来自大家找到愿意共同参与的位置，并把小戏推进到共同呈现；具体形式保持开放。若最终靠强迫、羞辱、凭空救援或一场喝彩替代协作，这份承诺就会落空。",
+        "schema_version": "story_design.authority.v1",
+        "candidate_payload": {
+          "objective": "为成年中文读者确立九章方向的第一人称生活喜剧体验：从我急于证明导演能力的认真与错位中获得笑意，在我与妹妹、村民反复商量分工并兑现约定的过程中获得温暖，期待我逐渐能提出请求、接受条件，与大家一起把小戏推进到共同呈现。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+            "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+            "参与条件、退场原因及具体演出条件通过我能接触的言行建立，不预先补成既定事实。",
+            "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+            "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+            "笑点之后呈现行动带来的分工、局势或关系变化。",
+            "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+            "最终共同呈现可采用较完整的露天演出或朴素的共同试演；不在本阶段固定台前人选、演出规模或章节悬念频率。"
+          ],
+          "applicability": [],
+          "reader_promise": "读者会跟着一个急于证明自己能当导演的我，走进与妹妹、村民共同排练露天小戏的现场。笑意来自认真安排与实际需要之间的错位、对白里的停顿，以及我不得不亲手修改自己主张的时刻；温暖来自有人明确说出条件，有人接下具体工作，也有人允许别人再试一次。持续的期待是：这次谁愿意站台前，谁接住台后的空缺，我们答应的事到下次试演还能否做到。后续需要用可见的选择和协作，挣得我从急于被认可到能够请求帮助、接受限制的转变，也让妹妹承担让大家轻松参与的实际责任。收束的满足来自大家找到愿意共同参与的位置，并把小戏推进到共同呈现；具体形式保持开放。若最终靠强迫、羞辱、凭空救援或一场喝彩替代协作，这份承诺就会落空。",
+          "constraint_envelope": {
+            "role": "READER_PROMISE",
+            "creative_brief": {
+              "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+              "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+                "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+            "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+            "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+            "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+            "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+            "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+            "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+            "把候选发展写成已接受历史，或擅自扩大九章方向。",
+            "替其他人物宣布羞耻或成长，以叙述者判断代替他们可见的选择。",
+            "将可选的补位、轮换、缩短角色或演出形式写成上游已经确定的事件。"
+          ],
+          "disappointment_risks": [
+            "反复采用我逞强、妹妹纠正的同一种局面，会使兄妹或姐妹之间的协作失去变化，也让妹妹免于承担自己的承诺。",
+            "村民提出的条件若从不改变安排，读者会发现所谓协商只是形式，人物仍然只能服从导演。",
+            "后续持续依赖新故障和临时退场，会削弱前次选择与下次排练之间的因果联系。",
+            "只有俏皮对白而没有站位、任务或关系变化，排练会沦为笑话串联。",
+            "过早把我写成善于倾听的人，会抹去急于获得认可的动机，使后续转变缺少过程。",
+            "用总结性独白宣布信任和成长，却没有兑现请求、承认失误或重新尝试的行动，会使温暖缺少支撑。",
+            "把排成小戏等同于满场喝彩、获得专业认可或所有人都愿意上台，会扩大这部生活喜剧实际作出的承诺。",
+            "用一次圆满结果消除所有分歧，会让此前建立的参与条件与协作难处显得无关紧要。"
+          ],
+          "setup_progress_payoff": [
+            {
+              "setup": "以我想证明导演能力、容易把修改听成否定的动机为起点；首场灯架故障与演员退场，使原先的安排必须面对现场缺口。",
+              "payoff": "我能在一次具体协作中说明需要什么、接受对方能承担的范围，并完成自己答应的部分，使导演能力通过帮助排练继续变得可见。",
+              "promise": "读者既能笑我忙着证明自己，也能看见这份急切背后的认真，并获得有行动支撑的人物转变。",
+              "progress": "通过分工和试演，让我的安排接受实际检验；当修改涉及别人已说出的条件时，我需要把命令改成可回应的请求，并承担自己选择带来的相关责任。"
+            },
+            {
+              "setup": "我想证明能当导演，妹妹想让大家轻松上台；谁站台前的争执同时牵涉台后工作和暂时不上台的权利。",
+              "payoff": "一项双方说清并兑现的分工，让我与妹妹都能提供有效帮助，也能向对方提出请求；关系变化由实际配合体现。",
+              "promise": "我与妹妹的争执会逐渐形成可以互相依靠的协作，而双方都保有欲望、失误和选择。",
+              "progress": "让不同任务检验双方主张：我的安排是否真能帮人，妹妹允许缩小任务后是否能说明剩余工作由谁承担。具体承担方式随已建立的条件选择。"
+            },
+            {
+              "setup": "第一场排练的临时退场暴露参与不能被视为理所当然；退场原因及其他人的意愿留待我能接触的言行建立。",
+              "payoff": "读者能从有人按约到场、完成有限任务或主动提出参与请求等可见行动中，感到信任有所积累；不要求所有人上台或撤回限制。",
+              "promise": "村民会作为有自身条件的参与者影响小戏，温暖来自自愿参与与承诺兑现。",
+              "progress": "通过当面交谈逐步建立各人的参与条件，让这些条件真实改变分工与试演形式；前次承诺在后续排练中得到检验。"
+            },
+            {
+              "setup": "首场双重缺口迫使大家调整任务，建立安排需要经过实际试演才能判断是否合用的叙事起点。",
+              "payoff": "共同呈现用得上此前逐步形成的配合，让读者看见小事积累的作用；满足感不依赖专业认可或无缺点的演出。",
+              "promise": "排练中的笑意会推动事情继续发展，前面的尝试将在后面的协作中产生可见作用。",
+              "progress": "后续优先从前次分工、修改与承诺留下的问题推进；可选择回收已经建立的台词安排、动作或提醒，不预先指定某项技巧必然奏效。"
+            }
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+              "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+            }
+          }
+        },
+        "execution_evidence": {
+          "attempt_id": "79fce35d-7650-4a37-b442-78976990d529",
+          "operation_id": "07708e0b-e16e-4b43-8b7b-0870d739331e",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:989870e1-6d77-49d8-a0bc-930522ad5651",
+          "route_snapshot_id": "production_execution/routes/6700151d0bb6d75c2510",
+          "usage_receipt_ref": "authority-asset-version:58563edc-f27c-4cd6-8730-b32dbda451aa",
+          "input_manifest_ref": "production_execution/inputs/6700151d0bb6d75c2510",
+          "context_bundle_hash": "sha256:fe1070a7dcfdb3f8cc9afde8af6399505c9c8287465764994864d319b0b74248",
+          "output_manifest_ref": "authority-asset-version:328c88ae-9249-477e-b67f-9bea883d6c0a",
+          "production_verified": false,
+          "external_receipt_ref": "83f8bbe9-c458-4d64-b1af-27e513c57c41",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:1f51a7b7-b666-4f4a-a0aa-77b5ca0b2e6d",
+          "capability_execution_ref": "348946a5-bd6b-5d97-a085-24af562042e4",
+          "capability_execution_hash": "sha256:d11657b5ea4793829ddaceab33ca4f7d5eae1962b6104a7a20151a95141fa212",
+          "capability_runtime_binding_ref": "sha256:6324cb84c0423077dbd8ae4a63a770c316963836b5f44163a8d28c2b77055306",
+          "capability_runtime_binding_hash": "sha256:bc6e0e5d1cf0d8937ae79f8859c133822d72f4e25c8c82935dda6bef2e7bda33",
+          "context_bundle_asset_version_id": "27530031-efa2-4838-9b1d-662c27ddf5a0",
+          "capability_pack_attempt_snapshot_id": "sha256:6324cb84c0423077dbd8ae4a63a770c316963836b5f44163a8d28c2b77055306",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:bc6e0e5d1cf0d8937ae79f8859c133822d72f4e25c8c82935dda6bef2e7bda33",
+          "narrative_intelligence_selection_digest": "sha256:682d2b31a6568c4e16dc6a29b56daef1338917a024917c0a084bc90eac5a11c3"
+        },
+        "constraint_envelope": {
+          "role": "READER_PROMISE",
+          "creative_brief": {
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+              "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+          "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+          "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+          "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+          "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+          "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+          "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+          "把候选发展写成已接受历史，或擅自扩大九章方向。",
+          "替其他人物宣布羞耻或成长，以叙述者判断代替他们可见的选择。",
+          "将可选的补位、轮换、缩短角色或演出形式写成上游已经确定的事件。"
+        ],
+        "disappointment_risks": [
+          "反复采用我逞强、妹妹纠正的同一种局面，会使兄妹或姐妹之间的协作失去变化，也让妹妹免于承担自己的承诺。",
+          "村民提出的条件若从不改变安排，读者会发现所谓协商只是形式，人物仍然只能服从导演。",
+          "后续持续依赖新故障和临时退场，会削弱前次选择与下次排练之间的因果联系。",
+          "只有俏皮对白而没有站位、任务或关系变化，排练会沦为笑话串联。",
+          "过早把我写成善于倾听的人，会抹去急于获得认可的动机，使后续转变缺少过程。",
+          "用总结性独白宣布信任和成长，却没有兑现请求、承认失误或重新尝试的行动，会使温暖缺少支撑。",
+          "把排成小戏等同于满场喝彩、获得专业认可或所有人都愿意上台，会扩大这部生活喜剧实际作出的承诺。",
+          "用一次圆满结果消除所有分歧，会让此前建立的参与条件与协作难处显得无关紧要。"
+        ],
+        "setup_progress_payoff": [
+          {
+            "setup": "以我想证明导演能力、容易把修改听成否定的动机为起点；首场灯架故障与演员退场，使原先的安排必须面对现场缺口。",
+            "payoff": "我能在一次具体协作中说明需要什么、接受对方能承担的范围，并完成自己答应的部分，使导演能力通过帮助排练继续变得可见。",
+            "promise": "读者既能笑我忙着证明自己，也能看见这份急切背后的认真，并获得有行动支撑的人物转变。",
+            "progress": "通过分工和试演，让我的安排接受实际检验；当修改涉及别人已说出的条件时，我需要把命令改成可回应的请求，并承担自己选择带来的相关责任。"
+          },
+          {
+            "setup": "我想证明能当导演，妹妹想让大家轻松上台；谁站台前的争执同时牵涉台后工作和暂时不上台的权利。",
+            "payoff": "一项双方说清并兑现的分工，让我与妹妹都能提供有效帮助，也能向对方提出请求；关系变化由实际配合体现。",
+            "promise": "我与妹妹的争执会逐渐形成可以互相依靠的协作，而双方都保有欲望、失误和选择。",
+            "progress": "让不同任务检验双方主张：我的安排是否真能帮人，妹妹允许缩小任务后是否能说明剩余工作由谁承担。具体承担方式随已建立的条件选择。"
+          },
+          {
+            "setup": "第一场排练的临时退场暴露参与不能被视为理所当然；退场原因及其他人的意愿留待我能接触的言行建立。",
+            "payoff": "读者能从有人按约到场、完成有限任务或主动提出参与请求等可见行动中，感到信任有所积累；不要求所有人上台或撤回限制。",
+            "promise": "村民会作为有自身条件的参与者影响小戏，温暖来自自愿参与与承诺兑现。",
+            "progress": "通过当面交谈逐步建立各人的参与条件，让这些条件真实改变分工与试演形式；前次承诺在后续排练中得到检验。"
+          },
+          {
+            "setup": "首场双重缺口迫使大家调整任务，建立安排需要经过实际试演才能判断是否合用的叙事起点。",
+            "payoff": "共同呈现用得上此前逐步形成的配合，让读者看见小事积累的作用；满足感不依赖专业认可或无缺点的演出。",
+            "promise": "排练中的笑意会推动事情继续发展，前面的尝试将在后面的协作中产生可见作用。",
+            "progress": "后续优先从前次分工、修改与承诺留下的问题推进；可选择回收已经建立的台词安排、动作或提醒，不预先指定某项技巧必然奏效。"
+          }
+        ],
+        "generator_operation_name": "reader.promise.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:cd3caca34e9d431c36e7b6157e3f01897cfcddbab13218fd1229edbb7ea9ae06",
+      "asset_version_id": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1"
+    },
+    {
+      "role": "theme_contract",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:stage-comedy",
+        "objective": "围绕我想证明能当导演、妹妹想让村民轻松上台的不同愿望，探索认可、参与条件与共同责任的关系。以九章方向中的分工协商、失误和试演，让主题伴随幽默与具体互助展开，使我逐渐能够提出请求、接受条件并完成协作。",
+        "project_id": "project:input-isolation-01:stage-comedy",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+          "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+          "主题通过请求、拒绝、站位、任务交接和试演结果逐步显现；允许我的自我辩解被可见结果修正，不要求每场戏都作主题判断。",
+          "保留我想当导演的欲望，使转变表现为更能提出请求、接受条件和完成协作，而非放弃组织工作。",
+          "各个参与者的意愿和条件须通过我能接触的言行建立；不预设演员退场原因、村民隐秘心理或最终台前人选。",
+          "选择后果按实际因果需要呈现，不要求每次选择都有不可逆损失。",
+          "结尾可倾向支持能兑现承诺的协作，同时保留具体分工仍需重谈的余地；不提前锁定完整演出或共同试演的收束形式。",
+          "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+          "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+          "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+          "笑点之后呈现行动带来的分工、局势或关系变化。"
+        ],
+        "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:THEME_CONTRACT:0",
+        "choice_tests": [
+          {
+            "cost": "亲自补演会减少我观察全场的便利，并需要说明交接；缩短试演则暂时无法检验原定安排的全部效果。",
+            "choice": "候选检验：台前出现空缺时，我可以亲自补演并把部分调度交给妹妹，也可以先协商缩短试演，保留自己在台外观察的条件。",
+            "thematic_pressure": "检验我能否把证明导演能力的欲望落实为有用的安排。补位与留在台外都可能合理，关键是我是否说明需要、接受他人的条件，并承担选择留下的工作。"
+          },
+          {
+            "cost": "接受限制可能使戏变简单，并增加其他自愿参与者的工作；继续协商需要时间，也可能仍得不到完整角色的承担者。",
+            "choice": "候选检验：村民当面提出只愿承担较小任务时，我可以接受并重分剩余工作，也可以解释完整任务的需要，询问对方是否愿意调整；对方仍可拒绝。",
+            "thematic_pressure": "检验认可是否必须来自别人服从我的完整方案。以对方实际答应的任务及后续试演结果表现信任，不把任何一次拒绝解释成对我能力的最终判决。"
+          },
+          {
+            "cost": "接下工作会占用她照顾其他环节的时间；重谈范围需要承认先前安排不够周全，也可能推迟试演。",
+            "choice": "候选检验：妹妹提出让参与者轻松一些的安排后，若试演显露无人承担的工作，她可以说明自己愿意接下的部分并向我求助，也可以与参与者重谈任务范围。",
+            "thematic_pressure": "检验体谅怎样成为可以兑现的承诺。让妹妹有判断失误和主动修正的空间，也让我的组织能力有机会成为她需要的帮助。"
+          },
+          {
+            "cost": "原定灯光和站位效果暂时无法检验，需要调整当天目标并向参与者说明变化。",
+            "choice": "候选检验：首轮灯架故障后先停止使用，我与妹妹可以协商改排对白或其他无需该设备的部分；是否恢复原定试演，取决于已建立的处理能力和现场条件。",
+            "thematic_pressure": "检验承认当前办不到的事是否也能体现导演责任。笑意可来自我郑重宣布的安排被自己改写，之后必须呈现新的分工和可执行的排练目标。"
+          }
+        ],
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "沿用上游首轮排练的台前空缺与台后调度冲突，补位会改变我的工作和指挥条件，适合呈现具体后果。",
+            "field_path": "$.choice_tests[0].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "上游以参与者提出条件、我修改分工为叙事动力，接受有限参与需要重新分配剩余任务。",
+            "field_path": "$.choice_tests[1].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "上游明确要求检验妹妹的宽松承诺由谁承担，可通过她说明能力边界及请求帮助呈现责任。",
+            "field_path": "$.choice_tests[2].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者指定首轮灯架故障，上游要求先停止使用，再按已建立的能力处理；调整排练会影响原定呈现方式。",
+            "field_path": "$.choice_tests[3].cost"
+          }
+        ],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "opposing_answers": [
+          "答案一：能把完整安排落实，才足以证明我能当导演。可让我的站位、出场和替补方案确实解决部分问题，使组织的价值可见；当方案遇到参与条件时，再检验我是否把修改误听成否定。这个答案有实际用处，但不能自动赋予我替别人决定参与范围的权力。",
+          "答案二：先让人愿意留下来，才有戏可排。可通过妹妹接受较小任务、允许再试一次的提议表现其力量；剩余工作随后由谁承担，则检验体谅能否兑现。这个答案值得支持，也需要面对时间和人手的限制。",
+          "答案三：导演能力可以体现在提出清楚的请求、组织可兑现的约定，并随试演结果调整安排。可通过我问明条件、妹妹说明自己的负担、参与者完成答应的部分逐步呈现。故事可倾向这一答案，但共同协作仍允许拒绝和暂时做不成，不把一次成功写成永久共识。"
+        ],
+        "candidate_payload": {
+          "objective": "围绕我想证明能当导演、妹妹想让村民轻松上台的不同愿望，探索认可、参与条件与共同责任的关系。以九章方向中的分工协商、失误和试演，让主题伴随幽默与具体互助展开，使我逐渐能够提出请求、接受条件并完成协作。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+            "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+            "主题通过请求、拒绝、站位、任务交接和试演结果逐步显现；允许我的自我辩解被可见结果修正，不要求每场戏都作主题判断。",
+            "保留我想当导演的欲望，使转变表现为更能提出请求、接受条件和完成协作，而非放弃组织工作。",
+            "各个参与者的意愿和条件须通过我能接触的言行建立；不预设演员退场原因、村民隐秘心理或最终台前人选。",
+            "选择后果按实际因果需要呈现，不要求每次选择都有不可逆损失。",
+            "结尾可倾向支持能兑现承诺的协作，同时保留具体分工仍需重谈的余地；不提前锁定完整演出或共同试演的收束形式。",
+            "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+            "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+            "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+            "笑点之后呈现行动带来的分工、局势或关系变化。"
+          ],
+          "choice_tests": [
+            {
+              "cost": "亲自补演会减少我观察全场的便利，并需要说明交接；缩短试演则暂时无法检验原定安排的全部效果。",
+              "choice": "候选检验：台前出现空缺时，我可以亲自补演并把部分调度交给妹妹，也可以先协商缩短试演，保留自己在台外观察的条件。",
+              "thematic_pressure": "检验我能否把证明导演能力的欲望落实为有用的安排。补位与留在台外都可能合理，关键是我是否说明需要、接受他人的条件，并承担选择留下的工作。"
+            },
+            {
+              "cost": "接受限制可能使戏变简单，并增加其他自愿参与者的工作；继续协商需要时间，也可能仍得不到完整角色的承担者。",
+              "choice": "候选检验：村民当面提出只愿承担较小任务时，我可以接受并重分剩余工作，也可以解释完整任务的需要，询问对方是否愿意调整；对方仍可拒绝。",
+              "thematic_pressure": "检验认可是否必须来自别人服从我的完整方案。以对方实际答应的任务及后续试演结果表现信任，不把任何一次拒绝解释成对我能力的最终判决。"
+            },
+            {
+              "cost": "接下工作会占用她照顾其他环节的时间；重谈范围需要承认先前安排不够周全，也可能推迟试演。",
+              "choice": "候选检验：妹妹提出让参与者轻松一些的安排后，若试演显露无人承担的工作，她可以说明自己愿意接下的部分并向我求助，也可以与参与者重谈任务范围。",
+              "thematic_pressure": "检验体谅怎样成为可以兑现的承诺。让妹妹有判断失误和主动修正的空间，也让我的组织能力有机会成为她需要的帮助。"
+            },
+            {
+              "cost": "原定灯光和站位效果暂时无法检验，需要调整当天目标并向参与者说明变化。",
+              "choice": "候选检验：首轮灯架故障后先停止使用，我与妹妹可以协商改排对白或其他无需该设备的部分；是否恢复原定试演，取决于已建立的处理能力和现场条件。",
+              "thematic_pressure": "检验承认当前办不到的事是否也能体现导演责任。笑意可来自我郑重宣布的安排被自己改写，之后必须呈现新的分工和可执行的排练目标。"
+            }
+          ],
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "沿用上游首轮排练的台前空缺与台后调度冲突，补位会改变我的工作和指挥条件，适合呈现具体后果。",
+              "field_path": "$.choice_tests[0].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "上游以参与者提出条件、我修改分工为叙事动力，接受有限参与需要重新分配剩余任务。",
+              "field_path": "$.choice_tests[1].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "上游明确要求检验妹妹的宽松承诺由谁承担，可通过她说明能力边界及请求帮助呈现责任。",
+              "field_path": "$.choice_tests[2].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者指定首轮灯架故障，上游要求先停止使用，再按已建立的能力处理；调整排练会影响原定呈现方式。",
+              "field_path": "$.choice_tests[3].cost"
+            }
+          ],
+          "opposing_answers": [
+            "答案一：能把完整安排落实，才足以证明我能当导演。可让我的站位、出场和替补方案确实解决部分问题，使组织的价值可见；当方案遇到参与条件时，再检验我是否把修改误听成否定。这个答案有实际用处，但不能自动赋予我替别人决定参与范围的权力。",
+            "答案二：先让人愿意留下来，才有戏可排。可通过妹妹接受较小任务、允许再试一次的提议表现其力量；剩余工作随后由谁承担，则检验体谅能否兑现。这个答案值得支持，也需要面对时间和人手的限制。",
+            "答案三：导演能力可以体现在提出清楚的请求、组织可兑现的约定，并随试演结果调整安排。可通过我问明条件、妹妹说明自己的负担、参与者完成答应的部分逐步呈现。故事可倾向这一答案，但共同协作仍允许拒绝和暂时做不成，不把一次成功写成永久共识。"
+          ],
+          "thematic_question": "我想证明自己能当导演时，怎样让自己的安排成为别人愿意参与、也能一起兑现的约定？",
+          "constraint_envelope": {
+            "role": "THEME_CONTRACT",
+            "creative_brief": {
+              "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+              "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+                "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+            "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+            "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+            "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+            "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+            "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+            "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+            "把候选发展写成已接受历史，或擅自扩大九章方向。",
+            "把所有意见分歧归结为我的虚荣，抹去组织安排的实际需要。",
+            "以我无条件包办所有剩余工作证明成长，或以任何人无条件服从证明团结。",
+            "让人物直接宣告他人已经成长，替代可观察的请求、回应和履约。",
+            "把选择检验变成每场戏必须承担不可逆代价的统一规则。"
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+              "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+            }
+          }
+        },
+        "thematic_question": "我想证明自己能当导演时，怎样让自己的安排成为别人愿意参与、也能一起兑现的约定？",
+        "execution_evidence": {
+          "attempt_id": "fffee2a5-bcc5-47de-91b6-b2e44ade2722",
+          "operation_id": "54f5e8be-bc05-49bf-9123-1aba4ed5221a",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:e6da7462-03f5-49c0-866b-9486d0cf798b",
+          "route_snapshot_id": "production_execution/routes/15b7d48dac5409751d4a",
+          "usage_receipt_ref": "authority-asset-version:55b9ce54-349d-4e9a-9872-0cbd477b97f3",
+          "input_manifest_ref": "production_execution/inputs/15b7d48dac5409751d4a",
+          "context_bundle_hash": "sha256:bfffb830bce9ba1e501c6f3946cd5f8d5b3fcc6a44f9bb7fc080c9980f808170",
+          "output_manifest_ref": "authority-asset-version:51648e84-5a38-4d92-b2f5-9179adf16c06",
+          "production_verified": false,
+          "external_receipt_ref": "8bae959b-cc0e-42a5-b46c-f71460e851fd",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:62b412f0-bbd6-43b3-8393-4068c9980ca6",
+          "capability_execution_ref": "9a64fad8-00e9-5407-aaf3-aab9e4ea89f7",
+          "capability_execution_hash": "sha256:dcca59f79d2e914a0da0ef1ffc68a52c37d077ba2b91f60be6c1b3ee4b8a3262",
+          "capability_runtime_binding_ref": "sha256:165ba325e7a0fcc5bf8e3f6e00a4fdccbea0779f15b17979ba88c508fc110d44",
+          "capability_runtime_binding_hash": "sha256:d82c0848a6060eeca5f773337c536203d5d751900bacd8383498cd9384ff5017",
+          "context_bundle_asset_version_id": "f9444717-845c-4a5a-b150-e13fe4b62916",
+          "capability_pack_attempt_snapshot_id": "sha256:165ba325e7a0fcc5bf8e3f6e00a4fdccbea0779f15b17979ba88c508fc110d44",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:d82c0848a6060eeca5f773337c536203d5d751900bacd8383498cd9384ff5017",
+          "narrative_intelligence_selection_digest": "sha256:e72ef5f560b50e0245cac8044c32567ee4fe3cdcb3d13f91bc774ea77533c184"
+        },
+        "constraint_envelope": {
+          "role": "THEME_CONTRACT",
+          "creative_brief": {
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+              "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+          "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+          "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+          "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+          "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+          "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+          "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+          "把候选发展写成已接受历史，或擅自扩大九章方向。",
+          "把所有意见分歧归结为我的虚荣，抹去组织安排的实际需要。",
+          "以我无条件包办所有剩余工作证明成长，或以任何人无条件服从证明团结。",
+          "让人物直接宣告他人已经成长，替代可观察的请求、回应和履约。",
+          "把选择检验变成每场戏必须承担不可逆代价的统一规则。"
+        ],
+        "generator_operation_name": "theme.candidates.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:f1f977b473bd9d0bd6b9bed5776789148f961732f3f72c39f9fb931b52287fe7",
+      "asset_version_id": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1"
+    },
+    {
+      "role": "creative_foundation",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "genre": "第一人称生活喜剧",
+        "book_id": "book:input-isolation-01:stage-comedy",
+        "subgenre": "乡村排练生活喜剧",
+        "core_fear": "我怕大家只在缺人搬东西时需要我，真正排戏时却觉得我的导演安排多余；因此容易把别人提出修改听成对我能力的否定。",
+        "objective": "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+        "project_id": "project:input-isolation-01:stage-comedy",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。"
+        ],
+        "core_desire": "我想把露天小戏排成，证明自己能当导演；妹妹想让村民轻松上台，不因一次失误或不合适的分工退出。",
+        "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:CREATIVE_FOUNDATION:comparison",
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者明确以兄妹或姐妹协作、村民排练和露天小戏为题材，适合乡村排练生活喜剧；不预设叙述者性别。",
+            "field_path": "$.subgenre"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者明确指定我想证明自己能当导演。",
+            "field_path": "$.core_desire"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "围绕证明导演能力，可提出怕自己的安排没人需要这一动机假设，通过我参与的具体争执表现。",
+            "field_path": "$.core_fear"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者明确指定我与妹妹争执谁站台前，并要求修灯、分工和试演中的选择推动关系变化。",
+            "field_path": "$.core_conflict"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "九章方向可由排练中的连续协作问题支撑，章节划分保持可调整，不追加长篇连载要求。",
+            "field_path": "$.serialization_potential"
+          }
+        ],
+        "core_conflict": "我把站位、出场和替补都视为导演必须决定的事；妹妹认为，先让人愿意留下来，才有戏可排。灯架坏了、演员临时退场，使我们不得不决定谁补位、谁照管现场、谁有权说暂时不上台。每次分工都检验我的安排是否真能帮人，也检验妹妹的宽松承诺是否有人承担。",
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          }
+        ],
+        "style_profile": {
+          "pov": "第一人称有限视角；只叙述我看见、做过、听到以及明确标识的个人推测。",
+          "narrator": "亲自组织和参与排练的我，急于证明能当导演，习惯先解释自己的安排，再被现场结果迫使改口；随着协作推进，逐渐更愿意先问别人需要什么。",
+          "constraints": [
+            "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+            "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+            "笑点之后呈现行动带来的分工、局势或关系变化。",
+            "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+            "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+            "以下例句均为原创风格示范，不构成已发生事件。"
+          ],
+          "genre_conventions": [
+            "生活喜剧以认真做事时出现的错位、对白停顿和误会产生笑意。",
+            "第一人称保留我对自身表现的偏袒，让亲眼可见的结果修正判断。",
+            "温暖由具体互助和兑现承诺积累。",
+            "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。"
+          ],
+          "original_examples": [
+            {
+              "example": "我在名单旁边写下“总调度”。妹妹指着空出来的角色问：“总调度会说这三句吗？”我看了看名单，把笔递给她：“会。你先替我调度一下。”",
+              "purpose": "用对白和补位呈现导演欲望的实际代价",
+              "explanation": "我的身份宣示被具体缺口打断；补位让妹妹获得临时调度权，笑点伴随行动和关系变化。"
+            },
+            {
+              "example": "灯架歪着，我让大家先退开。妹妹问：“还排吗？”我把原先画好的站位翻过来：“排对白。灯的事先放下。”刚才我还说这张图不能改，现在背面比正面忙。",
+              "purpose": "让故障触发可见选择而非凭空解决",
+              "explanation": "先停止使用故障设备，再改变排练任务；自嘲来自我亲手推翻自己的安排，局势转向可继续的对白试演。"
+            },
+            {
+              "example": "“我只说一句。”他把台词纸推回来。妹妹说：“一句也行。”我差点问那剩下的谁说，想起自己刚答应补位，便把纸拉到面前：“哪一句你想留着？”他第一次伸手指了台词。",
+              "purpose": "用有限承诺推进参与意愿与分工",
+              "explanation": "村民明确自己的条件，妹妹的承诺需要我承担余下工作；我的追问给对方选择，使参与从勉强转为具体合作。"
+            }
+          ]
+        },
+        "target_reader": "成年中文读者，尤其是喜欢日常对白、亲人之间的小争执，以及普通人共同做成一件事的读者。",
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "differentiation": "把谁站台前变成一项不断需要重谈的协作决定：愿意修灯的人未必愿意演，愿意演的人可能只肯说一句，妹妹愿意替人解围却未必能同时照管台后。喜剧的发现是，同一个人换个位置便可能从麻烦制造者变成关键帮手；我的导演能力也在这些换位中变得可见。",
+        "narrative_engine": "围绕一次次具体试演循环推进：我提出能展示导演能力的安排，妹妹或村民提出与自身时间、胆量或手艺有关的条件；实际试演暴露安排的缺口，我必须修改分工或说明请求，修改又改变下一次谁愿意参与。首轮以灯架故障和演员退场启动，让我在补台前的空缺与维持台后运转之间作出选择。后续问题从前次选择留下的责任产生，避免每章靠新故障重启。",
+        "candidate_payload": {
+          "genre": "第一人称生活喜剧",
+          "subgenre": "乡村排练生活喜剧",
+          "core_fear": "我怕大家只在缺人搬东西时需要我，真正排戏时却觉得我的导演安排多余；因此容易把别人提出修改听成对我能力的否定。",
+          "objective": "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。"
+          ],
+          "core_desire": "我想把露天小戏排成，证明自己能当导演；妹妹想让村民轻松上台，不因一次失误或不合适的分工退出。",
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者明确以兄妹或姐妹协作、村民排练和露天小戏为题材，适合乡村排练生活喜剧；不预设叙述者性别。",
+              "field_path": "$.subgenre"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者明确指定我想证明自己能当导演。",
+              "field_path": "$.core_desire"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "围绕证明导演能力，可提出怕自己的安排没人需要这一动机假设，通过我参与的具体争执表现。",
+              "field_path": "$.core_fear"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者明确指定我与妹妹争执谁站台前，并要求修灯、分工和试演中的选择推动关系变化。",
+              "field_path": "$.core_conflict"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "九章方向可由排练中的连续协作问题支撑，章节划分保持可调整，不追加长篇连载要求。",
+              "field_path": "$.serialization_potential"
+            }
+          ],
+          "core_conflict": "我把站位、出场和替补都视为导演必须决定的事；妹妹认为，先让人愿意留下来，才有戏可排。灯架坏了、演员临时退场，使我们不得不决定谁补位、谁照管现场、谁有权说暂时不上台。每次分工都检验我的安排是否真能帮人，也检验妹妹的宽松承诺是否有人承担。",
+          "style_profile": {
+            "pov": "第一人称有限视角；只叙述我看见、做过、听到以及明确标识的个人推测。",
+            "narrator": "亲自组织和参与排练的我，急于证明能当导演，习惯先解释自己的安排，再被现场结果迫使改口；随着协作推进，逐渐更愿意先问别人需要什么。",
+            "constraints": [
+              "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+              "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+              "笑点之后呈现行动带来的分工、局势或关系变化。",
+              "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+              "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+              "以下例句均为原创风格示范，不构成已发生事件。"
+            ],
+            "genre_conventions": [
+              "生活喜剧以认真做事时出现的错位、对白停顿和误会产生笑意。",
+              "第一人称保留我对自身表现的偏袒，让亲眼可见的结果修正判断。",
+              "温暖由具体互助和兑现承诺积累。",
+              "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。"
+            ],
+            "original_examples": [
+              {
+                "example": "我在名单旁边写下“总调度”。妹妹指着空出来的角色问：“总调度会说这三句吗？”我看了看名单，把笔递给她：“会。你先替我调度一下。”",
+                "purpose": "用对白和补位呈现导演欲望的实际代价",
+                "explanation": "我的身份宣示被具体缺口打断；补位让妹妹获得临时调度权，笑点伴随行动和关系变化。"
+              },
+              {
+                "example": "灯架歪着，我让大家先退开。妹妹问：“还排吗？”我把原先画好的站位翻过来：“排对白。灯的事先放下。”刚才我还说这张图不能改，现在背面比正面忙。",
+                "purpose": "让故障触发可见选择而非凭空解决",
+                "explanation": "先停止使用故障设备，再改变排练任务；自嘲来自我亲手推翻自己的安排，局势转向可继续的对白试演。"
+              },
+              {
+                "example": "“我只说一句。”他把台词纸推回来。妹妹说：“一句也行。”我差点问那剩下的谁说，想起自己刚答应补位，便把纸拉到面前：“哪一句你想留着？”他第一次伸手指了台词。",
+                "purpose": "用有限承诺推进参与意愿与分工",
+                "explanation": "村民明确自己的条件，妹妹的承诺需要我承担余下工作；我的追问给对方选择，使参与从勉强转为具体合作。"
+              }
+            ]
+          },
+          "target_reader": "成年中文读者，尤其是喜欢日常对白、亲人之间的小争执，以及普通人共同做成一件事的读者。",
+          "differentiation": "把谁站台前变成一项不断需要重谈的协作决定：愿意修灯的人未必愿意演，愿意演的人可能只肯说一句，妹妹愿意替人解围却未必能同时照管台后。喜剧的发现是，同一个人换个位置便可能从麻烦制造者变成关键帮手；我的导演能力也在这些换位中变得可见。",
+          "narrative_engine": "围绕一次次具体试演循环推进：我提出能展示导演能力的安排，妹妹或村民提出与自身时间、胆量或手艺有关的条件；实际试演暴露安排的缺口，我必须修改分工或说明请求，修改又改变下一次谁愿意参与。首轮以灯架故障和演员退场启动，让我在补台前的空缺与维持台后运转之间作出选择。后续问题从前次选择留下的责任产生，避免每章靠新故障重启。",
+          "why_worth_writing": "排一场小戏能让认可与照顾之间的难处变得具体：一句台词由谁说，一项工作由谁接，答应让别人轻松的人又该承担多少。读者既能笑我忙着证明自己，也能看到妹妹和村民各自的认真；最后的满足来自人们找到愿意共同参与的位置。",
+          "emotional_contract": "先让读者笑我急于显得有办法，再让读者看见这份急切背后的认真。妹妹也会判断失误，并承担自己让大家轻松的承诺。每次暖意都来自有人接住一句说错的话、完成一项答应的活，或允许另一个人重新试一次；最终回报是大家愿意一起把戏演下去。",
+          "constraint_envelope": {
+            "role": "CREATIVE_FOUNDATION",
+            "creative_brief": {
+              "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+              "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v5",
+            "narrative_search": {
+              "search_id": "narrative-search:4d99c071936a4acd9ca523a8a57dfa8bf65cf2147e22f123ea45ba9a641c2d2e",
+              "branch_key": "future-2",
+              "hard_constraints": [
+                "Preserve the exact author brief and source boundaries",
+                "Candidates are hypothetical; no accepted history or Canon mutation"
+              ],
+              "planning_horizon": {
+                "level": "CREATIVE_FOUNDATION",
+                "target_chapters": 9
+              },
+              "strategy_directive": "Explore a distinct direction through character motivations and relationships while respecting the author's constraints",
+              "desired_transformation": {
+                "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+                "author_brief": {
+                  "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+                  "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+                },
+                "selection_policy": {
+                  "tie_break": "STABLE_ID",
+                  "contract_version": "narrative-search-comparison.v2",
+                  "dimension_weights": {
+                    "arc_momentum": 1,
+                    "setup_payoff": 1,
+                    "reader_promise": 1,
+                    "reversal_reveal": 1,
+                    "character_agency": 1,
+                    "pacing_variation": 1,
+                    "pattern_diversity": 1,
+                    "world_consequence": 1,
+                    "future_optionality": 1,
+                    "conflict_escalation": 1,
+                    "emotional_progression": 1,
+                    "relationship_evolution": 1,
+                    "choice_cost_consequence": 1
+                  },
+                  "uncertainty_margin": 0.05
+                }
+              },
+              "accepted_through_chapter": 0,
+              "parent_state_asset_version_id": ""
+            },
+            "foundation_parent_bindings": {}
+          },
+          "prohibited_outcomes": [
+            "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+            "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+            "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+            "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+            "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+            "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+            "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+            "把候选发展写成已接受历史，或擅自扩大九章方向。"
+          ],
+          "serialization_potential": "适合九章短篇幅连续叙事。前段由首轮排练的双重缺口逼出临时分工，中段让前次承诺在后续试演中接受检验，后段把形成的协作方式用于露天小戏的共同呈现。章节可围绕不同参与问题拆合；章末留下一个具体请求或尚待检验的安排，支持继续阅读，不必固定事故或悬念频率。",
+          "foundation_parent_bindings": {},
+          "narrative_search_projection": {
+            "assumptions": [
+              "本分支为future-2，探索以人物动机、姐妹或兄妹关系和分工协商驱动的九章候选方向，叙述者性别保持未指定。",
+              "村民各自愿意承担的工作、演员退场原因及演出具体条件尚未冻结，后续只能通过我能接触的言行逐步建立。",
+              "核心恐惧和协作办法均为本候选提出的设计假设，不是上游既定人物事实。",
+              "各维度为0至1的模型估计，存在不低于0.05的比较不确定性，不构成文学资格判定或激活依据。"
+            ],
+            "future_options": [
+              "让妹妹短暂承担一次完整调度，在轻松参与与按约完成之间形成她自己的选择。",
+              "让一位起初只愿帮忙的村民提出有限度的上台请求，检验我是否尊重其条件。",
+              "保留台前人选的多种解法：轮换、缩短角色或由我补位，具体选择取决于后续已建立的参与意愿。",
+              "在九章范围内选择较完整的露天演出或朴素的共同试演作为收束，保留近期调整空间。"
+            ],
+            "narrative_risks": [
+              "若每章都由我逞强、妹妹纠正，关系会固化；需要安排妹妹承担承诺、我提供有效帮助的不同局面。",
+              "若村民仅按安排出场，协商会失去实质；需逐个建立他们明确说出的参与条件。",
+              "若首轮故障之后持续加入突发事故，会削弱人物选择的因果作用；后续优先使用既有分工造成的问题。",
+              "若过早确定最终演出形式和台前人选，会压缩九章方向的可调整空间。",
+              "若用叙述直接宣告理解和成长，温暖会缺少支撑；应以兑现约定、承认失误和具体协作呈现。"
+            ],
+            "repetition_keys": [
+              "future-2:台前资格与台后贡献",
+              "future-2:分工承诺产生后续责任",
+              "future-2:导演亲自补位",
+              "future-2:妹妹的宽松安排需要兑现"
+            ],
+            "contract_version": "narrative-search-projection.v1",
+            "selection_summary": "本候选适合作者要求的对白、失误与协作回报：九章动力主要来自谁愿意做什么、承诺由谁完成以及两人的调度权如何变化。代价是外部悬念较轻，需要持续写出各人的具体条件和不同的试演节奏。没有其他分支文本可供直接比较，本结果仅提供future-2的独立方向估计。",
+            "strategy_fingerprint": "future-2|motivation-relationship|frontstage-backstage-negotiation|first-person-life-comedy|nine-chapter-flexible",
+            "creative_intelligence": {
+              "arc_momentum": 0.8,
+              "setup_payoff": 0.83,
+              "reader_promise": 0.88,
+              "reversal_reveal": 0.72,
+              "character_agency": 0.89,
+              "pacing_variation": 0.81,
+              "pattern_diversity": 0.79,
+              "world_consequence": 0.68,
+              "future_optionality": 0.9,
+              "conflict_escalation": 0.73,
+              "emotional_progression": 0.86,
+              "relationship_evolution": 0.9,
+              "choice_cost_consequence": 0.82
+            },
+            "irreversible_decisions": [],
+            "projected_consequences": [
+              "若我为维持排练主动补演，就会暂时失去站在台外指挥的便利，并必须把部分调度交给妹妹。",
+              "若妹妹允许参与者缩小任务，剩余工作便需要重新分配，她必须明确询问谁愿意接手。",
+              "若我接受村民对任务的限制，排练形式可能变简单，但参与者更可能愿意再次到场。",
+              "若我们反复修改分工却没有说明变化，参与者可能误会承诺；这能产生需要当面澄清的后续场景。"
+            ],
+            "narrative_opportunities": [
+              "首轮缺人让我必须亲自试演，使指挥别人时没发现的难处成为可见经验。",
+              "妹妹替人答应一项任务后无法兼顾另一项任务，能使她主动向我求助，而非始终负责纠正我。",
+              "把前期被我嫌弃的短台词、慢动作或台后提醒，转化为后来实际可用的配合，形成小尺度铺垫回收。",
+              "通过一次分工被遵守或一次请求被拒绝，呈现村民与我之间的信任变化。"
+            ]
+          }
+        },
+        "why_worth_writing": "排一场小戏能让认可与照顾之间的难处变得具体：一句台词由谁说，一项工作由谁接，答应让别人轻松的人又该承担多少。读者既能笑我忙着证明自己，也能看到妹妹和村民各自的认真；最后的满足来自人们找到愿意共同参与的位置。",
+        "emotional_contract": "先让读者笑我急于显得有办法，再让读者看见这份急切背后的认真。妹妹也会判断失误，并承担自己让大家轻松的承诺。每次暖意都来自有人接住一句说错的话、完成一项答应的活，或允许另一个人重新试一次；最终回报是大家愿意一起把戏演下去。",
+        "execution_evidence": {
+          "attempt_id": "c8b208ff-38de-4cbc-aef4-116206670df5",
+          "operation_id": "085f41bc-28a7-47cc-93f6-c2c8880257dd",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:f5d10282-407d-425a-9f5a-f4348f8cb581",
+          "route_snapshot_id": "production_execution/routes/6a68206dedda9c91092d",
+          "usage_receipt_ref": "authority-asset-version:791b4fe8-f1bf-4915-abb7-770b5a3da884",
+          "input_manifest_ref": "production_execution/inputs/6a68206dedda9c91092d",
+          "context_bundle_hash": "sha256:f200c44f1c34b5645df0bbb7561bd90707a93500d61f3ecd6ee7a8ec661a8330",
+          "output_manifest_ref": "authority-asset-version:85582db2-0a98-4c8b-9db9-4bdddc355608",
+          "production_verified": false,
+          "external_receipt_ref": "3727e7e8-944f-47aa-be0d-2b3f986a2033",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:bc391ec2-df68-4ae8-ad8b-c04748a5ae09",
+          "capability_execution_ref": "944c402e-5b33-5b39-a86a-862f218eb2b0",
+          "capability_execution_hash": "sha256:83e5ac95b403fee4e16754708597e0d39073965b790af4a61f746b5a4e99f6f9",
+          "capability_runtime_binding_ref": "sha256:faf8480fd49e03605270cc7e7d31a229d1cee24cf2d411eaf47f41ad959d187c",
+          "capability_runtime_binding_hash": "sha256:ae41b171cb05213688fe9d98deb735a01ccfb697b47cfd64c2704d07ae6a913a",
+          "context_bundle_asset_version_id": "e4085643-33e2-4a48-b484-bdf47a40a2f8",
+          "capability_pack_attempt_snapshot_id": "sha256:faf8480fd49e03605270cc7e7d31a229d1cee24cf2d411eaf47f41ad959d187c",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:ae41b171cb05213688fe9d98deb735a01ccfb697b47cfd64c2704d07ae6a913a",
+          "narrative_intelligence_selection_digest": "sha256:bf93dc750795f52ab09d98e4cf890a7f1deadbd143ac204785cde5c53c1e375c"
+        },
+        "constraint_envelope": {
+          "role": "CREATIVE_FOUNDATION",
+          "creative_brief": {
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v5",
+          "narrative_search": {
+            "search_id": "narrative-search:4d99c071936a4acd9ca523a8a57dfa8bf65cf2147e22f123ea45ba9a641c2d2e",
+            "branch_key": "future-2",
+            "hard_constraints": [
+              "Preserve the exact author brief and source boundaries",
+              "Candidates are hypothetical; no accepted history or Canon mutation"
+            ],
+            "planning_horizon": {
+              "level": "CREATIVE_FOUNDATION",
+              "target_chapters": 9
+            },
+            "strategy_directive": "Explore a distinct direction through character motivations and relationships while respecting the author's constraints",
+            "desired_transformation": {
+              "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+              "author_brief": {
+                "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+                "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+              },
+              "selection_policy": {
+                "tie_break": "STABLE_ID",
+                "contract_version": "narrative-search-comparison.v2",
+                "dimension_weights": {
+                  "arc_momentum": 1,
+                  "setup_payoff": 1,
+                  "reader_promise": 1,
+                  "reversal_reveal": 1,
+                  "character_agency": 1,
+                  "pacing_variation": 1,
+                  "pattern_diversity": 1,
+                  "world_consequence": 1,
+                  "future_optionality": 1,
+                  "conflict_escalation": 1,
+                  "emotional_progression": 1,
+                  "relationship_evolution": 1,
+                  "choice_cost_consequence": 1
+                },
+                "uncertainty_margin": 0.05
+              }
+            },
+            "accepted_through_chapter": 0,
+            "parent_state_asset_version_id": ""
+          },
+          "foundation_parent_bindings": {}
+        },
+        "prohibited_outcomes": [
+          "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+          "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+          "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+          "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+          "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+          "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+          "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+          "把候选发展写成已接受历史，或擅自扩大九章方向。"
+        ],
+        "serialization_potential": "适合九章短篇幅连续叙事。前段由首轮排练的双重缺口逼出临时分工，中段让前次承诺在后续试演中接受检验，后段把形成的协作方式用于露天小戏的共同呈现。章节可围绕不同参与问题拆合；章末留下一个具体请求或尚待检验的安排，支持继续阅读，不必固定事故或悬念频率。",
+        "generator_operation_name": "creative.candidates.generate",
+        "foundation_parent_bindings": {},
+        "narrative_search_projection": {
+          "assumptions": [
+            "本分支为future-2，探索以人物动机、姐妹或兄妹关系和分工协商驱动的九章候选方向，叙述者性别保持未指定。",
+            "村民各自愿意承担的工作、演员退场原因及演出具体条件尚未冻结，后续只能通过我能接触的言行逐步建立。",
+            "核心恐惧和协作办法均为本候选提出的设计假设，不是上游既定人物事实。",
+            "各维度为0至1的模型估计，存在不低于0.05的比较不确定性，不构成文学资格判定或激活依据。"
+          ],
+          "future_options": [
+            "让妹妹短暂承担一次完整调度，在轻松参与与按约完成之间形成她自己的选择。",
+            "让一位起初只愿帮忙的村民提出有限度的上台请求，检验我是否尊重其条件。",
+            "保留台前人选的多种解法：轮换、缩短角色或由我补位，具体选择取决于后续已建立的参与意愿。",
+            "在九章范围内选择较完整的露天演出或朴素的共同试演作为收束，保留近期调整空间。"
+          ],
+          "narrative_risks": [
+            "若每章都由我逞强、妹妹纠正，关系会固化；需要安排妹妹承担承诺、我提供有效帮助的不同局面。",
+            "若村民仅按安排出场，协商会失去实质；需逐个建立他们明确说出的参与条件。",
+            "若首轮故障之后持续加入突发事故，会削弱人物选择的因果作用；后续优先使用既有分工造成的问题。",
+            "若过早确定最终演出形式和台前人选，会压缩九章方向的可调整空间。",
+            "若用叙述直接宣告理解和成长，温暖会缺少支撑；应以兑现约定、承认失误和具体协作呈现。"
+          ],
+          "repetition_keys": [
+            "future-2:台前资格与台后贡献",
+            "future-2:分工承诺产生后续责任",
+            "future-2:导演亲自补位",
+            "future-2:妹妹的宽松安排需要兑现"
+          ],
+          "contract_version": "narrative-search-projection.v1",
+          "selection_summary": "本候选适合作者要求的对白、失误与协作回报：九章动力主要来自谁愿意做什么、承诺由谁完成以及两人的调度权如何变化。代价是外部悬念较轻，需要持续写出各人的具体条件和不同的试演节奏。没有其他分支文本可供直接比较，本结果仅提供future-2的独立方向估计。",
+          "strategy_fingerprint": "future-2|motivation-relationship|frontstage-backstage-negotiation|first-person-life-comedy|nine-chapter-flexible",
+          "creative_intelligence": {
+            "arc_momentum": 0.8,
+            "setup_payoff": 0.83,
+            "reader_promise": 0.88,
+            "reversal_reveal": 0.72,
+            "character_agency": 0.89,
+            "pacing_variation": 0.81,
+            "pattern_diversity": 0.79,
+            "world_consequence": 0.68,
+            "future_optionality": 0.9,
+            "conflict_escalation": 0.73,
+            "emotional_progression": 0.86,
+            "relationship_evolution": 0.9,
+            "choice_cost_consequence": 0.82
+          },
+          "irreversible_decisions": [],
+          "projected_consequences": [
+            "若我为维持排练主动补演，就会暂时失去站在台外指挥的便利，并必须把部分调度交给妹妹。",
+            "若妹妹允许参与者缩小任务，剩余工作便需要重新分配，她必须明确询问谁愿意接手。",
+            "若我接受村民对任务的限制，排练形式可能变简单，但参与者更可能愿意再次到场。",
+            "若我们反复修改分工却没有说明变化，参与者可能误会承诺；这能产生需要当面澄清的后续场景。"
+          ],
+          "narrative_opportunities": [
+            "首轮缺人让我必须亲自试演，使指挥别人时没发现的难处成为可见经验。",
+            "妹妹替人答应一项任务后无法兼顾另一项任务，能使她主动向我求助，而非始终负责纠正我。",
+            "把前期被我嫌弃的短台词、慢动作或台后提醒，转化为后来实际可用的配合，形成小尺度铺垫回收。",
+            "通过一次分工被遵守或一次请求被拒绝，呈现村民与我之间的信任变化。"
+          ]
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+      "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "novelos.planning_context_bundle.v1",
+  "arc_working_set": {},
+  "foundation_task": {
+    "role": "WORLD_BIBLE",
+    "task": "Compile the world depth needed by this work using the frozen typed world contract. Preserve laws, limits and knowledge boundaries. A rule need not impose a cost; distinguish an inapplicable cost from an unknown consequence. Explain deferred dimensions and extension triggers.",
+    "parent_roles": [
+      "CREATIVE_FOUNDATION",
+      "THEME_CONTRACT",
+      "ENDING_INTENT",
+      "READER_PROMISE"
+    ],
+    "world_contract": {
+      "rules": {
+        "category": "one compiled section key",
+        "mechanism": "Use MECHANISM only when the existing typed WorldMechanism contract can express the rule; otherwise request explicit design clarification. Do not replace a hard rule with soft reasoning.",
+        "predicate": {
+          "value": "typed scalar; only EXISTS may omit value",
+          "required_for": "every enforcement except SOFT_CAUSAL"
+        },
+        "applicability_and_consequences": "nonempty string arrays"
+      },
+      "schema": {
+        "type": "object",
+        "$defs": {
+          "_EntityContract": {
+            "type": "object",
+            "title": "_EntityContract",
+            "required": [
+              "entity_id"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": null,
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "entity_id": {
+                "type": "string",
+                "title": "Entity Id",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          },
+          "_SectionContract": {
+            "type": "object",
+            "title": "_SectionContract",
+            "required": [
+              "depth",
+              "content"
+            ],
+            "properties": {
+              "depth": {
+                "enum": [
+                  "SEED",
+                  "WORKING",
+                  "DETAILED"
+                ],
+                "type": "string",
+                "title": "Depth"
+              },
+              "content": {
+                "type": "string",
+                "title": "Content",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          },
+          "WorldRuleContract": {
+            "type": "object",
+            "title": "WorldRuleContract",
+            "required": [
+              "rule_id",
+              "category",
+              "statement",
+              "enforcement",
+              "applicability",
+              "consequences"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string",
+                "title": "Rule Id",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "title": "Category",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "mechanism": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/_MechanismContract"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "predicate": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/_PredicateContract"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "statement": {
+                "type": "string",
+                "title": "Statement",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "enforcement": {
+                "enum": [
+                  "HARD",
+                  "QUANTITATIVE",
+                  "TEMPORAL",
+                  "SOFT_CAUSAL",
+                  "MECHANISM"
+                ],
+                "type": "string",
+                "title": "Enforcement"
+              },
+              "consequences": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Consequences",
+                "minItems": 1
+              },
+              "applicability": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Applicability",
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "_MechanismContract": {
+            "type": "object",
+            "title": "_MechanismContract",
+            "required": [
+              "contract_version",
+              "effect",
+              "entity_keys"
+            ],
+            "properties": {
+              "effect": {
+                "enum": [
+                  "REVIVAL",
+                  "INSTANT_TRAVEL",
+                  "MULTIPRESENCE",
+                  "POWER_TRANSITION"
+                ],
+                "type": "string",
+                "title": "Effect"
+              },
+              "entity_keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Entity Keys",
+                "minItems": 1
+              },
+              "contract_version": {
+                "type": "string",
+                "const": "world-mechanism.v1",
+                "title": "Contract Version"
+              }
+            },
+            "additionalProperties": false
+          },
+          "_PredicateContract": {
+            "type": "object",
+            "title": "_PredicateContract",
+            "required": [
+              "requirement_id",
+              "state_kind",
+              "entity_key",
+              "field",
+              "operator"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "title": "Field",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Value",
+                "default": null
+              },
+              "operator": {
+                "enum": [
+                  "EQUALS",
+                  "AT_LEAST",
+                  "AT_MOST",
+                  "EXISTS"
+                ],
+                "type": "string",
+                "title": "Operator"
+              },
+              "entity_key": {
+                "type": "string",
+                "title": "Entity Key",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "state_kind": {
+                "enum": [
+                  "canon_fact",
+                  "timeline_event",
+                  "character_state",
+                  "relationship_state",
+                  "world_rule",
+                  "resource_state",
+                  "power_state",
+                  "foreshadow_state",
+                  "reader_promise",
+                  "plot_thread",
+                  "narrative_debt",
+                  "mystery_state",
+                  "antagonist_state",
+                  "arc_state",
+                  "reward_event",
+                  "theme_movement",
+                  "character_knowledge",
+                  "character_belief",
+                  "character_arc",
+                  "reader_knowledge",
+                  "disclosure_event",
+                  "world_state",
+                  "faction_state",
+                  "location_state",
+                  "consequence_state",
+                  "conflict_state",
+                  "narrative_obligation",
+                  "payoff_event"
+                ],
+                "type": "string",
+                "title": "State Kind"
+              },
+              "requirement_id": {
+                "type": "string",
+                "title": "Requirement Id",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "title": "WorldFoundationContract",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "required": [
+          "contract_version",
+          "genre_profile",
+          "compiled_scope",
+          "sections",
+          "rules",
+          "entities"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/WorldRuleContract"
+            },
+            "title": "Rules",
+            "minItems": 1
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/_EntityContract"
+            },
+            "title": "Entities",
+            "minItems": 1
+          },
+          "sections": {
+            "type": "object",
+            "title": "Sections",
+            "propertyNames": {
+              "minLength": 1
+            },
+            "patternProperties": {
+              "\\S": {
+                "$ref": "#/$defs/_SectionContract"
+              }
+            }
+          },
+          "genre_profile": {
+            "type": "string",
+            "title": "Genre Profile",
+            "pattern": "\\S",
+            "minLength": 1
+          },
+          "compiled_scope": {
+            "enum": [
+              "BOOK",
+              "VOLUME",
+              "ARC"
+            ],
+            "type": "string",
+            "const": "BOOK",
+            "title": "Compiled Scope"
+          },
+          "contract_version": {
+            "type": "string",
+            "const": "world-foundation.v1",
+            "title": "Contract Version"
+          }
+        },
+        "additionalProperties": false
+      },
+      "example": {
+        "rules": [
+          {
+            "rule_id": "rule:choice",
+            "category": "core_laws",
+            "statement": "A faction may defend its interests.",
+            "enforcement": "SOFT_CAUSAL",
+            "consequences": [
+              "A proposed response still needs accepted causes."
+            ],
+            "applicability": [
+              "faction_state"
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "kind": "FACTION",
+            "entity_id": "faction:example"
+          }
+        ],
+        "sections": {
+          "core_laws": {
+            "depth": "SEED",
+            "content": "An original constraint changes choices."
+          }
+        },
+        "genre_profile": "original-genre.v1",
+        "compiled_scope": "BOOK",
+        "contract_version": "world-foundation.v1"
+      },
+      "entities": "nonempty array of unique entity_id and kind records; references must resolve; approved initial conditions are not accepted events",
+      "sections": {
+        "content": "concrete approved initial conditions, rules and limits",
+        "key_rule": "core_laws is required; include only needed ontology dimensions or genre:/book: extensions",
+        "ontology": [
+          "core_laws",
+          "ecology_resources",
+          "economy",
+          "history_culture",
+          "information_communication",
+          "life_death_disease",
+          "politics_factions",
+          "religion",
+          "society_class",
+          "space_time_geography",
+          "technology_power"
+        ]
+      },
+      "enum_contract": "Every enum is one scalar string. Schema enum arrays list choices; they are never the field's returned value. compiled_scope is fixed by this task.",
+      "compiled_scope": "BOOK",
+      "contract_version": "world-foundation.v1"
+    },
+    "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+    "contract_version": "foundation-generation.v4",
+    "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
+    "applicability_contract": "Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+  },
+  "context_manifest": {
+    "type": "NarrativeContextManifest",
+    "scope": {
+      "book_id": "book:input-isolation-01:stage-comedy",
+      "project_id": "project:input-isolation-01:stage-comedy",
+      "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:WORLD_BIBLE:0",
+      "planning_scope": "NOT_APPLICABLE"
+    },
+    "selected_inputs": [
+      {
+        "provenance": {
+          "authority": "StoryPlanningRuntime",
+          "projection_contract": "provider-context-view-v2",
+          "frozen_component_hash": "sha256:2a1d30bfda77ebc388597098a38ccf464526f7be89d09ed8af62983ad479b5d0"
+        },
+        "source_identity": "planning-context-envelope:world.design.generate:story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:WORLD_BIBLE:0",
+        "source_revision": "sha256:2a1d30bfda77ebc388597098a38ccf464526f7be89d09ed8af62983ad479b5d0",
+        "asset_version_id": "planning-context-envelope:sha256:2a1d30bfda77ebc388597098a38ccf464526f7be89d09ed8af62983ad479b5d0",
+        "estimated_tokens": 1939,
+        "physical_asset_type": "planning_context_projection",
+        "logical_context_kind": "planning_context_envelope",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:world.design.generate:planning_context_envelope:planning-context-envelope:world.design.generate:story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:WORLD_BIBLE:0",
+        "semantic_representation_identity": "provider-context-view-v2:planning_context_envelope:sha256:2a1d30bfda77ebc388597098a38ccf464526f7be89d09ed8af62983ad479b5d0"
+      },
+      {
+        "provenance": {
+          "planning_role": "creative_foundation",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+          "authority_asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1",
+        "source_revision": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+        "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1",
+        "estimated_tokens": 12275,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:creative_foundation",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:world.design.generate:planning_segment:creative_foundation:authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_foundation:sha256:73de94943f7d091687f01d66bc0656a102d3aa54d43acb70f4b475d8ddb3b50d"
+      },
+      {
+        "provenance": {
+          "planning_role": "ending_intent",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:55e9b92200c4b0b20c069bb482cfe0645f0928ed120cfb917612af733ff6f508",
+          "authority_asset_version_id": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1",
+        "source_revision": "sha256:55e9b92200c4b0b20c069bb482cfe0645f0928ed120cfb917612af733ff6f508",
+        "asset_version_id": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1",
+        "estimated_tokens": 6726,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:ending_intent",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:world.design.generate:planning_segment:ending_intent:authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:ending_intent:sha256:f025fa84e089646fd602b84a4467a8169ad03a52cea9ee4fa9a0774cdbc02c20"
+      },
+      {
+        "provenance": {
+          "planning_role": "creative_brief",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+          "authority_asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+        },
+        "source_identity": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "source_revision": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+        "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "estimated_tokens": 1201,
+        "physical_asset_type": "creative_brief",
+        "logical_context_kind": "planning_segment:creative_brief",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:world.design.generate:planning_segment:creative_brief:authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_brief:sha256:6f54696be477e7329cc21203fc0b4351c1bf348d5ca3ab79fd365fa7845cd1b9"
+      },
+      {
+        "provenance": {
+          "planning_role": "reader_promise",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:cd3caca34e9d431c36e7b6157e3f01897cfcddbab13218fd1229edbb7ea9ae06",
+          "authority_asset_version_id": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1",
+        "source_revision": "sha256:cd3caca34e9d431c36e7b6157e3f01897cfcddbab13218fd1229edbb7ea9ae06",
+        "asset_version_id": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1",
+        "estimated_tokens": 7515,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:reader_promise",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:world.design.generate:planning_segment:reader_promise:authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:reader_promise:sha256:4100fb10668850627dbd06d41454f144b33bec550d049370c30f51c89f7f1168"
+      },
+      {
+        "provenance": {
+          "planning_role": "theme_contract",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:f1f977b473bd9d0bd6b9bed5776789148f961732f3f72c39f9fb931b52287fe7",
+          "authority_asset_version_id": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1",
+        "source_revision": "sha256:f1f977b473bd9d0bd6b9bed5776789148f961732f3f72c39f9fb931b52287fe7",
+        "asset_version_id": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1",
+        "estimated_tokens": 7747,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:theme_contract",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:world.design.generate:planning_segment:theme_contract:authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:theme_contract:sha256:5472101baa2198361e15797f9b74ad4867759ba84afc811247741b6262533181"
+      }
+    ],
+    "contract_version": "planning-context-manifest-v1",
+    "effective_policy": {
+      "limits": {
+        "total": 64000,
+        "buckets": {},
+        "classes": {},
+        "sections": {},
+        "required_reservation": 0
+      },
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "denied_logical_kinds": [],
+      "allowed_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief",
+        "planning_segment:creative_foundation",
+        "planning_segment:ending_intent",
+        "planning_segment:reader_promise",
+        "planning_segment:theme_contract"
+      ],
+      "denied_physical_types": [],
+      "source_risk_threshold": 0,
+      "allowed_physical_types": [],
+      "permitted_source_modes": [
+        "generation"
+      ],
+      "required_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief",
+        "planning_segment:creative_foundation",
+        "planning_segment:ending_intent",
+        "planning_segment:reader_promise",
+        "planning_segment:theme_contract"
+      ],
+      "maximum_raw_source_ratio": 0.0,
+      "permitted_truncation_strategies": [
+        "structured_elements-v1"
+      ]
+    },
+    "projection_audit": {
+      "loss_records": [],
+      "loss_sources": []
+    },
+    "token_accounting": {
+      "method": "utf8-byte-upper-bound.v1",
+      "precision": "ESTIMATE_ONLY",
+      "total_limit": 64000,
+      "accepted_tokens": 37403,
+      "required_tokens": 37403,
+      "tokens_by_class": {
+        "PROTECTED": 37403
+      },
+      "tokens_by_bucket": {
+        "ending_intent": 6726,
+        "creative_brief": 1201,
+        "reader_promise": 7515,
+        "theme_contract": 7747,
+        "creative_foundation": 12275,
+        "planning_context_envelope": 1939
+      },
+      "accounting_method": "declared-candidate-estimate-v1",
+      "tokens_by_section": {
+        "PLANNING_INPUTS": 35464,
+        "PLANNING_CONTRACT": 1939
+      },
+      "required_reservation": 37403,
+      "total_candidate_tokens": 37403
+    },
+    "policy_compilation": {
+      "receipt_hash": "sha256:66fd8ab6f0d4cc8158bc4ecf79d4857bb80d2b8f5b27bbdc42a72969d173ebc1",
+      "input_policies": [
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "caller-context-limit-v1",
+            "policy_id": "planning-caller-context-limit",
+            "content_hash": "sha256:71da9c6d9f7c37139e87eb5ee87934578f59d1d18bb8a4fa10113b5588f12272",
+            "snapshot_ref": "command:planning-context-token-budget"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "context-profile-v1",
+            "policy_id": "planning-context-profile",
+            "content_hash": "sha256:7faf527135845d463faa068cebfcd7fb68bfa7f1cc375c80a6af6d5468fd9be6",
+            "snapshot_ref": "planning-context-profile:v1"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "planning-context-contract-v1",
+            "policy_id": "planning-typed-stage:world.design.generate",
+            "content_hash": "sha256:3be62eeb0e77d081145acd83bf33e9e72f67208c1aec4aa98bcf81f9cfba98ca",
+            "snapshot_ref": "planning-context-contract:world.design.generate"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        }
+      ],
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "effective_policy": {
+        "limits": {
+          "total": 64000,
+          "buckets": {},
+          "classes": {},
+          "sections": {},
+          "required_reservation": 0
+        },
+        "compiler_version": "effective-context-policy-compiler-v1",
+        "denied_logical_kinds": [],
+        "allowed_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief",
+          "planning_segment:creative_foundation",
+          "planning_segment:ending_intent",
+          "planning_segment:reader_promise",
+          "planning_segment:theme_contract"
+        ],
+        "denied_physical_types": [],
+        "source_risk_threshold": 0,
+        "allowed_physical_types": [],
+        "permitted_source_modes": [
+          "generation"
+        ],
+        "required_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief",
+          "planning_segment:creative_foundation",
+          "planning_segment:ending_intent",
+          "planning_segment:reader_promise",
+          "planning_segment:theme_contract"
+        ],
+        "maximum_raw_source_ratio": 0.0,
+        "permitted_truncation_strategies": [
+          "structured_elements-v1"
+        ]
+      },
+      "conflict_decision": "PASS"
+    },
+    "candidate_decisions": [
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "planning-context-envelope:sha256:2a1d30bfda77ebc388597098a38ccf464526f7be89d09ed8af62983ad479b5d0"
+      }
+    ],
+    "context_fingerprint": "sha256:cb6fd42b1a607f1bf847112d758dcfdb6388aaf16996d8712bee8b6661bed7af",
+    "truncation_decisions": [],
+    "provider_context_view": {
+      "content_hash": "sha256:a6741122174f8734d4741b30122a578f6a5a0486ab0993cc7ea989c3d38be750",
+      "compiled_view": {
+        "stage": "world.design.generate",
+        "segments": [
+          {
+            "role": "ending_intent",
+            "content": {
+              "objective": "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+                "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+                "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+                "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+                "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+                "笑点之后呈现行动带来的分工、局势或关系变化。",
+                "结尾形式以露天共同试演为候选收束方向；具体人选、规模与操作安排须由此前建立的条件支持，近期规划可据此调整。"
+              ],
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "我从急于证明导演能力走向提出请求、接受条件并完成协作，需要承担修改安排、兑现补位承诺和交出部分调度的具体代价；不要求不可逆损失或牺牲。",
+                  "field_path": "$.protagonist_cost"
+                }
+              ],
+              "ending_direction": "拟在九章范围内，以一轮规模朴素、能够完整走下来的露天共同试演收束。我仍想把戏排好，也仍会忍不住解释自己的安排，但在最后一次分工遇到异议时，能够先问对方愿意承担什么，把自己的请求说清楚，并接受由此带来的修改。妹妹让大家轻松参与的愿望也须落实为有人接手、有人兑现的工作，她可以判断失误，也可以向我求助。最终谁站台前，取决于此前说清并试过的条件；我的导演能力通过使这些配合实际运转而变得可见，无须由众人授予称号。收束的暖意来自有限承诺被完成，笑意来自我对导演派头的偏袒再次被现场结果修正。试演结束后，我对认可的在意与我们对安排的分歧可以继续存在；当前这场小戏得到交代，不预设正式公演、事业跃升或续篇。",
+              "protagonist_cost": "我需要放下独自决定站位、出场和替补的便利，花时间重谈已经解释过的安排，并兑现自己答应的补位或台后工作；当我亲自承担任务时，须把部分调度交给妹妹或已明确愿意接手的人。接受参与条件可能使小戏比我最初设想的简单，也使我不能始终站在台外展示指挥的样子。这些代价来自具体选择，不预设受伤、损失名声或永久退出台前。",
+              "closure_conditions": [
+                "结尾拟完成一轮按当面商定的分工进行的露天共同试演，使小戏在参与者能够承担的规模内得到完整呈现；不以观众数量或一致喝彩衡量是否做成。",
+                "结尾使用的参与条件、台前人选、替补办法和台后职责须在此前通过我参与的交谈与试演建立，不能到最后才宣布人人愿意配合。",
+                "第一场排练的灯架故障须先停止使用，再依据已建立的能力处理；结尾若需照明，须有可用依据，否则采用不依赖故障灯架的呈现条件。",
+                "演员临时退场留下的空缺须通过协商调整角色、台词或补位安排得到回应；不要求退场者返回，也不把返回作为成功条件。",
+                "我须在一次影响最终试演的具体安排中先提出请求，听取参与条件，再完成自己承诺的工作；成长由可见行动体现。",
+                "妹妹须承担自己作出的参与承诺，遇到无法兼顾的工作时明确求助或重谈分工；我也须提供一次实际有效的支持。",
+                "此前建立的一项小配合，如短台词、站位或台后提醒，须在结尾发挥作用；具体选项留待后续规划，不将示例视为既定事件。",
+                "结尾保留我仍在意认可、兄妹或姐妹仍会争论安排的余地，但当前小戏的协作责任须有交代，不靠下一部作品补完。"
+              ],
+              "prohibited_outcomes": [
+                "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+                "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+                "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+                "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+                "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+                "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+                "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+                "把候选发展写成已接受历史，或擅自扩大九章方向。",
+                "把我的转变写成彻底放弃导演愿望，或以包办全部工作证明协作成功。",
+                "为制造结局分量强加不可逆牺牲，或以续篇承诺替代当前小戏的收束。"
+              ],
+              "unacceptable_shortcuts": [
+                "用结尾独白宣布我已经学会尊重所有人，替代一次有请求、有条件、有兑现的协作。",
+                "用一致喝彩、专业人士认证或突然获得的资源证明我有导演能力。",
+                "让妹妹替我解决全部分工，再由我接受成果和认可。",
+                "让村民在没有说明原因和条件的情况下统一改变意愿。",
+                "把此前明确提出的时间、胆量或手艺限制当作最后必须克服的缺点。",
+                "靠新事故连续加码制造高潮，绕开前次承诺留下的责任。",
+                "直接复用上游风格例句作为已发生事件或最终场景。",
+                "提前锁定未建立的退场原因、最终演员名单或灯架修复办法来填补因果缺口。"
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:55e9b92200c4b0b20c069bb482cfe0645f0928ed120cfb917612af733ff6f508",
+            "asset_version_id": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1"
+          },
+          {
+            "role": "creative_brief",
+            "content": {
+              "idea": "我和妹妹带着村民排练一场露天小戏。我们对谁来站在台前争执不休，第一场排练偏偏撞上灯架坏了和演员临时退场。我想证明自己能当导演，妹妹想让大家轻松上台。让人物通过修灯、分工和试演中的具体选择形成冲突并改变关系。",
+              "genre": "第一人称生活喜剧",
+              "audience": "成年中文读者",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+              ],
+              "source_boundaries": [
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+              ],
+              "creative_brief_contract_version": "creative-brief-v2"
+            },
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          },
+          {
+            "role": "reader_promise",
+            "content": {
+              "objective": "为成年中文读者确立九章方向的第一人称生活喜剧体验：从我急于证明导演能力的认真与错位中获得笑意，在我与妹妹、村民反复商量分工并兑现约定的过程中获得温暖，期待我逐渐能提出请求、接受条件，与大家一起把小戏推进到共同呈现。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+                "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+                "参与条件、退场原因及具体演出条件通过我能接触的言行建立，不预先补成既定事实。",
+                "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+                "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+                "笑点之后呈现行动带来的分工、局势或关系变化。",
+                "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+                "最终共同呈现可采用较完整的露天演出或朴素的共同试演；不在本阶段固定台前人选、演出规模或章节悬念频率。"
+              ],
+              "applicability": [],
+              "reader_promise": "读者会跟着一个急于证明自己能当导演的我，走进与妹妹、村民共同排练露天小戏的现场。笑意来自认真安排与实际需要之间的错位、对白里的停顿，以及我不得不亲手修改自己主张的时刻；温暖来自有人明确说出条件，有人接下具体工作，也有人允许别人再试一次。持续的期待是：这次谁愿意站台前，谁接住台后的空缺，我们答应的事到下次试演还能否做到。后续需要用可见的选择和协作，挣得我从急于被认可到能够请求帮助、接受限制的转变，也让妹妹承担让大家轻松参与的实际责任。收束的满足来自大家找到愿意共同参与的位置，并把小戏推进到共同呈现；具体形式保持开放。若最终靠强迫、羞辱、凭空救援或一场喝彩替代协作，这份承诺就会落空。",
+              "prohibited_outcomes": [
+                "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+                "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+                "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+                "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+                "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+                "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+                "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+                "把候选发展写成已接受历史，或擅自扩大九章方向。",
+                "替其他人物宣布羞耻或成长，以叙述者判断代替他们可见的选择。",
+                "将可选的补位、轮换、缩短角色或演出形式写成上游已经确定的事件。"
+              ],
+              "disappointment_risks": [
+                "反复采用我逞强、妹妹纠正的同一种局面，会使兄妹或姐妹之间的协作失去变化，也让妹妹免于承担自己的承诺。",
+                "村民提出的条件若从不改变安排，读者会发现所谓协商只是形式，人物仍然只能服从导演。",
+                "后续持续依赖新故障和临时退场，会削弱前次选择与下次排练之间的因果联系。",
+                "只有俏皮对白而没有站位、任务或关系变化，排练会沦为笑话串联。",
+                "过早把我写成善于倾听的人，会抹去急于获得认可的动机，使后续转变缺少过程。",
+                "用总结性独白宣布信任和成长，却没有兑现请求、承认失误或重新尝试的行动，会使温暖缺少支撑。",
+                "把排成小戏等同于满场喝彩、获得专业认可或所有人都愿意上台，会扩大这部生活喜剧实际作出的承诺。",
+                "用一次圆满结果消除所有分歧，会让此前建立的参与条件与协作难处显得无关紧要。"
+              ],
+              "setup_progress_payoff": [
+                {
+                  "setup": "以我想证明导演能力、容易把修改听成否定的动机为起点；首场灯架故障与演员退场，使原先的安排必须面对现场缺口。",
+                  "payoff": "我能在一次具体协作中说明需要什么、接受对方能承担的范围，并完成自己答应的部分，使导演能力通过帮助排练继续变得可见。",
+                  "promise": "读者既能笑我忙着证明自己，也能看见这份急切背后的认真，并获得有行动支撑的人物转变。",
+                  "progress": "通过分工和试演，让我的安排接受实际检验；当修改涉及别人已说出的条件时，我需要把命令改成可回应的请求，并承担自己选择带来的相关责任。"
+                },
+                {
+                  "setup": "我想证明能当导演，妹妹想让大家轻松上台；谁站台前的争执同时牵涉台后工作和暂时不上台的权利。",
+                  "payoff": "一项双方说清并兑现的分工，让我与妹妹都能提供有效帮助，也能向对方提出请求；关系变化由实际配合体现。",
+                  "promise": "我与妹妹的争执会逐渐形成可以互相依靠的协作，而双方都保有欲望、失误和选择。",
+                  "progress": "让不同任务检验双方主张：我的安排是否真能帮人，妹妹允许缩小任务后是否能说明剩余工作由谁承担。具体承担方式随已建立的条件选择。"
+                },
+                {
+                  "setup": "第一场排练的临时退场暴露参与不能被视为理所当然；退场原因及其他人的意愿留待我能接触的言行建立。",
+                  "payoff": "读者能从有人按约到场、完成有限任务或主动提出参与请求等可见行动中，感到信任有所积累；不要求所有人上台或撤回限制。",
+                  "promise": "村民会作为有自身条件的参与者影响小戏，温暖来自自愿参与与承诺兑现。",
+                  "progress": "通过当面交谈逐步建立各人的参与条件，让这些条件真实改变分工与试演形式；前次承诺在后续排练中得到检验。"
+                },
+                {
+                  "setup": "首场双重缺口迫使大家调整任务，建立安排需要经过实际试演才能判断是否合用的叙事起点。",
+                  "payoff": "共同呈现用得上此前逐步形成的配合，让读者看见小事积累的作用；满足感不依赖专业认可或无缺点的演出。",
+                  "promise": "排练中的笑意会推动事情继续发展，前面的尝试将在后面的协作中产生可见作用。",
+                  "progress": "后续优先从前次分工、修改与承诺留下的问题推进；可选择回收已经建立的台词安排、动作或提醒，不预先指定某项技巧必然奏效。"
+                }
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:cd3caca34e9d431c36e7b6157e3f01897cfcddbab13218fd1229edbb7ea9ae06",
+            "asset_version_id": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1"
+          },
+          {
+            "role": "theme_contract",
+            "content": {
+              "objective": "围绕我想证明能当导演、妹妹想让村民轻松上台的不同愿望，探索认可、参与条件与共同责任的关系。以九章方向中的分工协商、失误和试演，让主题伴随幽默与具体互助展开，使我逐渐能够提出请求、接受条件并完成协作。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+                "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+                "主题通过请求、拒绝、站位、任务交接和试演结果逐步显现；允许我的自我辩解被可见结果修正，不要求每场戏都作主题判断。",
+                "保留我想当导演的欲望，使转变表现为更能提出请求、接受条件和完成协作，而非放弃组织工作。",
+                "各个参与者的意愿和条件须通过我能接触的言行建立；不预设演员退场原因、村民隐秘心理或最终台前人选。",
+                "选择后果按实际因果需要呈现，不要求每次选择都有不可逆损失。",
+                "结尾可倾向支持能兑现承诺的协作，同时保留具体分工仍需重谈的余地；不提前锁定完整演出或共同试演的收束形式。",
+                "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+                "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+                "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+                "笑点之后呈现行动带来的分工、局势或关系变化。"
+              ],
+              "choice_tests": [
+                {
+                  "cost": "亲自补演会减少我观察全场的便利，并需要说明交接；缩短试演则暂时无法检验原定安排的全部效果。",
+                  "choice": "候选检验：台前出现空缺时，我可以亲自补演并把部分调度交给妹妹，也可以先协商缩短试演，保留自己在台外观察的条件。",
+                  "thematic_pressure": "检验我能否把证明导演能力的欲望落实为有用的安排。补位与留在台外都可能合理，关键是我是否说明需要、接受他人的条件，并承担选择留下的工作。"
+                },
+                {
+                  "cost": "接受限制可能使戏变简单，并增加其他自愿参与者的工作；继续协商需要时间，也可能仍得不到完整角色的承担者。",
+                  "choice": "候选检验：村民当面提出只愿承担较小任务时，我可以接受并重分剩余工作，也可以解释完整任务的需要，询问对方是否愿意调整；对方仍可拒绝。",
+                  "thematic_pressure": "检验认可是否必须来自别人服从我的完整方案。以对方实际答应的任务及后续试演结果表现信任，不把任何一次拒绝解释成对我能力的最终判决。"
+                },
+                {
+                  "cost": "接下工作会占用她照顾其他环节的时间；重谈范围需要承认先前安排不够周全，也可能推迟试演。",
+                  "choice": "候选检验：妹妹提出让参与者轻松一些的安排后，若试演显露无人承担的工作，她可以说明自己愿意接下的部分并向我求助，也可以与参与者重谈任务范围。",
+                  "thematic_pressure": "检验体谅怎样成为可以兑现的承诺。让妹妹有判断失误和主动修正的空间，也让我的组织能力有机会成为她需要的帮助。"
+                },
+                {
+                  "cost": "原定灯光和站位效果暂时无法检验，需要调整当天目标并向参与者说明变化。",
+                  "choice": "候选检验：首轮灯架故障后先停止使用，我与妹妹可以协商改排对白或其他无需该设备的部分；是否恢复原定试演，取决于已建立的处理能力和现场条件。",
+                  "thematic_pressure": "检验承认当前办不到的事是否也能体现导演责任。笑意可来自我郑重宣布的安排被自己改写，之后必须呈现新的分工和可执行的排练目标。"
+                }
+              ],
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "沿用上游首轮排练的台前空缺与台后调度冲突，补位会改变我的工作和指挥条件，适合呈现具体后果。",
+                  "field_path": "$.choice_tests[0].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "上游以参与者提出条件、我修改分工为叙事动力，接受有限参与需要重新分配剩余任务。",
+                  "field_path": "$.choice_tests[1].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "上游明确要求检验妹妹的宽松承诺由谁承担，可通过她说明能力边界及请求帮助呈现责任。",
+                  "field_path": "$.choice_tests[2].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者指定首轮灯架故障，上游要求先停止使用，再按已建立的能力处理；调整排练会影响原定呈现方式。",
+                  "field_path": "$.choice_tests[3].cost"
+                }
+              ],
+              "opposing_answers": [
+                "答案一：能把完整安排落实，才足以证明我能当导演。可让我的站位、出场和替补方案确实解决部分问题，使组织的价值可见；当方案遇到参与条件时，再检验我是否把修改误听成否定。这个答案有实际用处，但不能自动赋予我替别人决定参与范围的权力。",
+                "答案二：先让人愿意留下来，才有戏可排。可通过妹妹接受较小任务、允许再试一次的提议表现其力量；剩余工作随后由谁承担，则检验体谅能否兑现。这个答案值得支持，也需要面对时间和人手的限制。",
+                "答案三：导演能力可以体现在提出清楚的请求、组织可兑现的约定，并随试演结果调整安排。可通过我问明条件、妹妹说明自己的负担、参与者完成答应的部分逐步呈现。故事可倾向这一答案，但共同协作仍允许拒绝和暂时做不成，不把一次成功写成永久共识。"
+              ],
+              "thematic_question": "我想证明自己能当导演时，怎样让自己的安排成为别人愿意参与、也能一起兑现的约定？",
+              "prohibited_outcomes": [
+                "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+                "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+                "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+                "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+                "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+                "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+                "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+                "把候选发展写成已接受历史，或擅自扩大九章方向。",
+                "把所有意见分歧归结为我的虚荣，抹去组织安排的实际需要。",
+                "以我无条件包办所有剩余工作证明成长，或以任何人无条件服从证明团结。",
+                "让人物直接宣告他人已经成长，替代可观察的请求、回应和履约。",
+                "把选择检验变成每场戏必须承担不可逆代价的统一规则。"
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:f1f977b473bd9d0bd6b9bed5776789148f961732f3f72c39f9fb931b52287fe7",
+            "asset_version_id": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "content": {
+              "genre": "第一人称生活喜剧",
+              "subgenre": "乡村排练生活喜剧",
+              "core_fear": "我怕大家只在缺人搬东西时需要我，真正排戏时却觉得我的导演安排多余；因此容易把别人提出修改听成对我能力的否定。",
+              "objective": "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。"
+              ],
+              "core_desire": "我想把露天小戏排成，证明自己能当导演；妹妹想让村民轻松上台，不因一次失误或不合适的分工退出。",
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者明确以兄妹或姐妹协作、村民排练和露天小戏为题材，适合乡村排练生活喜剧；不预设叙述者性别。",
+                  "field_path": "$.subgenre"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者明确指定我想证明自己能当导演。",
+                  "field_path": "$.core_desire"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "围绕证明导演能力，可提出怕自己的安排没人需要这一动机假设，通过我参与的具体争执表现。",
+                  "field_path": "$.core_fear"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者明确指定我与妹妹争执谁站台前，并要求修灯、分工和试演中的选择推动关系变化。",
+                  "field_path": "$.core_conflict"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "九章方向可由排练中的连续协作问题支撑，章节划分保持可调整，不追加长篇连载要求。",
+                  "field_path": "$.serialization_potential"
+                }
+              ],
+              "core_conflict": "我把站位、出场和替补都视为导演必须决定的事；妹妹认为，先让人愿意留下来，才有戏可排。灯架坏了、演员临时退场，使我们不得不决定谁补位、谁照管现场、谁有权说暂时不上台。每次分工都检验我的安排是否真能帮人，也检验妹妹的宽松承诺是否有人承担。",
+              "style_profile": {
+                "pov": "第一人称有限视角；只叙述我看见、做过、听到以及明确标识的个人推测。",
+                "narrator": "亲自组织和参与排练的我，急于证明能当导演，习惯先解释自己的安排，再被现场结果迫使改口；随着协作推进，逐渐更愿意先问别人需要什么。",
+                "constraints": [
+                  "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+                  "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+                  "笑点之后呈现行动带来的分工、局势或关系变化。",
+                  "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+                  "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+                  "以下例句均为原创风格示范，不构成已发生事件。"
+                ],
+                "genre_conventions": [
+                  "生活喜剧以认真做事时出现的错位、对白停顿和误会产生笑意。",
+                  "第一人称保留我对自身表现的偏袒，让亲眼可见的结果修正判断。",
+                  "温暖由具体互助和兑现承诺积累。",
+                  "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。"
+                ],
+                "original_examples": [
+                  {
+                    "example": "我在名单旁边写下“总调度”。妹妹指着空出来的角色问：“总调度会说这三句吗？”我看了看名单，把笔递给她：“会。你先替我调度一下。”",
+                    "purpose": "用对白和补位呈现导演欲望的实际代价",
+                    "explanation": "我的身份宣示被具体缺口打断；补位让妹妹获得临时调度权，笑点伴随行动和关系变化。"
+                  },
+                  {
+                    "example": "灯架歪着，我让大家先退开。妹妹问：“还排吗？”我把原先画好的站位翻过来：“排对白。灯的事先放下。”刚才我还说这张图不能改，现在背面比正面忙。",
+                    "purpose": "让故障触发可见选择而非凭空解决",
+                    "explanation": "先停止使用故障设备，再改变排练任务；自嘲来自我亲手推翻自己的安排，局势转向可继续的对白试演。"
+                  },
+                  {
+                    "example": "“我只说一句。”他把台词纸推回来。妹妹说：“一句也行。”我差点问那剩下的谁说，想起自己刚答应补位，便把纸拉到面前：“哪一句你想留着？”他第一次伸手指了台词。",
+                    "purpose": "用有限承诺推进参与意愿与分工",
+                    "explanation": "村民明确自己的条件，妹妹的承诺需要我承担余下工作；我的追问给对方选择，使参与从勉强转为具体合作。"
+                  }
+                ]
+              },
+              "target_reader": "成年中文读者，尤其是喜欢日常对白、亲人之间的小争执，以及普通人共同做成一件事的读者。",
+              "differentiation": "把谁站台前变成一项不断需要重谈的协作决定：愿意修灯的人未必愿意演，愿意演的人可能只肯说一句，妹妹愿意替人解围却未必能同时照管台后。喜剧的发现是，同一个人换个位置便可能从麻烦制造者变成关键帮手；我的导演能力也在这些换位中变得可见。",
+              "narrative_engine": "围绕一次次具体试演循环推进：我提出能展示导演能力的安排，妹妹或村民提出与自身时间、胆量或手艺有关的条件；实际试演暴露安排的缺口，我必须修改分工或说明请求，修改又改变下一次谁愿意参与。首轮以灯架故障和演员退场启动，让我在补台前的空缺与维持台后运转之间作出选择。后续问题从前次选择留下的责任产生，避免每章靠新故障重启。",
+              "why_worth_writing": "排一场小戏能让认可与照顾之间的难处变得具体：一句台词由谁说，一项工作由谁接，答应让别人轻松的人又该承担多少。读者既能笑我忙着证明自己，也能看到妹妹和村民各自的认真；最后的满足来自人们找到愿意共同参与的位置。",
+              "emotional_contract": "先让读者笑我急于显得有办法，再让读者看见这份急切背后的认真。妹妹也会判断失误，并承担自己让大家轻松的承诺。每次暖意都来自有人接住一句说错的话、完成一项答应的活，或允许另一个人重新试一次；最终回报是大家愿意一起把戏演下去。",
+              "prohibited_outcomes": [
+                "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+                "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+                "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+                "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+                "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+                "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。",
+                "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+                "把候选发展写成已接受历史，或擅自扩大九章方向。"
+              ],
+              "serialization_potential": "适合九章短篇幅连续叙事。前段由首轮排练的双重缺口逼出临时分工，中段让前次承诺在后续试演中接受检验，后段把形成的协作方式用于露天小戏的共同呈现。章节可围绕不同参与问题拆合；章末留下一个具体请求或尚待检验的安排，支持继续阅读，不必固定事故或悬念频率。",
+              "narrative_search_projection": {
+                "assumptions": [
+                  "本分支为future-2，探索以人物动机、姐妹或兄妹关系和分工协商驱动的九章候选方向，叙述者性别保持未指定。",
+                  "村民各自愿意承担的工作、演员退场原因及演出具体条件尚未冻结，后续只能通过我能接触的言行逐步建立。",
+                  "核心恐惧和协作办法均为本候选提出的设计假设，不是上游既定人物事实。",
+                  "各维度为0至1的模型估计，存在不低于0.05的比较不确定性，不构成文学资格判定或激活依据。"
+                ],
+                "future_options": [
+                  "让妹妹短暂承担一次完整调度，在轻松参与与按约完成之间形成她自己的选择。",
+                  "让一位起初只愿帮忙的村民提出有限度的上台请求，检验我是否尊重其条件。",
+                  "保留台前人选的多种解法：轮换、缩短角色或由我补位，具体选择取决于后续已建立的参与意愿。",
+                  "在九章范围内选择较完整的露天演出或朴素的共同试演作为收束，保留近期调整空间。"
+                ],
+                "narrative_risks": [
+                  "若每章都由我逞强、妹妹纠正，关系会固化；需要安排妹妹承担承诺、我提供有效帮助的不同局面。",
+                  "若村民仅按安排出场，协商会失去实质；需逐个建立他们明确说出的参与条件。",
+                  "若首轮故障之后持续加入突发事故，会削弱人物选择的因果作用；后续优先使用既有分工造成的问题。",
+                  "若过早确定最终演出形式和台前人选，会压缩九章方向的可调整空间。",
+                  "若用叙述直接宣告理解和成长，温暖会缺少支撑；应以兑现约定、承认失误和具体协作呈现。"
+                ],
+                "repetition_keys": [
+                  "future-2:台前资格与台后贡献",
+                  "future-2:分工承诺产生后续责任",
+                  "future-2:导演亲自补位",
+                  "future-2:妹妹的宽松安排需要兑现"
+                ],
+                "contract_version": "narrative-search-projection.v1",
+                "selection_summary": "本候选适合作者要求的对白、失误与协作回报：九章动力主要来自谁愿意做什么、承诺由谁完成以及两人的调度权如何变化。代价是外部悬念较轻，需要持续写出各人的具体条件和不同的试演节奏。没有其他分支文本可供直接比较，本结果仅提供future-2的独立方向估计。",
+                "strategy_fingerprint": "future-2|motivation-relationship|frontstage-backstage-negotiation|first-person-life-comedy|nine-chapter-flexible",
+                "creative_intelligence": {
+                  "arc_momentum": 0.8,
+                  "setup_payoff": 0.83,
+                  "reader_promise": 0.88,
+                  "reversal_reveal": 0.72,
+                  "character_agency": 0.89,
+                  "pacing_variation": 0.81,
+                  "pattern_diversity": 0.79,
+                  "world_consequence": 0.68,
+                  "future_optionality": 0.9,
+                  "conflict_escalation": 0.73,
+                  "emotional_progression": 0.86,
+                  "relationship_evolution": 0.9,
+                  "choice_cost_consequence": 0.82
+                },
+                "irreversible_decisions": [],
+                "projected_consequences": [
+                  "若我为维持排练主动补演，就会暂时失去站在台外指挥的便利，并必须把部分调度交给妹妹。",
+                  "若妹妹允许参与者缩小任务，剩余工作便需要重新分配，她必须明确询问谁愿意接手。",
+                  "若我接受村民对任务的限制，排练形式可能变简单，但参与者更可能愿意再次到场。",
+                  "若我们反复修改分工却没有说明变化，参与者可能误会承诺；这能产生需要当面澄清的后续场景。"
+                ],
+                "narrative_opportunities": [
+                  "首轮缺人让我必须亲自试演，使指挥别人时没发现的难处成为可见经验。",
+                  "妹妹替人答应一项任务后无法兼顾另一项任务，能使她主动向我求助，而非始终负责纠正我。",
+                  "把前期被我嫌弃的短台词、慢动作或台后提醒，转化为后来实际可用的配合，形成小尺度铺垫回收。",
+                  "通过一次分工被遵守或一次请求被拒绝，呈现村民与我之间的信任变化。"
+                ]
+              }
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+            "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "provider-context-view-v4",
+        "narrative_position": {
+          "book_id": "book:input-isolation-01:stage-comedy",
+          "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:WORLD_BIBLE:0",
+          "planning_scope": "NOT_APPLICABLE"
+        },
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-context-v2",
+          "loss_receipt": {
+            "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 0,
+            "source_input_hash": "sha256:94493a7b3572bbe65327db46867d0739cf14f0792366ce60289e7093b501dbb1"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v1",
+          "maximum_segments": 24,
+          "token_accounting": "utf8-byte-upper-bound.v1",
+          "omitted_fact_count": 0,
+          "omitted_item_count": 0,
+          "task_target_tokens": 64000,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 5,
+          "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+          "maximum_serialized_bytes": 8388608,
+          "maximum_facts_per_segment": null,
+          "truncated_character_count": 0
+        },
+        "accepted_state_boundary": {
+          "accepted_through_chapter": 0
+        },
+        "typed_arc_projection_version": "typed-arc-context-projection.v2"
+      },
+      "contract_version": "provider-context-view-v4",
+      "source_input_hash": "sha256:94493a7b3572bbe65327db46867d0739cf14f0792366ce60289e7093b501dbb1"
+    },
+    "deduplication_decisions": []
+  },
+  "estimated_tokens": 37403,
+  "narrative_search": {},
+  "source_isolation": "ABSTRACT_ASSETS_ONLY",
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "narrative_intelligence": {
+    "need": {
+      "scope": "STORY",
+      "genre_tags": [
+        "第一人称生活喜剧"
+      ],
+      "theme_tags": [],
+      "need_digest": "sha256:9025342f451ad64a2c13e9e3b28480e4b90254315f8c707573f89973622031ae",
+      "craft_policy": {},
+      "target_stage": "world.design.generate",
+      "conflict_tags": [],
+      "craft_context": {
+        "pov": [
+          "第一人称有限视角；只叙述我看见、做过、听到以及明确标识的个人推测。"
+        ],
+        "task": [
+          "world.design.generate"
+        ],
+        "genre": [
+          "第一人称生活喜剧"
+        ],
+        "style": [
+          "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+          "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。",
+          "亲自组织和参与排练的我，急于证明能当导演，习惯先解释自己的安排，再被现场结果迫使改口；随着协作推进，逐渐更愿意先问别人需要什么。",
+          "以下例句均为原创风格示范，不构成已发生事件。",
+          "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+          "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+          "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+          "温暖由具体互助和兑现承诺积累。",
+          "生活喜剧以认真做事时出现的错位、对白停顿和误会产生笑意。",
+          "笑点之后呈现行动带来的分工、局势或关系变化。",
+          "第一人称保留我对自身表现的偏袒，让亲眼可见的结果修正判断。",
+          "第一人称有限视角；只叙述我看见、做过、听到以及明确标识的个人推测。"
+        ],
+        "pacing": [],
+        "emotion": [],
+        "conflict": [],
+        "characters": [
+          "我怕大家只在缺人搬东西时需要我，真正排戏时却觉得我的导演安排多余；因此容易把别人提出修改听成对我能力的否定。",
+          "我想把露天小戏排成，证明自己能当导演；妹妹想让村民轻松上台，不因一次失误或不合适的分工退出。"
+        ],
+        "scene_goal": [],
+        "information": [],
+        "obligations": [],
+        "relationship": [],
+        "reader_effect": [
+          "读者会跟着一个急于证明自己能当导演的我，走进与妹妹、村民共同排练露天小戏的现场。笑意来自认真安排与实际需要之间的错位、对白里的停顿，以及我不得不亲手修改自己主张的时刻；温暖来自有人明确说出条件，有人接下具体工作，也有人允许别人再试一次。持续的期待是：这次谁愿意站台前，谁接住台后的空缺，我们答应的事到下次试演还能否做到。后续需要用可见的选择和协作，挣得我从急于被认可到能够请求帮助、接受限制的转变，也让妹妹承担让大家轻松参与的实际责任。收束的满足来自大家找到愿意共同参与的位置，并把小戏推进到共同呈现；具体形式保持开放。若最终靠强迫、羞辱、凭空救援或一场喝彩替代协作，这份承诺就会落空。"
+        ],
+        "chapter_number": 0,
+        "chapter_function": [
+          "CREATIVE_EVALUATION",
+          "为成年中文读者确立九章方向的第一人称生活喜剧体验：从我急于证明导演能力的认真与错位中获得笑意，在我与妹妹、村民反复商量分工并兑现约定的过程中获得温暖，期待我逐渐能提出请求、接受条件，与大家一起把小戏推进到共同呈现。",
+          "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+          "围绕我想证明能当导演、妹妹想让村民轻松上台的不同愿望，探索认可、参与条件与共同责任的关系。以九章方向中的分工协商、失误和试演，让主题伴随幽默与具体互助展开，使我逐渐能够提出请求、接受条件并完成协作。"
+        ]
+      },
+      "hard_constraints": [
+        "Candidates are hypothetical; no accepted history or Canon mutation",
+        "Preserve the exact author brief and source boundaries",
+        "严格使用我参与、观察或听到的信息；推测须显露为推测。",
+        "为制造结局分量强加不可逆牺牲，或以续篇承诺替代当前小戏的收束。",
+        "主题通过请求、拒绝、站位、任务交接和试演结果逐步显现；允许我的自我辩解被可见结果修正，不要求每场戏都作主题判断。",
+        "乡村排练中的不同参与条件通过当面交谈建立，避免用地域刻板印象解释人物。",
+        "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+        "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+        "以下例句均为原创风格示范，不构成已发生事件。",
+        "以全知叙述披露我未亲历、未听到或未经他人告知的心理、秘密和事件。",
+        "以具体物件、站位和操作表现排练过程，技术细节以人物已建立的知识为限。",
+        "以危险操作带电或不稳灯架制造轻松笑料；涉及故障时先停止使用，再按人物已建立的能力处理。",
+        "以我无条件包办所有剩余工作证明成长，或以任何人无条件服从证明团结。",
+        "保留我和妹妹带村民排练露天小戏、争执谁站台前、第一场排练遭遇灯架故障和演员临时退场的原始条件。",
+        "保留我想当导演的欲望，使转变表现为更能提出请求、接受条件和完成协作，而非放弃组织工作。",
+        "全书方向九章，近期规划保持可调整。",
+        "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+        "参与条件、退场原因及具体演出条件通过我能接触的言行建立，不预先补成既定事实。",
+        "叙述者可以自嘲，避免替别人宣布羞耻或成长。",
+        "各个参与者的意愿和条件须通过我能接触的言行建立；不预设演员退场原因、村民隐秘心理或最终台前人选。",
+        "对白随说话人的当前请求、拒绝和任务展开，不用人人都说俏皮话支撑喜剧。",
+        "将可选的补位、轮换、缩短角色或演出形式写成上游已经确定的事件。",
+        "将妹妹写成永远正确的调解者，或将村民写成只供导演摆布和取笑的群体。",
+        "引入其他作品、其他用例或历史试产资料中的表达与情节。",
+        "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+        "所有发展均为候选方向，不构成已发生的章节事件或已接受事实。",
+        "把候选发展写成已接受历史，或擅自扩大九章方向。",
+        "把我的转变写成彻底放弃导演愿望，或以包办全部工作证明协作成功。",
+        "把所有意见分歧归结为我的虚荣，抹去组织安排的实际需要。",
+        "把选择检验变成每场戏必须承担不可逆代价的统一规则。",
+        "替其他人物宣布羞耻或成长，以叙述者判断代替他们可见的选择。",
+        "最终共同呈现可采用较完整的露天演出或朴素的共同试演；不在本阶段固定台前人选、演出规模或章节悬念频率。",
+        "笑点之后呈现行动带来的分工、局势或关系变化。",
+        "结尾可倾向支持能兑现承诺的协作，同时保留具体分工仍需重谈的余地；不提前锁定完整演出或共同试演的收束形式。",
+        "结尾形式以露天共同试演为候选收束方向；具体人选、规模与操作安排须由此前建立的条件支持，近期规划可据此调整。",
+        "让人物直接宣告他人已经成长，替代可观察的请求、回应和履约。",
+        "让每个代表场景只展示笑话，不改变局势、分工或关系。",
+        "让灯架自行恢复、演员无因返回或陌生救援者突然包办全部难题。",
+        "选择后果按实际因果需要呈现，不要求每次选择都有不可逆损失。",
+        "靠羞辱怯场者、强迫上台或突然获得专业权威完成我的导演证明。"
+      ],
+      "condition_sources": {
+        "ending_intent": {
+          "content_hash": "sha256:55e9b92200c4b0b20c069bb482cfe0645f0928ed120cfb917612af733ff6f508",
+          "asset_version_id": "authority-output:5f281bb2-b145-45c5-bf62-5f48113e3935:story_planning.candidate:v1"
+        },
+        "creative_brief": {
+          "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+          "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+        },
+        "reader_promise": {
+          "content_hash": "sha256:cd3caca34e9d431c36e7b6157e3f01897cfcddbab13218fd1229edbb7ea9ae06",
+          "asset_version_id": "authority-output:07708e0b-e16e-4b43-8b7b-0870d739331e:story_planning.candidate:v1"
+        },
+        "theme_contract": {
+          "content_hash": "sha256:f1f977b473bd9d0bd6b9bed5776789148f961732f3f72c39f9fb931b52287fe7",
+          "asset_version_id": "authority-output:54f5e8be-bc05-49bf-9123-1aba4ed5221a:story_planning.candidate:v1"
+        },
+        "creative_foundation": {
+          "content_hash": "sha256:33c7c5e37a0a81fab7cf7763892779fe4897df9cd09346a7411b4d82abee7b6a",
+          "asset_version_id": "authority-output:085f41bc-28a7-47cc-93f6-c2c8880257dd:story_planning.candidate:v1"
+        }
+      },
+      "semantic_families": [
+        "CHARACTER_TRANSFORMATION",
+        "NARRATIVE_MECHANISM",
+        "THEME_MORAL_DILEMMA",
+        "WORLD_CONSEQUENCE"
+      ],
+      "reader_effect_tags": [
+        "读者会跟着一个急于证明自己能当导演的我，走进与妹妹、村民共同排练露天小戏的现场。笑意来自认真安排与实际需要之间的错位、对白里的停顿，以及我不得不亲手修改自己主张的时刻；温暖来自有人明确说出条件，有人接下具体工作，也有人允许别人再试一次。持续的期待是：这次谁愿意站台前，谁接住台后的空缺，我们答应的事到下次试演还能否做到。后续需要用可见的选择和协作，挣得我从急于被认可到能够请求帮助、接受限制的转变，也让妹妹承担让大家轻松参与的实际责任。收束的满足来自大家找到愿意共同参与的位置，并把小戏推进到共同呈现；具体形式保持开放。若最终靠强迫、羞辱、凭空救援或一场喝彩替代协作，这份承诺就会落空。"
+      ],
+      "recent_craft_usage": [],
+      "current_state_terms": [
+        "APPLICABLE"
+      ],
+      "desired_transformation_terms": [
+        "CREATIVE_EVALUATION",
+        "STABLE_ID",
+        "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+        "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "narrative-search-comparison.v2",
+        "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+        "为成年中文读者确立九章方向的第一人称生活喜剧体验：从我急于证明导演能力的认真与错位中获得笑意，在我与妹妹、村民反复商量分工并兑现约定的过程中获得温暖，期待我逐渐能提出请求、接受条件，与大家一起把小戏推进到共同呈现。",
+        "写一部九章方向的生活喜剧：我为了证明能当导演，与想让大家轻松上台的妹妹带村民排练露天小戏。第一场排练同时遭遇灯架故障和演员退场，我们争执谁该站台前，也逐渐发现谁能让别人安心站在那里。以一次次分工和试演，让我从急于获得认可走向能提出请求、接受条件并完成协作。",
+        "围绕我想证明能当导演、妹妹想让村民轻松上台的不同愿望，探索认可、参与条件与共同责任的关系。以九章方向中的分工协商、失误和试演，让主题伴随幽默与具体互助展开，使我逐渐能够提出请求、接受条件并完成协作。",
+        "用对白和补位呈现导演欲望的实际代价",
+        "用有限承诺推进参与意愿与分工",
+        "让故障触发可见选择而非凭空解决"
+      ],
+      "recently_used_repetition_keys": [
+        "future-2:分工承诺产生后续责任",
+        "future-2:台前资格与台后贡献",
+        "future-2:妹妹的宽松安排需要兑现",
+        "future-2:导演亲自补位"
+      ],
+      "required_card_asset_version_ids": []
+    },
+    "rejected": [],
+    "selected": [],
+    "project_id": "project:input-isolation-01:stage-comedy",
+    "policy_version": "knowledge-grounded-selection-v2",
+    "pool_truncated": false,
+    "schema_version": "mkaos-narrative-intelligence-selection.v1",
+    "pool_query_mode": "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION",
+    "selection_digest": "sha256:d6d69a0991968ea11190f85a60156de17b04e1842a78b28a968b83901902a1e4",
+    "selection_status": "NO_ELIGIBLE_MATCH",
+    "authority_boundary": {
+      "semantic_role": "POSSIBILITY_ONLY",
+      "may_mutate_narrative_state": false,
+      "may_mutate_story_authority": false,
+      "may_prove_accepted_reality": false,
+      "planning_must_recompose_for_project": true
+    },
+    "eligible_card_count": 0,
+    "examined_card_count": 0,
+    "knowledge_access_policy": {
+      "mode": "PROJECT_DEFAULT",
+      "book_id": "book:input-isolation-01:stage-comedy",
+      "policy_id": "book-production-knowledge-access",
+      "project_id": "project:input-isolation-01:stage-comedy",
+      "policy_hash": "sha256:93ef29d8734d4064f6e13f71dcd54a22636d0629568f452a3cbe91588513f6f4",
+      "policy_version": 1,
+      "schema_version": "book-knowledge-access-policy.v1",
+      "configured_explicitly": false,
+      "allowed_knowledge_card_asset_version_ids": []
+    }
+  },
+  "knowledge_access_policy": {
+    "mode": "PROJECT_DEFAULT",
+    "book_id": "book:input-isolation-01:stage-comedy",
+    "policy_id": "book-production-knowledge-access",
+    "project_id": "project:input-isolation-01:stage-comedy",
+    "policy_hash": "sha256:93ef29d8734d4064f6e13f71dcd54a22636d0629568f452a3cbe91588513f6f4",
+    "policy_version": 1,
+    "schema_version": "book-knowledge-access-policy.v1",
+    "configured_explicitly": false,
+    "allowed_knowledge_card_asset_version_ids": []
+  },
+  "planning_contract_version": "1.21.0",
+  "planning_context_policy_version": "context-policy:chapter-generation-pack:v2",
+  "narrative_qualification_profiles": [
+    {
+      "layer": "STORY_FOUNDATION",
+      "criteria": [
+        "WORLD_RULE_COHERENCE",
+        "RULE_APPLICABILITY_AND_LIMITS",
+        "WORLD_NARRATIVE_PURPOSE_SUPPORT",
+        "CHARACTER_AGENCY_SUPPORT",
+        "LONGFORM_EVOLUTION_CAPACITY"
+      ],
+      "skill_ref": "worldbuilding",
+      "profile_id": "world-foundation-semantic-v1-work-v3",
+      "profile_hash": "sha256:8052083c403fd7fedd715f50f182b302f992a83cc496b6c694d32d6b9b1844f4",
+      "capability_id": "world.design.generate",
+      "profile_version": "3.0.0",
+      "criterion_semantics": {
+        "WORLD_RULE_COHERENCE": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "CHARACTER_AGENCY_SUPPORT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "LONGFORM_EVOLUTION_CAPACITY": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "RULE_APPLICABILITY_AND_LIMITS": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "WORLD_NARRATIVE_PURPOSE_SUPPORT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention."
+      }
+    }
+  ]
+}

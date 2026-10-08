@@ -1,0 +1,288 @@
+{
+  "version": "wp-creative-input-isolation-01.evidence.v1",
+  "work_package_status": "PARTIALLY_COMPLETE",
+  "baseline_main_sha": "359a104c53cb59eccb74b2f92c98a3972a2557c5",
+  "final_source_sha": "908c9fe57ef3b9ea45e023d326d01f1c006f598e",
+  "real_execution_source_sha": "939c12ad47db37e3b27fc35897decb525a95cae0",
+  "real_execution_application_build_id": "creative-input-isolation-01:939c12ad47db37e3b27fc35897decb525a95cae0",
+  "original_checkout_head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "original_recorded_runtime_release": "b78b7431a70042d571117d0ec5773ee6c688c76c",
+  "original_uncommitted_changes": "PRESERVED_IN_SEPARATE_CHECKOUT",
+  "runtime_entry": "authority-creation start/continue --foreground",
+  "database": {
+    "name": "nf_creative_input_isolation_20261008_live",
+    "oid": 19895153,
+    "authority": "PostgreSQL"
+  },
+  "input_source": "TASK_GENERATED_FROM_NATIVE_CURRENT_AUTHOR_TASK",
+  "input_purpose": "CREATIVE_EVALUATION",
+  "provider": "codex-cli",
+  "model": "gpt-6.1-sol",
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "monetary_cost": "UNKNOWN",
+  "input_isolation": {
+    "status": "PASS_WITHIN_VERIFIED_ENTRY_AND_PLANNING_REQUEST_SCOPE",
+    "evidence_state": "EXECUTABLE",
+    "rendered_prompts_and_stdin_receipts_verified": 42,
+    "scope": "Content/Formation/Planning binding and actual frozen Provider requests; Chapter request coverage as recorded per case",
+    "source_and_purpose_independent": true,
+    "new_creation_missing_input_fails_closed": true,
+    "original_formation_replay_preserved": true
+  },
+  "file_cleanup": {
+    "status": "PASS",
+    "original_archived_files": 39,
+    "sha256_all_preserved": true,
+    "path_map": "config/archive/creative-inputs-legacy/path-map.json",
+    "automatic_discovery": "ABSENT_IN_CURRENT_CREATION_ENTRIES"
+  },
+  "real_validation": {
+    "provider_calls": 42,
+    "succeeded": 41,
+    "unknown": 1,
+    "chapter_draft_operations": 0,
+    "prose_samples": "NOT_RUN",
+    "prose_conformity": "NOT_PROVEN",
+    "full_book_target": 9,
+    "executor_stop_cursor": 1,
+    "real_direction_assessment": "Human reading of actual objectives, actions, conflict engines, style examples and reader reward supports differentiation in the generated proposals; this is not prose proof",
+    "effect_status_counts": {
+      "SUCCEEDED": 41,
+      "UNKNOWN": 1
+    },
+    "prose_not_run_reason": "All three original runs stopped before a persisted Chapter draft: unresolved character applicability, original UNKNOWN Provider outcome, and an unsent local Schema identity path failure with no supported terminal-successor recovery entry."
+  },
+  "checks": {
+    "focused_checks": "329 passed; additional runner preview check 1 passed (runner file 4 passed)",
+    "native_author_and_manuscript": "8 passed",
+    "native_admission_and_editorial_delivery": "2 passed",
+    "web_typecheck": "PASS",
+    "web_tests": "16 passed",
+    "documentation": "PASS@908c9fe57ef3b9ea45e023d326d01f1c006f598e",
+    "historical_inventory": "PASS",
+    "test_inventory": "PASS@908c9fe57ef3b9ea45e023d326d01f1c006f598e",
+    "baseline_failures_preserved": [
+      "4 expanded fixture tests failed identically on the frozen main baseline",
+      "instruction_surface: unmanaged instruction source in unchanged book_authority/manuscript.py"
+    ],
+    "full_repository_P0": "NOT_RUN",
+    "single_book_context_and_recovery": "182 passed, 5 subtests passed",
+    "pack_compatibility": "7 passed",
+    "historical_bytes": "39 original files match frozen main SHA-256",
+    "changed_file_lint": "PASS",
+    "additional_native_entrypoints": "8 passed, 4 subtests; 2 failures: statement timeout and protected Context budget; see paired baseline and fresh-database checks",
+    "paired_baseline_author_budget": "Same PROTECTED_CONTEXT_BUDGET_EXCEEDED failure on frozen main; 19.95 seconds",
+    "fresh_database_native_author": "Same routing source_gate_outcomes statement timeout on a fresh migrated database; 205.54 seconds",
+    "paired_baseline_native_author": "Same routing source_gate_outcomes statement timeout on frozen main; 233.52 seconds",
+    "canonical_source_paths": "49 actor/schema identity and native continuation unit checks passed; 40 causal World preparation checks passed; changed-file lint passed"
+  },
+  "next_actions": [
+    {
+      "case": "fantasy-cooking",
+      "action": "Reconcile original external effect a918dc02-f458-4326-9b05-ec7fdc54f870 with its existing process receipt. No final response or Provider request handle is available; keep UNKNOWN and original Book/Formation. Do not dispatch a new key."
+    },
+    {
+      "case": "stage-comedy",
+      "action": "Use native linked character candidate refinement to resolve planner applicability for fears without treating the narrator limited knowledge as a ban on proposing motives. Preserve original candidate and do not weaken activation validation."
+    },
+    {
+      "case": "archive-suspense",
+      "action": "Register an operator-owned native capacity continuation for the exact pre-send failed Planning Operation, then recover the same Formation. Automatic worker registration currently fails LOCAL_OPERATOR enforcement."
+    }
+  ],
+  "authorization_boundaries": {
+    "original_WP_LONGFORM_01": "UNTOUCHED",
+    "no_PR_merge": true,
+    "no_novel_publication": true,
+    "case_titles": "EVALUATION_CASES_ONLY_NOT_USER_NEW_BOOK_ASSIGNMENT"
+  },
+  "final_implementation_identity": "sha256:d28cc4838d0a31163e091f09b9da986ceb40419d87d745d108e5153b7eee0eac",
+  "original_first_failures": [
+    {
+      "case": "stage-comedy",
+      "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+      "stage": "CHARACTER_CAST",
+      "failure": {
+        "code": "FOUNDATION_APPLICABILITY_UNRESOLVED",
+        "message": "FOUNDATION_APPLICABILITY_UNRESOLVED: Uncertain design applicability requires clarification before activation",
+        "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b"
+      },
+      "recovery": {
+        "action": "RESUME_WITH_SAME_FROZEN_INPUTS",
+        "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+        "failed_operation_id": "runtime-attempt:79619e7d-c398-4fdf-96ae-547cc3d4338d"
+      }
+    },
+    {
+      "case": "fantasy-cooking",
+      "formation_run_id": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7",
+      "stage": "CHARACTER_CAST",
+      "failure": {
+        "code": "MODEL_EFFECT_FINAL_PLANNING",
+        "message": "MODEL_EFFECT_FINAL_PLANNING: Planning provider outcome was unknown",
+        "formation_run_id": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7"
+      },
+      "recovery": {
+        "action": "RESUME_WITH_SAME_FROZEN_INPUTS",
+        "formation_run_id": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7",
+        "failed_operation_id": "runtime-attempt:c1db7c9d-ec45-4869-bf43-ca6faed05a75"
+      }
+    },
+    {
+      "case": "archive-suspense",
+      "formation_run_id": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd",
+      "stage": "CHARACTER_CAST",
+      "failure": {
+        "code": "PermissionError",
+        "message": "runtime continuation registration requires the existing trusted local operator",
+        "formation_run_id": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd"
+      },
+      "recovery": {
+        "action": "RESUME_WITH_SAME_FROZEN_INPUTS",
+        "formation_run_id": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd",
+        "failed_operation_id": "runtime-attempt:91286713-b413-4634-adf5-4e824ea2ca2f"
+      }
+    }
+  ],
+  "single_book_boundary": {
+    "status": "PASS_WITHIN_VERIFIED_NATIVE_SCOPE",
+    "evidence_state": "EXECUTABLE",
+    "scope": "Same-Project independent Book/Workspace selection, parent lineage, actual Context loading, accepted-state and retrieval scope; stateless shared infrastructure retained"
+  },
+  "mkaos_access": {
+    "status": "EXECUTABLE_CONTROLLED",
+    "scope": "Existing Source/MKAOS access policy, permitted abstract KnowledgeCard and forbidden foreign Book story evidence",
+    "real_external_knowledge_consumption": "NOT_RUN",
+    "new_public_repository": false
+  },
+  "real_case_statuses": [
+    {
+      "case": "stage-comedy",
+      "project_id": "project:input-isolation-01:stage-comedy",
+      "book_id": "book:input-isolation-01:stage-comedy",
+      "effects": 7,
+      "effect_statuses": [
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED"
+      ],
+      "candidate_count": 7,
+      "formation": [
+        [
+          "FAILED",
+          "CHARACTER_CAST"
+        ]
+      ]
+    },
+    {
+      "case": "fantasy-cooking",
+      "project_id": "project:input-isolation-01:fantasy-cooking",
+      "book_id": "book:input-isolation-01:fantasy-cooking",
+      "effects": 7,
+      "effect_statuses": [
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "UNKNOWN"
+      ],
+      "candidate_count": 6,
+      "formation": [
+        [
+          "FAILED",
+          "CHARACTER_CAST"
+        ]
+      ]
+    },
+    {
+      "case": "archive-suspense",
+      "project_id": "project:input-isolation-01:archive-suspense",
+      "book_id": "book:input-isolation-01:archive-suspense",
+      "effects": 28,
+      "effect_statuses": [
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED",
+        "SUCCEEDED"
+      ],
+      "candidate_count": 28,
+      "formation": [
+        [
+          "READY",
+          "COMPLETE"
+        ]
+      ]
+    }
+  ],
+  "registration_runtime_provenance": {
+    "capacity_registration": "4605f2e2-462a-44aa-9d80-dad60e835525",
+    "reported_runtime_sha": "939c12ad47db37e3b27fc35897decb525a95cae0",
+    "actual_registration_checkout_base_sha": "b4117dfdf33a6ec33f50935ca4b963cef73f4f57",
+    "actual_registration_checkout": "DIRTY_WITH_CONTENT_BOOK_SCOPE_AND_CONTINUATION_ACTOR_FIXES",
+    "registration_implementation_tree_hash": "NOT_RECORDED",
+    "provider_calls_during_registration": 0,
+    "subsequent_provider_execution_checkout": "/tmp/wp-input-runtime-939c12",
+    "subsequent_provider_execution_checkout_sha": "939c12ad47db37e3b27fc35897decb525a95cae0"
+  },
+  "unclosed_gaps": [
+    {
+      "case": "stage-comedy",
+      "first_stage": "CHARACTER_CAST",
+      "code": "FOUNDATION_APPLICABILITY_UNRESOLVED",
+      "next_action": "Use an existing native linked candidate refinement and Formation selection path for the exact candidate; active-candidate applicability is currently blocked. Retain original input, candidate and frozen Pack."
+    },
+    {
+      "case": "fantasy-cooking",
+      "first_stage": "CHARACTER_CAST",
+      "code": "UNKNOWN",
+      "effect_id": "a918dc02-f458-4326-9b05-ec7fdc54f870",
+      "next_action": "Reconcile original Provider outcome through an owned native recovery lease; direct ordinary gateway reconciliation is rejected on FAILED_FINAL Attempt and no remote query handle was retained. Do not resend."
+    },
+    {
+      "case": "archive-suspense",
+      "first_stage": "CHAPTER_PLAN_WORLD_PREPARATION",
+      "source_operation_id": "17b04aad-e56c-4b02-adda-841869a3f537",
+      "code": "PROGRAMMING_BUG_SOURCE_PATH_ALIAS",
+      "external_intents_for_failed_operation": 0,
+      "production_source_path_fix": "908c9fe57ef3b9ea45e023d326d01f1c006f598e",
+      "recovery_entry_result": "PLANNING_RESULT_REPAIR_EVIDENCE_MISSING",
+      "next_action": "Reuse native runtime continuation to admit a proved unsent local preparation successor for the original ChapterPlan operation, preserving its Book/input/template/actor and terminal record; current entry only admits other bounded failure classes. Do not create another Book or rewrite history."
+    }
+  ],
+  "current_entry": {
+    "new_work": "authority-creation start --input-file CURRENT_WORK_REQUEST --foreground",
+    "existing_work": "authority-creation continue/recover with the returned original Project/Formation handles",
+    "validation": "Explicitly selected config/evaluation/creative-inputs/isolation-01 inputs, purpose CREATIVE_EVALUATION; never production defaults",
+    "next_production_input": "The current author request or existing Book-bound effective input; no novel selected by this work package"
+  }
+}

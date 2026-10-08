@@ -1,0 +1,2668 @@
+{
+  "book_id": "book:input-isolation-01:fantasy-cooking",
+  "trace_id": "trace:story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7",
+  "project_id": "project:input-isolation-01:fantasy-cooking",
+  "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:WORLD_BIBLE:0",
+  "token_budget": 64000,
+  "workspace_id": "workspace:input-isolation-01:fantasy-cooking",
+  "input_versions": [
+    {
+      "role": "ending_intent",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:fantasy-cooking",
+        "objective": "为九章烹饪奇幻成长设计有温度且保留经营现实的结尾，使陆芽从急于借祖母的发光麦饼赢得名声，转向能够依据手艺与交易反馈作出选择、说明价格，并与伙伴共同承担结果。",
+        "project_id": "project:input-isolation-01:fantasy-cooking",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整；结尾设计不得反向锁死尚未确定的章次与唯一配方。",
+          "保留陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气使面团失去弹性及邻摊客人口味不同的初始条件。",
+          "保留陆芽与惜料的送货少年围绕定价、试吃及最后一袋麦粉的分歧，以手艺尝试和有代价的合作推进成长。",
+          "固定陆芽的第三人称近距离视角，只使用她感知、记得、听到或有依据推断的信息；不进入少年或客人的内心。",
+          "通过按压、折叠、烙制、掰开、气味与入口反应呈现判断依据，感官细节须参与选择及后果。",
+          "每个代表场景至少改变一项经营局势或关系条件，最终核算与收摊动作也须承担反馈、决定或后果。",
+          "仅使用冻结作者简报与本书沿Authority生成的方案；不引入其他作品、其他用例、历史试产资料或检查答案。",
+          "所有结尾事件、出品变化与合作安排均为未来候选设计；不构成已发生事实、已批准方案或Authority状态变更。"
+        ],
+        "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:ENDING_INTENT:0",
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者要求手艺尝试与有代价的合作，冻结成长方向也将试吃耗料、可售份量减少及损耗分担作为因果条件。代价应落实为经协商的有限材料投入与经营取舍，无需增加永久创伤或重大牺牲。",
+            "field_path": "$.protagonist_cost"
+          }
+        ],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "ending_direction": "拟以首次独立摆摊的收摊与核算收束九章成长。陆芽根据前段试验，在双方先行同意的有限麦粉份额内做出一款有明确取舍的发光麦饼：具体调整由实际触觉、气味和入口反馈决定，不预定唯一成功配方。结尾安排一次有限的付费购买，让客人的具体反应检验她的选择；面对仍不合口味的反馈，她能够追问并判断是否调整，不再急着用祖母的名声替自己辩护。她愿意以自己的名字说明这款饼的味道、份量和价格，并与少年按约核对耗料和所得。两人的温度来自彼此尊重材料权限、兑现承担和修正判断，仍可保留意见差异。最后落在陆芽能够判断并承担自己的味道这一初步变化上，浮岛夜市的经营继续存在困难，盈利、持久客源与名声保持开放，不另起竞赛或续作主线。",
+        "protagonist_cost": "拟让陆芽承担经事前协商归于她的试验与试吃耗料，接受这部分投入减少当次可售份量，并在收摊核算中兑现约定的损耗承担。具体份额与分担方式须待麦粉权属和合作条件明确后确定，不能默认由少年供料或承担亏损。她还须放下以所有客人的赞美证明自己的期待，承认选定味道会失去部分交易机会；这些代价来自实际选择，不额外要求永久损失。",
+        "candidate_payload": {
+          "objective": "为九章烹饪奇幻成长设计有温度且保留经营现实的结尾，使陆芽从急于借祖母的发光麦饼赢得名声，转向能够依据手艺与交易反馈作出选择、说明价格，并与伙伴共同承担结果。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整；结尾设计不得反向锁死尚未确定的章次与唯一配方。",
+            "保留陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气使面团失去弹性及邻摊客人口味不同的初始条件。",
+            "保留陆芽与惜料的送货少年围绕定价、试吃及最后一袋麦粉的分歧，以手艺尝试和有代价的合作推进成长。",
+            "固定陆芽的第三人称近距离视角，只使用她感知、记得、听到或有依据推断的信息；不进入少年或客人的内心。",
+            "通过按压、折叠、烙制、掰开、气味与入口反应呈现判断依据，感官细节须参与选择及后果。",
+            "每个代表场景至少改变一项经营局势或关系条件，最终核算与收摊动作也须承担反馈、决定或后果。",
+            "仅使用冻结作者简报与本书沿Authority生成的方案；不引入其他作品、其他用例、历史试产资料或检查答案。",
+            "所有结尾事件、出品变化与合作安排均为未来候选设计；不构成已发生事实、已批准方案或Authority状态变更。"
+          ],
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者要求手艺尝试与有代价的合作，冻结成长方向也将试吃耗料、可售份量减少及损耗分担作为因果条件。代价应落实为经协商的有限材料投入与经营取舍，无需增加永久创伤或重大牺牲。",
+              "field_path": "$.protagonist_cost"
+            }
+          ],
+          "ending_direction": "拟以首次独立摆摊的收摊与核算收束九章成长。陆芽根据前段试验，在双方先行同意的有限麦粉份额内做出一款有明确取舍的发光麦饼：具体调整由实际触觉、气味和入口反馈决定，不预定唯一成功配方。结尾安排一次有限的付费购买，让客人的具体反应检验她的选择；面对仍不合口味的反馈，她能够追问并判断是否调整，不再急着用祖母的名声替自己辩护。她愿意以自己的名字说明这款饼的味道、份量和价格，并与少年按约核对耗料和所得。两人的温度来自彼此尊重材料权限、兑现承担和修正判断，仍可保留意见差异。最后落在陆芽能够判断并承担自己的味道这一初步变化上，浮岛夜市的经营继续存在困难，盈利、持久客源与名声保持开放，不另起竞赛或续作主线。",
+          "protagonist_cost": "拟让陆芽承担经事前协商归于她的试验与试吃耗料，接受这部分投入减少当次可售份量，并在收摊核算中兑现约定的损耗承担。具体份额与分担方式须待麦粉权属和合作条件明确后确定，不能默认由少年供料或承担亏损。她还须放下以所有客人的赞美证明自己的期待，承认选定味道会失去部分交易机会；这些代价来自实际选择，不额外要求永久损失。",
+          "closure_conditions": [
+            "前段须通过陆芽参与的交流明确最后一袋麦粉的权属、可用份额及使用权限；共同试验前谈清用途、损耗与收益承担，不能以结尾的成功补足事前缺失的同意。",
+            "结尾出品的工序与口味取舍须承接此前可观察的湿面团试验和客人反馈，让陆芽能够说明自己保留、调整了什么以及依据何在。",
+            "以一次实际付费购买及具体入口反馈检验最终选择；认可可以有限，仍有人不喜欢，陆芽不再把不同偏好直接当作自身无能的证明。",
+            "陆芽与少年须核对实际材料消耗和交易结果，兑现约定的承担方式；双方至少各有一次依据结果修正判断的行动，合作分歧不以单方面认错收束。",
+            "陆芽须通过明确说明味道、份量与价格的行动承担出品责任；祖母配方的情感分量得到保留，她对当前出品的判断也获得可见表达。",
+            "收束本次摆摊中材料用途与损耗承担的具体争执，保留后续口味调整、客源和盈利的不确定性；无需设置续作任务。"
+          ],
+          "constraint_envelope": {
+            "role": "ENDING_INTENT",
+            "creative_brief": {
+              "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+              "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+                "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+            "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+            "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+            "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+            "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+            "把未经协商使用他人麦粉写成无需承担后果的分享。",
+            "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+            "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+          ],
+          "unacceptable_shortcuts": [
+            "只用一句找到自己的味道宣布成长，省略可观察的工序判断、交易反馈与不同回应。",
+            "用最后一炉突然完美掩盖此前湿面团问题，或用发光强度代替入口口感的检验。",
+            "让少年无条件让出最后一袋麦粉，以慷慨表态跳过权属、权限及损耗协商。",
+            "用客人齐声赞美、权威授奖或销量暴涨替代有限而可信的认可。",
+            "把祖母配方写成错误的旧事物，或让祖母的评价替陆芽完成出品判断。",
+            "只写双方握手和解，省略材料核对、承担兑现及合作条件的实际变化。",
+            "为显得结尾有分量而追加无因果支持的重大牺牲，或以新的悬案强制连接续作。"
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+              "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+            }
+          }
+        },
+        "closure_conditions": [
+          "前段须通过陆芽参与的交流明确最后一袋麦粉的权属、可用份额及使用权限；共同试验前谈清用途、损耗与收益承担，不能以结尾的成功补足事前缺失的同意。",
+          "结尾出品的工序与口味取舍须承接此前可观察的湿面团试验和客人反馈，让陆芽能够说明自己保留、调整了什么以及依据何在。",
+          "以一次实际付费购买及具体入口反馈检验最终选择；认可可以有限，仍有人不喜欢，陆芽不再把不同偏好直接当作自身无能的证明。",
+          "陆芽与少年须核对实际材料消耗和交易结果，兑现约定的承担方式；双方至少各有一次依据结果修正判断的行动，合作分歧不以单方面认错收束。",
+          "陆芽须通过明确说明味道、份量与价格的行动承担出品责任；祖母配方的情感分量得到保留，她对当前出品的判断也获得可见表达。",
+          "收束本次摆摊中材料用途与损耗承担的具体争执，保留后续口味调整、客源和盈利的不确定性；无需设置续作任务。"
+        ],
+        "execution_evidence": {
+          "attempt_id": "af7e810f-d04a-4004-867f-f81aa509458d",
+          "operation_id": "4074b2f4-9ae2-4ff6-a595-1e5617beb50f",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:050b25bc-65a3-4c07-a77e-d8339282e57f",
+          "route_snapshot_id": "production_execution/routes/01a789525126938d2a6e",
+          "usage_receipt_ref": "authority-asset-version:4ad8b9e8-a055-4934-a2b3-d81b8defdf5c",
+          "input_manifest_ref": "production_execution/inputs/01a789525126938d2a6e",
+          "context_bundle_hash": "sha256:9f4c0ae5ffd77aec823cdbd7d70994c67f83b1968dde169db79410695a1f285e",
+          "output_manifest_ref": "authority-asset-version:eaae4325-d1c3-4b67-a3b0-d77b40fde596",
+          "production_verified": false,
+          "external_receipt_ref": "c063279d-7b00-4a50-a708-52feb8e25383",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:29e6b482-ffeb-4738-9447-a8af8b07f099",
+          "capability_execution_ref": "7de1a03c-bc1e-5f65-a234-4e894fe5480e",
+          "capability_execution_hash": "sha256:6c7d9a5be62db7fef4b201314525eac2205769b3805a7ac281aea79eeec63a3f",
+          "capability_runtime_binding_ref": "sha256:c14e38c89e660bac57bf0caba4f455cb9d74b6effc354ffb83db53e933fe674e",
+          "capability_runtime_binding_hash": "sha256:f494720ee636955b36cdfb986b2579da0f4060118a43886dfe0d9c0e7fbb0708",
+          "context_bundle_asset_version_id": "52d5e551-ef58-4eef-aadd-64a74325da02",
+          "capability_pack_attempt_snapshot_id": "sha256:c14e38c89e660bac57bf0caba4f455cb9d74b6effc354ffb83db53e933fe674e",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:f494720ee636955b36cdfb986b2579da0f4060118a43886dfe0d9c0e7fbb0708",
+          "narrative_intelligence_selection_digest": "sha256:ce2c482d168d079f16772b38b96246a2ae34744cb093ca384c43f52e48abf6b4"
+        },
+        "constraint_envelope": {
+          "role": "ENDING_INTENT",
+          "creative_brief": {
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+              "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+          "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+          "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+          "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+          "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+          "把未经协商使用他人麦粉写成无需承担后果的分享。",
+          "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+          "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+        ],
+        "unacceptable_shortcuts": [
+          "只用一句找到自己的味道宣布成长，省略可观察的工序判断、交易反馈与不同回应。",
+          "用最后一炉突然完美掩盖此前湿面团问题，或用发光强度代替入口口感的检验。",
+          "让少年无条件让出最后一袋麦粉，以慷慨表态跳过权属、权限及损耗协商。",
+          "用客人齐声赞美、权威授奖或销量暴涨替代有限而可信的认可。",
+          "把祖母配方写成错误的旧事物，或让祖母的评价替陆芽完成出品判断。",
+          "只写双方握手和解，省略材料核对、承担兑现及合作条件的实际变化。",
+          "为显得结尾有分量而追加无因果支持的重大牺牲，或以新的悬案强制连接续作。"
+        ],
+        "generator_operation_name": "ending.intent.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:953e6e3fb4c6918437c5a603e2902cd8e489a9d3e81b28494740cb94a2df5048",
+      "asset_version_id": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1"
+    },
+    {
+      "role": "creative_brief",
+      "content": {
+        "idea": "年轻厨师陆芽在浮岛夜市第一次独立摆摊，想卖出祖母留下的发光麦饼，却遇到潮湿空气让面团失去弹性和邻摊不同口味的客人。她与一位惜料的送货少年在定价、试吃与分享最后一袋麦粉之间产生分歧。让手艺尝试和有代价的合作推动她从急于赢得名声转向找到自己的味道。",
+        "genre": "第三人称近距离奇幻成长",
+        "audience": "成年中文读者",
+        "project_id": "project:input-isolation-01:fantasy-cooking",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+        ],
+        "source_boundaries": [
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+        ],
+        "creative_input_selection": {
+          "book_id": "book:input-isolation-01:fantasy-cooking",
+          "purpose": "CREATIVE_EVALUATION",
+          "intent_ref": "WP-CREATIVE-INPUT-ISOLATION-01:authorized-distinct-narrative-validation",
+          "project_id": "project:input-isolation-01:fantasy-cooking",
+          "source_kind": "TASK_GENERATED",
+          "parent_input": {
+            "content_hash": "sha256:f08c1f3ffefd0755dc4d436eb8b28788d3eb15440a5b9003c771d9097d5b5917",
+            "asset_version_id": "authority-output:ca09c788-bcb0-48b4-a5c7-130d9100c339:creative.brief:v1"
+          },
+          "workspace_id": "workspace:input-isolation-01:fantasy-cooking",
+          "contract_version": "creative-input-selection.v1",
+          "selected_by_actor_id": "author-first-native-operator",
+          "selection_operation_id": "846d6c65-ff43-4685-9e17-61a2b70f9d49"
+        },
+        "creative_brief_contract_version": "creative-brief-v2"
+      },
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+      "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+    },
+    {
+      "role": "reader_promise",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:fantasy-cooking",
+        "objective": "为成年中文读者明确九章烹饪奇幻成长故事的阅读承诺：贴近陆芽首次独立摆摊的窘迫、逞强与细小欢喜，通过可感知的手艺尝试、经营反馈和合作分歧，期待她从急于赢得名声转向能够判断、说明并承担自己的味道。本结果仅为承接冻结创作基础的候选承诺。",
+        "project_id": "project:input-isolation-01:fantasy-cooking",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+          "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。",
+          "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+          "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心；推断保留不确定性，新增信息通过她参与的交流与观察获得。",
+          "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+          "最后一袋麦粉的权属、可用份额与损耗承担方式尚未确定，使用前须在人物可知范围内明确。",
+          "准备、升级压力、阶段回报及具体收尾方式保持可调整，不承诺固定章末悬念、每章成功或每次行动都产生不可逆损失。"
+        ],
+        "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:READER_PROMISE:0",
+        "applicability": [],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "reader_promise": "读者将贴近陆芽的手、鼻息和迟疑，在浮岛夜市的日常劳动中体验第一次独自谋生的压力与温度。反复牵引阅读的问题是：这一次面团与客人的反应会让她看清什么，她愿意怎样调整，又能否与惜料的送货少年说清下一次尝试的条件？手艺的回报应能从动作和结果中辨认，关系的靠近应由具体协商与履行赢得。九章结尾须完成她对自身味道的初步确认：她能解释自己的取舍，面对不同偏好，并与伙伴承担共同选择的结果。认可可以有限，经营仍可继续摸索；找到自己的味道不以普遍赞美或一夜成名为证明。",
+        "schema_version": "story_design.authority.v1",
+        "candidate_payload": {
+          "objective": "为成年中文读者明确九章烹饪奇幻成长故事的阅读承诺：贴近陆芽首次独立摆摊的窘迫、逞强与细小欢喜，通过可感知的手艺尝试、经营反馈和合作分歧，期待她从急于赢得名声转向能够判断、说明并承担自己的味道。本结果仅为承接冻结创作基础的候选承诺。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+            "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。",
+            "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+            "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心；推断保留不确定性，新增信息通过她参与的交流与观察获得。",
+            "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+            "最后一袋麦粉的权属、可用份额与损耗承担方式尚未确定，使用前须在人物可知范围内明确。",
+            "准备、升级压力、阶段回报及具体收尾方式保持可调整，不承诺固定章末悬念、每章成功或每次行动都产生不可逆损失。"
+          ],
+          "applicability": [],
+          "reader_promise": "读者将贴近陆芽的手、鼻息和迟疑，在浮岛夜市的日常劳动中体验第一次独自谋生的压力与温度。反复牵引阅读的问题是：这一次面团与客人的反应会让她看清什么，她愿意怎样调整，又能否与惜料的送货少年说清下一次尝试的条件？手艺的回报应能从动作和结果中辨认，关系的靠近应由具体协商与履行赢得。九章结尾须完成她对自身味道的初步确认：她能解释自己的取舍，面对不同偏好，并与伙伴承担共同选择的结果。认可可以有限，经营仍可继续摸索；找到自己的味道不以普遍赞美或一夜成名为证明。",
+          "constraint_envelope": {
+            "role": "READER_PROMISE",
+            "creative_brief": {
+              "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+              "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+                "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+            "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+            "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+            "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+            "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+            "把未经协商使用他人麦粉写成无需承担后果的分享。",
+            "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+            "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+          ],
+          "disappointment_risks": [
+            "连续揉面和试饼只更换感官描写，却不改变判断、经营条件或合作关系，会让九章显得重复。",
+            "用旁白宣布陆芽找到了自己的味道，却没有呈现她怎样辨别反馈、作出取舍和承担结果，会使成长缺少可信依据。",
+            "把送货少年写成只负责算账或劝告的工具，缺少可见诉求与拒绝合作的行动，会削弱双方分歧的分量。",
+            "把有限认可写成失败，或以所有客人的赞美证明成长，会背离接纳不同口味的阅读回报。",
+            "让发光与浮岛只承担装饰作用，脱离展示、烹饪和交易中的具体感知，会削弱生活尺度的奇幻体验。",
+            "用材料损耗反复惩罚陆芽，缺少发现、修正与细小欢喜，会破坏克制而温暖的情绪承诺。",
+            "在九章结尾仍让陆芽只能等待他人认可，未完成对自身味道的初步判断，会使核心期待悬空；具体盈利与长期声誉则无需在结尾保证。"
+          ],
+          "setup_progress_payoff": [
+            {
+              "setup": "以潮湿空气导致面团失去弹性的初始条件，使陆芽熟悉的配方与眼前材料状态出现落差；发光能够吸引注意，却不能替代口感判断。",
+              "payoff": "让读者能够理解陆芽为何选择某种做法，以及成品保留了什么、舍弃了什么；她的手艺判断获得可观察的依据，具体工序与配方留待后续设计。",
+              "promise": "烹饪过程提供可以看见、闻到并理解的成长回报。",
+              "progress": "让相关尝试通过面团状态、烙制结果、入口反应及材料余量提供反馈，并据此改变下一步操作；不同尝试承担不同的问题变化。"
+            },
+            {
+              "setup": "陆芽想凭祖母留下的发光麦饼赢得认可，容易把客人的不同偏好听成对自己的否定，不愿承认原配方需要调整。",
+              "payoff": "陆芽对祖母配方作出有理由的保留或调整，能够说明自己愿意署名的味道，并承受仍有人不喜欢它。具体认可方式不预先锁定。",
+              "promise": "从依赖赞美到作出自己的判断，既保留继承的情感，也容纳不同口味。",
+              "progress": "通过她亲自听到的口味反馈与可见交易选择，使她逐步区分食物的问题、客人的偏好与对自身价值的判断；改变须落实为追问、选择或回应。"
+            },
+            {
+              "setup": "围绕定价、试吃和最后一袋麦粉建立分歧；麦粉的权属与可分享份额须先明确，不能默认陆芽可以支配他人的材料。",
+              "payoff": "合作的温度来自双方能够说清并履行某项具体安排，陆芽能够说明价格和自己承担的结果；材料分配、职责或分账的具体形式保持开放。",
+              "promise": "有边界、有实际分量的合作带来可信的关系变化。",
+              "progress": "让双方表达可见的诉求，在权限明确后检验约定；相关耗料、销售与劳动结果推动双方修正判断，不能只由少年退让。"
+            }
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+              "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+            }
+          }
+        },
+        "execution_evidence": {
+          "attempt_id": "820ca484-0437-4e93-9b71-750be77df15c",
+          "operation_id": "c28e7af2-54d1-48d7-be1d-cb14db780249",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:0b6e80c4-12f6-48bf-88da-85472f9a79e0",
+          "route_snapshot_id": "production_execution/routes/4df95be4d72ac7160eda",
+          "usage_receipt_ref": "authority-asset-version:a3fd5dc7-fcca-4d4c-9232-4aa7c6d11a2b",
+          "input_manifest_ref": "production_execution/inputs/4df95be4d72ac7160eda",
+          "context_bundle_hash": "sha256:891a4a0299c39a4efeada63191f4cca3b214a42b4f4e90a16948045d36a9d32a",
+          "output_manifest_ref": "authority-asset-version:1156bd60-9183-4316-84f2-26ef29502ef9",
+          "production_verified": false,
+          "external_receipt_ref": "e3db4964-0d72-4bfd-b02f-42a8c85112ff",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:fafb9c02-2af2-4fdb-904d-fc03c1c82d14",
+          "capability_execution_ref": "2c603157-028c-5106-9221-fc0e53f5c95c",
+          "capability_execution_hash": "sha256:bce3ec1926ffb9964011c1fa12674b155ffc510b5ff3335d0df4504f6400fa46",
+          "capability_runtime_binding_ref": "sha256:152ac11fc6913136e8e17c4a8c9acbb344524f18af070241d6f6739b93ec79f4",
+          "capability_runtime_binding_hash": "sha256:2d6ed24a3be2afc4990a8b93c956a47c834180da85932eedf6f38ccc05cb8521",
+          "context_bundle_asset_version_id": "54e04ac2-19d5-4aca-bb06-dd1bd5d47e15",
+          "capability_pack_attempt_snapshot_id": "sha256:152ac11fc6913136e8e17c4a8c9acbb344524f18af070241d6f6739b93ec79f4",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:2d6ed24a3be2afc4990a8b93c956a47c834180da85932eedf6f38ccc05cb8521",
+          "narrative_intelligence_selection_digest": "sha256:31ff5ba381bbc928a3807f14d746766e134edeedc7dce24a491d0b2e7c302e7b"
+        },
+        "constraint_envelope": {
+          "role": "READER_PROMISE",
+          "creative_brief": {
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+              "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+          "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+          "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+          "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+          "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+          "把未经协商使用他人麦粉写成无需承担后果的分享。",
+          "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+          "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+        ],
+        "disappointment_risks": [
+          "连续揉面和试饼只更换感官描写，却不改变判断、经营条件或合作关系，会让九章显得重复。",
+          "用旁白宣布陆芽找到了自己的味道，却没有呈现她怎样辨别反馈、作出取舍和承担结果，会使成长缺少可信依据。",
+          "把送货少年写成只负责算账或劝告的工具，缺少可见诉求与拒绝合作的行动，会削弱双方分歧的分量。",
+          "把有限认可写成失败，或以所有客人的赞美证明成长，会背离接纳不同口味的阅读回报。",
+          "让发光与浮岛只承担装饰作用，脱离展示、烹饪和交易中的具体感知，会削弱生活尺度的奇幻体验。",
+          "用材料损耗反复惩罚陆芽，缺少发现、修正与细小欢喜，会破坏克制而温暖的情绪承诺。",
+          "在九章结尾仍让陆芽只能等待他人认可，未完成对自身味道的初步判断，会使核心期待悬空；具体盈利与长期声誉则无需在结尾保证。"
+        ],
+        "setup_progress_payoff": [
+          {
+            "setup": "以潮湿空气导致面团失去弹性的初始条件，使陆芽熟悉的配方与眼前材料状态出现落差；发光能够吸引注意，却不能替代口感判断。",
+            "payoff": "让读者能够理解陆芽为何选择某种做法，以及成品保留了什么、舍弃了什么；她的手艺判断获得可观察的依据，具体工序与配方留待后续设计。",
+            "promise": "烹饪过程提供可以看见、闻到并理解的成长回报。",
+            "progress": "让相关尝试通过面团状态、烙制结果、入口反应及材料余量提供反馈，并据此改变下一步操作；不同尝试承担不同的问题变化。"
+          },
+          {
+            "setup": "陆芽想凭祖母留下的发光麦饼赢得认可，容易把客人的不同偏好听成对自己的否定，不愿承认原配方需要调整。",
+            "payoff": "陆芽对祖母配方作出有理由的保留或调整，能够说明自己愿意署名的味道，并承受仍有人不喜欢它。具体认可方式不预先锁定。",
+            "promise": "从依赖赞美到作出自己的判断，既保留继承的情感，也容纳不同口味。",
+            "progress": "通过她亲自听到的口味反馈与可见交易选择，使她逐步区分食物的问题、客人的偏好与对自身价值的判断；改变须落实为追问、选择或回应。"
+          },
+          {
+            "setup": "围绕定价、试吃和最后一袋麦粉建立分歧；麦粉的权属与可分享份额须先明确，不能默认陆芽可以支配他人的材料。",
+            "payoff": "合作的温度来自双方能够说清并履行某项具体安排，陆芽能够说明价格和自己承担的结果；材料分配、职责或分账的具体形式保持开放。",
+            "promise": "有边界、有实际分量的合作带来可信的关系变化。",
+            "progress": "让双方表达可见的诉求，在权限明确后检验约定；相关耗料、销售与劳动结果推动双方修正判断，不能只由少年退让。"
+          }
+        ],
+        "generator_operation_name": "reader.promise.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:78b58c972495a820c5274eccb316fbc7cf411cde138f9e3be17a5bbeeb337536",
+      "asset_version_id": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1"
+    },
+    {
+      "role": "theme_contract",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:fantasy-cooking",
+        "objective": "为九章烹饪成长方向提出一个可由手艺观察、经营反馈与合作协商共同探索的主题：陆芽如何在祖母的传承、客人的不同偏好和伙伴的材料边界之间，形成自己愿意说明并承担的判断。以下答案与选择均为候选探索路径，不预定章次或已发生结果。",
+        "project_id": "project:input-isolation-01:fantasy-cooking",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+          "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+          "承接陆芽害怕离开祖母配方便毫无本事的内在阻力，保持从急于赢得名声转向能够判断并承担自己的味道的成长方向。",
+          "固定陆芽的第三人称近距离视角；新增信息通过她参与的具体交流与观察获得，推断保留不确定性。",
+          "人物行动来自具体欲望与可知信息；每个代表场景至少改变一项局势或关系条件，安静动作也承担反馈、决定或后果。",
+          "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题；触觉与气味参与判断，术语只在动作需要时出现。",
+          "对话围绕可分配的材料、可说明的价格和具体口味展开，保留不同偏好与交易条件。",
+          "最后一袋麦粉的权属、可分享份额及少年惜料的具体经历尚未确定；后续须在人物可知范围内明确，不以主题需要补造事实。",
+          "主题主要通过观察、误判修正、具体协商和结果反馈探索；选择测试是可用方法，不要求每场都有两难或不可逆损失。",
+          "允许陆芽说清一次判断或疑问，但反思须联系她已经感知的出品与交易，不由叙述者替少年或客人解释动机。",
+          "结尾对陆芽判断与承担能力的初步成长提供回报，同时保留不同口味、合作分歧与经营前景的未决空间。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "接受边界为第零章；所有新增选择、场景及后果均为未来候选设计，不构成已发生事件、已知事实或已批准方案。"
+        ],
+        "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:THEME_CONTRACT:0",
+        "choice_tests": [
+          {
+            "cost": "小份试验占用有限麦粉与出摊时间；若结果不合适，投入的材料不能恢复为原有可售份量。",
+            "choice": "可让陆芽在湿面团无法按熟悉手感成形时，比较小份工序调整的结果，再决定保留祖母配方的哪些部分、改变哪些部分。",
+            "thematic_pressure": "检验忠于祖母是否只能表现为照做，也检验改变是否足以证明独立。主题可由按压、折叠和烙制后的实际差异呈现，不预设调整必然优于原方。"
+          },
+          {
+            "cost": "免费试吃减少可售份量；付费试售可能减少愿意尝试的人数。两种办法都不能保证获得足够反馈或成交。",
+            "choice": "可让陆芽与少年比较限量免费试吃和少量付费试售，说明各自愿意承担的耗料，再根据客人的具体回应调整办法。",
+            "thematic_pressure": "检验被注意、被夸赞与得到有用反馈是否相同。少年对耗料的顾虑和陆芽对接触客人的需求都有成立空间，分歧通过实际交易接受检验。"
+          },
+          {
+            "cost": "协商可能缩小试验规模或延后出品；若双方同意投入，所用麦粉将减少后续可售材料，损耗须按约定承担。",
+            "choice": "可在明确最后一袋麦粉的权属与双方权限后，让陆芽提出有份额上限、用途说明和损耗承担的共同试验；少年保有接受、修改或拒绝的权利。",
+            "thematic_pressure": "检验独立是否意味着凡事独自决定，以及分享是否必须包含对他人决定权的尊重。合作的温度来自清楚的边界与履约，不以少年单方面退让证明陆芽成长。"
+          },
+          {
+            "cost": "她可能放弃部分客人的交易机会，并继续承受销量与收益的不确定性；伙伴承担的工作与材料仍须得到交代。",
+            "choice": "可让陆芽面对互不相同的口味反馈，选择一款自己能够说明取舍、愿意署名并说明价格的麦饼，同时承认它未必适合每位客人。",
+            "thematic_pressure": "检验自己的味道是拒绝反馈的借口，还是听懂反馈后作出的具体判断。结尾可确认她回应异议和承担结果的能力，市场评价与经营前景保留开放性。"
+          }
+        ],
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "冻结方向要求手艺尝试与有限麦粉产生实际后果；候选配方试验会占用材料与出摊时间，具体用量留待后续规划。",
+            "field_path": "$.choice_tests[0].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "试吃与定价是作者指定的分歧，适合通过可售份量和反馈机会的取舍探索主题。",
+            "field_path": "$.choice_tests[1].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者要求有代价的合作；最后一袋麦粉须先明确权属、使用权限与损耗承担，才能提出有意义的共同投入。",
+            "field_path": "$.choice_tests[2].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "冻结成长方向要求陆芽放下以所有人满意衡量自身价值的习惯；选择具体服务的口味可能失去部分交易机会，但不预定必然亏损。",
+            "field_path": "$.choice_tests[3].cost"
+          }
+        ],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "opposing_answers": [
+          "一种候选答案是：守住祖母的配方，才能守住手艺的来处。可让陆芽坚持熟悉做法，并观察其中仍有价值的部分与不适应潮湿环境的部分；保留继承的情感分量，不把坚持直接判作愚昧。",
+          "另一种候选答案是：客人愿意付钱的味道，才是摊主应当做的味道。可通过试吃、份量和价格反馈显示倾听的必要，也让互不相同的偏好暴露追求所有人认可的限度；市场回应提供证据，却不能独自完成陆芽的判断。",
+          "还有一种候选答案是：自己喜欢并敢于署名，就足以称为自己的味道。可让陆芽尝试清楚表达偏好，同时面对客人的拒绝和伙伴的耗料要求；保留个人取舍的正当性，也检验她是否以自主为由回避后果。",
+          "可逐步形成的答案是：自己的味道来自对传承与反馈作出具体取舍，并尊重共同投入者的权限、承担约定的结果。可通过工序调整、售价说明与材料协商体现；这是本书支持的初步成长方向，不是保证成功的经营公式，也不裁定每种口味的高下。"
+        ],
+        "candidate_payload": {
+          "objective": "为九章烹饪成长方向提出一个可由手艺观察、经营反馈与合作协商共同探索的主题：陆芽如何在祖母的传承、客人的不同偏好和伙伴的材料边界之间，形成自己愿意说明并承担的判断。以下答案与选择均为候选探索路径，不预定章次或已发生结果。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+            "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+            "承接陆芽害怕离开祖母配方便毫无本事的内在阻力，保持从急于赢得名声转向能够判断并承担自己的味道的成长方向。",
+            "固定陆芽的第三人称近距离视角；新增信息通过她参与的具体交流与观察获得，推断保留不确定性。",
+            "人物行动来自具体欲望与可知信息；每个代表场景至少改变一项局势或关系条件，安静动作也承担反馈、决定或后果。",
+            "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题；触觉与气味参与判断，术语只在动作需要时出现。",
+            "对话围绕可分配的材料、可说明的价格和具体口味展开，保留不同偏好与交易条件。",
+            "最后一袋麦粉的权属、可分享份额及少年惜料的具体经历尚未确定；后续须在人物可知范围内明确，不以主题需要补造事实。",
+            "主题主要通过观察、误判修正、具体协商和结果反馈探索；选择测试是可用方法，不要求每场都有两难或不可逆损失。",
+            "允许陆芽说清一次判断或疑问，但反思须联系她已经感知的出品与交易，不由叙述者替少年或客人解释动机。",
+            "结尾对陆芽判断与承担能力的初步成长提供回报，同时保留不同口味、合作分歧与经营前景的未决空间。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "接受边界为第零章；所有新增选择、场景及后果均为未来候选设计，不构成已发生事件、已知事实或已批准方案。"
+          ],
+          "choice_tests": [
+            {
+              "cost": "小份试验占用有限麦粉与出摊时间；若结果不合适，投入的材料不能恢复为原有可售份量。",
+              "choice": "可让陆芽在湿面团无法按熟悉手感成形时，比较小份工序调整的结果，再决定保留祖母配方的哪些部分、改变哪些部分。",
+              "thematic_pressure": "检验忠于祖母是否只能表现为照做，也检验改变是否足以证明独立。主题可由按压、折叠和烙制后的实际差异呈现，不预设调整必然优于原方。"
+            },
+            {
+              "cost": "免费试吃减少可售份量；付费试售可能减少愿意尝试的人数。两种办法都不能保证获得足够反馈或成交。",
+              "choice": "可让陆芽与少年比较限量免费试吃和少量付费试售，说明各自愿意承担的耗料，再根据客人的具体回应调整办法。",
+              "thematic_pressure": "检验被注意、被夸赞与得到有用反馈是否相同。少年对耗料的顾虑和陆芽对接触客人的需求都有成立空间，分歧通过实际交易接受检验。"
+            },
+            {
+              "cost": "协商可能缩小试验规模或延后出品；若双方同意投入，所用麦粉将减少后续可售材料，损耗须按约定承担。",
+              "choice": "可在明确最后一袋麦粉的权属与双方权限后，让陆芽提出有份额上限、用途说明和损耗承担的共同试验；少年保有接受、修改或拒绝的权利。",
+              "thematic_pressure": "检验独立是否意味着凡事独自决定，以及分享是否必须包含对他人决定权的尊重。合作的温度来自清楚的边界与履约，不以少年单方面退让证明陆芽成长。"
+            },
+            {
+              "cost": "她可能放弃部分客人的交易机会，并继续承受销量与收益的不确定性；伙伴承担的工作与材料仍须得到交代。",
+              "choice": "可让陆芽面对互不相同的口味反馈，选择一款自己能够说明取舍、愿意署名并说明价格的麦饼，同时承认它未必适合每位客人。",
+              "thematic_pressure": "检验自己的味道是拒绝反馈的借口，还是听懂反馈后作出的具体判断。结尾可确认她回应异议和承担结果的能力，市场评价与经营前景保留开放性。"
+            }
+          ],
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "冻结方向要求手艺尝试与有限麦粉产生实际后果；候选配方试验会占用材料与出摊时间，具体用量留待后续规划。",
+              "field_path": "$.choice_tests[0].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "试吃与定价是作者指定的分歧，适合通过可售份量和反馈机会的取舍探索主题。",
+              "field_path": "$.choice_tests[1].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者要求有代价的合作；最后一袋麦粉须先明确权属、使用权限与损耗承担，才能提出有意义的共同投入。",
+              "field_path": "$.choice_tests[2].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "冻结成长方向要求陆芽放下以所有人满意衡量自身价值的习惯；选择具体服务的口味可能失去部分交易机会，但不预定必然亏损。",
+              "field_path": "$.choice_tests[3].cost"
+            }
+          ],
+          "opposing_answers": [
+            "一种候选答案是：守住祖母的配方，才能守住手艺的来处。可让陆芽坚持熟悉做法，并观察其中仍有价值的部分与不适应潮湿环境的部分；保留继承的情感分量，不把坚持直接判作愚昧。",
+            "另一种候选答案是：客人愿意付钱的味道，才是摊主应当做的味道。可通过试吃、份量和价格反馈显示倾听的必要，也让互不相同的偏好暴露追求所有人认可的限度；市场回应提供证据，却不能独自完成陆芽的判断。",
+            "还有一种候选答案是：自己喜欢并敢于署名，就足以称为自己的味道。可让陆芽尝试清楚表达偏好，同时面对客人的拒绝和伙伴的耗料要求；保留个人取舍的正当性，也检验她是否以自主为由回避后果。",
+            "可逐步形成的答案是：自己的味道来自对传承与反馈作出具体取舍，并尊重共同投入者的权限、承担约定的结果。可通过工序调整、售价说明与材料协商体现；这是本书支持的初步成长方向，不是保证成功的经营公式，也不裁定每种口味的高下。"
+          ],
+          "thematic_question": "当祖母教的做法、客人想吃的味道与伙伴愿意投入的材料并不一致时，陆芽怎样做出一款真正属于自己的麦饼，并承担这个选择？",
+          "constraint_envelope": {
+            "role": "THEME_CONTRACT",
+            "creative_brief": {
+              "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+              "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+                "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+            "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+            "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+            "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+            "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+            "把未经协商使用他人麦粉写成无需承担后果的分享。",
+            "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+            "把候选场景、关系变化或奇幻机制表述为已接受历史。",
+            "把客人的不同口味写成道德高下，以贬低不喜欢麦饼的人证明陆芽正确。",
+            "把自己的味道等同于拒绝反馈，或把销量等同于陆芽全部的个人价值。",
+            "以抽象说教替代手艺、交易与关系中的主题探索，或要求每场都附加同一种代价。"
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+              "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+            }
+          }
+        },
+        "thematic_question": "当祖母教的做法、客人想吃的味道与伙伴愿意投入的材料并不一致时，陆芽怎样做出一款真正属于自己的麦饼，并承担这个选择？",
+        "execution_evidence": {
+          "attempt_id": "626daa83-6326-4fc6-827a-16508f813c14",
+          "operation_id": "9e36653f-9a83-4833-9c90-66e5f06ed969",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:51194169-079c-4f9a-866f-1423f71d35ec",
+          "route_snapshot_id": "production_execution/routes/b7d3ee140b4abd201992",
+          "usage_receipt_ref": "authority-asset-version:6d5935c1-e80f-4b72-b30f-8d20fcd04b5d",
+          "input_manifest_ref": "production_execution/inputs/b7d3ee140b4abd201992",
+          "context_bundle_hash": "sha256:409655c46f05aa810ab3c3f09413fde645ab2bfc5f1b6cac43d5a12f612c8086",
+          "output_manifest_ref": "authority-asset-version:b886c8ca-899a-4d3e-ac9a-3b1a28693e40",
+          "production_verified": false,
+          "external_receipt_ref": "82e65589-8033-4c38-9b91-07143395874a",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:aebbf0c9-e415-46da-abe9-7c4d7859d37b",
+          "capability_execution_ref": "4ed4f871-0a92-5629-9fe8-4bb7a7550771",
+          "capability_execution_hash": "sha256:af4b8b43a896b311f8bf3dfd5b93e5f30ceac775cf6c4a4dc2486c40a32a3aa6",
+          "capability_runtime_binding_ref": "sha256:a849f6719a691fb594ea022b012837cf82f16864303d6b8de0092bfc015150fb",
+          "capability_runtime_binding_hash": "sha256:31a56d99893223c824a0eb367c1a8113e843ab2b2a059f72a5393c7d7f9b37e6",
+          "context_bundle_asset_version_id": "41af46e0-43e7-4e61-8583-599b2a99ad6a",
+          "capability_pack_attempt_snapshot_id": "sha256:a849f6719a691fb594ea022b012837cf82f16864303d6b8de0092bfc015150fb",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:31a56d99893223c824a0eb367c1a8113e843ab2b2a059f72a5393c7d7f9b37e6",
+          "narrative_intelligence_selection_digest": "sha256:4dce839096c23ce00fdc9ff94f64786273c833948d1dd286bcbabba5c0708962"
+        },
+        "constraint_envelope": {
+          "role": "THEME_CONTRACT",
+          "creative_brief": {
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+              "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+          "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+          "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+          "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+          "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+          "把未经协商使用他人麦粉写成无需承担后果的分享。",
+          "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+          "把候选场景、关系变化或奇幻机制表述为已接受历史。",
+          "把客人的不同口味写成道德高下，以贬低不喜欢麦饼的人证明陆芽正确。",
+          "把自己的味道等同于拒绝反馈，或把销量等同于陆芽全部的个人价值。",
+          "以抽象说教替代手艺、交易与关系中的主题探索，或要求每场都附加同一种代价。"
+        ],
+        "generator_operation_name": "theme.candidates.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:c4ac22c437638a6f2e944db3d6512881afeead33e1742f3f1bf2257ef54db63d",
+      "asset_version_id": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1"
+    },
+    {
+      "role": "creative_foundation",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "genre": "第三人称近距离奇幻成长",
+        "book_id": "book:input-isolation-01:fantasy-cooking",
+        "subgenre": "浮岛夜市中的烹饪奇幻与谋生成长",
+        "core_fear": "陆芽怕第一次独立摆摊的失败证明自己离开祖母的配方便毫无本事，因此容易把客人的不同偏好听成对自己的否定，也不愿承认原配方需要调整。",
+        "objective": "形成一个适合九章的原创成长方向：年轻厨师陆芽第一次在浮岛夜市独立摆摊，为卖出祖母留下的发光麦饼，与惜料的送货少年围绕定价、试吃和最后一袋麦粉展开合作。让每次手艺尝试带来可观察的经营与关系变化，推动她从急于赢得名声转向能够判断并承担自己的味道。",
+        "project_id": "project:input-isolation-01:fantasy-cooking",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+          "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。"
+        ],
+        "core_desire": "陆芽起初想凭祖母留下的发光麦饼赢得夜市客人的认可，逐渐学会做出自己愿意署名、能够说明价格并与伙伴共同承担结果的味道。",
+        "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:CREATIVE_FOUNDATION:comparison",
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "作者以浮岛夜市、发光麦饼和厨艺成长为核心，适合生活尺度的烹饪奇幻。",
+            "field_path": "$.subgenre"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "陆芽想卖出祖母留下的发光麦饼，并由急于获得名声转向找到自己的味道。",
+            "field_path": "$.core_desire"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "将失败理解为自己只会依赖祖母的手艺，可为作者要求的成长提供内在阻力；这是候选心理设计。",
+            "field_path": "$.core_fear"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "湿气、不同口味的客人及双方对有限麦粉用途的分歧，已构成具体冲突。",
+            "field_path": "$.core_conflict"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "九章方向可通过连续经营选择与合作关系变化形成阅读牵引，无需扩大为长期连载。",
+            "field_path": "$.serialization_potential"
+          }
+        ],
+        "core_conflict": "陆芽把卖出祖母的发光麦饼当作独立立足的证明，却遇到失去弹性的面团和不愿为同一种味道付钱的客人。她希望用试吃换来关注，送货少年则要求先算清耗料与售价；当试验也要动用最后一袋麦粉，两人必须决定怎样分担损失，以及谁有权决定这一袋粉的用途。",
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          }
+        ],
+        "style_profile": {
+          "pov": "固定陆芽的第三人称近距离视角。只呈现她当下感知、记得、听到或有依据推断的内容；推断保留不确定性，新增信息通过她参与的具体交流与观察获得。",
+          "narrator": "克制而有温度的第三人称叙述者，使用陆芽能够感知的细节组织场景，以她的误判和修正呈现意义，不替其他人物解释动机。",
+          "constraints": [
+            "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心。",
+            "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+            "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+            "对话围绕可分配的材料、可说明的价格和具体口味展开，人物观点通过行动接受检验。",
+            "每个代表场景至少改变一项局势或关系条件；安静动作也须承担反馈、决定或后果。",
+            "原创例句仅示范候选写法，不构成已接受场景或事实。"
+          ],
+          "genre_conventions": [
+            "让浮岛与发光食物自然进入日常劳动，通过使用中的细节建立奇幻感。",
+            "成长体现为感知更准确、表达更清楚和承担选择结果，不依赖能力等级提升。",
+            "保留有限材料、不同偏好和交易条件，使奇幻生活具有可理解的日常阻力。"
+          ],
+          "original_examples": [
+            {
+              "example": "陆芽把面团折回掌心，等它像在家时那样顶住指根。它却软软摊开，黏住了第二根手指。她停下撒粉的动作：再添一把，今晚能卖的饼就又少一点。",
+              "purpose": "用烹饪动作建立问题与后果",
+              "explanation": "触觉差异让陆芽发现实际问题，随后把补救动作与有限材料联系起来，产生选择压力。"
+            },
+            {
+              "example": "“掰小些，总能多给几个人尝。”她说。少年把空纸袋摊在秤旁：“那卖出去的，也这么小？”陆芽刚要反驳，客人已经把试吃钱放下，指了指她切剩的半块。她伸向整饼的手停住了。",
+              "purpose": "让交易反馈改变争执方向",
+              "explanation": "定价分歧由客人的可见选择推进，陆芽得到新的份量反馈；少年只表达观点，不获得叙述者代言。"
+            },
+            {
+              "example": "麦饼掰开时，细光还留在断面上。客人闻了闻，说想要咸一些。陆芽捏紧纸角，差点说祖母一直这样做。她把那句话咽下去，问：“是甜味太重，还是少了一点香？”",
+              "purpose": "把成长落实为一次不同的回应",
+              "explanation": "以短暂的防御反应呈现祖母配方的情感分量，再通过追问使关系从推销转向交流，为后续试验提供具体信息。"
+            }
+          ]
+        },
+        "target_reader": "成年中文读者，偏好生活尺度的奇幻、具体手艺过程及带有现实分歧的温暖关系。",
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "differentiation": "发光麦饼可以吸引目光，却不能替陆芽解决湿面团、入口口感和售价的问题。候选方向把奇幻的视觉吸引力与真实的烹饪判断放在同一张摊桌上：同一袋麦粉既能成为商品、试验材料，也能成为双方愿不愿意互相信任的具体尺度。找到自己的味道落实为一款有取舍的食物，而非得到所有客人的赞美。",
+        "narrative_engine": "以有限麦粉下的连续选择驱动九章方向：陆芽为卖出麦饼采取一种办法，客人的实际反应与烹饪结果暴露具体问题，她据此调整工序、价格或试吃方式，而调整又改变她与送货少年的合作条件。候选因果主线从湿面团造成首批出品不稳开始，经试吃耗料与口味反馈的分歧，走向最后一袋麦粉的用途协商，再以一款经陆芽判断取舍的麦饼检验合作结果。各段可交替采用揉面试验、当面议价、短暂销售和收摊核算，后续章次与具体做法保持可调整。",
+        "candidate_payload": {
+          "genre": "第三人称近距离奇幻成长",
+          "subgenre": "浮岛夜市中的烹饪奇幻与谋生成长",
+          "core_fear": "陆芽怕第一次独立摆摊的失败证明自己离开祖母的配方便毫无本事，因此容易把客人的不同偏好听成对自己的否定，也不愿承认原配方需要调整。",
+          "objective": "形成一个适合九章的原创成长方向：年轻厨师陆芽第一次在浮岛夜市独立摆摊，为卖出祖母留下的发光麦饼，与惜料的送货少年围绕定价、试吃和最后一袋麦粉展开合作。让每次手艺尝试带来可观察的经营与关系变化，推动她从急于赢得名声转向能够判断并承担自己的味道。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+            "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。"
+          ],
+          "core_desire": "陆芽起初想凭祖母留下的发光麦饼赢得夜市客人的认可，逐渐学会做出自己愿意署名、能够说明价格并与伙伴共同承担结果的味道。",
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "作者以浮岛夜市、发光麦饼和厨艺成长为核心，适合生活尺度的烹饪奇幻。",
+              "field_path": "$.subgenre"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "陆芽想卖出祖母留下的发光麦饼，并由急于获得名声转向找到自己的味道。",
+              "field_path": "$.core_desire"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "将失败理解为自己只会依赖祖母的手艺，可为作者要求的成长提供内在阻力；这是候选心理设计。",
+              "field_path": "$.core_fear"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "湿气、不同口味的客人及双方对有限麦粉用途的分歧，已构成具体冲突。",
+              "field_path": "$.core_conflict"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "九章方向可通过连续经营选择与合作关系变化形成阅读牵引，无需扩大为长期连载。",
+              "field_path": "$.serialization_potential"
+            }
+          ],
+          "core_conflict": "陆芽把卖出祖母的发光麦饼当作独立立足的证明，却遇到失去弹性的面团和不愿为同一种味道付钱的客人。她希望用试吃换来关注，送货少年则要求先算清耗料与售价；当试验也要动用最后一袋麦粉，两人必须决定怎样分担损失，以及谁有权决定这一袋粉的用途。",
+          "style_profile": {
+            "pov": "固定陆芽的第三人称近距离视角。只呈现她当下感知、记得、听到或有依据推断的内容；推断保留不确定性，新增信息通过她参与的具体交流与观察获得。",
+            "narrator": "克制而有温度的第三人称叙述者，使用陆芽能够感知的细节组织场景，以她的误判和修正呈现意义，不替其他人物解释动机。",
+            "constraints": [
+              "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心。",
+              "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+              "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+              "对话围绕可分配的材料、可说明的价格和具体口味展开，人物观点通过行动接受检验。",
+              "每个代表场景至少改变一项局势或关系条件；安静动作也须承担反馈、决定或后果。",
+              "原创例句仅示范候选写法，不构成已接受场景或事实。"
+            ],
+            "genre_conventions": [
+              "让浮岛与发光食物自然进入日常劳动，通过使用中的细节建立奇幻感。",
+              "成长体现为感知更准确、表达更清楚和承担选择结果，不依赖能力等级提升。",
+              "保留有限材料、不同偏好和交易条件，使奇幻生活具有可理解的日常阻力。"
+            ],
+            "original_examples": [
+              {
+                "example": "陆芽把面团折回掌心，等它像在家时那样顶住指根。它却软软摊开，黏住了第二根手指。她停下撒粉的动作：再添一把，今晚能卖的饼就又少一点。",
+                "purpose": "用烹饪动作建立问题与后果",
+                "explanation": "触觉差异让陆芽发现实际问题，随后把补救动作与有限材料联系起来，产生选择压力。"
+              },
+              {
+                "example": "“掰小些，总能多给几个人尝。”她说。少年把空纸袋摊在秤旁：“那卖出去的，也这么小？”陆芽刚要反驳，客人已经把试吃钱放下，指了指她切剩的半块。她伸向整饼的手停住了。",
+                "purpose": "让交易反馈改变争执方向",
+                "explanation": "定价分歧由客人的可见选择推进，陆芽得到新的份量反馈；少年只表达观点，不获得叙述者代言。"
+              },
+              {
+                "example": "麦饼掰开时，细光还留在断面上。客人闻了闻，说想要咸一些。陆芽捏紧纸角，差点说祖母一直这样做。她把那句话咽下去，问：“是甜味太重，还是少了一点香？”",
+                "purpose": "把成长落实为一次不同的回应",
+                "explanation": "以短暂的防御反应呈现祖母配方的情感分量，再通过追问使关系从推销转向交流，为后续试验提供具体信息。"
+              }
+            ]
+          },
+          "target_reader": "成年中文读者，偏好生活尺度的奇幻、具体手艺过程及带有现实分歧的温暖关系。",
+          "differentiation": "发光麦饼可以吸引目光，却不能替陆芽解决湿面团、入口口感和售价的问题。候选方向把奇幻的视觉吸引力与真实的烹饪判断放在同一张摊桌上：同一袋麦粉既能成为商品、试验材料，也能成为双方愿不愿意互相信任的具体尺度。找到自己的味道落实为一款有取舍的食物，而非得到所有客人的赞美。",
+          "narrative_engine": "以有限麦粉下的连续选择驱动九章方向：陆芽为卖出麦饼采取一种办法，客人的实际反应与烹饪结果暴露具体问题，她据此调整工序、价格或试吃方式，而调整又改变她与送货少年的合作条件。候选因果主线从湿面团造成首批出品不稳开始，经试吃耗料与口味反馈的分歧，走向最后一袋麦粉的用途协商，再以一款经陆芽判断取舍的麦饼检验合作结果。各段可交替采用揉面试验、当面议价、短暂销售和收摊核算，后续章次与具体做法保持可调整。",
+          "why_worth_writing": "第一次独立摆摊把手艺、继承与谋生放进同一场可触摸的考验。陆芽需要辨认面团，也需要辨认别人真正想吃什么，并说明自己愿意付出什么。有限麦粉使分享和尝试都有实际分量，让找到自己的味道成为读者能够看见、闻到并理解的成长。",
+          "emotional_contract": "让成年读者贴近第一次独自谋生时的窘迫、逞强与细小欢喜。阅读回报来自陆芽终于辨出面团变化、听懂一次口味反馈、说清一次分账要求，以及得到有限而可信的认可。结尾应有手艺与关系的温度，也保留经营仍需继续摸索的现实感。",
+          "constraint_envelope": {
+            "role": "CREATIVE_FOUNDATION",
+            "creative_brief": {
+              "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+              "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v5",
+            "narrative_search": {
+              "search_id": "narrative-search:d4992cf81e7d4bf91d758bcbc0dafdb043ac6cc1536591167a6b4f82ce4dc5c6",
+              "branch_key": "future-1",
+              "hard_constraints": [
+                "Preserve the exact author brief and source boundaries",
+                "Candidates are hypothetical; no accepted history or Canon mutation"
+              ],
+              "planning_horizon": {
+                "level": "CREATIVE_FOUNDATION",
+                "target_chapters": 9
+              },
+              "strategy_directive": "Explore the author's central promise through a coherent causal direction with room for later development",
+              "desired_transformation": {
+                "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+                "author_brief": {
+                  "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+                  "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+                },
+                "selection_policy": {
+                  "tie_break": "STABLE_ID",
+                  "contract_version": "narrative-search-comparison.v2",
+                  "dimension_weights": {
+                    "arc_momentum": 1,
+                    "setup_payoff": 1,
+                    "reader_promise": 1,
+                    "reversal_reveal": 1,
+                    "character_agency": 1,
+                    "pacing_variation": 1,
+                    "pattern_diversity": 1,
+                    "world_consequence": 1,
+                    "future_optionality": 1,
+                    "conflict_escalation": 1,
+                    "emotional_progression": 1,
+                    "relationship_evolution": 1,
+                    "choice_cost_consequence": 1
+                  },
+                  "uncertainty_margin": 0.05
+                }
+              },
+              "accepted_through_chapter": 0,
+              "parent_state_asset_version_id": ""
+            },
+            "foundation_parent_bindings": {}
+          },
+          "prohibited_outcomes": [
+            "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+            "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+            "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+            "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+            "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+            "把未经协商使用他人麦粉写成无需承担后果的分享。",
+            "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+            "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+          ],
+          "serialization_potential": "九章可形成一条短篇幅的连续阅读链：出品问题引出经营选择，经营选择改变材料余量与合作关系，新的关系条件再影响下一次尝试。章末牵引可来自待检验的口感、尚未谈妥的分配或陆芽终于提出的具体要求；中途提供阶段性手艺回报，结尾完成她对自身味道的初步确认，无需预设续作。",
+          "foundation_parent_bindings": {},
+          "narrative_search_projection": {
+            "assumptions": [
+              "本方向仅承接冻结作者简报；接受边界为第零章，没有已发生的摆摊事件。",
+              "将主要行动集中于首次摆摊及紧接其后的调整，可为九章提供连续压力；具体时间跨度尚未确定。",
+              "送货少年惜料的具体经历、最后一袋麦粉的权属与可分享份额尚未确定，后续需要在人物可知范围内明确，不能默认陆芽可以支配他的材料。",
+              "发光的具体机制尚未确定；本方向不假定其能够自动修复面团、操控食欲或保证销量。",
+              "以下分数为本分支的模型估计，存在至少约0.05的比较不确定性，不构成文学资格判断或激活证据。"
+            ],
+            "future_options": [
+              "通过小份试吃或少量付费试售比较客人反应；两种方式保留不同的耗料和信任代价。",
+              "根据实际试验，选择调整工序、份量或味道组合，不预先锁定唯一成功配方。",
+              "把合作落在材料分配、出品职责或收益分账中的一种具体安排上，由前段分歧决定适合哪一种。",
+              "结尾可由少量回头客或一次明确复购支持陆芽的选择，无需安排夜市冠军或爆发式成名。"
+            ],
+            "narrative_risks": [
+              "连续试饼容易重复；后续应让不同尝试分别改变工序判断、客人选择或合作权限。",
+              "少年容易沦为替陆芽算账的工具；需要赋予他可见的具体诉求，以及接受或拒绝合作的行动。",
+              "九章集中于有限经营场域可能显得拖延；应以问题变化与关系转折区分段落，避免九次近似失败。",
+              "若最后一袋麦粉的权属不清，分享容易成为虚假的慷慨；使用前须明确谁能决定、谁承担损耗。",
+              "奇幻感可能只剩装饰；可让发光参与展示和顾客判断，但新增规律必须另行设计，不能当作冻结事实。"
+            ],
+            "repetition_keys": [
+              "湿面团的触觉判断",
+              "试吃反馈改变出品选择",
+              "材料分配推动合作关系",
+              "光泽与入口口感的落差"
+            ],
+            "contract_version": "narrative-search-projection.v1",
+            "selection_summary": "future-1以第一次独立摆摊中的材料分配与口味判断为主线，紧扣作者要求的手艺尝试、有代价的合作及自我定位变化。优势是行动后果具体、关系推进可见，适合九章；代价是场域较小，需要持续改变问题类型。此处仅提供候选比较支持，不作选定或批准。",
+            "strategy_fingerprint": "future-1|CREATIVE_FOUNDATION|9章|首次摆摊|湿面团与口味反馈|有限麦粉合作|名声转向自己的味道",
+            "creative_intelligence": {
+              "arc_momentum": 0.84,
+              "setup_payoff": 0.85,
+              "reader_promise": 0.9,
+              "reversal_reveal": 0.72,
+              "character_agency": 0.9,
+              "pacing_variation": 0.8,
+              "pattern_diversity": 0.79,
+              "world_consequence": 0.66,
+              "future_optionality": 0.86,
+              "conflict_escalation": 0.76,
+              "emotional_progression": 0.87,
+              "relationship_evolution": 0.88,
+              "choice_cost_consequence": 0.89
+            },
+            "irreversible_decisions": [
+              "若后续选择将最后一袋麦粉的一部分用于共同试验，该部分材料一经投入便无法收回；具体份额、权限和承担方式须先明确。"
+            ],
+            "projected_consequences": [
+              "若陆芽扩大试吃，能够获得更多直接反馈，但剩余可售份量随之减少，迫使她重新考虑价格和试吃对象。",
+              "若陆芽只接受夸赞而忽略不同口味，出品判断会继续失准；主动追问反馈则可能使她承认祖母配方需要针对当前条件调整。",
+              "若双方先说明材料用途与损耗承担，再共享麦粉，合作可从相互干涉转为有边界的共同尝试。",
+              "若新出品只获得部分客人的认可，陆芽需要选择服务哪些口味，并放下以所有人满意衡量自身价值的习惯。"
+            ],
+            "narrative_opportunities": [
+              "让陆芽第一次认真询问客人口味时，发现自己此前只问对方愿不愿买，推动她改变获取反馈的方法。",
+              "用一次看似省料却影响口感的操作，使陆芽与少年都需要修正自己的判断，形成双向合作。",
+              "将开场令人期待的麦饼光泽与结尾更准确的味道判断呼应，使感官细节承担成长回报。",
+              "把价格协商写成双方陈述所承担工作的场景，让经济选择直接推动关系变化。"
+            ]
+          }
+        },
+        "why_worth_writing": "第一次独立摆摊把手艺、继承与谋生放进同一场可触摸的考验。陆芽需要辨认面团，也需要辨认别人真正想吃什么，并说明自己愿意付出什么。有限麦粉使分享和尝试都有实际分量，让找到自己的味道成为读者能够看见、闻到并理解的成长。",
+        "emotional_contract": "让成年读者贴近第一次独自谋生时的窘迫、逞强与细小欢喜。阅读回报来自陆芽终于辨出面团变化、听懂一次口味反馈、说清一次分账要求，以及得到有限而可信的认可。结尾应有手艺与关系的温度，也保留经营仍需继续摸索的现实感。",
+        "execution_evidence": {
+          "attempt_id": "12516431-37f2-4dc0-9e9d-e6555712ec1d",
+          "operation_id": "c7cd87b8-527b-4ea4-a34c-10f02d749c99",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:1136fdab-e1b6-4063-8c73-347806c957f3",
+          "route_snapshot_id": "production_execution/routes/d202bc126c2f67051133",
+          "usage_receipt_ref": "authority-asset-version:5f9908ce-7e36-4100-ac9e-0bf0ae828be7",
+          "input_manifest_ref": "production_execution/inputs/d202bc126c2f67051133",
+          "context_bundle_hash": "sha256:56c0c6be58af5e9725fab50edc8a9dfd545054cd85832f7e28e1164814b195ba",
+          "output_manifest_ref": "authority-asset-version:5ed077e5-9d56-4a82-9c93-15624356ef4d",
+          "production_verified": false,
+          "external_receipt_ref": "4fd13e20-6521-448a-84f5-f8ec32f1374e",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:c6d695f6-50e5-4b5b-8091-e183e3b8e0c6",
+          "capability_execution_ref": "8075c424-a364-55a7-91e4-57179e4ece2a",
+          "capability_execution_hash": "sha256:10b0eb0a9b65e6b73430f932bf6dd6ec543ce787b88c4cf38f634e99eefbcb5d",
+          "capability_runtime_binding_ref": "sha256:55b0c71c3cf6dac2cc1aea401db84db3c6323a649cd5a1a531085b94c398051d",
+          "capability_runtime_binding_hash": "sha256:ba828c95b8865acf86c829ef29aa986a0d205b236be20babe6ddd975177ad964",
+          "context_bundle_asset_version_id": "852da0ee-c245-49f5-95a9-3f62ab95769a",
+          "capability_pack_attempt_snapshot_id": "sha256:55b0c71c3cf6dac2cc1aea401db84db3c6323a649cd5a1a531085b94c398051d",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:ba828c95b8865acf86c829ef29aa986a0d205b236be20babe6ddd975177ad964",
+          "narrative_intelligence_selection_digest": "sha256:c8b00f2e1b6a923202921a16d2c0147c88678d2f554fecec64e7cc9a68cd3f7d"
+        },
+        "constraint_envelope": {
+          "role": "CREATIVE_FOUNDATION",
+          "creative_brief": {
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v5",
+          "narrative_search": {
+            "search_id": "narrative-search:d4992cf81e7d4bf91d758bcbc0dafdb043ac6cc1536591167a6b4f82ce4dc5c6",
+            "branch_key": "future-1",
+            "hard_constraints": [
+              "Preserve the exact author brief and source boundaries",
+              "Candidates are hypothetical; no accepted history or Canon mutation"
+            ],
+            "planning_horizon": {
+              "level": "CREATIVE_FOUNDATION",
+              "target_chapters": 9
+            },
+            "strategy_directive": "Explore the author's central promise through a coherent causal direction with room for later development",
+            "desired_transformation": {
+              "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+              "author_brief": {
+                "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+                "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+              },
+              "selection_policy": {
+                "tie_break": "STABLE_ID",
+                "contract_version": "narrative-search-comparison.v2",
+                "dimension_weights": {
+                  "arc_momentum": 1,
+                  "setup_payoff": 1,
+                  "reader_promise": 1,
+                  "reversal_reveal": 1,
+                  "character_agency": 1,
+                  "pacing_variation": 1,
+                  "pattern_diversity": 1,
+                  "world_consequence": 1,
+                  "future_optionality": 1,
+                  "conflict_escalation": 1,
+                  "emotional_progression": 1,
+                  "relationship_evolution": 1,
+                  "choice_cost_consequence": 1
+                },
+                "uncertainty_margin": 0.05
+              }
+            },
+            "accepted_through_chapter": 0,
+            "parent_state_asset_version_id": ""
+          },
+          "foundation_parent_bindings": {}
+        },
+        "prohibited_outcomes": [
+          "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+          "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+          "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+          "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+          "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+          "把未经协商使用他人麦粉写成无需承担后果的分享。",
+          "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+          "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+        ],
+        "serialization_potential": "九章可形成一条短篇幅的连续阅读链：出品问题引出经营选择，经营选择改变材料余量与合作关系，新的关系条件再影响下一次尝试。章末牵引可来自待检验的口感、尚未谈妥的分配或陆芽终于提出的具体要求；中途提供阶段性手艺回报，结尾完成她对自身味道的初步确认，无需预设续作。",
+        "generator_operation_name": "creative.candidates.generate",
+        "foundation_parent_bindings": {},
+        "narrative_search_projection": {
+          "assumptions": [
+            "本方向仅承接冻结作者简报；接受边界为第零章，没有已发生的摆摊事件。",
+            "将主要行动集中于首次摆摊及紧接其后的调整，可为九章提供连续压力；具体时间跨度尚未确定。",
+            "送货少年惜料的具体经历、最后一袋麦粉的权属与可分享份额尚未确定，后续需要在人物可知范围内明确，不能默认陆芽可以支配他的材料。",
+            "发光的具体机制尚未确定；本方向不假定其能够自动修复面团、操控食欲或保证销量。",
+            "以下分数为本分支的模型估计，存在至少约0.05的比较不确定性，不构成文学资格判断或激活证据。"
+          ],
+          "future_options": [
+            "通过小份试吃或少量付费试售比较客人反应；两种方式保留不同的耗料和信任代价。",
+            "根据实际试验，选择调整工序、份量或味道组合，不预先锁定唯一成功配方。",
+            "把合作落在材料分配、出品职责或收益分账中的一种具体安排上，由前段分歧决定适合哪一种。",
+            "结尾可由少量回头客或一次明确复购支持陆芽的选择，无需安排夜市冠军或爆发式成名。"
+          ],
+          "narrative_risks": [
+            "连续试饼容易重复；后续应让不同尝试分别改变工序判断、客人选择或合作权限。",
+            "少年容易沦为替陆芽算账的工具；需要赋予他可见的具体诉求，以及接受或拒绝合作的行动。",
+            "九章集中于有限经营场域可能显得拖延；应以问题变化与关系转折区分段落，避免九次近似失败。",
+            "若最后一袋麦粉的权属不清，分享容易成为虚假的慷慨；使用前须明确谁能决定、谁承担损耗。",
+            "奇幻感可能只剩装饰；可让发光参与展示和顾客判断，但新增规律必须另行设计，不能当作冻结事实。"
+          ],
+          "repetition_keys": [
+            "湿面团的触觉判断",
+            "试吃反馈改变出品选择",
+            "材料分配推动合作关系",
+            "光泽与入口口感的落差"
+          ],
+          "contract_version": "narrative-search-projection.v1",
+          "selection_summary": "future-1以第一次独立摆摊中的材料分配与口味判断为主线，紧扣作者要求的手艺尝试、有代价的合作及自我定位变化。优势是行动后果具体、关系推进可见，适合九章；代价是场域较小，需要持续改变问题类型。此处仅提供候选比较支持，不作选定或批准。",
+          "strategy_fingerprint": "future-1|CREATIVE_FOUNDATION|9章|首次摆摊|湿面团与口味反馈|有限麦粉合作|名声转向自己的味道",
+          "creative_intelligence": {
+            "arc_momentum": 0.84,
+            "setup_payoff": 0.85,
+            "reader_promise": 0.9,
+            "reversal_reveal": 0.72,
+            "character_agency": 0.9,
+            "pacing_variation": 0.8,
+            "pattern_diversity": 0.79,
+            "world_consequence": 0.66,
+            "future_optionality": 0.86,
+            "conflict_escalation": 0.76,
+            "emotional_progression": 0.87,
+            "relationship_evolution": 0.88,
+            "choice_cost_consequence": 0.89
+          },
+          "irreversible_decisions": [
+            "若后续选择将最后一袋麦粉的一部分用于共同试验，该部分材料一经投入便无法收回；具体份额、权限和承担方式须先明确。"
+          ],
+          "projected_consequences": [
+            "若陆芽扩大试吃，能够获得更多直接反馈，但剩余可售份量随之减少，迫使她重新考虑价格和试吃对象。",
+            "若陆芽只接受夸赞而忽略不同口味，出品判断会继续失准；主动追问反馈则可能使她承认祖母配方需要针对当前条件调整。",
+            "若双方先说明材料用途与损耗承担，再共享麦粉，合作可从相互干涉转为有边界的共同尝试。",
+            "若新出品只获得部分客人的认可，陆芽需要选择服务哪些口味，并放下以所有人满意衡量自身价值的习惯。"
+          ],
+          "narrative_opportunities": [
+            "让陆芽第一次认真询问客人口味时，发现自己此前只问对方愿不愿买，推动她改变获取反馈的方法。",
+            "用一次看似省料却影响口感的操作，使陆芽与少年都需要修正自己的判断，形成双向合作。",
+            "将开场令人期待的麦饼光泽与结尾更准确的味道判断呼应，使感官细节承担成长回报。",
+            "把价格协商写成双方陈述所承担工作的场景，让经济选择直接推动关系变化。"
+          ]
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+      "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "novelos.planning_context_bundle.v1",
+  "arc_working_set": {},
+  "foundation_task": {
+    "role": "WORLD_BIBLE",
+    "task": "Compile the world depth needed by this work using the frozen typed world contract. Preserve laws, limits and knowledge boundaries. A rule need not impose a cost; distinguish an inapplicable cost from an unknown consequence. Explain deferred dimensions and extension triggers.",
+    "parent_roles": [
+      "CREATIVE_FOUNDATION",
+      "THEME_CONTRACT",
+      "ENDING_INTENT",
+      "READER_PROMISE"
+    ],
+    "world_contract": {
+      "rules": {
+        "category": "one compiled section key",
+        "mechanism": "Use MECHANISM only when the existing typed WorldMechanism contract can express the rule; otherwise request explicit design clarification. Do not replace a hard rule with soft reasoning.",
+        "predicate": {
+          "value": "typed scalar; only EXISTS may omit value",
+          "required_for": "every enforcement except SOFT_CAUSAL"
+        },
+        "applicability_and_consequences": "nonempty string arrays"
+      },
+      "schema": {
+        "type": "object",
+        "$defs": {
+          "_EntityContract": {
+            "type": "object",
+            "title": "_EntityContract",
+            "required": [
+              "entity_id"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": null,
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "entity_id": {
+                "type": "string",
+                "title": "Entity Id",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          },
+          "_SectionContract": {
+            "type": "object",
+            "title": "_SectionContract",
+            "required": [
+              "depth",
+              "content"
+            ],
+            "properties": {
+              "depth": {
+                "enum": [
+                  "SEED",
+                  "WORKING",
+                  "DETAILED"
+                ],
+                "type": "string",
+                "title": "Depth"
+              },
+              "content": {
+                "type": "string",
+                "title": "Content",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          },
+          "WorldRuleContract": {
+            "type": "object",
+            "title": "WorldRuleContract",
+            "required": [
+              "rule_id",
+              "category",
+              "statement",
+              "enforcement",
+              "applicability",
+              "consequences"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string",
+                "title": "Rule Id",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "title": "Category",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "mechanism": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/_MechanismContract"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "predicate": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/_PredicateContract"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "statement": {
+                "type": "string",
+                "title": "Statement",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "enforcement": {
+                "enum": [
+                  "HARD",
+                  "QUANTITATIVE",
+                  "TEMPORAL",
+                  "SOFT_CAUSAL",
+                  "MECHANISM"
+                ],
+                "type": "string",
+                "title": "Enforcement"
+              },
+              "consequences": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Consequences",
+                "minItems": 1
+              },
+              "applicability": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Applicability",
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "_MechanismContract": {
+            "type": "object",
+            "title": "_MechanismContract",
+            "required": [
+              "contract_version",
+              "effect",
+              "entity_keys"
+            ],
+            "properties": {
+              "effect": {
+                "enum": [
+                  "REVIVAL",
+                  "INSTANT_TRAVEL",
+                  "MULTIPRESENCE",
+                  "POWER_TRANSITION"
+                ],
+                "type": "string",
+                "title": "Effect"
+              },
+              "entity_keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Entity Keys",
+                "minItems": 1
+              },
+              "contract_version": {
+                "type": "string",
+                "const": "world-mechanism.v1",
+                "title": "Contract Version"
+              }
+            },
+            "additionalProperties": false
+          },
+          "_PredicateContract": {
+            "type": "object",
+            "title": "_PredicateContract",
+            "required": [
+              "requirement_id",
+              "state_kind",
+              "entity_key",
+              "field",
+              "operator"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "title": "Field",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Value",
+                "default": null
+              },
+              "operator": {
+                "enum": [
+                  "EQUALS",
+                  "AT_LEAST",
+                  "AT_MOST",
+                  "EXISTS"
+                ],
+                "type": "string",
+                "title": "Operator"
+              },
+              "entity_key": {
+                "type": "string",
+                "title": "Entity Key",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "state_kind": {
+                "enum": [
+                  "canon_fact",
+                  "timeline_event",
+                  "character_state",
+                  "relationship_state",
+                  "world_rule",
+                  "resource_state",
+                  "power_state",
+                  "foreshadow_state",
+                  "reader_promise",
+                  "plot_thread",
+                  "narrative_debt",
+                  "mystery_state",
+                  "antagonist_state",
+                  "arc_state",
+                  "reward_event",
+                  "theme_movement",
+                  "character_knowledge",
+                  "character_belief",
+                  "character_arc",
+                  "reader_knowledge",
+                  "disclosure_event",
+                  "world_state",
+                  "faction_state",
+                  "location_state",
+                  "consequence_state",
+                  "conflict_state",
+                  "narrative_obligation",
+                  "payoff_event"
+                ],
+                "type": "string",
+                "title": "State Kind"
+              },
+              "requirement_id": {
+                "type": "string",
+                "title": "Requirement Id",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "title": "WorldFoundationContract",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "required": [
+          "contract_version",
+          "genre_profile",
+          "compiled_scope",
+          "sections",
+          "rules",
+          "entities"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/WorldRuleContract"
+            },
+            "title": "Rules",
+            "minItems": 1
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/_EntityContract"
+            },
+            "title": "Entities",
+            "minItems": 1
+          },
+          "sections": {
+            "type": "object",
+            "title": "Sections",
+            "propertyNames": {
+              "minLength": 1
+            },
+            "patternProperties": {
+              "\\S": {
+                "$ref": "#/$defs/_SectionContract"
+              }
+            }
+          },
+          "genre_profile": {
+            "type": "string",
+            "title": "Genre Profile",
+            "pattern": "\\S",
+            "minLength": 1
+          },
+          "compiled_scope": {
+            "enum": [
+              "BOOK",
+              "VOLUME",
+              "ARC"
+            ],
+            "type": "string",
+            "const": "BOOK",
+            "title": "Compiled Scope"
+          },
+          "contract_version": {
+            "type": "string",
+            "const": "world-foundation.v1",
+            "title": "Contract Version"
+          }
+        },
+        "additionalProperties": false
+      },
+      "example": {
+        "rules": [
+          {
+            "rule_id": "rule:choice",
+            "category": "core_laws",
+            "statement": "A faction may defend its interests.",
+            "enforcement": "SOFT_CAUSAL",
+            "consequences": [
+              "A proposed response still needs accepted causes."
+            ],
+            "applicability": [
+              "faction_state"
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "kind": "FACTION",
+            "entity_id": "faction:example"
+          }
+        ],
+        "sections": {
+          "core_laws": {
+            "depth": "SEED",
+            "content": "An original constraint changes choices."
+          }
+        },
+        "genre_profile": "original-genre.v1",
+        "compiled_scope": "BOOK",
+        "contract_version": "world-foundation.v1"
+      },
+      "entities": "nonempty array of unique entity_id and kind records; references must resolve; approved initial conditions are not accepted events",
+      "sections": {
+        "content": "concrete approved initial conditions, rules and limits",
+        "key_rule": "core_laws is required; include only needed ontology dimensions or genre:/book: extensions",
+        "ontology": [
+          "core_laws",
+          "ecology_resources",
+          "economy",
+          "history_culture",
+          "information_communication",
+          "life_death_disease",
+          "politics_factions",
+          "religion",
+          "society_class",
+          "space_time_geography",
+          "technology_power"
+        ]
+      },
+      "enum_contract": "Every enum is one scalar string. Schema enum arrays list choices; they are never the field's returned value. compiled_scope is fixed by this task.",
+      "compiled_scope": "BOOK",
+      "contract_version": "world-foundation.v1"
+    },
+    "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+    "contract_version": "foundation-generation.v4",
+    "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
+    "applicability_contract": "Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+  },
+  "context_manifest": {
+    "type": "NarrativeContextManifest",
+    "scope": {
+      "book_id": "book:input-isolation-01:fantasy-cooking",
+      "project_id": "project:input-isolation-01:fantasy-cooking",
+      "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:WORLD_BIBLE:0",
+      "planning_scope": "NOT_APPLICABLE"
+    },
+    "selected_inputs": [
+      {
+        "provenance": {
+          "planning_role": "creative_brief",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+          "authority_asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+        },
+        "source_identity": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1",
+        "source_revision": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+        "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1",
+        "estimated_tokens": 1267,
+        "physical_asset_type": "creative_brief",
+        "logical_context_kind": "planning_segment:creative_brief",
+        "logical_narrative_identity": "book:input-isolation-01:fantasy-cooking:world.design.generate:planning_segment:creative_brief:authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_brief:sha256:16f5aceff33b3ce3fa9813c888938900ee0248a9560273263e90a4a7f27c6d00"
+      },
+      {
+        "provenance": {
+          "planning_role": "creative_foundation",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+          "authority_asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1",
+        "source_revision": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+        "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1",
+        "estimated_tokens": 13248,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:creative_foundation",
+        "logical_narrative_identity": "book:input-isolation-01:fantasy-cooking:world.design.generate:planning_segment:creative_foundation:authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_foundation:sha256:3883a3c279729d0eb70dfd51dc6062e1ead6a801ad6d01d5e9e56f7dc509ee07"
+      },
+      {
+        "provenance": {
+          "authority": "StoryPlanningRuntime",
+          "projection_contract": "provider-context-view-v2",
+          "frozen_component_hash": "sha256:45d74e67c299c87633ef56451386ef6998941c01eefee0079bfa650a8415ad00"
+        },
+        "source_identity": "planning-context-envelope:world.design.generate:story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:WORLD_BIBLE:0",
+        "source_revision": "sha256:45d74e67c299c87633ef56451386ef6998941c01eefee0079bfa650a8415ad00",
+        "asset_version_id": "planning-context-envelope:sha256:45d74e67c299c87633ef56451386ef6998941c01eefee0079bfa650a8415ad00",
+        "estimated_tokens": 1942,
+        "physical_asset_type": "planning_context_projection",
+        "logical_context_kind": "planning_context_envelope",
+        "logical_narrative_identity": "book:input-isolation-01:fantasy-cooking:world.design.generate:planning_context_envelope:planning-context-envelope:world.design.generate:story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:WORLD_BIBLE:0",
+        "semantic_representation_identity": "provider-context-view-v2:planning_context_envelope:sha256:45d74e67c299c87633ef56451386ef6998941c01eefee0079bfa650a8415ad00"
+      },
+      {
+        "provenance": {
+          "planning_role": "reader_promise",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:78b58c972495a820c5274eccb316fbc7cf411cde138f9e3be17a5bbeeb337536",
+          "authority_asset_version_id": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1",
+        "source_revision": "sha256:78b58c972495a820c5274eccb316fbc7cf411cde138f9e3be17a5bbeeb337536",
+        "asset_version_id": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1",
+        "estimated_tokens": 6629,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:reader_promise",
+        "logical_narrative_identity": "book:input-isolation-01:fantasy-cooking:world.design.generate:planning_segment:reader_promise:authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:reader_promise:sha256:b4fd6cbc81635e06bada7d550da35a7f6e2557bfc872916372616f15b76608b1"
+      },
+      {
+        "provenance": {
+          "planning_role": "ending_intent",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:953e6e3fb4c6918437c5a603e2902cd8e489a9d3e81b28494740cb94a2df5048",
+          "authority_asset_version_id": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1",
+        "source_revision": "sha256:953e6e3fb4c6918437c5a603e2902cd8e489a9d3e81b28494740cb94a2df5048",
+        "asset_version_id": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1",
+        "estimated_tokens": 6030,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:ending_intent",
+        "logical_narrative_identity": "book:input-isolation-01:fantasy-cooking:world.design.generate:planning_segment:ending_intent:authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:ending_intent:sha256:1c2beffe72ecd3ac7c7bd661e6d34f65bf3dacf65500105348579d49886931d3"
+      },
+      {
+        "provenance": {
+          "planning_role": "theme_contract",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:c4ac22c437638a6f2e944db3d6512881afeead33e1742f3f1bf2257ef54db63d",
+          "authority_asset_version_id": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1",
+        "source_revision": "sha256:c4ac22c437638a6f2e944db3d6512881afeead33e1742f3f1bf2257ef54db63d",
+        "asset_version_id": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1",
+        "estimated_tokens": 8173,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:theme_contract",
+        "logical_narrative_identity": "book:input-isolation-01:fantasy-cooking:world.design.generate:planning_segment:theme_contract:authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:theme_contract:sha256:9e262102496a53b8cbb9584b9648833c54f9f3621a3d9893b662b89d7eab9b66"
+      }
+    ],
+    "contract_version": "planning-context-manifest-v1",
+    "effective_policy": {
+      "limits": {
+        "total": 64000,
+        "buckets": {},
+        "classes": {},
+        "sections": {},
+        "required_reservation": 0
+      },
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "denied_logical_kinds": [],
+      "allowed_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief",
+        "planning_segment:creative_foundation",
+        "planning_segment:ending_intent",
+        "planning_segment:reader_promise",
+        "planning_segment:theme_contract"
+      ],
+      "denied_physical_types": [],
+      "source_risk_threshold": 0,
+      "allowed_physical_types": [],
+      "permitted_source_modes": [
+        "generation"
+      ],
+      "required_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief",
+        "planning_segment:creative_foundation",
+        "planning_segment:ending_intent",
+        "planning_segment:reader_promise",
+        "planning_segment:theme_contract"
+      ],
+      "maximum_raw_source_ratio": 0.0,
+      "permitted_truncation_strategies": [
+        "structured_elements-v1"
+      ]
+    },
+    "projection_audit": {
+      "loss_records": [],
+      "loss_sources": []
+    },
+    "token_accounting": {
+      "method": "utf8-byte-upper-bound.v1",
+      "precision": "ESTIMATE_ONLY",
+      "total_limit": 64000,
+      "accepted_tokens": 37289,
+      "required_tokens": 37289,
+      "tokens_by_class": {
+        "PROTECTED": 37289
+      },
+      "tokens_by_bucket": {
+        "ending_intent": 6030,
+        "creative_brief": 1267,
+        "reader_promise": 6629,
+        "theme_contract": 8173,
+        "creative_foundation": 13248,
+        "planning_context_envelope": 1942
+      },
+      "accounting_method": "declared-candidate-estimate-v1",
+      "tokens_by_section": {
+        "PLANNING_INPUTS": 35347,
+        "PLANNING_CONTRACT": 1942
+      },
+      "required_reservation": 37289,
+      "total_candidate_tokens": 37289
+    },
+    "policy_compilation": {
+      "receipt_hash": "sha256:66fd8ab6f0d4cc8158bc4ecf79d4857bb80d2b8f5b27bbdc42a72969d173ebc1",
+      "input_policies": [
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "caller-context-limit-v1",
+            "policy_id": "planning-caller-context-limit",
+            "content_hash": "sha256:71da9c6d9f7c37139e87eb5ee87934578f59d1d18bb8a4fa10113b5588f12272",
+            "snapshot_ref": "command:planning-context-token-budget"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "context-profile-v1",
+            "policy_id": "planning-context-profile",
+            "content_hash": "sha256:7faf527135845d463faa068cebfcd7fb68bfa7f1cc375c80a6af6d5468fd9be6",
+            "snapshot_ref": "planning-context-profile:v1"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "planning-context-contract-v1",
+            "policy_id": "planning-typed-stage:world.design.generate",
+            "content_hash": "sha256:3be62eeb0e77d081145acd83bf33e9e72f67208c1aec4aa98bcf81f9cfba98ca",
+            "snapshot_ref": "planning-context-contract:world.design.generate"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        }
+      ],
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "effective_policy": {
+        "limits": {
+          "total": 64000,
+          "buckets": {},
+          "classes": {},
+          "sections": {},
+          "required_reservation": 0
+        },
+        "compiler_version": "effective-context-policy-compiler-v1",
+        "denied_logical_kinds": [],
+        "allowed_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief",
+          "planning_segment:creative_foundation",
+          "planning_segment:ending_intent",
+          "planning_segment:reader_promise",
+          "planning_segment:theme_contract"
+        ],
+        "denied_physical_types": [],
+        "source_risk_threshold": 0,
+        "allowed_physical_types": [],
+        "permitted_source_modes": [
+          "generation"
+        ],
+        "required_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief",
+          "planning_segment:creative_foundation",
+          "planning_segment:ending_intent",
+          "planning_segment:reader_promise",
+          "planning_segment:theme_contract"
+        ],
+        "maximum_raw_source_ratio": 0.0,
+        "permitted_truncation_strategies": [
+          "structured_elements-v1"
+        ]
+      },
+      "conflict_decision": "PASS"
+    },
+    "candidate_decisions": [
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "planning-context-envelope:sha256:45d74e67c299c87633ef56451386ef6998941c01eefee0079bfa650a8415ad00"
+      }
+    ],
+    "context_fingerprint": "sha256:aa83cd9815b7162e7e0aead0f6feb0e85d36a9fbe09d2233f9d2d27bc84edbb4",
+    "truncation_decisions": [],
+    "provider_context_view": {
+      "content_hash": "sha256:2ebf306adbb103b4fcbc6969cf05040986a7f0329f2334af51cb4d310a2bcda6",
+      "compiled_view": {
+        "stage": "world.design.generate",
+        "segments": [
+          {
+            "role": "ending_intent",
+            "content": {
+              "objective": "为九章烹饪奇幻成长设计有温度且保留经营现实的结尾，使陆芽从急于借祖母的发光麦饼赢得名声，转向能够依据手艺与交易反馈作出选择、说明价格，并与伙伴共同承担结果。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整；结尾设计不得反向锁死尚未确定的章次与唯一配方。",
+                "保留陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气使面团失去弹性及邻摊客人口味不同的初始条件。",
+                "保留陆芽与惜料的送货少年围绕定价、试吃及最后一袋麦粉的分歧，以手艺尝试和有代价的合作推进成长。",
+                "固定陆芽的第三人称近距离视角，只使用她感知、记得、听到或有依据推断的信息；不进入少年或客人的内心。",
+                "通过按压、折叠、烙制、掰开、气味与入口反应呈现判断依据，感官细节须参与选择及后果。",
+                "每个代表场景至少改变一项经营局势或关系条件，最终核算与收摊动作也须承担反馈、决定或后果。",
+                "仅使用冻结作者简报与本书沿Authority生成的方案；不引入其他作品、其他用例、历史试产资料或检查答案。",
+                "所有结尾事件、出品变化与合作安排均为未来候选设计；不构成已发生事实、已批准方案或Authority状态变更。"
+              ],
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者要求手艺尝试与有代价的合作，冻结成长方向也将试吃耗料、可售份量减少及损耗分担作为因果条件。代价应落实为经协商的有限材料投入与经营取舍，无需增加永久创伤或重大牺牲。",
+                  "field_path": "$.protagonist_cost"
+                }
+              ],
+              "ending_direction": "拟以首次独立摆摊的收摊与核算收束九章成长。陆芽根据前段试验，在双方先行同意的有限麦粉份额内做出一款有明确取舍的发光麦饼：具体调整由实际触觉、气味和入口反馈决定，不预定唯一成功配方。结尾安排一次有限的付费购买，让客人的具体反应检验她的选择；面对仍不合口味的反馈，她能够追问并判断是否调整，不再急着用祖母的名声替自己辩护。她愿意以自己的名字说明这款饼的味道、份量和价格，并与少年按约核对耗料和所得。两人的温度来自彼此尊重材料权限、兑现承担和修正判断，仍可保留意见差异。最后落在陆芽能够判断并承担自己的味道这一初步变化上，浮岛夜市的经营继续存在困难，盈利、持久客源与名声保持开放，不另起竞赛或续作主线。",
+              "protagonist_cost": "拟让陆芽承担经事前协商归于她的试验与试吃耗料，接受这部分投入减少当次可售份量，并在收摊核算中兑现约定的损耗承担。具体份额与分担方式须待麦粉权属和合作条件明确后确定，不能默认由少年供料或承担亏损。她还须放下以所有客人的赞美证明自己的期待，承认选定味道会失去部分交易机会；这些代价来自实际选择，不额外要求永久损失。",
+              "closure_conditions": [
+                "前段须通过陆芽参与的交流明确最后一袋麦粉的权属、可用份额及使用权限；共同试验前谈清用途、损耗与收益承担，不能以结尾的成功补足事前缺失的同意。",
+                "结尾出品的工序与口味取舍须承接此前可观察的湿面团试验和客人反馈，让陆芽能够说明自己保留、调整了什么以及依据何在。",
+                "以一次实际付费购买及具体入口反馈检验最终选择；认可可以有限，仍有人不喜欢，陆芽不再把不同偏好直接当作自身无能的证明。",
+                "陆芽与少年须核对实际材料消耗和交易结果，兑现约定的承担方式；双方至少各有一次依据结果修正判断的行动，合作分歧不以单方面认错收束。",
+                "陆芽须通过明确说明味道、份量与价格的行动承担出品责任；祖母配方的情感分量得到保留，她对当前出品的判断也获得可见表达。",
+                "收束本次摆摊中材料用途与损耗承担的具体争执，保留后续口味调整、客源和盈利的不确定性；无需设置续作任务。"
+              ],
+              "prohibited_outcomes": [
+                "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+                "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+                "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+                "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+                "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+                "把未经协商使用他人麦粉写成无需承担后果的分享。",
+                "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+                "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+              ],
+              "unacceptable_shortcuts": [
+                "只用一句找到自己的味道宣布成长，省略可观察的工序判断、交易反馈与不同回应。",
+                "用最后一炉突然完美掩盖此前湿面团问题，或用发光强度代替入口口感的检验。",
+                "让少年无条件让出最后一袋麦粉，以慷慨表态跳过权属、权限及损耗协商。",
+                "用客人齐声赞美、权威授奖或销量暴涨替代有限而可信的认可。",
+                "把祖母配方写成错误的旧事物，或让祖母的评价替陆芽完成出品判断。",
+                "只写双方握手和解，省略材料核对、承担兑现及合作条件的实际变化。",
+                "为显得结尾有分量而追加无因果支持的重大牺牲，或以新的悬案强制连接续作。"
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:953e6e3fb4c6918437c5a603e2902cd8e489a9d3e81b28494740cb94a2df5048",
+            "asset_version_id": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1"
+          },
+          {
+            "role": "creative_brief",
+            "content": {
+              "idea": "年轻厨师陆芽在浮岛夜市第一次独立摆摊，想卖出祖母留下的发光麦饼，却遇到潮湿空气让面团失去弹性和邻摊不同口味的客人。她与一位惜料的送货少年在定价、试吃与分享最后一袋麦粉之间产生分歧。让手艺尝试和有代价的合作推动她从急于赢得名声转向找到自己的味道。",
+              "genre": "第三人称近距离奇幻成长",
+              "audience": "成年中文读者",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+              ],
+              "source_boundaries": [
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+              ],
+              "creative_brief_contract_version": "creative-brief-v2"
+            },
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+            "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+          },
+          {
+            "role": "reader_promise",
+            "content": {
+              "objective": "为成年中文读者明确九章烹饪奇幻成长故事的阅读承诺：贴近陆芽首次独立摆摊的窘迫、逞强与细小欢喜，通过可感知的手艺尝试、经营反馈和合作分歧，期待她从急于赢得名声转向能够判断、说明并承担自己的味道。本结果仅为承接冻结创作基础的候选承诺。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+                "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。",
+                "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+                "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心；推断保留不确定性，新增信息通过她参与的交流与观察获得。",
+                "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+                "最后一袋麦粉的权属、可用份额与损耗承担方式尚未确定，使用前须在人物可知范围内明确。",
+                "准备、升级压力、阶段回报及具体收尾方式保持可调整，不承诺固定章末悬念、每章成功或每次行动都产生不可逆损失。"
+              ],
+              "applicability": [],
+              "reader_promise": "读者将贴近陆芽的手、鼻息和迟疑，在浮岛夜市的日常劳动中体验第一次独自谋生的压力与温度。反复牵引阅读的问题是：这一次面团与客人的反应会让她看清什么，她愿意怎样调整，又能否与惜料的送货少年说清下一次尝试的条件？手艺的回报应能从动作和结果中辨认，关系的靠近应由具体协商与履行赢得。九章结尾须完成她对自身味道的初步确认：她能解释自己的取舍，面对不同偏好，并与伙伴承担共同选择的结果。认可可以有限，经营仍可继续摸索；找到自己的味道不以普遍赞美或一夜成名为证明。",
+              "prohibited_outcomes": [
+                "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+                "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+                "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+                "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+                "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+                "把未经协商使用他人麦粉写成无需承担后果的分享。",
+                "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+                "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+              ],
+              "disappointment_risks": [
+                "连续揉面和试饼只更换感官描写，却不改变判断、经营条件或合作关系，会让九章显得重复。",
+                "用旁白宣布陆芽找到了自己的味道，却没有呈现她怎样辨别反馈、作出取舍和承担结果，会使成长缺少可信依据。",
+                "把送货少年写成只负责算账或劝告的工具，缺少可见诉求与拒绝合作的行动，会削弱双方分歧的分量。",
+                "把有限认可写成失败，或以所有客人的赞美证明成长，会背离接纳不同口味的阅读回报。",
+                "让发光与浮岛只承担装饰作用，脱离展示、烹饪和交易中的具体感知，会削弱生活尺度的奇幻体验。",
+                "用材料损耗反复惩罚陆芽，缺少发现、修正与细小欢喜，会破坏克制而温暖的情绪承诺。",
+                "在九章结尾仍让陆芽只能等待他人认可，未完成对自身味道的初步判断，会使核心期待悬空；具体盈利与长期声誉则无需在结尾保证。"
+              ],
+              "setup_progress_payoff": [
+                {
+                  "setup": "以潮湿空气导致面团失去弹性的初始条件，使陆芽熟悉的配方与眼前材料状态出现落差；发光能够吸引注意，却不能替代口感判断。",
+                  "payoff": "让读者能够理解陆芽为何选择某种做法，以及成品保留了什么、舍弃了什么；她的手艺判断获得可观察的依据，具体工序与配方留待后续设计。",
+                  "promise": "烹饪过程提供可以看见、闻到并理解的成长回报。",
+                  "progress": "让相关尝试通过面团状态、烙制结果、入口反应及材料余量提供反馈，并据此改变下一步操作；不同尝试承担不同的问题变化。"
+                },
+                {
+                  "setup": "陆芽想凭祖母留下的发光麦饼赢得认可，容易把客人的不同偏好听成对自己的否定，不愿承认原配方需要调整。",
+                  "payoff": "陆芽对祖母配方作出有理由的保留或调整，能够说明自己愿意署名的味道，并承受仍有人不喜欢它。具体认可方式不预先锁定。",
+                  "promise": "从依赖赞美到作出自己的判断，既保留继承的情感，也容纳不同口味。",
+                  "progress": "通过她亲自听到的口味反馈与可见交易选择，使她逐步区分食物的问题、客人的偏好与对自身价值的判断；改变须落实为追问、选择或回应。"
+                },
+                {
+                  "setup": "围绕定价、试吃和最后一袋麦粉建立分歧；麦粉的权属与可分享份额须先明确，不能默认陆芽可以支配他人的材料。",
+                  "payoff": "合作的温度来自双方能够说清并履行某项具体安排，陆芽能够说明价格和自己承担的结果；材料分配、职责或分账的具体形式保持开放。",
+                  "promise": "有边界、有实际分量的合作带来可信的关系变化。",
+                  "progress": "让双方表达可见的诉求，在权限明确后检验约定；相关耗料、销售与劳动结果推动双方修正判断，不能只由少年退让。"
+                }
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:78b58c972495a820c5274eccb316fbc7cf411cde138f9e3be17a5bbeeb337536",
+            "asset_version_id": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1"
+          },
+          {
+            "role": "theme_contract",
+            "content": {
+              "objective": "为九章烹饪成长方向提出一个可由手艺观察、经营反馈与合作协商共同探索的主题：陆芽如何在祖母的传承、客人的不同偏好和伙伴的材料边界之间，形成自己愿意说明并承担的判断。以下答案与选择均为候选探索路径，不预定章次或已发生结果。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+                "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+                "承接陆芽害怕离开祖母配方便毫无本事的内在阻力，保持从急于赢得名声转向能够判断并承担自己的味道的成长方向。",
+                "固定陆芽的第三人称近距离视角；新增信息通过她参与的具体交流与观察获得，推断保留不确定性。",
+                "人物行动来自具体欲望与可知信息；每个代表场景至少改变一项局势或关系条件，安静动作也承担反馈、决定或后果。",
+                "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题；触觉与气味参与判断，术语只在动作需要时出现。",
+                "对话围绕可分配的材料、可说明的价格和具体口味展开，保留不同偏好与交易条件。",
+                "最后一袋麦粉的权属、可分享份额及少年惜料的具体经历尚未确定；后续须在人物可知范围内明确，不以主题需要补造事实。",
+                "主题主要通过观察、误判修正、具体协商和结果反馈探索；选择测试是可用方法，不要求每场都有两难或不可逆损失。",
+                "允许陆芽说清一次判断或疑问，但反思须联系她已经感知的出品与交易，不由叙述者替少年或客人解释动机。",
+                "结尾对陆芽判断与承担能力的初步成长提供回报，同时保留不同口味、合作分歧与经营前景的未决空间。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "接受边界为第零章；所有新增选择、场景及后果均为未来候选设计，不构成已发生事件、已知事实或已批准方案。"
+              ],
+              "choice_tests": [
+                {
+                  "cost": "小份试验占用有限麦粉与出摊时间；若结果不合适，投入的材料不能恢复为原有可售份量。",
+                  "choice": "可让陆芽在湿面团无法按熟悉手感成形时，比较小份工序调整的结果，再决定保留祖母配方的哪些部分、改变哪些部分。",
+                  "thematic_pressure": "检验忠于祖母是否只能表现为照做，也检验改变是否足以证明独立。主题可由按压、折叠和烙制后的实际差异呈现，不预设调整必然优于原方。"
+                },
+                {
+                  "cost": "免费试吃减少可售份量；付费试售可能减少愿意尝试的人数。两种办法都不能保证获得足够反馈或成交。",
+                  "choice": "可让陆芽与少年比较限量免费试吃和少量付费试售，说明各自愿意承担的耗料，再根据客人的具体回应调整办法。",
+                  "thematic_pressure": "检验被注意、被夸赞与得到有用反馈是否相同。少年对耗料的顾虑和陆芽对接触客人的需求都有成立空间，分歧通过实际交易接受检验。"
+                },
+                {
+                  "cost": "协商可能缩小试验规模或延后出品；若双方同意投入，所用麦粉将减少后续可售材料，损耗须按约定承担。",
+                  "choice": "可在明确最后一袋麦粉的权属与双方权限后，让陆芽提出有份额上限、用途说明和损耗承担的共同试验；少年保有接受、修改或拒绝的权利。",
+                  "thematic_pressure": "检验独立是否意味着凡事独自决定，以及分享是否必须包含对他人决定权的尊重。合作的温度来自清楚的边界与履约，不以少年单方面退让证明陆芽成长。"
+                },
+                {
+                  "cost": "她可能放弃部分客人的交易机会，并继续承受销量与收益的不确定性；伙伴承担的工作与材料仍须得到交代。",
+                  "choice": "可让陆芽面对互不相同的口味反馈，选择一款自己能够说明取舍、愿意署名并说明价格的麦饼，同时承认它未必适合每位客人。",
+                  "thematic_pressure": "检验自己的味道是拒绝反馈的借口，还是听懂反馈后作出的具体判断。结尾可确认她回应异议和承担结果的能力，市场评价与经营前景保留开放性。"
+                }
+              ],
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "冻结方向要求手艺尝试与有限麦粉产生实际后果；候选配方试验会占用材料与出摊时间，具体用量留待后续规划。",
+                  "field_path": "$.choice_tests[0].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "试吃与定价是作者指定的分歧，适合通过可售份量和反馈机会的取舍探索主题。",
+                  "field_path": "$.choice_tests[1].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者要求有代价的合作；最后一袋麦粉须先明确权属、使用权限与损耗承担，才能提出有意义的共同投入。",
+                  "field_path": "$.choice_tests[2].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "冻结成长方向要求陆芽放下以所有人满意衡量自身价值的习惯；选择具体服务的口味可能失去部分交易机会，但不预定必然亏损。",
+                  "field_path": "$.choice_tests[3].cost"
+                }
+              ],
+              "opposing_answers": [
+                "一种候选答案是：守住祖母的配方，才能守住手艺的来处。可让陆芽坚持熟悉做法，并观察其中仍有价值的部分与不适应潮湿环境的部分；保留继承的情感分量，不把坚持直接判作愚昧。",
+                "另一种候选答案是：客人愿意付钱的味道，才是摊主应当做的味道。可通过试吃、份量和价格反馈显示倾听的必要，也让互不相同的偏好暴露追求所有人认可的限度；市场回应提供证据，却不能独自完成陆芽的判断。",
+                "还有一种候选答案是：自己喜欢并敢于署名，就足以称为自己的味道。可让陆芽尝试清楚表达偏好，同时面对客人的拒绝和伙伴的耗料要求；保留个人取舍的正当性，也检验她是否以自主为由回避后果。",
+                "可逐步形成的答案是：自己的味道来自对传承与反馈作出具体取舍，并尊重共同投入者的权限、承担约定的结果。可通过工序调整、售价说明与材料协商体现；这是本书支持的初步成长方向，不是保证成功的经营公式，也不裁定每种口味的高下。"
+              ],
+              "thematic_question": "当祖母教的做法、客人想吃的味道与伙伴愿意投入的材料并不一致时，陆芽怎样做出一款真正属于自己的麦饼，并承担这个选择？",
+              "prohibited_outcomes": [
+                "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+                "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+                "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+                "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+                "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+                "把未经协商使用他人麦粉写成无需承担后果的分享。",
+                "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+                "把候选场景、关系变化或奇幻机制表述为已接受历史。",
+                "把客人的不同口味写成道德高下，以贬低不喜欢麦饼的人证明陆芽正确。",
+                "把自己的味道等同于拒绝反馈，或把销量等同于陆芽全部的个人价值。",
+                "以抽象说教替代手艺、交易与关系中的主题探索，或要求每场都附加同一种代价。"
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:c4ac22c437638a6f2e944db3d6512881afeead33e1742f3f1bf2257ef54db63d",
+            "asset_version_id": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "content": {
+              "genre": "第三人称近距离奇幻成长",
+              "subgenre": "浮岛夜市中的烹饪奇幻与谋生成长",
+              "core_fear": "陆芽怕第一次独立摆摊的失败证明自己离开祖母的配方便毫无本事，因此容易把客人的不同偏好听成对自己的否定，也不愿承认原配方需要调整。",
+              "objective": "形成一个适合九章的原创成长方向：年轻厨师陆芽第一次在浮岛夜市独立摆摊，为卖出祖母留下的发光麦饼，与惜料的送货少年围绕定价、试吃和最后一袋麦粉展开合作。让每次手艺尝试带来可观察的经营与关系变化，推动她从急于赢得名声转向能够判断并承担自己的味道。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+                "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。"
+              ],
+              "core_desire": "陆芽起初想凭祖母留下的发光麦饼赢得夜市客人的认可，逐渐学会做出自己愿意署名、能够说明价格并与伙伴共同承担结果的味道。",
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "作者以浮岛夜市、发光麦饼和厨艺成长为核心，适合生活尺度的烹饪奇幻。",
+                  "field_path": "$.subgenre"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "陆芽想卖出祖母留下的发光麦饼，并由急于获得名声转向找到自己的味道。",
+                  "field_path": "$.core_desire"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "将失败理解为自己只会依赖祖母的手艺，可为作者要求的成长提供内在阻力；这是候选心理设计。",
+                  "field_path": "$.core_fear"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "湿气、不同口味的客人及双方对有限麦粉用途的分歧，已构成具体冲突。",
+                  "field_path": "$.core_conflict"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "九章方向可通过连续经营选择与合作关系变化形成阅读牵引，无需扩大为长期连载。",
+                  "field_path": "$.serialization_potential"
+                }
+              ],
+              "core_conflict": "陆芽把卖出祖母的发光麦饼当作独立立足的证明，却遇到失去弹性的面团和不愿为同一种味道付钱的客人。她希望用试吃换来关注，送货少年则要求先算清耗料与售价；当试验也要动用最后一袋麦粉，两人必须决定怎样分担损失，以及谁有权决定这一袋粉的用途。",
+              "style_profile": {
+                "pov": "固定陆芽的第三人称近距离视角。只呈现她当下感知、记得、听到或有依据推断的内容；推断保留不确定性，新增信息通过她参与的具体交流与观察获得。",
+                "narrator": "克制而有温度的第三人称叙述者，使用陆芽能够感知的细节组织场景，以她的误判和修正呈现意义，不替其他人物解释动机。",
+                "constraints": [
+                  "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心。",
+                  "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+                  "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+                  "对话围绕可分配的材料、可说明的价格和具体口味展开，人物观点通过行动接受检验。",
+                  "每个代表场景至少改变一项局势或关系条件；安静动作也须承担反馈、决定或后果。",
+                  "原创例句仅示范候选写法，不构成已接受场景或事实。"
+                ],
+                "genre_conventions": [
+                  "让浮岛与发光食物自然进入日常劳动，通过使用中的细节建立奇幻感。",
+                  "成长体现为感知更准确、表达更清楚和承担选择结果，不依赖能力等级提升。",
+                  "保留有限材料、不同偏好和交易条件，使奇幻生活具有可理解的日常阻力。"
+                ],
+                "original_examples": [
+                  {
+                    "example": "陆芽把面团折回掌心，等它像在家时那样顶住指根。它却软软摊开，黏住了第二根手指。她停下撒粉的动作：再添一把，今晚能卖的饼就又少一点。",
+                    "purpose": "用烹饪动作建立问题与后果",
+                    "explanation": "触觉差异让陆芽发现实际问题，随后把补救动作与有限材料联系起来，产生选择压力。"
+                  },
+                  {
+                    "example": "“掰小些，总能多给几个人尝。”她说。少年把空纸袋摊在秤旁：“那卖出去的，也这么小？”陆芽刚要反驳，客人已经把试吃钱放下，指了指她切剩的半块。她伸向整饼的手停住了。",
+                    "purpose": "让交易反馈改变争执方向",
+                    "explanation": "定价分歧由客人的可见选择推进，陆芽得到新的份量反馈；少年只表达观点，不获得叙述者代言。"
+                  },
+                  {
+                    "example": "麦饼掰开时，细光还留在断面上。客人闻了闻，说想要咸一些。陆芽捏紧纸角，差点说祖母一直这样做。她把那句话咽下去，问：“是甜味太重，还是少了一点香？”",
+                    "purpose": "把成长落实为一次不同的回应",
+                    "explanation": "以短暂的防御反应呈现祖母配方的情感分量，再通过追问使关系从推销转向交流，为后续试验提供具体信息。"
+                  }
+                ]
+              },
+              "target_reader": "成年中文读者，偏好生活尺度的奇幻、具体手艺过程及带有现实分歧的温暖关系。",
+              "differentiation": "发光麦饼可以吸引目光，却不能替陆芽解决湿面团、入口口感和售价的问题。候选方向把奇幻的视觉吸引力与真实的烹饪判断放在同一张摊桌上：同一袋麦粉既能成为商品、试验材料，也能成为双方愿不愿意互相信任的具体尺度。找到自己的味道落实为一款有取舍的食物，而非得到所有客人的赞美。",
+              "narrative_engine": "以有限麦粉下的连续选择驱动九章方向：陆芽为卖出麦饼采取一种办法，客人的实际反应与烹饪结果暴露具体问题，她据此调整工序、价格或试吃方式，而调整又改变她与送货少年的合作条件。候选因果主线从湿面团造成首批出品不稳开始，经试吃耗料与口味反馈的分歧，走向最后一袋麦粉的用途协商，再以一款经陆芽判断取舍的麦饼检验合作结果。各段可交替采用揉面试验、当面议价、短暂销售和收摊核算，后续章次与具体做法保持可调整。",
+              "why_worth_writing": "第一次独立摆摊把手艺、继承与谋生放进同一场可触摸的考验。陆芽需要辨认面团，也需要辨认别人真正想吃什么，并说明自己愿意付出什么。有限麦粉使分享和尝试都有实际分量，让找到自己的味道成为读者能够看见、闻到并理解的成长。",
+              "emotional_contract": "让成年读者贴近第一次独自谋生时的窘迫、逞强与细小欢喜。阅读回报来自陆芽终于辨出面团变化、听懂一次口味反馈、说清一次分账要求，以及得到有限而可信的认可。结尾应有手艺与关系的温度，也保留经营仍需继续摸索的现实感。",
+              "prohibited_outcomes": [
+                "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。",
+                "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+                "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+                "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+                "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+                "把未经协商使用他人麦粉写成无需承担后果的分享。",
+                "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+                "把候选场景、关系变化或奇幻机制表述为已接受历史。"
+              ],
+              "serialization_potential": "九章可形成一条短篇幅的连续阅读链：出品问题引出经营选择，经营选择改变材料余量与合作关系，新的关系条件再影响下一次尝试。章末牵引可来自待检验的口感、尚未谈妥的分配或陆芽终于提出的具体要求；中途提供阶段性手艺回报，结尾完成她对自身味道的初步确认，无需预设续作。",
+              "narrative_search_projection": {
+                "assumptions": [
+                  "本方向仅承接冻结作者简报；接受边界为第零章，没有已发生的摆摊事件。",
+                  "将主要行动集中于首次摆摊及紧接其后的调整，可为九章提供连续压力；具体时间跨度尚未确定。",
+                  "送货少年惜料的具体经历、最后一袋麦粉的权属与可分享份额尚未确定，后续需要在人物可知范围内明确，不能默认陆芽可以支配他的材料。",
+                  "发光的具体机制尚未确定；本方向不假定其能够自动修复面团、操控食欲或保证销量。",
+                  "以下分数为本分支的模型估计，存在至少约0.05的比较不确定性，不构成文学资格判断或激活证据。"
+                ],
+                "future_options": [
+                  "通过小份试吃或少量付费试售比较客人反应；两种方式保留不同的耗料和信任代价。",
+                  "根据实际试验，选择调整工序、份量或味道组合，不预先锁定唯一成功配方。",
+                  "把合作落在材料分配、出品职责或收益分账中的一种具体安排上，由前段分歧决定适合哪一种。",
+                  "结尾可由少量回头客或一次明确复购支持陆芽的选择，无需安排夜市冠军或爆发式成名。"
+                ],
+                "narrative_risks": [
+                  "连续试饼容易重复；后续应让不同尝试分别改变工序判断、客人选择或合作权限。",
+                  "少年容易沦为替陆芽算账的工具；需要赋予他可见的具体诉求，以及接受或拒绝合作的行动。",
+                  "九章集中于有限经营场域可能显得拖延；应以问题变化与关系转折区分段落，避免九次近似失败。",
+                  "若最后一袋麦粉的权属不清，分享容易成为虚假的慷慨；使用前须明确谁能决定、谁承担损耗。",
+                  "奇幻感可能只剩装饰；可让发光参与展示和顾客判断，但新增规律必须另行设计，不能当作冻结事实。"
+                ],
+                "repetition_keys": [
+                  "湿面团的触觉判断",
+                  "试吃反馈改变出品选择",
+                  "材料分配推动合作关系",
+                  "光泽与入口口感的落差"
+                ],
+                "contract_version": "narrative-search-projection.v1",
+                "selection_summary": "future-1以第一次独立摆摊中的材料分配与口味判断为主线，紧扣作者要求的手艺尝试、有代价的合作及自我定位变化。优势是行动后果具体、关系推进可见，适合九章；代价是场域较小，需要持续改变问题类型。此处仅提供候选比较支持，不作选定或批准。",
+                "strategy_fingerprint": "future-1|CREATIVE_FOUNDATION|9章|首次摆摊|湿面团与口味反馈|有限麦粉合作|名声转向自己的味道",
+                "creative_intelligence": {
+                  "arc_momentum": 0.84,
+                  "setup_payoff": 0.85,
+                  "reader_promise": 0.9,
+                  "reversal_reveal": 0.72,
+                  "character_agency": 0.9,
+                  "pacing_variation": 0.8,
+                  "pattern_diversity": 0.79,
+                  "world_consequence": 0.66,
+                  "future_optionality": 0.86,
+                  "conflict_escalation": 0.76,
+                  "emotional_progression": 0.87,
+                  "relationship_evolution": 0.88,
+                  "choice_cost_consequence": 0.89
+                },
+                "irreversible_decisions": [
+                  "若后续选择将最后一袋麦粉的一部分用于共同试验，该部分材料一经投入便无法收回；具体份额、权限和承担方式须先明确。"
+                ],
+                "projected_consequences": [
+                  "若陆芽扩大试吃，能够获得更多直接反馈，但剩余可售份量随之减少，迫使她重新考虑价格和试吃对象。",
+                  "若陆芽只接受夸赞而忽略不同口味，出品判断会继续失准；主动追问反馈则可能使她承认祖母配方需要针对当前条件调整。",
+                  "若双方先说明材料用途与损耗承担，再共享麦粉，合作可从相互干涉转为有边界的共同尝试。",
+                  "若新出品只获得部分客人的认可，陆芽需要选择服务哪些口味，并放下以所有人满意衡量自身价值的习惯。"
+                ],
+                "narrative_opportunities": [
+                  "让陆芽第一次认真询问客人口味时，发现自己此前只问对方愿不愿买，推动她改变获取反馈的方法。",
+                  "用一次看似省料却影响口感的操作，使陆芽与少年都需要修正自己的判断，形成双向合作。",
+                  "将开场令人期待的麦饼光泽与结尾更准确的味道判断呼应，使感官细节承担成长回报。",
+                  "把价格协商写成双方陈述所承担工作的场景，让经济选择直接推动关系变化。"
+                ]
+              }
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+            "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "provider-context-view-v4",
+        "narrative_position": {
+          "book_id": "book:input-isolation-01:fantasy-cooking",
+          "logical_key": "story-formation:9086a7081218f307a89e36112e190225d92365278f2ac96278c7a48cf6443fc7:WORLD_BIBLE:0",
+          "planning_scope": "NOT_APPLICABLE"
+        },
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-context-v2",
+          "loss_receipt": {
+            "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 0,
+            "source_input_hash": "sha256:66bdd2993cdabd3a665ecf615d162f616e50091676de44fa3e99a2b091486151"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v1",
+          "maximum_segments": 24,
+          "token_accounting": "utf8-byte-upper-bound.v1",
+          "omitted_fact_count": 0,
+          "omitted_item_count": 0,
+          "task_target_tokens": 64000,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 5,
+          "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+          "maximum_serialized_bytes": 8388608,
+          "maximum_facts_per_segment": null,
+          "truncated_character_count": 0
+        },
+        "accepted_state_boundary": {
+          "accepted_through_chapter": 0
+        },
+        "typed_arc_projection_version": "typed-arc-context-projection.v2"
+      },
+      "contract_version": "provider-context-view-v4",
+      "source_input_hash": "sha256:66bdd2993cdabd3a665ecf615d162f616e50091676de44fa3e99a2b091486151"
+    },
+    "deduplication_decisions": []
+  },
+  "estimated_tokens": 37289,
+  "narrative_search": {},
+  "source_isolation": "ABSTRACT_ASSETS_ONLY",
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "narrative_intelligence": {
+    "need": {
+      "scope": "STORY",
+      "genre_tags": [
+        "第三人称近距离奇幻成长"
+      ],
+      "theme_tags": [],
+      "need_digest": "sha256:6e96f1c6c7dc3798c4b4201875f3b6ca810d80a9be95ea5d58d50f0bee9757b5",
+      "craft_policy": {},
+      "target_stage": "world.design.generate",
+      "conflict_tags": [],
+      "craft_context": {
+        "pov": [
+          "固定陆芽的第三人称近距离视角。只呈现她当下感知、记得、听到或有依据推断的内容；推断保留不确定性，新增信息通过她参与的具体交流与观察获得。"
+        ],
+        "task": [
+          "world.design.generate"
+        ],
+        "genre": [
+          "第三人称近距离奇幻成长"
+        ],
+        "style": [
+          "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+          "保留有限材料、不同偏好和交易条件，使奇幻生活具有可理解的日常阻力。",
+          "克制而有温度的第三人称叙述者，使用陆芽能够感知的细节组织场景，以她的误判和修正呈现意义，不替其他人物解释动机。",
+          "原创例句仅示范候选写法，不构成已接受场景或事实。",
+          "固定陆芽的第三人称近距离视角。只呈现她当下感知、记得、听到或有依据推断的内容；推断保留不确定性，新增信息通过她参与的具体交流与观察获得。",
+          "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心。",
+          "对话围绕可分配的材料、可说明的价格和具体口味展开，人物观点通过行动接受检验。",
+          "成长体现为感知更准确、表达更清楚和承担选择结果，不依赖能力等级提升。",
+          "每个代表场景至少改变一项局势或关系条件；安静动作也须承担反馈、决定或后果。",
+          "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+          "让浮岛与发光食物自然进入日常劳动，通过使用中的细节建立奇幻感。"
+        ],
+        "pacing": [],
+        "emotion": [],
+        "conflict": [],
+        "characters": [
+          "陆芽怕第一次独立摆摊的失败证明自己离开祖母的配方便毫无本事，因此容易把客人的不同偏好听成对自己的否定，也不愿承认原配方需要调整。",
+          "陆芽起初想凭祖母留下的发光麦饼赢得夜市客人的认可，逐渐学会做出自己愿意署名、能够说明价格并与伙伴共同承担结果的味道。"
+        ],
+        "scene_goal": [],
+        "information": [],
+        "obligations": [],
+        "relationship": [],
+        "reader_effect": [
+          "读者将贴近陆芽的手、鼻息和迟疑，在浮岛夜市的日常劳动中体验第一次独自谋生的压力与温度。反复牵引阅读的问题是：这一次面团与客人的反应会让她看清什么，她愿意怎样调整，又能否与惜料的送货少年说清下一次尝试的条件？手艺的回报应能从动作和结果中辨认，关系的靠近应由具体协商与履行赢得。九章结尾须完成她对自身味道的初步确认：她能解释自己的取舍，面对不同偏好，并与伙伴承担共同选择的结果。认可可以有限，经营仍可继续摸索；找到自己的味道不以普遍赞美或一夜成名为证明。"
+        ],
+        "chapter_number": 0,
+        "chapter_function": [
+          "CREATIVE_EVALUATION",
+          "为九章烹饪奇幻成长设计有温度且保留经营现实的结尾，使陆芽从急于借祖母的发光麦饼赢得名声，转向能够依据手艺与交易反馈作出选择、说明价格，并与伙伴共同承担结果。",
+          "为九章烹饪成长方向提出一个可由手艺观察、经营反馈与合作协商共同探索的主题：陆芽如何在祖母的传承、客人的不同偏好和伙伴的材料边界之间，形成自己愿意说明并承担的判断。以下答案与选择均为候选探索路径，不预定章次或已发生结果。",
+          "为成年中文读者明确九章烹饪奇幻成长故事的阅读承诺：贴近陆芽首次独立摆摊的窘迫、逞强与细小欢喜，通过可感知的手艺尝试、经营反馈和合作分歧，期待她从急于赢得名声转向能够判断、说明并承担自己的味道。本结果仅为承接冻结创作基础的候选承诺。",
+          "形成一个适合九章的原创成长方向：年轻厨师陆芽第一次在浮岛夜市独立摆摊，为卖出祖母留下的发光麦饼，与惜料的送货少年围绕定价、试吃和最后一袋麦粉展开合作。让每次手艺尝试带来可观察的经营与关系变化，推动她从急于赢得名声转向能够判断并承担自己的味道。"
+        ]
+      },
+      "hard_constraints": [
+        "Candidates are hypothetical; no accepted history or Canon mutation",
+        "Preserve the exact author brief and source boundaries",
+        "主题主要通过观察、误判修正、具体协商和结果反馈探索；选择测试是可用方法，不要求每场都有两难或不可逆损失。",
+        "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+        "人物行动来自具体欲望与可知信息；每个代表场景至少改变一项局势或关系条件，安静动作也承担反馈、决定或后果。",
+        "仅使用冻结作者简报与本书沿Authority生成的方案；不引入其他作品、其他用例、历史试产资料或检查答案。",
+        "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+        "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+        "以大规模救世、权力升级或额外竞赛主线挤占九章的烹饪成长核心。",
+        "以抽象说教替代手艺、交易与关系中的主题探索，或要求每场都附加同一种代价。",
+        "以祖母配方必须原样保留，或必须彻底抛弃祖母配方，替代陆芽自己的具体判断。",
+        "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题，术语只在动作需要时出现。",
+        "优先通过按压、折叠、烙制、掰开和入口反应呈现厨艺问题；触觉与气味参与判断，术语只在动作需要时出现。",
+        "保留年轻厨师陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气导致面团失去弹性及邻摊客人口味不同的初始条件。",
+        "保留陆芽与惜料的送货少年围绕定价、试吃及最后一袋麦粉的分歧，以手艺尝试和有代价的合作推进成长。",
+        "保留陆芽与惜料的送货少年在定价、试吃和分享最后一袋麦粉上的分歧，让手艺尝试和有代价的合作推动成长。",
+        "保留陆芽第一次在浮岛夜市独立摆摊、祖母留下的发光麦饼、潮湿空气使面团失去弹性及邻摊客人口味不同的初始条件。",
+        "允许陆芽说清一次判断或疑问，但反思须联系她已经感知的出品与交易，不由叙述者替少年或客人解释动机。",
+        "全书方向九章，近期规划保持可调整。",
+        "全书方向九章，近期规划保持可调整；结尾设计不得反向锁死尚未确定的章次与唯一配方。",
+        "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+        "准备、升级压力、阶段回报及具体收尾方式保持可调整，不承诺固定章末悬念、每章成功或每次行动都产生不可逆损失。",
+        "原创例句仅示范候选写法，不构成已接受场景或事实。",
+        "固定陆芽的第三人称近距离视角，只使用她感知、记得、听到或有依据推断的信息；不进入少年或客人的内心。",
+        "固定陆芽的第三人称近距离视角；新增信息通过她参与的具体交流与观察获得，推断保留不确定性。",
+        "固定陆芽近距离视角；用触觉、气味、烹饪动作和关系变化提供成长的阅读回报。",
+        "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心。",
+        "始终贴近陆芽的感官、注意力和判断，不进入少年或客人的内心；推断保留不确定性，新增信息通过她参与的交流与观察获得。",
+        "对话围绕可分配的材料、可说明的价格和具体口味展开，人物观点通过行动接受检验。",
+        "对话围绕可分配的材料、可说明的价格和具体口味展开，保留不同偏好与交易条件。",
+        "所有新增细节均为未来候选设计，不构成已发生事件、已知事实或已批准方案。",
+        "所有结尾事件、出品变化与合作安排均为未来候选设计；不构成已发生事实、已批准方案或Authority状态变更。",
+        "承接陆芽害怕离开祖母配方便毫无本事的内在阻力，保持从急于赢得名声转向能够判断并承担自己的味道的成长方向。",
+        "把候选场景、关系变化或奇幻机制表述为已接受历史。",
+        "把客人的不同口味写成道德高下，以贬低不喜欢麦饼的人证明陆芽正确。",
+        "把少年惜料直接等同于吝啬或反派性格，以单方面认错结束合作分歧。",
+        "把未经协商使用他人麦粉写成无需承担后果的分享。",
+        "把自己的味道等同于拒绝反馈，或把销量等同于陆芽全部的个人价值。",
+        "接受边界为第零章；所有新增选择、场景及后果均为未来候选设计，不构成已发生事件、已知事实或已批准方案。",
+        "最后一袋麦粉的权属、可分享份额及少年惜料的具体经历尚未确定；后续须在人物可知范围内明确，不以主题需要补造事实。",
+        "最后一袋麦粉的权属、可用份额与损耗承担方式尚未确定，使用前须在人物可知范围内明确。",
+        "每个代表场景至少改变一项局势或关系条件；安静动作也须承担反馈、决定或后果。",
+        "每个代表场景至少改变一项经营局势或关系条件，最终核算与收摊动作也须承担反馈、决定或后果。",
+        "气味和触觉必须参与判断或选择，避免连续堆叠装饰性形容。",
+        "结尾对陆芽判断与承担能力的初步成长提供回报，同时保留不同口味、合作分歧与经营前景的未决空间。",
+        "让一次成功出品自动带来所有客人的喜爱、稳定盈利与持久名声。",
+        "让陆芽依靠她尚不知道的少年经历、顾客心声或幕后信息作出决定。",
+        "通过按压、折叠、烙制、掰开、气味与入口反应呈现判断依据，感官细节须参与选择及后果。",
+        "通过无前提的魔法、突然出现的材料或偶然大奖消除湿面团与有限麦粉造成的困难。"
+      ],
+      "condition_sources": {
+        "ending_intent": {
+          "content_hash": "sha256:953e6e3fb4c6918437c5a603e2902cd8e489a9d3e81b28494740cb94a2df5048",
+          "asset_version_id": "authority-output:4074b2f4-9ae2-4ff6-a595-1e5617beb50f:story_planning.candidate:v1"
+        },
+        "creative_brief": {
+          "content_hash": "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+          "asset_version_id": "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1"
+        },
+        "reader_promise": {
+          "content_hash": "sha256:78b58c972495a820c5274eccb316fbc7cf411cde138f9e3be17a5bbeeb337536",
+          "asset_version_id": "authority-output:c28e7af2-54d1-48d7-be1d-cb14db780249:story_planning.candidate:v1"
+        },
+        "theme_contract": {
+          "content_hash": "sha256:c4ac22c437638a6f2e944db3d6512881afeead33e1742f3f1bf2257ef54db63d",
+          "asset_version_id": "authority-output:9e36653f-9a83-4833-9c90-66e5f06ed969:story_planning.candidate:v1"
+        },
+        "creative_foundation": {
+          "content_hash": "sha256:2685458292d18ec122ff6a443154644bf9b81472fa76368370354f3c5122f9ec",
+          "asset_version_id": "authority-output:c7cd87b8-527b-4ea4-a34c-10f02d749c99:story_planning.candidate:v1"
+        }
+      },
+      "semantic_families": [
+        "CHARACTER_TRANSFORMATION",
+        "NARRATIVE_MECHANISM",
+        "THEME_MORAL_DILEMMA",
+        "WORLD_CONSEQUENCE"
+      ],
+      "reader_effect_tags": [
+        "读者将贴近陆芽的手、鼻息和迟疑，在浮岛夜市的日常劳动中体验第一次独自谋生的压力与温度。反复牵引阅读的问题是：这一次面团与客人的反应会让她看清什么，她愿意怎样调整，又能否与惜料的送货少年说清下一次尝试的条件？手艺的回报应能从动作和结果中辨认，关系的靠近应由具体协商与履行赢得。九章结尾须完成她对自身味道的初步确认：她能解释自己的取舍，面对不同偏好，并与伙伴承担共同选择的结果。认可可以有限，经营仍可继续摸索；找到自己的味道不以普遍赞美或一夜成名为证明。"
+      ],
+      "recent_craft_usage": [],
+      "current_state_terms": [
+        "APPLICABLE"
+      ],
+      "desired_transformation_terms": [
+        "CREATIVE_EVALUATION",
+        "STABLE_ID",
+        "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+        "authority-output:846d6c65-ff43-4685-9e17-61a2b70f9d49:creative.brief:v1",
+        "narrative-search-comparison.v2",
+        "sha256:0f182cda985ab6d3b44851542addd72736aa91c5b5c3602977dacf2251be16a9",
+        "为九章烹饪奇幻成长设计有温度且保留经营现实的结尾，使陆芽从急于借祖母的发光麦饼赢得名声，转向能够依据手艺与交易反馈作出选择、说明价格，并与伙伴共同承担结果。",
+        "为九章烹饪成长方向提出一个可由手艺观察、经营反馈与合作协商共同探索的主题：陆芽如何在祖母的传承、客人的不同偏好和伙伴的材料边界之间，形成自己愿意说明并承担的判断。以下答案与选择均为候选探索路径，不预定章次或已发生结果。",
+        "为成年中文读者明确九章烹饪奇幻成长故事的阅读承诺：贴近陆芽首次独立摆摊的窘迫、逞强与细小欢喜，通过可感知的手艺尝试、经营反馈和合作分歧，期待她从急于赢得名声转向能够判断、说明并承担自己的味道。本结果仅为承接冻结创作基础的候选承诺。",
+        "形成一个适合九章的原创成长方向：年轻厨师陆芽第一次在浮岛夜市独立摆摊，为卖出祖母留下的发光麦饼，与惜料的送货少年围绕定价、试吃和最后一袋麦粉展开合作。让每次手艺尝试带来可观察的经营与关系变化，推动她从急于赢得名声转向能够判断并承担自己的味道。",
+        "把成长落实为一次不同的回应",
+        "用烹饪动作建立问题与后果",
+        "让交易反馈改变争执方向"
+      ],
+      "recently_used_repetition_keys": [
+        "光泽与入口口感的落差",
+        "材料分配推动合作关系",
+        "湿面团的触觉判断",
+        "试吃反馈改变出品选择"
+      ],
+      "required_card_asset_version_ids": []
+    },
+    "rejected": [],
+    "selected": [],
+    "project_id": "project:input-isolation-01:fantasy-cooking",
+    "policy_version": "knowledge-grounded-selection-v2",
+    "pool_truncated": false,
+    "schema_version": "mkaos-narrative-intelligence-selection.v1",
+    "pool_query_mode": "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION",
+    "selection_digest": "sha256:d3854756e1e876c9f10a5ea2bf7014bafd8fa478be60355d8b2d027dbe7ac338",
+    "selection_status": "NO_ELIGIBLE_MATCH",
+    "authority_boundary": {
+      "semantic_role": "POSSIBILITY_ONLY",
+      "may_mutate_narrative_state": false,
+      "may_mutate_story_authority": false,
+      "may_prove_accepted_reality": false,
+      "planning_must_recompose_for_project": true
+    },
+    "eligible_card_count": 0,
+    "examined_card_count": 0,
+    "knowledge_access_policy": {
+      "mode": "PROJECT_DEFAULT",
+      "book_id": "book:input-isolation-01:fantasy-cooking",
+      "policy_id": "book-production-knowledge-access",
+      "project_id": "project:input-isolation-01:fantasy-cooking",
+      "policy_hash": "sha256:e8f11ef15080bac9f727465c2180c63112ec04cc8273c4c5a2fe15fcaeed2c8e",
+      "policy_version": 1,
+      "schema_version": "book-knowledge-access-policy.v1",
+      "configured_explicitly": false,
+      "allowed_knowledge_card_asset_version_ids": []
+    }
+  },
+  "knowledge_access_policy": {
+    "mode": "PROJECT_DEFAULT",
+    "book_id": "book:input-isolation-01:fantasy-cooking",
+    "policy_id": "book-production-knowledge-access",
+    "project_id": "project:input-isolation-01:fantasy-cooking",
+    "policy_hash": "sha256:e8f11ef15080bac9f727465c2180c63112ec04cc8273c4c5a2fe15fcaeed2c8e",
+    "policy_version": 1,
+    "schema_version": "book-knowledge-access-policy.v1",
+    "configured_explicitly": false,
+    "allowed_knowledge_card_asset_version_ids": []
+  },
+  "planning_contract_version": "1.21.0",
+  "planning_context_policy_version": "context-policy:chapter-generation-pack:v2",
+  "narrative_qualification_profiles": [
+    {
+      "layer": "STORY_FOUNDATION",
+      "criteria": [
+        "WORLD_RULE_COHERENCE",
+        "RULE_APPLICABILITY_AND_LIMITS",
+        "WORLD_NARRATIVE_PURPOSE_SUPPORT",
+        "CHARACTER_AGENCY_SUPPORT",
+        "LONGFORM_EVOLUTION_CAPACITY"
+      ],
+      "skill_ref": "worldbuilding",
+      "profile_id": "world-foundation-semantic-v1-work-v3",
+      "profile_hash": "sha256:8052083c403fd7fedd715f50f182b302f992a83cc496b6c694d32d6b9b1844f4",
+      "capability_id": "world.design.generate",
+      "profile_version": "3.0.0",
+      "criterion_semantics": {
+        "WORLD_RULE_COHERENCE": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "CHARACTER_AGENCY_SUPPORT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "LONGFORM_EVOLUTION_CAPACITY": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "RULE_APPLICABILITY_AND_LIMITS": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "WORLD_NARRATIVE_PURPOSE_SUPPORT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention."
+      }
+    }
+  ]
+}

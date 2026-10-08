@@ -1,0 +1,93 @@
+[
+  {
+    "effect_id": "4fd13e20-6521-448a-84f5-f8ec32f1374e",
+    "status": "SUCCEEDED",
+    "stage": "creative.candidates.generate",
+    "rendered_prompt_sha256": "sha256:81d3e9795c5799568571913275ade827737989c9d6b0299d83bcca0bca7a98d2",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-00-creative.candidates.generate.txt"
+  },
+  {
+    "effect_id": "37d13178-f24b-446b-b3be-a94c5128009f",
+    "status": "SUCCEEDED",
+    "stage": "creative.candidates.generate",
+    "rendered_prompt_sha256": "sha256:07e951d4c9b8ff253ae62c1c978e2822a043f2f563ba661467637eb88ec3deb0",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-01-creative.candidates.generate.txt"
+  },
+  {
+    "effect_id": "82e65589-8033-4c38-9b91-07143395874a",
+    "status": "SUCCEEDED",
+    "stage": "theme.candidates.generate",
+    "rendered_prompt_sha256": "sha256:2c2b1c0a31f6ae2a96e1c6ae032f19668dc61359fc54c025117ee53b39e62303",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-02-theme.candidates.generate.txt"
+  },
+  {
+    "effect_id": "c063279d-7b00-4a50-a708-52feb8e25383",
+    "status": "SUCCEEDED",
+    "stage": "ending.intent.generate",
+    "rendered_prompt_sha256": "sha256:26cfa13d594af609f9932a68f29f2def3ff3713966c44d012ae6502b1cb5e33b",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-03-ending.intent.generate.txt"
+  },
+  {
+    "effect_id": "e3db4964-0d72-4bfd-b02f-42a8c85112ff",
+    "status": "SUCCEEDED",
+    "stage": "reader.promise.generate",
+    "rendered_prompt_sha256": "sha256:34d0465269ca24e8f2db0e149a08f04a3417c6062193da53e8913dddee3feb74",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-04-reader.promise.generate.txt"
+  },
+  {
+    "effect_id": "57e7dad7-1322-4f7d-a7c4-7f22dbf80c83",
+    "status": "SUCCEEDED",
+    "stage": "world.design.generate",
+    "rendered_prompt_sha256": "sha256:a75da09c4fe6ee0910bfa2ce46466159031dffdec4fe9ba696ffa60dce087d10",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-05-world.design.generate.txt"
+  },
+  {
+    "effect_id": "a918dc02-f458-4326-9b05-ec7fdc54f870",
+    "status": "UNKNOWN",
+    "stage": "character.cast.generate",
+    "rendered_prompt_sha256": "sha256:3d2338678d601c1cac4dd89daf2ad27b6b63517a7e64d0dc694e55f095fb708d",
+    "prompt_admission_hash_match": true,
+    "foreign_book_inputs": [],
+    "other_case_in_prompt": [],
+    "actual_stdin_receipt_hash_match": true,
+    "selection_metadata_in_prompt": false,
+    "hidden_test_controls_in_prompt": false,
+    "request_file": "/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge/.local/evidence/wp-creative-input-isolation-01/fantasy-cooking/request-06-character.cast.generate.txt"
+  }
+]
