@@ -8,14 +8,14 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `94aa18f3143abe7db7da7a53229326e749eb33a9`
-Baseline implementation identity: `sha256:ad4ebcbc18d15f8fcb15ff4ee575a2f52f8dc8d6fa64c2fe971f0485d906e48a`
+Current-reality baseline: `0a3f0041c5faa253b8de7decae96e55bcd64afa4`
+Baseline implementation identity: `sha256:6a36853ee4ae9db0e5df0d263cc2e610a45550eb4827edc7b5403c12af1e18f8`
 
 2026-10-08 scoped Source integration review: Bounded market observations have native controlled engineering evidence; live rankings, authorized text and real reference-assisted prose remain unproven. Other unresolved decisions are retained. Prior scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
 real-Provider qualification or literary quality.
 
-Source baseline refreshed for the coordinated forward-contract integration. Archived closure inputs remain HISTORICAL_REPLAY_ONLY and grant no current production permission. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
+The earlier coordinated forward-contract integration retained its explicit NOT_RUN validation record. The scoped market-reference implementation now has focused PostgreSQL, migration, Source isolation and author UI checks; these do not qualify live access, real text analysis or prose benefit. Archived closure inputs remain HISTORICAL_REPLAY_ONLY and grant no current production permission. Full qualification and merged-main validation remain NOT_RUN.
 
 <!-- proposal-lifecycle
 {
@@ -24,8 +24,8 @@ Source baseline refreshed for the coordinated forward-contract integration. Arch
   "reviewed_on": "2026-10-08",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "94aa18f3143abe7db7da7a53229326e749eb33a9",
-    "implementation_tree_sha": "sha256:ad4ebcbc18d15f8fcb15ff4ee575a2f52f8dc8d6fa64c2fe971f0485d906e48a"
+    "sha": "0a3f0041c5faa253b8de7decae96e55bcd64afa4",
+    "implementation_tree_sha": "sha256:6a36853ee4ae9db0e5df0d263cc2e610a45550eb4827edc7b5403c12af1e18f8"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -39,7 +39,10 @@ Source baseline refreshed for the coordinated forward-contract integration. Arch
     "src/novel_forge/storage/migrations",
     "src/novel_forge/storage/book_authority_repositories.py",
     "src/novel_forge/modules/narrative_state",
-    "src/novel_forge/modules/worldbuilding"
+    "src/novel_forge/modules/worldbuilding",
+    "src/novel_forge/modules/source_authority",
+    "src/novel_forge/modules/source_import",
+    "src/novel_forge/storage/source_market_records.py"
   ],
   "implemented_refs": [
     {
