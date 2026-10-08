@@ -125,8 +125,11 @@ class NarrativeIntelligenceNeed:
     craft_context: Mapping[str, Any] = dataclass_field(default_factory=dict)
     craft_policy: Mapping[str, Any] = dataclass_field(default_factory=dict)
     recent_craft_usage: tuple[Mapping[str, Any], ...] = ()
+    craft_selection_policy_version: str = "craft-need-driven-selection.v2"
 
     def __post_init__(self) -> None:
+        from .craft_matching import require_selection_version
+        require_selection_version(self.craft_selection_policy_version)
         scope = self.scope.strip().upper()
         if scope not in NARRATIVE_INTELLIGENCE_SCOPES:
             raise ValueError("Narrative Intelligence scope is invalid")
@@ -169,6 +172,8 @@ class NarrativeIntelligenceNeed:
             name: getattr(self, name) for name in self.__dataclass_fields__
             if name != "condition_sources"
         }
+        if self.craft_selection_policy_version == "craft-context-affinity-selection.v1":
+            payload.pop("craft_selection_policy_version")
         payload["condition_sources"] = {
             role: {key: source.get(key, "") for key in ("asset_version_id", "content_hash")}
             for role, source in self.condition_sources.items()
@@ -492,6 +497,8 @@ def select_narrative_intelligence(
                 normalized["craft_mechanism"], context=need.craft_context,
                 recent_usage=need.recent_craft_usage, policy=craft_policy,
                 card_identity=(asset_version_id, content_hash),
+                selection_policy_version=need.craft_selection_policy_version,
+                applicability_status=assessment["status"],
             )
             if craft_assessment["rejection_reason"] not in {"", "CRAFT_NO_CONTEXT_MATCH"}:
                 rejected.append({"knowledge_card_asset_version_id": asset_version_id, "content_hash": content_hash, "reason": craft_assessment["rejection_reason"], "applicability_assessment": assessment, "craft_assessment": craft_assessment})
@@ -539,8 +546,13 @@ def select_narrative_intelligence(
             reasons.append(f"TERM_OVERLAP:{','.join(sorted(overlap)[:5])}")
         if craft_assessment is not None:
             score = craft_assessment["score"] + (1 if asset_version_id in required_ids else 0)
-            reasons = craft_assessment["match_reasons"]
-        if score == 0 and not explicit_family:
+            reasons = list(craft_assessment["match_reasons"])
+            if asset_version_id in required_ids and need.craft_selection_policy_version == "craft-need-driven-selection.v2":
+                reasons.append("REQUIRED_BY_ACTIVE_PARENT_TRANSLATION")
+            if need.craft_selection_policy_version == "craft-need-driven-selection.v2":
+                craft_assessment["matching_assessment"].update(author_required_adjustment=int(asset_version_id in required_ids), selection_score=score)
+                normalized["selection_tags"] = {**normalized["selection_tags"], "genre": [], "conflict": []}
+        if score == 0 and not explicit_family and (craft_assessment is None or need.craft_selection_policy_version == "craft-context-affinity-selection.v1"):
             score = 1
             reasons.append("LEGACY_ABSTRACT_CARD_FALLBACK")
         if score == 0 and not (craft_assessment and craft_assessment["rejection_reason"] == "CRAFT_NO_CONTEXT_MATCH"):
@@ -597,6 +609,9 @@ def select_narrative_intelligence(
         "schema_version": "mkaos-narrative-intelligence-selection.v1",
         "policy_version": NARRATIVE_INTELLIGENCE_POLICY_VERSION,
         "need": need.to_dict(),
+        **({"craft_selection_policy_version": need.craft_selection_policy_version,
+            "craft_metadata_boundary": "Craft affinity, family and selection labels are descriptive metadata, not applicability predicates, author requirements or intended effects. Use only matched needs, resolved prerequisites and concrete adopted sites; do not impose metadata on this Book."}
+            if need.craft_selection_policy_version == "craft-need-driven-selection.v2" else {}),
         **({"craft_policy": craft_policy} if any(item.get("content", {}).get("abstract_content", {}).get("craft_mechanism") for item in cards) else {}),
         "selected": selected,
         "rejected": sorted(

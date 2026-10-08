@@ -94,23 +94,37 @@ def _terms(value: Any) -> set[str]:
     return words | {word[index:index + 2] for word in words if re.fullmatch(r"[\u4e00-\u9fff]+", word) for index in range(len(word) - 1)}
 
 
-def craft_pattern_signature(mechanism: Mapping[str, Any]) -> list[str]:
-    return sorted(_terms({key: mechanism[key] for key in ("abstract_mechanism", "affinity")}))[:256]
+def craft_pattern_signature(mechanism: Mapping[str, Any], *, version: str = "abstract-mechanism-terms.v2") -> list[str]:
+    from .craft_matching import LEGACY_SIGNATURE, SEMANTIC_SIGNATURE, semantic_terms
+    if version == LEGACY_SIGNATURE:
+        return sorted(_terms({key: mechanism[key] for key in ("abstract_mechanism", "affinity")}))[:256]
+    if version != SEMANTIC_SIGNATURE:
+        raise KernelError("CRAFT_SIGNATURE_VERSION_INVALID", "Unknown Craft pattern contract")
+    return sorted(semantic_terms(mechanism["abstract_mechanism"]))[:256]
 
 
-def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping[str, Any], recent_usage: Sequence[Mapping[str, Any]], policy: Mapping[str, Any], card_identity: tuple[str, str] | None = None) -> dict[str, Any]:
+def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping[str, Any], recent_usage: Sequence[Mapping[str, Any]], policy: Mapping[str, Any], card_identity: tuple[str, str] | None = None, selection_policy_version: str = "craft-need-driven-selection.v2", applicability_status: str = "UNKNOWN") -> dict[str, Any]:
     from .craft import validate_craft_mechanism
 
     mechanism = validate_craft_mechanism(mechanism)
     policy = validate_craft_policy(policy)
     reasons: list[str] = []
+    from .craft_matching import LEGACY_SELECTION, LEGACY_SIGNATURE, SEMANTIC_SIGNATURE, assess_need, require_selection_version
+    require_selection_version(selection_policy_version)
+    matching_assessment = None
     score = 0
-    searchable = _terms({key: mechanism[key] for key in ("narrative_problem", "desired_reader_effect", "abstract_mechanism", "applicability_conditions", "affinity")})
-    for dimension, values in sorted(context.items()):
-        overlap = _terms(values) & searchable
-        if overlap:
-            score += min(5, len(overlap))
-            reasons.append(f"CRAFT_CONTEXT:{dimension}:{','.join(sorted(overlap)[:5])}")
+    if selection_policy_version == LEGACY_SELECTION:
+        searchable = _terms({key: mechanism[key] for key in ("narrative_problem", "desired_reader_effect", "abstract_mechanism", "applicability_conditions", "affinity")})
+        for dimension, values in sorted(context.items()):
+            overlap = _terms(values) & searchable
+            if overlap:
+                score += min(5, len(overlap))
+                reasons.append(f"CRAFT_CONTEXT:{dimension}:{','.join(sorted(overlap)[:5])}")
+    else:
+        matching_assessment = assess_need(mechanism, context, applicability_status=applicability_status)
+        score = matching_assessment["need_score"] + matching_assessment["affinity_adjustment"]
+        reasons.extend(f"CRAFT_NEED:{item['dimension']}:{','.join(item['terms'][:5])}" for item in matching_assessment["need_matches"])
+        reasons.extend(f"CRAFT_AFFINITY:{item['dimension']}:{item['value']}:{item['status']}" for item in matching_assessment["affinity_adjustments"])
     identity = mechanism["mechanism_id"]
     current_chapter = int(context.get("chapter_number") or 0)
     accepted_history = {
@@ -140,13 +154,19 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         if usage_spec["frequency_unit"] == "INSTANCE":
             frequency = len({item.get("usage", {}).get("instance_id") or item["use_id"] for item in matching})
     repetition_penalty = frequency * policy["repetition_penalty"]
-    signature = set(craft_pattern_signature(mechanism))
+    signature_version = LEGACY_SIGNATURE if selection_policy_version == LEGACY_SELECTION else SEMANTIC_SIGNATURE
+    signature = set(craft_pattern_signature(mechanism, version=signature_version))
     similarities = []
     for item in realized:
-        other = set(item.get("pattern_signature") or [])
+        if signature_version == LEGACY_SIGNATURE:
+            other = set(item.get("pattern_signature") or [])
+        else:
+            other = set(item.get("semantic_pattern_signature") or (
+                item.get("pattern_signature") if item.get("pattern_signature_version") == SEMANTIC_SIGNATURE else []
+            ) or [])
         if other and item.get("mechanism_id") != identity:
             similarity = len(signature & other) * 100 // len(signature | other)
-            similarities.append({"use_id": item["use_id"], "chapter": item["chapter"], "method": "ABSTRACT_MECHANISM_AFFINITY_TERM_JACCARD", "similarity_percent": similarity})
+            similarities.append({"use_id": item["use_id"], "chapter": item["chapter"], "method": "ABSTRACT_MECHANISM_AFFINITY_TERM_JACCARD" if signature_version == LEGACY_SIGNATURE else "ABSTRACT_MECHANISM_TERM_JACCARD", "similarity_percent": similarity})
     pattern_penalty = sum(item["similarity_percent"] >= policy["pattern_similarity_threshold_percent"] for item in similarities) * policy["pattern_similarity_penalty"]
     salience_penalty = sum(item.get("role") == "PRIMARY" for item in matching) * policy["salience_penalty"]
     if matching:
@@ -174,6 +194,12 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         temporal_budget_applied = not continuable
     rejection = "CRAFT_COOLDOWN" if temporal_budget_applied and in_cooldown else "CRAFT_FREQUENCY_BUDGET" if temporal_budget_applied and frequency >= policy["max_frequency_in_window"] else "" if score else "CRAFT_NO_CONTEXT_MATCH"
     budget_assessment = {"frequency": frequency, "repetition_penalty": repetition_penalty, "pattern_similarity_penalty": pattern_penalty, "salience_penalty": salience_penalty, "feedback_penalty": feedback_penalty, "realization_cautions": feedback, "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION", "in_cooldown": in_cooldown, "pattern_signature": sorted(signature), "pattern_comparisons": similarities, "recent_usage": observations, "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"}
+    if matching_assessment is not None:
+        budget_assessment.update(pattern_signature_version=signature_version,
+            noncomparable_pattern_use_ids=[item["use_id"] for item in realized if item.get("mechanism_id") != identity and not item.get("semantic_pattern_signature") and item.get("pattern_signature_version") != SEMANTIC_SIGNATURE])
+        matching_assessment.update(final_score=max(1, score - repetition_penalty - pattern_penalty - salience_penalty - feedback_penalty) if score else 0,
+            variation_adjustment=policy["variation_bonus"] if "CRAFT_VARIATION_BONUS" in reasons else 0,
+            total_penalty=repetition_penalty + pattern_penalty + salience_penalty + feedback_penalty)
     if policy["schema_version"] == "narrative-craft-budget.v2":
         budget_assessment.update(cadence_class=cadence_class, policy_version=policy["schema_version"], temporal_budget_applied=temporal_budget_applied, classification="CONFIGURABLE_POLICY", creative_benefit="NOT_PROVEN")
     if usage_spec:
@@ -186,6 +212,7 @@ def craft_candidate_assessment(mechanism: Mapping[str, Any], *, context: Mapping
         "match_reasons": reasons,
         "budget_assessment": budget_assessment,
         "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED",
+        **({"matching_assessment": matching_assessment} if matching_assessment is not None else {}),
     }
 
 
@@ -199,6 +226,8 @@ def build_craft_strategy(candidate: Mapping[str, Any], selection: Mapping[str, A
     cards = {item["knowledge_card_asset_version_id"]: item for item in selection.get("selected") or () if item.get("selected_content", {}).get("craft_mechanism")}
     if not cards:
         return None
+    if selection.get("craft_selection_policy_version") == "craft-need-driven-selection.v2":
+        judgment_basis = "NEED_DRIVEN_" + judgment_basis
     scenes = candidate.get("scene_plan") or []
     policy = _frozen_craft_policy(selection.get("craft_policy"))
     uses: list[dict[str, Any]] = []
@@ -289,7 +318,7 @@ def validate_craft_strategy(strategy: Mapping[str, Any], *, scenes: Sequence[Map
         from .craft_usage import validate_usage_occupancy
         validate_usage_occupancy(uses, policy)
     compositions = strategy["composition"]
-    if not isinstance(compositions, list) or any(not isinstance(item, Mapping) or set(item) != {"scene_id", "ordered_use_ids", "intended_combined_reader_effect", "judgment_basis"} | ({"combination_rationales"} if typed else set()) or item.get("judgment_basis") not in {"PROVIDER_PLANNING_TRANSLATION_WITH_DETERMINISTIC_COMPATIBILITY_CHECK", "AUTHOR_ADAPTATION_WITH_DETERMINISTIC_COMPATIBILITY_CHECK"} for item in compositions) or {item.get("scene_id") for item in compositions} != {use["scene_id"] for use in uses} or len(compositions) != len({item.get("scene_id") for item in compositions}):
+    if not isinstance(compositions, list) or any(not isinstance(item, Mapping) or set(item) != {"scene_id", "ordered_use_ids", "intended_combined_reader_effect", "judgment_basis"} | ({"combination_rationales"} if typed else set()) or item.get("judgment_basis") not in {"PROVIDER_PLANNING_TRANSLATION_WITH_DETERMINISTIC_COMPATIBILITY_CHECK", "AUTHOR_ADAPTATION_WITH_DETERMINISTIC_COMPATIBILITY_CHECK", "NEED_DRIVEN_PROVIDER_PLANNING_TRANSLATION_WITH_DETERMINISTIC_COMPATIBILITY_CHECK", "NEED_DRIVEN_AUTHOR_ADAPTATION_WITH_DETERMINISTIC_COMPATIBILITY_CHECK"} for item in compositions) or {item.get("scene_id") for item in compositions} != {use["scene_id"] for use in uses} or len(compositions) != len({item.get("scene_id") for item in compositions}):
         raise KernelError("CRAFT_COMPOSITION_INVALID", "Craft composition must account for every selected scene")
     for composition in compositions:
         group = sorted([use for use in uses if use["scene_id"] == composition["scene_id"]], key=lambda use: (use["sequence"], use["use_id"]))

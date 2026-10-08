@@ -116,7 +116,8 @@ def _rows(cursor) -> list[dict[str, Any]]:
                     chapter = int((row.get("narrative_position") or {}).get("chapter") or 0)
                     row["craft_usage"] = [{
                         "mechanism_id": use["mechanism_id"], "mechanism_version": use["mechanism_version"],
-                        "pattern_signature": craft_pattern_signature(use["mechanism"]),
+                        "pattern_signature": craft_pattern_signature(use["mechanism"], version="abstract-mechanism-affinity-terms.v1"),
+                "semantic_pattern_signature": craft_pattern_signature(use["mechanism"]),
                         **({"usage": use["usage"]} if "usage" in use else {}),
                         "family": use["mechanism"]["family"], "use_id": use["use_id"], "scene_id": use["scene_id"], "role": use["role"],
                         "chapter": chapter, "knowledge_card_asset_version_id": row["knowledge_card_asset_version_id"],
@@ -443,7 +444,8 @@ def list_accepted_craft_usage(
                 **{key: use[key] for key in ("mechanism_id", "mechanism_version", "use_id", "scene_id", "role", "knowledge_card_asset_version_id", "content_hash")},
                 **({"usage": use["usage"]} if "usage" in use else {}),
                 "family": use["mechanism"]["family"],
-                "pattern_signature": craft_pattern_signature(use["mechanism"]),
+                "pattern_signature": craft_pattern_signature(use["mechanism"], version="abstract-mechanism-affinity-terms.v1"),
+                "semantic_pattern_signature": craft_pattern_signature(use["mechanism"]),
                 "chapter": chapter, "acceptance_id": acceptance, "book_run_id": source_run,
                 **({"edition_revision_id": history_edition_id} if history_edition_id else {}),
                 "accepted_draft_asset_version_id": draft_id, "accepted_draft_content_hash": draft_hash,

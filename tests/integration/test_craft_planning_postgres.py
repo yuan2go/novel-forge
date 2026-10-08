@@ -379,3 +379,55 @@ def test_pg_craft_reselection_preserves_cumulative_campaign_budget(request, monk
 def test_pg_craft_reselection_blocks_original_insufficient_request_budget(request, monkeypatch, stop):
     test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
         request, monkeypatch, continue_after_acceptance=False, typed_usage="reselection", budget_stop=stop, original_budget_cap=True)
+
+
+@pytest.mark.parametrize('genre,pov', [('xuanhuan','first_person'), ('romance','omniscient')])
+def test_pg_need_driven_production_planning_context_and_final_projection(genre, pov):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    from novel_forge.modules.story_planning_runtime.domain import FrozenPlanningInput
+    from tests.integration.authority_postgres_support import transaction
+
+    ensure_migrated()
+    project_id = 'need-driven-planning:' + uuid4().hex
+    workspace_id, book_id = 'workspace:'+project_id, 'book:'+project_id
+    seed_authority_project_book(project_id=project_id, workspace_id=workspace_id, book_id=book_id)
+    knowledge = MkaosAuthorityApplication(DATABASE_URL, application_build_id='need-driven-smoke', commit_sha=RELEASE_SHA)
+    catalog_hash = core_catalog_hash()
+    author = AuthorCoreCraftCommand(project_id,workspace_id,'intentional-gap',catalog_hash,'operator','author','trace','correlation')
+    authored = knowledge.execute_core_craft(author)
+    approved = knowledge.execute_approval(ApproveKnowledgeCandidateCommand(project_id,workspace_id,authored['asset_version_id'],
+        'repository-original-craft-v1:'+catalog_hash,'Scoped engineering governance, no reader quality evidence','operator','approve','trace','correlation'))
+    source_id = 'brief:'+project_id
+    version_id = source_id+':v1'
+    content = {'book_id':book_id, 'writing_problem':'每个动机和感受都被重复解释', 'genre':genre, 'pov':pov,
+        'scene_needs':['省去读者已能推得的重复说明'], 'constraints':['保留必要因果和人物知识边界']}
+    with transaction() as connection:
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'creative_brief')", [source_id,project_id])
+        cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'creative-brief.v2')", [version_id,source_id,Jsonb(content),craft_hash(content)])
+    command = StoryPlanningGenerationCommand(project_id=project_id,workspace_id=workspace_id,book_id=book_id,actor_id='operator',
+        generator_operation_name='creative.candidates.generate',logical_key='foundation',input_versions={'creative_brief':version_id},
+        idempotency_key='planning',trace_id='trace',correlation_id='correlation')
+    preparer = PostgresPlanningExecutionPreparer(DATABASE_URL, execution_transport=SimpleNamespace(production_execution_gateway_backed=True),
+        planning_route=SimpleNamespace(release_sha=RELEASE_SHA), worker_id='need-driven-context-smoke')
+    context, documents = preparer._context_bundle(operation_id='planning:'+project_id,attempt_id='attempt',command=command,
+        inputs=(FrozenPlanningInput('creative_brief',version_id,craft_hash(content),'creative_brief'),),preflight_only=True)
+    selection = context['narrative_intelligence']
+    assert selection['selected'][0]['knowledge_card_asset_version_id'] == approved['asset_version_id']
+    assert selection['craft_selection_policy_version'] == 'craft-need-driven-selection.v2'
+    assert selection['need']['craft_context']['writing_problem'] == [content['writing_problem']]
+    assert any(d.asset_version_id == approved['asset_version_id'] for d in documents)
+    view = context['context_manifest']['provider_context_view']['compiled_view']
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view, build_provider_context_view
+    task = build_provider_task_view(command.generator_operation_name, {
+        'planning_command': {'planning_scope': command.planning_scope.value, 'execution_contract_version': command.execution_contract_version, 'creative_requirements_contract': 'work-requirements.v2'},
+        'frozen_inputs': [{'role': 'creative_brief', 'asset_version_id': version_id, 'content_hash': craft_hash(content)}],
+        'foundation_task': context['foundation_task'], 'narrative_intelligence': selection})
+    assert build_provider_context_view(command.generator_operation_name, context, task) == view
+    assert task['narrative_intelligence']['craft_metadata_boundary'] == selection['craft_metadata_boundary']
+    assert task['narrative_intelligence']['selected'][0]['selected_content']['selection_tags']['genre'] == []
+    assert task['narrative_intelligence']['selected'][0]['selected_content']['craft_mechanism'] == selection['selected'][0]['selected_content']['craft_mechanism']
+    replay, _ = preparer._context_bundle(operation_id='planning:'+project_id,attempt_id='retry',command=command,
+        inputs=(FrozenPlanningInput('creative_brief',version_id,craft_hash(content),'creative_brief'),),preflight_only=True)
+    assert replay == context

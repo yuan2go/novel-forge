@@ -48,6 +48,7 @@ def test_invalid_universal_or_unversioned_claims_fail_closed(change):
 
 def test_source_abstraction_requires_observation_and_cannot_smuggle_source():
     candidate = core_catalog()[0]
+    candidate["version"] = 1
     candidate["provenance"]["origin"] = "SOURCE_ABSTRACTION"
     with pytest.raises(KernelError):
         validate_craft_mechanism(candidate)

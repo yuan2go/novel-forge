@@ -688,6 +688,9 @@ def _planning_narrative_intelligence_need(
         )) | set(required_editorial_knowledge(selected_inputs, command=command)))),
         craft_context={
             "task": [stage],
+            "writing_problem": list(_selection_terms(craft_sources, {"writing_problem", "writing_problems", "craft_problem"})),
+            "scene_demand": list(_selection_terms(craft_sources, {"scene_demand", "scene_needs"})),
+            "scene_type": list(_selection_terms(craft_sources, {"scene_type"})),
             "chapter_function": list(_selection_terms(craft_sources, {"chapter_function", "primary_function", "objective", "purpose"})),
             "scene_goal": list(_selection_terms(craft_sources, {"scene_goal", "scene_goals", "goal", "required_outcomes", "action", "decision", "consequence"})),
             "reader_effect": list(_selection_terms(craft_sources, {"reader_effect", "reader_effect_tags", "intended_reader_effect", "reader_promise"})),
@@ -5710,6 +5713,8 @@ class PostgresPlanningExecutionPreparer:
             original = self.query.require(project_id=command.project_id,
                 **({"asset_version_id": context_version} if context_version else {"logical_ref": f"planning/context_bundles/{result_repair_source['source_operation_id']}.json"}))
             previous_selection = original.content["narrative_intelligence"]
+            from novel_forge.modules.mkaos_authority.craft_matching import inherit_reselection_contract
+            need = inherit_reselection_contract(need, previous_selection)
             from novel_forge.modules.mkaos_authority.craft_selection import validate_craft_policy
             if previous_selection.get("craft_policy") and previous_selection["craft_policy"] != validate_craft_policy(need.craft_policy):
                 raise KernelError("CRAFT_RESELECTION_POLICY_DRIFT", "Concrete repair cannot reinterpret its predecessor policy")

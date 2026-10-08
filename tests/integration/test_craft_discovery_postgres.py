@@ -32,6 +32,9 @@ def test_source_craft_discovery_uses_native_effect_observation_governance_and_ex
         observation_id = inputs["observation_asset_version_id"]
         if observation_id not in discovered_by_observation:
             mechanism = core_catalog()[len(discovered_by_observation)]
+            mechanism["version"] = 1
+            mechanism["schema_version"] = "narrative-craft-mechanism.v1"
+            mechanism.pop("affinity_evidence", None)
             mechanism["mechanism_id"] = "fixture-discovered-" + mechanism["mechanism_id"]
             mechanism["provenance"] = {
                 "origin": "SOURCE_ABSTRACTION", "attribution": "Scripted discovery output; no semantic or reader-quality claim",
@@ -138,6 +141,9 @@ def test_source_discovery_output_cannot_claim_unrelated_lineage_or_publish_raw_e
         attempted.append(inputs["observation_asset_version_id"])
         mechanism = core_catalog()[0]
         mechanism["mechanism_id"] = "fixture-invalid-discovery"
+        mechanism["version"] = 1
+        mechanism["schema_version"] = "narrative-craft-mechanism.v1"
+        mechanism.pop("affinity_evidence", None)
         mechanism["provenance"].update({"origin": "SOURCE_ABSTRACTION", "abstraction_policy_version": CRAFT_DISCOVERY_POLICY,
             "source_observation_asset_version_ids": ["unrelated-observation:v1" if violation == "unrelated_observation" else inputs["observation_asset_version_id"]]})
         candidate = craft_candidate(mechanism)
