@@ -48,13 +48,12 @@ def response_status(status: int, body: str) -> str:
 
 
 def retry_after(value: str, now: datetime) -> float:
+    if re.fullmatch(r"[0-9]{1,10}", value.strip()):
+        return float(value)
     try:
-        return max(0, float(value))
-    except ValueError:
-        try:
-            return max(0, (parsedate_to_datetime(value) - now).total_seconds())
-        except (ValueError, TypeError):
-            return 0
+        return max(0, (parsedate_to_datetime(value) - now).total_seconds())
+    except (ValueError, TypeError, OverflowError):
+        return 0
 
 
 def parse_rank_page(

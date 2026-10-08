@@ -13,6 +13,26 @@ from tests.integration.migration_window_postgres_support import (
 )
 
 
+def test_expired_retry_after_does_not_silently_resume_stopped_site():
+    import pytest
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.source_import.market_runtime import site_slot, stop_site
+
+    with disposable_database_at_migration(
+        DATABASE_URL, prefix="market_site", target_migration_id=LATEST_MIGRATION_ID
+    ) as url:
+        site_slot(url, 1)
+        stop_site(url, "RATE_LIMITED", 120)
+        with pytest.raises(KernelError, match="MARKET_SITE_STOPPED"):
+            site_slot(url, 1)
+        with psycopg.connect(url) as connection:
+            connection.execute(
+                "UPDATE authority_source_market_site SET blocked_until=NOW()-interval '1 second'"
+            )
+        with pytest.raises(KernelError, match="MARKET_SITE_STOPPED"):
+            site_slot(url, 1)
+
+
 def test_market_forward_upgrade_preserves_existing_project_and_installs_scope_guards():
     with disposable_database_at_migration(
         DATABASE_URL,

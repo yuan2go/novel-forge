@@ -170,6 +170,7 @@ def test_stale_observation_and_absence_are_not_refreshed_or_delisted():
 def test_retry_after_and_parser_drift():
     assert retry_after("120", NOW) == 120
     assert retry_after("bad", NOW) == 0
+    assert retry_after("inf", NOW) == 0
     with pytest.raises(ValueError):
         parse_rank_page(
             "<html>new layout</html>",

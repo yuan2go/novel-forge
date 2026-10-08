@@ -138,7 +138,7 @@ def site_slot(database: str, interval: int) -> None:
         )
         next_at, stopped, blocked = uow.cursor.fetchone()
         now = datetime.now(timezone.utc)
-        if stopped and (blocked is None or blocked > now):
+        if stopped:
             raise KernelError("MARKET_SITE_STOPPED", stopped)
         wait = max(0, (next_at - now).total_seconds())
         if wait > 60:

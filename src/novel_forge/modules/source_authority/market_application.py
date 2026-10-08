@@ -124,9 +124,13 @@ def apply_market_action(
                     "Resume requires a newly reviewed enabled official definition",
                 )
             repository.cursor.execute(
-                "SELECT stopped_at FROM authority_source_market_site WHERE host='www.qidian.com' FOR UPDATE"
+                "SELECT stopped_at,blocked_until FROM authority_source_market_site WHERE host='www.qidian.com' FOR UPDATE"
             )
             stopped = repository.cursor.fetchone()
+            if stopped and stopped[1] and stopped[1] > datetime.now(timezone.utc):
+                raise KernelError(
+                    "MARKET_RETRY_AFTER_ACTIVE", "Retained Retry-After has not elapsed"
+                )
             if stopped and stopped[0] and action.use_scope.reviewed_at <= stopped[0]:
                 raise KernelError(
                     "MARKET_ACCESS_REVIEW_REQUIRED",
