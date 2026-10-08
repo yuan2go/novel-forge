@@ -36,7 +36,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
     transport.database_url = DATABASE_URL
-    inputs = {"version": "creation-request.v1", "title": "Author work", "target_chapters": 6,
+    inputs = {"version": "creation-request.v1", "title": "Author work", "target_chapters": 8,
+        "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
         "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
         "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
             "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
@@ -84,6 +85,10 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [result["book_run_id"]])
         book = uow.cursor.fetchone()[0]
         assert book["current_chapter"] == 6
+        assert book["target_chapter_count"] == 6
+        uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [book["book_design_version"]])
+        assert uow.cursor.fetchone()[0]["target_chapters"] == 8
+        assert "execution_window" not in json.dumps(transport.calls, ensure_ascii=False)
         assert book["accepted_through_chapter"] == 0
         uow.cursor.execute("SELECT definition_name,count(*) FROM authority_operation WHERE project_id=%s GROUP BY definition_name", [project])
         counts = dict(uow.cursor.fetchall())

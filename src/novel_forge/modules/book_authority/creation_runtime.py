@@ -330,8 +330,10 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         execution_probe()
         snapshot = composition.input_resolver.require(opened["result"]["input_snapshot_id"])
         design = AuthorityAssetQuery(content.database_url).require(project_id=project, asset_version_id=snapshot.book_design_version)
+        from .creation_window import execution_stop_chapter
+        stop_chapter = execution_stop_chapter(frozen.generation_policy or {}, target_chapters=int(design.content["target_chapters"]))
         started = composition.authority.start(resolved_book_command(snapshot,
-            actor=composition.principal.principal_id, run_key=run_key, chapters=int(design.content["target_chapters"])), principal=composition.principal)
+            actor=composition.principal.principal_id, run_key=run_key, chapters=stop_chapter), principal=composition.principal)
         existing = (started.book_run_id,)
     stop = drive_book(composition=composition, chapter=chapter, book_run_id=existing[0], worker=book_worker,
         maximum_ticks=maximum_ticks, deadline=deadline,
@@ -731,7 +733,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             raise ValueError("Start requires current work input, exact Book scope and stable idempotency key")
         inputs = deepcopy(request_input) if request_input is not None else json.loads(args.input_file.read_text())
         required = {"version", "brief", "title", "target_chapters", "language_contract"}
-        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection"} or inputs["version"] != "creation-request.v1":
+        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection", "execution_window"} or inputs["version"] != "creation-request.v1":
             raise ValueError("Creation input must declare current brief, title, scope and language")
         if (not isinstance(inputs["target_chapters"], int) or isinstance(inputs["target_chapters"], bool)
                 or not 1 <= inputs["target_chapters"] <= 10000 or not isinstance(inputs["brief"], dict)
@@ -740,6 +742,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 or not isinstance(inputs["language_contract"].get("required_language"), str)
                 or not inputs["language_contract"]["required_language"].strip()):
             raise ValueError("Creation requires a typed current work request")
+        from .creation_window import validate_execution_window
+        execution_window = validate_execution_window(inputs.get("execution_window"), target_chapters=inputs["target_chapters"])
         from novel_forge.modules.creative.input_selection import validate_input_selection, require_input_scope, brief_input_assets
         selection = validate_input_selection(inputs.get("input_selection") or {
             "contract_version": "creative-input-selection.v1", "book_id": args.book_id,
@@ -789,6 +793,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             if (replay[0] != args.workspace_id or {"project_id":args.project_id, **inputs["brief"]} != {key: value for key, value in original_brief.content.items() if key != "creative_input_selection"}
                     or any(inputs[field] != policy.get(field) for field in ("title", "target_chapters"))
                     or inputs["language_contract"] != profile.get("language_contract")
+                    or execution_window != profile.get("execution_window")
                     or candidate_count != policy.get("creative_candidates")
                     or author_direction != policy.get("author_creative_foundation")
                     or automatic_comparison != (policy.get("creative_selection") == "AUTO_COMPARISON")
@@ -805,6 +810,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         if not windows or max(windows) <= 0:
             raise ValueError("CREATION_CONTEXT_WINDOW_REQUIRED")
         profile_content = profiles["profiles"]["production_profile"]["content"]
+        if execution_window is not None:
+            profile_content["execution_window"] = execution_window
         template_config = json.loads(args.execution_template_file.read_text())
         if template_config.get("author_workflow"):
             from .manuscript import AUTHOR_WORKFLOW

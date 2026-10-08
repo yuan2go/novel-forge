@@ -100,6 +100,6 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 
 ## 与其他模块的关系
 
-- 上游：`data/raw/`、`data/cleaned/`、`docs/00-product/copyright-and-compliance.md`。
+- 上游：Source Authority 的精确 Document、Transform、Chunk、EvidenceSpan，以及 `docs/current-system.md` 的来源隔离合同。
 - 下游：`anti-copy-abstraction`、Source Deconstruction Authority、MKAOS Candidate/Governance；任何 operator handoff 都不是生产 Authority。
 - Agent：Knowledge Agent、Material Agent、Chief Editor Agent。

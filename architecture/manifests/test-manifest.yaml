@@ -8,6 +8,42 @@
   ],
   "classification_rules": [
     {
+      "id": "public-catalog-domain-and-transport",
+      "patterns": [
+        "tests/unit/test_public_catalog.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-authority",
+      "capability": "public-catalog-capture",
+      "production_target": "src/novel_forge/modules/source_authority/public_catalog_adapter.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "public-catalog-native-storage",
+      "patterns": [
+        "tests/integration/test_public_catalog_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-authority",
+      "capability": "public-catalog-capture",
+      "production_target": "src/novel_forge/modules/source_authority/public_catalog_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creation-delivery-window",
+      "patterns": [
+        "tests/unit/test_creation_window.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/creation_window.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
       "id": "author-first-native-manuscript",
       "patterns": [
         "tests/integration/test_author_first_manuscript_postgres.py"

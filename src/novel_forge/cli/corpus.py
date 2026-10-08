@@ -35,6 +35,10 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument(
         "action",
         choices=(
+            "catalog-capture",
+            "catalog-run",
+            "catalog-status",
+            "catalog-snapshots",
             "work",
             "jobs",
             "curated",
@@ -113,6 +117,8 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         if args.action
         in {
             "status",
+            "catalog-status",
+            "catalog-snapshots",
             "jobs",
             "results",
             "targets",
@@ -130,6 +136,22 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         project,
     )
     build, sha = authority_release_identity()
+    if args.action.startswith("catalog-"):
+        from novel_forge.modules.source_authority.public_catalog import CatalogCapture
+        from novel_forge.modules.source_authority.public_catalog_application import CatalogCommand
+        app = SourceAuthorityApplication(settings.database_url, application_build_id=build, commit_sha=sha)
+        if args.action == "catalog-snapshots":
+            return {"items": app.public_catalog.snapshots(project_id=project, after=args.after, limit=args.limit)}
+        if args.action == "catalog-status":
+            return app.public_catalog.result(args.operation_id, project, replayed=True)
+        if args.action == "catalog-run":
+            return SourceAuthorityScheduler(app).run_or_recover(operation_id=args.operation_id, project_id=project)
+        if not args.manifest or not args.workspace_id or not args.run_key:
+            raise ValueError("catalog capture requires manifest, workspace and stable run key")
+        return app.admit_catalog(CatalogCommand(project_id=project, workspace_id=args.workspace_id,
+            idempotency_key=args.run_key, actor_id=principal.principal_id,
+            capture=CatalogCapture.model_validate_json(args.manifest.read_bytes()),
+            trace_id="trace:" + args.run_key, correlation_id="correlation:" + args.run_key), principal=principal)
     query = SourceImportQuery(settings.database_url)
     if args.action == "jobs":
         rows = query.list_imports(

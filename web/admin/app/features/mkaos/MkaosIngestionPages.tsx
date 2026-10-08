@@ -1,5 +1,7 @@
 "use client";
 
+import { PublicCatalogPanel } from "./PublicCatalogPanel";
+
 import { BookOpen, CheckCircle2, FileSearch, GitBranch, ShieldAlert, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { FeatureShell } from "../../shared/feature-shell";
@@ -174,7 +176,7 @@ export function MkaosIngestionPage({ mode }: { mode: Mode }) {
         </section>
       ) : null}
 
-      {mode === "repositories" ? <RepositoryTable rows={repositories} /> : null}
+      {mode === "repositories" ? <><PublicCatalogPanel /><RepositoryTable rows={repositories} /></> : null}
       {mode === "books" ? <BooksPanel books={books} pairs={pairs} /> : null}
       {mode === "extraction-jobs" ? (
         <section className="workspaceGrid">

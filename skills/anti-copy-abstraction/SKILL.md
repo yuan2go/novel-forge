@@ -75,6 +75,6 @@ description: Use when converting concrete reference-work analysis into reusable 
 
 ## 与其他模块的关系
 
-- 上游：`hot-novel-deconstruction`、`data/decompositions/`。
-- 下游：`data/knowledge/`、`data/materials/`、`quality-review`。
+- 上游：`hot-novel-deconstruction` 与已提交的 Source Observation AssetVersion。
+- 下游：MKAOS Candidate/Governance、KnowledgeCard、KnowledgePack 与 `quality-review`。
 - Agent：Knowledge Agent、Review Agent、Quality Agent。

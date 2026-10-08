@@ -2266,3 +2266,9 @@ mappings carry volume scope and original chapter numbers separately from reading
 Older parser versions retain their frozen semantics. v5 reprocessing appends to the same
 Edition/acquisition; prior number/title conflicts close only when identical source units
 and content are distinguished by verified volume scopes. Other issues remain carried.
+
+Source public catalog capture (`source.public_catalog.capture`) uses the existing Source
+Authority worker and Kernel ExternalEffect lifecycle. Its immutable `public_catalog_snapshot`
+is evidence only and ineligible for generation; research selection binds a work to its exact
+snapshot hash without granting prose rights. Official HTTP collection and authorized offline
+DOM excerpts retain distinct modes. Product filters read a chosen project snapshot.

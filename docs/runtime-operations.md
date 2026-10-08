@@ -631,7 +631,10 @@ validation template. Genesis inputs remain in
 `config/execution_templates/creation_inputs.json`. The first selects optional objectives,
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
 state and quality floors. `creation-request.v1` supplies the current work's brief, title,
-target chapter count, required language and optional chapter-length bounds. These inputs
+target chapter count, required language and optional chapter-length bounds and `execution_window` (`version: "creation-execution-window.v1"`,
+`stop_after_chapter` within the full target). The window bounds the Book delivery run;
+BookDesign and long planning retain `target_chapters`. Omitting it preserves historical
+full-target execution. It is frozen operational policy, excluded from story requests. These inputs
 are frozen together as `formation-generation.v5` for author comparison or
 `formation-generation.v7` for explicitly authorized automatic comparison; continue
 uses that snapshot even if the template file later changes. Automatic comparison
@@ -1813,7 +1816,7 @@ an old experiment. Synthetic Source admission files additionally require explici
 `tests/fixtures/creation/`; evaluation inputs live under
 `config/evaluation/creative-inputs/`. They are never recursively discovered by creation.
 
-Original bytes formerly in `config/production/` are under
+Original bytes from the retired production sample directory are under
 `config/archive/creative-inputs-legacy/`. Its `path-map.json` records each old locator
 and original SHA-256. Explicit legacy file reads resolve only those exact entries and
 verify bytes; unknown names fail. Frozen directories/manifests remain unchanged and
@@ -2822,6 +2825,47 @@ approved Pack policy. The request freezes that profile; replay without this fiel
 on v2. Increasing an environment budget alone does not upgrade an old frozen request.
 The v3 owner maximum is 24,000 tokens, and effective Pack/request limits still apply.
 
+## Public work discovery
+
+The MKAOS repository page exposes public catalog capture, task status, immutable snapshots,
+project-scoped filters and research selection. The native routes are
+`POST /product/source-governance/public-catalog/captures`,
+`GET /product/source-governance/public-catalog/captures/{operation_id}`,
+`GET /product/source-governance/public-catalog/snapshots`,
+`GET /product/source-governance/public-catalog/works` and
+`POST /product/source-governance/public-catalog/research-selections`.
+Capture requires Project/Workspace and a stable request key. Selecting a work registers
+only a RESEARCH source identity bound to the exact snapshot hash; chapter access and rights
+remain separate Source Import decisions.
+
+`corpus catalog-capture --project-id "$PROJECT" --workspace-id "$WORKSPACE"
+--manifest "$CAPTURE" --run-key "$KEY"` admits the same Source Kernel task.
+Use `corpus catalog-run --project-id "$PROJECT" --operation-id "$OPERATION"` to execute
+or recover, and `catalog-status`/`catalog-snapshots` to read retained evidence. The existing
+Source Authority worker also owns these tasks. Configure the durable absolute
+`NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT`; the catalog stores hash-bound page bytes,
+receipts, rate limits and bounded TTL caches beneath its `public-catalog` child.
+
+Capture manifests supply `platform: "qidian"`, an official HTTPS `url`, `max_pages: 1..5`
+and `mode: "LIVE_HTTP"`. No topic is a system default. Non-200 responses, access probes,
+missing rows, conflicting duplicates and changed layouts fail explicitly. Encoded or
+unpublished counts and data update times stay null; chapter update times are separate.
+Rank changes require comparable retained snapshots. Metadata never enters draft context.
+UNKNOWN recovers the original Effect receipt and never refetches under a replacement ID.
+
+For separately authorized offline evidence, set `mode: "OFFLINE_AUTHORIZED_SNAPSHOT"`,
+`authorization_ref`, and `offline_pages` containing exact URL, absolute path, SHA256 and
+original timezone-qualified `acquired_at`. Configure `NOVEL_FORGE_PUBLIC_CATALOG_OFFLINE_ROOT`.
+A bounded browser DOM export must declare `snapshot_scope: "RENDERED_DOM_EXCERPT"`;
+its selected range is incomplete even without a next-page link. This path is always marked
+offline and does not prove live HTTP collection. Cached live results keep original acquisition
+time and `cache_reused`; no historical snapshot or terminal failure is overwritten.
+
+Focused checks are `tests/unit/test_public_catalog.py` and
+`tests/integration/test_public_catalog_postgres.py`, plus touched API/CLI/frontend checks.
+Their synthetic pages and transports establish contracts only. Actual official-page
+acquisition and source reading require separately retained real evidence.
+
 ## Author-guided single-Book production
 
 The retained `novels/yu-xian-zhi-wai/inputs/author-guided-twelve` input belongs to its
@@ -3003,8 +3047,9 @@ current novel entry above.
 ## Knowledge-grounded six-chapter comparison
 
 For the retained six-chapter A/B experiment, use
-`config/evaluation/creative-inputs/first-novel-creative-execution` explicitly. The current author-guided
-single-Book entry is `novels/yu-xian-zhi-wai/current/README.md`. The adjacent archived raw
+`config/evaluation/creative-inputs/first-novel-creative-execution` explicitly. The retained author-guided
+single-Book example is `novels/yu-xian-zhi-wai/current/README.md`; it is not a default
+input for a new work. New work requires an explicit current creation request. The adjacent archived raw
 materials, fixture chapters, backups and historical reports are inert records, not active
 configuration discovery roots or Agent instructions. The A-only author design is a draft;
 it is neither an approved native asset nor a shared input for B.

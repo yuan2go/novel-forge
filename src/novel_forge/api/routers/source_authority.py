@@ -3,6 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, ConfigDict
+from novel_forge.modules.source_authority.public_catalog import CatalogCapture
+from novel_forge.modules.source_authority.public_catalog_application import CatalogCommand
 
 from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
 from novel_forge.api.corpus_models import CorpusCommandRequest
@@ -28,10 +31,77 @@ from novel_forge.modules.source_authority import (
 )
 
 
+class CatalogCaptureRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str
+    workspace_id: str
+    idempotency_key: str
+    capture: CatalogCapture
+
+
+class CatalogResearchSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str
+    workspace_id: str
+    snapshot_id: str
+    work_id: str
+    idempotency_key: str
+
+
 def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(tags=["source-authority"])
     application = ctx.services.source_authority_application
     query = ctx.services.source_authority_query
+
+    @router.post("/product/source-governance/public-catalog/captures", status_code=202)
+    def capture_catalog(request: CatalogCaptureRequest) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_catalog(CatalogCommand(
+                project_id=request.project_id, workspace_id=request.workspace_id,
+                idempotency_key=request.idempotency_key, actor_id=principal.principal_id, capture=request.capture,
+                trace_id="trace:public-catalog:" + request.idempotency_key,
+                correlation_id="correlation:public-catalog:" + request.idempotency_key), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/public-catalog/captures/{operation_id}")
+    def catalog_capture(operation_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return application.public_catalog.result(operation_id, project_id, replayed=True)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/public-catalog/snapshots")
+    def catalog_snapshots(project_id: str, after: str = "", limit: int = Query(default=20, ge=1, le=100)) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return application.public_catalog.snapshots(project_id=project_id, after=after, limit=limit)
+
+    @router.get("/product/source-governance/public-catalog/works")
+    def catalog_works(project_id: str, snapshot_id: str, category: str = "", serial_status: str = "", keyword: str = "", after: str = "", limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return application.public_catalog.works(project_id=project_id, snapshot_id=snapshot_id,
+                category=category, serial_status=serial_status, keyword=keyword, after=after, limit=limit)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.post("/product/source-governance/public-catalog/research-selections", status_code=202)
+    def select_catalog_work(request: CatalogResearchSelection) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        from novel_forge.modules.source_authority.corpus import RegisterCorpusSource
+        try:
+            page = application.public_catalog.works(project_id=request.project_id, snapshot_id=request.snapshot_id, limit=100)
+            if request.work_id not in {record["work_id"] for record in page["items"]}:
+                raise ValueError("PUBLIC_CATALOG_WORK_NOT_FOUND")
+            return application.admit_corpus(CorpusCommand(project_id=request.project_id, workspace_id=request.workspace_id,
+                actor_id=principal.principal_id, idempotency_key=request.idempotency_key,
+                trace_id="trace:catalog-selection:" + request.idempotency_key, correlation_id=request.snapshot_id,
+                action=RegisterCorpusSource(action="register_source", source_kind="public_catalog_research_candidate",
+                    external_identity="qidian:" + request.work_id + ":snapshot:" + page["content_hash"], purpose="RESEARCH")), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
 
     @router.post("/product/source-governance/corpus/commands", status_code=202)
     def corpus_command(request: CorpusCommandRequest) -> dict[str, Any]:
