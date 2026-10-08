@@ -56,7 +56,10 @@
         "skills/worldbuilding/SKILL.md",
         "skills/*/legacy-v1.md",
         "skills/prose-generation/legacy-v2.md",
-        "skills/*/legacy-calibration-20261003.md"
+        "skills/*/legacy-calibration-20261003.md",
+        "skills/anti-copy-abstraction/legacy-v1.0.0.md",
+        "skills/hot-novel-business-deconstruction/legacy-v1.0.0.md",
+        "skills/hot-novel-deconstruction/legacy-v2.0.0.md"
       ],
       "kind": "RUNTIME_SKILL_SOURCE",
       "owner": "skill-governance",

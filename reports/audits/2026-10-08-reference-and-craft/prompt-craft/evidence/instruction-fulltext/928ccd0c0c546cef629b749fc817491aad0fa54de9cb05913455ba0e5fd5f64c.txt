@@ -1,0 +1,20 @@
+{
+  "$id": "novel-forge://schemas/canon-extraction-input/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canon_snapshot_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "draft_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "draft_asset_version_id",
+    "canon_snapshot_version_id"
+  ],
+  "type": "object"
+}

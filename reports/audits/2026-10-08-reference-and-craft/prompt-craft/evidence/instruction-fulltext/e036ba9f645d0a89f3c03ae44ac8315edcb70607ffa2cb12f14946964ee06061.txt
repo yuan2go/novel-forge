@@ -1,0 +1,19 @@
+{
+  "allowed_asset_types": [
+    "context_bundle",
+    "canon_snapshot",
+    "story_state",
+    "chapter_outcome"
+  ],
+  "forbidden_asset_types": [
+    "raw_source_chunk",
+    "raw_source_document"
+  ],
+  "max_tokens": 16000,
+  "policy_id": "context-policy:agent-session-pack:v1",
+  "reject_cross_project": true,
+  "required_version_refs": [
+    "accepted_boundary"
+  ],
+  "source_isolation": "ABSTRACT_ASSETS_ONLY"
+}

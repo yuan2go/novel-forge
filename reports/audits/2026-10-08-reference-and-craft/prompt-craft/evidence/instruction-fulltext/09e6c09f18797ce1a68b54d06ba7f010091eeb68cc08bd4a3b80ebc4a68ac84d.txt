@@ -1,0 +1,35 @@
+{
+  "$id": "novel-forge://schemas/execution-output/retrieval-embed/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "embedding_dimensions": {
+      "maximum": 8192,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "embedding_model": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "vectors": {
+      "items": {
+        "items": {
+          "type": "number"
+        },
+        "maxItems": 8192,
+        "minItems": 1,
+        "type": "array"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "vectors",
+    "embedding_model",
+    "embedding_dimensions"
+  ],
+  "type": "object"
+}

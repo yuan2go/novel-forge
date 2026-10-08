@@ -1,0 +1,3250 @@
+[
+  {
+    "sha256": "dc7af7138384d1ad9fb5636122655c48e47f6815f53cac9403a93fa52e894d3d",
+    "source": "config/capability_packs/artifacts/agent_session_system_instruction.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-system:agent-session-pack@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "c36ae6a6b64ba27aaab0b7ffd42b7cf05be4410ac25cdb2d667ee5c9cfa5ad45",
+    "source": "config/capability_packs/artifacts/chapter_generation_system_instruction_v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-system:chapter-generation-pack@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "e14d88f41fe8c3f55795d75873432603c38cf8bbf9caae985c846105240fd0b8",
+    "source": "config/capability_packs/artifacts/chapter_generation_system_instruction_v2.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-system:chapter-generation-pack@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+    "source": "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-system:chapter-generation-pack@v3",
+    "stage": ""
+  },
+  {
+    "sha256": "bd97dc4c04261497d8618824235ab2473d99bcc306db2056e979d3d26b5e8a94",
+    "source": "config/capability_packs/artifacts/model_reference_system_instruction_v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-system:model-reference-creation@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "6770272dedd724622365c33414f05851d1c19c1c7d3741dd1140e2056550e8b6",
+    "source": "config/capability_packs/artifacts/agent_session_template.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:agent-session-pack@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d2399264315aabfa5e75b341d2316c015effaf6562b7044555ede5668e5323d1",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v10.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v10",
+    "stage": ""
+  },
+  {
+    "sha256": "b60d5af0af82787a8cbf692817068f244e2bcb42012d0c2e007c6bc38d6593b1",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v11.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v11",
+    "stage": ""
+  },
+  {
+    "sha256": "be4f6de5758ff8f38849340b9bb07adb729a6ed75ef01cbe275e047464d60875",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v12.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-template:chapter-generation-pack@v12",
+    "stage": ""
+  },
+  {
+    "sha256": "a69eebbacb169071e28ec4133fda95a11e5dbc426ac7a05f8c4e51298f84cbbe",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v2.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "8b66a263372be80a9ed440bc7ed1d6f7606c18e3211f648a2d0889f37b541e6a",
+    "source": "config/capability_packs/artifacts/chapter_generation_template.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v3",
+    "stage": ""
+  },
+  {
+    "sha256": "8b66a263372be80a9ed440bc7ed1d6f7606c18e3211f648a2d0889f37b541e6a",
+    "source": "config/capability_packs/artifacts/chapter_generation_template.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v4",
+    "stage": ""
+  },
+  {
+    "sha256": "27506871d1af591bf16af02c2be471f484a067f097fc071332228b6a0d5c93ac",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v5.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v5",
+    "stage": ""
+  },
+  {
+    "sha256": "80a4672b21a765a3f5c42acca7520009f29a34593042c8ff34bab0eb09cf3aef",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v6.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v6",
+    "stage": ""
+  },
+  {
+    "sha256": "89c126e270a6d4ba6ae91572c1c523c2527694314a22d8fead44a4bba8802e26",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v7.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v7",
+    "stage": ""
+  },
+  {
+    "sha256": "d280bf7ee4fb201d3e9feeeb6f5d90b0314a551292326726ff53ecc9695d5871",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v8.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v8",
+    "stage": ""
+  },
+  {
+    "sha256": "9a6769fa826548016a0ec661ad8a177a13a6fe12194d5568ecb093e8eee8a1d4",
+    "source": "config/capability_packs/artifacts/chapter_generation_template_v9.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:chapter-generation-pack@v9",
+    "stage": ""
+  },
+  {
+    "sha256": "f7bc0972ca0287e4de4a621167bc333c056cc4cc9b766fd7d0206f55b676f3b2",
+    "source": "config/capability_packs/artifacts/model_reference_template_v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prompt-template:model-reference-creation@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d35583efb62fb6b7cca223af3e7506a991a0d51690323ee4cf4f847a1452436b",
+    "source": "skills/agent-loop-governance/SKILL.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "agent-loop-governance@agent-loop-governance-v1",
+    "stage": ""
+  },
+  {
+    "sha256": "47cc7b18ffb04bd3e754a0f274d0a63b77dac4aca250602dc3e0a642a8114065",
+    "source": "skills/canon-continuity-graph/legacy-v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "canon-continuity-graph@canon-continuity-graph-v1",
+    "stage": ""
+  },
+  {
+    "sha256": "a5b946be2a78e72d68c830ef8f14670f0ba8df82f8451c4af85e17bcc47a4296",
+    "source": "skills/canon-continuity-graph/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "canon-continuity-graph@canon-continuity-graph-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "fd8d3e02c7cc428eb96037d9d7d8036b59b26252f76388ba7f44e3338fe5bf76",
+    "source": "skills/chapter-outline/legacy-v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "chapter-outline@chapter-plan-skill-v1",
+    "stage": ""
+  },
+  {
+    "sha256": "e23e0e8f3fe0660896496115b2eb86c0fcd54b79b103ca3180870d00b65a29c9",
+    "source": "skills/chapter-outline/legacy-calibration-20261003.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "chapter-outline@chapter-plan-skill-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "b355ad1e0a9cfa2e8b86960c1782cdd3021855ec579008a125a9c6a08c79a96e",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": ""
+  },
+  {
+    "sha256": "16071b45e41ec6c55f835653ef137e19bace61d904b434024196112307d1d513",
+    "source": "skills/context-builder-source-isolation/legacy-calibration-20261003.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "context-builder-source-isolation@context-builder-source-isolation-v1",
+    "stage": ""
+  },
+  {
+    "sha256": "4e808849452f21042d16ba7fc3e9f3b1f8c99edc4745b3868bead94acc9021fc",
+    "source": "skills/context-builder-source-isolation/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "context-builder-source-isolation@context-builder-source-isolation-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "4e5ca7a08841ae4384585f1385851406fb08a92972eba0c035b985bed7c7616c",
+    "source": "skills/prose-generation/legacy-v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prose-generation@prose-generation-v1",
+    "stage": ""
+  },
+  {
+    "sha256": "cfc3e878aef3da772a21c6e2e23eb08b3275499f3a2f742e9d2ee04c66ed3c05",
+    "source": "skills/prose-generation/legacy-v2.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prose-generation@prose-generation-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "ae0e31c4435151294bbf2659cc3deb7743a78668a57788f4157e88c956150bd9",
+    "source": "skills/prose-generation/legacy-calibration-20261003.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "prose-generation@prose-generation-v3",
+    "stage": ""
+  },
+  {
+    "sha256": "7b6b03f212e97a2ee5ed9d6c0a101d1f70cc85766db28b63432c2f30bee9b9d2",
+    "source": "skills/prose-generation/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prose-generation@prose-generation-v4",
+    "stage": ""
+  },
+  {
+    "sha256": "d8ada86b028cbc5e921d0aed88cd691884cc89fd0799b36d86e1c3b24d868496",
+    "source": "skills/quality-review/legacy-v1.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "quality-review@quality-review-v1",
+    "stage": ""
+  },
+  {
+    "sha256": "c278970af4057ff3c98318648be312a051da6060acc7102e4011f5bd1daa8a14",
+    "source": "skills/quality-review/legacy-calibration-20261003.md",
+    "status": "CATALOG_ONLY_HISTORICAL_OR_OTHER_STAGE",
+    "identity": "quality-review@quality-review-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "b29a40dd5b4e9954147c1d0ffb81a41418f67d185d6d55feeb7075cb6033759a",
+    "source": "skills/quality-review/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "quality-review@quality-review-v3",
+    "stage": ""
+  },
+  {
+    "sha256": "0507650ab6eff7a5d9dff784d585eb3cdb39d93b259c45b38b2fc9531cd4cdaf",
+    "source": "skills/long-outline/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "long-outline@long-outline-v3",
+    "stage": ""
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "config/capability_packs/artifacts/story_planning_system_instruction_v11.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-system:story-planning-pack@v11",
+    "stage": ""
+  },
+  {
+    "sha256": "144021c742309f09756debe21e8f5441de22f812cab4325ff555b6d394aedc44",
+    "source": "config/capability_packs/artifacts/story_planning_template.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-template:story-planning-pack@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "a5b946be2a78e72d68c830ef8f14670f0ba8df82f8451c4af85e17bcc47a4296",
+    "source": "skills/canon-continuity-graph/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "canon-continuity-graph@canon-continuity-graph-qualification-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "b355ad1e0a9cfa2e8b86960c1782cdd3021855ec579008a125a9c6a08c79a96e",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "b1a7097473a1f84f25fb47dd83a15c95b9ac1eba97fecfb4df42d1d6dd92b39f",
+    "source": "skills/character-design/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "character-design@character-design-qualification-v3",
+    "stage": ""
+  },
+  {
+    "sha256": "7feaaf6da55d30956f953f4b12228729dacb18bf4d4ebdf505727b625f77dcdf",
+    "source": "skills/hot-novel-business-deconstruction/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "hot-novel-business-deconstruction@hot-novel-business-deconstruction-qualification-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "95eb1c50f20982b7b693272d41b60ca9056a4c7133677173056570a4c7cc566f",
+    "source": "skills/narrative-beat-design/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "narrative-beat-design@narrative-beat-design-qualification-v3",
+    "stage": ""
+  },
+  {
+    "sha256": "d31881351bf0d2a0dac80d0dd9379beccad314f750938197c8719fff463ec00b",
+    "source": "skills/topic-development/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "topic-development@topic-development-qualification-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "05c1ba7c5c5f882a2702717f6c7b3b589962dd7802ccffb10d4ae98797b6bdb7",
+    "source": "skills/worldbuilding/SKILL.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "worldbuilding@worldbuilding-qualification-v2",
+    "stage": ""
+  },
+  {
+    "sha256": "cf69cace3ae3dcf856c05b9fd413e954b0d5215240444624e4ca7dfec52ad7b2",
+    "source": "config/capability_packs/artifacts/narrative_evaluation_system_instruction.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-system:narrative-semantic-evaluation-pack@v3",
+    "stage": ""
+  },
+  {
+    "sha256": "29162621cb468e41f3fa070fe0501f4cdd6531dc4c1528d520562dbcaee0941c",
+    "source": "config/capability_packs/artifacts/narrative_evaluation_template.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-template:narrative-semantic-evaluation-pack@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+    "source": "config/capability_packs/artifacts/longform_prose_review_system_instruction.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-system:longform-prose-review-pack@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "51f69fbc0d7d0a5dc4a036127a9a2110edcf4257fc8d1eec99c90f0a88590995",
+    "source": "config/capability_packs/artifacts/longform_prose_review_template.md",
+    "status": "CURRENT_CODE_BOUND_DEPLOYMENT_UNVERIFIED",
+    "identity": "prompt-template:longform-prose-review-pack@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "07cc5fa3f720fd89ef0815d2f06674963c9a4ca0934a130a5b6319c698702e92",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "20944505a0ba596f3da155a24989d0d03df9c75e5b93ff9623b80ea1f5028aaf",
+    "source": "stage-comedy-00-creative.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "7d423f627325c0e05f893f0f52bf29dc84401ca9dfbdaadfbc944851179f1a44",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "20944505a0ba596f3da155a24989d0d03df9c75e5b93ff9623b80ea1f5028aaf",
+    "source": "stage-comedy-01-creative.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "95d185611efe912d75bdc1fd97f1908cb52d9c700389949b56bd8a7355d92988",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "62bbd118280691ff203c6f1d40760ce7470c62aceb0aabf27944f482b9ce7ca5",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "6165f0e58bed1241b21fc180c167381112e1344e6dd328d577ffc6d29596c110",
+    "source": "stage-comedy-02-theme.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-03-ending.intent.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "3822c0af17c72d7117b3c2e1f4f0187faffe4ac743a5f5de6cb03ab46162529d",
+    "source": "stage-comedy-03-ending.intent.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-03-ending.intent.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-03-ending.intent.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "3a8bd1fd65ed38955c748a64d99c8dbf3210c627ef7b844296ad1c1a8c53a43a",
+    "source": "stage-comedy-03-ending.intent.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-03-ending.intent.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "c10cb015c6f0a559cdd0f748b21bcacd28f0ca9f71f710b9e5867598bb44d3ee",
+    "source": "stage-comedy-03-ending.intent.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-04-reader.promise.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "b4a1610a11bddc254f79a2277cbd854cf3d18c2cb412602ec7871dba3ae4d872",
+    "source": "stage-comedy-04-reader.promise.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-04-reader.promise.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-04-reader.promise.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "0f9f1cceda21244a3387af1e6daaf3f3147a82de4ec06d9adb2315ffedd0d3ca",
+    "source": "stage-comedy-04-reader.promise.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-04-reader.promise.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "9dfc835b204349f3cd91c688bda52d9aff2c65329758062f74659a0eaa671431",
+    "source": "stage-comedy-04-reader.promise.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-05-world.design.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "a098a9f0c4fa7fb29d7561079339c046c8fbfbda694a3eae872eea70da49c02a",
+    "source": "stage-comedy-05-world.design.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-05-world.design.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-05-world.design.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "5352692adf2b1c39e56065130024ab4858fe4a09398809545aaf0d6044f3f84e",
+    "source": "stage-comedy-05-world.design.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-05-world.design.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "ff8fc28ea95d054a053f1648c2d336d483c42d2839d57fb310c3b91c48442a1a",
+    "source": "stage-comedy-05-world.design.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "stage-comedy-06-character.cast.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "12034f16d9556bb1b0d68db04263469bbdd9f1c11ea2b86ce9beb814b81d556d",
+    "source": "stage-comedy-06-character.cast.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "stage-comedy-06-character.cast.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "stage-comedy-06-character.cast.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "c3c6639f4fe7372995b3204c717ac7c66b32627c759615405202f3cd8b35646c",
+    "source": "stage-comedy-06-character.cast.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "stage-comedy-06-character.cast.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "77060d9ef4ca5d70a20b9984c37770c4c1f91438f99c03de7b2520604a596313",
+    "source": "stage-comedy-06-character.cast.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "5a86fc3159c13e2f3085d85072a974c27aee548bee9f57bb1152972d8d03eccf",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "20944505a0ba596f3da155a24989d0d03df9c75e5b93ff9623b80ea1f5028aaf",
+    "source": "fantasy-cooking-00-creative.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "349d043de986b2d139627daa016859f77c7a14f429ed7a16a899cd47c8eac7ef",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "20944505a0ba596f3da155a24989d0d03df9c75e5b93ff9623b80ea1f5028aaf",
+    "source": "fantasy-cooking-01-creative.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "95d185611efe912d75bdc1fd97f1908cb52d9c700389949b56bd8a7355d92988",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "c2f03e3e718f2b81d81192555513df7873f5adc7fdd183bd2c28993645b73c69",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "6165f0e58bed1241b21fc180c167381112e1344e6dd328d577ffc6d29596c110",
+    "source": "fantasy-cooking-02-theme.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "3822c0af17c72d7117b3c2e1f4f0187faffe4ac743a5f5de6cb03ab46162529d",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "c4d2cde3c27537b20b5ce6efc6976c8b225188179863c444ce0ffe054efab09c",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "c10cb015c6f0a559cdd0f748b21bcacd28f0ca9f71f710b9e5867598bb44d3ee",
+    "source": "fantasy-cooking-03-ending.intent.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "b4a1610a11bddc254f79a2277cbd854cf3d18c2cb412602ec7871dba3ae4d872",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "f7c454928d2481504b8105240e27200e7726399c52c39bce0e5e2263f6ec9f26",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "9dfc835b204349f3cd91c688bda52d9aff2c65329758062f74659a0eaa671431",
+    "source": "fantasy-cooking-04-reader.promise.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-05-world.design.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "a098a9f0c4fa7fb29d7561079339c046c8fbfbda694a3eae872eea70da49c02a",
+    "source": "fantasy-cooking-05-world.design.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-05-world.design.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-05-world.design.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "e8427ba793b218a7d3ef2dbb4d0b4a2efadef4d428d1a7b226cbcde5117049bd",
+    "source": "fantasy-cooking-05-world.design.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-05-world.design.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "ff8fc28ea95d054a053f1648c2d336d483c42d2839d57fb310c3b91c48442a1a",
+    "source": "fantasy-cooking-05-world.design.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "12034f16d9556bb1b0d68db04263469bbdd9f1c11ea2b86ce9beb814b81d556d",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "ce46ed3416efb1b42d483874b6f2cc1cb3fae535a250940df4c8ee0a17ac109d",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "77060d9ef4ca5d70a20b9984c37770c4c1f91438f99c03de7b2520604a596313",
+    "source": "fantasy-cooking-06-character.cast.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "d62d367f310b36c293fda57ece680f060b593dd24e3da79136de490e78a4a753",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "20944505a0ba596f3da155a24989d0d03df9c75e5b93ff9623b80ea1f5028aaf",
+    "source": "archive-suspense-00-creative.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "692c6975442d69b7c76e22c5dcdea4e6668e7c7ec870dfa8edaf3515c710ad91",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "20944505a0ba596f3da155a24989d0d03df9c75e5b93ff9623b80ea1f5028aaf",
+    "source": "archive-suspense-01-creative.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "95d185611efe912d75bdc1fd97f1908cb52d9c700389949b56bd8a7355d92988",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "b5038195e023aec03aeb82f2a1dfcb474209bbfaf79dd9f860f26fe5bf3940aa",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "6165f0e58bed1241b21fc180c167381112e1344e6dd328d577ffc6d29596c110",
+    "source": "archive-suspense-02-theme.candidates.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-03-ending.intent.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "3822c0af17c72d7117b3c2e1f4f0187faffe4ac743a5f5de6cb03ab46162529d",
+    "source": "archive-suspense-03-ending.intent.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-03-ending.intent.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-03-ending.intent.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "565450fe00308d66bb256a682a97a86751f5a64fc66b378e725d985816a5e18a",
+    "source": "archive-suspense-03-ending.intent.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-03-ending.intent.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "c10cb015c6f0a559cdd0f748b21bcacd28f0ca9f71f710b9e5867598bb44d3ee",
+    "source": "archive-suspense-03-ending.intent.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-04-reader.promise.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "b4a1610a11bddc254f79a2277cbd854cf3d18c2cb412602ec7871dba3ae4d872",
+    "source": "archive-suspense-04-reader.promise.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-04-reader.promise.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-04-reader.promise.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "154d3810b4d72d87fba295f89956c14de132e676e49900138015152ac2409363",
+    "source": "archive-suspense-04-reader.promise.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-04-reader.promise.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "9dfc835b204349f3cd91c688bda52d9aff2c65329758062f74659a0eaa671431",
+    "source": "archive-suspense-04-reader.promise.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-05-world.design.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "a098a9f0c4fa7fb29d7561079339c046c8fbfbda694a3eae872eea70da49c02a",
+    "source": "archive-suspense-05-world.design.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-05-world.design.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-05-world.design.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "dd7691010e2d9d7908cae3da74e387a5fa61013afef331ce4842439c51d4e07e",
+    "source": "archive-suspense-05-world.design.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-05-world.design.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "ff8fc28ea95d054a053f1648c2d336d483c42d2839d57fb310c3b91c48442a1a",
+    "source": "archive-suspense-05-world.design.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-06-character.cast.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "12034f16d9556bb1b0d68db04263469bbdd9f1c11ea2b86ce9beb814b81d556d",
+    "source": "archive-suspense-06-character.cast.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-06-character.cast.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-06-character.cast.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "10198b753db86dca06db636c599b682d9ceeede5b4f45d0821a1476bed0c7065",
+    "source": "archive-suspense-06-character.cast.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "26dd2d03f569d376ab50d9dbc85e11a88f26abf6594d2f4e422887cfa3d29e23",
+    "source": "archive-suspense-06-character.cast.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "77060d9ef4ca5d70a20b9984c37770c4c1f91438f99c03de7b2520604a596313",
+    "source": "archive-suspense-06-character.cast.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-07-book_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "57a904dc159727c5282563bd01fa3aedd65c1e0ce30ec20dae1a3198e89d9204",
+    "source": "archive-suspense-07-book_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-07-book_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-07-book_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "e136abe1568fe005dd2a9f590ca0fdb5827fd897b9c7215413ee709a761fb970",
+    "source": "archive-suspense-07-book_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "2c8b59bfcf6407315f994bca089bc91ae0099117536f09a964bba6af5ab893d3",
+    "source": "archive-suspense-07-book_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "b1e05856ca39c86b90dcba49d06fdd65716d378165f43c4a9e4306e193466156",
+    "source": "archive-suspense-07-book_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-08-book_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "57a904dc159727c5282563bd01fa3aedd65c1e0ce30ec20dae1a3198e89d9204",
+    "source": "archive-suspense-08-book_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-08-book_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-08-book_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "75f0f5ab39d43b7c3b3ef0b284013afbd014a1aa3c7153fe650a76cba2b84a93",
+    "source": "archive-suspense-08-book_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "2c8b59bfcf6407315f994bca089bc91ae0099117536f09a964bba6af5ab893d3",
+    "source": "archive-suspense-08-book_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "b1e05856ca39c86b90dcba49d06fdd65716d378165f43c4a9e4306e193466156",
+    "source": "archive-suspense-08-book_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-09-book_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "57a904dc159727c5282563bd01fa3aedd65c1e0ce30ec20dae1a3198e89d9204",
+    "source": "archive-suspense-09-book_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-09-book_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-09-book_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "7a95d20592c4fcbebc88f2a3cfb6fbe7a3f499b0593fb7b680495dc897e22c54",
+    "source": "archive-suspense-09-book_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "2c8b59bfcf6407315f994bca089bc91ae0099117536f09a964bba6af5ab893d3",
+    "source": "archive-suspense-09-book_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "b1e05856ca39c86b90dcba49d06fdd65716d378165f43c4a9e4306e193466156",
+    "source": "archive-suspense-09-book_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-10-volume_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "7fe045d482ee53e86ca6abbe801df67907cb1d7cdda4dddf882e01103a0c1942",
+    "source": "archive-suspense-10-volume_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-10-volume_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-10-volume_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "2244c56e90e4c1c5e886aebd5376db9e31dc6852ba7d500dcb28c8338e76d230",
+    "source": "archive-suspense-10-volume_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "786130976d56e70daa61da611f3e61dde08e542b25af015a49845b83a219ccb2",
+    "source": "archive-suspense-10-volume_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "27a8b8796549eb892386fe05090e10efb0201b86de41e7ff9412ebc7e96599e7",
+    "source": "archive-suspense-10-volume_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-11-volume_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "7fe045d482ee53e86ca6abbe801df67907cb1d7cdda4dddf882e01103a0c1942",
+    "source": "archive-suspense-11-volume_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-11-volume_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-11-volume_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "3e968577923ef7c7673eecb6815999f9b67af6029d3efb61b198148118addd39",
+    "source": "archive-suspense-11-volume_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "786130976d56e70daa61da611f3e61dde08e542b25af015a49845b83a219ccb2",
+    "source": "archive-suspense-11-volume_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "27a8b8796549eb892386fe05090e10efb0201b86de41e7ff9412ebc7e96599e7",
+    "source": "archive-suspense-11-volume_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-12-volume_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "7fe045d482ee53e86ca6abbe801df67907cb1d7cdda4dddf882e01103a0c1942",
+    "source": "archive-suspense-12-volume_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-12-volume_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-12-volume_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "4e894698c22d3a6606bcc247bb4bb54ec75854939f76e9b7030b60258aae3bec",
+    "source": "archive-suspense-12-volume_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "786130976d56e70daa61da611f3e61dde08e542b25af015a49845b83a219ccb2",
+    "source": "archive-suspense-12-volume_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "27a8b8796549eb892386fe05090e10efb0201b86de41e7ff9412ebc7e96599e7",
+    "source": "archive-suspense-12-volume_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-13-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-13-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-13-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-13-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "16f8aaa99dc29b918a85988d2fe58975b3fa50de99bb444b1cb11a260e421b27",
+    "source": "archive-suspense-13-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-13-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1d80acf3ea1dab0bd79dfaa7852d7725795b6c27ebdaab66b19ba0bf6fd6da6b",
+    "source": "archive-suspense-13-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-14-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-14-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-14-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-14-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "6e67ef954065c47588285c1b5199f3ba10666e3460393ef44f67d8b91a2e1cb6",
+    "source": "archive-suspense-14-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-14-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1d80acf3ea1dab0bd79dfaa7852d7725795b6c27ebdaab66b19ba0bf6fd6da6b",
+    "source": "archive-suspense-14-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-15-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-15-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-15-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-15-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "724be8fbc2645b506968dca3e40823134b105abe3a59207401575dde56542282",
+    "source": "archive-suspense-15-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-15-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1d80acf3ea1dab0bd79dfaa7852d7725795b6c27ebdaab66b19ba0bf6fd6da6b",
+    "source": "archive-suspense-15-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-16-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-16-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-16-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-16-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "4e4d5620ae363194a96988e72d2eefb7876c4b34e1aa4b7b72d2c190b60c0dd2",
+    "source": "archive-suspense-16-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-16-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "89472b722b8f05c7d25521fd6b07eb9447d19c51054ccd4a605931f499eb7294",
+    "source": "archive-suspense-16-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-17-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-17-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-17-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-17-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2f83239f0f0bae28af8cf87425849732c26a8d338b9427ebefcfc5ca2fb5be03",
+    "source": "archive-suspense-17-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-17-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "89472b722b8f05c7d25521fd6b07eb9447d19c51054ccd4a605931f499eb7294",
+    "source": "archive-suspense-17-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-18-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-18-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-18-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-18-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "47d3721bd736ecebffd64f3623d2de157bce97c67308e2e59f554d876f295b66",
+    "source": "archive-suspense-18-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-18-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "89472b722b8f05c7d25521fd6b07eb9447d19c51054ccd4a605931f499eb7294",
+    "source": "archive-suspense-18-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-19-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-19-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-19-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-19-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "18fed71189d7188cc329d253e7790fa53326fa6e7776b8ba02b19e3c165c82b4",
+    "source": "archive-suspense-19-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-19-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1cfa52b0f9b4d91cda8ad75a13542b4094f5457fbb58179f4f1d21e4f96868f0",
+    "source": "archive-suspense-19-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-20-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-20-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-20-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-20-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "ccbfb026cce6837370f31570c8d12f89479809a135dc6d6ee0a5b9930f0ad4fb",
+    "source": "archive-suspense-20-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-20-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1cfa52b0f9b4d91cda8ad75a13542b4094f5457fbb58179f4f1d21e4f96868f0",
+    "source": "archive-suspense-20-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-21-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-21-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-21-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-21-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "c3bbdd48fe5dced66d1646c1aec560c2943bd97923e4d74ee190f56171139005",
+    "source": "archive-suspense-21-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-21-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1cfa52b0f9b4d91cda8ad75a13542b4094f5457fbb58179f4f1d21e4f96868f0",
+    "source": "archive-suspense-21-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-22-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-22-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-22-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-22-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "db92d6b26d0d27703ada5491884e2a19054e838c4c5bd46a263565cc99a868b6",
+    "source": "archive-suspense-22-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-22-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "a8b2053424a394464ebee95465bb83c2b7cd41a0428ff93607c800944bf0a234",
+    "source": "archive-suspense-22-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-23-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-23-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-23-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-23-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "7308aabc61dcf982b187debdc529c774e153ec724978de4c796edba50174664e",
+    "source": "archive-suspense-23-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-23-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "a8b2053424a394464ebee95465bb83c2b7cd41a0428ff93607c800944bf0a234",
+    "source": "archive-suspense-23-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-24-arc_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "archive-suspense-24-arc_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-24-arc_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-24-arc_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "1be282d795988af7ae9b335a4a81725def27f0627037affa6384ec95f60e1058",
+    "source": "archive-suspense-24-arc_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d",
+    "source": "archive-suspense-24-arc_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "a8b2053424a394464ebee95465bb83c2b7cd41a0428ff93607c800944bf0a234",
+    "source": "archive-suspense-24-arc_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "7265b6db374aecca2e0d6cd0347bdb0f9893b5b2a97ca68d0e07ca5f25b44473",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f0b8f205dfe4bb3ce2c05b9990d79818bf2d7b12de7a93b7816beba2bffccd46",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "aa1462436e493f99b6bc9a17f9896ff7503bfc5de2072474c0b5be0c3b53b822",
+    "source": "archive-suspense-25-chapter_group_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "3554b9cbb3f9c82896a04e44ae582ba3e20af6efb8fce7ad8085f9242991b5e8",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f0b8f205dfe4bb3ce2c05b9990d79818bf2d7b12de7a93b7816beba2bffccd46",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "aa1462436e493f99b6bc9a17f9896ff7503bfc5de2072474c0b5be0c3b53b822",
+    "source": "archive-suspense-26-chapter_group_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::system_instruction",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "system_instruction",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::governed_skill",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "governed_skill",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::required_knowledge",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "required_knowledge",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f120802bedd74c267f90e8dd1b3d95241536865ee1cdd8759cec8888bfffe477",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::tool_policy",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "tool_policy",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "06edc1694ae20b365ae0fef0854c83dc078bb3904035d8739039124cf627b7c2",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::prompt_template",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "prompt_template",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f0b8f205dfe4bb3ce2c05b9990d79818bf2d7b12de7a93b7816beba2bffccd46",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::stage_semantic_contract",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "stage_semantic_contract",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "aa1462436e493f99b6bc9a17f9896ff7503bfc5de2072474c0b5be0c3b53b822",
+    "source": "archive-suspense-27-chapter_group_plan.generate.txt::output_schema",
+    "status": "FROZEN_REAL_REQUEST_HASH_VERIFIED",
+    "identity": "output_schema",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "e036ba9f645d0a89f3c03ae44ac8315edcb70607ffa2cb12f14946964ee06061",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:agent-session-pack:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "context-policy:agent-session-pack:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "f7c698dfc43c411744f2bea1521ca79c83c945632a24e0096677ef394d4f3019",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "context-policy:chapter-generation-pack:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "07f00d72a5587cf3ae980710abd75abc48199304931c66622efb1b8b9c1c67a3",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "context-policy:chapter-generation-pack:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "a6b5d2844441c0587edd17354cf6e615fd44ade1afe8062faef0bee4736c2838",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#KNOWLEDGE:knowledge:chapter-causal-cost:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "knowledge:chapter-causal-cost:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "a8c86255f57f09fe8fbb6dccc8c8deb52a651ee353e274da4c8788a229326e04",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#KNOWLEDGE:knowledge:chapter-causal-cost:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "knowledge:chapter-causal-cost:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "12f6fbb53a31720596bbe0c9e1a10124b538f8b363db6b4ddf62c61e110da759",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:chapter-plan-authority.v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "chapter-plan-authority.v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "e5d34c74efb2527420ad9c8e1a0c69ed21e7b8be13bb35b053f8d2afae99ea66",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:operation-saga-attempt-state.v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "operation-saga-attempt-state.v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "928ccd0c0c546cef629b749fc817491aad0fa54de9cb05913455ba0e5fd5f64c",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:canon-extraction-input:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:canon-extraction-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "eb07fa8565232f87cfd855a912f478ed557ede725e5336b562b623f618e0db93",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:canon-patch:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:canon-patch:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "fee77fae66357d7918010c5ab5f9a231837b659bbe30e97835440b4a8541895e",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-context-input:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-context-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "f969f2a68a9ff2af3f5f8e2c52e0538e33f56b88c0a1ad10db928d03640cdaca",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-generation-pack-input:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-generation-pack-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "4b4879ce9bade1abe0a9366123854ef1a16e5074b182fb9ac4e8bdcbd2cf07d4",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-generation-pack-output:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-generation-pack-output:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "bd70e782a8e70edfb099915817e5e224d25998ce0e23f68e68c02edc6ea789bf",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-plan-version:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-plan-version:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "a524953b9491f71fe0d8c2b5d6585e7a69524ca3e99777167da4fffb6d39e97c",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-plan:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-plan:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d0a0390fe10fabd9fcf1fe305b12e91d3da0878808a738beb94ed098fb30c822",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-review-input:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-review-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "eab3496aea7b61bfe54c792ff0e6883223e819cb5e455222501c7cab8e24529a",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:chapter-review-output:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:chapter-review-output:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "57a450050302d5c90a0e36f0bc958b7895c0cba8e1edb20e6f388ea20dd36579",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:context-bundle:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:context-bundle:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "943e3b6c141f21946f368f638e2abe596e1e41543313589eb4a4cccd27dc80da",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:context-bundle:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:context-bundle:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "840f52df3d38085e4e72dd07857da6cfd1a9e8b1e7fbf701dc32a70f17bb9afc",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:agent-workspace-execute:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:agent-workspace-execute:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "ce7b17decf3b6d822ac94580bba2e563b1e657fd7a8f102318865544e72b776c",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:canon-extract:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:canon-extract:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:context-task-compile:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:context-task-compile:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d9390a5935a7aff328da20472b181bd07039a8350c2996475bf394500095677e",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:planning-chapter-generate:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-chapter-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "0ae59e14c7a6564dd2570b33b46b73fbe78a8beb39f7b950de64472e1c3d408f",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:planning-chapter-memo:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-chapter-memo:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d3b38d00f94a20c3e4b8baa57cb61174f74bab5f4c2a4c66772e6949d004749a",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:prose-chapter-draft:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:prose-chapter-draft:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "81eb3105ce8a2687f3f8fdc25a8084a857e9ac903b93fc47bd03e45a85a04f71",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:quality-intrinsic-judge:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:quality-intrinsic-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "29f75bf73cf360114e846126bf9e58cc463b96cca62f3c72f4bc12c9b4066bb0",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:quality-originality-judge:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:quality-originality-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "5fe9c87dd6a49538c635da3883616f34a0221732428dc03470d6670c556b54ef",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:quality-platform-judge:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:quality-platform-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "72570b6e58ebf33b04c7665dc577e61f85e970e77e06f74224e587d57f238c9d",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:retrieval-embed:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:retrieval-embed:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "8c8dc0304454c068b308e037085d3b84d7fb5633fc3309bfab9e05127457c45a",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:review-chapter-evaluate:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:review-chapter-evaluate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "7dcaae50a94258df526c74beb249677f338d9d2a89f0457b41af6f7080555927",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-input:revision-chapter-revise:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:revision-chapter-revise:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "3c58ecd770c7371a8b2580ba3da6cb41036dfd1d80b47e4c74138675925076ee",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:agent-workspace-execute:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:agent-workspace-execute:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "58219a7bbd1e8b1a3f154af4d826013f47c3376d0260de85c42c836c158788b4",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:canon-extract:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:canon-extract:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:context-task-compile:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:context-task-compile:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "1eeadaeb46e418a1a4cb52a5a434d6a84cf206945353b383b5494b27485f49da",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:planning-chapter-generate:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-chapter-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "ba6fd7ce664d1283e167c0ce86c6ad595403f993b839b151f8b8c4764a0725d7",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:planning-chapter-memo:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-chapter-memo:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "666f3282e51d95c5ba0f590b8d48bbb8bec9d275deb87cff5def79bf2cde8705",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:prose-chapter-draft:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:prose-chapter-draft:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "daeae977c5fb1682390c51137d1f53a52e254d8fdb99e400499dd93a465cdc62",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:quality-intrinsic-judge:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:quality-intrinsic-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "634ea781053f3e9fd79d6f3afb257047d4e970aecd273968af8caa7e322da3e3",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:quality-originality-judge:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:quality-originality-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "6f463c119035c184e92af9f7e8f3d77a30a54d3709777cf3a513af2f53adbbf4",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:quality-platform-judge:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:quality-platform-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "09e6c09f18797ce1a68b54d06ba7f010091eeb68cc08bd4a3b80ebc4a68ac84d",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:retrieval-embed:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:retrieval-embed:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "3914fea6ee5e9c75e65e9656eefe6dcd66ea7dfd511697780ca78bc50a867abb",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:review-chapter-evaluate:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:review-chapter-evaluate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "438700f3372d78309aea51d7f859517db57dd42f1f6a9dfbb0b89b3cb99feea6",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#SCHEMA:schema:execution-output:revision-chapter-revise:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:revision-chapter-revise:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "43bc97e1effe7312e68c23b3cf22ed0e7dff1ffd97064ec090de27d7e8aa6fe8",
+    "source": "native:model-reference-creation-input-v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:model-reference-creation-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "3cd69c8fd81626137ccd40423b0eb1d40c5d548e17b58185678f6b1ef0c25ef1",
+    "source": "native:model-reference-creation-output-v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:model-reference-creation-output:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "2c7cb82e587a0eade394c708ec3999f7abc9931c4c8eb14795c0ed0dd90de9e5",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:agent-session-pack:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "tools:agent-session-pack:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "e5feabcf2c20c8807a5fedd7786edab14b66b5b087929817003d9b923d914822",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:chapter-generation-pack:v1@v1",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "tools:chapter-generation-pack:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "498dd0dc2a44ed010888f99bce78fdef7e7748c2b74bfbff1298f0fd0ec63f04",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:chapter-generation-pack:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "tools:chapter-generation-pack:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "08fb20976e5ca715a1f09f13715cf79dde21dd65d56e5fff1ddd4ff87c73c61b",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "context-policy:chapter-generation-pack:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "a5dcade0d211d2a74ae954e65f4eeef88e84774e61175e9ff4b701145ad40ccc",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#TOOL_POLICY:tools:chapter-generation-pack:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "tools:chapter-generation-pack:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "6a8b47ca25b4878a9e4d073baa22bd36047a2f60f9d1db1d372802f274d7f4ce",
+    "source": "generated:longform-pack-domain-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:story-planning-pack-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "9ed833d6f15323324a5d934ea7b2875adc7127f6e3e08b198a3317dad2c81895",
+    "source": "generated:longform-pack-domain-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:story-planning-pack-output:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:creative-proposal-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:creative-proposal-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:theme-question-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:theme-question-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:ending-intent-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:ending-intent-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:reader-promise-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:reader-promise-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:world-design-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:world-design-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:character-cast-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:character-cast-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-book-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-book-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-volume-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-volume-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-arc-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-arc-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-chapter_group-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-chapter_group-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:planning-story_chapter-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:planning-story_chapter-generate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "1114e4b3c6358354cc19fdc2469b74233023506755547c92d0d307e1a8eb3421",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "context-policy:chapter-generation-pack:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:quality-intrinsic-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:quality-intrinsic-judge:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "5a808155690721cf30bf75d895dea63be64ed3fdd54a14d261dff2662bedb22a",
+    "source": "generated:longform-pack-domain-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:narrative-semantic-evaluation-pack-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "9bf71e29a23e4fb10138568aaa12c5e9d3fb777d0f7fb190c6a1c86d891aeeaf",
+    "source": "generated:longform-pack-domain-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:narrative-semantic-evaluation-pack-output:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "f9b34368e85475b27007f05914f18cc7adce3bacf7a0ed064800bf5cfdd3b385",
+    "source": "catalog:config/capability_packs/artifacts/chapter_generation_contract_catalog.json#CONTEXT_POLICY:context-policy:chapter-generation-pack:v2@v2",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "context-policy:chapter-generation-pack:v2@v2",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-input:review-chapter-evaluate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "d573b0e5da754590209c9a0f74fa4186ef2127e16773db70b1d8e7a4f6df91ff",
+    "source": "generated:longform-pack-capability-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:execution-output:review-chapter-evaluate:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "072aed3f335acc552043362b8ff14f4d0696a4efc49223d7a98ae76d64bc06f2",
+    "source": "generated:longform-pack-domain-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:longform-prose-review-pack-input:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "0ed7233a71d834557f97deec0d2e3440d525c142e68b2c815f0f3e21df1d16ef",
+    "source": "generated:longform-pack-domain-schema",
+    "status": "CATALOG_ONLY_SELECTION_MUST_BIND_EXACT_VERSION",
+    "identity": "schema:longform-prose-review-pack-output:v1@v1",
+    "stage": ""
+  },
+  {
+    "sha256": "f53b98a60e62f01e630bafd21de4dbef0b9cbc051a8bbd5b43520820bd4871af",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "chapter_plan.generate"
+  },
+  {
+    "sha256": "f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "memo"
+  },
+  {
+    "sha256": "56f15ea6762d048082c3b064636b7ceccf074c9afac71c4f331523ddf964bac2",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "world_candidates.generate"
+  },
+  {
+    "sha256": "c92ddfd3e336300653cf82be06037937a5b39438c8eaf38c7180b2bc180af081",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "world_candidates.evaluate"
+  },
+  {
+    "sha256": "c8ba7a283d23226a87aab4de3f2f4f0e67427aae362c8a4a76324940a6b9ca22",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "world_candidates.actor_0"
+  },
+  {
+    "sha256": "c8ba7a283d23226a87aab4de3f2f4f0e67427aae362c8a4a76324940a6b9ca22",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "world_candidates.actor_1"
+  },
+  {
+    "sha256": "c8ba7a283d23226a87aab4de3f2f4f0e67427aae362c8a4a76324940a6b9ca22",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-plan-skill-v3",
+    "stage": "world_candidates.actor_2"
+  },
+  {
+    "sha256": "1689a68cfb8d6f305785cd8b1490e399338f150f78adf1a6c2c30de2b0535f1c",
+    "source": "skills/context-builder-source-isolation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "context-builder-source-isolation@context-builder-source-isolation-v2",
+    "stage": "retrieval"
+  },
+  {
+    "sha256": "1689a68cfb8d6f305785cd8b1490e399338f150f78adf1a6c2c30de2b0535f1c",
+    "source": "skills/context-builder-source-isolation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "context-builder-source-isolation@context-builder-source-isolation-v2",
+    "stage": "retrieval_query_expansion"
+  },
+  {
+    "sha256": "6e45d92d57f40f3a76c990bde4014ce1fcc064eb2a37cb5b9425d55c61efa4c4",
+    "source": "skills/context-builder-source-isolation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "context-builder-source-isolation@context-builder-source-isolation-v2",
+    "stage": "context_compress"
+  },
+  {
+    "sha256": "94df1a5481152a00fe22f18a4f7198548f7340d55113392d3e3b635f5a99b6e6",
+    "source": "skills/context-builder-source-isolation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "context-builder-source-isolation@context-builder-source-isolation-v2",
+    "stage": "context_fidelity"
+  },
+  {
+    "sha256": "cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+    "source": "skills/prose-generation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "prose-generation@prose-generation-v4",
+    "stage": "draft"
+  },
+  {
+    "sha256": "221d5b30d06f98d59d74ca5dd8c7df97094b201e52036b835e404e5b2e952f04",
+    "source": "skills/prose-generation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "prose-generation@prose-generation-v4",
+    "stage": "revision"
+  },
+  {
+    "sha256": "3f5404314c62b07694038df04bf15deede0983b123fbb56e5e85b1ee44c5c040",
+    "source": "skills/prose-generation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "prose-generation@prose-generation-v4",
+    "stage": "revision:targeted"
+  },
+  {
+    "sha256": "8c6277036f66ec9d2ca42bab98558055cd87af848cff33cc8495df2af0a21ee0",
+    "source": "skills/prose-generation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "prose-generation@prose-generation-v4",
+    "stage": "screenplay_generate"
+  },
+  {
+    "sha256": "e3e8acffe9b7f44a27d530c529b734268316307ff2330662bf664cf379348482",
+    "source": "skills/prose-generation/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "prose-generation@prose-generation-v4",
+    "stage": "screenplay_revision"
+  },
+  {
+    "sha256": "4919b9aaa78e6e01d0fb2c9162bc264effe57792a746c38a7b5d195202f12c31",
+    "source": "skills/quality-review/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "quality-review@quality-review-v3",
+    "stage": "review"
+  },
+  {
+    "sha256": "4919b9aaa78e6e01d0fb2c9162bc264effe57792a746c38a7b5d195202f12c31",
+    "source": "skills/quality-review/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "quality-review@quality-review-v3",
+    "stage": "rereview"
+  },
+  {
+    "sha256": "5ca775e3852992e5da495e75c83284bb32b5fe70fabf7bd61482a3d22286397f",
+    "source": "skills/quality-review/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "quality-review@quality-review-v3",
+    "stage": "narrative_semantic_evaluation"
+  },
+  {
+    "sha256": "7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+    "source": "skills/quality-review/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "quality-review@quality-review-v3",
+    "stage": "longform_prose_review"
+  },
+  {
+    "sha256": "0ca21a9009b6737682ad0b5699958bf85ef68fbce9dab14963a1095a2bce600e",
+    "source": "skills/quality-review/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "quality-review@quality-review-v3",
+    "stage": "screenplay_review"
+  },
+  {
+    "sha256": "3822c0af17c72d7117b3c2e1f4f0187faffe4ac743a5f5de6cb03ab46162529d",
+    "source": "skills/long-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "long-outline@long-outline-v3",
+    "stage": "ending.intent.generate"
+  },
+  {
+    "sha256": "57a904dc159727c5282563bd01fa3aedd65c1e0ce30ec20dae1a3198e89d9204",
+    "source": "skills/long-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "long-outline@long-outline-v3",
+    "stage": "book_plan.generate"
+  },
+  {
+    "sha256": "7fe045d482ee53e86ca6abbe801df67907cb1d7cdda4dddf882e01103a0c1942",
+    "source": "skills/long-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "long-outline@long-outline-v3",
+    "stage": "volume_plan.generate"
+  },
+  {
+    "sha256": "1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+    "source": "skills/long-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "long-outline@long-outline-v3",
+    "stage": "arc_plan.generate"
+  },
+  {
+    "sha256": "ea1b1e9b6d2828d1562691e32454f66111442a76e9d1a8fcca47aba2faf798b2",
+    "source": "skills/long-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "long-outline@long-outline-v3",
+    "stage": "chapter_group_plan.generate"
+  },
+  {
+    "sha256": "f53b98a60e62f01e630bafd21de4dbef0b9cbc051a8bbd5b43520820bd4871af",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "chapter_plan.generate"
+  },
+  {
+    "sha256": "f34a6586e6cde44f724edad45bd41dba8b1827d4f51421d28f8a3f39e62e963e",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "memo"
+  },
+  {
+    "sha256": "56f15ea6762d048082c3b064636b7ceccf074c9afac71c4f331523ddf964bac2",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "world_candidates.generate"
+  },
+  {
+    "sha256": "c92ddfd3e336300653cf82be06037937a5b39438c8eaf38c7180b2bc180af081",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "world_candidates.evaluate"
+  },
+  {
+    "sha256": "c8ba7a283d23226a87aab4de3f2f4f0e67427aae362c8a4a76324940a6b9ca22",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "world_candidates.actor_0"
+  },
+  {
+    "sha256": "c8ba7a283d23226a87aab4de3f2f4f0e67427aae362c8a4a76324940a6b9ca22",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "world_candidates.actor_1"
+  },
+  {
+    "sha256": "c8ba7a283d23226a87aab4de3f2f4f0e67427aae362c8a4a76324940a6b9ca22",
+    "source": "skills/chapter-outline/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "chapter-outline@chapter-outline-qualification-v2",
+    "stage": "world_candidates.actor_2"
+  },
+  {
+    "sha256": "b1a7097473a1f84f25fb47dd83a15c95b9ac1eba97fecfb4df42d1d6dd92b39f",
+    "source": "skills/character-design/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "character-design@character-design-qualification-v3",
+    "stage": "character.cast.generate"
+  },
+  {
+    "sha256": "95d185611efe912d75bdc1fd97f1908cb52d9c700389949b56bd8a7355d92988",
+    "source": "skills/narrative-beat-design/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "narrative-beat-design@narrative-beat-design-qualification-v3",
+    "stage": "theme.candidates.generate"
+  },
+  {
+    "sha256": "a7fffef1c10a44d1288a805d16ed60c94c9279161b74e3b328501ef646d85081",
+    "source": "skills/topic-development/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "topic-development@topic-development-qualification-v2",
+    "stage": "creative.candidates.generate"
+  },
+  {
+    "sha256": "b4a1610a11bddc254f79a2277cbd854cf3d18c2cb412602ec7871dba3ae4d872",
+    "source": "skills/topic-development/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "topic-development@topic-development-qualification-v2",
+    "stage": "reader.promise.generate"
+  },
+  {
+    "sha256": "a098a9f0c4fa7fb29d7561079339c046c8fbfbda694a3eae872eea70da49c02a",
+    "source": "skills/worldbuilding/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "worldbuilding@worldbuilding-qualification-v2",
+    "stage": "world.design.generate"
+  },
+  {
+    "sha256": "a098a9f0c4fa7fb29d7561079339c046c8fbfbda694a3eae872eea70da49c02a",
+    "source": "skills/worldbuilding/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "worldbuilding@worldbuilding-qualification-v2",
+    "stage": "world_candidates.generate"
+  },
+  {
+    "sha256": "a098a9f0c4fa7fb29d7561079339c046c8fbfbda694a3eae872eea70da49c02a",
+    "source": "skills/worldbuilding/SKILL.md",
+    "status": "CURRENT_CODE_STAGE_PROJECTION_DEPLOYMENT_UNVERIFIED",
+    "identity": "worldbuilding@worldbuilding-qualification-v2",
+    "stage": "world_candidates.evaluate"
+  }
+]

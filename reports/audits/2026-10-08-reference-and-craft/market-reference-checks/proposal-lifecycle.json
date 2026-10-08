@@ -1,0 +1,41 @@
+{
+  "errors": [
+    "architecture/proposals/classical-corpus-codex-validation.md: stale lifecycle: implementation scope changed since review",
+    "architecture/proposals/narrative-memory-context-lifecycle-closure.md: stale lifecycle: implementation scope changed since review",
+    "architecture/proposals/prompt-and-generation-contract-convergence-01.md: stale lifecycle: implementation scope changed since review"
+  ],
+  "proposal_count": 4,
+  "proposals": [
+    {
+      "baseline_sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+      "path": "architecture/proposals/classical-corpus-codex-validation.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "0a3f0041c5faa253b8de7decae96e55bcd64afa4",
+      "path": "architecture/proposals/industrial-novel-os-blueprint.md",
+      "remaining_decisions": 6,
+      "remaining_work": 11,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+      "path": "architecture/proposals/narrative-memory-context-lifecycle-closure.md",
+      "remaining_decisions": 3,
+      "remaining_work": 4,
+      "status": "PARTIALLY_IMPLEMENTED"
+    },
+    {
+      "baseline_sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
+      "path": "architecture/proposals/prompt-and-generation-contract-convergence-01.md",
+      "remaining_decisions": 0,
+      "remaining_work": 2,
+      "status": "PARTIALLY_IMPLEMENTED"
+    }
+  ],
+  "retained_terminal_count": 0,
+  "schema_version": "novel-forge.proposal-lifecycle.v1",
+  "status": "FAIL"
+}

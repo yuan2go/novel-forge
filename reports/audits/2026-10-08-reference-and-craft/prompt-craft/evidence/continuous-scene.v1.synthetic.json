@@ -1,0 +1,26 @@
+{
+  "contract_version": "scene-realization-composition.v1",
+  "plan_version_id": "",
+  "plan_content_hash": "",
+  "style_digest": "sha256:cd59036f92de48974d69907bc470ba06f9a27cbf83dea3582fc895678fca4164",
+  "plan_representation": "STRUCTURED_SCENE_BEATS",
+  "scene_source_digest": "sha256:64a680dc111bd671ff51fed788ec008664cee5cc8cb5d17066ffe61cc3c8945f",
+  "slots": [
+    {
+      "slot_id": "s1:skeleton",
+      "scene_id": "s1",
+      "capability": "SKELETON",
+      "beat_ids": [
+        "b1"
+      ],
+      "character_ids": [
+        "p"
+      ],
+      "accessible_knowledge": []
+    }
+  ],
+  "voices": [],
+  "integration_policy": "ordered-slot-concatenation.v1",
+  "authority": "CANDIDATE_REALIZATION_ONLY",
+  "contract_digest": "sha256:a83d855e5accb5d2a119c19f5a87481906628e0d9cfc859ada0ed1ba12dd15e2"
+}

@@ -1,0 +1,239 @@
+{
+  "evidence_class": "SYNTHETIC_OFFLINE_CODE_ONLY",
+  "baseline_main": "7540c51fe587266b8083ef4168271aa5a4ff9f3e",
+  "core_catalog_count": 43,
+  "non_wuxia_xuanhuan_families": 40,
+  "affinity_genre_sets": [
+    [
+      "wuxia",
+      "xuanhuan",
+      "chinese_serial"
+    ]
+  ],
+  "affinity_pov_sets": [
+    [
+      "limited",
+      "first_person"
+    ]
+  ],
+  "same_method_assessments": [
+    {
+      "case": "genre_only_xuanhuan",
+      "context": {
+        "genre": [
+          "xuanhuan"
+        ]
+      },
+      "score": 2,
+      "rejection_reason": "",
+      "match_reasons": [
+        "CRAFT_CONTEXT:genre:xuanhuan",
+        "CRAFT_VARIATION_BONUS"
+      ]
+    },
+    {
+      "case": "genre_only_romance",
+      "context": {
+        "genre": [
+          "romance"
+        ]
+      },
+      "score": 0,
+      "rejection_reason": "CRAFT_NO_CONTEXT_MATCH",
+      "match_reasons": []
+    },
+    {
+      "case": "same_problem_xuanhuan",
+      "context": {
+        "genre": [
+          "xuanhuan"
+        ],
+        "style": [
+          "省去说明"
+        ],
+        "pov": [
+          "limited"
+        ]
+      },
+      "score": 5,
+      "rejection_reason": "",
+      "match_reasons": [
+        "CRAFT_CONTEXT:genre:xuanhuan",
+        "CRAFT_CONTEXT:pov:limited",
+        "CRAFT_CONTEXT:style:省去,说明",
+        "CRAFT_VARIATION_BONUS"
+      ]
+    },
+    {
+      "case": "same_problem_romance",
+      "context": {
+        "genre": [
+          "romance"
+        ],
+        "style": [
+          "省去说明"
+        ],
+        "pov": [
+          "limited"
+        ]
+      },
+      "score": 4,
+      "rejection_reason": "",
+      "match_reasons": [
+        "CRAFT_CONTEXT:pov:limited",
+        "CRAFT_CONTEXT:style:省去,说明",
+        "CRAFT_VARIATION_BONUS"
+      ]
+    },
+    {
+      "case": "same_genre_first_person",
+      "context": {
+        "genre": [
+          "xuanhuan"
+        ],
+        "style": [
+          "省去说明"
+        ],
+        "pov": [
+          "first_person"
+        ]
+      },
+      "score": 5,
+      "rejection_reason": "",
+      "match_reasons": [
+        "CRAFT_CONTEXT:genre:xuanhuan",
+        "CRAFT_CONTEXT:pov:first_person",
+        "CRAFT_CONTEXT:style:省去,说明",
+        "CRAFT_VARIATION_BONUS"
+      ]
+    },
+    {
+      "case": "same_genre_omniscient",
+      "context": {
+        "genre": [
+          "xuanhuan"
+        ],
+        "style": [
+          "省去说明"
+        ],
+        "pov": [
+          "omniscient"
+        ]
+      },
+      "score": 4,
+      "rejection_reason": "",
+      "match_reasons": [
+        "CRAFT_CONTEXT:genre:xuanhuan",
+        "CRAFT_CONTEXT:style:省去,说明",
+        "CRAFT_VARIATION_BONUS"
+      ]
+    },
+    {
+      "case": "pov_only_first_person",
+      "context": {
+        "pov": [
+          "first_person"
+        ]
+      },
+      "score": 2,
+      "rejection_reason": "",
+      "match_reasons": [
+        "CRAFT_CONTEXT:pov:first_person",
+        "CRAFT_VARIATION_BONUS"
+      ]
+    },
+    {
+      "case": "pov_only_omniscient",
+      "context": {
+        "pov": [
+          "omniscient"
+        ]
+      },
+      "score": 0,
+      "rejection_reason": "CRAFT_NO_CONTEXT_MATCH",
+      "match_reasons": []
+    }
+  ],
+  "checks": [
+    {
+      "id": "genre_alone_matches_generic_gap",
+      "actual": "",
+      "expected": "",
+      "pass": true
+    },
+    {
+      "id": "other_genre_alone_not_match",
+      "actual": "CRAFT_NO_CONTEXT_MATCH",
+      "expected": "CRAFT_NO_CONTEXT_MATCH",
+      "pass": true
+    },
+    {
+      "id": "method_usable_in_other_genre_with_same_problem",
+      "actual": "",
+      "expected": "",
+      "pass": true
+    },
+    {
+      "id": "no_optional_cards_not_a_domain_selection_error",
+      "actual": 0,
+      "expected": 0,
+      "pass": true
+    },
+    {
+      "id": "author_selected_required_card_keeps_gate",
+      "actual": "MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE",
+      "expected": "MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE",
+      "pass": true
+    },
+    {
+      "id": "generic_creative_skill_fallback_without_genre_skill",
+      "actual": "topic-development",
+      "expected": "topic-development",
+      "pass": true
+    },
+    {
+      "id": "draft_projection_excludes_screenplay_and_revision",
+      "actual": false,
+      "expected": false,
+      "pass": true
+    },
+    {
+      "id": "unselected_reward_not_applicable_to_evaluation",
+      "actual": "NOT_APPLICABLE",
+      "expected": "NOT_APPLICABLE",
+      "pass": true
+    },
+    {
+      "id": "unselected_hook_not_applicable_to_evaluation",
+      "actual": "NOT_APPLICABLE",
+      "expected": "NOT_APPLICABLE",
+      "pass": true
+    },
+    {
+      "id": "quality_cannot_require_unselected_reward",
+      "actual": [
+        "NOT_APPLICABLE",
+        null,
+        false,
+        []
+      ],
+      "expected": [
+        "NOT_APPLICABLE",
+        null,
+        false,
+        []
+      ],
+      "pass": true
+    },
+    {
+      "id": "current_longitudinal_reward_cadence_is_measurement",
+      "actual": "MEASURED",
+      "expected": "MEASURED",
+      "pass": true
+    }
+  ],
+  "provider_calls": 0,
+  "book_activation": 0,
+  "literary_effect": "UNVERIFIED",
+  "scope_note": "Empty optional selection is not full production admission; real author required cards and schema/source gates remain binding."
+}

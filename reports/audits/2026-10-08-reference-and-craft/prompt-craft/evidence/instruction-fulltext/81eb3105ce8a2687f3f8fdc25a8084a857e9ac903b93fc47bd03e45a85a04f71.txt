@@ -1,0 +1,25 @@
+{
+  "$id": "novel-forge://schemas/execution-input/quality-intrinsic-judge/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "context_bundle_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "input_manifest_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "route_snapshot_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "input_manifest_hash",
+    "context_bundle_asset_version_id",
+    "route_snapshot_hash"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,88 @@
+{
+  "contract_version": "scene-realization-composition.v1",
+  "plan_version_id": "",
+  "plan_content_hash": "",
+  "style_digest": "sha256:cd59036f92de48974d69907bc470ba06f9a27cbf83dea3582fc895678fca4164",
+  "plan_representation": "STRUCTURED_SCENE_BEATS",
+  "scene_source_digest": "sha256:64a680dc111bd671ff51fed788ec008664cee5cc8cb5d17066ffe61cc3c8945f",
+  "slots": [
+    {
+      "slot_id": "s1:skeleton",
+      "scene_id": "s1",
+      "capability": "SKELETON",
+      "beat_ids": [
+        "b1"
+      ],
+      "character_ids": [
+        "p"
+      ],
+      "accessible_knowledge": []
+    },
+    {
+      "slot_id": "s1:action",
+      "scene_id": "s1",
+      "capability": "ACTION",
+      "beat_ids": [
+        "b1"
+      ],
+      "character_ids": [
+        "p"
+      ],
+      "accessible_knowledge": []
+    },
+    {
+      "slot_id": "s1:interior:p",
+      "scene_id": "s1",
+      "capability": "INTERIOR",
+      "beat_ids": [
+        "b1"
+      ],
+      "character_ids": [
+        "p"
+      ],
+      "accessible_knowledge": []
+    },
+    {
+      "slot_id": "s1:description",
+      "scene_id": "s1",
+      "capability": "DESCRIPTION",
+      "beat_ids": [
+        "b1"
+      ],
+      "character_ids": [
+        "p"
+      ],
+      "accessible_knowledge": []
+    },
+    {
+      "slot_id": "s1:transition",
+      "scene_id": "s1",
+      "capability": "TRANSITION",
+      "beat_ids": [
+        "b1"
+      ],
+      "character_ids": [
+        "p"
+      ],
+      "accessible_knowledge": []
+    }
+  ],
+  "voices": [],
+  "integration_policy": "ordered-slot-concatenation.v1",
+  "authority": "CANDIDATE_REALIZATION_ONLY",
+  "core_projection": {
+    "contract_version": "scene-core-slots.v1",
+    "source_capabilities": {
+      "s1": [
+        "SKELETON",
+        "ACTION",
+        "INTERIOR",
+        "DESCRIPTION",
+        "TRANSITION"
+      ]
+    },
+    "intrinsic_capability": "SKELETON",
+    "authority": "EXECUTION_PROJECTION_ONLY"
+  },
+  "contract_digest": "sha256:a0e251dcd887d87b3b28f657f9505cc4a59a17ec2a41bcd388b2c324aaf197ae"
+}

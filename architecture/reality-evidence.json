@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261008_0182_source_observation_span_identity",
+  "migration_head": "20261008_0183_source_observation_span_identity",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -5732,6 +5732,10 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/runtime_usage.py",
           "symbol": "list_runtime_usage"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/market_application.py",
+          "symbol": "apply_market_action"
         }
       ],
       "domain_symbols": [
@@ -5814,6 +5818,14 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/applicability.py",
           "symbol": "assess_applicability"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/market.py",
+          "symbol": "RankDefinition"
+        },
+        {
+          "path": "src/novel_forge/modules/source_authority/market.py",
+          "symbol": "UseScope"
         }
       ],
       "commands_operations": [
@@ -5836,6 +5848,10 @@
         {
           "path": "src/novel_forge/modules/source_authority/corpus.py",
           "symbol": "DecideCorpusEquivalence"
+        },
+        {
+          "path": "src/novel_forge/modules/source_import/market_runtime.py",
+          "symbol": "admit_market_refresh"
         }
       ],
       "state_ownership": {
@@ -5848,7 +5864,9 @@
           "versioned dataset/underlying-work rights and admission decisions",
           "verified Corpus content/acquisition bindings and exact SourceWork bridges",
           "versioned work-scoped use grants and current consumption admission",
-          "immutable Corpus processing, scoped integrity reviews and non-transitive equivalence decisions"
+          "immutable Corpus processing, scoped integrity reviews and non-transitive equivalence decisions",
+          "platform-stable work metadata versions and distinct ranking definitions/observations",
+          "exact market-to-Corpus edition evidence links"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -5863,6 +5881,10 @@
           {
             "path": "src/novel_forge/modules/source_authority/corpus_mutations.py",
             "symbol": "apply_corpus_action"
+          },
+          {
+            "path": "src/novel_forge/modules/source_authority/market_application.py",
+            "symbol": "apply_market_action"
           }
         ]
       },
@@ -5971,9 +5993,14 @@
           "locator": "MIGRATION_ID = \"20260912_0129_corpus_member_fk_indexes\""
         },
         {
-          "path": "src/novel_forge/storage/migrations/versions/v20261008_0182_source_observation_span_identity.py",
-          "id": "20261008_0182_source_observation_span_identity",
-          "locator": "MIGRATION_ID = \"20261008_0182_source_observation_span_identity\""
+          "path": "src/novel_forge/storage/migrations/versions/v20261008_0182_source_market_observations.py",
+          "id": "20261008_0182_source_market_observations",
+          "locator": "MIGRATION_ID = \"20261008_0182_source_market_observations\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261008_0183_source_observation_span_identity.py",
+          "id": "20261008_0183_source_observation_span_identity",
+          "locator": "MIGRATION_ID = \"20261008_0183_source_observation_span_identity\""
         }
       ],
       "external_effects": {
@@ -5987,6 +6014,10 @@
           {
             "path": "src/novel_forge/modules/source_import/corpus_ingestion/acquisition.py",
             "symbol": "CorpusAcquisitionAdapter"
+          },
+          {
+            "path": "src/novel_forge/modules/source_import/market_adapter.py",
+            "symbol": "QidianRankAdapter"
           }
         ]
       },
@@ -6094,6 +6125,22 @@
         {
           "path": "tests/integration/test_narrative_orchestration_qualification_postgres.py",
           "symbol": "test_accepted_reality_closes_three_chapter_orchestration_loop"
+        },
+        {
+          "path": "tests/integration/test_source_market_postgres.py",
+          "symbol": "test_native_author_import_identity_snapshots_idempotency_failures_and_revocation"
+        },
+        {
+          "path": "tests/integration/test_source_market_postgres.py",
+          "symbol": "test_native_fetch_receipt_replay_and_source_data_ineligible"
+        },
+        {
+          "path": "tests/integration/test_source_market_postgres.py",
+          "symbol": "test_native_unknown_fetch_never_redispatches_or_creates_new_scheduled_task"
+        },
+        {
+          "path": "tests/integration/test_source_market_migration_postgres.py",
+          "symbol": "test_market_forward_upgrade_preserves_existing_project_and_installs_scope_guards"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9942,7 +9989,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:053f5c1dd6e95b8918726ebe8e40745b37ff8f9a559a3d82df817bc7386e6029"
+    "implementation_tree_sha": "sha256:30570dcec77bd6b5327d3b4df6c8dbcb698ab1c51ff9d6813761401792a38538"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

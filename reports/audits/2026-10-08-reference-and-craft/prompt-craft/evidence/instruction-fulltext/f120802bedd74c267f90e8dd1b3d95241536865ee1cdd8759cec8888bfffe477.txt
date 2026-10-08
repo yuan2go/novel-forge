@@ -1,0 +1,2 @@
+{"allowed":["model.provider.invoke"],"default":"DENY","denied":[],"governing_policy_hash":"sha256:65c39e5333d62a936e6d4f1047b0a9ac4bf71d49a9e4422257de7a9e643b58c8","governing_policy_ref":"tools:chapter-generation-pack:v2","invoked":["model.provider.invoke"]}
+Do not invoke shell, file, MCP, web, or any other tool.

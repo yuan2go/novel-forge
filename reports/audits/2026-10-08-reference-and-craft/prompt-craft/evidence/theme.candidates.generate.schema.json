@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "prohibited_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "thematic_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "opposing_answers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "choice_tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "thematic_pressure": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "choice",
+          "cost",
+          "thematic_pressure"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 16
+    },
+    "applicability": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "pattern": "^(?:\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[[0-9]+\\])+|/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*)$",
+            "description": "Exact JSONPath or RFC 6901 JSON Pointer of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPLICABLE",
+              "NOT_APPLICABLE",
+              "PROHIBITED",
+              "UNDETERMINED"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "field_path",
+          "status",
+          "rationale"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "objective",
+    "constraints",
+    "prohibited_outcomes",
+    "thematic_question",
+    "opposing_answers",
+    "choice_tests",
+    "applicability"
+  ],
+  "additionalProperties": false
+}

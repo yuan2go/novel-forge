@@ -1,0 +1,9 @@
+{
+  "$id": "schema:execution-input:agent-workspace-execute:v1",
+  "additionalProperties": true,
+  "required": [
+    "instruction",
+    "accepted_boundary"
+  ],
+  "type": "object"
+}

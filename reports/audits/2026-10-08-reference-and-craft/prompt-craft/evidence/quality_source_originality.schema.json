@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "minLength": 1
+          },
+          "gate_status": {
+            "type": "string",
+            "enum": [
+              "PASSED",
+              "PASSED_WITH_WARNINGS",
+              "FAILED",
+              "INSUFFICIENT_EVIDENCE",
+              "REQUIRES_HUMAN_REVIEW",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "evidence_locations": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+              "type": "object",
+              "properties": {
+                "quote": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "claim": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "quote",
+                "claim"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "issue_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "revision_strategies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "dimension",
+          "gate_status",
+          "score",
+          "confidence",
+          "evidence_locations",
+          "issue_codes",
+          "revision_strategies"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "dimensions"
+  ],
+  "additionalProperties": false
+}

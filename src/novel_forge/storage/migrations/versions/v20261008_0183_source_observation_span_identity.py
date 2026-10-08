@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-MIGRATION_ID = "20261008_0182_source_observation_span_identity"
-DOWN_REVISION = "20261008_0181_author_manuscript_delivery"
+MIGRATION_ID = "20261008_0183_source_observation_span_identity"
+DOWN_REVISION = "20261008_0182_source_market_observations"
 FORWARD_ONLY = True
 BACKUP_REQUIRED = True
 FORWARD_FIX = "Retain every original observation and span; append a correction to evidence identity."

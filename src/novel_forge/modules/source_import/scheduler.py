@@ -26,7 +26,7 @@ class SourceImportScheduler(SourceAuthorityScheduler):
             lease_seconds=lease_seconds,
         )
         self.operation_names = SOURCE_IMPORT_OPERATIONS
-        self.output_keys = frozenset({"source.import.repository_snapshot"})
+        self.output_keys = frozenset({"source.import.repository_snapshot", "source.market.record"})
 
     def pending_for_job(
         self, *, project_id: str, import_job_id: str, limit: int = 50, excluded: tuple[str, ...] = ()

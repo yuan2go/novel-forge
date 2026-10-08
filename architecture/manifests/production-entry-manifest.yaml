@@ -387,6 +387,15 @@
       "dispatch": "worker_claim",
       "api_call": "application.admit_catalog",
       "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.import.market.refresh",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/market_runtime.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "admit_market_refresh",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
     }
   ]
 }

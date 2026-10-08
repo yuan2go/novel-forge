@@ -1,0 +1,11 @@
+{
+  "contract_version": "foundation-generation.v4",
+  "role": "ENDING_INTENT",
+  "task": "Design an ending direction consistent with this work, including an open ending when selected. Preserve applicable commitments and prohibitions. Do not invent irreversible costs, closure or a sequel bridge. Intent is not accepted history.",
+  "parent_roles": [
+    "CREATIVE_FOUNDATION"
+  ],
+  "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
+  "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+  "applicability_contract": "Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+}

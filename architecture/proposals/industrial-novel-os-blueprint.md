@@ -8,24 +8,24 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42`
-Baseline implementation identity: `sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87`
+Current-reality baseline: `0a3f0041c5faa253b8de7decae96e55bcd64afa4`
+Baseline implementation identity: `sha256:6a36853ee4ae9db0e5df0d263cc2e610a45550eb4827edc7b5403c12af1e18f8`
 
-2026-10-07 scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
+2026-10-08 scoped Source integration review: Bounded market observations have native controlled engineering evidence; live rankings, authorized text and real reference-assisted prose remain unproven. Other unresolved decisions are retained. Prior scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
 real-Provider qualification or literary quality.
 
-Source baseline refreshed for the coordinated forward-contract integration. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
+The earlier coordinated forward-contract integration retained its explicit NOT_RUN validation record. The scoped market-reference implementation now has focused PostgreSQL, migration, Source isolation and author UI checks; these do not qualify live access, real text analysis or prose benefit. Archived closure inputs remain HISTORICAL_REPLAY_ONLY and grant no current production permission. Full qualification and merged-main validation remain NOT_RUN.
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-07",
+  "reviewed_on": "2026-10-08",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
-    "implementation_tree_sha": "sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87"
+    "sha": "0a3f0041c5faa253b8de7decae96e55bcd64afa4",
+    "implementation_tree_sha": "sha256:6a36853ee4ae9db0e5df0d263cc2e610a45550eb4827edc7b5403c12af1e18f8"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -39,7 +39,10 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
     "src/novel_forge/storage/migrations",
     "src/novel_forge/storage/book_authority_repositories.py",
     "src/novel_forge/modules/narrative_state",
-    "src/novel_forge/modules/worldbuilding"
+    "src/novel_forge/modules/worldbuilding",
+    "src/novel_forge/modules/source_authority",
+    "src/novel_forge/modules/source_import",
+    "src/novel_forge/storage/source_market_records.py"
   ],
   "implemented_refs": [
     {
@@ -175,6 +178,14 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
     {
       "path": "src/novel_forge/modules/chapter_authority/handlers.py",
       "symbol": "merge_task_retrieval_projections"
+    },
+    {
+      "path": "src/novel_forge/modules/source_authority/market_application.py",
+      "symbol": "apply_market_action"
+    },
+    {
+      "path": "src/novel_forge/modules/source_import/market_runtime.py",
+      "symbol": "execute_market_refresh"
     }
   ],
   "superseding_refs": [
@@ -267,7 +278,7 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
           "path": "scripts/narrative_closure_campaign.py"
         },
         {
-          "path": "config/production/narrative-closure/authorization-request.json"
+          "path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-request.json"
         }
       ]
     },
@@ -279,7 +290,7 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
           "path": "scripts/narrative_closure_review.py"
         },
         {
-          "path": "config/production/narrative-closure/protocol.json"
+          "path": "config/archive/creative-inputs-legacy/narrative-closure/protocol.json"
         }
       ]
     },
@@ -360,6 +371,20 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
           "symbol": "inherit_unchanged_prefix"
         }
       ]
+    },
+    {
+      "id": "hot-novel-lawful-live-and-prose",
+      "description": "Verify current official ranking navigation and lawful access, current author/source inputs and authorized native real A/B prose; controlled metadata tests do not prove literary benefit.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/source_import/market_adapter.py",
+          "symbol": "QidianRankAdapter"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+          "symbol": "drive_book"
+        }
+      ]
     }
   ]
 }
@@ -428,7 +453,7 @@ coverage and issue dispositions. Public release is separately authorized.
 
 | Direction | Native consumer and unresolved prerequisite | Decision / exit condition |
 | --- | --- | --- |
-| Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | HOLD until source authorization and a testable topic-quality hypothesis exist; then one bounded input adapter |
+| Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | WP-HOT-NOVEL-REFERENCE-TO-PROSE-01 commissions a bounded Source adapter, distinct rank/time observations and author reference access; runtime evidence remains pending. Preserve source authorization and comparable-cohort requirements; heat does not prove mechanism quality |
 | General association graph | A concrete query unmet by existing accepted/inferred indexes; exact source and relation provenance | HOLD until that query and measured improvement are specified; never merge inferred relations into accepted truth |
 | Textual novel and scene screenplay adaptation | Exact accepted source edition; distinct chapter/scene-dialogue contracts and review rules; source/output rights | REQUIRED IN WP02: implement through existing Editor and Authorities. Image, audio and video production are outside this scope; publication remains separately authorized |
 

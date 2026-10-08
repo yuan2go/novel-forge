@@ -1,0 +1,12 @@
+{
+  "audit_high_and_critical": true,
+  "critical_requires_approval": true,
+  "default": "DENY",
+  "empty_allowlist_semantics": "DENY_ALL",
+  "explicit_tool_refs": [
+    "model.provider.invoke",
+    "storage.object.put"
+  ],
+  "inline_auth_material_allowed": false,
+  "policy_id": "tools:chapter-generation-pack:v2"
+}

@@ -1,0 +1,37 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "evaluation": {
+      "type": "object"
+    },
+    "findings": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "score_range": {
+      "items": {
+        "maximum": 100,
+        "minimum": 0,
+        "type": "integer"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "PASSED",
+        "FAILED",
+        "UNCERTAIN"
+      ]
+    }
+  },
+  "required": [
+    "status",
+    "score_range",
+    "findings"
+  ],
+  "type": "object"
+}

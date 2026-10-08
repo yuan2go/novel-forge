@@ -14,11 +14,16 @@ from .contracts import IngestionFailure
 
 
 class CorpusHttpTransport:
-    def __init__(self, *, token: str = "") -> None:
+    def __init__(self, *, token: str = "", allowed_hosts: tuple[str, ...] | None = None, max_redirects: int = 5) -> None:
         self.token = token
+        self.allowed_hosts = allowed_hosts
+        if not 0 <= max_redirects <= 5:
+            raise ValueError("Redirect count must be bounded")
+        self.max_redirects = max_redirects
 
-    @staticmethod
-    def _host_allowed(host: str) -> bool:
+    def _host_allowed(self, host: str) -> bool:
+        if self.allowed_hosts is not None:
+            return host in self.allowed_hosts
         return host in {"huggingface.co", "archive.org"} or any(
             host.endswith(suffix)
             for suffix in (".huggingface.co", ".hf.co", ".archive.org")
@@ -26,13 +31,14 @@ class CorpusHttpTransport:
 
     @contextmanager
     def open(
-        self, url: str, *, timeout: int, method: str = "GET"
+        self, url: str, *, timeout: int, method: str = "GET",
+        conditional_headers: dict[str, str] | None = None, accepted_statuses: tuple[int, ...] = (200,)
     ) -> Iterator[http.client.HTTPResponse]:
         current = url
         connection = None
         response = None
         try:
-            for _ in range(6):
+            for _ in range(self.max_redirects + 1):
                 parsed = urlsplit(current)
                 host = parsed.hostname or ""
                 if (
@@ -100,6 +106,10 @@ class CorpusHttpTransport:
                     "User-Agent": "NovelForge-Corpus/1",
                     "Accept-Encoding": "identity",
                 }
+                if conditional_headers:
+                    if set(conditional_headers) - {"If-None-Match", "If-Modified-Since"}:
+                        raise IngestionFailure("REMOTE_HEADERS_FORBIDDEN")
+                    headers.update(conditional_headers)
                 if self.token and host == "huggingface.co":
                     headers["Authorization"] = "Bearer " + self.token
                 target = parsed.path or "/"
@@ -108,6 +118,8 @@ class CorpusHttpTransport:
                 connection.request(method, target, headers=headers)
                 response = connection.getresponse()
                 if response.status in {301, 302, 303, 307, 308}:
+                    if self.max_redirects == 0:
+                        raise IngestionFailure("REMOTE_REDIRECT_REVIEW_REQUIRED")
                     location = response.getheader("Location")
                     if not location:
                         raise IngestionFailure("REDIRECT_WITHOUT_LOCATION")
@@ -115,11 +127,11 @@ class CorpusHttpTransport:
                     response.close()
                     connection.close()
                     continue
-                if response.status in {401, 403}:
+                if response.status in {401, 403} and response.status not in accepted_statuses:
                     raise IngestionFailure(
                         "REMOTE_ACCESS_NOT_AUTHORIZED", str(response.status)
                     )
-                if response.status != 200:
+                if response.status not in accepted_statuses:
                     raise IngestionFailure("REMOTE_HTTP_FAILURE", str(response.status))
                 yield response
                 return

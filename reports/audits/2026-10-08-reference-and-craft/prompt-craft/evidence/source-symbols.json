@@ -1,0 +1,3710 @@
+[
+  {
+    "file": "src/novel_forge/cli/creation.py",
+    "symbol": "add_creation_parser",
+    "start": 8,
+    "end": 33
+  },
+  {
+    "file": "src/novel_forge/cli/creation.py",
+    "symbol": "run_creation_command",
+    "start": 36,
+    "end": 66
+  },
+  {
+    "file": "src/novel_forge/cli/creation.py",
+    "symbol": "run_opening_resource_successor_command",
+    "start": 69,
+    "end": 84
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "StartStoryFormationCommand",
+    "start": 43,
+    "end": 52
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "StoryFormationAdmission",
+    "start": 56,
+    "end": 61
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "StoryFormationApplication",
+    "start": 64,
+    "end": 929
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_definition",
+    "start": 932,
+    "end": 986
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "__init__",
+    "start": 66,
+    "end": 82
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "admit",
+    "start": 84,
+    "end": 168
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "advance",
+    "start": 170,
+    "end": 177
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "advance_expected",
+    "start": 179,
+    "end": 258
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "wait_for_approval",
+    "start": 260,
+    "end": 307
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "review_candidates",
+    "start": 309,
+    "end": 333
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "author_decision",
+    "start": 335,
+    "end": 390
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "resume",
+    "start": 392,
+    "end": 421
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "approve_book_design",
+    "start": 423,
+    "end": 483
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "cancel_continuation",
+    "start": 485,
+    "end": 500
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "require_continuation_live",
+    "start": 502,
+    "end": 505
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "abort",
+    "start": 507,
+    "end": 525
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "find_by_key",
+    "start": 527,
+    "end": 539
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "require",
+    "start": 541,
+    "end": 543
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "record_failure",
+    "start": 545,
+    "end": 558
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "schedule_candidates",
+    "start": 560,
+    "end": 596
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_control",
+    "start": 598,
+    "end": 641
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_execute_transaction",
+    "start": 643,
+    "end": 766
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_require_generation_permissions",
+    "start": 769,
+    "end": 792
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_schedule",
+    "start": 794,
+    "end": 813
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_latest_job",
+    "start": 815,
+    "end": 840
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "frozen_input",
+    "start": 842,
+    "end": 843
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_frozen_input",
+    "start": 845,
+    "end": 864
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_input_assets",
+    "start": 866,
+    "end": 908
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_context",
+    "start": 910,
+    "end": 917
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation.py",
+    "symbol": "_register_definitions",
+    "start": 919,
+    "end": 929
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "FormationApprovalRequired",
+    "start": 28,
+    "end": 48
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "FormationGeneration",
+    "start": 51,
+    "end": 538
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "__init__",
+    "start": 29,
+    "end": 48
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "__init__",
+    "start": 52,
+    "end": 59
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "_require_creation_live",
+    "start": 61,
+    "end": 64
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "prepare_layer",
+    "start": 66,
+    "end": 322
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "prepare_design",
+    "start": 324,
+    "end": 502
+  },
+  {
+    "file": "src/novel_forge/modules/book_design_authority/formation_generation.py",
+    "symbol": "_manual_activation_evidence",
+    "start": 504,
+    "end": 538
+  },
+  {
+    "file": "src/novel_forge/modules/creative/input_selection.py",
+    "symbol": "validate_input_selection",
+    "start": 16,
+    "end": 35
+  },
+  {
+    "file": "src/novel_forge/modules/creative/input_selection.py",
+    "symbol": "bind_input_selection",
+    "start": 38,
+    "end": 52
+  },
+  {
+    "file": "src/novel_forge/modules/creative/input_selection.py",
+    "symbol": "require_input_scope",
+    "start": 55,
+    "end": 66
+  },
+  {
+    "file": "src/novel_forge/modules/creative/input_selection.py",
+    "symbol": "narrative_brief",
+    "start": 69,
+    "end": 73
+  },
+  {
+    "file": "src/novel_forge/modules/creative/input_selection.py",
+    "symbol": "brief_input_assets",
+    "start": 76,
+    "end": 87
+  },
+  {
+    "file": "src/novel_forge/modules/creative/input_selection.py",
+    "symbol": "require_selected_brief",
+    "start": 90,
+    "end": 114
+  },
+  {
+    "file": "src/novel_forge/modules/creative/editorial_learning.py",
+    "symbol": "_require",
+    "start": 18,
+    "end": 20
+  },
+  {
+    "file": "src/novel_forge/modules/creative/editorial_learning.py",
+    "symbol": "validate_editorial_learning",
+    "start": 23,
+    "end": 51
+  },
+  {
+    "file": "src/novel_forge/modules/creative/editorial_learning.py",
+    "symbol": "editorial_author_design",
+    "start": 54,
+    "end": 73
+  },
+  {
+    "file": "src/novel_forge/modules/creative/editorial_learning.py",
+    "symbol": "bind_editorial_inputs",
+    "start": 76,
+    "end": 95
+  },
+  {
+    "file": "src/novel_forge/modules/creative/editorial_learning.py",
+    "symbol": "required_editorial_knowledge",
+    "start": 98,
+    "end": 108
+  },
+  {
+    "file": "src/novel_forge/modules/creative/editorial_learning.py",
+    "symbol": "editorial_selection_inputs",
+    "start": 111,
+    "end": 128
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "_object",
+    "start": 28,
+    "end": 34
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "_text",
+    "start": 37,
+    "end": 38
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "_texts",
+    "start": 41,
+    "end": 42
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "_records",
+    "start": 45,
+    "end": 51
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "_apply_work_schema",
+    "start": 54,
+    "end": 98
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "validate_foundation_applicability",
+    "start": 101,
+    "end": 143
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "foundation_output_schema",
+    "start": 146,
+    "end": 255
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "foundation_output_schema_ref",
+    "start": 258,
+    "end": 264
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "foundation_task",
+    "start": 267,
+    "end": 312
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "foundation_envelope",
+    "start": 315,
+    "end": 351
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "validate_foundation_payload",
+    "start": 354,
+    "end": 413
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "world_generation_contract",
+    "start": 416,
+    "end": 444
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "normalize_foundation_payload",
+    "start": 447,
+    "end": 478
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+    "symbol": "visit",
+    "start": 107,
+    "end": 120
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "require_candidate_repair_operation",
+    "start": 160,
+    "end": 199
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_repair_routing_lineage",
+    "start": 202,
+    "end": 327
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "planning_repair_route_receipt",
+    "start": 330,
+    "end": 538
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_narrative_intelligence_need",
+    "start": 541,
+    "end": 722
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_craft_context_sources",
+    "start": 725,
+    "end": 745
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_inherited_knowledge_versions",
+    "start": 748,
+    "end": 769
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_knowledge_access",
+    "start": 772,
+    "end": 780
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_required_selection_terms",
+    "start": 783,
+    "end": 808
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_selection_terms",
+    "start": 811,
+    "end": 845
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_narrative_intelligence_limit",
+    "start": 848,
+    "end": 849
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_merge_selection_terms",
+    "start": 852,
+    "end": 853
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_recent_activated_repetition_keys",
+    "start": 856,
+    "end": 872
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_realization_reference_contract",
+    "start": 875,
+    "end": 920
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "PlanningExecutionRoute",
+    "start": 924,
+    "end": 972
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_canonical",
+    "start": 975,
+    "end": 982
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_token",
+    "start": 985,
+    "end": 986
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_chapter_function_row",
+    "start": 989,
+    "end": 1039
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_logical_chapter_number",
+    "start": 1042,
+    "end": 1059
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_fixture_chapter_shape",
+    "start": 1062,
+    "end": 1067
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "planning_fixture_response",
+    "start": 1070,
+    "end": 1705
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_fixture_character_arc_stage",
+    "start": 1708,
+    "end": 1716
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_fixture_narrative_event_chain",
+    "start": 1719,
+    "end": 1765
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_strict_object",
+    "start": 1768,
+    "end": 1774
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_frozen_provider_value_schema",
+    "start": 1777,
+    "end": 1866
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_realization_authority_ref_schema",
+    "start": 1869,
+    "end": 1900
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_canonical_narrative_provider_properties",
+    "start": 1903,
+    "end": 2467
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "planning_schema_evidence_identity",
+    "start": 2470,
+    "end": 2504
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "world_schema_evidence_identity",
+    "start": 2507,
+    "end": 2544
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "planning_provider_output_schema",
+    "start": 2547,
+    "end": 3093
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_apply_work_planning_schema",
+    "start": 3096,
+    "end": 3173
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_frozen_arc_ref_schema",
+    "start": 3176,
+    "end": 3183
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_PlanningExecutionBinding",
+    "start": 3187,
+    "end": 3190
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_PlanningGatewayEffectAdapter",
+    "start": 3193,
+    "end": 3364
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_nonnegative_usage_value",
+    "start": 3367,
+    "end": 3376
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_is_nonnegative_decimal",
+    "start": 3379,
+    "end": 3384
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_budget_settlement",
+    "start": 3387,
+    "end": 3518
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_failed_provider_submission_state",
+    "start": 3534,
+    "end": 3578
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_failed_provider_measurement",
+    "start": 3581,
+    "end": 3602
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_failed_provider_budget_decision",
+    "start": 3605,
+    "end": 3638
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_budget_capability_profile",
+    "start": 3641,
+    "end": 3667
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_PlanningPepPort",
+    "start": 3671,
+    "end": 4026
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "PostgresPlanningExecutionPreparer",
+    "start": 4029,
+    "end": 6722
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_world_contract_route_receipt",
+    "start": 6733,
+    "end": 6769
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "bind_provider_realization_selectors",
+    "start": 6771,
+    "end": 6813
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "bind_realization_selector_schema",
+    "start": 6816,
+    "end": 6870
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "project",
+    "start": 731,
+    "end": 743
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "collect",
+    "start": 786,
+    "end": 794
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "visit",
+    "start": 796,
+    "end": 804
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "visit",
+    "start": 816,
+    "end": 826
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "collect",
+    "start": 828,
+    "end": 838
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "__post_init__",
+    "start": 940,
+    "end": 972
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "authority_ref",
+    "start": 1088,
+    "end": 1117
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "shape",
+    "start": 2481,
+    "end": 2494
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "shape",
+    "start": 2526,
+    "end": 2533
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "visit",
+    "start": 3104,
+    "end": 3125
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "__init__",
+    "start": 3196,
+    "end": 3210
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "execute",
+    "start": 3212,
+    "end": 3220
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_invoke",
+    "start": 3222,
+    "end": 3326
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "query",
+    "start": 3328,
+    "end": 3329
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_existing_handle",
+    "start": 3331,
+    "end": 3337
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "cancel",
+    "start": 3339,
+    "end": 3364
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "execute",
+    "start": 3691,
+    "end": 3939
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_record_model_evidence",
+    "start": 3941,
+    "end": 3987
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_record_evidence",
+    "start": 3989,
+    "end": 4026
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "__init__",
+    "start": 4032,
+    "end": 4089
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "prepare",
+    "start": 4091,
+    "end": 4144
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_prepare_stage",
+    "start": 4146,
+    "end": 5162
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_recovered_planning_route",
+    "start": 5164,
+    "end": 5195
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_execution_binding",
+    "start": 5197,
+    "end": 5460
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_context_bundle",
+    "start": 5462,
+    "end": 5906
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_reproject_frozen_context",
+    "start": 5910,
+    "end": 5937
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_materialize_planning_context",
+    "start": 5940,
+    "end": 5960
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_world_context_bundle",
+    "start": 5963,
+    "end": 6009
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_world_context_content",
+    "start": 6012,
+    "end": 6023
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_planning_context_manifest",
+    "start": 6026,
+    "end": 6372
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_append_narrative_intelligence_documents",
+    "start": 6374,
+    "end": 6463
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_validate_frozen_context_retry",
+    "start": 6466,
+    "end": 6496
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_repair_context",
+    "start": 6498,
+    "end": 6593
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_allowed_tools",
+    "start": 6596,
+    "end": 6609
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_operation_graph",
+    "start": 6611,
+    "end": 6637
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_select_model_profile",
+    "start": 6639,
+    "end": 6666
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "_ensure_contract",
+    "start": 6668,
+    "end": 6722
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "detach",
+    "start": 3129,
+    "end": 3134
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "append_candidate",
+    "start": 6061,
+    "end": 6113
+  },
+  {
+    "file": "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "symbol": "execute_stage",
+    "start": 4128,
+    "end": 4138
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "NarrativeDesignLayer",
+    "start": 15,
+    "end": 27
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "NarrativeQualificationProfile",
+    "start": 31,
+    "end": 61
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "NarrativeQualificationReceipt",
+    "start": 65,
+    "end": 75
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "NarrativeQualificationResult",
+    "start": 79,
+    "end": 94
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "NarrativeEvaluationLineage",
+    "start": 98,
+    "end": 179
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "_profile",
+    "start": 182,
+    "end": 196
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "uses_work_requirements",
+    "start": 436,
+    "end": 448
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "qualification_profile_options",
+    "start": 472,
+    "end": 487
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "qualification_profiles_for_asset",
+    "start": 534,
+    "end": 551
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "required_qualification_profiles",
+    "start": 554,
+    "end": 595
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "validate_narrative_qualification",
+    "start": 598,
+    "end": 775
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "scripted_qualification",
+    "start": 778,
+    "end": 814
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "qualification_provider_schema",
+    "start": 817,
+    "end": 895
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "_strict_object",
+    "start": 898,
+    "end": 904
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "_canonical_hash",
+    "start": 907,
+    "end": 918
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "profile_hash",
+    "start": 40,
+    "end": 50
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "criterion_semantics",
+    "start": 53,
+    "end": 61
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "to_evidence",
+    "start": 85,
+    "end": 94
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "__post_init__",
+    "start": 113,
+    "end": 176
+  },
+  {
+    "file": "src/novel_forge/modules/story_design_authority/qualification.py",
+    "symbol": "to_evidence",
+    "start": 178,
+    "end": 179
+  },
+  {
+    "file": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+    "symbol": "ChapterMission",
+    "start": 13,
+    "end": 21
+  },
+  {
+    "file": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+    "symbol": "SceneArchitecture",
+    "start": 25,
+    "end": 28
+  },
+  {
+    "file": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+    "symbol": "require_chapter_contracts",
+    "start": 31,
+    "end": 87
+  },
+  {
+    "file": "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py",
+    "symbol": "validate_scene_mission_coverage",
+    "start": 90,
+    "end": 151
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_project_empty_world_selection",
+    "start": 191,
+    "end": 251
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_project_empty_world_query_directory",
+    "start": 254,
+    "end": 276
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_project_selected_world_selection",
+    "start": 279,
+    "end": 323
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_project_denied_planning_selection",
+    "start": 326,
+    "end": 351
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "build_provider_task_view",
+    "start": 354,
+    "end": 1042
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "build_task_narrative_projection",
+    "start": 1045,
+    "end": 1168
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_world_disclosure_field_projections",
+    "start": 1171,
+    "end": 1182
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "provider_accessible_fact_ids",
+    "start": 1185,
+    "end": 1189
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "project_narrative_state_facts",
+    "start": 1192,
+    "end": 1278
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "project_retrieved_state_context",
+    "start": 1281,
+    "end": 1288
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "build_provider_context_view",
+    "start": 1291,
+    "end": 1774
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_build_narrative_evaluation_context_view",
+    "start": 1777,
+    "end": 1942
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_is_exact_sha256",
+    "start": 1945,
+    "end": 1952
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "project_reader_outcome_context_input",
+    "start": 1955,
+    "end": 2031
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_build_reader_outcome_context_view",
+    "start": 2034,
+    "end": 2124
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "compile_planning_provider_context",
+    "start": 2127,
+    "end": 2129
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_build_planning_context_view",
+    "start": 2132,
+    "end": 2353
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_reference_planning_matrix_source",
+    "start": 2356,
+    "end": 2377
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_compact_qualified_foundation_planning",
+    "start": 2380,
+    "end": 2484
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_projection_hash",
+    "start": 2487,
+    "end": 2488
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "planning_context_source_hash",
+    "start": 2491,
+    "end": 2492
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_loss_record",
+    "start": 2495,
+    "end": 2505
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_compact_planning_loss_sources",
+    "start": 2508,
+    "end": 2517
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_planning_view_with_audit_receipt",
+    "start": 2520,
+    "end": 2530
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_prune_optional_planning_context",
+    "start": 2533,
+    "end": 2561
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_planning_accepted_through_chapter",
+    "start": 2564,
+    "end": 2611
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_planning_chapter",
+    "start": 2614,
+    "end": 2625
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_planning_selectors",
+    "start": 2628,
+    "end": 2663
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "project_world_planning_window",
+    "start": 2666,
+    "end": 2677
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_project_planning_content",
+    "start": 2680,
+    "end": 2813
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_chapter_in_range",
+    "start": 2816,
+    "end": 2821
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "build_provider_knowledge_view",
+    "start": 2824,
+    "end": 2864
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_task",
+    "start": 2867,
+    "end": 2872
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_pick",
+    "start": 2875,
+    "end": 2880
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_prose",
+    "start": 2883,
+    "end": 2889
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_compact",
+    "start": 2892,
+    "end": 2901
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_serialized_character_count",
+    "start": 2904,
+    "end": 2912
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_serialized_byte_count",
+    "start": 2915,
+    "end": 2916
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_selectors",
+    "start": 2919,
+    "end": 2957
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_state_fact_relevant",
+    "start": 2960,
+    "end": 2982
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_state_fact_references",
+    "start": 2985,
+    "end": 3020
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_scene_epistemic_scopes",
+    "start": 3032,
+    "end": 3055
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_cross_chapter_task",
+    "start": 3058,
+    "end": 3071
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "project_longform_prose_review_context_input",
+    "start": 3074,
+    "end": 3077
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_build_longform_prose_review_context_view",
+    "start": 3080,
+    "end": 3094
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "_realization_source_review",
+    "start": 3097,
+    "end": 3104
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "clean",
+    "start": 1116,
+    "end": 1117
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "remove",
+    "start": 2422,
+    "end": 2425
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "collect",
+    "start": 2458,
+    "end": 2466
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "replace_literal",
+    "start": 2471,
+    "end": 2479
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "visit",
+    "start": 2537,
+    "end": 2549
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "observe",
+    "start": 2569,
+    "end": 2577
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "visit",
+    "start": 2633,
+    "end": 2652
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "record_loss",
+    "start": 2773,
+    "end": 2779
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/provider_views.py",
+    "symbol": "visit",
+    "start": 2989,
+    "end": 3011
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+    "symbol": "project_sections",
+    "start": 26,
+    "end": 35
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+    "symbol": "project_skill_method",
+    "start": 38,
+    "end": 47
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+    "symbol": "project_planning_system",
+    "start": 50,
+    "end": 65
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "DeterministicFixtureChapterProvider",
+    "start": 97,
+    "end": 209
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_PlanHandler",
+    "start": 213,
+    "end": 361
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_ExecutionIntentHandler",
+    "start": 365,
+    "end": 433
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_MemoHandler",
+    "start": 437,
+    "end": 448
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "deterministic_retrieval_coverage_fast_path",
+    "start": 451,
+    "end": 478
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "bind_quality_prose_evidence",
+    "start": 481,
+    "end": 493
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_RetrievalHandler",
+    "start": 497,
+    "end": 995
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "merge_task_retrieval_projections",
+    "start": 998,
+    "end": 1021
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_ContextHandler",
+    "start": 1025,
+    "end": 1485
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_DraftHandler",
+    "start": 1489,
+    "end": 1578
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_ReviewHandler",
+    "start": 1582,
+    "end": 1608
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_RevisionHandler",
+    "start": 1612,
+    "end": 1716
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_ReReviewHandler",
+    "start": 1720,
+    "end": 1777
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_BestCandidateHandler",
+    "start": 1781,
+    "end": 1931
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_CanonHandler",
+    "start": 1935,
+    "end": 2029
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_CanonExtractionHandler",
+    "start": 2033,
+    "end": 2114
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_CanonProposalHandler",
+    "start": 2118,
+    "end": 2175
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_QualityGroupHandler",
+    "start": 2179,
+    "end": 2457
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_QualityHandler",
+    "start": 2461,
+    "end": 2784
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_provider_usage_records",
+    "start": 2787,
+    "end": 2862
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_PublishGateHandler",
+    "start": 2866,
+    "end": 2892
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_ExportHandler",
+    "start": 2896,
+    "end": 2918
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_FinalReleaseGateHandler",
+    "start": 2922,
+    "end": 2948
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_content_hash",
+    "start": 2951,
+    "end": 2959
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_external_effect_id",
+    "start": 2962,
+    "end": 2973
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_provider_latency_ms",
+    "start": 2976,
+    "end": 2987
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_provider_usage",
+    "start": 2990,
+    "end": 2999
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_campaign_usage",
+    "start": 3002,
+    "end": 3027
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_campaign_semantic_status",
+    "start": 3030,
+    "end": 3048
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "build_chapter_handler_registry",
+    "start": 3051,
+    "end": 3107
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_output",
+    "start": 3110,
+    "end": 3116
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_blocking_issue_codes",
+    "start": 3119,
+    "end": 3121
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_model_output",
+    "start": 3124,
+    "end": 3149
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_revision_decision_output",
+    "start": 3152,
+    "end": 3156
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_execution_commit_auxiliary",
+    "start": 3159,
+    "end": 3204
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_provider_evidence",
+    "start": 3207,
+    "end": 3210
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_canon_provider_extraction",
+    "start": 3213,
+    "end": 3225
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_normalize_rereview_with_quality_namespace",
+    "start": 3228,
+    "end": 3233
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_retained_result_proof",
+    "start": 3236,
+    "end": 3239
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_result_evidence_fields",
+    "start": 3242,
+    "end": 3243
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_canon_recovery_feedback",
+    "start": 3246,
+    "end": 3263
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_invoke_with_known_receipt",
+    "start": 3266,
+    "end": 3271
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_book_identity",
+    "start": 3274,
+    "end": 3279
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "invoke",
+    "start": 101,
+    "end": 182
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "structured_fixture_output",
+    "start": 186,
+    "end": 209
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 214,
+    "end": 361
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 366,
+    "end": 433
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 440,
+    "end": 448
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 502,
+    "end": 643
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "_run_campaign",
+    "start": 645,
+    "end": 995
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1028,
+    "end": 1485
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1492,
+    "end": 1578
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1585,
+    "end": 1608
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1615,
+    "end": 1716
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1723,
+    "end": 1777
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1782,
+    "end": 1931
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 1936,
+    "end": 2029
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2036,
+    "end": 2114
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2121,
+    "end": 2175
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2183,
+    "end": 2457
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2462,
+    "end": 2784
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2867,
+    "end": 2892
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2897,
+    "end": 2918
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "execute",
+    "start": 2923,
+    "end": 2948
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/handlers.py",
+    "symbol": "context_model_call",
+    "start": 1323,
+    "end": 1331
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "chapter_stage_capability",
+    "start": 172,
+    "end": 176
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_canonical",
+    "start": 179,
+    "end": 182
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_identity_token",
+    "start": 185,
+    "end": 186
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_retrieval_embedding_output_contract",
+    "start": 189,
+    "end": 203
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_provider_context_selection",
+    "start": 206,
+    "end": 245
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_provider_route_context_types",
+    "start": 248,
+    "end": 257
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "chapter_producer_contract_identity",
+    "start": 260,
+    "end": 286
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_provider_token_contract",
+    "start": 289,
+    "end": 312
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_provider_effective_context_policy",
+    "start": 315,
+    "end": 584
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_stage_tool_permissions",
+    "start": 587,
+    "end": 624
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ChapterExecutionRoute",
+    "start": 628,
+    "end": 720
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ChapterExecutionBinding",
+    "start": 724,
+    "end": 728
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ChapterCapabilityPreflight",
+    "start": 732,
+    "end": 737
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "PostgresChapterExecutionContractBinder",
+    "start": 740,
+    "end": 2372
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "PostgresRetrievalProjectionExecutionContractBinder",
+    "start": 2375,
+    "end": 2676
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ChapterFixtureResponseFactory",
+    "start": 2679,
+    "end": 2680
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ExternalEffectExecutionSessionStore",
+    "start": 2683,
+    "end": 2746
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_fixture_knowledge_checks",
+    "start": 2749,
+    "end": 2758
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "default_chapter_fixture_response",
+    "start": 2761,
+    "end": 3242
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_provider_process_timeout_seconds",
+    "start": 3245,
+    "end": 3260
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "PostgresProductionExecutionPayloadResolver",
+    "start": 3263,
+    "end": 3802
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_required_language_from_context",
+    "start": 3805,
+    "end": 3834
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_language_semantic_contract",
+    "start": 3837,
+    "end": 3850
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_stage_semantic_contract_v3",
+    "start": 3853,
+    "end": 3946
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_stage_semantic_contract",
+    "start": 3949,
+    "end": 4423
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_bind_language_contract",
+    "start": 4426,
+    "end": 4428
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_project_prose_skill",
+    "start": 4431,
+    "end": 4441
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_materialize_production_codex_prompt",
+    "start": 4444,
+    "end": 4821
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_materialize_source_intelligence_prompt",
+    "start": 4824,
+    "end": 4937
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ChapterExecutionGatewaySession",
+    "start": 4947,
+    "end": 4949
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_RecoveryAuthorizedGatewayAdapter",
+    "start": 4953,
+    "end": 5036
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "ProductionExecutionGatewayExternalEffectAdapter",
+    "start": 5039,
+    "end": 5658
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__post_init__",
+    "start": 654,
+    "end": 720
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__init__",
+    "start": 741,
+    "end": 773
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "freeze_before_external_effect",
+    "start": 775,
+    "end": 1229
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_provider_output_contract",
+    "start": 1232,
+    "end": 1366
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "bind",
+    "start": 1368,
+    "end": 2016
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_target_scope",
+    "start": 2018,
+    "end": 2052
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_resource_claims",
+    "start": 2054,
+    "end": 2078
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_origin_chain",
+    "start": 2081,
+    "end": 2085
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_artifacts",
+    "start": 2088,
+    "end": 2099
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_operation_graph",
+    "start": 2101,
+    "end": 2160
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_resolve_pack_snapshot",
+    "start": 2162,
+    "end": 2244
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_materialize_selected_inputs",
+    "start": 2246,
+    "end": 2304
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_budget_reservation",
+    "start": 2306,
+    "end": 2326
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_ensure_contract",
+    "start": 2328,
+    "end": 2372
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__init__",
+    "start": 2380,
+    "end": 2396
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "freeze_before_external_effect",
+    "start": 2398,
+    "end": 2676
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__call__",
+    "start": 2680,
+    "end": 2680
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__init__",
+    "start": 2692,
+    "end": 2695
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "put_record",
+    "start": 2697,
+    "end": 2704
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "save_record",
+    "start": 2706,
+    "end": 2714
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "get_record",
+    "start": 2716,
+    "end": 2722
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "find_record",
+    "start": 2724,
+    "end": 2725
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "put_evidence",
+    "start": 2727,
+    "end": 2738
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "read_evidence",
+    "start": 2740,
+    "end": 2746
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__init__",
+    "start": 3264,
+    "end": 3277
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "resolve",
+    "start": 3279,
+    "end": 3514
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "resolve_source_intelligence_inputs",
+    "start": 3516,
+    "end": 3802
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "visit",
+    "start": 3809,
+    "end": 3826
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "required_text",
+    "start": 4468,
+    "end": 4477
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "provider",
+    "start": 4958,
+    "end": 4959
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "reconciliation_mode",
+    "start": 4962,
+    "end": 4963
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "production_execution_gateway_backed",
+    "start": 4966,
+    "end": 4967
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "capability_profile",
+    "start": 4970,
+    "end": 4971
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "cost_accounting_basis",
+    "start": 4974,
+    "end": 4975
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "account_authorization_ref",
+    "start": 4978,
+    "end": 4979
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "provider_call_caps",
+    "start": 4982,
+    "end": 4983
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "provider_token_caps",
+    "start": 4986,
+    "end": 4987
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "execute",
+    "start": 4989,
+    "end": 5002
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "query",
+    "start": 5004,
+    "end": 5017
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "cancel",
+    "start": 5019,
+    "end": 5033
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "record_authorization",
+    "start": 5035,
+    "end": 5036
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "__init__",
+    "start": 5044,
+    "end": 5125
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "execute",
+    "start": 5127,
+    "end": 5139
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "query",
+    "start": 5141,
+    "end": 5153
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "cancel",
+    "start": 5155,
+    "end": 5169
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_cancel",
+    "start": 5171,
+    "end": 5234
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "model_id_for_stage",
+    "start": 5236,
+    "end": 5238
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "session_for_project",
+    "start": 5240,
+    "end": 5242
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "register_execution_binder",
+    "start": 5244,
+    "end": 5253
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "provider_id_for_stage",
+    "start": 5255,
+    "end": 5257
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "for_recovery",
+    "start": 5259,
+    "end": 5297
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_invoke",
+    "start": 5299,
+    "end": 5420
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_record_recovery_authorization",
+    "start": 5422,
+    "end": 5426
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_binding_and_session",
+    "start": 5428,
+    "end": 5471
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_session",
+    "start": 5473,
+    "end": 5479
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "close_sessions",
+    "start": 5481,
+    "end": 5484
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_effect_id",
+    "start": 5486,
+    "end": 5503
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_evidence",
+    "start": 5505,
+    "end": 5635
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+    "symbol": "_external_outcome",
+    "start": 5638,
+    "end": 5658
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "CandidateStopReason",
+    "start": 16,
+    "end": 23
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "CandidateEvidence",
+    "start": 27,
+    "end": 38
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "retained_candidate_evidence",
+    "start": 41,
+    "end": 65
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "compare_candidates",
+    "start": 68,
+    "end": 201
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "bind_selected_review",
+    "start": 204,
+    "end": 238
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "build_best_candidate",
+    "start": 241,
+    "end": 279
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/candidate_selection.py",
+    "symbol": "_evidence",
+    "start": 282,
+    "end": 304
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "text_hash",
+    "start": 21,
+    "end": 22
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "edit_map",
+    "start": 25,
+    "end": 29
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "reconcile_author_scenes",
+    "start": 32,
+    "end": 81
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "source_draft_content",
+    "start": 84,
+    "end": 91
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "_scope",
+    "start": 94,
+    "end": 98
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "_session_ref",
+    "start": 101,
+    "end": 103
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "_book_scope",
+    "start": 106,
+    "end": 110
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "require_source",
+    "start": 113,
+    "end": 145
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "ChapterAuthorEditingApplication",
+    "start": 148,
+    "end": 368
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "author_edit_definitions",
+    "start": 371,
+    "end": 388
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "__init__",
+    "start": 149,
+    "end": 153
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "require",
+    "start": 155,
+    "end": 196
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "execute",
+    "start": 198,
+    "end": 222
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "_session",
+    "start": 225,
+    "end": 231
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "_handle",
+    "start": 233,
+    "end": 358
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_authority/author_editor.py",
+    "symbol": "_write",
+    "start": 361,
+    "end": 368
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "BookProductionState",
+    "start": 92,
+    "end": 117
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "BookProductionStateClass",
+    "start": 120,
+    "end": 124
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "BookProductionStateSemantics",
+    "start": 128,
+    "end": 133
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_state_semantics",
+    "start": 136,
+    "end": 152
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "book_production_state_semantics",
+    "start": 275,
+    "end": 289
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "actionable_book_production_states",
+    "start": 292,
+    "end": 298
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "StartBookProductionCommand",
+    "start": 302,
+    "end": 319
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "SubmitBookChapterCommand",
+    "start": 323,
+    "end": 339
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "BookProductionAdmission",
+    "start": 343,
+    "end": 347
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "ChapterAuthorityCommandPort",
+    "start": 350,
+    "end": 377
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "ChapterAuthorityCommandAdapter",
+    "start": 381,
+    "end": 455
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "stable_chapter_submission_key",
+    "start": 458,
+    "end": 484
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "PostgresBookAuthority",
+    "start": 487,
+    "end": 3354
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "book_authority_mutation_definition",
+    "start": 3357,
+    "end": 3401
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "book_replan_input_binding_definition",
+    "start": 3404,
+    "end": 3447
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "book_coordinate_definition",
+    "start": 3450,
+    "end": 3498
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "select_chapter_acceptance_outputs",
+    "start": 3501,
+    "end": 3562
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_validate_chapter_acceptance_evidence",
+    "start": 3565,
+    "end": 3718
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_validate_start",
+    "start": 3721,
+    "end": 3763
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_longform_context_asset_version_ids",
+    "start": 3766,
+    "end": 3775
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "recover_admission",
+    "start": 351,
+    "end": 353
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "submit",
+    "start": 355,
+    "end": 357
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "require_run",
+    "start": 359,
+    "end": 361
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "require_acceptance_evidence",
+    "start": 363,
+    "end": 365
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "cancel",
+    "start": 367,
+    "end": 377
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "recover_admission",
+    "start": 385,
+    "end": 388
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "submit",
+    "start": 390,
+    "end": 393
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "require_run",
+    "start": 395,
+    "end": 398
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "require_acceptance_evidence",
+    "start": 400,
+    "end": 405
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "cancel",
+    "start": 407,
+    "end": 455
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "__init__",
+    "start": 488,
+    "end": 514
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "start",
+    "start": 516,
+    "end": 785
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "submit_chapter",
+    "start": 787,
+    "end": 947
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_dispatch_reserved_chapter",
+    "start": 949,
+    "end": 1029
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_require_chapter_production_admission",
+    "start": 1031,
+    "end": 1109
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_require_accepted_projection_boundary",
+    "start": 1111,
+    "end": 1168
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "accept_chapter",
+    "start": 1170,
+    "end": 1647
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "pause",
+    "start": 1649,
+    "end": 1702
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "cancel",
+    "start": 1704,
+    "end": 1792
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "resume",
+    "start": 1794,
+    "end": 1881
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "advance_supervisor_checkpoint",
+    "start": 1883,
+    "end": 1941
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "bind_replanned_input_snapshot",
+    "start": 1943,
+    "end": 2123
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "recover_chapter_submission",
+    "start": 2125,
+    "end": 2142
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "reconcile_chapter",
+    "start": 2144,
+    "end": 2248
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "schedule_reader_outcome",
+    "start": 2250,
+    "end": 2265
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "schedule_longform_recap",
+    "start": 2267,
+    "end": 2282
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "complete_book_checkpoint",
+    "start": 2284,
+    "end": 2354
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "require",
+    "start": 2356,
+    "end": 2419
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_validate_input_snapshot",
+    "start": 2421,
+    "end": 2512
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_require_snapshot_plan_portfolio_current_in_uow",
+    "start": 2515,
+    "end": 2600
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_require_completed_opening_workflow_for_snapshot",
+    "start": 2602,
+    "end": 2771
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "require_chapter_request",
+    "start": 2773,
+    "end": 2817
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "resolve_asset_refs",
+    "start": 2819,
+    "end": 2848
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "recover_reader_contract",
+    "start": 2850,
+    "end": 2907
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_schedule_followup",
+    "start": 2909,
+    "end": 3026
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_accepted_followup_snapshot",
+    "start": 3028,
+    "end": 3109
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_followup_operation_id",
+    "start": 3111,
+    "end": 3124
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_book_graph_context",
+    "start": 3126,
+    "end": 3145
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_find_chapter_acceptance",
+    "start": 3147,
+    "end": 3172
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_initial_narrative_state_inputs",
+    "start": 3174,
+    "end": 3225
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_context_candidates_for_dispatch",
+    "start": 3227,
+    "end": 3231
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_execute_mutation",
+    "start": 3233,
+    "end": 3328
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_cas_book_state",
+    "start": 3331,
+    "end": 3350
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "_probe",
+    "start": 3352,
+    "end": 3354
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_start",
+    "start": 620,
+    "end": 745
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_reservation",
+    "start": 831,
+    "end": 919
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_link",
+    "start": 981,
+    "end": 1009
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_acceptance",
+    "start": 1325,
+    "end": 1620
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_pause",
+    "start": 1671,
+    "end": 1686
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_abort",
+    "start": 1757,
+    "end": 1776
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_resume",
+    "start": 1854,
+    "end": 1865
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_checkpoint",
+    "start": 1904,
+    "end": 1920
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "handler",
+    "start": 1977,
+    "end": 2084
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_reconciliation",
+    "start": 2206,
+    "end": 2224
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_checkpoint",
+    "start": 2312,
+    "end": 2331
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_successor",
+    "start": 2885,
+    "end": 2901
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "commit_followup_link",
+    "start": 2990,
+    "end": 3009
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/production.py",
+    "symbol": "governed_handler",
+    "start": 3260,
+    "end": 3290
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "resolved_book_command",
+    "start": 18,
+    "end": 31
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "_RecoveryCheckpoint",
+    "start": 34,
+    "end": 37
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "drive_book",
+    "start": 40,
+    "end": 47
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "_drive_book",
+    "start": 50,
+    "end": 199
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "continue_creation",
+    "start": 202,
+    "end": 340
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "creation_cancellation",
+    "start": 343,
+    "end": 346
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "reconcile_creation_cancellation",
+    "start": 349,
+    "end": 365
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "_formation_resume_blocker",
+    "start": 368,
+    "end": 410
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "creation_runtime_environment",
+    "start": 413,
+    "end": 420
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "creation_progress",
+    "start": 442,
+    "end": 449
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "creation_wait_class",
+    "start": 452,
+    "end": 466
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "creation_recovery_record",
+    "start": 469,
+    "end": 478
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "schedule_creation_jobs",
+    "start": 481,
+    "end": 534
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "execute_creation_claim",
+    "start": 537,
+    "end": 602
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "creation_status",
+    "start": 605,
+    "end": 688
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "execute_creation_command",
+    "start": 691,
+    "end": 997
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "ensure_creation_scope",
+    "start": 1000,
+    "end": 1029
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "__init__",
+    "start": 35,
+    "end": 37
+  },
+  {
+    "file": "src/novel_forge/modules/book_authority/creation_runtime.py",
+    "symbol": "recover",
+    "start": 57,
+    "end": 76
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "constrain_diagnosis_schema",
+    "start": 14,
+    "end": 40
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "require_review_score",
+    "start": 43,
+    "end": 48
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "open_diagnoses",
+    "start": 51,
+    "end": 72
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "prose_repair_diagnoses",
+    "start": 75,
+    "end": 81
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "validate_prose_repair_scope",
+    "start": 84,
+    "end": 114
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "blocking_diagnosis_codes",
+    "start": 117,
+    "end": 122
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "prose_hash",
+    "start": 125,
+    "end": 126
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "validate_location",
+    "start": 129,
+    "end": 144
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "validate_diagnosis",
+    "start": 147,
+    "end": 163
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "verified_resolutions",
+    "start": 166,
+    "end": 183
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "review_covers_candidate",
+    "start": 186,
+    "end": 195
+  },
+  {
+    "file": "src/novel_forge/modules/review/diagnostics.py",
+    "symbol": "variant",
+    "start": 18,
+    "end": 31
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "quality_receipt",
+    "start": 13,
+    "end": 32
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "model_quality_receipt",
+    "start": 35,
+    "end": 43
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "assess_internal_quality",
+    "start": 46,
+    "end": 84
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "verify_internal_quality",
+    "start": 87,
+    "end": 114
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "internal_required_actions",
+    "start": 117,
+    "end": 135
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "receipt_work_constraints",
+    "start": 138,
+    "end": 160
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "apply_work_constraint_actions",
+    "start": 163,
+    "end": 211
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "measure_length",
+    "start": 214,
+    "end": 220
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "candidate_work_constraint_checks",
+    "start": 223,
+    "end": 243
+  },
+  {
+    "file": "src/novel_forge/modules/chapter_quality_authority/creative_validation.py",
+    "symbol": "assess_coordinated_internal_quality",
+    "start": 246,
+    "end": 266
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "_policy_defaults",
+    "start": 35,
+    "end": 49
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "validate_craft_policy",
+    "start": 52,
+    "end": 78
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "_frozen_craft_policy",
+    "start": 81,
+    "end": 84
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "_hash",
+    "start": 87,
+    "end": 88
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "_terms",
+    "start": 91,
+    "end": 94
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "craft_pattern_signature",
+    "start": 97,
+    "end": 98
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "craft_candidate_assessment",
+    "start": 101,
+    "end": 189
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "compose_craft_candidates",
+    "start": 192,
+    "end": 195
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "build_craft_strategy",
+    "start": 198,
+    "end": 238
+  },
+  {
+    "file": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+    "symbol": "validate_craft_strategy",
+    "start": 241,
+    "end": 309
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_utc_now",
+    "start": 59,
+    "end": 60
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_canonical_json",
+    "start": 63,
+    "end": 66
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_sha256",
+    "start": 69,
+    "end": 72
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_freeze_output_contract",
+    "start": 75,
+    "end": 85
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "observe_codex_cli_version",
+    "start": 86,
+    "end": 115
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "ResolvedExecutionPayload",
+    "start": 119,
+    "end": 164
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "CodexPricingSnapshot",
+    "start": 168,
+    "end": 213
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "CodexAccountEntitlementSnapshot",
+    "start": 217,
+    "end": 254
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "CodexStructuredResultValidator",
+    "start": 257,
+    "end": 263
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_validate_frozen_structured_result",
+    "start": 266,
+    "end": 275
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "parse_codex_jsonl_evidence",
+    "start": 286,
+    "end": 435
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "LocalProcessExecutionPolicy",
+    "start": 439,
+    "end": 473
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "ExecutionPayloadResolver",
+    "start": 476,
+    "end": 479
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "StaticExecutionPayloadResolver",
+    "start": 482,
+    "end": 495
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "InMemoryExecutionRecordStore",
+    "start": 498,
+    "end": 564
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "ResultNormalizer",
+    "start": 567,
+    "end": 573
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "ResultValidator",
+    "start": 576,
+    "end": 714
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "ExecutionReconciler",
+    "start": 717,
+    "end": 770
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "ScriptedFixtureExecutionBackend",
+    "start": 773,
+    "end": 904
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "RemoteProviderExecutionBackend",
+    "start": 907,
+    "end": 1455
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_CodexResultFailure",
+    "start": 1458,
+    "end": 1462
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_codex_process_failure",
+    "start": 1466,
+    "end": 1484
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "CodexCliExecutionBackend",
+    "start": 1487,
+    "end": 2161
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__post_init__",
+    "start": 133,
+    "end": 164
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__post_init__",
+    "start": 176,
+    "end": 199
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "snapshot_hash",
+    "start": 202,
+    "end": 203
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "to_dict",
+    "start": 205,
+    "end": 213
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__post_init__",
+    "start": 225,
+    "end": 240
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "snapshot_hash",
+    "start": 243,
+    "end": 244
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "to_dict",
+    "start": 246,
+    "end": 254
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__call__",
+    "start": 258,
+    "end": 263
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "token",
+    "start": 315,
+    "end": 319
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__post_init__",
+    "start": 444,
+    "end": 458
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "assert_payload",
+    "start": 460,
+    "end": 468
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "assert_result",
+    "start": 470,
+    "end": 473
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "resolve",
+    "start": 477,
+    "end": 479
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 483,
+    "end": 484
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "resolve",
+    "start": 486,
+    "end": 495
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 499,
+    "end": 502
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "put_record",
+    "start": 504,
+    "end": 512
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "save_record",
+    "start": 514,
+    "end": 523
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "get_record",
+    "start": 525,
+    "end": 531
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "find_record",
+    "start": 533,
+    "end": 534
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "put_evidence",
+    "start": 536,
+    "end": 548
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "read_evidence",
+    "start": 550,
+    "end": 554
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_assert_record_safe",
+    "start": 557,
+    "end": 564
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "normalize",
+    "start": 569,
+    "end": 573
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 577,
+    "end": 578
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "successful_result",
+    "start": 580,
+    "end": 714
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "non_success",
+    "start": 739,
+    "end": 770
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 776,
+    "end": 806
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "submit",
+    "start": 808,
+    "end": 810
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "submit_recovered",
+    "start": 812,
+    "end": 822
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_submit",
+    "start": 824,
+    "end": 861
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "reconcile",
+    "start": 863,
+    "end": 868
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "cancel",
+    "start": 870,
+    "end": 904
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 908,
+    "end": 989
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_record_provider_result",
+    "start": 991,
+    "end": 1031
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "submit",
+    "start": 1033,
+    "end": 1035
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "submit_recovered",
+    "start": 1037,
+    "end": 1047
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_submit",
+    "start": 1049,
+    "end": 1207
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "reconcile",
+    "start": 1209,
+    "end": 1302
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "cancel",
+    "start": 1304,
+    "end": 1383
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "accept_callback",
+    "start": 1385,
+    "end": 1389
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_accept_callback",
+    "start": 1391,
+    "end": 1455
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 1459,
+    "end": 1462
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "__init__",
+    "start": 1490,
+    "end": 1553
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "submit",
+    "start": 1555,
+    "end": 1557
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "submit_recovered",
+    "start": 1559,
+    "end": 1569
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_submit",
+    "start": 1571,
+    "end": 1704
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "reconcile",
+    "start": 1706,
+    "end": 1776
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_rejected_output_receipts",
+    "start": 1778,
+    "end": 1804
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_prepare_payload",
+    "start": 1806,
+    "end": 1880
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_model_authority_evidence",
+    "start": 1883,
+    "end": 1945
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "_validate_successful_process",
+    "start": 1947,
+    "end": 2089
+  },
+  {
+    "file": "src/novel_forge/modules/production_execution/backends.py",
+    "symbol": "cancel",
+    "start": 2091,
+    "end": 2161
+  }
+]

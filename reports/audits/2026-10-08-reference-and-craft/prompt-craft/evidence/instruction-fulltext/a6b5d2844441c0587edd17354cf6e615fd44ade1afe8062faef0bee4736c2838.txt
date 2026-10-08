@@ -1,0 +1,10 @@
+{
+  "knowledge_id": "chapter-causal-cost",
+  "rules": [
+    "Every decisive chapter action must expose a concrete consequence or irreversible cost in the chapter text.",
+    "Review evidence must point to the action, consequence, and resulting story-state change."
+  ],
+  "schema_version": "novelos.capability_knowledge.v1",
+  "source_eligibility": "NOT_SOURCE_DERIVED",
+  "usage_role": "CONSTRAINT"
+}

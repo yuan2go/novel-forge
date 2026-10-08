@@ -1,0 +1,7 @@
+{
+  "status": "UNAVAILABLE_OR_PARTIAL",
+  "error_type": "OperationalError",
+  "sqlstate": null,
+  "provider_calls": 0,
+  "note": "No DSN or error text exported; existing files preserve any completed SELECT evidence"
+}

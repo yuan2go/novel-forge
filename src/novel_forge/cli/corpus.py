@@ -39,6 +39,11 @@ def add_corpus_parser(subparsers: Any) -> None:
             "catalog-run",
             "catalog-status",
             "catalog-snapshots",
+            "market-query",
+            "market-work",
+            "market-command",
+            "market-refresh",
+            "market-run",
             "work",
             "jobs",
             "curated",
@@ -78,6 +83,9 @@ def add_corpus_parser(subparsers: Any) -> None:
         type=Path,
         help="bounded JSON array of exact ChapterReadingScope requests",
     )
+    parser.add_argument("--definition-id", default="")
+    parser.add_argument("--category", default="")
+    parser.add_argument("--period-value", default="")
     parser.add_argument("--work-id", default="")
     parser.add_argument("--corpus-id", default="")
     parser.add_argument("--revision-id", default="")
@@ -115,6 +123,40 @@ def add_corpus_parser(subparsers: Any) -> None:
 def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any]:
     principal = build_trusted_principal_resolver().resolve_api_principal()
     project = args.project_id
+    if args.action.startswith("market-"):
+        from novel_forge.modules.source_authority.market_query import query_ranks, query_market_work
+        if args.action in {"market-query", "market-work"}:
+            principal.require("source.authority.query", project)
+            return (query_market_work(settings.database_url, project, args.work_id)
+                    if args.action == "market-work" else query_ranks(settings.database_url, project,
+                    category=args.category, definition_id=args.definition_id, after=args.after, limit=args.limit))
+        principal.require("source.authority.execute", project)
+        build, sha = authority_release_identity()
+        if args.action == "market-command":
+            if not args.decision or not args.run_key or not args.workspace_id or args.decision.stat().st_size > 262144:
+                raise ValueError("Market command requires a bounded --decision, --workspace-id and stable --run-key")
+            authority = SourceAuthorityApplication(settings.database_url, application_build_id=build, commit_sha=sha)
+            action = validate_corpus_action(json.loads(args.decision.read_text()))
+            if action.action not in {"register_source", "declare_rights", "retire_source", "define_market_rank", "observe_market_rank", "link_market_edition"}:
+                raise ValueError("Expected a Source market command")
+            admitted = authority.admit_corpus(CorpusCommand(project_id=project, workspace_id=args.workspace_id,
+                actor_id=principal.principal_id, idempotency_key=args.run_key, trace_id=args.run_key,
+                correlation_id=args.run_key, action=action), principal=principal)
+            return SourceAuthorityScheduler(authority).run_or_recover(operation_id=admitted["operation_id"], project_id=project)
+        execution = build_production_execution_composition(settings)
+        try:
+            app = build_source_import_application(settings, execution=execution)
+            if args.action == "market-refresh":
+                from novel_forge.modules.source_import.market_runtime import MarketRefreshRequest, admit_market_refresh
+                return admit_market_refresh(app, MarketRefreshRequest(project_id=project, workspace_id=args.workspace_id,
+                    definition_id=args.definition_id, run_key=args.run_key, period_value=args.period_value), principal)
+            if not args.operation_id:
+                raise ValueError("Resume requires the original --operation-id")
+            if app._operation_definition(args.operation_id, project) != "source.import.market.refresh":
+                raise ValueError("Exact market refresh Operation required")
+            return SourceImportScheduler(app).run_or_recover(operation_id=args.operation_id, project_id=project)
+        finally:
+            execution.close()
     principal.require(
         "source.authority.query"
         if args.action

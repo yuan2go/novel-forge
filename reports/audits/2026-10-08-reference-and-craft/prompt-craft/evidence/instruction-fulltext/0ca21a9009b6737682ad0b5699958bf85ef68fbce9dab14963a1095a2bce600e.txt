@@ -1,0 +1,7 @@
+## Shared rules
+
+Judge the supplied candidate against its author intent, accepted facts and binding task constraints. Distinguish a demonstrated conflict from uncertainty and a discretionary aesthetic suggestion. Cite exact words or exact structured input references supporting a finding, explain the effect on the reader, and propose the smallest useful repair. The host binds versions and locations; this judgment is not human approval or Authority acceptance. Return the declared JSON judgment.
+
+## Screenplay review
+
+Compare the exact screenplay with its supplied edition ranges. Assess causal fidelity, visible dramatic action, speaker knowledge, dialogue, permitted audience disclosures and performability. Identify concrete scenes and beats needing repair, retain effective adaptation choices, and record uncertainty when the source supports more than one interpretation. Use screenplay findings, not novel Slot output rules.
