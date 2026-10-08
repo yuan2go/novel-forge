@@ -1,0 +1,98 @@
+{
+  "source_sha": "897968a777f4cdadfbe29a89d67a0e0a8bf029a9",
+  "baseline_main_sha": "a3f8a6a71c2d0131cad9d948e0287848a8023847",
+  "publication_tests_and_hooks": "NOT_RUN_BY_USER_REQUEST",
+  "merged_head_revalidation": "NOT_RUN",
+  "new_provider_calls": 0,
+  "evidence_ceiling": "EXECUTABLE",
+  "literary_quality": "NOT_RUN",
+  "retained_failures": "Source validate/P0/broader fixture failures remain retained; focused historical checks do not qualify the merged head.",
+  "original_sources_unchanged": true,
+  "excluded": "PostgreSQL cluster data, server/initdb logs and duplicate PR body are not copied. Ongoing separate three-chapter production task is outside this completed source snapshot.",
+  "files": [
+    {
+      "path": "DELIVERY.md",
+      "source_sha256": "e5946bc79a686fcc67553fa19cfaac3bf39e69944555b9c99fc90ecb773de53b",
+      "published_sha256": "e5946bc79a686fcc67553fa19cfaac3bf39e69944555b9c99fc90ecb773de53b",
+      "redacted": false
+    },
+    {
+      "path": "accepted-history-pg.log",
+      "source_sha256": "52ba5133fed6e0256757a29707ddaec2c7412685a6d50e6a9c94d6d187d194ad",
+      "published_sha256": "52ba5133fed6e0256757a29707ddaec2c7412685a6d50e6a9c94d6d187d194ad",
+      "redacted": false
+    },
+    {
+      "path": "architecture.log",
+      "source_sha256": "617d82326dda105cde87440823e01ec425e828aab671cc842740458ba4539eb2",
+      "published_sha256": "617d82326dda105cde87440823e01ec425e828aab671cc842740458ba4539eb2",
+      "redacted": false
+    },
+    {
+      "path": "baseline-accepted-history.log",
+      "source_sha256": "eb0a1eb1d08e9702f97314938a1b55da7fa9880b571aedacd5585c087586b379",
+      "published_sha256": "eb0a1eb1d08e9702f97314938a1b55da7fa9880b571aedacd5585c087586b379",
+      "redacted": false
+    },
+    {
+      "path": "baseline-planning.log",
+      "source_sha256": "0a7b3898922cab19596fa909569e3970044923b60d63bcced514a117d064f312",
+      "published_sha256": "0a7b3898922cab19596fa909569e3970044923b60d63bcced514a117d064f312",
+      "redacted": false
+    },
+    {
+      "path": "before-after.json",
+      "source_sha256": "f8d13060678bf715125508c8d92edfe5643d07ca66166dae10e4216c1fe571c8",
+      "published_sha256": "f8d13060678bf715125508c8d92edfe5643d07ca66166dae10e4216c1fe571c8",
+      "redacted": false
+    },
+    {
+      "path": "documentation.log",
+      "source_sha256": "b9e334784f22cbbc6dab5435b8578821b9646a36985f5083fc420d1367dcb28c",
+      "published_sha256": "b9e334784f22cbbc6dab5435b8578821b9646a36985f5083fc420d1367dcb28c",
+      "redacted": false
+    },
+    {
+      "path": "final-focused-pg.log",
+      "source_sha256": "cdd1626866cca33d325731effb6314a4a065b1d91b7067ac5c0858e3a577d7c1",
+      "published_sha256": "cdd1626866cca33d325731effb6314a4a065b1d91b7067ac5c0858e3a577d7c1",
+      "redacted": false
+    },
+    {
+      "path": "focused-pg.log",
+      "source_sha256": "badf05323995e3f702a94af17501177a33801d14f8936e72c1a972e0bda694c5",
+      "published_sha256": "badf05323995e3f702a94af17501177a33801d14f8936e72c1a972e0bda694c5",
+      "redacted": false
+    },
+    {
+      "path": "focused-unit.log",
+      "source_sha256": "8df830e7c471a513c111b98e5533ca7b8060df0b11e6f603301a5616092cc189",
+      "published_sha256": "8df830e7c471a513c111b98e5533ca7b8060df0b11e6f603301a5616092cc189",
+      "redacted": false
+    },
+    {
+      "path": "module-manifest.log",
+      "source_sha256": "3b4ae728fade03514c419a7c805adad70d9ac47dc3355041dbb4614c671e84ad",
+      "published_sha256": "3b4ae728fade03514c419a7c805adad70d9ac47dc3355041dbb4614c671e84ad",
+      "redacted": false
+    },
+    {
+      "path": "p0.log",
+      "source_sha256": "5a5c7366f0e93adb0e12e4408df7c4c0fe1f7fe720d070a41e86e192bf2d95a3",
+      "published_sha256": "5a5c7366f0e93adb0e12e4408df7c4c0fe1f7fe720d070a41e86e192bf2d95a3",
+      "redacted": false
+    },
+    {
+      "path": "test-reality.log",
+      "source_sha256": "716e9f08819ba7a77171c4d3913da4b0985edfdfdd8daa63e486c9af11d74765",
+      "published_sha256": "716e9f08819ba7a77171c4d3913da4b0985edfdfdd8daa63e486c9af11d74765",
+      "redacted": false
+    },
+    {
+      "path": "validate.log",
+      "source_sha256": "f3d93a4406e45c81cc31b4db8331a5d60dd0669b021caa9626b261ed1a96e598",
+      "published_sha256": "f3d93a4406e45c81cc31b4db8331a5d60dd0669b021caa9626b261ed1a96e598",
+      "redacted": false
+    }
+  ]
+}

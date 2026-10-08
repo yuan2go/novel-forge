@@ -1,0 +1,1154 @@
+.F....FFFFFFFFFF                                                         [100%]
+=================================== FAILURES ===================================
+_____ test_source_null_execution_db_guard_and_original_masquerade_rejected _____
+tests/integration/test_narrative_craft_authoring_postgres.py:73: in test_source_null_execution_db_guard_and_original_masquerade_rejected
+    with pytest.raises(KernelError, match="canonical authoring path"):
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'canonical authoring path'
+E     Actual message: 'MKAOS_CRAFT_INVALID: Revised mechanisms must name the preceding governed Card'
+_ test_pg_frozen_selection_production_planning_handler_derives_exact_scene_strategy _
+tests/integration/test_craft_planning_postgres.py:32: in test_pg_frozen_selection_production_planning_handler_derives_exact_scene_strategy
+    activated = _activate_plan_chain(project_id=project_id, workspace_id=workspace_id, book_id=book_id, generic=generic, principal=principal, application=planning)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_core_functional_loops_postgres.py:1250: in _activate_plan_chain
+    assert generated.status is PlanningGenerationStatus.APPROVAL_PENDING
+E   AssertionError: assert <PlanningGenerationStatus.REJECTED: 'REJECTED'> is <PlanningGenerationStatus.APPROVAL_PENDING: 'APPROVAL_PENDING'>
+E    +  where <PlanningGenerationStatus.REJECTED: 'REJECTED'> = PlanningGenerationResult(generation_operation_id='33314d7f-aafc-4555-891a-ac02ed002198', candidate_asset_version_id='a...updated_by_operation_id': '9a64521e-a82a-4bf5-a274-979c1bffd2b5', 'version': 2}, planning_binding=None, replayed=False).status
+E    +  and   <PlanningGenerationStatus.APPROVAL_PENDING: 'APPROVAL_PENDING'> = PlanningGenerationStatus.APPROVAL_PENDING
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-False] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-False] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+_ test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+____ test_pg_craft_reselection_preserves_cumulative_campaign_budget[calls] _____
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:372: in test_pg_craft_reselection_preserves_cumulative_campaign_budget
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+____ test_pg_craft_reselection_preserves_cumulative_campaign_budget[tokens] ____
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:372: in test_pg_craft_reselection_preserves_cumulative_campaign_budget
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+_ test_pg_craft_reselection_blocks_original_insufficient_request_budget[calls] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:380: in test_pg_craft_reselection_blocks_original_insufficient_request_budget
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+_ test_pg_craft_reselection_blocks_original_insufficient_request_budget[tokens] _
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+src/novel_forge/modules/story_planning_runtime/binder.py:489: in execute
+    candidate_payload = bind_provider_realization_selectors(original_provider_result, catalog)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/execution.py:6801: in bind_provider_realization_selectors
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_REALIZATION_SELECTOR_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+The above exception was the direct cause of the following exception:
+src/novel_forge/modules/story_planning_runtime/application.py:799: in generate
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:152: in execute
+    return self._execute(request)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:221: in _execute
+    candidate = self.binder.execute(
+src/novel_forge/modules/story_planning_runtime/binder.py:500: in execute
+    raise PlanningResultValidationError(error, raw_result=original_provider_result, execution_evidence=planning_evidence.to_dict()) from error
+E   novel_forge.modules.story_planning_runtime.result_recovery.PlanningResultValidationError: PLANNING_GENERATION_RESULT_INVALID: Model selects a frozen source; host owns its identity, type, hash and lineage
+
+During handling of the above exception, another exception occurred:
+tests/integration/test_craft_planning_postgres.py:380: in test_pg_craft_reselection_blocks_original_insufficient_request_budget
+    test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(
+tests/integration/test_craft_planning_postgres.py:351: in test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+tests/integration/test_core_functional_loops_postgres.py:1779: in test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres
+    opened = execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:635: in execute_book_opening_claim
+    result = execute_book_opening_node_claim(
+src/novel_forge/workers/book_authority.py:447: in execute_book_opening_node_claim
+    return _execute_book_opening_claim(
+src/novel_forge/workers/book_authority.py:481: in _execute_book_opening_claim
+    result = opening.execute_run(
+src/novel_forge/modules/book_authority/opening.py:1190: in execute_run
+    return self._execute_workflow_node(
+src/novel_forge/modules/book_authority/opening.py:1259: in _execute_workflow_node
+    node_result = self._execute_workflow_node_payload(
+src/novel_forge/modules/book_authority/opening.py:1697: in _execute_workflow_node_payload
+    search = self._search(
+src/novel_forge/modules/book_authority/opening.py:5943: in _search
+    return self.narrative_search.explore(search_request, **explore_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/search_application.py:339: in explore
+    result = self.planning.generate(
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:2007: in _repair_unmaterialized_result
+    return self.generate(repaired, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:815: in generate
+    return self._repair_unmaterialized_result(command, operation_id=operation_id, principal=principal, execution_probe=execution_probe)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_planning_runtime/application.py:1992: in _repair_unmaterialized_result
+    raise KernelError("PLANNING_RESULT_REPAIR_BOUND_EXCEEDED", "invalid raw results exhausted their bounded repair allowance; all results remain retained")
+E   novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained
+=========================== short test summary info ============================
+FAILED tests/integration/test_narrative_craft_authoring_postgres.py::test_source_null_execution_db_guard_and_original_masquerade_rejected
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_frozen_selection_production_planning_handler_derives_exact_scene_strategy
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-False]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-False]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-True]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[True-explicit]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy[False-reselection]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_craft_reselection_preserves_cumulative_campaign_budget[calls]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_craft_reselection_preserves_cumulative_campaign_budget[tokens]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_craft_reselection_blocks_original_insufficient_request_budget[calls]
+FAILED tests/integration/test_craft_planning_postgres.py::test_pg_craft_reselection_blocks_original_insufficient_request_budget[tokens]
+11 failed, 5 passed in 41.90s

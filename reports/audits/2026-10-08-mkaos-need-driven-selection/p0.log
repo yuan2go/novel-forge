@@ -1,0 +1,3 @@
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/run_p0_backend_qualification.py --profile local --output "/tmp/novel-forge-mkaos-need-p0/p0-backend-qualification-$(git rev-parse HEAD).json"
+migration_matrix omits PostgreSQL migration/upgrade tests: tests/integration/test_source_market_migration_postgres.py
+make: *** [p0-backend-qualification] Error 2
