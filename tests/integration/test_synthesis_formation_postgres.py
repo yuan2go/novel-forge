@@ -60,7 +60,7 @@ from tests.integration.test_core_functional_loops_postgres import _principal
 def test_native_formation_generates_foundation_from_author_brief(
     tmp_path, monkeypatch, author_guided, result_repair, runtime_recovery,
     evaluation_recovery, manual_review, advice_only, target_chapters,
-    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, memo_timeout_prefix_recovery=False, scene_core_recovery=False, scene_information_recovery=False, review_knowledge_recovery=False, length_scope_recovery=False,
+    *, complete_after_result_repair=False, creative_validation=False, author_result_repair=False, valid_result_admission=False, capacity_continuation=False, semantic_repair=False, route_continuation=False, input_order_continuation=False, world_result_repair=False, world_disabled=False, world_optional_recovery=False, gateway_null_recovery=False, stage_repair_recovery=False, memo_timeout_recovery=False, memo_timeout_prefix_recovery=False, scene_core_recovery=False, scene_information_recovery=False, review_knowledge_recovery=False, length_scope_recovery=False, foundation_uncertainty_recovery=False,
 ):
     if memo_timeout_prefix_recovery:
         memo_timeout_recovery = True
@@ -300,6 +300,24 @@ def test_native_formation_generates_foundation_from_author_brief(
     registry = ProviderAdapterRegistry()
     transport = AuthorSynthesisTransport(author, brief) if author_guided else SynthesisTransport()
     transport.database_url = settings.database_url
+    if foundation_uncertainty_recovery:
+        from novel_forge.modules.story_planning_runtime import application as planning_module
+        resolved_check = planning_module.require_resolved_foundation_applicability
+        monkeypatch.setattr(planning_module, "require_resolved_foundation_applicability", lambda _: None)
+        original_foundation = transport.planning
+        uncertain_once = False
+        def uncertain_world(stage, inputs):
+            nonlocal uncertain_once
+            result = original_foundation(stage, inputs)
+            if stage == "world.design.generate" and not uncertain_once:
+                uncertain_once = True
+                result["rules"][0]["cost"] = None
+                item = next(item for item in result["applicability"]
+                            if item["field_path"] in {"$.rules[0].cost", "/rules/0/cost"})
+                item.update(status="UNDETERMINED", rationale="Retained uncertainty before Foundation activation")
+            return result
+        transport.planning = uncertain_world
+        legacy_candidate = None
     if valid_result_admission:
         from novel_forge.modules.story_planning_runtime import result_recovery
         from novel_forge.modules.command_kernel.errors import KernelError
@@ -804,6 +822,15 @@ def test_native_formation_generates_foundation_from_author_brief(
                 )
             except Exception as exc:
                 from novel_forge.modules.command_kernel.errors import KernelError
+                if foundation_uncertainty_recovery and isinstance(exc, KernelError) and exc.code == "FOUNDATION_APPLICABILITY_UNRESOLVED":
+                    assert legacy_candidate is None
+                    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                        uow.cursor.execute("SELECT g.operation_id,g.candidate_asset_version_id,v.content_hash FROM authority_story_planning_generation g JOIN authority_asset_version v ON v.asset_version_id=g.candidate_asset_version_id WHERE g.project_id=%s AND g.generator_operation_name='world.design.generate'", [harness.project_id])
+                        legacy_candidate = uow.cursor.fetchone()
+                    monkeypatch.setattr(planning_module, "require_resolved_foundation_applicability", resolved_check)
+                    current = formation.require(admitted.formation_run_id)
+                    formation.resume(admitted.formation_run_id, expected_version=current["version"], principal=principal)
+                    continue
                 if capacity_continuation and isinstance(exc, KernelError) and exc.code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
                     execution.close()
                     formation, execution, chapter, composition = _recover_capacity_formation(harness=harness,
@@ -1028,8 +1055,16 @@ def test_native_formation_generates_foundation_from_author_brief(
                 for _, source, qualification in dependencies
             )
         assert (
-            recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair or author_result_repair else 7)
+            recovered_activation and len(transport.calls) == calls_before_recovery == (8 if result_repair or author_result_repair or foundation_uncertainty_recovery else 7)
         )
+        if foundation_uncertainty_recovery:
+            assert legacy_candidate is not None
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT o.status,v.content_hash,(SELECT count(*) FROM authority_story_planning_validation_report r WHERE r.candidate_asset_version_id=v.asset_version_id AND r.status='FAIL'),(SELECT count(*) FROM authority_book_foundation_binding b WHERE b.asset_version_id=v.asset_version_id) FROM authority_operation o JOIN authority_asset_version v ON v.asset_version_id=%s WHERE o.operation_id=%s", [legacy_candidate[1],legacy_candidate[0]])
+                assert uow.cursor.fetchone() == ("SUCCEEDED", legacy_candidate[2], 1, 0)
+                uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND causation_operation_id=%s AND command_payload #>> '{payload,repair_of_candidate_id}'=%s", [harness.project_id,legacy_candidate[0],legacy_candidate[1]])
+                assert uow.cursor.fetchone()[0] == 1
+            return
         assert {call["stage"] for call in transport.calls} == {
             "creative.candidates.generate",
             "theme.candidates.generate",
@@ -2085,6 +2120,13 @@ def _assert_runtime_continuation_once(formation, harness, transport, principal):
     assert len({item.candidate_asset_version_id for item in outcomes})==1
     assert all(item.generation_operation_id==successor_id for item in outcomes)
     assert len(transport.calls)==before
+
+
+def test_native_unbound_foundation_uncertainty_repairs_without_rewriting_success(tmp_path, monkeypatch):
+    test_native_formation_generates_foundation_from_author_brief(
+        tmp_path, monkeypatch, False, False, False, False, False, False, 1,
+        foundation_uncertainty_recovery=True,
+    )
 
 
 def test_creative_validation_native_controlled_process_to_internal_acceptance(tmp_path, monkeypatch):

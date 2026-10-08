@@ -649,6 +649,14 @@ approved original author direction. Native validation verifies its active receip
 creative candidate generation occurs on that path. The existing author page offers both. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
 
+Foundation candidates with `UNDETERMINED` applicability retain their exact field diagnosis
+and use the existing bounded Planning repair before approval. A historical Story Design
+activation that never acquired a Foundation binding may append a diagnosed successor;
+its original successful Operation, receipt and candidate content remain intact. A bound
+Foundation requires its owning design-change path. Repaired candidates use their own
+approval and activation identities; retrying a prior decision cannot approve a different
+candidate under the same idempotency key.
+
 Ordinary writing runs only its required stages. Review/Canon/Quality being absent from the
 graph means zero optional-stage dispatches, not deferred hidden execution. `MANUSCRIPT_READY`
 means the requested draft range is saved; it does not mean Book acceptance or literary PASS.

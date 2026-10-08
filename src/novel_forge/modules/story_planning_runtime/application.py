@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .foundation_generation import FOUNDATION_GENERATORS, validate_foundation_payload
+from .foundation_generation import FOUNDATION_GENERATORS, require_resolved_foundation_applicability, validate_foundation_payload
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, replace
@@ -1874,6 +1874,28 @@ class StoryPlanningGenerationApplication:
         state = self.story_design.require(
             project_id=command.project_id, asset_version_id=str(row[4])
         )
+        if command.generator_operation_name in FOUNDATION_GENERATORS and state["lifecycle"] == "ACTIVE":
+            asset = self._require_asset(project_id=command.project_id, asset_version_id=str(row[4]))
+            try:
+                require_resolved_foundation_applicability(asset["content"])
+            except KernelError as error:
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_book_foundation_binding WHERE project_id=%s AND book_id=%s AND asset_version_id=%s)",
+                                       [command.project_id, command.book_id, row[4]])
+                    committed = uow.cursor.fetchone()[0]
+                if committed:
+                    raise
+                definition = GENERATOR_CATALOG[command.generator_operation_name]
+                if command.repair_number >= definition.maximum_structural_regenerations:
+                    raise KernelError("PLANNING_REPAIR_BOUND_EXCEEDED", "Unresolved Foundation exhausted its frozen repair allowance") from error
+                report_hash = self._record_validation(operation_id=str(row[0]), candidate_asset_version_id=str(row[4]),
+                    validation_kind="STRUCTURAL", status="FAIL", report={"status": "FAIL", "validation_kind": "STRUCTURAL",
+                        "error_code": error.code, "message": error.message, "candidate_asset_version_id": str(row[4])})
+                repaired = replace(command, runtime_continuation_id="", repair_of_candidate_id=str(row[4]),
+                    repair_of_operation_id="", repair_result_asset_version_id="", repair_result_diagnostic=None,
+                    repair_reason=f"{error.code}:{report_hash}", repair_number=command.repair_number + 1,
+                    idempotency_key=f"{command.idempotency_key}:repair:{command.repair_number + 1}")
+                return self.generate(repaired, principal=principal, execution_probe=execution_probe)
         if command.routing_bootstrap_authorization_id and row[3] in {
             "EVALUATION_PENDING", "REPAIR_REQUIRED", "REJECTED",
         }:
@@ -2403,6 +2425,7 @@ class StoryPlanningGenerationApplication:
                 contract = None
                 if command.generator_operation_name in FOUNDATION_GENERATORS:
                     validate_foundation_payload(command.generator_operation_name, content)
+                    require_resolved_foundation_applicability(content)
                 else:
                     contract = validate_planning_contract(
                         project_id=command.project_id,

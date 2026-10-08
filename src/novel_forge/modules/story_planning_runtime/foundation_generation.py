@@ -25,6 +25,19 @@ FOUNDATION_INPUT_ROLES = {
 }
 
 
+def require_resolved_foundation_applicability(content: Mapping[str, Any]) -> None:
+    payload = content.get("candidate_payload", content)
+    unresolved = [str(item["field_path"]) for item in payload.get("applicability", ())
+                  if item.get("status") == "UNDETERMINED"]
+    if unresolved:
+        raise KernelError(
+            "FOUNDATION_APPLICABILITY_UNRESOLVED",
+            "Unresolved applicability at " + ", ".join(unresolved)
+            + ". Resolve candidate design within the author's delegated scope or defer the unused rule. "
+              "Preserve upstream decisions; do not invent accepted facts or relabel uncertainty as inapplicable.",
+        )
+
+
 def _object(properties: dict[str, Any]) -> dict[str, Any]:
     return {
         "type": "object",

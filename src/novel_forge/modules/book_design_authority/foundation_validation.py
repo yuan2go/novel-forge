@@ -66,6 +66,7 @@ def validate_foundation_layer(
     if work_requirements:
         from novel_forge.modules.story_planning_runtime.foundation_generation import (
             FOUNDATION_GENERATORS,
+            require_resolved_foundation_applicability,
             validate_foundation_payload,
         )
 
@@ -73,11 +74,7 @@ def validate_foundation_layer(
             name for name, target in FOUNDATION_GENERATORS.items() if target is role
         )
         validate_foundation_payload(generator, {"candidate_payload": dict(content)})
-        if any(item["status"] == "UNDETERMINED" for item in content["applicability"]):
-            raise KernelError(
-                "FOUNDATION_APPLICABILITY_UNRESOLVED",
-                "Uncertain design applicability requires clarification before activation",
-            )
+        require_resolved_foundation_applicability(content)
         if parent_contents:
             _require_declared_parent_bindings(content, parent_contents)
             if FoundationRole.CREATIVE_FOUNDATION in parent_contents:
