@@ -8,24 +8,24 @@
 
 Status: `PARTIALLY_IMPLEMENTED`
 Scope: unresolved target narrative domain and business architecture decisions
-Current-reality baseline: `2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42`
-Baseline implementation identity: `sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87`
+Current-reality baseline: `94aa18f3143abe7db7da7a53229326e749eb33a9`
+Baseline implementation identity: `sha256:ad4ebcbc18d15f8fcb15ff4ee575a2f52f8dc8d6fa64c2fe971f0485d906e48a`
 
-2026-10-07 scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
+2026-10-08 scoped Source integration review: Bounded market observations have native controlled engineering evidence; live rankings, authorized text and real reference-assisted prose remain unproven. Other unresolved decisions are retained. Prior scope review: Native creation retains author choices, cancellation and worker identity, bounded recovery and accepted-history protection. Book-owned immutable edition validation and controlled selection are implemented; Narrative Segment policy, human quorum, reader consent and real comparative benefit remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
 real-Provider qualification or literary quality.
 
-Source baseline refreshed for the coordinated forward-contract integration. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
+Source baseline refreshed for the coordinated forward-contract integration. Archived closure inputs remain HISTORICAL_REPLAY_ONLY and grant no current production permission. Tests, hooks, builds, PostgreSQL, full qualification and merged-SHA validation are NOT_RUN by explicit user instruction; this baseline grants no runtime or production qualification.
 
 <!-- proposal-lifecycle
 {
   "schema_version": "novel-forge.proposal-lifecycle.v1",
   "status": "PARTIALLY_IMPLEMENTED",
-  "reviewed_on": "2026-10-07",
+  "reviewed_on": "2026-10-08",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "2e4db4ecdb8e3d9f7f10f1e55cb246143777dc42",
-    "implementation_tree_sha": "sha256:9b556399acc80fc79a18180ed45f311a6c8b299015caba223d0bf00a82097a87"
+    "sha": "94aa18f3143abe7db7da7a53229326e749eb33a9",
+    "implementation_tree_sha": "sha256:ad4ebcbc18d15f8fcb15ff4ee575a2f52f8dc8d6fa64c2fe971f0485d906e48a"
   },
   "scope": [
     "src/novel_forge/modules/story_design_authority",
@@ -275,7 +275,7 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
           "path": "scripts/narrative_closure_campaign.py"
         },
         {
-          "path": "config/production/narrative-closure/authorization-request.json"
+          "path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-request.json"
         }
       ]
     },
@@ -287,7 +287,7 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
           "path": "scripts/narrative_closure_review.py"
         },
         {
-          "path": "config/production/narrative-closure/protocol.json"
+          "path": "config/archive/creative-inputs-legacy/narrative-closure/protocol.json"
         }
       ]
     },
