@@ -371,6 +371,8 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
         book = uow.cursor.fetchone()[0]
         uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [book["production_profile_version"]])
         requirements = uow.cursor.fetchone()[0]
+        from .creation_window import delivery_window_evidence
+        window = delivery_window_evidence(uow.cursor, book)
         deliveries, changes = working_dependency_changes(uow, book)
         available = [number for number, _ in deliveries]
         if chapters is not None and (not chapters or chapters != sorted(set(chapters)) or any(number not in available for number in chapters)):
@@ -397,7 +399,8 @@ def current_manuscript(database_url: str, *, book: dict[str, Any], principal: An
     manifest = {"version": "current-manuscript-export.v1", "book_run_id": book["book_run_id"],
         "project_id": book["project_id"], "workspace_id": book["workspace_id"], "book_id": book["book_id"], "accepted_through_chapter": book["accepted_through_chapter"],
         "units": units, "kind": "CURRENT_AUTHOR_MANUSCRIPT", "publication": "NOT_AUTHORIZED",
-        "writing_state": book["state"], "book_version": book["version"], "target_chapters": book["target_chapter_count"]}
+        "writing_state": book["state"], "book_version": book["version"], "target_chapters": book["target_chapter_count"],
+        "delivery_window_policy": window}
     manifest["manifest_digest"] = canonical_hash(manifest)
     manifest["text"] = "\n\n".join(f"第{item['chapter']}章 {item['title']}\n\n{item['text']}" for item in units)
     manifest["text_digest"] = "sha256:" + sha256(manifest["text"].encode()).hexdigest()

@@ -101,6 +101,29 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     manifest = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert len(manifest["units"]) == 6
     assert all(unit["quality_status"] == "NOT_VERIFIED" for unit in manifest["units"])
+    prefix_versions = [unit["asset_version_id"] for unit in manifest["units"]]
+    from fastapi.testclient import TestClient
+    from novel_forge.api.authority_app import create_authority_app
+    client = TestClient(create_authority_app(settings))
+    extension = {"project_id": project, "book_run_id": book["book_run_id"],
+        "expected_version": book["version"], "stop_after_chapter": 8, "idempotency_key": "extend-native-to-eight"}
+    outside = client.post("/product/editor/manuscripts/extend-delivery-window", json={**extension, "project_id": "another-project"})
+    assert outside.status_code == 403
+    extended = client.post("/product/editor/manuscripts/extend-delivery-window", json=extension)
+    assert extended.status_code == 200, extended.json()
+    assert client.post("/product/editor/manuscripts/extend-delivery-window", json=extension).json()["replayed"]
+    continued = run_creation_command(settings, args)
+    assert continued["stop_reason"] == "MANUSCRIPT_READY", continued
+    from novel_forge.modules.book_authority.production import PostgresBookAuthority
+    book = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=None,
+        application_build_id=harness.application_build_id, commit_sha=harness.release_sha).require(book["book_run_id"])
+    manifest = current_manuscript(DATABASE_URL, book=book, principal=principal)
+    assert len(manifest["units"]) == 8 and book["current_chapter"] == 8 and book["accepted_through_chapter"] == 0
+    assert [unit["asset_version_id"] for unit in manifest["units"][:6]] == prefix_versions
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=7", [book["book_run_id"]])
+        sources = uow.cursor.fetchone()[0]["sources"]
+        assert any(source["chapter"] == 6 and source["asset_version_id"] == prefix_versions[5] for source in sources)
     from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
     from novel_forge.modules.book_followup_authority.prose_coordinator import BookProseReviewCoordinator
     from novel_forge.modules.command_kernel.errors import KernelError
@@ -143,7 +166,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         assert blocking_working_cli_outcomes(uow.cursor, project_id=project, book_id=book["book_id"],
             book_run_id=book["book_run_id"], outcomes=required_unknown) == required_unknown
     usable = current_manuscript(DATABASE_URL, book=book, principal=principal)
-    assert len(usable["units"]) == 6
+    assert len(usable["units"]) == 8
     assert usable["units"][0]["review_status"] == "FAILED"
     assert usable["units"][0]["asset_version_id"] == manifest["units"][0]["asset_version_id"]
     unit = manifest["units"][0]
@@ -194,7 +217,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert [unit["chapter"] for unit in exported.json()["units"]] == [2]
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [project])
-        assert uow.cursor.fetchone()[0] == 6
+        assert uow.cursor.fetchone()[0] == 8
 
 
 def test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint():

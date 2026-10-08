@@ -155,8 +155,14 @@ def require_result_repair_source(
                 "result repair requires this Book's failed terminal Operation with no Candidate",
             )
         uow.cursor.execute(
-            """SELECT 1 FROM authority_external_effect WHERE operation_id=%s
-            AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') LIMIT 1""",
+            """SELECT 1 FROM authority_external_effect e WHERE operation_id=%s
+            AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')
+            AND NOT EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
+              WHERE r.external_effect_id=e.external_effect_id
+                AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
+                AND r.evidence->>'request_hash'=e.request_hash
+                AND r.evidence->>'project_id'=e.project_id
+                AND r.evidence->>'operation_id'=e.operation_id) LIMIT 1""",
             [operation_id],
         )
         if uow.cursor.fetchone():

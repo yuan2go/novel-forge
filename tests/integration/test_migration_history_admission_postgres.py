@@ -3,11 +3,35 @@ from __future__ import annotations
 import psycopg
 import pytest
 
-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, run_migrations
+from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, get_migration_status, run_migrations
+from psycopg.conninfo import make_conninfo
 from tests.integration import authority_postgres_support as support
 from tests.integration.migration_window_postgres_support import disposable_database_at_migration
 
 MAIN_HEAD = "20261007_0159_planning_dead_letter_result_recovery"
+
+
+def test_restored_migration_status_is_read_only_and_preserves_partial_history():
+    with disposable_database_at_migration(support.DATABASE_URL, prefix="status_restore", target_migration_id=MAIN_HEAD) as url:
+        before = _snapshot(url)
+        readonly = make_conninfo(url, options="-c default_transaction_read_only=on")
+        result = get_migration_status(readonly)
+        assert not result["ok"] and not result["extra"]
+        assert result["applied"][-1]["migration_id"] == MAIN_HEAD
+        assert result["missing"][-1] == LATEST_MIGRATION_ID
+        assert _snapshot(url) == before
+        assert get_migration_status(readonly) == result
+
+
+def test_missing_migration_ledger_is_reported_without_bootstrapping():
+    with disposable_database_at_migration(support.DATABASE_URL, prefix="status_empty", target_migration_id=MIGRATIONS[0].migration_id) as url:
+        with psycopg.connect(url) as connection:
+            connection.execute("DROP TABLE nf_schema_migrations")
+        result = get_migration_status(make_conninfo(url, options="-c default_transaction_read_only=on"))
+        assert not result["ok"] and result["applied"] == []
+        assert result["missing"] == result["available"]
+        with psycopg.connect(url) as connection:
+            assert connection.execute("SELECT to_regclass('nf_schema_migrations')").fetchone() == (None,)
 
 
 def _snapshot(url):

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.logging.execution import execution_step
+
 from dataclasses import dataclass
 from typing import Iterable, Protocol
 
@@ -191,6 +193,7 @@ class AdmissionController:
             )
         return route
 
+    @execution_step("production_execution.AdmissionController.admit")
     def admit(
         self,
         request: ExecutionRequest,
@@ -201,6 +204,7 @@ class AdmissionController:
         )
         return self._admit_frozen_contracts(request, capability)
 
+    @execution_step("production_execution.AdmissionController.admit_recovery")
     def admit_recovery(
         self,
         request: ExecutionRequest,
@@ -398,6 +402,7 @@ class ProductionExecutionGateway:
         self.backends = backends
         self.admission = admission
 
+    @execution_step("production_execution.ProductionExecutionGateway.submit")
     def submit(self, request: ExecutionRequest) -> ExecutionHandle:
         route = self.admission.resolve_route(request)
         backend = self.backends.resolve(route.backend_id)
@@ -408,6 +413,7 @@ class ProductionExecutionGateway:
         )
         return handle
 
+    @execution_step("production_execution.ProductionExecutionGateway.resume_planned_execution")
     def resume_planned_execution(
         self,
         request: ExecutionRequest,
@@ -493,6 +499,7 @@ class ProductionExecutionGateway:
         self._validate_cancellation(handle, result)
         return result
 
+    @execution_step("production_execution.ProductionExecutionGateway.reconcile")
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
         self.admission.assert_handle_current(handle)
         backend = self.backends.resolve(handle.backend_id)
@@ -500,6 +507,7 @@ class ProductionExecutionGateway:
         self._validate_result(handle, result)
         return result
 
+    @execution_step("production_execution.ProductionExecutionGateway.cancel")
     def cancel(
         self, handle: ExecutionHandle, reason: str
     ) -> ExecutionCancellationResult:

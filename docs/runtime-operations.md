@@ -65,8 +65,10 @@ an OpenAI-compatible Chat Completions endpoint alone is insufficient.
 For Codex membership, inspect the configured executable/version/digest, explicit
 `CODEX_HOME`, effective configuration and login identity without exposing tokens.
 The default process allowlist excludes OpenAI base-URL/API-key variables and permits
-HTTP/HTTPS proxy settings. `--ignore-user-config`, `--ignore-rules` and `--ephemeral`
-isolate user instruction/session inputs; they do not attest server ownership.
+HTTP/HTTPS proxy settings. `--ignore-user-config` and `--ignore-rules` isolate user instruction inputs. New
+invocations preserve local session evidence (`codex-local-session-evidence.v1`); old
+frozen ephemeral executions retain their original command. Local session IDs are not
+remote request IDs, and resuming a session starts new work rather than querying a receipt.
 `codex-no-transport-retry.v1` selects a custom Responses Provider requiring OpenAI auth
 and zero HTTP/stream retries. Existing bindings keep their prior retry policy.
 Initial/recovered submissions use the same command construction; receipt reconciliation
@@ -136,6 +138,8 @@ PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-migrate
 The authoritative registry is `src/novel_forge/storage/migrations/versions/__init__.py`;
 the head is also checked by `architecture/manifests/migration-manifest.yaml`. Applied IDs
 live in `nf_schema_migrations`.
+Status runs in a read-only transaction and reports an absent migration ledger as missing
+migrations. Only the apply command initializes that ledger.
 
 The Source convergence segment includes two distinct `0121` entries connected by
 declared parents. Use full identities and the registry's parent chain, not numeric
@@ -146,7 +150,7 @@ forward-only, backup and downgrade properties. Run clean-install and upgrade tes
 using a new migration outside an isolated test database.
 
 The published chain through 0168 is immutable. The current forward segment is
-0169–0180, ending at Foundation direction search. Resolve each full
+0169–0184, ending at original CLI Effect reconciliation. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -187,6 +191,68 @@ turn it into a positive native test.
 The offline snapshot importer is the separate `novel-forge-migrate` entry. Imported
 records remain governed candidates; import does not infer approval or production
 activation.
+
+## Execution diagnostics
+
+Set `NOVEL_FORGE_EXECUTION_DIAGNOSTICS=1` on the API/worker process to emit
+`execution-diagnostics.v1` JSON lines to stderr. The existing Kernel, Planning adapter,
+execution admission/gateway, Codex supervisor, result validation, Authority evidence
+store and Book recovery paths share nested span IDs and the available original
+Project/Book/Operation/Effect/Execution/Attempt/fence identities. An operation started
+before diagnostics were enabled cannot gain historical spans retroactively.
+
+Use the first failed span and its enclosing spans to distinguish admission, process,
+validation and persistence failures. A completed span only means that function returned;
+inspect its outcome and durable receipts before interpreting success. A `codex.stream`
+observation reports terminal-event and usage presence, stream-disconnect and response-body
+decode markers from a bounded first/last stdout scan. `scan_truncated=true` makes that
+observation incomplete. By default it retains no error message, prompt, prose, command arguments,
+environment values or connection string. Logging failure cannot alter an execution.
+
+For local diagnosis, also set `NOVEL_FORGE_EXECUTION_DIAGNOSTICS_EXCEPTION_TEXT=1`
+to retain exception messages, chained tracebacks and Codex error-event messages with
+credential patterns redacted. These details can contain author/source text and local
+paths; capture them in access-restricted operational logs outside the repository.
+Raw subprocess stdout/stderr remain in the original private execution directory.
+The optional text does not enter request contracts or change frozen Provider policies.
+
+`codex.recovery` with `cached_result=true` means local stored-result reuse, not a remote
+Provider query. A disconnect with no terminal result or measured usage remains UNKNOWN;
+diagnostics do not establish remote nonexecution, release a held reservation or authorize
+resending the original Effect. Keep original receipts unchanged. Test injected failures
+with isolated identities and resources; a later successful diagnostic request cannot
+resolve an earlier request's remote outcome.
+
+### Original Codex result recovery
+
+Codex reconciliation reads the original execution directory, request, Attempt/fence,
+command and input digests. A changed complete process receipt can supersede cached
+UNKNOWN/RUNNING results, retaining the prior result as immutable execution evidence.
+An orphaned process is consumable only with a complete single-turn JSONL completion,
+measured usage, valid output and the frozen Schema/semantic checks; the process receipt
+is not rewritten as a successful exit. Missing/truncated evidence remains unresolved.
+Concurrent stale recovery cannot overwrite a terminal persisted result.
+
+An authorized operator can append `cli-original-reconciliation.v1` through the existing
+`POST /product/content-authority/external-effects/{external_effect_id}/resolve` endpoint and
+`external_effect.resolve` permission. Supply `original_remote_receipt_ref` in `evidence`,
+the observed Operation version and a stable resolution idempotency key. The referenced
+`cli_remote_receipt` / `cli-remote-receipt.v1` AssetVersion must be ELIGIBLE/CLEAR and
+point to a same-project `cli_provider_record` / `cli-provider-record.v1` containing the
+original authenticated Provider result. Both preserve the remote request ID, original
+input hash, terminal outcome and measured usage. The receipt additionally binds project,
+Operation, Effect, dispatch/generation, request hash, execution, Attempt/fence and process
+receipt, with `verification_basis=AUTHORIZED_OPERATOR_ATTESTATION` and the trusted actor.
+Successful production results also require the original frozen execution manifests,
+validated exact output and usage/cost evidence. Local exit/error text alone is insufficient.
+
+The migration manifest binds the append-only CLI reconciliation guard and unique
+evidence index. Original dispatches and terminal Operations are preserved. A held entitlement
+reservation settles once through the existing budget owner; historical unmeasured settled
+usage receives an append-only correction. Membership monetary cost stays UNKNOWN.
+Opening assessment includes the verified reconciliation and changes its snapshot digest;
+a terminal owner requires its native linked successor before consuming any result.
+Without original evidence this endpoint rejects resolution and never redispatches.
 
 ## Validation matrix
 
@@ -719,10 +785,33 @@ increased. UNKNOWN blocks this switch until its original request is reconciled, 
 manuscript reads/edits/exports remain independent. API clients bind the original adoption
 key and expected Book version; response recovery replays the native transaction receipt.
 
+Extend an existing author-first delivery window at a settled `READY` or `PAUSED`
+checkpoint, using the `book_version` returned by manuscript read:
+
+```bash
+novel-forge authority-manuscript extend-delivery-window --project-id "$PROJECT" \
+  --book-run-id "$BOOK_RUN" --stop-after-chapter "$DELIVERY_TARGET" \
+  --expected-version "$BOOK_VERSION" --idempotency-key "$EXTENSION_KEY"
+```
+
+The target must increase within the frozen production profile's full-book target. The
+command appends `book-delivery-window-extension.v1` evidence under the original BookRun;
+it preserves Formation, start command, source profile, plans, manuscript versions and
+accepted cursor. Repeat the same version, target and key after response loss. A later
+extension uses a new current checkpoint/key and links the previous policy version.
+`POST /product/editor/manuscripts/extend-delivery-window` accepts the same fields and
+returns the committed policy AssetVersion. Read/export includes that exact policy.
+UNKNOWN, held unknown usage, active work and held execution leases require their native
+recovery before extension. The command does not dispatch a model; ordinary `continue`
+uses the saved frontier and selected prior prose after successful extension. Before a
+BookRun exists, finish the original Opening recovery and original start first.
+
 Focused verification for this policy uses
 `tests/integration/test_author_first_manuscript_postgres.py` (controlled native production
 composition, cross-ChapterGroup writing, interrupted delivery/recovery, optional review
-outage, stale review, protected local edits and exact export), existing resource/cancellation
+outage, same-run delivery-window extension, stale review, protected local edits and exact export),
+`tests/integration/test_book_delivery_window_postgres.py` (frozen inputs, checkpoint races,
+original UNKNOWN, rollback, response loss and exact replay), existing resource/cancellation
 and editor PostgreSQL tests, and the touched realization/template/editor unit tests.
 The controlled transport is fixture evidence only. A real-provider short journey must bind
 one implementation SHA, native receipts, optional-stage counts and actual usage separately;

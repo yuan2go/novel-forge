@@ -285,6 +285,7 @@ def _source_gateway_provider_result(
     if local_cli_remote_outcome_unknown(
         transport=handle.transport, outcome=result.outcome,
         started_at=result.started_at, usage_receipt_ref=result.usage_receipt_ref,
+        failure_code=record.raw_evidence.get("failure_code"),
     ):
         evidence["external_state_unknown"] = True
         evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"

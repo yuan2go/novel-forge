@@ -2415,7 +2415,9 @@ class PostgresBookAuthority:
         result = dict(zip(fields, row, strict=True))
         with AuthorityUnitOfWork(self.database_url) as uow:
             from .manuscript import effective_workflow
+            from .creation_window import delivery_window_evidence
             result["author_workflow"] = effective_workflow(uow.cursor, result)
+            result["delivery_window_policy"] = delivery_window_evidence(uow.cursor, result)
         return result
 
     def _validate_input_snapshot(

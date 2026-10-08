@@ -3478,7 +3478,13 @@ def _enforce_routing_chain_budget(
         f"""SELECT count(*), count(*) FILTER (
                     WHERE b.usage_accounted AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}}'='true'),
                   bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
-                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED'))
+                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED')
+                    AND NOT EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
+                      WHERE r.external_effect_id=e.external_effect_id
+                        AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
+                        AND r.evidence->>'project_id'=e.project_id
+                        AND r.evidence->>'operation_id'=e.operation_id
+                        AND r.evidence->>'request_hash'=e.request_hash))
            FROM (SELECT *,{provider_usage_accounted_sql()} AS usage_accounted FROM authority_budget_reservation) b
            JOIN authority_external_effect e USING(external_effect_id)
            WHERE b.project_id=%s AND b.operation_id=ANY(%s::text[]) AND b.stable_idempotency_key<>%s
@@ -3712,6 +3718,11 @@ def settle_provider_budget_in_uow(
     if lane_evidence and any(dict(row.get("evidence") or {}).get(key) != value for key, value in lane_evidence.items()):
         raise KernelError("BUDGET_SCOPE_CONFLICT", "settlement entitlement authorization differs from reservation")
     if row["status"] == "SETTLED":
+        from .cli_effect_reconciliation import corrected_settlement_replay
+        if row["settled_amount"] == amount and corrected_settlement_replay(uow, row, actual_tokens):
+            return {"reservation_id": reservation_id, "status": "SETTLED", "replayed": True,
+                "usage_corrected": True, "accounting_basis": accounting_basis, "cost_status": cost_status,
+                "budget_breach": False, "agent_budget_exceeded": []}
         if row["settled_amount"] != amount or row["actual_tokens"] != actual_tokens:
             raise KernelError("BUDGET_SETTLEMENT_CONFLICT", "settlement replay differs")
         if locked_scope is not None:
@@ -4178,7 +4189,15 @@ def require_known_cli_lineage(cursor: Any, *, project_id: str, operation_id: str
             COALESCE(request_book.book_id,production.book_id,NULLIF(o.command_payload->>'book_id',''),
                 NULLIF(o.command_payload#>>'{payload,book_id}',''),
                 NULLIF(root.command_payload->>'book_id',''),
-                NULLIF(root.command_payload#>>'{payload,book_id}',''),'')
+                NULLIF(root.command_payload#>>'{payload,book_id}',''),''),
+            EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
+                JOIN authority_external_effect effect USING(external_effect_id)
+                JOIN authority_budget_reservation corrected_budget ON corrected_budget.external_effect_id=effect.external_effect_id
+                WHERE effect.project_id=o.project_id AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
+                  AND r.evidence#>>'{budget_correction,mode}'='APPEND_CORRECTION'
+                  AND corrected_budget.evidence->>'resource_control_version' IS DISTINCT FROM 'billing-channel-resources.v1'
+                  AND (r.evidence#>>'{budget_correction,actual_tokens}')::bigint>
+                      (r.evidence#>>'{budget_correction,original_actual_tokens}')::bigint)
         FROM authority_operation o LEFT JOIN authority_operation root
           ON root.operation_id=o.root_operation_id AND root.project_id=o.project_id
         LEFT JOIN authority_book_chapter_request request ON request.project_id=o.project_id
@@ -4194,6 +4213,8 @@ def require_known_cli_lineage(cursor: Any, *, project_id: str, operation_id: str
     lineage = cursor.fetchone()
     if lineage is None:
         raise KernelError("CROSS_PROJECT_REFERENCE", "Provider dispatch Operation scope is missing")
+    if len(lineage) > 2 and lineage[2]:
+        raise KernelError("BUDGET_CORRECTION_BREACH", "Original measured usage exceeded the retained ceiling; no further Provider allowance is admitted")
     unresolved = unresolved_cli_outcomes(cursor, project_id,
         root_operation_id="" if lineage[1] else str(lineage[0]), book_id=str(lineage[1]))
     if lineage[1] and unresolved:
@@ -4233,9 +4254,14 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: 
           AND (d.evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
             OR NOT COALESCE(d.evidence #> '{production_execution,execution_result,started_at}'='null'::jsonb,false))
           AND NULLIF(d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}', '') IS NULL
-          AND NOT EXISTS(SELECT 1 FROM authority_effect_manual_resolution m
-              WHERE m.external_effect_id=e.external_effect_id AND m.project_id=e.project_id
-                AND m.operation_id=e.operation_id AND m.created_at>=COALESCE(d.finished_at,d.updated_at,d.created_at))
+          AND NOT EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
+              WHERE r.external_effect_id=e.external_effect_id
+                AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
+                AND r.evidence->>'dispatch_id'=d.dispatch_id
+                AND r.evidence->>'generation'=d.generation::text
+                AND r.evidence->>'request_hash'=e.request_hash
+                AND r.evidence->>'project_id'=e.project_id
+                AND r.evidence->>'operation_id'=e.operation_id)
         ORDER BY e.created_at,e.external_effect_id,d.generation LIMIT 20""",
         [project_id, root_operation_id, root_operation_id, root_operation_id, book_id, book_id],
     )
@@ -4257,8 +4283,20 @@ def provider_project_usage(cursor: Any, project_id: str) -> dict[str, Any]:
         [project_id],
     )
     row = cursor.fetchone()
-    return dict(zip(("calls_used_or_reserved", "conservative_tokens", "recorded_actual_tokens",
+    usage = dict(zip(("calls_used_or_reserved", "conservative_tokens", "recorded_actual_tokens",
         "unmeasured_reservations", "unmeasured_reserved_tokens"), map(int, row), strict=True))
+    cursor.execute(
+        """SELECT COALESCE(sum((r.evidence#>>'{budget_correction,actual_tokens}')::bigint),0),
+            COALESCE(sum(greatest(0,(r.evidence#>>'{budget_correction,actual_tokens}')::bigint
+                -(r.evidence#>>'{budget_correction,original_actual_tokens}')::bigint)),0)
+        FROM authority_effect_reconciliation_evidence r
+        JOIN authority_external_effect e USING(external_effect_id)
+        WHERE e.project_id=%s AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
+          AND r.evidence#>>'{budget_correction,mode}'='APPEND_CORRECTION'""", [project_id])
+    corrected, overrun = map(int, cursor.fetchone())
+    usage["reconciled_actual_tokens"] = corrected
+    usage["conservative_tokens"] += overrun
+    return usage
 
 
 _USAGE_CAP_DIMENSIONS = frozenset(

@@ -139,8 +139,9 @@ def get_migration_status(database_url: str) -> dict[str, Any]:
     validate_migration_chain()
     with _connect(database_url) as connection:
         with connection.cursor() as cursor:
-            _ensure_migration_table(cursor)
-            applied = _applied_migration_rows(cursor)
+            cursor.execute("SET TRANSACTION READ ONLY")
+            cursor.execute("SELECT to_regclass('nf_schema_migrations')")
+            applied = _applied_migration_rows(cursor) if cursor.fetchone()[0] is not None else []
     return _status_from_rows(applied)
 
 

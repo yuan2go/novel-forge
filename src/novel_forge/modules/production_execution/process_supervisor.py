@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.logging.execution import execution_step
+
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -412,6 +414,7 @@ class PersistentExecutionDirectory:
         self._validate_receipt_paths(layout, receipt)
         return receipt
 
+    @execution_step("production_execution.PersistentExecutionDirectory.write_receipt")
     def write_receipt(self, receipt: ProcessReceipt) -> ExecutionDirectoryLayout:
         layout = self.prepare(receipt.execution_id)
         with self.exclusive(layout):
@@ -419,6 +422,7 @@ class PersistentExecutionDirectory:
             self._write_receipt_unlocked(layout, receipt)
         return layout
 
+    @execution_step("production_execution.PersistentExecutionDirectory._write_receipt_unlocked")
     def _write_receipt_unlocked(
         self, layout: ExecutionDirectoryLayout, receipt: ProcessReceipt
     ) -> None:
@@ -645,6 +649,7 @@ class CodexProcessSupervisor:
         ] = {}
         self._active_processes_lock = Lock()
 
+    @execution_step("production_execution.CodexProcessSupervisor.run")
     def run(self, request: ProcessLaunchRequest, *, controller: Any | None = None) -> SupervisedProcessResult:
         layout = self.execution_directory.prepare(request.execution_id)
         existing: ProcessReceipt | None = None
@@ -896,6 +901,7 @@ class CodexProcessSupervisor:
             stderr=self._read_text(layout.stderr_path),
         )
 
+    @execution_step("production_execution.CodexProcessSupervisor.recover")
     def recover(self, execution_id: str) -> ProcessRecoveryResult:
         receipt = self.execution_directory.read_receipt(execution_id)
         if receipt is None:
@@ -1041,6 +1047,7 @@ class CodexProcessSupervisor:
             duplicate_submission=True,
         )
 
+    @execution_step("production_execution.CodexProcessSupervisor.cancel")
     def cancel(
         self,
         execution_id: str,

@@ -78,6 +78,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                 "/product/mkaos/runtime-usage",
                 "/product/mkaos/runtime-selections",
                 "/product/production/book-authority/runs/{book_run_id}/corrective-actions",
+                "/product/editor/manuscripts/extend-delivery-window",
                 "/product/production/book-authority/books/{book_id}/planning-generations/{operation_id}/runtime-continuation",
                 "/product/temporal-query",
                 "/product/content-intelligence/pacing",
@@ -114,6 +115,12 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
             )
             with TestClient(app) as client:
                 responses = (
+                    client.post("/product/content-authority/external-effects/effect-original/resolve", json={
+                        "operation_id": "operation-original", "project_id": "project-denied",
+                        "actor_id": "attacker-supplied", "decision": "MARK_SUCCEEDED", "reason": "test",
+                        "evidence": {"original_remote_receipt_ref": "authority-asset-version:untrusted"},
+                        "idempotency_key": "resolution-denied", "expected_operation_version": 3,
+                    }),
                     client.get(
                         "/product/tasks", params={"project_id": "project-denied"}
                     ),
@@ -218,7 +225,7 @@ class AuthorityApiSurfaceTests(unittest.TestCase):
                     ),
                 )
 
-        self.assertEqual([response.status_code for response in responses], [403] * 12)
+        self.assertEqual([response.status_code for response in responses], [403] * 13)
 
 
 if __name__ == "__main__":

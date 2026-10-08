@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.logging.execution import execution_step
+
 from dataclasses import asdict
 import hashlib
 import json
@@ -24,6 +26,7 @@ from .evidence import ExecutionRecord
 from .contracts import (
     ExecutionCancellationResult,
     ExecutionHandle,
+    ExecutionOutcome,
     ExecutionRequest,
     ExecutionResult,
 )
@@ -224,6 +227,7 @@ class AuthorityExecutionRecoveryStore:
     def save_record(self, record: ExecutionRecord) -> None:
         self._save_record(record)
 
+    @execution_step("production_execution.AuthorityExecutionRecoveryStore.get_record")
     def get_record(self, execution_id: str) -> ExecutionRecord:
         existing = self._require_session(execution_id)
         record_payload = existing.content.get("record")
@@ -286,6 +290,7 @@ class AuthorityExecutionRecoveryStore:
             raise ValueError("manifest evidence kind must identify a manifest")
         return self.put_evidence(kind, execution_id, payload)
 
+    @execution_step("production_execution.AuthorityExecutionRecoveryStore.put_evidence")
     def put_evidence(
         self,
         kind: str,
@@ -302,6 +307,7 @@ class AuthorityExecutionRecoveryStore:
             correlation_id=record.request.correlation_id,
         )
 
+    @execution_step("production_execution.AuthorityExecutionRecoveryStore.read_evidence")
     def read_evidence(self, ref: str) -> dict[str, Any]:
         if not ref.startswith(_EVIDENCE_REF_PREFIX):
             raise ValueError("execution evidence ref is not Authority-backed")
@@ -321,6 +327,7 @@ class AuthorityExecutionRecoveryStore:
             raise ValueError("execution evidence payload hash is corrupt")
         return dict(payload)
 
+    @execution_step("production_execution.AuthorityExecutionRecoveryStore._save_record")
     def _save_record(self, record: ExecutionRecord) -> None:
         request = record.request
         if request.project_id != self.project_id:
@@ -332,6 +339,11 @@ class AuthorityExecutionRecoveryStore:
             )
             if stored_request_hash != request.contract_hash:
                 raise ValueError("duplicate execution ID has a different request")
+        if existing is not None:
+            prior = _record_from_dict(existing.content["record"])
+            uncertain = {ExecutionOutcome.ACCEPTED, ExecutionOutcome.RUNNING, ExecutionOutcome.UNKNOWN, ExecutionOutcome.ORPHANED}
+            if prior.result is not None and prior.result.outcome not in uncertain and record.result != prior.result:
+                raise ValueError("stale recovery cannot overwrite a terminal execution result")
         record_payload = _record_to_dict(record)
         assert_no_inline_secrets(
             record_payload,
