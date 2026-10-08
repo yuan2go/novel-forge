@@ -172,8 +172,10 @@ def _generated_inputs(destination: Path) -> dict[str, bytes]:
 
 def prepare_freeze(destination: Path, approved_versions: list[str] | None = None, *,
                    target_book_id: str = "", input_dir: Path | None = None,
-                   input_names: Sequence[str] | None = None) -> dict:
-    source = Path(input_dir) if input_dir is not None else Path(__file__).resolve().parents[1] / "config/production/knowledge-closure"
+                   input_names: Sequence[str] | None = None, synthetic_source_imports: bool = False) -> dict:
+    if input_dir is None:
+        raise ValueError("Freeze requires an explicit input_dir; no historical sample is selected by default")
+    source = Path(input_dir)
     if source.is_symlink() or not source.is_dir():
         raise ValueError("Freeze source must be a real input directory")
     source = source.resolve()
@@ -186,7 +188,9 @@ def prepare_freeze(destination: Path, approved_versions: list[str] | None = None
     inputs = _input_snapshot(source, input_names)
     _check_knowledge_policy_inputs(inputs, approved_versions)
     output = dict(inputs)
-    if input_dir is None:
+    if synthetic_source_imports:
+        if not {"professional.jsonl", "fiction.jsonl"} <= inputs.keys():
+            raise ValueError("Synthetic imports require the explicitly selected synthetic Source fixtures")
         generated = _generated_inputs(destination)
         if output.keys() & generated.keys():
             raise ValueError("Built-in inputs collide with generated Source admission files")
@@ -209,7 +213,7 @@ def prepare_freeze(destination: Path, approved_versions: list[str] | None = None
         "contract_version": "knowledge-closure-freeze.v1", "freeze_integrity_version": INTEGRITY_VERSION,
         "status": "READY_FOR_AUTHORIZATION", "input_directory": str(source), "output_directory": str(destination),
         "input_files": sorted(inputs), "source_files": {name: _hash(data) for name, data in inputs.items()},
-        "input_mode": "BUILT_IN_FIXTURE" if input_dir is None else "EXPLICIT_DIRECTORY",
+        "input_mode": "EXPLICIT_SYNTHETIC_FIXTURE" if synthetic_source_imports else "EXPLICIT_DIRECTORY",
         "arm_a_binding": binding, "real_provider_execution": "NOT_RUN", "human_editorial": "NOT_RUN",
         "analysis_target": {"intended_use": "ABSTRACT_GENERATION", "target_book_id": target_book_id,
                             "status": "PENDING_AUTHORITY_PREFLIGHT" if target_book_id else "TARGET_BOOK_ID_REQUIRED"},
@@ -307,6 +311,9 @@ def load_frozen_inputs(paths: dict[str, Path], *, freeze_dir: Path | None = None
     documents, files = {}, {}
     for role, supplied in paths.items():
         path = Path(supplied)
+        if not path.exists() and freeze_dir is None:
+            from novel_forge.modules.creative.input_paths import resolve_historical_input_path
+            path = resolve_historical_input_path(path)
         if path.is_symlink():
             raise ValueError("Runner inputs cannot follow file symlinks")
         resolved = path.resolve()

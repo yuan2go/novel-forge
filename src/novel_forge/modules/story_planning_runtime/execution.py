@@ -5487,6 +5487,10 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_INPUT_DRIFT",
                     "Planning input differs from its frozen Authority version",
                 )
+            if item.role == "creative_brief" and document.content.get("creative_input_selection"):
+                from novel_forge.modules.creative.input_selection import require_input_scope
+                require_input_scope(document.content, project_id=command.project_id,
+                    workspace_id=command.workspace_id, book_id=command.book_id)
             documents.append(document)
             selected.append(
                 {

@@ -1,0 +1,95 @@
+{
+  "contract_version": "narrative-closure-effect-protocol.v1",
+  "runtime_authority": "NOT_RUNTIME_AUTHORITY",
+  "wp02": {
+    "intervention": "WP02_COMBINED",
+    "arm_a": "Original review path, frozen adopted Craft unchanged",
+    "arm_b": "Cross-chapter and Craft review/revision joint repair",
+    "attribution": "Whole intervention only; no isolated window causality claim",
+    "fixed": [
+      "actual accepted prior prose",
+      "current authored candidate",
+      "semantic plan",
+      "world and character facts",
+      "Provider routes",
+      "revision policy",
+      "phase opportunity"
+    ]
+  },
+  "craft": {
+    "intervention": "CRAFT_POLICY",
+    "separate_campaign_and_budget_required": true,
+    "scope": "REVIEW_REVISION_OF_FIXED_AUTHOR_INPUT",
+    "mechanism_candidates": [
+      "spatial-anchor",
+      "exchange-response-cost",
+      "subtext-pressure",
+      "choice-exposes-value"
+    ],
+    "selection": "Exact existing KnowledgeCard versions require native applicability, approval and adoption; no new catalogue entries or automatic weight changes",
+    "fixed": [
+      "creative brief",
+      "world and character facts",
+      "semantic plan except craft_strategy",
+      "cross-chapter policy",
+      "Provider routes",
+      "original candidate",
+      "revision policy",
+      "phase opportunity"
+    ],
+    "observations": [
+      "ADOPTED",
+      "ADAPTED",
+      "REJECTED",
+      "NOT_USED",
+      "MISUSED",
+      "OVERUSED",
+      "FORCED",
+      "SIDE_EFFECT"
+    ],
+    "proof_axes": [
+      "delivered to request",
+      "located realization in prose",
+      "model proxy assessment",
+      "independent reader preference"
+    ],
+    "discovery_status": "HYPOTHESIS"
+  },
+  "staging": {
+    "pilot_pairs": 2,
+    "exploration_pairs": 6,
+    "exploration_domains": {
+      "ACTION": 3,
+      "RELATIONSHIP": 3
+    },
+    "expansion": "Every pilot arm requires current native source-bound author-reading APPROVE decision; failure or unknown Effect stops further dispatch",
+    "semantic_strata": [
+      "repair warranted",
+      "intentional repetition or reasonable change",
+      "insufficient evidence or partial coverage"
+    ],
+    "evaluation_answers_in_model_context": false,
+    "reviewers": 2,
+    "disagreement": "Keep both raw responses and explicit disagreement; authorized adjudication remains separate",
+    "absence_of_humans": "NOT_RUN",
+    "runtime_identifiers": "Use opaque task-number project/book/asset identities; semantic sample labels and operator stratification are never sent as Provider instructions or source identities."
+  },
+  "recovery": {
+    "entry": "python -m scripts.narrative_closure_campaign resume",
+    "identity": "Same pinned manifest, implementation, database, native Book Run and Chapter submission; new export directory only",
+    "unknown_effect": "Existing Chapter scheduler reconciles durable receipt/Effect before continuation; no budget reset or blind retry"
+  },
+  "comparison_scope": {
+    "implementation_control": "SAME_FINAL_IMPLEMENTATION_NATIVE_PATHS",
+    "historical_defective_implementation": "NOT_RUN",
+    "attribution": "COMPLETE_DECLARED_INTERVENTION_ONLY",
+    "shared_factors": [
+      "final schema and normalization fixes",
+      "exact before/after ReReview",
+      "candidate and preservation fixes",
+      "author input pathway"
+    ],
+    "wp02_treatment": "Native non-window A versus frozen accepted-prose window B within the final implementation; all effects belong to this declared combined runtime intervention, not separate fixes.",
+    "historical_baseline_limit": "This runner does not execute the historical defective implementation. No old-versus-new quality benefit may be claimed from these pairs."
+  }
+}

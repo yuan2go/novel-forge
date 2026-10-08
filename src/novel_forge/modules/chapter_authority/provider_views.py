@@ -2691,6 +2691,9 @@ def _project_planning_content(
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
+    if role == "creative_brief":
+        from novel_forge.modules.creative.input_selection import narrative_brief
+        return narrative_brief(content), 0, 0
     if role == "previous_chapter_outcome":
         return _compact(_pick(content, "chapter_number", "scene_outcomes", "arc_evidence", "realization_evidence", "reader_state_observations")), 0, 0
     if role.startswith("change_evidence:") and content.get("schema_version") == "longform-prose-review.v1":

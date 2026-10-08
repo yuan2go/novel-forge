@@ -42,8 +42,8 @@ def test_native_creation_runners_preserve_isolated_object_store_configuration(mo
         monkeypatch.setattr(runner, 'authorize_execution', lambda *_args: {'accounting_basis': 'FIXTURE'})
         monkeypatch.setattr(runner, 'build_trusted_principal_resolver', lambda **_kwargs: Mock())
         monkeypatch.setattr(runner, 'build_content_authority_application', lambda *_args, **_kwargs: None)
-        source = Path(__file__).resolve().parents[2] / 'config/production/knowledge-closure'
-        args += ['--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
+        source = Path(__file__).resolve().parents[2] / 'tests/fixtures/creation/knowledge-closure'
+        args += ['--input-source', 'HISTORICAL_TEST_SAMPLE', '--input-purpose', 'ENGINEERING_REGRESSION', '--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
                  '--formation-policy', str(source / 'formation.json'), '--project-id', 'settings-project', '--book-id', 'settings-book']
     else:
         args += ['--input-snapshot-id', 'settings-snapshot']

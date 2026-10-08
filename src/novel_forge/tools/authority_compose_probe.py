@@ -84,7 +84,7 @@ def submit(settings: IndustrialSettings, suffix: str) -> dict[str, str]:
             trace_id=f"compose-smoke:trace:{token}",
             correlation_id=f"compose-smoke:correlation:{token}",
             idempotency_key=f"compose-smoke:content:{token}",
-            payload={"brief": BRIEF},
+            payload={"brief": BRIEF, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": f"compose-smoke-book:{token}", "source_kind": "HISTORICAL_TEST_SAMPLE", "purpose": "ENGINEERING_REGRESSION", "intent_ref": "explicit-test-case"}},
         ),
         principal=principal,
     )

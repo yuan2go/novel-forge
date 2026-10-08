@@ -27,6 +27,8 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
     def setUp(self) -> None:
         self.project_id = identifier("content-project")
         self.counter = 0
+        from novel_forge.modules.authority_security import Principal, PrincipalType
+        self.principal = Principal("content-operator", PrincipalType.LOCAL_OPERATOR, frozenset({"*"}), frozenset({self.project_id}), "test")
         self.app = ContentAuthorityApplication(
             DATABASE_URL,
             application_build_id="content-authority-integration",
@@ -46,8 +48,8 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         request = ContentOperationRequest(definition_name="book.production_profile.author", project_id=self.project_id,
             workspace_id=f"workspace:{self.project_id}", actor_id="content-operator", trace_id="trace:config", correlation_id="config",
             idempotency_key="config:first", payload={"content": profile})
-        old = self.app.execute(request)
-        replay = self.app.execute(request)
+        old = self.app.execute(request, principal=self.principal)
+        replay = self.app.execute(request, principal=self.principal)
         self.assertEqual(old.asset_version_id, replay.asset_version_id)
         original = self.read_content(old.asset_version_id)
         newer = self.run_op("book.production_profile.author", payload={"content": {**profile, "profile_id": "author-config-v2",
@@ -108,6 +110,8 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
 
     def run_op(self, name: str, inputs=(), payload=None, approval=None):
         self.counter += 1
+        if name == "creative.brief.create":
+            payload = {**payload, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": f"book:{self.project_id}", "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "explicit-test-case"}}
         result = self.app.execute(
             ContentOperationRequest(
                 definition_name=name,
@@ -120,7 +124,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 payload=payload or {},
                 input_assets=tuple(inputs),
                 approval=approval,
-            )
+            ), principal=self.principal
         )
         return {
             "asset_version_id": result.asset_version_id,
@@ -175,9 +179,9 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         MkaosAuthorityPostgresTests._create_project(self.project_id, f"workspace:{self.project_id}")
         card = create_approved_cooling_card(database_url=DATABASE_URL, project_id=self.project_id, workspace_id=f"workspace:{self.project_id}")
         raw = editorial_brief(card["card_asset_version_id"], card["content_hash"], f"book:{self.project_id}")
-        request = ContentOperationRequest(definition_name="creative.brief.create", project_id=self.project_id, workspace_id=f"workspace:{self.project_id}", actor_id="content-operator", trace_id="trace:editorial", correlation_id="editorial", idempotency_key="editorial:v1", input_assets=({"asset_version_id": card["card_asset_version_id"], "content_hash": card["content_hash"]},), payload={"brief": raw})
-        first = self.app.execute(request)
-        replay = self.app.execute(request)
+        request = ContentOperationRequest(definition_name="creative.brief.create", project_id=self.project_id, workspace_id=f"workspace:{self.project_id}", actor_id="content-operator", trace_id="trace:editorial", correlation_id="editorial", idempotency_key="editorial:v1", input_assets=({"asset_version_id": card["card_asset_version_id"], "content_hash": card["content_hash"]},), payload={"brief": raw, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": f"book:{self.project_id}", "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "explicit-test-case"}})
+        first = self.app.execute(request, principal=self.principal)
+        replay = self.app.execute(request, principal=self.principal)
         self.assertEqual(first.asset_version_id, replay.asset_version_id)
         content = self.read_content(first.asset_version_id)
         self.assertEqual(content["editorial_learning"], raw["editorial_learning"])

@@ -25,9 +25,9 @@ def _write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, default=str) + "\n")
 
 
-def prepare(destination: Path, approved_versions: list[str] | None = None, *, target_book_id: str = "", input_dir: Path | None = None, input_names: list[str] | None = None) -> dict:
+def prepare(destination: Path, approved_versions: list[str] | None = None, *, target_book_id: str = "", input_dir: Path | None = None, input_names: list[str] | None = None, synthetic_source_imports: bool = False) -> dict:
     return prepare_freeze(destination, approved_versions, target_book_id=target_book_id,
-                          input_dir=input_dir, input_names=input_names)
+                          input_dir=input_dir, input_names=input_names, synthetic_source_imports=synthetic_source_imports)
 
 
 def _executed_groups(directory: Path, chapters: dict, identity: dict) -> list[dict]:
@@ -249,7 +249,8 @@ def main(argv=None):
     frozen.add_argument("--output", type=Path, required=True)
     frozen.add_argument("--approved-card-versions", type=Path)
     frozen.add_argument("--target-book-id", default="")
-    frozen.add_argument("--input-dir", type=Path)
+    frozen.add_argument("--input-dir", type=Path, required=True)
+    frozen.add_argument("--synthetic-source-imports", action="store_true", help="Generate admission files only for explicitly selected synthetic fixtures")
     frozen.add_argument("--input-names", nargs="+", help="Exact full set of explicit input file names")
     verification = modes.add_parser("verify")
     verification.add_argument("directory", type=Path)
@@ -260,7 +261,7 @@ def main(argv=None):
     blind.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.action == "prepare":
-        result = prepare(args.output, json.loads(args.approved_card_versions.read_text()) if args.approved_card_versions else None, target_book_id=args.target_book_id, input_dir=args.input_dir, input_names=args.input_names)
+        result = prepare(args.output, json.loads(args.approved_card_versions.read_text()) if args.approved_card_versions else None, target_book_id=args.target_book_id, input_dir=args.input_dir, input_names=args.input_names, synthetic_source_imports=args.synthetic_source_imports)
     elif args.action == "verify":
         result = verify_freeze(args.directory, expected_manifest_hash=args.expected_manifest_hash)
     else:

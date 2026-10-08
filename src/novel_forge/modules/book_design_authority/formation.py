@@ -663,6 +663,12 @@ class StoryFormationApplication:
         formation_run_id = str(payload["formation_run_id"])
         checkpoint("after_domain_validation")
         if definition_name == "story.formation.admit":
+            frozen = StoryFormationInput.from_mapping(dict(payload["frozen_input"]))
+            if frozen.creative_brief_asset_version_id:
+                from novel_forge.modules.creative.input_selection import require_selected_brief
+                require_selected_brief(uow.cursor, asset_version_id=frozen.creative_brief_asset_version_id,
+                    content_hash=frozen.creative_brief_content_hash, project_id=str(row[1]),
+                    workspace_id=str(row[2]), book_id=str(payload["book_id"]))
             result = repository.create(
                 formation_run_id=formation_run_id,
                 project_id=str(row[1]),

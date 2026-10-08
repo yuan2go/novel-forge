@@ -95,6 +95,19 @@ The following distinctions govern implementation:
 | `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources and the intact-body guard limits one manuscript to 200000 code points; neither constant is a final architectural invariant or literary certification |
 | `UNRESOLVED_DESIGN_CONSTRAINT` | Unverified remote capacity/accounting metadata or unqualified long-form literary effectiveness cannot be promoted from local wiring |
 
+## Creative input selection
+
+Content owns the explicit source/use selection on each newly registered Brief.
+`creative-input-selection.v1` binds its native Operation and authenticated actor to
+Project, Workspace, Book and current intent. TASK_GENERATED Briefs retain an exact
+selected parent; automatic Formation proposals continue under the existing authorization.
+Historical samples and reference materials cannot supply current production author intent.
+Formation admits only selected inputs and Planning rechecks scope and provenance at
+loading. Provider Brief projection is an allowlist of creative semantic fields;
+execution controls and selection metadata remain host evidence. Legacy frozen Formation
+and Content replay retain their original inputs and identities. These executable input
+boundaries do not establish literary conformity or longform quality.
+
 ## Generated Foundation formation
 
 The existing Formation API accepts either six exact qualified layer references or one

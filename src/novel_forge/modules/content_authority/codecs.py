@@ -150,16 +150,24 @@ def _many(request: AuthorityHandlerRequest, *types: str) -> list[AuthorityInputA
 
 def _creative_brief(request: AuthorityHandlerRequest) -> dict[str, Any]:
     brief = validate_creative_brief(_payload(request)["brief"])
+    if request.definition_version == "2.1.5":
+        from novel_forge.modules.creative.input_selection import bind_input_selection
+        brief["creative_input_selection"] = bind_input_selection(
+            _payload(request).get("input_selection"), project_id=request.project_id,
+            workspace_id=request.workspace_id, actor_id=request.actor_id,
+            operation_id=request.operation_id, inputs=request.inputs)
     if brief.get("editorial_learning"):
         from .definitions import CONTENT_EDITORIAL_BRIEF_VERSION
-        if request.definition_version != CONTENT_EDITORIAL_BRIEF_VERSION:
+        if request.definition_version not in {CONTENT_EDITORIAL_BRIEF_VERSION, "2.1.5"}:
             raise ValueError("Editorial learning requires its versioned native Brief definition")
         from novel_forge.modules.creative.editorial_learning import editorial_author_design
         from novel_forge.modules.mkaos_authority.domain import assert_abstract_content_safe
         expected = {card["asset_version_id"]: card["content_hash"] for decision in brief["editorial_learning"]["decisions"] for card in decision["knowledge_cards"]}
-        if len(expected) != len(request.inputs) or set(expected) != {item.asset_version_id for item in request.inputs}:
+        parent = brief.get("creative_input_selection", {}).get("parent_input", {})
+        knowledge_inputs = tuple(item for item in request.inputs if item.asset_version_id != parent.get("asset_version_id"))
+        if len(expected) != len(knowledge_inputs) or set(expected) != {item.asset_version_id for item in knowledge_inputs}:
             raise ValueError("Editorial learning must freeze exactly its declared KnowledgeCard inputs")
-        for item in request.inputs:
+        for item in knowledge_inputs:
             if (item.asset_type != "knowledge_card" or item.content_hash != expected[item.asset_version_id]
                     or item.lifecycle != "ACTIVE" or item.eligibility != "ELIGIBLE" or item.governance != "CLEAR"
                     or item.qualification_decision != "ELIGIBLE" or item.content.get("project_id") != request.project_id):

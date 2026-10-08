@@ -12,7 +12,7 @@ from tests.unit.test_creation_comparison import comparison_contract
 def frozen_runner_inputs(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
-    fixtures = Path(__file__).resolve().parents[2] / "config/production/knowledge-closure"
+    fixtures = Path(__file__).resolve().parents[2] / "tests/fixtures/creation/knowledge-closure"
     for name in ("brief.json", "creation.json", "formation.json", "deny-all.json"):
         (source / name).write_bytes((fixtures / name).read_bytes())
     (source / "budget.json").write_text(json.dumps(comparison_contract()))
@@ -32,6 +32,7 @@ def runner_arguments(tmp_path, target, digest, paths):
         "--formation-policy", str(paths["formation"]), "--knowledge-policy", str(paths["knowledge"]),
         "--comparison-budget", str(paths["budget"]), "--freeze-dir", str(target),
         "--freeze-manifest-hash", digest, "--project-id", "project-B", "--book-id", "book-B",
+        "--input-source", "HISTORICAL_TEST_SAMPLE", "--input-purpose", "ENGINEERING_REGRESSION",
         "--workspace-id", "workspace-B", "--root", str(tmp_path / "runtime"),
         "--run-key", "frozen-control", "--evidence-dir", str(tmp_path / "evidence"),
     ]

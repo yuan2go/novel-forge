@@ -2852,6 +2852,18 @@ class StoryPlanningGenerationApplication:
         result: list[FrozenPlanningInput] = []
         for role, asset_version_id in authority_roles.items():
             item = by_id[asset_version_id]
+            if role == "creative_brief":
+                from novel_forge.modules.creative.input_selection import require_selected_brief
+                with AuthorityUnitOfWork(self.database_url) as input_uow:
+                    input_uow.cursor.execute("""SELECT 1 FROM authority_story_formation_run
+                        WHERE project_id=%s AND workspace_id=%s AND book_id=%s
+                        AND frozen_stage_inputs->>'creative_brief_asset_version_id'=%s
+                        AND frozen_stage_inputs->>'creative_brief_content_hash'=%s""",
+                        [command.project_id, command.workspace_id, command.book_id, asset_version_id, item["content_hash"]])
+                    legacy_frozen = input_uow.cursor.fetchone() is not None
+                    require_selected_brief(input_uow.cursor, asset_version_id=asset_version_id,
+                        content_hash=item["content_hash"], project_id=command.project_id,
+                        workspace_id=command.workspace_id, book_id=command.book_id, allow_legacy_frozen=legacy_frozen)
             expected_contract = (
                 PlanContractType.VOLUME
                 if role.startswith("arc_scope_volume:")

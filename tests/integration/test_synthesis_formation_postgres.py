@@ -261,6 +261,7 @@ def test_native_formation_generates_foundation_from_author_brief(
             correlation_id=harness.project_id,
             idempotency_key=f"{harness.project_id}:synthesis:brief",
             payload={
+                "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": harness.book_ids[0], "source_kind": "HISTORICAL_TEST_SAMPLE", "purpose": "ENGINEERING_REGRESSION", "intent_ref": "explicit-test-case"},
                 "brief": {
                     "creative_brief_contract_version": "creative-brief-v3" if author_guided else "creative-brief-v2",
                     **({"author_design": author} if author_guided else {}),
@@ -1117,7 +1118,7 @@ def test_native_formation_generates_foundation_from_author_brief(
         policy = json.loads(
             (
                 Path(__file__).resolve().parents[2]
-                / "config/production/short-arc-creation.json"
+                / "tests/fixtures/creation/short-arc/creation.json"
             ).read_text()
         )
         if length_scope_recovery:

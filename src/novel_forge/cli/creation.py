@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +43,7 @@ def run_creation_command(settings: Any, args: Any) -> dict[str, Any]:
             raise ValueError("Starting a work requires --input-file")
         principal = build_trusted_principal_resolver().resolve_api_principal()
         identity = canonical_hash({"version": "author-cli-work.v1", "actor_id": principal.principal_id,
-            "project_id": args.project_id, "input_location": str(args.input_file.resolve()),
+            "project_id": args.project_id, "input_hash": canonical_hash(json.loads(args.input_file.read_bytes())),
             "work_key": args.idempotency_key}).split(":")[-1]
         args = SimpleNamespace(**vars(args))
         args.project_id = args.project_id or "project:author:" + identity
@@ -52,7 +53,17 @@ def run_creation_command(settings: Any, args: Any) -> dict[str, Any]:
     if not args.project_id:
         raise ValueError("Continue or recover the exact Project returned when this work was started")
     result = execute_creation_command(settings, args)
-    return {**result, "project_id": args.project_id, "book_id": result.get("book_id") or args.book_id}
+    book_id = result.get("book_id") or args.book_id
+    if not book_id and args.formation_run_id:
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        with AuthorityUnitOfWork(settings.database_url) as uow:
+            uow.cursor.execute("SELECT book_id FROM authority_story_formation_run WHERE formation_run_id=%s AND project_id=%s",
+                [args.formation_run_id, args.project_id])
+            original = uow.cursor.fetchone()
+        if original is None:
+            raise ValueError("Continue requires the original Formation in the selected Project")
+        book_id = str(original[0])
+    return {**result, "project_id": args.project_id, "book_id": book_id}
 
 
 def run_opening_resource_successor_command(settings: Any, args: Any) -> dict[str, Any]:
