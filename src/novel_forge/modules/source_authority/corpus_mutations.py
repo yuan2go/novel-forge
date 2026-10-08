@@ -26,6 +26,10 @@ def apply_corpus_action(
     workspace_id: str,
     operation_id: str,
 ) -> dict[str, Any]:
+    if action.action in {"define_market_rank", "observe_market_rank", "link_market_edition"}:
+        from .market_application import apply_market_action
+        return apply_market_action(repository, action, project_id=project_id,
+                                   workspace_id=workspace_id, operation_id=operation_id)
     if action.action in {
         "declare_relation",
         "resolve_canonical_works",

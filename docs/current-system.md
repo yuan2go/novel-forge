@@ -735,7 +735,54 @@ comparison, calibrated semantic review, real reader preference and longitudinal 
 quality remain unproven. Accepted-history correction retains its edition-policy boundary.
 Versioned editorial policies and signatures are executable contracts, not evidence that a
 real manuscript has received authorized human acceptance. Optional actor isolation is an
-experimental World Preparation mode; market observations have no production proof.
+experimental World Preparation mode. The Qidian manual publishing adapter handles upload packages and
+receipts; it is not a ranking query or acquisition adapter. Source Corpus acquisition,
+bounded deconstruction and exact Book knowledge selection retain their existing owners.
+Market rank definitions, comparable observations and automatic updates require separate
+executable Source evidence; publishing adapter presence supplies none. The Source market
+path now has bounded PostgreSQL definitions, attempts and work metadata, native Corpus
+commands, Source Import refresh and worker scheduling, and an optional reference panel in
+the existing author workspace. Its engineering ceiling is `EXECUTABLE` under controlled
+tests. Official Qidian access, current navigation/filter definitions, lawful real text
+analysis and comparative prose benefit require their own evidence.
+
+## Popular-work reference access
+
+One project/platform Source owns stable Qidian numeric work IDs and existing Corpus book
+identities. Different ranks, categories, periods and observation times remain separate.
+Migration 0182 adds metadata versions, immutable rank definitions, complete/partial/failed
+attempts and explicit links to independently authorized Corpus editions. Market ranks
+never become Canon, character knowledge, author intent or Reader feedback.
+
+`source.import.market.refresh` uses existing Kernel Operation/Attempt/Lease/Fence and
+ExternalEffect owners. It fetches only frozen official pagination URLs after current
+Corpus-purpose and independent acquisition/storage rights checks, and delegates the
+observation commit to `source.corpus.commit`. Raw HTTP bytes are discarded; metadata
+receipts are durable. The Source Import output is a projection of that commit.
+Conditional 304 and failed fetches never replace the last complete observation or its
+data time. Comparisons require matching complete definitions, Top N and fixed period;
+absence from a bounded range does not establish removal. New chapter analysis continues
+through existing SourceUnit/window, Observation, Candidate and governed KnowledgeCard
+paths, including content hashes, coverage gaps and independent evidence review.
+
+Separate `use_scope` permissions may accompany Corpus rights for acquisition, storage,
+analysis, cloud models, abstract application and training. New market-to-text edition
+links require this scope. Explicit permissions and expiry are checked by existing Corpus
+use admission; legacy declarations retain their original serialized contract. Ranking
+permission grants no text permission. Retirement, rights changes and expired scope stop
+new use and hide unavailable reference projections; retained history stays attributable.
+No raw text is acquired or cached by the market path. Existing text storage deletion
+obligations remain separate from metadata retirement and must be handled under the
+applicable source policy.
+
+The author panel queries current observations and inspectable edition/Card lineage, then
+adds exact Card/hash references to the current Book's existing editorial learning input.
+KEEP/ADAPT/AVOID/DEFER, stage/range and author rationale remain authoritative. Formation
+and Planning translate approved abstractions through existing filtered retrieval; Draft
+receives its normal intent/plan/abstract context. Query errors are optional; invalidated
+explicit references are surfaced rather than replaced. New reference choices cannot
+rewrite frozen tasks or existing prose. No vector store, new Provider route or training
+platform is added. See the market-reference procedure in `docs/runtime-operations.md`.
 
 ## Narrative Craft intelligence
 

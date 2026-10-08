@@ -28,6 +28,7 @@ SOURCE_IMPORT_REPROCESSING_HANDLER = "novel_forge.source_import.reprocessing_app
 SOURCE_IMPORT_OPERATIONS = frozenset(
     {
         SOURCE_IMPORT_DISCOVERY_OPERATION,
+        "source.import.market.refresh",
         "source.import.corpus.acquire",
         "source.import.corpus.work",
         "source.import.corpus.analysis",
@@ -96,6 +97,8 @@ def source_import_definitions(
         },
     }
     rows = (
+        ("source.import.market.refresh", "novel_forge.source_import.market_refresh",
+         "source-market:{project_id}", ["source.remote.fetch"]),
         (
             "source.import.corpus.analysis",
             "novel_forge.source_import.corpus_analysis",

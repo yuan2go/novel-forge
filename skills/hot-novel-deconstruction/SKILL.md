@@ -17,7 +17,7 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 
 - 拆解热门小说、爆款章节、同赛道样本或类型文片段。
 - 为 `decompose`、`extract-knowledge`、`build-materials` 或题材策划提供抽象输入。
-- 需要判断一个样本为什么有追读、爽点和商业吸引力。
+- 观察样本中的阅读承诺、爽点与承接机制；商业因果必须作为待验证假设。
 
 ## 输入要求
 
@@ -35,6 +35,14 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 - 下层 Observation 已足够时，上层聚合只读取 Observation，不重新读取原文；确定性聚合不得调用模型。
 - 每条 finding 必须引用本次冻结输入中的 `evidence_span_id` 或 lower-scale Observation AssetVersion，并包含 confidence 与 originality risk。
 - 相同 scope + analyzer contract + observation 内容必须重放已有结果；合约升级只重算目标维度及 lineage 下游。
+
+## 证据边界
+
+- 榜单和简介仅为市场观察；文本观察、机制解释、适用假设、真实读者反馈分别标注，不能混作验证。
+- 覆盖范围和缺失章节随 Observation 保留。没有后文时，结局、伏笔回收、重复疲劳和长篇成长允许无法判断。
+- 每次只依据本次实际合法输入，禁止凭书名、模型记忆或网页指令补全。
+- 比较作品时保留各自证据；重复转载和近似样本不是独立验证，允许反例。
+- 开篇关注目标、压力、承诺、信息缺口及进入故事的速度；人物关注选择代价、关系变化和个体语言；长篇关注阶段依赖及疲劳，不能规定统一节拍。
 
 ## 操作流程
 
@@ -100,6 +108,6 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 
 ## 与其他模块的关系
 
-- 上游：`data/raw/`、`data/cleaned/`、`docs/00-product/copyright-and-compliance.md`。
+- 上游：Source Authority / Corpus 冻结的合法文本、用途范围与 SourceUnit / EvidenceSpan。
 - 下游：`anti-copy-abstraction`、Source Deconstruction Authority、MKAOS Candidate/Governance；任何 operator handoff 都不是生产 Authority。
 - Agent：Knowledge Agent、Material Agent、Chief Editor Agent。

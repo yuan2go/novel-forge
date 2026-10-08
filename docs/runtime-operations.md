@@ -1813,7 +1813,7 @@ an old experiment. Synthetic Source admission files additionally require explici
 `tests/fixtures/creation/`; evaluation inputs live under
 `config/evaluation/creative-inputs/`. They are never recursively discovered by creation.
 
-Original bytes formerly in `config/production/` are under
+Original bytes from the former production configuration directory are under
 `config/archive/creative-inputs-legacy/`. Its `path-map.json` records each old locator
 and original SHA-256. Explicit legacy file reads resolve only those exact entries and
 verify bytes; unknown names fail. Frozen directories/manifests remain unchanged and
@@ -3398,3 +3398,101 @@ exact native creative template, new per-call resource policy and zero-work evide
 The historical Opening, budget snapshot and failure remain immutable. An Opening with
 any dispatched Effect, reservation, output or completed node requires its ordinary
 reconciliation/recovery path; the zero-work successor cannot discard that evidence.
+
+
+## Popular-work market observations and Book references
+
+This path uses existing Source Authority and Source Import workers. Apply the forward
+0182 migration using the normal migration procedure and backup requirement above.
+The existing Qidian publishing adapter does not fetch rankings. Live ranking updates
+remain disabled until access rules, terms, use evidence and actual official navigation
+support the exact requested combination. Never promote indexed search results to a full
+ranking or source novel. Monthly and sales entry links are
+https://www.qidian.com/rank/yuepiao/ and https://www.qidian.com/rank/hotsales/.
+New-book names/filters and all/玄幻/武侠/仙侠 navigation must be evidenced independently;
+`signnewbook` is an unverified candidate, and `newfans` is not a new-book substitute.
+Unavailable combinations must be recorded UNVERIFIED or UNSUPPORTED rather than guessed.
+
+Use the existing trusted principal and project/workspace scope. Each JSON decision is
+bounded to 256 KiB and submitted through a durable native Corpus command:
+
+```bash
+novel-forge corpus market-command --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+  --run-key "$COMMAND_KEY" --decision "$DECISION_JSON"
+novel-forge corpus market-query --project-id "$PROJECT" --category XIANXIA --limit 20
+novel-forge corpus market-work --project-id "$PROJECT" --work-id "$BOOK_SOURCE_ID"
+novel-forge corpus market-refresh --project-id "$PROJECT" --workspace-id "$WORKSPACE" \
+  --definition-id "$DEFINITION_ID" --period-value "$OFFICIAL_PERIOD" --run-key "$FETCH_KEY"
+novel-forge corpus market-run --project-id "$PROJECT" --operation-id "$ORIGINAL_OPERATION_ID"
+```
+
+Decisions use existing `register_source`, `declare_rights`, `retire_source` actions and
+new `define_market_rank`, `observe_market_rank`, `link_market_edition` actions. Register
+one MARKET_INTELLIGENCE Source for the platform. Definitions freeze official name,
+category label, period, public metric explanation, dated navigation reference, parser
+version, exact page URLs, period/category selectors matching their official labels, and
+update policy. Changed or absent selected labels stop parsing. A revision supplies `previous_definition_id`.
+Do not set VERIFIED without actual navigation evidence. `use_scope` separately records
+ALLOW/DENY/UNKNOWN for acquire/save/analyze/cloud_model/abstract_use/training, rule/term
+references, evidence, review/expiry times and retention policy. Public readability,
+robots permission and subscriptions do not grant all purposes. Fetch requires current
+acquire/save permission; training defaults DENY.
+
+An authorized-file or own-reading-notes observation supplies source/definition identity,
+receipt and content hashes, actual acquisition/observation/site times (or a site-time
+missing reason), exact period, requested Top N, ordered pages and each public rank.
+Entries use stable numeric work ID and canonical official book URL, with title/rank/ID
+field provenance. Never fabricate missing ranks, metrics or a complete range. COMPLETE
+requires each requested rank once across contiguous pages; PARTIAL records gaps. Web
+observations can only be committed from the exact successful native refresh receipt.
+Authorized-file imports retain their actual acquisition method, not a Git snapshot.
+
+API equivalents are GET `/product/source-governance/market/ranks`, GET
+`/product/source-governance/market/works/{book_source_id}`, POST existing
+`/product/source-governance/corpus/commands`, POST
+`/product/source-imports/market/refresh`, and GET
+`/product/source-imports/market/operations/{operation_id}`. Query responses expose last
+complete data time/range separately from latest acquisition status and stale state.
+A failed or 304 request does not make old data fresh. Comparison is disabled for unknown
+or rolling-window semantics and incomplete ranges. Top N absence is not delisting.
+
+Defaults are daily update, Top 20, 20/page, at most five pages, site interval ten seconds,
+20-second transport timeout, two retries for known 502/503/504, and 60-second maximum
+backoff. These are CONFIGURABLE_POLICY and remain subordinate to official rules.
+Concurrency shares a PostgreSQL site slot. 403/429/challenge/login/drift/removal stops the
+path; redirects require review. Retry-After is honored without proxy/origin substitution.
+To resume stopped access, review changed access evidence and append a new exact definition
+with `resume_access: true`; do not clear the site row manually. UNKNOWN refresh remains
+in the original Kernel reconciliation path. Run `market-run` for its original Operation;
+no queryable historical receipt means it remains UNKNOWN, not a new fetch under a new ID.
+
+For text, use the existing Corpus authorized-file import and chapter reading/analysis
+commands above. Declare independent current text use_scope before linking its exact
+edition to the market book with `link_market_edition` and an identity-matching evidence
+reference. Source scopes, gap/evidence locations, content/near-duplicate checks and
+Observation → Candidate → KnowledgeCard governance remain native. Source withdrawal
+stops use; raw/normalized object deletion and index cleanup must follow the applicable
+Corpus storage policy. The market path itself retains no raw response or novel text.
+
+In `/production`, choose the Book and expand the optional popular-reference panel. Query
+by category, inspect source permission/sample lineage and mechanism evidence, then add a
+Card to the existing editorial input. Fill its actual KEEP/ADAPT/AVOID/DEFER decision,
+reader effect, application, tradeoff and stage/range. The panel does not approve a Card
+or silently bind a replacement. Optional query failure allows original input to continue.
+
+For a real A/B comparison create independent Books before the first reference-consuming
+Formation stage, with the same current author Brief, model/route, workflow and length.
+A excludes newly selected references; B freezes the selected Card versions and Book
+scope. Do not share plans or caches across arms. Use native author-first creation,
+revision and manuscript export; retain initial/revised versions. Review three continuous
+chapters per arm with blinded identity/order and matched length, then repair concrete
+reading problems once. Evidence analysis review, actual prose review, reader feedback,
+originality checks and long-form quality remain separate. No current legal reference,
+author input or finite paid grant means no model dispatch. An empty paid template is not
+authorization, and old validation prose is not the current input.
+
+Focused checks for changes to this path are source-market unit/integration and 0181→0182
+migration tests, current Source routing/Craft/editorial and Corpus-use isolation tests,
+TypeScript, the author market-reference browser flow, and applicable migration/entry/
+worker/Skill/reality projections. These establish engineering behavior under their
+reported environment; they cannot establish live access, text rights or prose benefit.

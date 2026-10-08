@@ -40,7 +40,8 @@ description: Use when converting concrete reference-work analysis into reusable 
 3. 保留结构、机制和读者效果。
 4. 将具体桥段改写为类型无关的因果机制。
 5. 为每条原则补适用范围、禁用范围和审稿检查项。
-6. 输出 schema-backed Knowledge Candidate，进入 Validation、Source Isolation、Originality Gate 与人工 Approval；未批准前不得成为 KnowledgeCard。
+6. 机制必须说明叙事问题、预期效果、抽象方法、适用与禁用条件、代价、变化方式、证据覆盖和审稿观察点；映射现行 Candidate 的机制/适用性字段，不新增平行资产。
+7. 输出 schema-backed Knowledge Candidate，进入 Validation、Source Isolation、Originality Gate 与人工 Approval；未批准前不得成为 KnowledgeCard。
 
 ## 输出格式
 
@@ -57,6 +58,13 @@ description: Use when converting concrete reference-work analysis into reusable 
 ## 原创风险等级
 ## 是否允许进入下游
 ```
+
+## 证据及应用边界
+
+- 因果机制是可测试解释，预期读者效果是应用假设；热度不能证明文学质量或效果，不虚构读者反馈。
+- 共性和差异可关联；单书证据不能伪装成跨作品验证，相似机制不合并其独立证据。
+- Formation / Planning 将机制转译为当前书的原创场景；Draft 只接收作者意图、计划和必要抽象指导。
+- 具体 Card 版本、Book 范围、阶段、KEEP/ADAPT/AVOID/DEFER 与理由由现行 CreativeBrief 绑定保存。新参考不改写历史请求。
 
 ## 质量标准
 
@@ -75,6 +83,6 @@ description: Use when converting concrete reference-work analysis into reusable 
 
 ## 与其他模块的关系
 
-- 上游：`hot-novel-deconstruction`、`data/decompositions/`。
-- 下游：`data/knowledge/`、`data/materials/`、`quality-review`。
+- 上游：`hot-novel-deconstruction`、`hot-novel-business-deconstruction` 与冻结的 Observation AssetVersion。
+- 下游：现行 MKAOS Candidate / KnowledgeCard、单书检索和 `quality-review`。
 - Agent：Knowledge Agent、Review Agent、Quality Agent。

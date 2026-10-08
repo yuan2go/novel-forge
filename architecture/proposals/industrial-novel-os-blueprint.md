@@ -175,6 +175,14 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
     {
       "path": "src/novel_forge/modules/chapter_authority/handlers.py",
       "symbol": "merge_task_retrieval_projections"
+    },
+    {
+      "path": "src/novel_forge/modules/source_authority/market_application.py",
+      "symbol": "apply_market_action"
+    },
+    {
+      "path": "src/novel_forge/modules/source_import/market_runtime.py",
+      "symbol": "execute_market_refresh"
     }
   ],
   "superseding_refs": [
@@ -360,6 +368,20 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
           "symbol": "inherit_unchanged_prefix"
         }
       ]
+    },
+    {
+      "id": "hot-novel-lawful-live-and-prose",
+      "description": "Verify current official ranking navigation and lawful access, current author/source inputs and authorized native real A/B prose; controlled metadata tests do not prove literary benefit.",
+      "evidence_refs": [
+        {
+          "path": "src/novel_forge/modules/source_import/market_adapter.py",
+          "symbol": "QidianRankAdapter"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
+          "symbol": "drive_book"
+        }
+      ]
     }
   ]
 }
@@ -428,7 +450,7 @@ coverage and issue dispositions. Public release is separately authorized.
 
 | Direction | Native consumer and unresolved prerequisite | Decision / exit condition |
 | --- | --- | --- |
-| Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | HOLD until source authorization and a testable topic-quality hypothesis exist; then one bounded input adapter |
+| Market observations | Topic proposal; one rights-backed source, comparable cohort, observation time and missing-value semantics | WP-HOT-NOVEL-REFERENCE-TO-PROSE-01 commissions a bounded Source adapter, distinct rank/time observations and author reference access; runtime evidence remains pending. Preserve source authorization and comparable-cohort requirements; heat does not prove mechanism quality |
 | General association graph | A concrete query unmet by existing accepted/inferred indexes; exact source and relation provenance | HOLD until that query and measured improvement are specified; never merge inferred relations into accepted truth |
 | Textual novel and scene screenplay adaptation | Exact accepted source edition; distinct chapter/scene-dialogue contracts and review rules; source/output rights | REQUIRED IN WP02: implement through existing Editor and Authorities. Image, audio and video production are outside this scope; publication remains separately authorized |
 
