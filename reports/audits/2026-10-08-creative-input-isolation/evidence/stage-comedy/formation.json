@@ -1,0 +1,348 @@
+[
+  {
+    "book_id": "book:input-isolation-01:stage-comedy",
+    "failure": {
+      "code": "FOUNDATION_APPLICABILITY_UNRESOLVED",
+      "message": "FOUNDATION_APPLICABILITY_UNRESOLVED: Uncertain design applicability requires clarification before activation",
+      "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b"
+    },
+    "version": 7,
+    "lifecycle": "FAILED",
+    "created_at": "2026-10-08T12:39:41.621834+08:00",
+    "project_id": "project:input-isolation-01:stage-comedy",
+    "updated_at": "2026-10-08T12:52:49.083668+08:00",
+    "workspace_id": "workspace:input-isolation-01:stage-comedy",
+    "current_stage": "CHARACTER_CAST",
+    "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+    "root_operation_id": "10852517-b65b-4b34-94a1-a4ce3aa797a9",
+    "frozen_input_digest": "sha256:70a5df98bf556c45df3dadbcadcb0bfb8a5109a77ebdc29f5d570d8b42cf9b7b",
+    "frozen_stage_inputs": {
+      "layers": [],
+      "generation_policy": {
+        "title": "戏台开灯",
+        "approval_mode": "AUTO",
+        "target_chapters": 9,
+        "contract_version": "formation-generation.v7",
+        "selection_policy": {
+          "tie_break": "STABLE_ID",
+          "contract_version": "narrative-search-comparison.v2",
+          "dimension_weights": {
+            "arc_momentum": 1,
+            "setup_payoff": 1,
+            "reader_promise": 1,
+            "reversal_reveal": 1,
+            "character_agency": 1,
+            "pacing_variation": 1,
+            "pattern_diversity": 1,
+            "world_consequence": 1,
+            "future_optionality": 1,
+            "conflict_escalation": 1,
+            "emotional_progression": 1,
+            "relationship_evolution": 1,
+            "choice_cost_consequence": 1
+          },
+          "uncertainty_margin": 0.05
+        },
+        "auto_authorization": {
+          "book_id": "book:input-isolation-01:stage-comedy",
+          "project_id": "project:input-isolation-01:stage-comedy",
+          "workspace_id": "workspace:input-isolation-01:stage-comedy",
+          "policy_version": "formation-auto-policy.v1",
+          "allowed_actions": [
+            "book_design.candidate.activate",
+            "book_design.candidate.decide",
+            "story_planning.candidate.activate",
+            "story_planning.candidate.approve"
+          ],
+          "contract_version": "formation-auto-authorization.v1",
+          "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+          "authorization_ref": "creation:creation:project:input-isolation-01:stage-comedy:book:input-isolation-01:stage-comedy:selected-evaluation:stage-comedy",
+          "authorized_by_principal_id": "author-first-native-operator"
+        },
+        "creative_selection": "AUTO_COMPARISON",
+        "creative_candidates": 2,
+        "strategy_directives": [
+          "Explore the author's central promise through a coherent causal direction with room for later development",
+          "Explore a distinct direction through character motivations and relationships while respecting the author's constraints"
+        ],
+        "creation_input_policy": {
+          "purpose": "Runtime genesis and quality floor; work scope and language supplied by the current Formation request.",
+          "profiles": {
+            "reader_state": {
+              "content": {
+                "type": "reader_state",
+                "status": "NOT_OBSERVED",
+                "observations": [],
+                "safe_summary": "Initial reader_state; no accepted narrative history.",
+                "evidence_class": "READER_PROXY_ADVISORY",
+                "profile_version": "reader-outcome-v3",
+                "contract_version": "reader-state-genesis-v1",
+                "structured_facts": [],
+                "authority_boundary": "ADVISORY",
+                "accepted_through_chapter": 0
+              },
+              "operation": "book.reader_state.author"
+            },
+            "arc_portfolio": {
+              "content": {
+                "type": "arc_portfolio",
+                "portfolio_id": "initial-arc-window",
+                "safe_summary": "Initial arc_portfolio; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "FUTURE_INTENT"
+              },
+              "operation": "book.arc_portfolio.author"
+            },
+            "quality_trend": {
+              "content": {
+                "type": "quality_trend",
+                "status": "NO_ACCEPTED_CHAPTERS",
+                "safe_summary": "Initial quality_trend; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "ADVISORY"
+              },
+              "operation": "book.quality_trend.author"
+            },
+            "reward_ledger": {
+              "content": {
+                "type": "reward_ledger_snapshot",
+                "entries": [],
+                "safe_summary": "Initial reward_ledger; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.reward_ledger.author"
+            },
+            "conflict_state": {
+              "content": {
+                "type": "conflict_state",
+                "entries": [],
+                "safe_summary": "Initial conflict_state; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.conflict_state.author"
+            },
+            "promise_ledger": {
+              "content": {
+                "type": "promise_ledger_snapshot",
+                "entries": [],
+                "safe_summary": "Initial promise_ledger; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.promise_ledger.author"
+            },
+            "quality_rubric": {
+              "content": {
+                "type": "quality_rubric",
+                "dimensions": [
+                  "continuity",
+                  "causality",
+                  "character_consistency",
+                  "pacing",
+                  "style"
+                ],
+                "profile_id": "creative-validation-quality-rubric",
+                "safe_summary": "Initial quality_rubric; no accepted narrative history.",
+                "structured_facts": []
+              },
+              "operation": "chapter.quality_rubric.author"
+            },
+            "reader_segment": {
+              "content": {
+                "type": "reader_segment_profile",
+                "profile_id": "creative-validation-reader-segment",
+                "safe_summary": "Initial reader_segment; no accepted narrative history.",
+                "profile_version": "reader-outcome-v3",
+                "structured_facts": [],
+                "authority_boundary": "ADVISORY"
+              },
+              "operation": "book.reader_segment.author"
+            },
+            "character_state": {
+              "content": {
+                "type": "character_state_snapshot",
+                "entries": [],
+                "safe_summary": "Initial character_state; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.character_state.author"
+            },
+            "reader_contract": {
+              "content": {
+                "type": "reader_contract",
+                "profile_id": "creative-validation-reader-contract",
+                "safe_summary": "Initial reader_contract; no accepted narrative history.",
+                "profile_version": "reader-outcome-v3",
+                "structured_facts": [],
+                "authority_boundary": "ADVISORY"
+              },
+              "operation": "book.reader_contract.author"
+            },
+            "platform_profile": {
+              "content": {
+                "type": "platform_profile",
+                "profile_id": "creative-validation-platform-profile",
+                "constraints": [
+                  "Private internal manuscript; no external publication"
+                ],
+                "safe_summary": "Initial platform_profile; no accepted narrative history.",
+                "structured_facts": [
+                  {
+                    "key": "platform_rules",
+                    "value": {
+                      "format": {
+                        "paragraph_max": 500
+                      },
+                      "rhythm": [],
+                      "opening": [],
+                      "ai_content": {
+                        "mode": "internal"
+                      },
+                      "chapter_length": {
+                        "maximum": 1000,
+                        "minimum": 600
+                      },
+                      "publish_metadata": {
+                        "title_required": true
+                      },
+                      "sensitive_content": []
+                    }
+                  }
+                ]
+              },
+              "operation": "chapter.platform_profile.author"
+            },
+            "production_profile": {
+              "content": {
+                "type": "production_profile",
+                "profile_id": "creative-validation-production-profile",
+                "safe_summary": "Initial production_profile; no accepted narrative history.",
+                "chapter_length": {
+                  "maximum": 1000,
+                  "minimum": 600
+                },
+                "author_workflow": {
+                  "mode": "AUTHOR_FIRST",
+                  "version": "author-workflow.v1",
+                  "deep_review": false
+                },
+                "structured_facts": [],
+                "language_contract": {
+                  "required_language": "zh-CN"
+                },
+                "authority_boundary": "FUTURE_INTENT",
+                "target_chapter_count": 9,
+                "chapter_context_policy": {
+                  "version": "book-chapter-context.v1",
+                  "draft_profile": "draft-context-profile-v4",
+                  "draft_token_budget": 226400,
+                  "quality_token_budget": 226400
+                },
+                "world_production_policy": {
+                  "version": "world-production-policy.v4",
+                  "max_provider_stages": 2,
+                  "context_token_budget": 226400
+                }
+              },
+              "operation": "book.production_profile.author"
+            },
+            "ending_reachability": {
+              "content": {
+                "type": "ending_reachability",
+                "status": "PLANNED_NOT_ACTUAL",
+                "safe_summary": "Initial ending_reachability; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "ADVISORY"
+              },
+              "operation": "book.ending_reachability.author"
+            },
+            "foreshadowing_state": {
+              "content": {
+                "type": "foreshadow_snapshot",
+                "entries": [],
+                "safe_summary": "Initial foreshadowing_state; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.foreshadowing_state.author"
+            },
+            "foreshadowing_ledger": {
+              "content": {
+                "type": "foreshadowing_ledger",
+                "entries": [],
+                "safe_summary": "Initial foreshadowing_ledger; no accepted narrative history.",
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.foreshadowing_ledger.author"
+            },
+            "previous_volume_outcome": {
+              "content": {
+                "type": "previous_volume_outcome",
+                "status": "NO_PREVIOUS_VOLUME",
+                "safe_summary": "Initial previous_volume_outcome; no accepted narrative history.",
+                "actual_outcomes": [],
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.previous_volume_outcome.author"
+            },
+            "previous_chapter_outcome": {
+              "content": {
+                "type": "previous_chapter_outcome",
+                "status": "NO_PREVIOUS_CHAPTER",
+                "safe_summary": "Initial previous_chapter_outcome; no accepted narrative history.",
+                "actual_outcomes": [],
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.previous_chapter_outcome.author"
+            },
+            "previous_chapter_group_outcome": {
+              "content": {
+                "type": "previous_chapter_group_outcome",
+                "status": "NO_PREVIOUS_CHAPTER_GROUP",
+                "safe_summary": "Initial previous_chapter_group_outcome; no accepted narrative history.",
+                "actual_outcomes": [],
+                "contract_version": "v1",
+                "structured_facts": [],
+                "authority_boundary": "PRE_CHAPTER_0"
+              },
+              "operation": "book.previous_chapter_group_outcome.author"
+            }
+          },
+          "contract_version": "creation-input-policy.v1"
+        }
+      },
+      "book_design_content_hash": "",
+      "creative_brief_content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+      "book_design_asset_version_id": "",
+      "creative_brief_asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+    },
+    "recovery_instruction": {
+      "action": "RESUME_WITH_SAME_FROZEN_INPUTS",
+      "formation_run_id": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+      "failed_operation_id": "runtime-attempt:79619e7d-c398-4fdf-96ae-547cc3d4338d"
+    },
+    "expected_book_version": 1,
+    "foundation_set_digest": null,
+    "stable_idempotency_key": "creation:project:input-isolation-01:stage-comedy:book:input-isolation-01:stage-comedy:selected-evaluation:stage-comedy",
+    "book_design_content_hash": null,
+    "formation_policy_version": "story-formation-policy.v1",
+    "book_design_asset_version_id": null
+  }
+]

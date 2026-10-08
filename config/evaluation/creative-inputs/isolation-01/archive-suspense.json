@@ -1,0 +1,28 @@
+{
+  "version": "creation-request.v1",
+  "title": "午夜闭馆",
+  "target_chapters": 9,
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "chapter_length": {
+    "minimum": 600,
+    "maximum": 1000
+  },
+  "creative_candidates": 2,
+  "brief": {
+    "creative_brief_contract_version": "creative-brief-v2",
+    "idea": "夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，一名借阅者仍被锁在即将断电的旧库房。她必须在保住自己的岗位记录与信任一位说法前后矛盾的维修员之间选择。明确以调查和证据推理推动救人行动，让线索改变她的判断；真相由正式候选形成，不预写作答。",
+    "genre": "第三人称限知悬疑",
+    "audience": "成年中文读者",
+    "constraints": [
+      "全书方向九章，近期规划保持可调整。",
+      "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+      "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+    ],
+    "source_boundaries": [
+      "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+      "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+    ]
+  }
+}

@@ -66,6 +66,32 @@ def test_frozen_editorial_decisions_follow_native_parent_and_exact_chapter_scope
         required_editorial_knowledge([damaged], command=command())
 
 
+def test_task_generated_editorial_brief_keeps_parent_and_exact_knowledge_inputs():
+    from novel_forge.modules.creative.input_selection import brief_input_assets
+    selection = {"contract_version": "creative-input-selection.v1", "book_id": "b",
+        "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "author-task"}
+    parent = AuthorityInputAsset(asset_version_id="brief:current", asset_type="creative_brief",
+        content_hash="sha256:" + "a" * 64, content={"creative_input_selection": {**selection,
+            "project_id": "p", "workspace_id": "w", "selected_by_actor_id": "author", "selection_operation_id": "selection"}})
+    card = AuthorityInputAsset(asset_version_id="card:v3", asset_type="knowledge_card",
+        content_hash="sha256:" + "c" * 64, content={"project_id": "p", "abstract_content": {"mechanism": "Cooling consumes water"}})
+    derived = {**selection, "source_kind": "TASK_GENERATED", "parent_input": {
+        "asset_version_id": parent.asset_version_id, "content_hash": parent.content_hash}}
+    assert brief_input_assets(editorial_brief(), derived) == (
+        derived["parent_input"], {"asset_version_id": card.asset_version_id, "content_hash": card.content_hash})
+    request = AuthorityHandlerRequest(operation_id="derive", project_id="p", workspace_id="w", actor_id="assistant",
+        trace_id="trace", correlation_id="corr", definition_name="creative.brief.create", definition_version="2.1.5",
+        command={"project_id": "p", "input_asset_version_ids": [parent.asset_version_id, card.asset_version_id],
+            "payload": {"brief": editorial_brief(), "input_selection": derived}}, inputs=(parent, card))
+    result = CONTENT_CODECS["creative.brief.create"].execute(request)
+    assert result.content["creative_input_selection"]["parent_input"] == derived["parent_input"]
+    assert result.content["author_design"]["book_id"] == "b"
+    with pytest.raises(KernelError, match="declared KnowledgeCard"):
+        CONTENT_CODECS["creative.brief.create"].execute(replace(request,
+            command={**request.command, "input_asset_version_ids": [parent.asset_version_id, card.asset_version_id, "foreign-card"]},
+            inputs=(parent, card, replace(card, asset_version_id="foreign-card"))))
+
+
 def test_required_editorial_knowledge_cannot_silently_turn_into_empty_selection():
     from novel_forge.modules.mkaos_authority.domain import select_narrative_intelligence
     from novel_forge.modules.story_planning_runtime.execution import _planning_narrative_intelligence_need

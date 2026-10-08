@@ -144,7 +144,7 @@ def test_v3_initialization_reaches_content_and_formation_in_independent_workspac
     brief = content.execute(ContentOperationRequest(
         definition_name="creative.brief.create", project_id=project, workspace_id=secondary, actor_id=principal.principal_id,
         idempotency_key="brief:" + book_id, trace_id="trace:secondary-brief", correlation_id=book_id,
-        payload={"brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An original young swordsman rescues his teacher.",
+        payload={"input_selection": {"contract_version": "creative-input-selection.v1", "book_id": book_id, "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "explicit-test-case"}, "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An original young swordsman rescues his teacher.",
                            "genre": "guofeng xuanhuan", "audience": "adult adventure readers", "constraints": ["Bounded powers"],
                            "source_boundaries": ["Original expression only"]}},
     ), principal=principal)
@@ -189,3 +189,80 @@ def test_concurrent_books_cannot_both_claim_new_workspace(pilot_project):
     with transaction() as connection:
         assert connection.execute("SELECT COUNT(*) FROM authority_book WHERE workspace_id=%s", [secondary]).fetchone()[0] == 1
         assert connection.execute("SELECT COUNT(*) FROM authority_book b JOIN authority_workspace w ON w.book_id=b.book_id AND w.workspace_id=b.workspace_id WHERE b.workspace_id=%s", [secondary]).fetchone()[0] == 1
+
+
+def test_current_selection_requires_native_author_and_exact_parent(pilot_project):
+    from novel_forge.modules.authority_security import PrincipalType
+    project, workspace, operator, *_ = pilot_project
+    book = pilot_support._initialize(pilot_project, run_key="selected-input")
+    principal = replace(operator, permissions=operator.permissions | {
+        "content.authority.execute", "content.operation:creative.brief.create"})
+    app = ContentAuthorityApplication(DATABASE_URL, application_build_id="shared-pilot-fixture",
+        commit_sha="b" * 40, integration_proven=CONTENT_CODECS, trusted_only=True)
+    selection = {"contract_version": "creative-input-selection.v1", "book_id": book["book_id"],
+        "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "current-intent"}
+    brief = {"creative_brief_contract_version": "creative-brief-v2", "idea": "A cook learns to share flour.",
+        "genre": "fantasy cooking", "audience": "adult readers", "constraints": ["Actions change relationships"],
+        "source_boundaries": ["Original selected work only"]}
+    request = ContentOperationRequest(definition_name="creative.brief.create", project_id=project,
+        workspace_id=workspace, actor_id=principal.principal_id, idempotency_key="selected-brief",
+        trace_id="trace:input", correlation_id=book["book_id"], payload={"brief": brief})
+    with pytest.raises(KernelError, match="CREATIVE_INPUT_SELECTION_REQUIRED"):
+        app.admit(request, principal=principal)
+    request = replace(request, payload={"brief": brief, "input_selection": selection})
+    machine = replace(principal, principal_type=PrincipalType.SERVICE)
+    with pytest.raises(PermissionError, match="authenticated author"):
+        app.admit(request, principal=machine)
+    root = app.execute(request, principal=principal)
+    assert app.execute(request, principal=principal).asset_version_id == root.asset_version_id
+    derived = {**selection, "source_kind": "TASK_GENERATED", "parent_input": {
+        "asset_version_id": root.asset_version_id, "content_hash": root.content_hash}}
+    child_request = replace(request, idempotency_key="derived-brief", input_assets=(derived["parent_input"],),
+        payload={"brief": {**brief, "idea": "The cook must decide how to price a failed pastry."}, "input_selection": derived})
+    assert app.execute(child_request, principal=machine).asset_version_id != root.asset_version_id
+    with pytest.raises(KernelError, match="CREATIVE_INPUT_BOOK_MISMATCH"):
+        app.admit(replace(child_request, idempotency_key="foreign-derived", payload={
+            **child_request.payload, "input_selection": {**derived, "book_id": "other-book"}}), principal=machine)
+    with pytest.raises(KernelError, match="CREATIVE_INPUT_USE_FORBIDDEN"):
+        app.admit(replace(request, idempotency_key="old-sample", payload={"brief": brief,
+            "input_selection": {**selection, "source_kind": "HISTORICAL_TEST_SAMPLE"}}), principal=principal)
+
+
+def test_same_project_inputs_cannot_bind_another_books_workspace(pilot_project):
+    project, workspace, operator, project_app, composition, _ = pilot_project
+    first = pilot_support._initialize(pilot_project, run_key="first-input-book")
+    secondary = identifier("input-isolation-workspace")
+    project_app.execute(workspace_command(pilot_project, secondary), principal=operator)
+    second = {"book_id": identifier("second-input-book")}
+    composition.formation.generation.book_design.execute(BookDesignAuthorityCommand(
+        definition_name="book.create", project_id=project, workspace_id=secondary, book_id=second["book_id"],
+        actor_id=operator.principal_id, service_identity="workspace-fixture", idempotency_key="create:" + second["book_id"],
+        trace_id="trace:second-input-book", correlation_id=project,
+        payload={"title": "Independent second Book", "production_profile": {}, "runtime_policy": {}, "release_identity": "fixture-only"}), principal=operator)
+    principal = replace(operator, permissions=operator.permissions | {
+        "content.authority.execute", "content.operation:creative.brief.create"})
+    app = ContentAuthorityApplication(DATABASE_URL, application_build_id="shared-pilot-fixture",
+        commit_sha="b" * 40, integration_proven=CONTENT_CODECS, trusted_only=True)
+    selection = {"contract_version": "creative-input-selection.v1", "book_id": first["book_id"],
+        "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "current-book-task"}
+    brief = {"creative_brief_contract_version": "creative-brief-v2", "idea": "A village choir prepares a concert.",
+        "genre": "ensemble comedy", "audience": "adult readers", "constraints": ["Use the selected concert conflict"], "source_boundaries": ["Original expression"]}
+    request = ContentOperationRequest(definition_name="creative.brief.create", project_id=project,
+        workspace_id=workspace, actor_id=principal.principal_id, idempotency_key="current-book-brief",
+        trace_id="trace:input-scope", correlation_id=first["book_id"], payload={"brief": brief, "input_selection": selection})
+    original = app.execute(request, principal=principal)
+    with pytest.raises(KernelError, match="CREATIVE_INPUT_BOOK_MISMATCH"):
+        app.admit(replace(request, idempotency_key="mislabelled-input",
+            payload={"brief": brief, "input_selection": {**selection, "book_id": second["book_id"]}}), principal=principal)
+    derived = {**selection, "book_id": second["book_id"], "source_kind": "TASK_GENERATED", "parent_input": {
+        "asset_version_id": original.asset_version_id, "content_hash": original.content_hash}}
+    with pytest.raises(KernelError, match="CREATIVE_INPUT_BOOK_MISMATCH"):
+        app.admit(replace(request, workspace_id=secondary, idempotency_key="foreign-parent",
+            input_assets=(derived["parent_input"],), payload={"brief": brief, "input_selection": derived}), principal=principal)
+    own = app.execute(replace(request, workspace_id=secondary, idempotency_key="second-own-input",
+        payload={"brief": {**brief, "idea": "A cook opens a mountain bakery."},
+            "input_selection": {**selection, "book_id": second["book_id"], "intent_ref": "second-current-task"}}), principal=principal)
+    assert own.asset_version_id != original.asset_version_id
+    with transaction() as connection:
+        assert connection.execute("SELECT count(*) FROM authority_book WHERE project_id=%s", [project]).fetchone()[0] == 2
+        assert connection.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [project]).fetchone()[0] == 0

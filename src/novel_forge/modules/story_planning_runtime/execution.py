@@ -2509,7 +2509,7 @@ def world_schema_evidence_identity(
 ) -> dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
     sources = sorted((root / "worldbuilding").glob("*.py")) + [
-        Path(__file__),
+        Path(__file__).resolve(),
         root / "story_planning_runtime" / "world_preparation.py",
         root / "chapter_authority" / "provider_views.py",
     ]
@@ -5487,6 +5487,13 @@ class PostgresPlanningExecutionPreparer:
                     "PLANNING_CONTEXT_INPUT_DRIFT",
                     "Planning input differs from its frozen Authority version",
                 )
+            if item.role == "creative_brief" and document.content.get("creative_input_selection"):
+                from novel_forge.modules.creative.input_selection import require_input_scope
+                require_input_scope(document.content, project_id=command.project_id,
+                    workspace_id=command.workspace_id, book_id=command.book_id)
+            if document.content.get("book_id") and document.content["book_id"] != command.book_id:
+                raise KernelError("PLANNING_CONTEXT_INPUT_BOOK_INVALID",
+                    "Frozen Planning context belongs to another Book")
             documents.append(document)
             selected.append(
                 {

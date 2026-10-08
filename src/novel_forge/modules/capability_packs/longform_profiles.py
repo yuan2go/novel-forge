@@ -746,6 +746,11 @@ def _bind_planning_qualification_skills(
             continue
         path = skill_paths[skill_ref]
         version = f"{skill_ref}-qualification-v2"
+        if skill_ref == "character-design":
+            if aligned_methods:
+                version = f"{skill_ref}-qualification-v3"
+            else:
+                path = "config/capability_packs/artifacts/character_design_work_v2.md"
         if skill_ref == "narrative-beat-design":
             if aligned_methods:
                 version = f"{skill_ref}-qualification-v3"

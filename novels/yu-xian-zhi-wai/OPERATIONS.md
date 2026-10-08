@@ -1,6 +1,6 @@
-# 首本长篇试生产：本地操作入口
+# 首本长篇试生产：历史操作快照
 
-工作树：/Users/yuan/projects/novel-forge-first-novel-pilot（本地分支，未 push）。本文件是操作说明；业务权威仍为 PostgreSQL。
+工作树：/Users/yuan/projects/novel-forge-first-novel-pilot（本地分支，未 push）。本文件保留原运行操作，不表示服务仍在运行或本书是当前目标。新创作遵循 docs/runtime-operations.md 的显式输入选择；业务权威仍为 PostgreSQL。
 
 ## 已完成的素材操作
 
@@ -114,7 +114,7 @@ B 的 DENY_ALL 已冻结，保留其未来自身 Canon/记忆。
 ```bash
 cd '/Users/yuan/projects/novel-forge-first-novel-pilot'
 PYTHONPATH=src:. .venv/bin/python -m scripts.prepare_knowledge_closure prepare \
-  --input-dir config/production/first-novel-pilot --target-book-id first-novel-pilot-a \
+  --input-dir config/archive/creative-inputs-legacy/first-novel-pilot --target-book-id first-novel-pilot-a \
   --approved-card-versions "$APPROVED_VERSIONS_FILE" --output "$NEW_FROZEN_A"
 ```
 

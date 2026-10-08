@@ -1,0 +1,50 @@
+{
+  "contract_version": "creative-single-book-budget.v2",
+  "experiment_id": "yu-xian-zhi-wai-author-guided-twelve-v1",
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "shared_total": {
+    "calls": 480,
+    "tokens": 12000000
+  },
+  "arms": [
+    {
+      "arm": "SINGLE",
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "first-novel-pilot-a",
+      "project_total": {
+        "calls": 480,
+        "tokens": 12000000
+      },
+      "source_allocation": {
+        "calls": 20,
+        "tokens": 500000
+      },
+      "design_allocation": {
+        "calls": 60,
+        "tokens": 1500000
+      },
+      "creation_early_allocation": {
+        "calls": 150,
+        "tokens": 3750000
+      },
+      "creation_late_allocation": {
+        "calls": 150,
+        "tokens": 3750000
+      },
+      "repair_allocation": {
+        "calls": 100,
+        "tokens": 2500000
+      },
+      "chapter_ranges": {
+        "CREATION_EARLY": [
+          1,
+          6
+        ],
+        "CREATION_LATE": [
+          7,
+          12
+        ]
+      }
+    }
+  ]
+}

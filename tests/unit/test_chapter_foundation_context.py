@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+
 from novel_forge.modules.chapter_authority.domain_handlers import build_context_bundle
 from novel_forge.modules.chapter_authority.domain_handlers import build_canon_patch
 from novel_forge.modules.chapter_authority.provider_views import (
@@ -188,3 +189,24 @@ def test_character_and_reader_promise_are_protected_in_draft_and_review() -> Non
     assert "CHARACTER_IDENTITY_PRONOUN_CONTRADICTION" in {
         item["conflict_code"] for item in canon["conflicts"]
     }
+
+
+@pytest.mark.parametrize("role", ["world_bible", "character_cast", "canon", "story_state", "reader_promise"])
+def test_planning_request_load_rejects_other_book_in_same_project(role):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
+    from novel_forge.modules.story_planning_runtime.domain import FrozenPlanningInput
+    loader = object.__new__(PostgresPlanningExecutionPreparer)
+    loaded = []
+    frozen_hash = "sha256:" + "a" * 64
+    def require(**identity):
+        loaded.append(identity)
+        return SimpleNamespace(asset_type=role, content_hash=frozen_hash, governance="CLEAR",
+            eligibility="ELIGIBLE", content={"project_id": "shared-project", "book_id": "other-book"})
+    loader.query = SimpleNamespace(require=require)
+    command = SimpleNamespace(project_id="shared-project", workspace_id="selected-workspace", book_id="selected-book")
+    with pytest.raises(KernelError, match="PLANNING_CONTEXT_INPUT_BOOK_INVALID"):
+        loader._context_bundle(operation_id="operation", attempt_id="attempt", command=command,
+            inputs=(FrozenPlanningInput(role=role, asset_version_id="foreign-version", asset_type=role,
+                content_hash=frozen_hash),))
+    assert loaded == [{"project_id": "shared-project", "asset_version_id": "foreign-version"}]

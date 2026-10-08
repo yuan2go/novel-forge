@@ -125,7 +125,7 @@ def _historical_authorization_evidence(
         name = str(relative)
         path = root / name
         if (
-            not name.startswith("config/production/narrative-closure/authorization-")
+            not name.startswith("config/archive/creative-inputs-legacy/narrative-closure/authorization-")
             or path.suffix != ".json"
             or not path.resolve().is_relative_to(root)
         ):

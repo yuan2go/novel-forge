@@ -228,6 +228,9 @@ def test_semantic_rerank_cannot_expand_frozen_lexical_structured_union() -> None
         workspace_id=workspace_id,
         book_id=book_id,
     )
+    foreign_book = identifier("same-project-other-book")
+    seed_authority_project_book(project_id=project_id, book_id=foreign_book,
+        workspace_id=identifier("other-book-workspace"), seed_project=False)
     source_definition = identifier("retrieval-source-definition")
     source_operation_id = identifier("retrieval-source-operation")
     with transaction() as connection, connection.cursor() as cursor:
@@ -303,6 +306,11 @@ def test_semantic_rerank_cannot_expand_frozen_lexical_structured_union() -> None
             vector=(1.0, 0.0, 0.0),
             projection_version="accepted-retrieval-embedding-v0",
         )
+        foreign_id, _, _ = _seed_document(cursor, project_id=project_id,
+            book_id=foreign_book, source_operation_id=source_operation_id,
+            label=identifier("other-book-memory"), chapter=1,
+            text="silent covenant signal belongs to another story",
+            vector=(1.0, 0.0, 0.0), entity_ids=("entity:duplicate",))
 
     intent = {
         "chapter": 200,
@@ -334,6 +342,7 @@ def test_semantic_rerank_cannot_expand_frozen_lexical_structured_union() -> None
     base_ids = {item["retrieval_document_id"] for item in discovery.documents}
     assert distant_id not in base_ids
     assert duplicate_id in base_ids
+    assert foreign_id not in base_ids
 
     operation_id, worker = _start_retrieval_attempt(project_id)
     arguments = {
@@ -368,6 +377,7 @@ def test_semantic_rerank_cannot_expand_frozen_lexical_structured_union() -> None
     assert stale_id not in by_id
     assert wrong_model_id not in by_id
     assert wrong_version_id not in by_id
+    assert foreign_id not in by_id
 
     result_arguments = {
         "project_id": project_id,

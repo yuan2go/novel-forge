@@ -19,6 +19,16 @@ from novel_forge.modules.mkaos_authority.domain import (
 
 
 class ContextAuthorityDomainTests(unittest.TestCase):
+    def test_shared_knowledge_does_not_admit_other_books_story(self) -> None:
+        bundle = build_authority_context_bundle(project_id="project-a", book_id="book-a",
+            stage="draft", created_by_operation_id="operation-isolated", context_profile_version="draft-v1",
+            token_budget=600, candidates=(self.candidate("plan-a", "chapter_plan"),
+                self.candidate("public-method", "knowledge_card", safe_summary="A deadline makes competing priorities visible."),
+                self.candidate("other-canon", "canon", book_id="book-b", safe_summary="Another book's character and plot")))
+        self.assertIn("public-method", bundle["selected_asset_version_ids"])
+        self.assertNotIn("other-canon", bundle["selected_asset_version_ids"])
+        self.assertIn({"asset_version_id": "other-canon", "reason": "WRONG_BOOK"}, bundle["rejected_asset_versions"])
+
     def test_deny_all_rejects_knowledge_before_context_selection(self) -> None:
         access = resolve_book_knowledge_access_policy(
             production_profile={

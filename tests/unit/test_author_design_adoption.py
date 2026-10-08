@@ -895,7 +895,7 @@ def test_actual_author_package_retains_all_text_within_measured_world_role_budge
     from novel_forge.modules.story_planning_runtime.execution import PostgresPlanningExecutionPreparer
     from novel_forge.modules.story_planning_runtime.world_preparation import PlanningProviderStage
     from novel_forge.modules.narrative_state.reality import narrative_hash
-    brief = json.loads((Path(__file__).resolve().parents[2] / 'config/production/author-guided-twelve/brief.json').read_text())
+    brief = json.loads((Path(__file__).resolve().parents[2] / 'novels/yu-xian-zhi-wai/inputs/author-guided-twelve/brief.json').read_text())
     binding = bind_author_design(brief['author_design'], asset_version_id='authority-output:5d074ee2-2384-43ca-8296-e66a56255b2d:creative.brief:v1', content_hash=narrative_hash(brief))
     source = project_author_design(binding, target='CHAPTER', chapter=chapter)
     command, stage, content = _world_author_context('world_candidates.evaluate')

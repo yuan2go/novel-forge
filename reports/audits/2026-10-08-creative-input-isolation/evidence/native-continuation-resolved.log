@@ -1,0 +1,46 @@
+Traceback (most recent call last):
+  File "/tmp/wp-input-native-continue.py", line 26, in <module>
+    result = run_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/cli/creation.py", line 55, in run_creation_command
+    result = execute_creation_command(settings, args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/creation_runtime.py", line 984, in execute_creation_command
+    result = continue_creation(composition=composition, content=content, chapter=chapter, formation_run_id=formation_id,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/creation_runtime.py", line 336, in continue_creation
+    stop = drive_book(composition=composition, chapter=chapter, book_run_id=existing[0], worker=book_worker,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/creation_runtime.py", line 43, in drive_book
+    return _drive_book(composition=composition, chapter=chapter, book_run_id=book_run_id,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/creation_runtime.py", line 149, in _drive_book
+    tick = execute_book_coordination_claim(jobs, composition, claim)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/workers/book_authority.py", line 184, in execute_book_coordination_claim
+    tick = ticker.tick(claim.subject_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/composition.py", line 69, in tick
+    return self.supervisor.tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/supervisor.py", line 131, in tick
+    return self._tick(book_run_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/supervisor.py", line 474, in _tick
+    result = self._generate_plan(book, "chapter_plan.generate", next_chapter)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/book_authority/supervisor.py", line 1026, in _generate_plan
+    result = self.planning.generate(frozen or generation, principal=self.principal)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/story_planning_runtime/application.py", line 547, in generate
+    replay = self._terminal_generation_replay(command, principal=principal, execution_probe=execution_probe)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/story_planning_runtime/application.py", line 1853, in _terminal_generation_replay
+    return self._repair_unmaterialized_result(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/story_planning_runtime/application.py", line 1971, in _repair_unmaterialized_result
+    source = require_result_repair_source(self.database_url, command=command, operation_id=operation_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/wp-input-runtime-939c12/src/novel_forge/modules/story_planning_runtime/result_recovery.py", line 212, in require_result_repair_source
+    raise KernelError(
+novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_EVIDENCE_MISSING: failed Operation has no durable Provider result; reconcile before any new request

@@ -95,6 +95,19 @@ The following distinctions govern implementation:
 | `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources and the intact-body guard limits one manuscript to 200000 code points; neither constant is a final architectural invariant or literary certification |
 | `UNRESOLVED_DESIGN_CONSTRAINT` | Unverified remote capacity/accounting metadata or unqualified long-form literary effectiveness cannot be promoted from local wiring |
 
+## Creative input selection
+
+Content owns the explicit source/use selection on each newly registered Brief.
+`creative-input-selection.v1` binds its native Operation and authenticated actor to
+Project, Workspace, Book and current intent. TASK_GENERATED Briefs retain an exact
+selected parent; automatic Formation proposals continue under the existing authorization.
+Historical samples and reference materials cannot supply current production author intent.
+Formation admits only selected inputs and Planning rechecks scope and provenance at
+loading. Provider Brief projection is an allowlist of creative semantic fields;
+execution controls and selection metadata remain host evidence. Legacy frozen Formation
+and Content replay retain their original inputs and identities. These executable input
+boundaries do not establish literary conformity or longform quality.
+
 ## Generated Foundation formation
 
 The existing Formation API accepts either six exact qualified layer references or one
@@ -656,6 +669,19 @@ accounted separately. New authorization evidence is required; selecting a policy
 renew an author decision or confer model qualification.
 
 ## Governed corpus works and Book knowledge isolation
+
+Each Book owns its world, cast, relationships, plans, manuscripts, Canon, narrative
+state and revision history. A Project may contain several Book-bound Workspaces in
+one PostgreSQL deployment; a Project match alone does not authorize story input from
+another Book. Shared Prompt and Skill assets carry methods, not a default story or
+chapter structure. Shared worldlines, characters, Canon and plot memory are outside
+the current production contract.
+
+Common research and reference mechanisms enter through Source/MKAOS and the existing
+Book knowledge access policy. An approved abstract mechanism is neither a Book setting,
+an accepted event nor character knowledge. Its Book-specific translation becomes that
+Book's candidate plan. Historical briefs and test execution instructions are not
+KnowledgeCards and do not gain generation access by being moved or renamed.
 
 Source Import represents a collection as versioned `SourceWork` and ordered `SourceUnit`
 identities over existing AssetVersion, Source and object-store boundaries. Governed

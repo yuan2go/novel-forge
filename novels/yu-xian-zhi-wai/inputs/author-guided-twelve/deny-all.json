@@ -1,0 +1,6 @@
+{
+  "policy_id": "yu-xian-zhi-wai-author-guided-original-v1",
+  "policy_version": 1,
+  "mode": "DENY_ALL",
+  "allowed_knowledge_card_asset_version_ids": []
+}

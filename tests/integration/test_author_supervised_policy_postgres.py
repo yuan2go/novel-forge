@@ -151,7 +151,7 @@ def test_native_author_design_is_approved_without_independent_qualification(cont
     author = replace(author, permissions=author.permissions | {"content.operation:creative.brief.create"})
     brief = content.execute(ContentOperationRequest(definition_name="creative.brief.create", project_id=project, workspace_id=workspace,
         actor_id=author.principal_id, trace_id=project, correlation_id=project, idempotency_key=project+":brief",
-        payload={"brief":{"creative_brief_contract_version":"creative-brief-v2","idea":"Protect an original witness while delivering the record.",
+        payload={"input_selection": {"contract_version": "creative-input-selection.v1", "book_id": book, "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "explicit-test-case"}, "brief":{"creative_brief_contract_version":"creative-brief-v2","idea":"Protect an original witness while delivering the record.",
             "genre":"mystery","audience":"adult readers","constraints":["Evidence must be witnessed"],"source_boundaries":["Original author input"]}}), principal=author)
     request = SimpleNamespace(brief_asset_version_id=brief.asset_version_id, brief_content_hash=brief.content_hash,
         design=candidate["candidate_payload"], contribution="OPERATOR_AUTHORED_INPUT", idempotency_key=project+":author-adapter")

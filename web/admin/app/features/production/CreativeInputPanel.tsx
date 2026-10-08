@@ -115,7 +115,7 @@ export function CreativeInputPanel({project, book, release, formationId, onBook,
   const briefExtension = editorialBriefExtension(learning);
   const {input_asset_version_ids: _inputs, ...extension} = briefExtension;
   const lines = (text: string) => text.split("\n").map(s => s.trim()).filter(Boolean);
-  const briefPayload = {brief: {...extension, idea: saved.idea, genre: saved.genre, audience: saved.audience, constraints: lines(saved.constraints), source_boundaries: lines(saved.sources)}};
+  const briefPayload = {input_selection: {contract_version: "creative-input-selection.v1", book_id: book?.book_id || "", source_kind: "CURRENT_AUTHOR_INPUT", purpose: "WORK_PRODUCTION", intent_ref: `author-input:${book?.book_id || ""}`}, brief: {...extension, idea: saved.idea, genre: saved.genre, audience: saved.audience, constraints: lines(saved.constraints), source_boundaries: lines(saved.sources)}};
   const briefMatches = !saved.submittedBrief && !saved.editorialEnabled || saved.submittedBrief === JSON.stringify(briefPayload);
   const directionMatches = designFields.every(([name])=>saved.design?.[name]===saved.direction?.content?.candidate_payload[name]);
   const change = (field: keyof Saved, value: string | number) => setSaved(current => ({...current, [field]: value}));

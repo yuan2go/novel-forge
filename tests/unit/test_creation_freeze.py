@@ -1,3 +1,4 @@
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import errno
 import hashlib
@@ -245,7 +246,8 @@ def test_post_publish_failure_requires_read_only_reconciliation(tmp_path, monkey
 def test_final_byte_hashes_and_default_source_use_chain_are_frozen(tmp_path):
     target = tmp_path / "frozen"
     manifest = freeze.prepare_freeze(
-        target, ["approved-exact-version"], target_book_id="planned-book"
+        target, ["approved-exact-version"], target_book_id="planned-book",
+        input_dir=Path(__file__).resolve().parents[2] / "tests/fixtures/creation/knowledge-closure", synthetic_source_imports=True
     )
     assert manifest == json.loads((target / "freeze.json").read_bytes())
     assert "freeze.json" not in manifest["files"]
@@ -370,3 +372,26 @@ def test_old_whitelist_cannot_be_inherited_from_input_configuration(tmp_path, sh
         manifest["arm_a_binding"] == "EXACT_VERSIONS_BOUND_AUTHORITY_RECHECK_REQUIRED"
     )
     assert (tmp_path / "matched" / name).read_bytes() == (source / name).read_bytes()
+
+
+def test_missing_current_input_never_selects_the_historical_fixture(tmp_path):
+    with pytest.raises(ValueError, match="explicit input_dir"):
+        freeze.prepare_freeze(tmp_path / "must-not-exist")
+    assert not (tmp_path / "must-not-exist").exists()
+
+
+def test_historical_paths_resolve_only_exact_original_bytes_without_changing_input_identity():
+    from pathlib import Path
+    from novel_forge.modules.creative.input_paths import resolve_historical_input_path
+    root = Path(__file__).resolve().parents[2]
+    original = root / "config/production/chinese-pilot-brief.json"
+    mapped = resolve_historical_input_path(original)
+    assert mapped == root / "config/archive/creative-inputs-legacy/chinese-pilot-brief.json"
+    legacy, identity = freeze.load_frozen_inputs({"brief": original})
+    archived, current_identity = freeze.load_frozen_inputs({"brief": mapped})
+    assert legacy == archived and identity == current_identity
+    assert identity["files"]["brief"]["name"] == "chinese-pilot-brief.json"
+    missing = root / "config/production/not-a-previous-input.json"
+    assert resolve_historical_input_path(missing) == missing
+    with pytest.raises(FileNotFoundError):
+        freeze.load_frozen_inputs({"brief": missing})

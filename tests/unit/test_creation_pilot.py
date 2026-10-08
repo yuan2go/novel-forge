@@ -1,4 +1,5 @@
 from __future__ import annotations
+from pathlib import Path
 
 from decimal import Decimal
 from types import SimpleNamespace
@@ -152,13 +153,14 @@ def test_six_chapter_inputs_freeze_sources_and_do_not_invent_card_approval(tmp_p
     import hashlib
     import json
     from scripts.prepare_knowledge_closure import prepare
-    report = prepare(tmp_path / "unbound")
+    source = Path(__file__).resolve().parents[2] / "tests/fixtures/creation/knowledge-closure"
+    report = prepare(tmp_path / "unbound", input_dir=source, synthetic_source_imports=True)
     assert report["real_provider_execution"] == "NOT_RUN"
     assert report["arm_a_binding"] == "KNOWLEDGE_APPROVAL_AND_EXACT_VERSION_BINDING_REQUIRED"
     assert not (tmp_path / "unbound/allow-only.json").exists()
     for name, digest in report["files"].items():
         assert digest == "sha256:" + hashlib.sha256((tmp_path / "unbound" / name).read_bytes()).hexdigest()
-    bound = prepare(tmp_path / "bound", ["exact-approved-version"], target_book_id="planned-treatment-book")
+    bound = prepare(tmp_path / "bound", ["exact-approved-version"], target_book_id="planned-treatment-book", input_dir=source, synthetic_source_imports=True)
     policy = json.loads((tmp_path / "bound/allow-only.json").read_text())
     assert policy["allowed_knowledge_card_asset_version_ids"] == ["exact-approved-version"]
     creation = json.loads((tmp_path / "bound/creation.json").read_text())
@@ -174,7 +176,7 @@ def test_six_chapter_inputs_freeze_sources_and_do_not_invent_card_approval(tmp_p
         assert "ABSTRACT_GENERATION" in imported["rights"]["allowed_uses"]
     from novel_forge.modules.command_kernel.errors import KernelError
     with pytest.raises(KernelError):
-        prepare(tmp_path / "empty", [])
+        prepare(tmp_path / "empty", [], input_dir=source, synthetic_source_imports=True)
 
 
 def test_blind_export_does_not_turn_missing_prose_into_review_material(tmp_path):

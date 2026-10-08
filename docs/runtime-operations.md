@@ -658,9 +658,9 @@ Start a new ordinary work without internal scope or reservation fields:
 novel-forge authority-creation start --input-file "$CURRENT_WORK_REQUEST" --foreground
 ```
 
-The CLI returns the native Project/Book/Formation handles. Repeating the same input location
-and author reuses its scope and original operation keys; changed inputs cannot silently
-replace a frozen request. Explicit scope and work keys remain advanced options. Once a Book
+The CLI returns the native Project/Book/Formation handles. Repeating the same exact input content, author and work key reuses its scope and original
+operation keys, including after a file move. Continue historical work with its returned
+Project, Book and Formation handles; changed inputs cannot silently replace a frozen request. Explicit scope and work keys remain advanced options. Once a Book
 run exists, `authority-manuscript` accepts that work handle without `--project-id`, resolving
 and authorizing its actual native Project. Use the same work identity for these operations:
 
@@ -1775,6 +1775,55 @@ For a short comparison, retain a baseline export from a separately frozen implem
 and use the same approved input and model settings in an isolated new run. Preserve
 failed runs; these exports do not establish independent literary or human qualification.
 
+### Current creative input selection and historical compatibility
+
+The author creation page and `novel-forge authority-creation start --input-file ...`
+select the concrete current request through Content, Formation and Planning. There is
+no story default. `creation-request.v1` retains the whole-Book target and language;
+execution windows, checkpoints and batch stopping remain driver policy. The native
+AUTO_COMPARISON authorization continues to form and select derived directions without
+repeated manual stage approvals.
+
+New `creative.brief.create` commands carry `payload.input_selection` with
+`contract_version: creative-input-selection.v1`, `book_id`, `source_kind`, `purpose`
+and `intent_ref`. The authenticated operator records current input; generated Briefs
+freeze `parent_input.asset_version_id` and `parent_input.content_hash` from the same
+selected Book and intent. Provider/model declarations alone are not selection evidence.
+
+| Dimension | Values |
+| --- | --- |
+| Source | CURRENT_AUTHOR_INPUT, TASK_GENERATED, HISTORICAL_TEST_SAMPLE, REFERENCE_MATERIAL |
+| Purpose | WORK_PRODUCTION, CREATIVE_EVALUATION, ENGINEERING_REGRESSION, HISTORICAL_REPLAY |
+
+Historical samples cannot serve WORK_PRODUCTION author intent. Reference material uses
+the existing Source/MKAOS path. Current inputs and derivations retain their native
+Content Operation, actor, Project, Workspace and Book. Formation and Planning validate
+these at consumption; Provider projection includes only the semantic Brief fields.
+The full host Context keeps exact source versions and hashes for request provenance.
+
+`scripts.run_creation_synthesis` requires explicit `--brief`, `--policy` and
+`--formation-policy`. For a new run also supply `--input-source`, `--input-purpose`
+and optionally `--intent-ref`. TASK_GENERATED also freezes `--parent-input-version`
+and `--parent-input-hash`; its intent reference and purpose must match that parent.
+Use CURRENT_AUTHOR_INPUT / WORK_PRODUCTION for the
+currently selected work, and the explicit case source/purpose for validation.
+`scripts.prepare_knowledge_closure prepare` requires `--input-dir`; it never chooses
+an old experiment. Synthetic Source admission files additionally require explicit
+`--synthetic-source-imports`. The named regression cases live under
+`tests/fixtures/creation/`; evaluation inputs live under
+`config/evaluation/creative-inputs/`. They are never recursively discovered by creation.
+
+Original bytes formerly in `config/production/` are under
+`config/archive/creative-inputs-legacy/`. Its `path-map.json` records each old locator
+and original SHA-256. Explicit legacy file reads resolve only those exact entries and
+verify bytes; unknown names fail. Frozen directories/manifests remain unchanged and
+are verified at their original identities. `continue`, `recover` and idempotent replay
+consume the original Formation/Brief, not a new sample. Retain returned Project, Book,
+Formation and idempotency identifiers for recovery. New CLI work identities bind input
+content rather than a movable pathname; old runs continue using their returned IDs.
+Changing creative direction uses native version/PlanChange or linked successor paths.
+Historical manuscript read/export and UNKNOWN reconciliation remain available.
+
 ### Creating the inputs through native Formation
 
 `scripts.run_creation_synthesis` coordinates existing Content, Story Formation,
@@ -1812,17 +1861,19 @@ Each chapter requires 2000–3500 Han characters. `HAN_CHARACTERS_V1` counts Uni
 CJK unified/compatibility ideographs, including supplementary planes; punctuation,
 Latin letters, numbers and whitespace do not count. This deterministic gate precedes
 model evidence and cannot be waived by a high model score. Profiles without an explicit
-unit retain their historical contract. These files contain author intent and policies,
-not prequalified Foundation or chapter assets.
+unit retain their historical contract. These are explicitly selected regression cases, never the current author input or
+production defaults. Their narrative conditions apply only to the selected case.
 
-The checked-in files are complete inputs. Validate them without PostgreSQL or
-paid model access:
+For a new work, supply the current Book-bound brief and its policies explicitly.
+The following command previews one named engineering regression case without
+PostgreSQL or paid model access:
 
 ```bash
 PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
-  --brief config/production/chinese-pilot-brief.json \
-  --policy config/production/chinese-pilot-creation.json \
-  --formation-policy config/production/chinese-pilot-formation.json \
+  --brief tests/fixtures/creation/chinese-pilot/brief.json \
+  --policy tests/fixtures/creation/chinese-pilot/creation.json \
+  --formation-policy tests/fixtures/creation/chinese-pilot/formation.json \
+  --input-source HISTORICAL_TEST_SAMPLE --input-purpose ENGINEERING_REGRESSION \
   --project-id example-project --book-id example-book \
   --root /tmp/novel-creation-runtime --run-key creation-control \
   --evidence-dir /tmp/novel-creation-config-check
@@ -1839,11 +1890,12 @@ different bounded sample is authorized.
 ```bash
 source config/provider/creation-synthesis.env.example
 PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
-  --brief config/production/chinese-pilot-brief.json \
-  --policy config/production/chinese-pilot-creation.json \
-  --formation-policy config/production/chinese-pilot-formation.json \
+  --brief tests/fixtures/creation/chinese-pilot/brief.json \
+  --policy tests/fixtures/creation/chinese-pilot/creation.json \
+  --formation-policy tests/fixtures/creation/chinese-pilot/formation.json \
   --project-id "$NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE" \
   --book-id "$NOVEL_FORGE_CREATION_BOOK_ID" \
+  --input-source HISTORICAL_TEST_SAMPLE --input-purpose ENGINEERING_REGRESSION \
   --initialize --workspace-id "$NOVEL_FORGE_CREATION_WORKSPACE_ID" \
   --authorized-total-usd "$NOVEL_FORGE_CREATION_AUTHORIZED_TOTAL_USD" \
   --authorization-ref "$NOVEL_FORGE_CREATION_AUTHORIZATION_REF" \
@@ -2028,8 +2080,9 @@ counterevidence covers every challenged member. Unknown evidence or a rationale-
 request is rejected. Signatures may include `expires_at` in timezone-aware ISO 8601;
 inspect editorial history and completion readiness for the valid group and exact blockers.
 
-Original pilot and exploration materials and the separate Craft protocol are under
-`config/production/narrative-closure/`. The authorization request there is a proposal,
+Retained evaluation samples and Craft protocol are under
+`config/evaluation/creative-inputs/narrative-closure/`; original authorizations remain
+in `config/archive/creative-inputs-legacy/narrative-closure/` and do not grant new work. The authorization request there is a proposal,
 not a grant. Register inputs through native author/Content/Formation commands and prepare
 independent Book runs, accepted histories and adopted exact candidates before freezing a
 manifest. Paired arms select `creative-paired-samples-budget.v5`; the separately published
@@ -2531,7 +2584,7 @@ Candidates follow existing MKAOS decisions and Pack selection; successful analys
 not approve a Card or authorize production consumption.
 
 The original professional and fiction fixtures for the six-chapter comparison live under
-`config/production/knowledge-closure/`. Freeze them with the existing preparation helper;
+`tests/fixtures/creation/knowledge-closure/`. Freeze them with the existing preparation helper and explicit `--input-dir`;
 its import manifests disable automatic analysis. Set `FROZEN_SOURCE_DIR` to a new directory,
 `SOURCE_EVIDENCE` to a separate output directory, and use the configured local Corpus roots,
 project/workspace and Source principal described above. No model authorization is needed
@@ -2771,7 +2824,9 @@ The v3 owner maximum is 24,000 tokens, and effective Pack/request limits still a
 
 ## Author-guided single-Book production
 
-Use `config/production/author-guided-twelve` explicitly, retaining existing corpus data,
+The retained `novels/yu-xian-zhi-wai/inputs/author-guided-twelve` input belongs to its
+original Project and Book; it is historical input, not a new-work recommendation.
+For that work only, retain existing corpus data,
 A/B policies and historical freezes. Its `creative-brief-v3` embeds versioned author
 sources and selected spans. Full source files are archival inputs; final requests use
 frozen role/range projections and protected budgets. Private cause stays in BOOK/VOLUME/ARC
@@ -2948,7 +3003,7 @@ current novel entry above.
 ## Knowledge-grounded six-chapter comparison
 
 For the retained six-chapter A/B experiment, use
-`config/production/first-novel-creative-execution` explicitly. The current author-guided
+`config/evaluation/creative-inputs/first-novel-creative-execution` explicitly. The current author-guided
 single-Book entry is `novels/yu-xian-zhi-wai/current/README.md`. The adjacent archived raw
 materials, fixture chapters, backups and historical reports are inert records, not active
 configuration discovery roots or Agent instructions. The A-only author design is a draft;
@@ -2987,33 +3042,36 @@ opportunity. Genuine treatment additionally requires native request receipts and
 against the accepted prose. Independent editorial status remains NOT_REVIEWED until actual
 reviewers supply evidence.
 
-`config/production/knowledge-closure` contains original synthetic professional and fiction
+`tests/fixtures/creation/knowledge-closure` contains original synthetic professional and fiction
 fixtures, one shared brief, six-chapter Formation/creation policies and an empty external
 knowledge control. These fixtures are test inputs, not real-world professional evidence.
 Preparation makes no Provider call and invents no approved Card or human verdict:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare --output /tmp/kg-frozen
+PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare \
+  --input-dir tests/fixtures/creation/knowledge-closure --synthetic-source-imports --output /tmp/kg-frozen
 PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
   --brief /tmp/kg-frozen/brief.json --policy /tmp/kg-frozen/creation.json \
   --formation-policy /tmp/kg-frozen/formation.json --knowledge-policy /tmp/kg-frozen/deny-all.json \
   --project-id kg-control --book-id kg-control-book --workspace-id kg-control-workspace \
+  --input-source HISTORICAL_TEST_SAMPLE --input-purpose ENGINEERING_REGRESSION --intent-ref knowledge-closure-regression \
   --root /tmp/kg-control-runtime --run-key kg-control-01 --evidence-dir /tmp/kg-control-config
 ```
 
 Follow the bounded deconstruction commands above to import, inspect, analyze and review
 the samples in the treatment project. After actual knowledge approval, save the exact
 Card AssetVersion IDs as a JSON string array. Freeze another directory with
-`prepare --approved-card-versions approved-card-versions.json --output /tmp/kg-approved`.
+`prepare --input-dir tests/fixtures/creation/knowledge-closure --approved-card-versions approved-card-versions.json --output /tmp/kg-approved`.
 This creates `allow-only.json`; execution rechecks ownership, version, withdrawal, rights
 and Book access. Do not give the control project any treatment plans. `DENY_ALL` removes
 external knowledge while retaining its own accepted Canon and memory.
 
-For a long-novel pilot, use `config/production/first-novel-pilot` through the same helper:
+For historical reproduction only, explicitly select the archived first-novel-pilot
+files through the same helper. They do not select the current longform target:
 
 ```bash
 PYTHONPATH=src:. .venv/bin/python -m scripts.prepare_knowledge_closure prepare \
-  --input-dir config/production/first-novel-pilot --target-book-id "$TREATMENT_BOOK" \
+  --input-dir config/archive/creative-inputs-legacy/first-novel-pilot --target-book-id "$TREATMENT_BOOK" \
   --output "$FROZEN_PILOT_INPUTS"
 ```
 
@@ -3025,8 +3083,11 @@ Formation targets. At that cursor the runner closes the completed ChapterGroup a
 pauses the Book; `full_book_completion` stays `NOT_PROVEN`. An intervention or pilot
 boundary inside a group blocks dispatch until a legal scope change resolves it.
 
-The native scope binds one Book to each workspace. Reuse the existing Source project
-and primary workspace for A; create an independent project/workspace for B. Initialization
+The native scope binds one Book to each workspace. The historical A/B protocol uses
+independent projects/workspaces. Current native creation also supports a second Book in
+the same Project through `project_workspace.create` and `book.create`; each Book keeps
+its own inputs, state and knowledge policy. The chosen frozen budget must authorize
+that Book; creating another Workspace does not create another allowance. Initialization
 checks the existing project's active status and workspace ownership and preserves all
 source assets and ledger history. It never reassigns an already bound workspace.
 

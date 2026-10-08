@@ -1,0 +1,8 @@
+{
+  "effect_id": "a918dc02-f458-4326-9b05-ec7fdc54f870",
+  "execution_id": "planning-execution:a918dc02-f458-4326-9b05-ec7fdc54f870:8d1c9100-6d0d-4f30-ba6f-b7193293f636",
+  "status": "BLOCKED",
+  "code": "ValueError",
+  "message": "Authority Attempt is not execution-active: FAILED_FINAL",
+  "new_dispatches": 0
+}

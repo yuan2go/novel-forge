@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from novel_forge.modules.authority_handler_runtime import AuthorityExecutionResult
 from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.definitions import (
@@ -90,6 +91,35 @@ class ContentAuthorityApplication:
                 require_model_reference_annotation(uow.cursor, project_id=request.project_id,
                     definition_name=request.definition_name, payload=request.payload,
                     actor_id=principal.principal_id, input_assets=list(request.input_assets))
+        replay_definition_version = None
+        if request.definition_name == "creative.brief.create":
+            with AuthorityUnitOfWork(self.database_url) as selection_uow:
+                selection_uow.cursor.execute("""SELECT definition_version, command_payload, workspace_id, actor_id
+                    FROM authority_operation WHERE project_id=%s AND definition_name=%s
+                    AND idempotency_scope='project:content-domain' AND idempotency_key=%s""",
+                    [request.project_id, request.definition_name, request.idempotency_key])
+                previous = selection_uow.cursor.fetchone()
+            if (previous and previous[1] == {"project_id": request.project_id,
+                    "input_asset_version_ids": [item["asset_version_id"] for item in request.input_assets], "payload": request.payload}
+                    and previous[2] == request.workspace_id and previous[3] == request.actor_id):
+                replay_definition_version = str(previous[0])
+            else:
+                from novel_forge.modules.creative.input_selection import validate_input_selection
+                selected = validate_input_selection(request.payload.get("input_selection"))
+                if selected["source_kind"] != "TASK_GENERATED" and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):
+                    raise PermissionError("Current input selection requires the authenticated author/operator; generated proposals inherit an exact selected input")
+                with AuthorityUnitOfWork(self.database_url) as book_uow:
+                    book_uow.cursor.execute("""SELECT project_id, workspace_id
+                        FROM authority_book WHERE book_id=%s""", [selected["book_id"]])
+                    if book_uow.cursor.fetchone() != (request.project_id, request.workspace_id):
+                        raise KernelError("CREATIVE_INPUT_BOOK_MISMATCH",
+                            "Selected input requires its existing Book in the exact Project and Workspace")
+                if selected["source_kind"] == "TASK_GENERATED":
+                    from novel_forge.modules.creative.input_selection import require_selected_brief
+                    with AuthorityUnitOfWork(self.database_url) as parent_uow:
+                        require_selected_brief(parent_uow.cursor, **selected["parent_input"],
+                            project_id=request.project_id, workspace_id=request.workspace_id,
+                            book_id=selected["book_id"])
         reference_annotation = "reference_sample" in request.payload
         if reference_annotation and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):
             raise PermissionError("sample annotations require an authenticated local operator")
@@ -135,7 +165,7 @@ class ContentAuthorityApplication:
             # WHY: unrelated task-contract drift must not block this admission.
             uow.repositories.definitions.register(definition)
             uow.commit()
-        definition_version = definition["definition_version"]
+        definition_version = replay_definition_version or definition["definition_version"]
         if reference_annotation:
             from novel_forge.modules.book_followup_authority.prose_sample_feedback import PROSE_ANNOTATION_VERSION
             from novel_forge.modules.book_followup_authority.screenplay_sample_feedback import SCREENPLAY_ANNOTATION_VERSION

@@ -1,0 +1,2704 @@
+{
+  "book_id": "book:input-isolation-01:archive-suspense",
+  "trace_id": "trace:story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd",
+  "project_id": "project:input-isolation-01:archive-suspense",
+  "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:WORLD_BIBLE:0",
+  "token_budget": 64000,
+  "workspace_id": "workspace:input-isolation-01:archive-suspense",
+  "input_versions": [
+    {
+      "role": "ending_intent",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:archive-suspense",
+        "objective": "在九章内兑现证据可追踪的救援悬疑：明确被困借阅者的去向与救援结果，解释两张回执的冲突，并让温桥以可核查的当班记录回应岗位自保与有限信任之间的压力。",
+        "project_id": "project:input-isolation-01:archive-suspense",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定温桥的第三人称限知视角，所有信息经她感知、回忆、查验或听取进入叙述；他人的解释保留来源。",
+          "以调查和证据推理推动救人行动，让新线索实际改变温桥的判断与搜救路线。",
+          "求援与调查并行，人物继续采取其已知可行的救援、核对与证据保全行动。",
+          "对维修员的信任按具体说法与行动逐项建立，不由一次验证扩展为全面信任。",
+          "回执办理权限、可留痕的操作机制、断电影响与救援设施须在后续设计中明确并提前铺设；本结尾意图不替这些未定条件编造答案。",
+          "每个代表场景回答一个可检验的问题，并产生救援局势或关系变化；时间压力由钟表、照明变化和搜索进展承担。",
+          "旧事故支线只承担人物动机与当前救援所需线索的功能。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "本结果仅提出结尾候选方向，不构成已接受事件、Canon或Authority状态变更。"
+        ],
+        "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:ENDING_INTENT:0",
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "温桥如实记录救援中的判断与操作，会使自己的当班行为接受核查，并承受维修员因隐瞒被记录而产生的关系压力；这些后果与其欲望和恐惧直接相关，不要求失业、伤亡或其他重大不可逆损失。",
+            "field_path": "$.protagonist_cost"
+          }
+        ],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "ending_direction": "拟议结尾以救援成功、回执谜题闭合和责任处理仍有余波收束。温桥依据已取得的记录与现场证据修正搜救路线，在断电前组织借阅者脱困；维修员的设施知识可以帮助救援，但须经过现场验证，他的帮助不抵消违规与隐瞒。救援后，温桥将两张冲突回执、查验经过及自己的判断与操作写入当班异常记录，不为保全岗位删去可能使自己受询问的部分，也不把维修员未核实的解释写成事实。她对记录的理解由避免签字被利用，推进为留下足以说明行动依据、也能接受核查的记录；她仍担心责任后果，但不再以一份表面无误的闭馆记录作为安全保证。最终停在温桥能够确认救援完成、异常记录已提交的情境。她与维修员可以认可彼此在救援中的具体贡献，关系不必恢复亲密。正式处分及父亲旧事故的完整责任归属保持未决，不新增更大阴谋或续作任务。",
+        "protagonist_cost": "拟议温桥为如实记录承担相称后果：她须解释拒绝直接完成闭馆核对、修正判断及参与救援的依据，无法凭一份无异常的记录结束当班；记录维修员的违规与隐瞒也可能使刚建立的有限合作受损。具体核查结果与岗位处分保持未定，不预设她失业，也不以重大不可逆损失证明成长。",
+        "candidate_payload": {
+          "objective": "在九章内兑现证据可追踪的救援悬疑：明确被困借阅者的去向与救援结果，解释两张回执的冲突，并让温桥以可核查的当班记录回应岗位自保与有限信任之间的压力。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "固定温桥的第三人称限知视角，所有信息经她感知、回忆、查验或听取进入叙述；他人的解释保留来源。",
+            "以调查和证据推理推动救人行动，让新线索实际改变温桥的判断与搜救路线。",
+            "求援与调查并行，人物继续采取其已知可行的救援、核对与证据保全行动。",
+            "对维修员的信任按具体说法与行动逐项建立，不由一次验证扩展为全面信任。",
+            "回执办理权限、可留痕的操作机制、断电影响与救援设施须在后续设计中明确并提前铺设；本结尾意图不替这些未定条件编造答案。",
+            "每个代表场景回答一个可检验的问题，并产生救援局势或关系变化；时间压力由钟表、照明变化和搜索进展承担。",
+            "旧事故支线只承担人物动机与当前救援所需线索的功能。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "本结果仅提出结尾候选方向，不构成已接受事件、Canon或Authority状态变更。"
+          ],
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "温桥如实记录救援中的判断与操作，会使自己的当班行为接受核查，并承受维修员因隐瞒被记录而产生的关系压力；这些后果与其欲望和恐惧直接相关，不要求失业、伤亡或其他重大不可逆损失。",
+              "field_path": "$.protagonist_cost"
+            }
+          ],
+          "ending_direction": "拟议结尾以救援成功、回执谜题闭合和责任处理仍有余波收束。温桥依据已取得的记录与现场证据修正搜救路线，在断电前组织借阅者脱困；维修员的设施知识可以帮助救援，但须经过现场验证，他的帮助不抵消违规与隐瞒。救援后，温桥将两张冲突回执、查验经过及自己的判断与操作写入当班异常记录，不为保全岗位删去可能使自己受询问的部分，也不把维修员未核实的解释写成事实。她对记录的理解由避免签字被利用，推进为留下足以说明行动依据、也能接受核查的记录；她仍担心责任后果，但不再以一份表面无误的闭馆记录作为安全保证。最终停在温桥能够确认救援完成、异常记录已提交的情境。她与维修员可以认可彼此在救援中的具体贡献，关系不必恢复亲密。正式处分及父亲旧事故的完整责任归属保持未决，不新增更大阴谋或续作任务。",
+          "protagonist_cost": "拟议温桥为如实记录承担相称后果：她须解释拒绝直接完成闭馆核对、修正判断及参与救援的依据，无法凭一份无异常的记录结束当班；记录维修员的违规与隐瞒也可能使刚建立的有限合作受损。具体核查结果与岗位处分保持未定，不预设她失业，也不以重大不可逆损失证明成长。",
+          "closure_conditions": [
+            "九章内明确借阅者的实际去向，并通过温桥可感知、查验的救援结果确认她已在断电前脱困；发出求援或找到位置不能替代救援完成。",
+            "以此前读者能够接触的办理顺序、取阅信息与现场痕迹，解释两张回执为何冲突，并明确提前生成的已归还回执不能证明借阅者已经离馆。",
+            "维修员违规延长妹妹入库时间、提前办理回执及隐瞒亲属关系的经过得到证据支持；说明其位置判断为何过时，避免将全部矛盾归结为一句坦白。",
+            "借阅者寻找父亲旧事故记录的欲望能够解释她偏离原定位置的行动；只闭合与当夜去向和救援有关的问题，不要求查清旧事故全貌。",
+            "温桥完成可追查的当班异常记录，保留两张回执及关键查验结果，区分亲见事实、行动依据和他人尚待核实的说法。",
+            "明确温桥与维修员的合作边界：救援中得到验证的帮助可以被认可，先前隐瞒仍被记录；双方不必完成和解。",
+            "最终责任处分与旧事故剩余疑问可以未决，但救援结果、回执矛盾和温桥如何处理当班记录必须获得明确回应。"
+          ],
+          "constraint_envelope": {
+            "role": "ENDING_INTENT",
+            "creative_brief": {
+              "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+              "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+                "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+            "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+            "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+            "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+            "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+            "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+            "以开放式结尾为由悬置借阅者是否获救或回执为何冲突。",
+            "将救援成功等同于维修员免责、温桥必然免受核查或双方自动和解。",
+            "强加失业、死亡、重伤等未获因果支持的重大损失作为结尾成立的条件。",
+            "照搬其他作品的表达、人物组合或场景序列。",
+            "将本候选的设定、预测或拟议选择表述为已接受事实。"
+          ],
+          "unacceptable_shortcuts": [
+            "临近结尾才补出亲属关系、回执权限或关键设施功能，且此前没有可供温桥与读者检验的铺设。",
+            "用借阅者获救后的长篇解释一次性补齐所有推理，取代救援前改变行动的线索链。",
+            "让维修员突然准确知道妹妹的新位置，跳过其原有位置判断已经过时的问题。",
+            "以删除、修改或丢弃原始回执换取温桥的岗位安全，再将其呈现为责任问题已经解决。",
+            "用管理者口头保证无人追责消除温桥的记录选择，或用突然严惩制造未经铺设的结尾代价。",
+            "为让温桥先作出责任选择而暂停可行的救援；异常报告的具体时机须服从当时的救援条件。",
+            "以旧事故的新谜团或幕后势力取代本书收束，强行建立续作桥梁。"
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+              "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+            }
+          }
+        },
+        "closure_conditions": [
+          "九章内明确借阅者的实际去向，并通过温桥可感知、查验的救援结果确认她已在断电前脱困；发出求援或找到位置不能替代救援完成。",
+          "以此前读者能够接触的办理顺序、取阅信息与现场痕迹，解释两张回执为何冲突，并明确提前生成的已归还回执不能证明借阅者已经离馆。",
+          "维修员违规延长妹妹入库时间、提前办理回执及隐瞒亲属关系的经过得到证据支持；说明其位置判断为何过时，避免将全部矛盾归结为一句坦白。",
+          "借阅者寻找父亲旧事故记录的欲望能够解释她偏离原定位置的行动；只闭合与当夜去向和救援有关的问题，不要求查清旧事故全貌。",
+          "温桥完成可追查的当班异常记录，保留两张回执及关键查验结果，区分亲见事实、行动依据和他人尚待核实的说法。",
+          "明确温桥与维修员的合作边界：救援中得到验证的帮助可以被认可，先前隐瞒仍被记录；双方不必完成和解。",
+          "最终责任处分与旧事故剩余疑问可以未决，但救援结果、回执矛盾和温桥如何处理当班记录必须获得明确回应。"
+        ],
+        "execution_evidence": {
+          "attempt_id": "457aea80-d451-401d-881b-0265cedc3a0a",
+          "operation_id": "aef5c6cd-9e4d-4186-8697-b676df892ba3",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:345ed31d-b099-4af4-96da-b2d1120f6add",
+          "route_snapshot_id": "production_execution/routes/19cfbaa75acb27f319f5",
+          "usage_receipt_ref": "authority-asset-version:72c1ba46-b46f-4b0c-9c70-be9a7a43e6fc",
+          "input_manifest_ref": "production_execution/inputs/19cfbaa75acb27f319f5",
+          "context_bundle_hash": "sha256:500fd2598884bd4f96914b1926ee66e1fa3a5d784d5111ec5ea0cbb9f69544a9",
+          "output_manifest_ref": "authority-asset-version:35129b3a-05e6-4800-a90b-2d40abadf2a5",
+          "production_verified": false,
+          "external_receipt_ref": "6375dcf3-7555-428a-bb1f-be6d4c9a6e3e",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:6a440ae3-1085-40bc-8685-00937dc388ac",
+          "capability_execution_ref": "062cb573-9def-55eb-9382-7055fbcefe58",
+          "capability_execution_hash": "sha256:56dffbdc7620de9923ac6a14af9b38fa0bb52bf0c4af52b5ac22679062be9cde",
+          "capability_runtime_binding_ref": "sha256:26da7de80d82495b8e88349ed10a5540ee1fab3d7dbbdb5d37d659a19c0397f1",
+          "capability_runtime_binding_hash": "sha256:ed8b254296ab44856f13671a8cee0744868baa690bd871078253c0081bf32308",
+          "context_bundle_asset_version_id": "d1fcc8a9-daed-4b70-91bb-29821dd47c2d",
+          "capability_pack_attempt_snapshot_id": "sha256:26da7de80d82495b8e88349ed10a5540ee1fab3d7dbbdb5d37d659a19c0397f1",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:ed8b254296ab44856f13671a8cee0744868baa690bd871078253c0081bf32308",
+          "narrative_intelligence_selection_digest": "sha256:b4398d155f2cc2ac68c1f9cc4f13898b3be900c9d9de22f0c1e48dcf5b789523"
+        },
+        "constraint_envelope": {
+          "role": "ENDING_INTENT",
+          "creative_brief": {
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+              "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+          "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+          "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+          "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+          "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+          "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+          "以开放式结尾为由悬置借阅者是否获救或回执为何冲突。",
+          "将救援成功等同于维修员免责、温桥必然免受核查或双方自动和解。",
+          "强加失业、死亡、重伤等未获因果支持的重大损失作为结尾成立的条件。",
+          "照搬其他作品的表达、人物组合或场景序列。",
+          "将本候选的设定、预测或拟议选择表述为已接受事实。"
+        ],
+        "unacceptable_shortcuts": [
+          "临近结尾才补出亲属关系、回执权限或关键设施功能，且此前没有可供温桥与读者检验的铺设。",
+          "用借阅者获救后的长篇解释一次性补齐所有推理，取代救援前改变行动的线索链。",
+          "让维修员突然准确知道妹妹的新位置，跳过其原有位置判断已经过时的问题。",
+          "以删除、修改或丢弃原始回执换取温桥的岗位安全，再将其呈现为责任问题已经解决。",
+          "用管理者口头保证无人追责消除温桥的记录选择，或用突然严惩制造未经铺设的结尾代价。",
+          "为让温桥先作出责任选择而暂停可行的救援；异常报告的具体时机须服从当时的救援条件。",
+          "以旧事故的新谜团或幕后势力取代本书收束，强行建立续作桥梁。"
+        ],
+        "generator_operation_name": "ending.intent.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:2b9eb51aa9ae295833f30aaf4acb34db61a8d39eedf6568a9912d9dc421febf5",
+      "asset_version_id": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1"
+    },
+    {
+      "role": "creative_brief",
+      "content": {
+        "idea": "夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，一名借阅者仍被锁在即将断电的旧库房。她必须在保住自己的岗位记录与信任一位说法前后矛盾的维修员之间选择。明确以调查和证据推理推动救人行动，让线索改变她的判断；真相由正式候选形成，不预写作答。",
+        "genre": "第三人称限知悬疑",
+        "audience": "成年中文读者",
+        "project_id": "project:input-isolation-01:archive-suspense",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+        ],
+        "source_boundaries": [
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+        ],
+        "creative_input_selection": {
+          "book_id": "book:input-isolation-01:archive-suspense",
+          "purpose": "CREATIVE_EVALUATION",
+          "intent_ref": "WP-CREATIVE-INPUT-ISOLATION-01:authorized-distinct-narrative-validation",
+          "project_id": "project:input-isolation-01:archive-suspense",
+          "source_kind": "TASK_GENERATED",
+          "parent_input": {
+            "content_hash": "sha256:857be1848a78e9a58be41e7550ac89b1af02af1a6ad59ccea04e953a9eb89d30",
+            "asset_version_id": "authority-output:d7eb85a3-4e27-4f23-9eda-1c793d35e6cd:creative.brief:v1"
+          },
+          "workspace_id": "workspace:input-isolation-01:archive-suspense",
+          "contract_version": "creative-input-selection.v1",
+          "selected_by_actor_id": "author-first-native-operator",
+          "selection_operation_id": "4726bdba-0b3e-4e17-8591-34f8cd6e1666"
+        },
+        "creative_brief_contract_version": "creative-brief-v2"
+      },
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+      "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+    },
+    {
+      "role": "reader_promise",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:archive-suspense",
+        "objective": "为成年中文读者建立一部九章第三人称限知悬疑的阅读承诺：与夜班档案员温桥共同查验两张冲突回执，在旧库房断电前以证据推动有效救援，并看见她如何处理有限信任与当班记录责任。",
+        "project_id": "project:input-isolation-01:archive-suspense",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+          "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+          "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+          "关键推理使用读者能够接触到的线索；误导来自事实的有限解释与人物隐瞒。",
+          "对话中的回避必须服务于说话者当时的具体欲望。",
+          "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+          "证据细节只在影响判断或行动时展开。",
+          "旧事故只承担人物动机与必要线索功能，救援不以查清全部旧事故为前提。",
+          "回执字段、办理权限和断电的具体影响须由后续设计闭合，本承诺不预定未经确认的设施功能。",
+          "局部答案推动后续行动，不新增固定章末悬念、商业连载节奏或每章重大不可逆损失的要求。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "本承诺为候选设计；上游设计条件不构成已发生的章节事件，不改变已接受历史或Canon。"
+        ],
+        "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:READER_PROMISE:0",
+        "applicability": [],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "reader_promise": "读者将贴近温桥的感官与判断，经历怀疑、查验、短暂放心和再次受压。持续的期待来自两个相互牵动的问题：记录能否指向借阅者的真实去向，维修员的哪一句话足以支持下一项救人行动。读者能接触关键线索，随温桥修正判断；局部疑问得到回答后，答案会改变搜索或合作，而救援条件仍在收紧。九章内，两张回执为何冲突、借阅者身在何处以及如何在断电前得到有效救援，都须获得有因果支撑的明确回应。温桥对记录和信任的选择也须呈现相称后果；最终和解、处分或旧事故的完整结论不作预先保证。",
+        "schema_version": "story_design.authority.v1",
+        "candidate_payload": {
+          "objective": "为成年中文读者建立一部九章第三人称限知悬疑的阅读承诺：与夜班档案员温桥共同查验两张冲突回执，在旧库房断电前以证据推动有效救援，并看见她如何处理有限信任与当班记录责任。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+            "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+            "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+            "关键推理使用读者能够接触到的线索；误导来自事实的有限解释与人物隐瞒。",
+            "对话中的回避必须服务于说话者当时的具体欲望。",
+            "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+            "证据细节只在影响判断或行动时展开。",
+            "旧事故只承担人物动机与必要线索功能，救援不以查清全部旧事故为前提。",
+            "回执字段、办理权限和断电的具体影响须由后续设计闭合，本承诺不预定未经确认的设施功能。",
+            "局部答案推动后续行动，不新增固定章末悬念、商业连载节奏或每章重大不可逆损失的要求。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "本承诺为候选设计；上游设计条件不构成已发生的章节事件，不改变已接受历史或Canon。"
+          ],
+          "applicability": [],
+          "reader_promise": "读者将贴近温桥的感官与判断，经历怀疑、查验、短暂放心和再次受压。持续的期待来自两个相互牵动的问题：记录能否指向借阅者的真实去向，维修员的哪一句话足以支持下一项救人行动。读者能接触关键线索，随温桥修正判断；局部疑问得到回答后，答案会改变搜索或合作，而救援条件仍在收紧。九章内，两张回执为何冲突、借阅者身在何处以及如何在断电前得到有效救援，都须获得有因果支撑的明确回应。温桥对记录和信任的选择也须呈现相称后果；最终和解、处分或旧事故的完整结论不作预先保证。",
+          "constraint_envelope": {
+            "role": "READER_PROMISE",
+            "creative_brief": {
+              "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+              "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+                "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+            "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+            "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+            "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+            "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+            "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+            "照搬其他作品的表达、人物组合或场景序列。",
+            "将本候选的设定、预测或拟议选择表述为已接受事实。",
+            "将异常报告、维修员主动认责或救援后的和解等可选方向升级为必然结局。",
+            "以开放结局为由悬置被困者的去向、主要回执谜题或救援结果。"
+          ],
+          "disappointment_risks": [
+            "回执办理机制含混，读者无法判断两张纸分别证明什么，最终解释便会像临时补设规则。",
+            "维修员与借阅者的亲属关系仅靠最后坦白揭晓，缺少温桥此前可接触的迹象，会削弱共同推理的满足感。",
+            "维修员的一次正确判断被当作全部说法可信的证明，会使有限合作失去张力，也损害温桥的判断力。",
+            "反复核对纸面材料却不改变搜救路线、合作条件或局势，会让调查与救援脱节。",
+            "时间压力只靠倒计时口号呈现，缺少可感知的救援条件变化，会使紧迫感空转。",
+            "旧事故扩张成需要另一本书解决的谜团，或抢占当夜救援的篇幅，会稀释九章内的核心兑现。",
+            "结尾只宣布人已获救，却不交代线索如何导向实际位置以及有效救援，会使行动回报缺乏因果支撑。",
+            "温桥的岗位顾虑在结尾突然消失，或救援成功自动消除所有记录责任，会使她的选择失去分量。",
+            "每次调查都强加重大损失，或每章机械增加一个谜团，会使人物行动和阅读节奏显得人为。"
+          ],
+          "setup_progress_payoff": [
+            {
+              "setup": "闭馆核对时，两张回执对同一次借阅给出无法直接兼容的信息，温桥不能据此确认借阅者已经离开。",
+              "payoff": "在九章内解释两张回执的冲突及形成原因，使读者能回看关键线索，理解手续完成为何不足以证明本人离馆，以及这一认识如何支持找到借阅者。",
+              "promise": "回执谜题可以凭读者接触到的证据追踪，答案会改变救人行动。",
+              "progress": "通过温桥对办理顺序、取阅信息与现场痕迹的查验，逐步区分纸面手续与实际行动；每次解释修正都影响下一项搜救判断。"
+            },
+            {
+              "setup": "借阅者滞留在即将断电的旧库房，温桥掌握的信息不足以直接确定其当前位置。",
+              "payoff": "在断电前找到并组织有效救出借阅者，明确交代决定性证据、行动衔接与救援结果，使成功来自此前建立的判断和可行条件。",
+              "promise": "调查所得会转化为有效救援，紧迫行动有可理解的因果过程。",
+              "progress": "求援与调查并行，搜索方向随证据调整；以温桥能够感知的时间、照明与搜索进展呈现压力，设施建议经验证后才用于行动。"
+            },
+            {
+              "setup": "维修员说法前后矛盾，却掌握可能帮助搜救的设施知识；温桥既需要他的协助，也需要保留独立判断。",
+              "payoff": "让借阅者与维修员的关系、违规通融及隐瞒获得证据支持，说明其说法为何变化、位置判断为何可能过时；以实际合作结果兑现信任变化，关系可以修复，也可以留下裂痕。",
+              "promise": "一个有用却有隐瞒的人会带来具体的合作难题，信任随验证而变化。",
+              "progress": "温桥逐项检验维修员的建议，区分设施能力、救人动机与叙述可信度；亲属关系和旧事故诉求通过她可接触的迹象及有来源的陈述进入调查。"
+            },
+            {
+              "setup": "温桥既想救出借阅者，也怕自己的签字成为他人推卸责任的依据；照着回执完成闭馆可能掩盖仍有人滞留的事实。",
+              "payoff": "呈现温桥如何留下对自身行动有依据的记录，以及这一处理对当班责任和合作关系的直接影响；责任认定可以保留余波，但她当夜的选择不能被略过。",
+              "promise": "救人和保住岗位记录的冲突会落实为选择及后果。",
+              "progress": "让证据保管、记录核对和必要报告与搜救需求发生具体联系；在相关行动处呈现耗时、违规暴露或合作受损等相称后果，具体记录方式保持可调整。"
+            }
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+              "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+            }
+          }
+        },
+        "execution_evidence": {
+          "attempt_id": "95994e97-ce68-422a-8d36-36f6fdd8ee16",
+          "operation_id": "2f1c7d69-e935-4958-9707-94acae0568bb",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:71b7d3ba-fd33-4965-8d6b-55c73ffd5560",
+          "route_snapshot_id": "production_execution/routes/3d02855c0470c0894512",
+          "usage_receipt_ref": "authority-asset-version:6558e949-e606-4cb3-89d6-861eeb2e3c5d",
+          "input_manifest_ref": "production_execution/inputs/3d02855c0470c0894512",
+          "context_bundle_hash": "sha256:8fb7a5dd30a4736c8e314009dbdb32463ec29bd954b36bfda37bbb77a5a09db5",
+          "output_manifest_ref": "authority-asset-version:ba2fbcad-ad7e-4130-b6e7-de84f11fd9ba",
+          "production_verified": false,
+          "external_receipt_ref": "d7f5d481-e31c-4178-9d8d-8670684372f9",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:a9fee11d-915f-4bf1-bbb1-74e5c7a60783",
+          "capability_execution_ref": "71e6c37c-2650-5484-bd6e-570bd94cb5b7",
+          "capability_execution_hash": "sha256:5ba5d3e3209fc1446c8cab4c3fccf4f6c997e23a3db0161a52dd29334dc21afc",
+          "capability_runtime_binding_ref": "sha256:1d2b8b219cdfb4923d5efa3c50b93665f9df1db5fb45562f2478475391e89cdb",
+          "capability_runtime_binding_hash": "sha256:bfbd074d37dd3f1b92c606ada6784318aeb0a3a7e381e386c9f9e014eab13e5a",
+          "context_bundle_asset_version_id": "1cb79e02-b519-4366-885b-9ac65a34bc60",
+          "capability_pack_attempt_snapshot_id": "sha256:1d2b8b219cdfb4923d5efa3c50b93665f9df1db5fb45562f2478475391e89cdb",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:bfbd074d37dd3f1b92c606ada6784318aeb0a3a7e381e386c9f9e014eab13e5a",
+          "narrative_intelligence_selection_digest": "sha256:8339d7f9130e3809a1c8cdf280a4baf530703a9d44a5b2129c81f36e8e318bd1"
+        },
+        "constraint_envelope": {
+          "role": "READER_PROMISE",
+          "creative_brief": {
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+              "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+          "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+          "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+          "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+          "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+          "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+          "照搬其他作品的表达、人物组合或场景序列。",
+          "将本候选的设定、预测或拟议选择表述为已接受事实。",
+          "将异常报告、维修员主动认责或救援后的和解等可选方向升级为必然结局。",
+          "以开放结局为由悬置被困者的去向、主要回执谜题或救援结果。"
+        ],
+        "disappointment_risks": [
+          "回执办理机制含混，读者无法判断两张纸分别证明什么，最终解释便会像临时补设规则。",
+          "维修员与借阅者的亲属关系仅靠最后坦白揭晓，缺少温桥此前可接触的迹象，会削弱共同推理的满足感。",
+          "维修员的一次正确判断被当作全部说法可信的证明，会使有限合作失去张力，也损害温桥的判断力。",
+          "反复核对纸面材料却不改变搜救路线、合作条件或局势，会让调查与救援脱节。",
+          "时间压力只靠倒计时口号呈现，缺少可感知的救援条件变化，会使紧迫感空转。",
+          "旧事故扩张成需要另一本书解决的谜团，或抢占当夜救援的篇幅，会稀释九章内的核心兑现。",
+          "结尾只宣布人已获救，却不交代线索如何导向实际位置以及有效救援，会使行动回报缺乏因果支撑。",
+          "温桥的岗位顾虑在结尾突然消失，或救援成功自动消除所有记录责任，会使她的选择失去分量。",
+          "每次调查都强加重大损失，或每章机械增加一个谜团，会使人物行动和阅读节奏显得人为。"
+        ],
+        "setup_progress_payoff": [
+          {
+            "setup": "闭馆核对时，两张回执对同一次借阅给出无法直接兼容的信息，温桥不能据此确认借阅者已经离开。",
+            "payoff": "在九章内解释两张回执的冲突及形成原因，使读者能回看关键线索，理解手续完成为何不足以证明本人离馆，以及这一认识如何支持找到借阅者。",
+            "promise": "回执谜题可以凭读者接触到的证据追踪，答案会改变救人行动。",
+            "progress": "通过温桥对办理顺序、取阅信息与现场痕迹的查验，逐步区分纸面手续与实际行动；每次解释修正都影响下一项搜救判断。"
+          },
+          {
+            "setup": "借阅者滞留在即将断电的旧库房，温桥掌握的信息不足以直接确定其当前位置。",
+            "payoff": "在断电前找到并组织有效救出借阅者，明确交代决定性证据、行动衔接与救援结果，使成功来自此前建立的判断和可行条件。",
+            "promise": "调查所得会转化为有效救援，紧迫行动有可理解的因果过程。",
+            "progress": "求援与调查并行，搜索方向随证据调整；以温桥能够感知的时间、照明与搜索进展呈现压力，设施建议经验证后才用于行动。"
+          },
+          {
+            "setup": "维修员说法前后矛盾，却掌握可能帮助搜救的设施知识；温桥既需要他的协助，也需要保留独立判断。",
+            "payoff": "让借阅者与维修员的关系、违规通融及隐瞒获得证据支持，说明其说法为何变化、位置判断为何可能过时；以实际合作结果兑现信任变化，关系可以修复，也可以留下裂痕。",
+            "promise": "一个有用却有隐瞒的人会带来具体的合作难题，信任随验证而变化。",
+            "progress": "温桥逐项检验维修员的建议，区分设施能力、救人动机与叙述可信度；亲属关系和旧事故诉求通过她可接触的迹象及有来源的陈述进入调查。"
+          },
+          {
+            "setup": "温桥既想救出借阅者，也怕自己的签字成为他人推卸责任的依据；照着回执完成闭馆可能掩盖仍有人滞留的事实。",
+            "payoff": "呈现温桥如何留下对自身行动有依据的记录，以及这一处理对当班责任和合作关系的直接影响；责任认定可以保留余波，但她当夜的选择不能被略过。",
+            "promise": "救人和保住岗位记录的冲突会落实为选择及后果。",
+            "progress": "让证据保管、记录核对和必要报告与搜救需求发生具体联系；在相关行动处呈现耗时、违规暴露或合作受损等相称后果，具体记录方式保持可调整。"
+          }
+        ],
+        "generator_operation_name": "reader.promise.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:034c96153c8ea447f3601695632464467da211e65a923b7b061e9ba71c16a073",
+      "asset_version_id": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1"
+    },
+    {
+      "role": "theme_contract",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "book_id": "book:input-isolation-01:archive-suspense",
+        "objective": "围绕温桥在断电前调查并救出借阅者的目标，探索记录怎样保护人、信任怎样获得依据，以及救援与承担责任能否同时成立。以可追踪的证据、合作范围的变化和当班记录的处理承载主题，保留父级候选的动机条件与九章篇幅，不预定最终道德判词。",
+        "project_id": "project:input-isolation-01:archive-suspense",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。",
+          "沿用父级方向中借阅者与维修员的亲属关系、旧事故诉求和提前办理回执的候选条件，不将其表述为已发生的章节事件。",
+          "主题主要通过证据含义的修正、有限合作和当班记录的处理呈现，也允许温桥的观察、犹疑与简短反思；不强制每场设置道德抉择。",
+          "区分温桥看见的事实、暂时推测与尚未验证的说法；他人的解释保留来源。",
+          "回执权限、办理机制和断电具体影响须由后续设计确认，本契约不以新增设施事实补足它们。",
+          "主要谜题和救援结果在九章范围内获得明确回应；责任认定与关系余波可以保留未尽之处。",
+          "后果按行动的实际因果支持呈现，可以是耗时、责任暴露或合作受损，不统一要求重大不可逆损失。"
+        ],
+        "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:THEME_CONTRACT:0",
+        "choice_tests": [
+          {
+            "cost": "核对与证据保管占用有限时间，闭馆核对无法立即完成，她需要说明为何未按原记录签字；具体耗时须由后续场景支持。",
+            "choice": "拟议选择：温桥保留两张冲突回执，启动可行求援，并针对影响搜救的字段进行核对；尚未查清的内容明确标为未核实。",
+            "thematic_pressure": "检验记录的保护作用是否来自手续完成，还是来自允许矛盾被保留和追查。回执的局部答案须改变下一项搜救行动，不能只成为责任讨论。"
+          },
+          {
+            "cost": "查验需要时间与现场行动，持续追问可能使维修员更防备；拒绝使用已获支持的专业判断也可能限制救援选择。",
+            "choice": "拟议选择：温桥将维修员的建议拆成可验证的步骤，根据每次现场结果调整合作范围，同时保留对其其他说法的疑问。",
+            "thematic_pressure": "检验信任能否局限于某项能力和某次行动。一次建议得到证实，可以支持下一步合作，却不能自动证明此前隐瞒无害；这一过程通过判断变化呈现，不要求每场都重复同一测试。"
+          },
+          {
+            "cost": "记录可能使她自己的判断失误与维修员的违规同时进入追查范围，也可能损伤合作关系；不预定她必然失去岗位或维修员必然受处分。",
+            "choice": "拟议选择：在不耽误必要救援的时机，温桥留下包含回执矛盾、实际行动、判断依据及未核实说法的当班记录；是否提交异常报告及其时机由后续规划确定。",
+            "thematic_pressure": "检验救援成功是否足以抹去过程中的责任，以及准确记录能否同时保护被救者和容纳救援者的失误。行动依据可获得明确回应，责任处理与关系余波可保留复杂性。"
+          }
+        ],
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "核对回执与保留异常会占用当夜有限时间，并使温桥的签字责任保持未决；后果应与具体行动相称。",
+            "field_path": "$.choice_tests[0].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "有限合作需要查验，也可能因追问而受损；这些后果直接影响搜救判断，不要求每次合作都造成不可逆损失。",
+            "field_path": "$.choice_tests[1].cost"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "如后续规划选择提交异常报告，准确记录可能暴露双方责任；处分与关系结局尚未确定。",
+            "field_path": "$.choice_tests[2].cost"
+          }
+        ],
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        ],
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "opposing_answers": [
+          "尽责首先意味着按记录和岗位边界行事：明确的手续能够限制个人判断的失误。可通过温桥对签字依据的重视呈现其合理性，再由两张回执与实际去向的差异检验它的限度；不能把守程序直接写成漠视生命。",
+          "尽责也意味着发现记录与现实冲突时，主动核实并留下行动依据。可通过温桥边求援边调查、让证据改变路线来展开；这一答案仍须面对判断可能出错及时间有限的问题。",
+          "紧急合作需要依靠有用的人，但依靠他的某项能力不等于接受他的全部解释。可通过维修员的设施判断与位置判断分别得到检验，呈现信任的不同范围；具体查验结果由后续规划安排。",
+          "共同救人可以成为重新合作的理由，却不能自动消除此前隐瞒的责任。可通过救援后的记录与在场陈述继续检验这一答案；结尾既可走向共同承担，也可出现关系破裂，不以救援成功预先裁定谁值得原谅。"
+        ],
+        "candidate_payload": {
+          "objective": "围绕温桥在断电前调查并救出借阅者的目标，探索记录怎样保护人、信任怎样获得依据，以及救援与承担责任能否同时成立。以可追踪的证据、合作范围的变化和当班记录的处理承载主题，保留父级候选的动机条件与九章篇幅，不预定最终道德判词。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。",
+            "沿用父级方向中借阅者与维修员的亲属关系、旧事故诉求和提前办理回执的候选条件，不将其表述为已发生的章节事件。",
+            "主题主要通过证据含义的修正、有限合作和当班记录的处理呈现，也允许温桥的观察、犹疑与简短反思；不强制每场设置道德抉择。",
+            "区分温桥看见的事实、暂时推测与尚未验证的说法；他人的解释保留来源。",
+            "回执权限、办理机制和断电具体影响须由后续设计确认，本契约不以新增设施事实补足它们。",
+            "主要谜题和救援结果在九章范围内获得明确回应；责任认定与关系余波可以保留未尽之处。",
+            "后果按行动的实际因果支持呈现，可以是耗时、责任暴露或合作受损，不统一要求重大不可逆损失。"
+          ],
+          "choice_tests": [
+            {
+              "cost": "核对与证据保管占用有限时间，闭馆核对无法立即完成，她需要说明为何未按原记录签字；具体耗时须由后续场景支持。",
+              "choice": "拟议选择：温桥保留两张冲突回执，启动可行求援，并针对影响搜救的字段进行核对；尚未查清的内容明确标为未核实。",
+              "thematic_pressure": "检验记录的保护作用是否来自手续完成，还是来自允许矛盾被保留和追查。回执的局部答案须改变下一项搜救行动，不能只成为责任讨论。"
+            },
+            {
+              "cost": "查验需要时间与现场行动，持续追问可能使维修员更防备；拒绝使用已获支持的专业判断也可能限制救援选择。",
+              "choice": "拟议选择：温桥将维修员的建议拆成可验证的步骤，根据每次现场结果调整合作范围，同时保留对其其他说法的疑问。",
+              "thematic_pressure": "检验信任能否局限于某项能力和某次行动。一次建议得到证实，可以支持下一步合作，却不能自动证明此前隐瞒无害；这一过程通过判断变化呈现，不要求每场都重复同一测试。"
+            },
+            {
+              "cost": "记录可能使她自己的判断失误与维修员的违规同时进入追查范围，也可能损伤合作关系；不预定她必然失去岗位或维修员必然受处分。",
+              "choice": "拟议选择：在不耽误必要救援的时机，温桥留下包含回执矛盾、实际行动、判断依据及未核实说法的当班记录；是否提交异常报告及其时机由后续规划确定。",
+              "thematic_pressure": "检验救援成功是否足以抹去过程中的责任，以及准确记录能否同时保护被救者和容纳救援者的失误。行动依据可获得明确回应，责任处理与关系余波可保留复杂性。"
+            }
+          ],
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "核对回执与保留异常会占用当夜有限时间，并使温桥的签字责任保持未决；后果应与具体行动相称。",
+              "field_path": "$.choice_tests[0].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "有限合作需要查验，也可能因追问而受损；这些后果直接影响搜救判断，不要求每次合作都造成不可逆损失。",
+              "field_path": "$.choice_tests[1].cost"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "如后续规划选择提交异常报告，准确记录可能暴露双方责任；处分与关系结局尚未确定。",
+              "field_path": "$.choice_tests[2].cost"
+            }
+          ],
+          "opposing_answers": [
+            "尽责首先意味着按记录和岗位边界行事：明确的手续能够限制个人判断的失误。可通过温桥对签字依据的重视呈现其合理性，再由两张回执与实际去向的差异检验它的限度；不能把守程序直接写成漠视生命。",
+            "尽责也意味着发现记录与现实冲突时，主动核实并留下行动依据。可通过温桥边求援边调查、让证据改变路线来展开；这一答案仍须面对判断可能出错及时间有限的问题。",
+            "紧急合作需要依靠有用的人，但依靠他的某项能力不等于接受他的全部解释。可通过维修员的设施判断与位置判断分别得到检验，呈现信任的不同范围；具体查验结果由后续规划安排。",
+            "共同救人可以成为重新合作的理由，却不能自动消除此前隐瞒的责任。可通过救援后的记录与在场陈述继续检验这一答案；结尾既可走向共同承担，也可出现关系破裂，不以救援成功预先裁定谁值得原谅。"
+          ],
+          "thematic_question": "当一份看似能保护岗位的记录可能遮住一个仍需救援的人，而能帮忙的人又有所隐瞒，怎样的核实、信任与记录，才能让尽责同时意味着救人和对自己的行动负责？",
+          "constraint_envelope": {
+            "role": "THEME_CONTRACT",
+            "creative_brief": {
+              "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+              "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v4",
+            "foundation_parent_bindings": {
+              "CREATIVE_FOUNDATION": {
+                "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+                "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "以温桥未曾获得的信息、他人内心或场外全知解释推进救援或宣告主题结论。",
+            "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+            "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+            "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+            "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+            "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+            "照搬其他作品的表达、人物组合或场景序列。",
+            "将本候选的设定、预测或拟议选择表述为已接受事实。",
+            "用亲属关系证明维修员所有说法可信，或用违规证明他的全部帮助都不可信。",
+            "把主题简化为记录必然有害、程序必然冷酷，或救人成功便可免除所有责任。",
+            "为证明主题而强制每场付出重大不可逆代价，或以议论替代必要的调查和行动。",
+            "预先承诺温桥失去岗位、维修员受处分或双方和解，替代尚待规划的具体因果过程。"
+          ],
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+              "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+            }
+          }
+        },
+        "thematic_question": "当一份看似能保护岗位的记录可能遮住一个仍需救援的人，而能帮忙的人又有所隐瞒，怎样的核实、信任与记录，才能让尽责同时意味着救人和对自己的行动负责？",
+        "execution_evidence": {
+          "attempt_id": "fd8bbd22-ed11-44b5-9a95-9bbf3026c75e",
+          "operation_id": "cf061b97-cb85-4775-9b2a-eece3cb8032a",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:b3eb8953-466b-4528-b560-632c002507a1",
+          "route_snapshot_id": "production_execution/routes/5deb327586851ba6b145",
+          "usage_receipt_ref": "authority-asset-version:2e2ca962-2625-4d6d-a839-030aad82e345",
+          "input_manifest_ref": "production_execution/inputs/5deb327586851ba6b145",
+          "context_bundle_hash": "sha256:484d1fb092d68a54abba0ace5bb8b1bfe6525bfe1c3774cf5bb4a02e38497571",
+          "output_manifest_ref": "authority-asset-version:69c964bb-1799-475e-8567-c0438b0358c9",
+          "production_verified": false,
+          "external_receipt_ref": "7f8fe675-3f5d-4317-9596-28258398f11a",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:d861c742-1057-4e9e-8ffa-aafdad50fc68",
+          "capability_execution_ref": "e838b825-bd23-538b-86c1-3c0eb52b195a",
+          "capability_execution_hash": "sha256:ec8fbf69b459b71246914b84b2e7e605fb8886b53ea9ac89291223ec32a0aa70",
+          "capability_runtime_binding_ref": "sha256:20839ec25c41a7e603584f09f50d190ab3a2e80239a2f249b6b345b8a6efb65e",
+          "capability_runtime_binding_hash": "sha256:6de26f78d75321b95a0252bda1fb76c488d814a25f39d5e35bfb80ca18ab91f6",
+          "context_bundle_asset_version_id": "df516f24-7a9b-4d35-ae56-e41c7113c4cd",
+          "capability_pack_attempt_snapshot_id": "sha256:20839ec25c41a7e603584f09f50d190ab3a2e80239a2f249b6b345b8a6efb65e",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:6de26f78d75321b95a0252bda1fb76c488d814a25f39d5e35bfb80ca18ab91f6",
+          "narrative_intelligence_selection_digest": "sha256:35fd698fbae1285ef5d15383c83f62e9ae119f08319a3955aa9069d76530e66f"
+        },
+        "constraint_envelope": {
+          "role": "THEME_CONTRACT",
+          "creative_brief": {
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v4",
+          "foundation_parent_bindings": {
+            "CREATIVE_FOUNDATION": {
+              "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+              "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+            }
+          }
+        },
+        "prohibited_outcomes": [
+          "以温桥未曾获得的信息、他人内心或场外全知解释推进救援或宣告主题结论。",
+          "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+          "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+          "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+          "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+          "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+          "照搬其他作品的表达、人物组合或场景序列。",
+          "将本候选的设定、预测或拟议选择表述为已接受事实。",
+          "用亲属关系证明维修员所有说法可信，或用违规证明他的全部帮助都不可信。",
+          "把主题简化为记录必然有害、程序必然冷酷，或救人成功便可免除所有责任。",
+          "为证明主题而强制每场付出重大不可逆代价，或以议论替代必要的调查和行动。",
+          "预先承诺温桥失去岗位、维修员受处分或双方和解，替代尚待规划的具体因果过程。"
+        ],
+        "generator_operation_name": "theme.candidates.generate",
+        "foundation_parent_bindings": {
+          "CREATIVE_FOUNDATION": {
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:7459611ea1090979ab5eb0cf425514c80a51cd6bd4e1ebe7b8ffad2361366ae4",
+      "asset_version_id": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1"
+    },
+    {
+      "role": "creative_foundation",
+      "content": {
+        "type": "PlanningGenerationCandidate",
+        "genre": "第三人称限知悬疑",
+        "book_id": "book:input-isolation-01:archive-suspense",
+        "subgenre": "封闭场所救援悬疑／关系悬疑",
+        "core_fear": "她怕自己的签字成为别人推卸责任的依据，也怕为了证明自己没有错，错过真正需要她的人。",
+        "objective": "写出一部九章悬疑：夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，必须通过调查确定被困借阅者的去向，并在旧库房断电前组织有效救援。她越接近事实，越需要决定如何与说法矛盾的维修员合作，以及是否让自己的当班记录暴露他们各自的责任。",
+        "project_id": "project:input-isolation-01:archive-suspense",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+          "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+          "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。"
+        ],
+        "core_desire": "在断电前找到并救出借阅者，同时留下能准确说明自己做过什么、为什么这样做的记录。",
+        "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:CREATIVE_FOUNDATION:comparison",
+        "applicability": [
+          {
+            "status": "APPLICABLE",
+            "rationale": "以档案证据调查、闭馆时限与互信变化组织悬疑。",
+            "field_path": "$.subgenre"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "温桥的救人目标与保住岗位记录的欲望构成具体行动动力。",
+            "field_path": "$.core_desire"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "对承担错误记录责任的恐惧影响她如何验证维修员的说法。",
+            "field_path": "$.core_fear"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "救援需要借助有隐瞒的维修员，而正式记录又可能掩盖被困者的位置。",
+            "field_path": "$.core_conflict"
+          },
+          {
+            "status": "APPLICABLE",
+            "rationale": "九章可通过局部问题兑现与证据引发的新行动衔接；不据此新增强制连载要求。",
+            "field_path": "$.serialization_potential"
+          }
+        ],
+        "core_conflict": "温桥必须判断维修员哪些话可用于救人、哪些话只是保护自己。照着已归还回执完成闭馆能暂时保住她的岗位记录，却可能让搜救错过仍有人滞留的库区；全面相信维修员，又可能替他的隐瞒承担责任。她需要把有限合作拆成能够当场检验的行动。",
+        "frozen_inputs": [
+          {
+            "role": "creative_brief",
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          }
+        ],
+        "style_profile": {
+          "pov": "全书固定温桥的第三人称限知视角，不切换维修员或借阅者视角。",
+          "narrator": "克制、贴近温桥感官与判断的第三人称叙述者，允许她误判，不替她预告真相。",
+          "constraints": [
+            "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+            "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+            "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+            "证据细节只在影响判断或行动时展开。",
+            "对话中的回避必须服务于说话者当时的具体欲望。",
+            "每个代表场景推进冲突，并产生局势或关系变化。"
+          ],
+          "genre_conventions": [
+            "关键推理使用读者能够接触到的线索。",
+            "误导来自事实的有限解释与人物隐瞒。",
+            "局部疑问在一个场景内得到兑现，同时推动下一项行动。",
+            "主要谜题和救援结果在九章范围内获得明确回应。"
+          ],
+          "original_examples": [
+            {
+              "example": "“人已经走了。”维修员伸手来取回执。温桥把纸压在登记簿下。“从哪道门？”他的手停住了。她还不能证明他撒谎，但这张纸暂时不能交给他。",
+              "purpose": "用具体问题呈现怀疑与行动",
+              "explanation": "温桥只依据回答与动作调整证据保管方式；问话立刻改变合作关系。"
+            },
+            {
+              "example": "指示灯灭了，维修员说过的侧门却没有弹开。温桥拉了一次，门纹丝不动。她松开把手：“换一条路。你先告诉我，下一道门凭什么能开。”",
+              "purpose": "让现场验证产生局势变化",
+              "explanation": "用可见结果检验设施说法，并让失败促成新的合作条件；设施细节须经后续世界设计确认。"
+            },
+            {
+              "example": "“你认识她？”温桥问。他低头看那张未完成的回执，没有回答。她把两张纸并排放好：“那就先说她来找什么。我得知道她还会往哪里走。”",
+              "purpose": "将关系压力转化为可调查的问题",
+              "explanation": "关系疑问服务于当前搜救，温桥不从沉默直接判定亲属身份。"
+            }
+          ]
+        },
+        "target_reader": "成年中文读者，偏好证据可追踪、人物动机可信、紧迫行动与关系变化相互推动的悬疑。",
+        "planning_scope": "NOT_APPLICABLE",
+        "schema_version": "story_design.authority.v1",
+        "differentiation": "悬疑的核心落在三个人对同一份记录的不同需求：温桥需要记录保护岗位，维修员需要记录遮住违规，借阅者需要记录证明家人的遭遇。维修员可以熟悉设施、愿意救人，同时隐瞒决定搜救路线的关键信息。温桥与他的信任逐项建立：一次说法被证实，只支持下一次有限合作，不自动洗清其他矛盾。",
+        "narrative_engine": "候选真相：借阅者是维修员的妹妹，她来查父亲一次旧事故的维修记录。维修员违规替她延长入库时间，又提前生成已归还回执，想在闭馆核对时掩盖这次通融；妹妹发现所需材料不在原定位置，继续寻找，错过了他的接应。另一张未完成借阅回执仍保留着她最初登记的取阅信息。维修员起初声称她已经离开，发现温桥不肯仅凭回执签字后，又改称知道她在哪里。他隐瞒的是违规与亲属关系，他掌握的地点却也已经过时。温桥从两张回执的办理顺序、取阅标记和现场痕迹中区分离馆证明与手续完成记录，逐步修正搜救路线。每轮调查都以一个具体疑问开始，经查验、问话或现场搜索取得信息，再用所得证据决定是否接受维修员的下一项建议。求援与调查并行，维修员的设施知识须经现场验证，最终救援不依赖先查清全部旧事故。",
+        "candidate_payload": {
+          "genre": "第三人称限知悬疑",
+          "subgenre": "封闭场所救援悬疑／关系悬疑",
+          "core_fear": "她怕自己的签字成为别人推卸责任的依据，也怕为了证明自己没有错，错过真正需要她的人。",
+          "objective": "写出一部九章悬疑：夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，必须通过调查确定被困借阅者的去向，并在旧库房断电前组织有效救援。她越接近事实，越需要决定如何与说法矛盾的维修员合作，以及是否让自己的当班记录暴露他们各自的责任。",
+          "constraints": [
+            "全书方向九章，近期规划保持可调整。",
+            "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+            "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+            "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+            "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+            "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+            "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。"
+          ],
+          "core_desire": "在断电前找到并救出借阅者，同时留下能准确说明自己做过什么、为什么这样做的记录。",
+          "applicability": [
+            {
+              "status": "APPLICABLE",
+              "rationale": "以档案证据调查、闭馆时限与互信变化组织悬疑。",
+              "field_path": "$.subgenre"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "温桥的救人目标与保住岗位记录的欲望构成具体行动动力。",
+              "field_path": "$.core_desire"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "对承担错误记录责任的恐惧影响她如何验证维修员的说法。",
+              "field_path": "$.core_fear"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "救援需要借助有隐瞒的维修员，而正式记录又可能掩盖被困者的位置。",
+              "field_path": "$.core_conflict"
+            },
+            {
+              "status": "APPLICABLE",
+              "rationale": "九章可通过局部问题兑现与证据引发的新行动衔接；不据此新增强制连载要求。",
+              "field_path": "$.serialization_potential"
+            }
+          ],
+          "core_conflict": "温桥必须判断维修员哪些话可用于救人、哪些话只是保护自己。照着已归还回执完成闭馆能暂时保住她的岗位记录，却可能让搜救错过仍有人滞留的库区；全面相信维修员，又可能替他的隐瞒承担责任。她需要把有限合作拆成能够当场检验的行动。",
+          "style_profile": {
+            "pov": "全书固定温桥的第三人称限知视角，不切换维修员或借阅者视角。",
+            "narrator": "克制、贴近温桥感官与判断的第三人称叙述者，允许她误判，不替她预告真相。",
+            "constraints": [
+              "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+              "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+              "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+              "证据细节只在影响判断或行动时展开。",
+              "对话中的回避必须服务于说话者当时的具体欲望。",
+              "每个代表场景推进冲突，并产生局势或关系变化。"
+            ],
+            "genre_conventions": [
+              "关键推理使用读者能够接触到的线索。",
+              "误导来自事实的有限解释与人物隐瞒。",
+              "局部疑问在一个场景内得到兑现，同时推动下一项行动。",
+              "主要谜题和救援结果在九章范围内获得明确回应。"
+            ],
+            "original_examples": [
+              {
+                "example": "“人已经走了。”维修员伸手来取回执。温桥把纸压在登记簿下。“从哪道门？”他的手停住了。她还不能证明他撒谎，但这张纸暂时不能交给他。",
+                "purpose": "用具体问题呈现怀疑与行动",
+                "explanation": "温桥只依据回答与动作调整证据保管方式；问话立刻改变合作关系。"
+              },
+              {
+                "example": "指示灯灭了，维修员说过的侧门却没有弹开。温桥拉了一次，门纹丝不动。她松开把手：“换一条路。你先告诉我，下一道门凭什么能开。”",
+                "purpose": "让现场验证产生局势变化",
+                "explanation": "用可见结果检验设施说法，并让失败促成新的合作条件；设施细节须经后续世界设计确认。"
+              },
+              {
+                "example": "“你认识她？”温桥问。他低头看那张未完成的回执，没有回答。她把两张纸并排放好：“那就先说她来找什么。我得知道她还会往哪里走。”",
+                "purpose": "将关系压力转化为可调查的问题",
+                "explanation": "关系疑问服务于当前搜救，温桥不从沉默直接判定亲属身份。"
+              }
+            ]
+          },
+          "target_reader": "成年中文读者，偏好证据可追踪、人物动机可信、紧迫行动与关系变化相互推动的悬疑。",
+          "differentiation": "悬疑的核心落在三个人对同一份记录的不同需求：温桥需要记录保护岗位，维修员需要记录遮住违规，借阅者需要记录证明家人的遭遇。维修员可以熟悉设施、愿意救人，同时隐瞒决定搜救路线的关键信息。温桥与他的信任逐项建立：一次说法被证实，只支持下一次有限合作，不自动洗清其他矛盾。",
+          "narrative_engine": "候选真相：借阅者是维修员的妹妹，她来查父亲一次旧事故的维修记录。维修员违规替她延长入库时间，又提前生成已归还回执，想在闭馆核对时掩盖这次通融；妹妹发现所需材料不在原定位置，继续寻找，错过了他的接应。另一张未完成借阅回执仍保留着她最初登记的取阅信息。维修员起初声称她已经离开，发现温桥不肯仅凭回执签字后，又改称知道她在哪里。他隐瞒的是违规与亲属关系，他掌握的地点却也已经过时。温桥从两张回执的办理顺序、取阅标记和现场痕迹中区分离馆证明与手续完成记录，逐步修正搜救路线。每轮调查都以一个具体疑问开始，经查验、问话或现场搜索取得信息，再用所得证据决定是否接受维修员的下一项建议。求援与调查并行，维修员的设施知识须经现场验证，最终救援不依赖先查清全部旧事故。",
+          "why_worth_writing": "一张看似保护岗位的回执，也可能使一个人从搜救名单上消失。温桥必须在调查中学习怎样依靠记录、怎样质疑记录，以及怎样与有隐瞒的人共同完成救援。这些判断都有即时行动后果，能够让制度细节、人物关系和悬疑推进彼此支撑。",
+          "emotional_contract": "让读者与温桥共同经历怀疑、验证、短暂放心和再次受压。紧迫感来自正在消失的救援条件，关系张力来自一个有用的人并不完全可靠。每个代表场景至少回答一个可检验的问题，并使救援局势或人物关系发生变化；结尾兑现被困者的去向与回执冲突的原因，保留责任认定可能带来的余波。",
+          "constraint_envelope": {
+            "role": "CREATIVE_FOUNDATION",
+            "creative_brief": {
+              "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+              "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+            },
+            "contract_version": "foundation-generation.v5",
+            "narrative_search": {
+              "search_id": "narrative-search:29367e4f71fd2fe13da681e4b9b5490e1e1eeaa5b6b9be1b0eab4f6d869d6701",
+              "branch_key": "future-2",
+              "hard_constraints": [
+                "Preserve the exact author brief and source boundaries",
+                "Candidates are hypothetical; no accepted history or Canon mutation"
+              ],
+              "planning_horizon": {
+                "level": "CREATIVE_FOUNDATION",
+                "target_chapters": 9
+              },
+              "strategy_directive": "Explore a distinct direction through character motivations and relationships while respecting the author's constraints",
+              "desired_transformation": {
+                "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+                "author_brief": {
+                  "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+                  "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+                },
+                "selection_policy": {
+                  "tie_break": "STABLE_ID",
+                  "contract_version": "narrative-search-comparison.v2",
+                  "dimension_weights": {
+                    "arc_momentum": 1,
+                    "setup_payoff": 1,
+                    "reader_promise": 1,
+                    "reversal_reveal": 1,
+                    "character_agency": 1,
+                    "pacing_variation": 1,
+                    "pattern_diversity": 1,
+                    "world_consequence": 1,
+                    "future_optionality": 1,
+                    "conflict_escalation": 1,
+                    "emotional_progression": 1,
+                    "relationship_evolution": 1,
+                    "choice_cost_consequence": 1
+                  },
+                  "uncertainty_margin": 0.05
+                }
+              },
+              "accepted_through_chapter": 0,
+              "parent_state_asset_version_id": ""
+            },
+            "foundation_parent_bindings": {}
+          },
+          "prohibited_outcomes": [
+            "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+            "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+            "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+            "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+            "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+            "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+            "照搬其他作品的表达、人物组合或场景序列。",
+            "将本候选的设定、预测或拟议选择表述为已接受事实。"
+          ],
+          "serialization_potential": "九章可形成持续阅读动力：前段建立回执矛盾与有限合作，中段用现场证据修正去向并揭开关系隐瞒，后段集中完成救援与当班责任的处理。章节衔接来自已兑现的局部答案引出的行动问题，近期场景和具体路线保持可调整。",
+          "foundation_parent_bindings": {},
+          "narrative_search_projection": {
+            "assumptions": [
+              "本分支以future-2的动机与关系方向展开；借阅者和维修员的亲属关系、旧事故诉求及提前办理回执均为本次候选新增设定。",
+              "旧库房即将断电这一条件来自作者简报；断电具体影响照明、通信或通行中的哪些环节，仍需后续世界设计确认。",
+              "两张回执可通过办理顺序和取阅信息形成可检查的矛盾；具体字段和办理权限需后续设计闭合。",
+              "九章主要覆盖同一次闭馆救援及其直接后果，旧事故只承担人物动机与必要线索功能。",
+              "以下分值为0至1的比较估计，存在不低于0.05的判断不确定性，不构成文学资格或激活证据。"
+            ],
+            "future_options": [
+              "借阅者被找到后，可通过温桥在场听见的陈述检验维修员对违规经过的解释。",
+              "维修员可主动留下承认提前办理回执的记录，也可继续要求温桥替他保密；两种方向都须由届时已建立的欲望和证据支持。",
+              "救援路线可在后续设施设计中调整，只要每次变更都有温桥实际获得的线索支持。",
+              "九章结尾可侧重共同承担责任，或救援成功后的关系破裂；均须兑现救人与回执谜题。"
+            ],
+            "narrative_risks": [
+              "亲属关系若仅靠临近结尾的坦白揭晓，会削弱推理；应提前安排温桥可观察、但存在其他解释的熟悉迹象。",
+              "提前生成回执若缺乏明确权限与办理机制，会成为便利设定；后续必须限定维修员能操作什么、留下什么痕迹。",
+              "旧事故若扩展为庞大阴谋，会挤压九章救援主线；只引入改变当前搜救判断的材料。",
+              "连续查纸面记录容易使节奏停滞；应让证据查验与现场搜索、受限交流交替发生。",
+              "若所有代价都被写成重大不可逆损失，会失真；应按具体行动呈现耗时、暴露违规或合作受损等相称后果。"
+            ],
+            "repetition_keys": [
+              "future-2",
+              "动机与关系驱动调查",
+              "按证据限定信任",
+              "手续记录与实际去向冲突",
+              "亲属隐瞒改变救援判断"
+            ],
+            "contract_version": "narrative-search-projection.v1",
+            "selection_summary": "该方向将作者给定的岗位记录与维修员信任之选落实到可验证的合作关系，适合九章内形成完整救援与谜题兑现。优势是人物动机能直接改变线索解释；主要取舍是必须限制旧事故支线，并在后续设计中补足回执权限与断电后果。当前没有其他候选的完整内容，不能据此宣称比较胜出。",
+            "strategy_fingerprint": "future-2|motivation-relationship|bounded-trust|receipt-evidence|nine-chapter-rescue",
+            "creative_intelligence": {
+              "arc_momentum": 0.83,
+              "setup_payoff": 0.87,
+              "reader_promise": 0.9,
+              "reversal_reveal": 0.84,
+              "character_agency": 0.9,
+              "pacing_variation": 0.77,
+              "pattern_diversity": 0.79,
+              "world_consequence": 0.72,
+              "future_optionality": 0.84,
+              "conflict_escalation": 0.82,
+              "emotional_progression": 0.87,
+              "relationship_evolution": 0.93,
+              "choice_cost_consequence": 0.86
+            },
+            "irreversible_decisions": [
+              "拟议关键选择：温桥提交包含两张冲突回执的异常报告，使当夜的违规进入可追查的正式流程；是否实施及具体时机由后续规划确定。"
+            ],
+            "projected_consequences": [
+              "温桥拒绝直接签署闭馆核对，会延长她的当班责任，也保留追查借阅者的机会。",
+              "维修员的亲属关系一旦被证据支持，他的帮助会获得更强动机解释，同时其先前隐瞒也更难忽略。",
+              "证明已归还回执不能证明本人离馆，会使搜救从核对名单转向复原借阅者的实际行动。",
+              "异常报告可能使救援成功与岗位记录受损同时成立，迫使温桥重新理解记录如何保护人。"
+            ],
+            "narrative_opportunities": [
+              "让维修员给出一次正确的设施判断与一次错误的位置判断，迫使温桥区分专业能力和叙述可信度。",
+              "通过借阅者留下的取阅痕迹表现其寻找父亲记录的欲望，使被困者具有主动性。",
+              "让温桥在保留原始证据、报告异常与继续搜救之间分配有限时间，呈现岗位欲望对行动的实际影响。",
+              "将回执矛盾从真假判断推进到手续究竟证明什么，使反转来自证据含义的修正。"
+            ]
+          }
+        },
+        "why_worth_writing": "一张看似保护岗位的回执，也可能使一个人从搜救名单上消失。温桥必须在调查中学习怎样依靠记录、怎样质疑记录，以及怎样与有隐瞒的人共同完成救援。这些判断都有即时行动后果，能够让制度细节、人物关系和悬疑推进彼此支撑。",
+        "emotional_contract": "让读者与温桥共同经历怀疑、验证、短暂放心和再次受压。紧迫感来自正在消失的救援条件，关系张力来自一个有用的人并不完全可靠。每个代表场景至少回答一个可检验的问题，并使救援局势或人物关系发生变化；结尾兑现被困者的去向与回执冲突的原因，保留责任认定可能带来的余波。",
+        "execution_evidence": {
+          "attempt_id": "0bd98c7d-610a-4459-974e-ff935656d473",
+          "operation_id": "ced2cfea-2b5e-4513-b1a2-d78aef127170",
+          "fencing_token": 1,
+          "commit_authority": "STORY_DESIGN_AUTHORITY",
+          "cost_receipt_ref": "authority-asset-version:fdc79762-c158-4d29-9d59-c518e7b29ccf",
+          "route_snapshot_id": "production_execution/routes/71b5a9f0fc855059acef",
+          "usage_receipt_ref": "authority-asset-version:7cae693f-77dd-4020-afba-45b621274cb9",
+          "input_manifest_ref": "production_execution/inputs/71b5a9f0fc855059acef",
+          "context_bundle_hash": "sha256:f7f26dc9600acbfaa0fab83c36ab2e6ca87898859e361285a38ffb5cb3ce7953",
+          "output_manifest_ref": "authority-asset-version:1b210b8f-6d6c-44f1-9579-135c986808b8",
+          "production_verified": false,
+          "external_receipt_ref": "357d3d13-0852-4f31-8d52-0d2e7639cdba",
+          "real_provider_proven": true,
+          "fixture_protocol_only": false,
+          "external_effect_backed": true,
+          "validation_manifest_ref": "authority-asset-version:87d2ee3a-30fa-4841-9f74-6f6a8584bd85",
+          "capability_execution_ref": "bb1a1949-374d-5382-b79d-465b813a94f9",
+          "capability_execution_hash": "sha256:48ad2b8b2f3c4ffefad4cd4e486517ce7aeaf8771a330a1f2a9a3a23fe2c02a7",
+          "capability_runtime_binding_ref": "sha256:7c65827a27d2dcf6d73c3f403c5a797f0baf49d8c112698f7f99fc42831d8ffa",
+          "capability_runtime_binding_hash": "sha256:06cf1c0381f3c9bf9442e708dadce0fd1d85307577cf7ec0ccb19b8a5763b3a7",
+          "context_bundle_asset_version_id": "df9e1c05-efd0-469f-85ed-9e8b87a8f6cd",
+          "capability_pack_attempt_snapshot_id": "sha256:7c65827a27d2dcf6d73c3f403c5a797f0baf49d8c112698f7f99fc42831d8ffa",
+          "production_execution_gateway_backed": true,
+          "capability_pack_attempt_snapshot_hash": "sha256:06cf1c0381f3c9bf9442e708dadce0fd1d85307577cf7ec0ccb19b8a5763b3a7",
+          "narrative_intelligence_selection_digest": "sha256:6eed70fe15fec62e496a54b775fe105e3ed471c43d649c4d3a506ed28af6e840"
+        },
+        "constraint_envelope": {
+          "role": "CREATIVE_FOUNDATION",
+          "creative_brief": {
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          "contract_version": "foundation-generation.v5",
+          "narrative_search": {
+            "search_id": "narrative-search:29367e4f71fd2fe13da681e4b9b5490e1e1eeaa5b6b9be1b0eab4f6d869d6701",
+            "branch_key": "future-2",
+            "hard_constraints": [
+              "Preserve the exact author brief and source boundaries",
+              "Candidates are hypothetical; no accepted history or Canon mutation"
+            ],
+            "planning_horizon": {
+              "level": "CREATIVE_FOUNDATION",
+              "target_chapters": 9
+            },
+            "strategy_directive": "Explore a distinct direction through character motivations and relationships while respecting the author's constraints",
+            "desired_transformation": {
+              "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+              "author_brief": {
+                "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+                "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+              },
+              "selection_policy": {
+                "tie_break": "STABLE_ID",
+                "contract_version": "narrative-search-comparison.v2",
+                "dimension_weights": {
+                  "arc_momentum": 1,
+                  "setup_payoff": 1,
+                  "reader_promise": 1,
+                  "reversal_reveal": 1,
+                  "character_agency": 1,
+                  "pacing_variation": 1,
+                  "pattern_diversity": 1,
+                  "world_consequence": 1,
+                  "future_optionality": 1,
+                  "conflict_escalation": 1,
+                  "emotional_progression": 1,
+                  "relationship_evolution": 1,
+                  "choice_cost_consequence": 1
+                },
+                "uncertainty_margin": 0.05
+              }
+            },
+            "accepted_through_chapter": 0,
+            "parent_state_asset_version_id": ""
+          },
+          "foundation_parent_bindings": {}
+        },
+        "prohibited_outcomes": [
+          "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+          "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+          "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+          "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+          "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+          "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+          "照搬其他作品的表达、人物组合或场景序列。",
+          "将本候选的设定、预测或拟议选择表述为已接受事实。"
+        ],
+        "serialization_potential": "九章可形成持续阅读动力：前段建立回执矛盾与有限合作，中段用现场证据修正去向并揭开关系隐瞒，后段集中完成救援与当班责任的处理。章节衔接来自已兑现的局部答案引出的行动问题，近期场景和具体路线保持可调整。",
+        "generator_operation_name": "creative.candidates.generate",
+        "foundation_parent_bindings": {},
+        "narrative_search_projection": {
+          "assumptions": [
+            "本分支以future-2的动机与关系方向展开；借阅者和维修员的亲属关系、旧事故诉求及提前办理回执均为本次候选新增设定。",
+            "旧库房即将断电这一条件来自作者简报；断电具体影响照明、通信或通行中的哪些环节，仍需后续世界设计确认。",
+            "两张回执可通过办理顺序和取阅信息形成可检查的矛盾；具体字段和办理权限需后续设计闭合。",
+            "九章主要覆盖同一次闭馆救援及其直接后果，旧事故只承担人物动机与必要线索功能。",
+            "以下分值为0至1的比较估计，存在不低于0.05的判断不确定性，不构成文学资格或激活证据。"
+          ],
+          "future_options": [
+            "借阅者被找到后，可通过温桥在场听见的陈述检验维修员对违规经过的解释。",
+            "维修员可主动留下承认提前办理回执的记录，也可继续要求温桥替他保密；两种方向都须由届时已建立的欲望和证据支持。",
+            "救援路线可在后续设施设计中调整，只要每次变更都有温桥实际获得的线索支持。",
+            "九章结尾可侧重共同承担责任，或救援成功后的关系破裂；均须兑现救人与回执谜题。"
+          ],
+          "narrative_risks": [
+            "亲属关系若仅靠临近结尾的坦白揭晓，会削弱推理；应提前安排温桥可观察、但存在其他解释的熟悉迹象。",
+            "提前生成回执若缺乏明确权限与办理机制，会成为便利设定；后续必须限定维修员能操作什么、留下什么痕迹。",
+            "旧事故若扩展为庞大阴谋，会挤压九章救援主线；只引入改变当前搜救判断的材料。",
+            "连续查纸面记录容易使节奏停滞；应让证据查验与现场搜索、受限交流交替发生。",
+            "若所有代价都被写成重大不可逆损失，会失真；应按具体行动呈现耗时、暴露违规或合作受损等相称后果。"
+          ],
+          "repetition_keys": [
+            "future-2",
+            "动机与关系驱动调查",
+            "按证据限定信任",
+            "手续记录与实际去向冲突",
+            "亲属隐瞒改变救援判断"
+          ],
+          "contract_version": "narrative-search-projection.v1",
+          "selection_summary": "该方向将作者给定的岗位记录与维修员信任之选落实到可验证的合作关系，适合九章内形成完整救援与谜题兑现。优势是人物动机能直接改变线索解释；主要取舍是必须限制旧事故支线，并在后续设计中补足回执权限与断电后果。当前没有其他候选的完整内容，不能据此宣称比较胜出。",
+          "strategy_fingerprint": "future-2|motivation-relationship|bounded-trust|receipt-evidence|nine-chapter-rescue",
+          "creative_intelligence": {
+            "arc_momentum": 0.83,
+            "setup_payoff": 0.87,
+            "reader_promise": 0.9,
+            "reversal_reveal": 0.84,
+            "character_agency": 0.9,
+            "pacing_variation": 0.77,
+            "pattern_diversity": 0.79,
+            "world_consequence": 0.72,
+            "future_optionality": 0.84,
+            "conflict_escalation": 0.82,
+            "emotional_progression": 0.87,
+            "relationship_evolution": 0.93,
+            "choice_cost_consequence": 0.86
+          },
+          "irreversible_decisions": [
+            "拟议关键选择：温桥提交包含两张冲突回执的异常报告，使当夜的违规进入可追查的正式流程；是否实施及具体时机由后续规划确定。"
+          ],
+          "projected_consequences": [
+            "温桥拒绝直接签署闭馆核对，会延长她的当班责任，也保留追查借阅者的机会。",
+            "维修员的亲属关系一旦被证据支持，他的帮助会获得更强动机解释，同时其先前隐瞒也更难忽略。",
+            "证明已归还回执不能证明本人离馆，会使搜救从核对名单转向复原借阅者的实际行动。",
+            "异常报告可能使救援成功与岗位记录受损同时成立，迫使温桥重新理解记录如何保护人。"
+          ],
+          "narrative_opportunities": [
+            "让维修员给出一次正确的设施判断与一次错误的位置判断，迫使温桥区分专业能力和叙述可信度。",
+            "通过借阅者留下的取阅痕迹表现其寻找父亲记录的欲望，使被困者具有主动性。",
+            "让温桥在保留原始证据、报告异常与继续搜救之间分配有限时间，呈现岗位欲望对行动的实际影响。",
+            "将回执矛盾从真假判断推进到手续究竟证明什么，使反转来自证据含义的修正。"
+          ]
+        },
+        "knowledge_translation_policy_version": "knowledge-grounded-selection-v2"
+      },
+      "asset_type": "planning_generation_candidate",
+      "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+      "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+    }
+  ],
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "novelos.planning_context_bundle.v1",
+  "arc_working_set": {},
+  "foundation_task": {
+    "role": "WORLD_BIBLE",
+    "task": "Compile the world depth needed by this work using the frozen typed world contract. Preserve laws, limits and knowledge boundaries. A rule need not impose a cost; distinguish an inapplicable cost from an unknown consequence. Explain deferred dimensions and extension triggers.",
+    "parent_roles": [
+      "CREATIVE_FOUNDATION",
+      "THEME_CONTRACT",
+      "ENDING_INTENT",
+      "READER_PROMISE"
+    ],
+    "world_contract": {
+      "rules": {
+        "category": "one compiled section key",
+        "mechanism": "Use MECHANISM only when the existing typed WorldMechanism contract can express the rule; otherwise request explicit design clarification. Do not replace a hard rule with soft reasoning.",
+        "predicate": {
+          "value": "typed scalar; only EXISTS may omit value",
+          "required_for": "every enforcement except SOFT_CAUSAL"
+        },
+        "applicability_and_consequences": "nonempty string arrays"
+      },
+      "schema": {
+        "type": "object",
+        "$defs": {
+          "_EntityContract": {
+            "type": "object",
+            "title": "_EntityContract",
+            "required": [
+              "entity_id"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "title": "Kind",
+                "default": null,
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "entity_id": {
+                "type": "string",
+                "title": "Entity Id",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          },
+          "_SectionContract": {
+            "type": "object",
+            "title": "_SectionContract",
+            "required": [
+              "depth",
+              "content"
+            ],
+            "properties": {
+              "depth": {
+                "enum": [
+                  "SEED",
+                  "WORKING",
+                  "DETAILED"
+                ],
+                "type": "string",
+                "title": "Depth"
+              },
+              "content": {
+                "type": "string",
+                "title": "Content",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          },
+          "WorldRuleContract": {
+            "type": "object",
+            "title": "WorldRuleContract",
+            "required": [
+              "rule_id",
+              "category",
+              "statement",
+              "enforcement",
+              "applicability",
+              "consequences"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string",
+                "title": "Rule Id",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "title": "Category",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "mechanism": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/_MechanismContract"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "predicate": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/_PredicateContract"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "statement": {
+                "type": "string",
+                "title": "Statement",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "enforcement": {
+                "enum": [
+                  "HARD",
+                  "QUANTITATIVE",
+                  "TEMPORAL",
+                  "SOFT_CAUSAL",
+                  "MECHANISM"
+                ],
+                "type": "string",
+                "title": "Enforcement"
+              },
+              "consequences": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Consequences",
+                "minItems": 1
+              },
+              "applicability": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Applicability",
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "_MechanismContract": {
+            "type": "object",
+            "title": "_MechanismContract",
+            "required": [
+              "contract_version",
+              "effect",
+              "entity_keys"
+            ],
+            "properties": {
+              "effect": {
+                "enum": [
+                  "REVIVAL",
+                  "INSTANT_TRAVEL",
+                  "MULTIPRESENCE",
+                  "POWER_TRANSITION"
+                ],
+                "type": "string",
+                "title": "Effect"
+              },
+              "entity_keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "\\S",
+                  "minLength": 1
+                },
+                "title": "Entity Keys",
+                "minItems": 1
+              },
+              "contract_version": {
+                "type": "string",
+                "const": "world-mechanism.v1",
+                "title": "Contract Version"
+              }
+            },
+            "additionalProperties": false
+          },
+          "_PredicateContract": {
+            "type": "object",
+            "title": "_PredicateContract",
+            "required": [
+              "requirement_id",
+              "state_kind",
+              "entity_key",
+              "field",
+              "operator"
+            ],
+            "properties": {
+              "field": {
+                "type": "string",
+                "title": "Field",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Value",
+                "default": null
+              },
+              "operator": {
+                "enum": [
+                  "EQUALS",
+                  "AT_LEAST",
+                  "AT_MOST",
+                  "EXISTS"
+                ],
+                "type": "string",
+                "title": "Operator"
+              },
+              "entity_key": {
+                "type": "string",
+                "title": "Entity Key",
+                "pattern": "\\S",
+                "minLength": 1
+              },
+              "state_kind": {
+                "enum": [
+                  "canon_fact",
+                  "timeline_event",
+                  "character_state",
+                  "relationship_state",
+                  "world_rule",
+                  "resource_state",
+                  "power_state",
+                  "foreshadow_state",
+                  "reader_promise",
+                  "plot_thread",
+                  "narrative_debt",
+                  "mystery_state",
+                  "antagonist_state",
+                  "arc_state",
+                  "reward_event",
+                  "theme_movement",
+                  "character_knowledge",
+                  "character_belief",
+                  "character_arc",
+                  "reader_knowledge",
+                  "disclosure_event",
+                  "world_state",
+                  "faction_state",
+                  "location_state",
+                  "consequence_state",
+                  "conflict_state",
+                  "narrative_obligation",
+                  "payoff_event"
+                ],
+                "type": "string",
+                "title": "State Kind"
+              },
+              "requirement_id": {
+                "type": "string",
+                "title": "Requirement Id",
+                "pattern": "\\S",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "title": "WorldFoundationContract",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "required": [
+          "contract_version",
+          "genre_profile",
+          "compiled_scope",
+          "sections",
+          "rules",
+          "entities"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/WorldRuleContract"
+            },
+            "title": "Rules",
+            "minItems": 1
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/_EntityContract"
+            },
+            "title": "Entities",
+            "minItems": 1
+          },
+          "sections": {
+            "type": "object",
+            "title": "Sections",
+            "propertyNames": {
+              "minLength": 1
+            },
+            "patternProperties": {
+              "\\S": {
+                "$ref": "#/$defs/_SectionContract"
+              }
+            }
+          },
+          "genre_profile": {
+            "type": "string",
+            "title": "Genre Profile",
+            "pattern": "\\S",
+            "minLength": 1
+          },
+          "compiled_scope": {
+            "enum": [
+              "BOOK",
+              "VOLUME",
+              "ARC"
+            ],
+            "type": "string",
+            "const": "BOOK",
+            "title": "Compiled Scope"
+          },
+          "contract_version": {
+            "type": "string",
+            "const": "world-foundation.v1",
+            "title": "Contract Version"
+          }
+        },
+        "additionalProperties": false
+      },
+      "example": {
+        "rules": [
+          {
+            "rule_id": "rule:choice",
+            "category": "core_laws",
+            "statement": "A faction may defend its interests.",
+            "enforcement": "SOFT_CAUSAL",
+            "consequences": [
+              "A proposed response still needs accepted causes."
+            ],
+            "applicability": [
+              "faction_state"
+            ]
+          }
+        ],
+        "entities": [
+          {
+            "kind": "FACTION",
+            "entity_id": "faction:example"
+          }
+        ],
+        "sections": {
+          "core_laws": {
+            "depth": "SEED",
+            "content": "An original constraint changes choices."
+          }
+        },
+        "genre_profile": "original-genre.v1",
+        "compiled_scope": "BOOK",
+        "contract_version": "world-foundation.v1"
+      },
+      "entities": "nonempty array of unique entity_id and kind records; references must resolve; approved initial conditions are not accepted events",
+      "sections": {
+        "content": "concrete approved initial conditions, rules and limits",
+        "key_rule": "core_laws is required; include only needed ontology dimensions or genre:/book: extensions",
+        "ontology": [
+          "core_laws",
+          "ecology_resources",
+          "economy",
+          "history_culture",
+          "information_communication",
+          "life_death_disease",
+          "politics_factions",
+          "religion",
+          "society_class",
+          "space_time_geography",
+          "technology_power"
+        ]
+      },
+      "enum_contract": "Every enum is one scalar string. Schema enum arrays list choices; they are never the field's returned value. compiled_scope is fixed by this task.",
+      "compiled_scope": "BOOK",
+      "contract_version": "world-foundation.v1"
+    },
+    "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+    "contract_version": "foundation-generation.v4",
+    "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
+    "applicability_contract": "Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+  },
+  "context_manifest": {
+    "type": "NarrativeContextManifest",
+    "scope": {
+      "book_id": "book:input-isolation-01:archive-suspense",
+      "project_id": "project:input-isolation-01:archive-suspense",
+      "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:WORLD_BIBLE:0",
+      "planning_scope": "NOT_APPLICABLE"
+    },
+    "selected_inputs": [
+      {
+        "provenance": {
+          "planning_role": "reader_promise",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:034c96153c8ea447f3601695632464467da211e65a923b7b061e9ba71c16a073",
+          "authority_asset_version_id": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1",
+        "source_revision": "sha256:034c96153c8ea447f3601695632464467da211e65a923b7b061e9ba71c16a073",
+        "asset_version_id": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1",
+        "estimated_tokens": 7415,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:reader_promise",
+        "logical_narrative_identity": "book:input-isolation-01:archive-suspense:world.design.generate:planning_segment:reader_promise:authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:reader_promise:sha256:754f59798fc70d150df7d03363e8b5eead800873d72a236d630b7cd0e547be6a"
+      },
+      {
+        "provenance": {
+          "planning_role": "creative_brief",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+          "authority_asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+        },
+        "source_identity": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1",
+        "source_revision": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+        "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1",
+        "estimated_tokens": 1255,
+        "physical_asset_type": "creative_brief",
+        "logical_context_kind": "planning_segment:creative_brief",
+        "logical_narrative_identity": "book:input-isolation-01:archive-suspense:world.design.generate:planning_segment:creative_brief:authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_brief:sha256:2bbf978a7206574c874316ecff582ffb14f94c6e55b6dd805bf0390606b4b839"
+      },
+      {
+        "provenance": {
+          "planning_role": "ending_intent",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:2b9eb51aa9ae295833f30aaf4acb34db61a8d39eedf6568a9912d9dc421febf5",
+          "authority_asset_version_id": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1",
+        "source_revision": "sha256:2b9eb51aa9ae295833f30aaf4acb34db61a8d39eedf6568a9912d9dc421febf5",
+        "asset_version_id": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1",
+        "estimated_tokens": 6485,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:ending_intent",
+        "logical_narrative_identity": "book:input-isolation-01:archive-suspense:world.design.generate:planning_segment:ending_intent:authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:ending_intent:sha256:bad5a8f276703007ec7716e012b8c83c94c1ebc4d371a144ad43003a93acd7e4"
+      },
+      {
+        "provenance": {
+          "authority": "StoryPlanningRuntime",
+          "projection_contract": "provider-context-view-v2",
+          "frozen_component_hash": "sha256:39409808ae87c9d9f43b25294bed99b1f22909b32054a6b90a8f5da1b80aeb7f"
+        },
+        "source_identity": "planning-context-envelope:world.design.generate:story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:WORLD_BIBLE:0",
+        "source_revision": "sha256:39409808ae87c9d9f43b25294bed99b1f22909b32054a6b90a8f5da1b80aeb7f",
+        "asset_version_id": "planning-context-envelope:sha256:39409808ae87c9d9f43b25294bed99b1f22909b32054a6b90a8f5da1b80aeb7f",
+        "estimated_tokens": 1943,
+        "physical_asset_type": "planning_context_projection",
+        "logical_context_kind": "planning_context_envelope",
+        "logical_narrative_identity": "book:input-isolation-01:archive-suspense:world.design.generate:planning_context_envelope:planning-context-envelope:world.design.generate:story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:WORLD_BIBLE:0",
+        "semantic_representation_identity": "provider-context-view-v2:planning_context_envelope:sha256:39409808ae87c9d9f43b25294bed99b1f22909b32054a6b90a8f5da1b80aeb7f"
+      },
+      {
+        "provenance": {
+          "planning_role": "creative_foundation",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+          "authority_asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1",
+        "source_revision": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+        "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1",
+        "estimated_tokens": 12452,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:creative_foundation",
+        "logical_narrative_identity": "book:input-isolation-01:archive-suspense:world.design.generate:planning_segment:creative_foundation:authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_foundation:sha256:5b749f16a645c01bf225fb081b5b6975f5689517b7af2c28396e4bcd2ce29bc4"
+      },
+      {
+        "provenance": {
+          "planning_role": "theme_contract",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:7459611ea1090979ab5eb0cf425514c80a51cd6bd4e1ebe7b8ffad2361366ae4",
+          "authority_asset_version_id": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1"
+        },
+        "source_identity": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1",
+        "source_revision": "sha256:7459611ea1090979ab5eb0cf425514c80a51cd6bd4e1ebe7b8ffad2361366ae4",
+        "asset_version_id": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1",
+        "estimated_tokens": 6977,
+        "physical_asset_type": "planning_generation_candidate",
+        "logical_context_kind": "planning_segment:theme_contract",
+        "logical_narrative_identity": "book:input-isolation-01:archive-suspense:world.design.generate:planning_segment:theme_contract:authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:theme_contract:sha256:711db9d4738f3f0b9a428348533f81af151789c3ef901782fb2f9c344baa1618"
+      }
+    ],
+    "contract_version": "planning-context-manifest-v1",
+    "effective_policy": {
+      "limits": {
+        "total": 64000,
+        "buckets": {},
+        "classes": {},
+        "sections": {},
+        "required_reservation": 0
+      },
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "denied_logical_kinds": [],
+      "allowed_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief",
+        "planning_segment:creative_foundation",
+        "planning_segment:ending_intent",
+        "planning_segment:reader_promise",
+        "planning_segment:theme_contract"
+      ],
+      "denied_physical_types": [],
+      "source_risk_threshold": 0,
+      "allowed_physical_types": [],
+      "permitted_source_modes": [
+        "generation"
+      ],
+      "required_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief",
+        "planning_segment:creative_foundation",
+        "planning_segment:ending_intent",
+        "planning_segment:reader_promise",
+        "planning_segment:theme_contract"
+      ],
+      "maximum_raw_source_ratio": 0.0,
+      "permitted_truncation_strategies": [
+        "structured_elements-v1"
+      ]
+    },
+    "projection_audit": {
+      "loss_records": [],
+      "loss_sources": []
+    },
+    "token_accounting": {
+      "method": "utf8-byte-upper-bound.v1",
+      "precision": "ESTIMATE_ONLY",
+      "total_limit": 64000,
+      "accepted_tokens": 36527,
+      "required_tokens": 36527,
+      "tokens_by_class": {
+        "PROTECTED": 36527
+      },
+      "tokens_by_bucket": {
+        "ending_intent": 6485,
+        "creative_brief": 1255,
+        "reader_promise": 7415,
+        "theme_contract": 6977,
+        "creative_foundation": 12452,
+        "planning_context_envelope": 1943
+      },
+      "accounting_method": "declared-candidate-estimate-v1",
+      "tokens_by_section": {
+        "PLANNING_INPUTS": 34584,
+        "PLANNING_CONTRACT": 1943
+      },
+      "required_reservation": 36527,
+      "total_candidate_tokens": 36527
+    },
+    "policy_compilation": {
+      "receipt_hash": "sha256:66fd8ab6f0d4cc8158bc4ecf79d4857bb80d2b8f5b27bbdc42a72969d173ebc1",
+      "input_policies": [
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "caller-context-limit-v1",
+            "policy_id": "planning-caller-context-limit",
+            "content_hash": "sha256:71da9c6d9f7c37139e87eb5ee87934578f59d1d18bb8a4fa10113b5588f12272",
+            "snapshot_ref": "command:planning-context-token-budget"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "context-profile-v1",
+            "policy_id": "planning-context-profile",
+            "content_hash": "sha256:7faf527135845d463faa068cebfcd7fb68bfa7f1cc375c80a6af6d5468fd9be6",
+            "snapshot_ref": "planning-context-profile:v1"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "planning-context-contract-v1",
+            "policy_id": "planning-typed-stage:world.design.generate",
+            "content_hash": "sha256:3be62eeb0e77d081145acd83bf33e9e72f67208c1aec4aa98bcf81f9cfba98ca",
+            "snapshot_ref": "planning-context-contract:world.design.generate"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief",
+            "planning_segment:creative_foundation",
+            "planning_segment:ending_intent",
+            "planning_segment:reader_promise",
+            "planning_segment:theme_contract"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        }
+      ],
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "effective_policy": {
+        "limits": {
+          "total": 64000,
+          "buckets": {},
+          "classes": {},
+          "sections": {},
+          "required_reservation": 0
+        },
+        "compiler_version": "effective-context-policy-compiler-v1",
+        "denied_logical_kinds": [],
+        "allowed_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief",
+          "planning_segment:creative_foundation",
+          "planning_segment:ending_intent",
+          "planning_segment:reader_promise",
+          "planning_segment:theme_contract"
+        ],
+        "denied_physical_types": [],
+        "source_risk_threshold": 0,
+        "allowed_physical_types": [],
+        "permitted_source_modes": [
+          "generation"
+        ],
+        "required_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief",
+          "planning_segment:creative_foundation",
+          "planning_segment:ending_intent",
+          "planning_segment:reader_promise",
+          "planning_segment:theme_contract"
+        ],
+        "maximum_raw_source_ratio": 0.0,
+        "permitted_truncation_strategies": [
+          "structured_elements-v1"
+        ]
+      },
+      "conflict_decision": "PASS"
+    },
+    "candidate_decisions": [
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "planning-context-envelope:sha256:39409808ae87c9d9f43b25294bed99b1f22909b32054a6b90a8f5da1b80aeb7f"
+      }
+    ],
+    "context_fingerprint": "sha256:394fc3a330fc879ae94c8cecb045f9eb72d556abea65237df655a865ff73933a",
+    "truncation_decisions": [],
+    "provider_context_view": {
+      "content_hash": "sha256:a9de831f4b2296809cf41b73dcbd9d7aa3e08c4b9a1378b89d4b272ffc0427d1",
+      "compiled_view": {
+        "stage": "world.design.generate",
+        "segments": [
+          {
+            "role": "ending_intent",
+            "content": {
+              "objective": "在九章内兑现证据可追踪的救援悬疑：明确被困借阅者的去向与救援结果，解释两张回执的冲突，并让温桥以可核查的当班记录回应岗位自保与有限信任之间的压力。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定温桥的第三人称限知视角，所有信息经她感知、回忆、查验或听取进入叙述；他人的解释保留来源。",
+                "以调查和证据推理推动救人行动，让新线索实际改变温桥的判断与搜救路线。",
+                "求援与调查并行，人物继续采取其已知可行的救援、核对与证据保全行动。",
+                "对维修员的信任按具体说法与行动逐项建立，不由一次验证扩展为全面信任。",
+                "回执办理权限、可留痕的操作机制、断电影响与救援设施须在后续设计中明确并提前铺设；本结尾意图不替这些未定条件编造答案。",
+                "每个代表场景回答一个可检验的问题，并产生救援局势或关系变化；时间压力由钟表、照明变化和搜索进展承担。",
+                "旧事故支线只承担人物动机与当前救援所需线索的功能。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "本结果仅提出结尾候选方向，不构成已接受事件、Canon或Authority状态变更。"
+              ],
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "温桥如实记录救援中的判断与操作，会使自己的当班行为接受核查，并承受维修员因隐瞒被记录而产生的关系压力；这些后果与其欲望和恐惧直接相关，不要求失业、伤亡或其他重大不可逆损失。",
+                  "field_path": "$.protagonist_cost"
+                }
+              ],
+              "ending_direction": "拟议结尾以救援成功、回执谜题闭合和责任处理仍有余波收束。温桥依据已取得的记录与现场证据修正搜救路线，在断电前组织借阅者脱困；维修员的设施知识可以帮助救援，但须经过现场验证，他的帮助不抵消违规与隐瞒。救援后，温桥将两张冲突回执、查验经过及自己的判断与操作写入当班异常记录，不为保全岗位删去可能使自己受询问的部分，也不把维修员未核实的解释写成事实。她对记录的理解由避免签字被利用，推进为留下足以说明行动依据、也能接受核查的记录；她仍担心责任后果，但不再以一份表面无误的闭馆记录作为安全保证。最终停在温桥能够确认救援完成、异常记录已提交的情境。她与维修员可以认可彼此在救援中的具体贡献，关系不必恢复亲密。正式处分及父亲旧事故的完整责任归属保持未决，不新增更大阴谋或续作任务。",
+              "protagonist_cost": "拟议温桥为如实记录承担相称后果：她须解释拒绝直接完成闭馆核对、修正判断及参与救援的依据，无法凭一份无异常的记录结束当班；记录维修员的违规与隐瞒也可能使刚建立的有限合作受损。具体核查结果与岗位处分保持未定，不预设她失业，也不以重大不可逆损失证明成长。",
+              "closure_conditions": [
+                "九章内明确借阅者的实际去向，并通过温桥可感知、查验的救援结果确认她已在断电前脱困；发出求援或找到位置不能替代救援完成。",
+                "以此前读者能够接触的办理顺序、取阅信息与现场痕迹，解释两张回执为何冲突，并明确提前生成的已归还回执不能证明借阅者已经离馆。",
+                "维修员违规延长妹妹入库时间、提前办理回执及隐瞒亲属关系的经过得到证据支持；说明其位置判断为何过时，避免将全部矛盾归结为一句坦白。",
+                "借阅者寻找父亲旧事故记录的欲望能够解释她偏离原定位置的行动；只闭合与当夜去向和救援有关的问题，不要求查清旧事故全貌。",
+                "温桥完成可追查的当班异常记录，保留两张回执及关键查验结果，区分亲见事实、行动依据和他人尚待核实的说法。",
+                "明确温桥与维修员的合作边界：救援中得到验证的帮助可以被认可，先前隐瞒仍被记录；双方不必完成和解。",
+                "最终责任处分与旧事故剩余疑问可以未决，但救援结果、回执矛盾和温桥如何处理当班记录必须获得明确回应。"
+              ],
+              "prohibited_outcomes": [
+                "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+                "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+                "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+                "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+                "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+                "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+                "以开放式结尾为由悬置借阅者是否获救或回执为何冲突。",
+                "将救援成功等同于维修员免责、温桥必然免受核查或双方自动和解。",
+                "强加失业、死亡、重伤等未获因果支持的重大损失作为结尾成立的条件。",
+                "照搬其他作品的表达、人物组合或场景序列。",
+                "将本候选的设定、预测或拟议选择表述为已接受事实。"
+              ],
+              "unacceptable_shortcuts": [
+                "临近结尾才补出亲属关系、回执权限或关键设施功能，且此前没有可供温桥与读者检验的铺设。",
+                "用借阅者获救后的长篇解释一次性补齐所有推理，取代救援前改变行动的线索链。",
+                "让维修员突然准确知道妹妹的新位置，跳过其原有位置判断已经过时的问题。",
+                "以删除、修改或丢弃原始回执换取温桥的岗位安全，再将其呈现为责任问题已经解决。",
+                "用管理者口头保证无人追责消除温桥的记录选择，或用突然严惩制造未经铺设的结尾代价。",
+                "为让温桥先作出责任选择而暂停可行的救援；异常报告的具体时机须服从当时的救援条件。",
+                "以旧事故的新谜团或幕后势力取代本书收束，强行建立续作桥梁。"
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:2b9eb51aa9ae295833f30aaf4acb34db61a8d39eedf6568a9912d9dc421febf5",
+            "asset_version_id": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1"
+          },
+          {
+            "role": "creative_brief",
+            "content": {
+              "idea": "夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，一名借阅者仍被锁在即将断电的旧库房。她必须在保住自己的岗位记录与信任一位说法前后矛盾的维修员之间选择。明确以调查和证据推理推动救人行动，让线索改变她的判断；真相由正式候选形成，不预写作答。",
+              "genre": "第三人称限知悬疑",
+              "audience": "成年中文读者",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+              ],
+              "source_boundaries": [
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+              ],
+              "creative_brief_contract_version": "creative-brief-v2"
+            },
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+            "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+          },
+          {
+            "role": "reader_promise",
+            "content": {
+              "objective": "为成年中文读者建立一部九章第三人称限知悬疑的阅读承诺：与夜班档案员温桥共同查验两张冲突回执，在旧库房断电前以证据推动有效救援，并看见她如何处理有限信任与当班记录责任。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+                "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+                "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+                "关键推理使用读者能够接触到的线索；误导来自事实的有限解释与人物隐瞒。",
+                "对话中的回避必须服务于说话者当时的具体欲望。",
+                "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+                "证据细节只在影响判断或行动时展开。",
+                "旧事故只承担人物动机与必要线索功能，救援不以查清全部旧事故为前提。",
+                "回执字段、办理权限和断电的具体影响须由后续设计闭合，本承诺不预定未经确认的设施功能。",
+                "局部答案推动后续行动，不新增固定章末悬念、商业连载节奏或每章重大不可逆损失的要求。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "本承诺为候选设计；上游设计条件不构成已发生的章节事件，不改变已接受历史或Canon。"
+              ],
+              "applicability": [],
+              "reader_promise": "读者将贴近温桥的感官与判断，经历怀疑、查验、短暂放心和再次受压。持续的期待来自两个相互牵动的问题：记录能否指向借阅者的真实去向，维修员的哪一句话足以支持下一项救人行动。读者能接触关键线索，随温桥修正判断；局部疑问得到回答后，答案会改变搜索或合作，而救援条件仍在收紧。九章内，两张回执为何冲突、借阅者身在何处以及如何在断电前得到有效救援，都须获得有因果支撑的明确回应。温桥对记录和信任的选择也须呈现相称后果；最终和解、处分或旧事故的完整结论不作预先保证。",
+              "prohibited_outcomes": [
+                "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+                "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+                "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+                "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+                "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+                "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+                "照搬其他作品的表达、人物组合或场景序列。",
+                "将本候选的设定、预测或拟议选择表述为已接受事实。",
+                "将异常报告、维修员主动认责或救援后的和解等可选方向升级为必然结局。",
+                "以开放结局为由悬置被困者的去向、主要回执谜题或救援结果。"
+              ],
+              "disappointment_risks": [
+                "回执办理机制含混，读者无法判断两张纸分别证明什么，最终解释便会像临时补设规则。",
+                "维修员与借阅者的亲属关系仅靠最后坦白揭晓，缺少温桥此前可接触的迹象，会削弱共同推理的满足感。",
+                "维修员的一次正确判断被当作全部说法可信的证明，会使有限合作失去张力，也损害温桥的判断力。",
+                "反复核对纸面材料却不改变搜救路线、合作条件或局势，会让调查与救援脱节。",
+                "时间压力只靠倒计时口号呈现，缺少可感知的救援条件变化，会使紧迫感空转。",
+                "旧事故扩张成需要另一本书解决的谜团，或抢占当夜救援的篇幅，会稀释九章内的核心兑现。",
+                "结尾只宣布人已获救，却不交代线索如何导向实际位置以及有效救援，会使行动回报缺乏因果支撑。",
+                "温桥的岗位顾虑在结尾突然消失，或救援成功自动消除所有记录责任，会使她的选择失去分量。",
+                "每次调查都强加重大损失，或每章机械增加一个谜团，会使人物行动和阅读节奏显得人为。"
+              ],
+              "setup_progress_payoff": [
+                {
+                  "setup": "闭馆核对时，两张回执对同一次借阅给出无法直接兼容的信息，温桥不能据此确认借阅者已经离开。",
+                  "payoff": "在九章内解释两张回执的冲突及形成原因，使读者能回看关键线索，理解手续完成为何不足以证明本人离馆，以及这一认识如何支持找到借阅者。",
+                  "promise": "回执谜题可以凭读者接触到的证据追踪，答案会改变救人行动。",
+                  "progress": "通过温桥对办理顺序、取阅信息与现场痕迹的查验，逐步区分纸面手续与实际行动；每次解释修正都影响下一项搜救判断。"
+                },
+                {
+                  "setup": "借阅者滞留在即将断电的旧库房，温桥掌握的信息不足以直接确定其当前位置。",
+                  "payoff": "在断电前找到并组织有效救出借阅者，明确交代决定性证据、行动衔接与救援结果，使成功来自此前建立的判断和可行条件。",
+                  "promise": "调查所得会转化为有效救援，紧迫行动有可理解的因果过程。",
+                  "progress": "求援与调查并行，搜索方向随证据调整；以温桥能够感知的时间、照明与搜索进展呈现压力，设施建议经验证后才用于行动。"
+                },
+                {
+                  "setup": "维修员说法前后矛盾，却掌握可能帮助搜救的设施知识；温桥既需要他的协助，也需要保留独立判断。",
+                  "payoff": "让借阅者与维修员的关系、违规通融及隐瞒获得证据支持，说明其说法为何变化、位置判断为何可能过时；以实际合作结果兑现信任变化，关系可以修复，也可以留下裂痕。",
+                  "promise": "一个有用却有隐瞒的人会带来具体的合作难题，信任随验证而变化。",
+                  "progress": "温桥逐项检验维修员的建议，区分设施能力、救人动机与叙述可信度；亲属关系和旧事故诉求通过她可接触的迹象及有来源的陈述进入调查。"
+                },
+                {
+                  "setup": "温桥既想救出借阅者，也怕自己的签字成为他人推卸责任的依据；照着回执完成闭馆可能掩盖仍有人滞留的事实。",
+                  "payoff": "呈现温桥如何留下对自身行动有依据的记录，以及这一处理对当班责任和合作关系的直接影响；责任认定可以保留余波，但她当夜的选择不能被略过。",
+                  "promise": "救人和保住岗位记录的冲突会落实为选择及后果。",
+                  "progress": "让证据保管、记录核对和必要报告与搜救需求发生具体联系；在相关行动处呈现耗时、违规暴露或合作受损等相称后果，具体记录方式保持可调整。"
+                }
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:034c96153c8ea447f3601695632464467da211e65a923b7b061e9ba71c16a073",
+            "asset_version_id": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1"
+          },
+          {
+            "role": "theme_contract",
+            "content": {
+              "objective": "围绕温桥在断电前调查并救出借阅者的目标，探索记录怎样保护人、信任怎样获得依据，以及救援与承担责任能否同时成立。以可追踪的证据、合作范围的变化和当班记录的处理承载主题，保留父级候选的动机条件与九章篇幅，不预定最终道德判词。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。",
+                "沿用父级方向中借阅者与维修员的亲属关系、旧事故诉求和提前办理回执的候选条件，不将其表述为已发生的章节事件。",
+                "主题主要通过证据含义的修正、有限合作和当班记录的处理呈现，也允许温桥的观察、犹疑与简短反思；不强制每场设置道德抉择。",
+                "区分温桥看见的事实、暂时推测与尚未验证的说法；他人的解释保留来源。",
+                "回执权限、办理机制和断电具体影响须由后续设计确认，本契约不以新增设施事实补足它们。",
+                "主要谜题和救援结果在九章范围内获得明确回应；责任认定与关系余波可以保留未尽之处。",
+                "后果按行动的实际因果支持呈现，可以是耗时、责任暴露或合作受损，不统一要求重大不可逆损失。"
+              ],
+              "choice_tests": [
+                {
+                  "cost": "核对与证据保管占用有限时间，闭馆核对无法立即完成，她需要说明为何未按原记录签字；具体耗时须由后续场景支持。",
+                  "choice": "拟议选择：温桥保留两张冲突回执，启动可行求援，并针对影响搜救的字段进行核对；尚未查清的内容明确标为未核实。",
+                  "thematic_pressure": "检验记录的保护作用是否来自手续完成，还是来自允许矛盾被保留和追查。回执的局部答案须改变下一项搜救行动，不能只成为责任讨论。"
+                },
+                {
+                  "cost": "查验需要时间与现场行动，持续追问可能使维修员更防备；拒绝使用已获支持的专业判断也可能限制救援选择。",
+                  "choice": "拟议选择：温桥将维修员的建议拆成可验证的步骤，根据每次现场结果调整合作范围，同时保留对其其他说法的疑问。",
+                  "thematic_pressure": "检验信任能否局限于某项能力和某次行动。一次建议得到证实，可以支持下一步合作，却不能自动证明此前隐瞒无害；这一过程通过判断变化呈现，不要求每场都重复同一测试。"
+                },
+                {
+                  "cost": "记录可能使她自己的判断失误与维修员的违规同时进入追查范围，也可能损伤合作关系；不预定她必然失去岗位或维修员必然受处分。",
+                  "choice": "拟议选择：在不耽误必要救援的时机，温桥留下包含回执矛盾、实际行动、判断依据及未核实说法的当班记录；是否提交异常报告及其时机由后续规划确定。",
+                  "thematic_pressure": "检验救援成功是否足以抹去过程中的责任，以及准确记录能否同时保护被救者和容纳救援者的失误。行动依据可获得明确回应，责任处理与关系余波可保留复杂性。"
+                }
+              ],
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "核对回执与保留异常会占用当夜有限时间，并使温桥的签字责任保持未决；后果应与具体行动相称。",
+                  "field_path": "$.choice_tests[0].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "有限合作需要查验，也可能因追问而受损；这些后果直接影响搜救判断，不要求每次合作都造成不可逆损失。",
+                  "field_path": "$.choice_tests[1].cost"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "如后续规划选择提交异常报告，准确记录可能暴露双方责任；处分与关系结局尚未确定。",
+                  "field_path": "$.choice_tests[2].cost"
+                }
+              ],
+              "opposing_answers": [
+                "尽责首先意味着按记录和岗位边界行事：明确的手续能够限制个人判断的失误。可通过温桥对签字依据的重视呈现其合理性，再由两张回执与实际去向的差异检验它的限度；不能把守程序直接写成漠视生命。",
+                "尽责也意味着发现记录与现实冲突时，主动核实并留下行动依据。可通过温桥边求援边调查、让证据改变路线来展开；这一答案仍须面对判断可能出错及时间有限的问题。",
+                "紧急合作需要依靠有用的人，但依靠他的某项能力不等于接受他的全部解释。可通过维修员的设施判断与位置判断分别得到检验，呈现信任的不同范围；具体查验结果由后续规划安排。",
+                "共同救人可以成为重新合作的理由，却不能自动消除此前隐瞒的责任。可通过救援后的记录与在场陈述继续检验这一答案；结尾既可走向共同承担，也可出现关系破裂，不以救援成功预先裁定谁值得原谅。"
+              ],
+              "thematic_question": "当一份看似能保护岗位的记录可能遮住一个仍需救援的人，而能帮忙的人又有所隐瞒，怎样的核实、信任与记录，才能让尽责同时意味着救人和对自己的行动负责？",
+              "prohibited_outcomes": [
+                "以温桥未曾获得的信息、他人内心或场外全知解释推进救援或宣告主题结论。",
+                "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+                "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+                "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+                "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+                "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+                "照搬其他作品的表达、人物组合或场景序列。",
+                "将本候选的设定、预测或拟议选择表述为已接受事实。",
+                "用亲属关系证明维修员所有说法可信，或用违规证明他的全部帮助都不可信。",
+                "把主题简化为记录必然有害、程序必然冷酷，或救人成功便可免除所有责任。",
+                "为证明主题而强制每场付出重大不可逆代价，或以议论替代必要的调查和行动。",
+                "预先承诺温桥失去岗位、维修员受处分或双方和解，替代尚待规划的具体因果过程。"
+              ]
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:7459611ea1090979ab5eb0cf425514c80a51cd6bd4e1ebe7b8ffad2361366ae4",
+            "asset_version_id": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1"
+          },
+          {
+            "role": "creative_foundation",
+            "content": {
+              "genre": "第三人称限知悬疑",
+              "subgenre": "封闭场所救援悬疑／关系悬疑",
+              "core_fear": "她怕自己的签字成为别人推卸责任的依据，也怕为了证明自己没有错，错过真正需要她的人。",
+              "objective": "写出一部九章悬疑：夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，必须通过调查确定被困借阅者的去向，并在旧库房断电前组织有效救援。她越接近事实，越需要决定如何与说法矛盾的维修员合作，以及是否让自己的当班记录暴露他们各自的责任。",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+                "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+                "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。"
+              ],
+              "core_desire": "在断电前找到并救出借阅者，同时留下能准确说明自己做过什么、为什么这样做的记录。",
+              "applicability": [
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "以档案证据调查、闭馆时限与互信变化组织悬疑。",
+                  "field_path": "$.subgenre"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "温桥的救人目标与保住岗位记录的欲望构成具体行动动力。",
+                  "field_path": "$.core_desire"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "对承担错误记录责任的恐惧影响她如何验证维修员的说法。",
+                  "field_path": "$.core_fear"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "救援需要借助有隐瞒的维修员，而正式记录又可能掩盖被困者的位置。",
+                  "field_path": "$.core_conflict"
+                },
+                {
+                  "status": "APPLICABLE",
+                  "rationale": "九章可通过局部问题兑现与证据引发的新行动衔接；不据此新增强制连载要求。",
+                  "field_path": "$.serialization_potential"
+                }
+              ],
+              "core_conflict": "温桥必须判断维修员哪些话可用于救人、哪些话只是保护自己。照着已归还回执完成闭馆能暂时保住她的岗位记录，却可能让搜救错过仍有人滞留的库区；全面相信维修员，又可能替他的隐瞒承担责任。她需要把有限合作拆成能够当场检验的行动。",
+              "style_profile": {
+                "pov": "全书固定温桥的第三人称限知视角，不切换维修员或借阅者视角。",
+                "narrator": "克制、贴近温桥感官与判断的第三人称叙述者，允许她误判，不替她预告真相。",
+                "constraints": [
+                  "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+                  "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+                  "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+                  "证据细节只在影响判断或行动时展开。",
+                  "对话中的回避必须服务于说话者当时的具体欲望。",
+                  "每个代表场景推进冲突，并产生局势或关系变化。"
+                ],
+                "genre_conventions": [
+                  "关键推理使用读者能够接触到的线索。",
+                  "误导来自事实的有限解释与人物隐瞒。",
+                  "局部疑问在一个场景内得到兑现，同时推动下一项行动。",
+                  "主要谜题和救援结果在九章范围内获得明确回应。"
+                ],
+                "original_examples": [
+                  {
+                    "example": "“人已经走了。”维修员伸手来取回执。温桥把纸压在登记簿下。“从哪道门？”他的手停住了。她还不能证明他撒谎，但这张纸暂时不能交给他。",
+                    "purpose": "用具体问题呈现怀疑与行动",
+                    "explanation": "温桥只依据回答与动作调整证据保管方式；问话立刻改变合作关系。"
+                  },
+                  {
+                    "example": "指示灯灭了，维修员说过的侧门却没有弹开。温桥拉了一次，门纹丝不动。她松开把手：“换一条路。你先告诉我，下一道门凭什么能开。”",
+                    "purpose": "让现场验证产生局势变化",
+                    "explanation": "用可见结果检验设施说法，并让失败促成新的合作条件；设施细节须经后续世界设计确认。"
+                  },
+                  {
+                    "example": "“你认识她？”温桥问。他低头看那张未完成的回执，没有回答。她把两张纸并排放好：“那就先说她来找什么。我得知道她还会往哪里走。”",
+                    "purpose": "将关系压力转化为可调查的问题",
+                    "explanation": "关系疑问服务于当前搜救，温桥不从沉默直接判定亲属身份。"
+                  }
+                ]
+              },
+              "target_reader": "成年中文读者，偏好证据可追踪、人物动机可信、紧迫行动与关系变化相互推动的悬疑。",
+              "differentiation": "悬疑的核心落在三个人对同一份记录的不同需求：温桥需要记录保护岗位，维修员需要记录遮住违规，借阅者需要记录证明家人的遭遇。维修员可以熟悉设施、愿意救人，同时隐瞒决定搜救路线的关键信息。温桥与他的信任逐项建立：一次说法被证实，只支持下一次有限合作，不自动洗清其他矛盾。",
+              "narrative_engine": "候选真相：借阅者是维修员的妹妹，她来查父亲一次旧事故的维修记录。维修员违规替她延长入库时间，又提前生成已归还回执，想在闭馆核对时掩盖这次通融；妹妹发现所需材料不在原定位置，继续寻找，错过了他的接应。另一张未完成借阅回执仍保留着她最初登记的取阅信息。维修员起初声称她已经离开，发现温桥不肯仅凭回执签字后，又改称知道她在哪里。他隐瞒的是违规与亲属关系，他掌握的地点却也已经过时。温桥从两张回执的办理顺序、取阅标记和现场痕迹中区分离馆证明与手续完成记录，逐步修正搜救路线。每轮调查都以一个具体疑问开始，经查验、问话或现场搜索取得信息，再用所得证据决定是否接受维修员的下一项建议。求援与调查并行，维修员的设施知识须经现场验证，最终救援不依赖先查清全部旧事故。",
+              "why_worth_writing": "一张看似保护岗位的回执，也可能使一个人从搜救名单上消失。温桥必须在调查中学习怎样依靠记录、怎样质疑记录，以及怎样与有隐瞒的人共同完成救援。这些判断都有即时行动后果，能够让制度细节、人物关系和悬疑推进彼此支撑。",
+              "emotional_contract": "让读者与温桥共同经历怀疑、验证、短暂放心和再次受压。紧迫感来自正在消失的救援条件，关系张力来自一个有用的人并不完全可靠。每个代表场景至少回答一个可检验的问题，并使救援局势或人物关系发生变化；结尾兑现被困者的去向与回执冲突的原因，保留责任认定可能带来的余波。",
+              "prohibited_outcomes": [
+                "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+                "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+                "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+                "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+                "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+                "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+                "照搬其他作品的表达、人物组合或场景序列。",
+                "将本候选的设定、预测或拟议选择表述为已接受事实。"
+              ],
+              "serialization_potential": "九章可形成持续阅读动力：前段建立回执矛盾与有限合作，中段用现场证据修正去向并揭开关系隐瞒，后段集中完成救援与当班责任的处理。章节衔接来自已兑现的局部答案引出的行动问题，近期场景和具体路线保持可调整。",
+              "narrative_search_projection": {
+                "assumptions": [
+                  "本分支以future-2的动机与关系方向展开；借阅者和维修员的亲属关系、旧事故诉求及提前办理回执均为本次候选新增设定。",
+                  "旧库房即将断电这一条件来自作者简报；断电具体影响照明、通信或通行中的哪些环节，仍需后续世界设计确认。",
+                  "两张回执可通过办理顺序和取阅信息形成可检查的矛盾；具体字段和办理权限需后续设计闭合。",
+                  "九章主要覆盖同一次闭馆救援及其直接后果，旧事故只承担人物动机与必要线索功能。",
+                  "以下分值为0至1的比较估计，存在不低于0.05的判断不确定性，不构成文学资格或激活证据。"
+                ],
+                "future_options": [
+                  "借阅者被找到后，可通过温桥在场听见的陈述检验维修员对违规经过的解释。",
+                  "维修员可主动留下承认提前办理回执的记录，也可继续要求温桥替他保密；两种方向都须由届时已建立的欲望和证据支持。",
+                  "救援路线可在后续设施设计中调整，只要每次变更都有温桥实际获得的线索支持。",
+                  "九章结尾可侧重共同承担责任，或救援成功后的关系破裂；均须兑现救人与回执谜题。"
+                ],
+                "narrative_risks": [
+                  "亲属关系若仅靠临近结尾的坦白揭晓，会削弱推理；应提前安排温桥可观察、但存在其他解释的熟悉迹象。",
+                  "提前生成回执若缺乏明确权限与办理机制，会成为便利设定；后续必须限定维修员能操作什么、留下什么痕迹。",
+                  "旧事故若扩展为庞大阴谋，会挤压九章救援主线；只引入改变当前搜救判断的材料。",
+                  "连续查纸面记录容易使节奏停滞；应让证据查验与现场搜索、受限交流交替发生。",
+                  "若所有代价都被写成重大不可逆损失，会失真；应按具体行动呈现耗时、暴露违规或合作受损等相称后果。"
+                ],
+                "repetition_keys": [
+                  "future-2",
+                  "动机与关系驱动调查",
+                  "按证据限定信任",
+                  "手续记录与实际去向冲突",
+                  "亲属隐瞒改变救援判断"
+                ],
+                "contract_version": "narrative-search-projection.v1",
+                "selection_summary": "该方向将作者给定的岗位记录与维修员信任之选落实到可验证的合作关系，适合九章内形成完整救援与谜题兑现。优势是人物动机能直接改变线索解释；主要取舍是必须限制旧事故支线，并在后续设计中补足回执权限与断电后果。当前没有其他候选的完整内容，不能据此宣称比较胜出。",
+                "strategy_fingerprint": "future-2|motivation-relationship|bounded-trust|receipt-evidence|nine-chapter-rescue",
+                "creative_intelligence": {
+                  "arc_momentum": 0.83,
+                  "setup_payoff": 0.87,
+                  "reader_promise": 0.9,
+                  "reversal_reveal": 0.84,
+                  "character_agency": 0.9,
+                  "pacing_variation": 0.77,
+                  "pattern_diversity": 0.79,
+                  "world_consequence": 0.72,
+                  "future_optionality": 0.84,
+                  "conflict_escalation": 0.82,
+                  "emotional_progression": 0.87,
+                  "relationship_evolution": 0.93,
+                  "choice_cost_consequence": 0.86
+                },
+                "irreversible_decisions": [
+                  "拟议关键选择：温桥提交包含两张冲突回执的异常报告，使当夜的违规进入可追查的正式流程；是否实施及具体时机由后续规划确定。"
+                ],
+                "projected_consequences": [
+                  "温桥拒绝直接签署闭馆核对，会延长她的当班责任，也保留追查借阅者的机会。",
+                  "维修员的亲属关系一旦被证据支持，他的帮助会获得更强动机解释，同时其先前隐瞒也更难忽略。",
+                  "证明已归还回执不能证明本人离馆，会使搜救从核对名单转向复原借阅者的实际行动。",
+                  "异常报告可能使救援成功与岗位记录受损同时成立，迫使温桥重新理解记录如何保护人。"
+                ],
+                "narrative_opportunities": [
+                  "让维修员给出一次正确的设施判断与一次错误的位置判断，迫使温桥区分专业能力和叙述可信度。",
+                  "通过借阅者留下的取阅痕迹表现其寻找父亲记录的欲望，使被困者具有主动性。",
+                  "让温桥在保留原始证据、报告异常与继续搜救之间分配有限时间，呈现岗位欲望对行动的实际影响。",
+                  "将回执矛盾从真假判断推进到手续究竟证明什么，使反转来自证据含义的修正。"
+                ]
+              }
+            },
+            "asset_type": "planning_generation_candidate",
+            "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+            "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+          }
+        ],
+        "contract_version": "provider-context-view-v4",
+        "narrative_position": {
+          "book_id": "book:input-isolation-01:archive-suspense",
+          "logical_key": "story-formation:0112650f75000eb5e35342daa6892e39f4b21cf9775700836e4a8eca77cbdfdd:WORLD_BIBLE:0",
+          "planning_scope": "NOT_APPLICABLE"
+        },
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-context-v2",
+          "loss_receipt": {
+            "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 0,
+            "source_input_hash": "sha256:39c60fdc26cb684697982939722b3eb37a19dc9e614621e5ed2adb356b66def0"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v1",
+          "maximum_segments": 24,
+          "token_accounting": "utf8-byte-upper-bound.v1",
+          "omitted_fact_count": 0,
+          "omitted_item_count": 0,
+          "task_target_tokens": 64000,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 5,
+          "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+          "maximum_serialized_bytes": 8388608,
+          "maximum_facts_per_segment": null,
+          "truncated_character_count": 0
+        },
+        "accepted_state_boundary": {
+          "accepted_through_chapter": 0
+        },
+        "typed_arc_projection_version": "typed-arc-context-projection.v2"
+      },
+      "contract_version": "provider-context-view-v4",
+      "source_input_hash": "sha256:39c60fdc26cb684697982939722b3eb37a19dc9e614621e5ed2adb356b66def0"
+    },
+    "deduplication_decisions": []
+  },
+  "estimated_tokens": 36527,
+  "narrative_search": {},
+  "source_isolation": "ABSTRACT_ASSETS_ONLY",
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "narrative_intelligence": {
+    "need": {
+      "scope": "STORY",
+      "genre_tags": [
+        "第三人称限知悬疑"
+      ],
+      "theme_tags": [],
+      "need_digest": "sha256:cb35e7b784ef7ed9d846d129e3ecfc45b45b12ec4fc443fc808adf5d35577521",
+      "craft_policy": {},
+      "target_stage": "world.design.generate",
+      "conflict_tags": [],
+      "craft_context": {
+        "pov": [
+          "全书固定温桥的第三人称限知视角，不切换维修员或借阅者视角。"
+        ],
+        "task": [
+          "world.design.generate"
+        ],
+        "genre": [
+          "第三人称限知悬疑"
+        ],
+        "style": [
+          "主要谜题和救援结果在九章范围内获得明确回应。",
+          "克制、贴近温桥感官与判断的第三人称叙述者，允许她误判，不替她预告真相。",
+          "全书固定温桥的第三人称限知视角，不切换维修员或借阅者视角。",
+          "关键推理使用读者能够接触到的线索。",
+          "对话中的回避必须服务于说话者当时的具体欲望。",
+          "局部疑问在一个场景内得到兑现，同时推动下一项行动。",
+          "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+          "每个代表场景推进冲突，并产生局势或关系变化。",
+          "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+          "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+          "证据细节只在影响判断或行动时展开。",
+          "误导来自事实的有限解释与人物隐瞒。"
+        ],
+        "pacing": [],
+        "emotion": [],
+        "conflict": [],
+        "characters": [
+          "在断电前找到并救出借阅者，同时留下能准确说明自己做过什么、为什么这样做的记录。",
+          "她怕自己的签字成为别人推卸责任的依据，也怕为了证明自己没有错，错过真正需要她的人。"
+        ],
+        "scene_goal": [],
+        "information": [],
+        "obligations": [],
+        "relationship": [],
+        "reader_effect": [
+          "读者将贴近温桥的感官与判断，经历怀疑、查验、短暂放心和再次受压。持续的期待来自两个相互牵动的问题：记录能否指向借阅者的真实去向，维修员的哪一句话足以支持下一项救人行动。读者能接触关键线索，随温桥修正判断；局部疑问得到回答后，答案会改变搜索或合作，而救援条件仍在收紧。九章内，两张回执为何冲突、借阅者身在何处以及如何在断电前得到有效救援，都须获得有因果支撑的明确回应。温桥对记录和信任的选择也须呈现相称后果；最终和解、处分或旧事故的完整结论不作预先保证。"
+        ],
+        "chapter_number": 0,
+        "chapter_function": [
+          "CREATIVE_EVALUATION",
+          "为成年中文读者建立一部九章第三人称限知悬疑的阅读承诺：与夜班档案员温桥共同查验两张冲突回执，在旧库房断电前以证据推动有效救援，并看见她如何处理有限信任与当班记录责任。",
+          "写出一部九章悬疑：夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，必须通过调查确定被困借阅者的去向，并在旧库房断电前组织有效救援。她越接近事实，越需要决定如何与说法矛盾的维修员合作，以及是否让自己的当班记录暴露他们各自的责任。",
+          "围绕温桥在断电前调查并救出借阅者的目标，探索记录怎样保护人、信任怎样获得依据，以及救援与承担责任能否同时成立。以可追踪的证据、合作范围的变化和当班记录的处理承载主题，保留父级候选的动机条件与九章篇幅，不预定最终道德判词。",
+          "在九章内兑现证据可追踪的救援悬疑：明确被困借阅者的去向与救援结果，解释两张回执的冲突，并让温桥以可核查的当班记录回应岗位自保与有限信任之间的压力。"
+        ]
+      },
+      "hard_constraints": [
+        "Candidates are hypothetical; no accepted history or Canon mutation",
+        "Preserve the exact author brief and source boundaries",
+        "为维持悬疑而让人物无理由放弃求援、核对记录或其他其已知可行的行动。",
+        "为证明主题而强制每场付出重大不可逆代价，或以议论替代必要的调查和行动。",
+        "主要谜题和救援结果在九章范围内获得明确回应；责任认定与关系余波可以保留未尽之处。",
+        "主题主要通过证据含义的修正、有限合作和当班记录的处理呈现，也允许温桥的观察、犹疑与简短反思；不强制每场设置道德抉择。",
+        "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+        "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+        "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案；其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+        "以开放式结尾为由悬置借阅者是否获救或回执为何冲突。",
+        "以开放结局为由悬置被困者的去向、主要回执谜题或救援结果。",
+        "以温桥未曾获得的信息、他人内心或场外全知解释推进救援。",
+        "以温桥未曾获得的信息、他人内心或场外全知解释推进救援或宣告主题结论。",
+        "以调查和证据推理推动救人行动，让新线索实际改变温桥的判断与搜救路线。",
+        "依靠巧合找到被困者，或用未铺设的设施功能解除困境。",
+        "全书方向九章，近期规划保持可调整。",
+        "关键推理使用读者能够接触到的线索；误导来自事实的有限解释与人物隐瞒。",
+        "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。",
+        "区分温桥看见的事实、暂时推测与尚未验证的说法；他人的解释保留来源。",
+        "后果按行动的实际因果支持呈现，可以是耗时、责任暴露或合作受损，不统一要求重大不可逆损失。",
+        "回执办理权限、可留痕的操作机制、断电影响与救援设施须在后续设计中明确并提前铺设；本结尾意图不替这些未定条件编造答案。",
+        "回执字段、办理权限和断电的具体影响须由后续设计闭合，本承诺不预定未经确认的设施功能。",
+        "回执权限、办理机制和断电具体影响须由后续设计确认，本契约不以新增设施事实补足它们。",
+        "固定温桥的第三人称限知视角，所有信息经她感知、回忆、查验或听取进入叙述；他人的解释保留来源。",
+        "固定温桥限知视角；信息获得需要行动与代价，保持紧迫感并兑现一个场景内的疑问。",
+        "对维修员的信任按具体说法与行动逐项建立，不由一次验证扩展为全面信任。",
+        "对话中的回避必须服务于说话者当时的具体欲望。",
+        "将异常报告、维修员主动认责或救援后的和解等可选方向升级为必然结局。",
+        "将救援成功等同于维修员免责、温桥必然免受核查或双方自动和解。",
+        "将本候选的设定、预测或拟议选择表述为已接受事实。",
+        "局部答案推动后续行动，不新增固定章末悬念、商业连载节奏或每章重大不可逆损失的要求。",
+        "强加失业、死亡、重伤等未获因果支持的重大损失作为结尾成立的条件。",
+        "所有信息经温桥感知、回忆、查验或听取而进入叙述；他人的解释保留来源。",
+        "把主题简化为记录必然有害、程序必然冷酷，或救人成功便可免除所有责任。",
+        "把岗位顾虑写成温桥明知有人危险仍无动机解释地拖延救援。",
+        "旧事故只承担人物动机与必要线索功能，救援不以查清全部旧事故为前提。",
+        "旧事故支线只承担人物动机与当前救援所需线索的功能。",
+        "明确以调查和证据推理推动救人行动，让线索改变温桥的判断。",
+        "本承诺为候选设计；上游设计条件不构成已发生的章节事件，不改变已接受历史或Canon。",
+        "本方向及其真相解释均为候选设计，不构成已接受历史或Canon。",
+        "本结果仅提出结尾候选方向，不构成已接受事件、Canon或Authority状态变更。",
+        "每个代表场景回答一个可检验的问题，并产生救援局势或关系变化；时间压力由钟表、照明变化和搜索进展承担。",
+        "每个代表场景推进冲突，并产生局势或关系变化。",
+        "求援与调查并行，人物继续采取其已知可行的救援、核对与证据保全行动。",
+        "沿用父级方向中借阅者与维修员的亲属关系、旧事故诉求和提前办理回执的候选条件，不将其表述为已发生的章节事件。",
+        "照搬其他作品的表达、人物组合或场景序列。",
+        "用亲属关系证明维修员所有说法可信，或用违规证明他的全部帮助都不可信。",
+        "用措辞区分她看见的事实、暂时推测与尚未验证的说法。",
+        "让旧事故支线取代当夜救援，或不兑现两张回执冲突的解释。",
+        "让维修员的坦白直接替代证据推理，或让温桥无验证地接受全部说法。",
+        "让钟表、照明变化和搜索进展承担时间压力，避免反复空喊倒计时。",
+        "证据细节只在影响判断或行动时展开。",
+        "预先承诺温桥失去岗位、维修员受处分或双方和解，替代尚待规划的具体因果过程。"
+      ],
+      "condition_sources": {
+        "ending_intent": {
+          "content_hash": "sha256:2b9eb51aa9ae295833f30aaf4acb34db61a8d39eedf6568a9912d9dc421febf5",
+          "asset_version_id": "authority-output:aef5c6cd-9e4d-4186-8697-b676df892ba3:story_planning.candidate:v1"
+        },
+        "creative_brief": {
+          "content_hash": "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+          "asset_version_id": "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1"
+        },
+        "reader_promise": {
+          "content_hash": "sha256:034c96153c8ea447f3601695632464467da211e65a923b7b061e9ba71c16a073",
+          "asset_version_id": "authority-output:2f1c7d69-e935-4958-9707-94acae0568bb:story_planning.candidate:v1"
+        },
+        "theme_contract": {
+          "content_hash": "sha256:7459611ea1090979ab5eb0cf425514c80a51cd6bd4e1ebe7b8ffad2361366ae4",
+          "asset_version_id": "authority-output:cf061b97-cb85-4775-9b2a-eece3cb8032a:story_planning.candidate:v1"
+        },
+        "creative_foundation": {
+          "content_hash": "sha256:48d96af9843e1dc6ad1d200dd4059918e503ed949c1c4ad55a8141b004ae425f",
+          "asset_version_id": "authority-output:ced2cfea-2b5e-4513-b1a2-d78aef127170:story_planning.candidate:v1"
+        }
+      },
+      "semantic_families": [
+        "CHARACTER_TRANSFORMATION",
+        "NARRATIVE_MECHANISM",
+        "THEME_MORAL_DILEMMA",
+        "WORLD_CONSEQUENCE"
+      ],
+      "reader_effect_tags": [
+        "读者将贴近温桥的感官与判断，经历怀疑、查验、短暂放心和再次受压。持续的期待来自两个相互牵动的问题：记录能否指向借阅者的真实去向，维修员的哪一句话足以支持下一项救人行动。读者能接触关键线索，随温桥修正判断；局部疑问得到回答后，答案会改变搜索或合作，而救援条件仍在收紧。九章内，两张回执为何冲突、借阅者身在何处以及如何在断电前得到有效救援，都须获得有因果支撑的明确回应。温桥对记录和信任的选择也须呈现相称后果；最终和解、处分或旧事故的完整结论不作预先保证。"
+      ],
+      "recent_craft_usage": [],
+      "current_state_terms": [
+        "APPLICABLE"
+      ],
+      "desired_transformation_terms": [
+        "CREATIVE_EVALUATION",
+        "STABLE_ID",
+        "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+        "authority-output:4726bdba-0b3e-4e17-8591-34f8cd6e1666:creative.brief:v1",
+        "narrative-search-comparison.v2",
+        "sha256:216f159b3c8d51a9774e7f9702fe09c570d1cd573ede6afc2371e17109493313",
+        "为成年中文读者建立一部九章第三人称限知悬疑的阅读承诺：与夜班档案员温桥共同查验两张冲突回执，在旧库房断电前以证据推动有效救援，并看见她如何处理有限信任与当班记录责任。",
+        "写出一部九章悬疑：夜班档案员温桥在闭馆前发现两张相互冲突的借阅回执，必须通过调查确定被困借阅者的去向，并在旧库房断电前组织有效救援。她越接近事实，越需要决定如何与说法矛盾的维修员合作，以及是否让自己的当班记录暴露他们各自的责任。",
+        "围绕温桥在断电前调查并救出借阅者的目标，探索记录怎样保护人、信任怎样获得依据，以及救援与承担责任能否同时成立。以可追踪的证据、合作范围的变化和当班记录的处理承载主题，保留父级候选的动机条件与九章篇幅，不预定最终道德判词。",
+        "在九章内兑现证据可追踪的救援悬疑：明确被困借阅者的去向与救援结果，解释两张回执的冲突，并让温桥以可核查的当班记录回应岗位自保与有限信任之间的压力。",
+        "将关系压力转化为可调查的问题",
+        "用具体问题呈现怀疑与行动",
+        "让现场验证产生局势变化"
+      ],
+      "recently_used_repetition_keys": [
+        "future-2",
+        "亲属隐瞒改变救援判断",
+        "动机与关系驱动调查",
+        "手续记录与实际去向冲突",
+        "按证据限定信任"
+      ],
+      "required_card_asset_version_ids": []
+    },
+    "rejected": [],
+    "selected": [],
+    "project_id": "project:input-isolation-01:archive-suspense",
+    "policy_version": "knowledge-grounded-selection-v2",
+    "pool_truncated": false,
+    "schema_version": "mkaos-narrative-intelligence-selection.v1",
+    "pool_query_mode": "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION",
+    "selection_digest": "sha256:786294a25f9ddba474ba962579c473a5f98923cb0619a65a2bdfb0e87286489f",
+    "selection_status": "NO_ELIGIBLE_MATCH",
+    "authority_boundary": {
+      "semantic_role": "POSSIBILITY_ONLY",
+      "may_mutate_narrative_state": false,
+      "may_mutate_story_authority": false,
+      "may_prove_accepted_reality": false,
+      "planning_must_recompose_for_project": true
+    },
+    "eligible_card_count": 0,
+    "examined_card_count": 0,
+    "knowledge_access_policy": {
+      "mode": "PROJECT_DEFAULT",
+      "book_id": "book:input-isolation-01:archive-suspense",
+      "policy_id": "book-production-knowledge-access",
+      "project_id": "project:input-isolation-01:archive-suspense",
+      "policy_hash": "sha256:f2aa6815ec096778646905860226bd2f34a3e1c7c2ec7ed6b57c6298e0fafdc8",
+      "policy_version": 1,
+      "schema_version": "book-knowledge-access-policy.v1",
+      "configured_explicitly": false,
+      "allowed_knowledge_card_asset_version_ids": []
+    }
+  },
+  "knowledge_access_policy": {
+    "mode": "PROJECT_DEFAULT",
+    "book_id": "book:input-isolation-01:archive-suspense",
+    "policy_id": "book-production-knowledge-access",
+    "project_id": "project:input-isolation-01:archive-suspense",
+    "policy_hash": "sha256:f2aa6815ec096778646905860226bd2f34a3e1c7c2ec7ed6b57c6298e0fafdc8",
+    "policy_version": 1,
+    "schema_version": "book-knowledge-access-policy.v1",
+    "configured_explicitly": false,
+    "allowed_knowledge_card_asset_version_ids": []
+  },
+  "planning_contract_version": "1.21.0",
+  "planning_context_policy_version": "context-policy:chapter-generation-pack:v2",
+  "narrative_qualification_profiles": [
+    {
+      "layer": "STORY_FOUNDATION",
+      "criteria": [
+        "WORLD_RULE_COHERENCE",
+        "RULE_APPLICABILITY_AND_LIMITS",
+        "WORLD_NARRATIVE_PURPOSE_SUPPORT",
+        "CHARACTER_AGENCY_SUPPORT",
+        "LONGFORM_EVOLUTION_CAPACITY"
+      ],
+      "skill_ref": "worldbuilding",
+      "profile_id": "world-foundation-semantic-v1-work-v3",
+      "profile_hash": "sha256:8052083c403fd7fedd715f50f182b302f992a83cc496b6c694d32d6b9b1844f4",
+      "capability_id": "world.design.generate",
+      "profile_version": "3.0.0",
+      "criterion_semantics": {
+        "WORLD_RULE_COHERENCE": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "CHARACTER_AGENCY_SUPPORT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "LONGFORM_EVOLUTION_CAPACITY": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "RULE_APPLICABILITY_AND_LIMITS": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "WORLD_NARRATIVE_PURPOSE_SUPPORT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention."
+      }
+    }
+  ]
+}

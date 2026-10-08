@@ -67,6 +67,12 @@ from scripts.creation_comparison import (
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--brief", type=Path, required=True)
+    from novel_forge.modules.creative.input_selection import INPUT_SOURCES, INPUT_PURPOSES, validate_input_selection, brief_input_assets
+    parser.add_argument("--input-source", choices=sorted(INPUT_SOURCES))
+    parser.add_argument("--input-purpose", choices=sorted(INPUT_PURPOSES))
+    parser.add_argument("--intent-ref", help="Current author request or test case identity; defaults to the explicitly supplied run key")
+    parser.add_argument("--parent-input-version", help="Exact selected native parent Brief for TASK_GENERATED input")
+    parser.add_argument("--parent-input-hash", help="Frozen content hash of the selected parent Brief")
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--formation-policy", type=Path, required=True)
     parser.add_argument("--knowledge-policy", type=Path, help="Exact approved Book knowledge access policy, frozen before Formation")
@@ -115,6 +121,13 @@ def main(argv=None):
         required=args.comparison_budget is not None,
     )
     brief, policy, formation_policy = (documents[key] for key in ("brief", "creation", "formation"))
+    selection = None
+    if args.input_source or args.input_purpose or args.parent_input_version or args.parent_input_hash:
+        selection = validate_input_selection({"contract_version": "creative-input-selection.v1",
+            "book_id": args.book_id, "source_kind": args.input_source, "purpose": args.input_purpose,
+            "intent_ref": args.intent_ref or args.run_key,
+            **({"parent_input": {"asset_version_id": args.parent_input_version,
+                "content_hash": args.parent_input_hash}} if args.parent_input_version or args.parent_input_hash else {})})
     comparison_budget = validate_comparison_budget(documents["budget"]) if args.comparison_budget else None
     from novel_forge.modules.mkaos_authority.domain import resolve_book_knowledge_access_policy
     profile = policy["profiles"]["production_profile"]["content"]
@@ -169,6 +182,7 @@ def main(argv=None):
         "book_target_chapter_count": formation_policy["target_chapters"],
         "pilot_stop_after_chapter": pilot_cursor,
         "reading_checkpoints": list(checkpoints),
+        "input_selection": selection,
         "production_scope": "AUTHOR_GUIDED_SINGLE_BOOK" if brief.get("author_design") else "CREATIVE_BRIEF_PRODUCTION",
         "full_book_completion": "NOT_PROVEN",
         "brief_input_hash": "sha256:"
@@ -204,7 +218,8 @@ def main(argv=None):
                 definition_name="creative.brief.create", project_id=args.project_id,
                 workspace_id=args.workspace_id, actor_id=principal.principal_id,
                 trace_id=f"trace:{args.run_key}", correlation_id=args.run_key,
-                idempotency_key=f"{args.run_key}:brief", payload={"brief": brief},
+                idempotency_key=f"{args.run_key}:brief", payload={"brief": brief, **({"input_selection": selection} if selection else {})},
+                input_assets=brief_input_assets(brief, selection),
             ), principal=principal)
             report.update(status="AUTHOR_INPUT_REGISTERED_NOT_APPROVED", author_input={
                 "asset_version_id": authored.asset_version_id, "content_hash": authored.content_hash,
@@ -408,11 +423,16 @@ def main(argv=None):
                 project_id=args.project_id,
                 asset_version_id=frozen.creative_brief_asset_version_id,
             )
+            if selection is not None and any((original.content.get("creative_input_selection") or {}).get(key) != value for key, value in selection.items()):
+                raise ValueError("Resume cannot replace the original frozen input selection or purpose")
+            report["input_selection"] = original.content.get("creative_input_selection") or {"purpose": "HISTORICAL_REPLAY", "identity": "ORIGINAL_FROZEN_INPUT"}
             if original.content_hash != frozen.creative_brief_content_hash or any(
                 original.content.get(key) != value for key, value in brief.items()
             ):
                 raise ValueError("resume requires the original frozen creative brief")
         else:
+            if selection is None:
+                raise ValueError("New creation requires --input-source and --input-purpose; no historical input is selected implicitly")
             authored = content.execute(
                 ContentOperationRequest(
                     definition_name="creative.brief.create",
@@ -422,7 +442,8 @@ def main(argv=None):
                     trace_id=f"trace:{args.run_key}",
                     correlation_id=args.run_key,
                     idempotency_key=f"{args.run_key}:brief",
-                    payload={"brief": brief},
+                    payload={"brief": brief, **({"input_selection": selection} if selection else {})},
+                    input_assets=brief_input_assets(brief, selection),
                 ),
                 principal=principal,
             )

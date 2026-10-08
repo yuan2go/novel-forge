@@ -1,0 +1,569 @@
+{
+  "book_id": "book:input-isolation-01:stage-comedy",
+  "trace_id": "trace:story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b",
+  "project_id": "project:input-isolation-01:stage-comedy",
+  "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:CREATIVE_FOUNDATION:comparison",
+  "token_budget": 64000,
+  "workspace_id": "workspace:input-isolation-01:stage-comedy",
+  "input_versions": [
+    {
+      "role": "creative_brief",
+      "content": {
+        "idea": "我和妹妹带着村民排练一场露天小戏。我们对谁来站在台前争执不休，第一场排练偏偏撞上灯架坏了和演员临时退场。我想证明自己能当导演，妹妹想让大家轻松上台。让人物通过修灯、分工和试演中的具体选择形成冲突并改变关系。",
+        "genre": "第一人称生活喜剧",
+        "audience": "成年中文读者",
+        "project_id": "project:input-isolation-01:stage-comedy",
+        "constraints": [
+          "全书方向九章，近期规划保持可调整。",
+          "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+          "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+        ],
+        "source_boundaries": [
+          "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+          "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+        ],
+        "creative_input_selection": {
+          "book_id": "book:input-isolation-01:stage-comedy",
+          "purpose": "CREATIVE_EVALUATION",
+          "intent_ref": "WP-CREATIVE-INPUT-ISOLATION-01:authorized-distinct-narrative-validation",
+          "project_id": "project:input-isolation-01:stage-comedy",
+          "source_kind": "TASK_GENERATED",
+          "parent_input": {
+            "content_hash": "sha256:234d0026cca4de43cd9d75ca8651dc8e53645b77b0aa4a706d79c849afc1570b",
+            "asset_version_id": "authority-output:fafe8a8f-f469-4f4b-9afc-c6dad7b998ff:creative.brief:v1"
+          },
+          "workspace_id": "workspace:input-isolation-01:stage-comedy",
+          "contract_version": "creative-input-selection.v1",
+          "selected_by_actor_id": "author-first-native-operator",
+          "selection_operation_id": "29a562da-5f7e-443c-ba59-75601b948c0c"
+        },
+        "creative_brief_contract_version": "creative-brief-v2"
+      },
+      "asset_type": "creative_brief",
+      "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+      "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+    }
+  ],
+  "planning_scope": "NOT_APPLICABLE",
+  "schema_version": "novelos.planning_context_bundle.v1",
+  "arc_working_set": {},
+  "foundation_task": {
+    "role": "CREATIVE_FOUNDATION",
+    "task": "Develop this work's premise, narrative purpose, reader experience and sustainable form from the author brief and selected design. Conflict and serialization are choices, not universal requirements. Create original operational style examples, never imitate reference prose.",
+    "parent_roles": [],
+    "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+    "contract_version": "foundation-generation.v5",
+    "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
+    "applicability_contract": "Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them.",
+    "narrative_search_contract": "Return the frozen strategy's distinct future direction and the required narrative_search_projection. Comparison estimates remain model support, not literary qualification or accepted story state."
+  },
+  "context_manifest": {
+    "type": "NarrativeContextManifest",
+    "scope": {
+      "book_id": "book:input-isolation-01:stage-comedy",
+      "project_id": "project:input-isolation-01:stage-comedy",
+      "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:CREATIVE_FOUNDATION:comparison",
+      "planning_scope": "NOT_APPLICABLE"
+    },
+    "selected_inputs": [
+      {
+        "provenance": {
+          "authority": "StoryPlanningRuntime",
+          "projection_contract": "provider-context-view-v2",
+          "frozen_component_hash": "sha256:16322559b61f0fa1e5f594eef52e1b7cc8d702da255dc551c4ec96bfdaadf5d4"
+        },
+        "source_identity": "planning-context-envelope:creative.candidates.generate:story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:CREATIVE_FOUNDATION:comparison",
+        "source_revision": "sha256:16322559b61f0fa1e5f594eef52e1b7cc8d702da255dc551c4ec96bfdaadf5d4",
+        "asset_version_id": "planning-context-envelope:sha256:16322559b61f0fa1e5f594eef52e1b7cc8d702da255dc551c4ec96bfdaadf5d4",
+        "estimated_tokens": 1963,
+        "physical_asset_type": "planning_context_projection",
+        "logical_context_kind": "planning_context_envelope",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:creative.candidates.generate:planning_context_envelope:planning-context-envelope:creative.candidates.generate:story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:CREATIVE_FOUNDATION:comparison",
+        "semantic_representation_identity": "provider-context-view-v2:planning_context_envelope:sha256:16322559b61f0fa1e5f594eef52e1b7cc8d702da255dc551c4ec96bfdaadf5d4"
+      },
+      {
+        "provenance": {
+          "planning_role": "creative_brief",
+          "projection_contract": "provider-context-view-v2",
+          "source_content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+          "authority_asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+        },
+        "source_identity": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "source_revision": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+        "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "estimated_tokens": 1201,
+        "physical_asset_type": "creative_brief",
+        "logical_context_kind": "planning_segment:creative_brief",
+        "logical_narrative_identity": "book:input-isolation-01:stage-comedy:creative.candidates.generate:planning_segment:creative_brief:authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1",
+        "semantic_representation_identity": "provider-context-view-v2:planning_segment:creative_brief:sha256:6f54696be477e7329cc21203fc0b4351c1bf348d5ca3ab79fd365fa7845cd1b9"
+      }
+    ],
+    "contract_version": "planning-context-manifest-v1",
+    "effective_policy": {
+      "limits": {
+        "total": 64000,
+        "buckets": {},
+        "classes": {},
+        "sections": {},
+        "required_reservation": 0
+      },
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "denied_logical_kinds": [],
+      "allowed_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief"
+      ],
+      "denied_physical_types": [],
+      "source_risk_threshold": 0,
+      "allowed_physical_types": [],
+      "permitted_source_modes": [
+        "generation"
+      ],
+      "required_logical_kinds": [
+        "planning_context_envelope",
+        "planning_segment:creative_brief"
+      ],
+      "maximum_raw_source_ratio": 0.0,
+      "permitted_truncation_strategies": [
+        "structured_elements-v1"
+      ]
+    },
+    "projection_audit": {
+      "loss_records": [],
+      "loss_sources": []
+    },
+    "token_accounting": {
+      "method": "utf8-byte-upper-bound.v1",
+      "precision": "ESTIMATE_ONLY",
+      "total_limit": 64000,
+      "accepted_tokens": 3164,
+      "required_tokens": 3164,
+      "tokens_by_class": {
+        "PROTECTED": 3164
+      },
+      "tokens_by_bucket": {
+        "creative_brief": 1201,
+        "planning_context_envelope": 1963
+      },
+      "accounting_method": "declared-candidate-estimate-v1",
+      "tokens_by_section": {
+        "PLANNING_INPUTS": 1201,
+        "PLANNING_CONTRACT": 1963
+      },
+      "required_reservation": 3164,
+      "total_candidate_tokens": 3164
+    },
+    "policy_compilation": {
+      "receipt_hash": "sha256:c40ca8a944fec4cf429d11a7e6e4f09eee1a52a277c42c4a2888d2797ba96180",
+      "input_policies": [
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "caller-context-limit-v1",
+            "policy_id": "planning-caller-context-limit",
+            "content_hash": "sha256:46aec97d15b3337486805c5b339c4c3fc04d5697e0b645ef580417655dce55d5",
+            "snapshot_ref": "command:planning-context-token-budget"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "context-profile-v1",
+            "policy_id": "planning-context-profile",
+            "content_hash": "sha256:9a8ea47a678dc8d5fdba95a39eb8159093e47ebe52d2ed41d3f5759d31533b40",
+            "snapshot_ref": "planning-context-profile:v1"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 64000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "planning-context-contract-v1",
+            "policy_id": "planning-typed-stage:creative.candidates.generate",
+            "content_hash": "sha256:9115b773e8e405151b2e4db0674e4b1ad89518e22e93168a6e1d02a05116b680",
+            "snapshot_ref": "planning-context-contract:creative.candidates.generate"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_segment:creative_brief"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        }
+      ],
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "effective_policy": {
+        "limits": {
+          "total": 64000,
+          "buckets": {},
+          "classes": {},
+          "sections": {},
+          "required_reservation": 0
+        },
+        "compiler_version": "effective-context-policy-compiler-v1",
+        "denied_logical_kinds": [],
+        "allowed_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief"
+        ],
+        "denied_physical_types": [],
+        "source_risk_threshold": 0,
+        "allowed_physical_types": [],
+        "permitted_source_modes": [
+          "generation"
+        ],
+        "required_logical_kinds": [
+          "planning_context_envelope",
+          "planning_segment:creative_brief"
+        ],
+        "maximum_raw_source_ratio": 0.0,
+        "permitted_truncation_strategies": [
+          "structured_elements-v1"
+        ]
+      },
+      "conflict_decision": "PASS"
+    },
+    "candidate_decisions": [
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+      },
+      {
+        "reason": "ELIGIBLE_AND_BUDGETED",
+        "decision": "SELECTED",
+        "asset_version_id": "planning-context-envelope:sha256:16322559b61f0fa1e5f594eef52e1b7cc8d702da255dc551c4ec96bfdaadf5d4"
+      }
+    ],
+    "context_fingerprint": "sha256:89c54d1aa59f91612e0f26eb2356bf09a20d27ea2ffee597ff0bce7dcbd4c9ba",
+    "truncation_decisions": [],
+    "provider_context_view": {
+      "content_hash": "sha256:aa2c7e35ab482921309edc4343895b52fca7f97d4c4f34c4c33b01e8ec281919",
+      "compiled_view": {
+        "stage": "creative.candidates.generate",
+        "segments": [
+          {
+            "role": "creative_brief",
+            "content": {
+              "idea": "我和妹妹带着村民排练一场露天小戏。我们对谁来站在台前争执不休，第一场排练偏偏撞上灯架坏了和演员临时退场。我想证明自己能当导演，妹妹想让大家轻松上台。让人物通过修灯、分工和试演中的具体选择形成冲突并改变关系。",
+              "genre": "第一人称生活喜剧",
+              "audience": "成年中文读者",
+              "constraints": [
+                "全书方向九章，近期规划保持可调整。",
+                "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。",
+                "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。"
+              ],
+              "source_boundaries": [
+                "仅使用本次明确选定的原创输入及本用例本书沿Authority生成的方案。",
+                "其他作品、其他用例、历史试产资料和检查答案不作为创作输入。"
+              ],
+              "creative_brief_contract_version": "creative-brief-v2"
+            },
+            "asset_type": "creative_brief",
+            "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+            "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+          }
+        ],
+        "contract_version": "provider-context-view-v4",
+        "narrative_position": {
+          "book_id": "book:input-isolation-01:stage-comedy",
+          "logical_key": "story-formation:be970bf2e1a82d35d0052c1140168e5ccb7235405d7668b2f05350f35b34072b:CREATIVE_FOUNDATION:comparison",
+          "planning_scope": "NOT_APPLICABLE"
+        },
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-context-v2",
+          "loss_receipt": {
+            "audit_hash": "sha256:1b419e072ec8ddc80f76874146a517d31d75bc285e4bd510e8e2d1668fa1f709",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 0,
+            "source_input_hash": "sha256:f7be3c47af0eaa8167f5560d45c0e69ca7c74ac4b7e9a8539c49aacbfb5aad8e"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v1",
+          "maximum_segments": 24,
+          "token_accounting": "utf8-byte-upper-bound.v1",
+          "omitted_fact_count": 0,
+          "omitted_item_count": 0,
+          "task_target_tokens": 64000,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 1,
+          "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+          "maximum_serialized_bytes": 8388608,
+          "maximum_facts_per_segment": null,
+          "truncated_character_count": 0
+        },
+        "accepted_state_boundary": {
+          "accepted_through_chapter": 0
+        },
+        "typed_arc_projection_version": "typed-arc-context-projection.v2"
+      },
+      "contract_version": "provider-context-view-v4",
+      "source_input_hash": "sha256:f7be3c47af0eaa8167f5560d45c0e69ca7c74ac4b7e9a8539c49aacbfb5aad8e"
+    },
+    "deduplication_decisions": []
+  },
+  "estimated_tokens": 3164,
+  "narrative_search": {
+    "search_id": "narrative-search:4d99c071936a4acd9ca523a8a57dfa8bf65cf2147e22f123ea45ba9a641c2d2e",
+    "branch_key": "future-1",
+    "hard_constraints": [
+      "Preserve the exact author brief and source boundaries",
+      "Candidates are hypothetical; no accepted history or Canon mutation"
+    ],
+    "planning_horizon": {
+      "level": "CREATIVE_FOUNDATION",
+      "target_chapters": 9
+    },
+    "strategy_directive": "Explore the author's central promise through a coherent causal direction with room for later development",
+    "desired_transformation": {
+      "stage_goal": "Select a writable direction respecting author intent, causal potential, character agency, differentiation and length fit",
+      "author_brief": {
+        "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+        "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+      },
+      "selection_policy": {
+        "tie_break": "STABLE_ID",
+        "contract_version": "narrative-search-comparison.v2",
+        "dimension_weights": {
+          "arc_momentum": 1,
+          "setup_payoff": 1,
+          "reader_promise": 1,
+          "reversal_reveal": 1,
+          "character_agency": 1,
+          "pacing_variation": 1,
+          "pattern_diversity": 1,
+          "world_consequence": 1,
+          "future_optionality": 1,
+          "conflict_escalation": 1,
+          "emotional_progression": 1,
+          "relationship_evolution": 1,
+          "choice_cost_consequence": 1
+        },
+        "uncertainty_margin": 0.05
+      }
+    },
+    "accepted_through_chapter": 0,
+    "parent_state_asset_version_id": ""
+  },
+  "source_isolation": "ABSTRACT_ASSETS_ONLY",
+  "language_contract": {
+    "required_language": "zh-CN"
+  },
+  "narrative_intelligence": {
+    "need": {
+      "scope": "STORY",
+      "genre_tags": [
+        "第一人称生活喜剧"
+      ],
+      "theme_tags": [],
+      "need_digest": "sha256:3cb044af83f40dae3dba2d8e1856adadb5a7b58eb20884e1f056a7262420ea37",
+      "craft_policy": {},
+      "target_stage": "creative.candidates.generate",
+      "conflict_tags": [],
+      "craft_context": {
+        "pov": [],
+        "task": [
+          "creative.candidates.generate"
+        ],
+        "genre": [
+          "第一人称生活喜剧"
+        ],
+        "style": [],
+        "pacing": [],
+        "emotion": [],
+        "conflict": [],
+        "characters": [],
+        "scene_goal": [],
+        "information": [],
+        "obligations": [],
+        "relationship": [],
+        "reader_effect": [],
+        "chapter_number": 0,
+        "chapter_function": [
+          "CREATIVE_EVALUATION"
+        ]
+      },
+      "hard_constraints": [
+        "人物行动应来自具体欲望和其能知道的信息；每个代表场景推进冲突并提供局势或关系变化。",
+        "全书方向九章，近期规划保持可调整。",
+        "我叙述自己看见和做过的事；用对白节奏、失误和协作给读者幽默与温暖的回报。"
+      ],
+      "condition_sources": {
+        "creative_brief": {
+          "content_hash": "sha256:b3d1b5a3fda54b51faab31bd0dfe3d3adefd75e3b1794bc50a02aa26600bd2f2",
+          "asset_version_id": "authority-output:29a562da-5f7e-443c-ba59-75601b948c0c:creative.brief:v1"
+        }
+      },
+      "semantic_families": [
+        "CHARACTER_TRANSFORMATION",
+        "NARRATIVE_MECHANISM",
+        "THEME_MORAL_DILEMMA",
+        "WORLD_CONSEQUENCE"
+      ],
+      "reader_effect_tags": [],
+      "recent_craft_usage": [],
+      "current_state_terms": [],
+      "desired_transformation_terms": [
+        "CREATIVE_EVALUATION"
+      ],
+      "recently_used_repetition_keys": [],
+      "required_card_asset_version_ids": []
+    },
+    "rejected": [],
+    "selected": [],
+    "project_id": "project:input-isolation-01:stage-comedy",
+    "policy_version": "knowledge-grounded-selection-v2",
+    "pool_truncated": false,
+    "schema_version": "mkaos-narrative-intelligence-selection.v1",
+    "pool_query_mode": "ALL_PROJECT_ELIGIBLE_NO_TRUNCATION",
+    "selection_digest": "sha256:bf93dc750795f52ab09d98e4cf890a7f1deadbd143ac204785cde5c53c1e375c",
+    "selection_status": "NO_ELIGIBLE_MATCH",
+    "authority_boundary": {
+      "semantic_role": "POSSIBILITY_ONLY",
+      "may_mutate_narrative_state": false,
+      "may_mutate_story_authority": false,
+      "may_prove_accepted_reality": false,
+      "planning_must_recompose_for_project": true
+    },
+    "eligible_card_count": 0,
+    "examined_card_count": 0,
+    "knowledge_access_policy": {
+      "mode": "PROJECT_DEFAULT",
+      "book_id": "book:input-isolation-01:stage-comedy",
+      "policy_id": "book-production-knowledge-access",
+      "project_id": "project:input-isolation-01:stage-comedy",
+      "policy_hash": "sha256:93ef29d8734d4064f6e13f71dcd54a22636d0629568f452a3cbe91588513f6f4",
+      "policy_version": 1,
+      "schema_version": "book-knowledge-access-policy.v1",
+      "configured_explicitly": false,
+      "allowed_knowledge_card_asset_version_ids": []
+    }
+  },
+  "knowledge_access_policy": {
+    "mode": "PROJECT_DEFAULT",
+    "book_id": "book:input-isolation-01:stage-comedy",
+    "policy_id": "book-production-knowledge-access",
+    "project_id": "project:input-isolation-01:stage-comedy",
+    "policy_hash": "sha256:93ef29d8734d4064f6e13f71dcd54a22636d0629568f452a3cbe91588513f6f4",
+    "policy_version": 1,
+    "schema_version": "book-knowledge-access-policy.v1",
+    "configured_explicitly": false,
+    "allowed_knowledge_card_asset_version_ids": []
+  },
+  "planning_contract_version": "1.21.0",
+  "planning_context_policy_version": "context-policy:chapter-generation-pack:v2",
+  "narrative_qualification_profiles": [
+    {
+      "layer": "STORY_INTENT",
+      "criteria": [
+        "NARRATIVE_PURPOSE_CLARITY",
+        "READER_FIT",
+        "DIFFERENTIATION",
+        "WORK_LENGTH_CAPACITY",
+        "EMOTIONAL_CONTRACT"
+      ],
+      "skill_ref": "topic-development",
+      "profile_id": "creative-foundation-semantic-v1-work-v3",
+      "profile_hash": "sha256:e1ab97f124740131193abeb87fd943b99ed8d184f138f7d94e811cd991bf8783",
+      "capability_id": "creative.proposal.generate",
+      "profile_version": "3.0.0",
+      "criterion_semantics": {
+        "READER_FIT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "DIFFERENTIATION": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "EMOTIONAL_CONTRACT": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "WORK_LENGTH_CAPACITY": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention.",
+        "NARRATIVE_PURPOSE_CLARITY": "Evaluate this criterion against frozen author requirements and this work's valid commitments. A method that is absent, explicitly inapplicable or prohibited is not required: validate the chosen alternative and record PASS with its input/candidate evidence if coherent, with no repair_directive. This is a pass of alignment, not a claim that the omitted method occurred. Explicitly selected or adopted commitments remain mandatory; missing/contradictory execution is FAIL, genuinely missing evidence is INSUFFICIENT. Neither verdict may invent an unselected method as a repair. Unknown applicability does not prove absence or authorize invention."
+      }
+    }
+  ]
+}

@@ -731,7 +731,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             raise ValueError("Start requires current work input, exact Book scope and stable idempotency key")
         inputs = deepcopy(request_input) if request_input is not None else json.loads(args.input_file.read_text())
         required = {"version", "brief", "title", "target_chapters", "language_contract"}
-        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy"} or inputs["version"] != "creation-request.v1":
+        if not required <= set(inputs) or set(inputs) - required - {"chapter_length", "creative_candidates", "author_creative_foundation", "comparison_policy", "input_selection"} or inputs["version"] != "creation-request.v1":
             raise ValueError("Creation input must declare current brief, title, scope and language")
         if (not isinstance(inputs["target_chapters"], int) or isinstance(inputs["target_chapters"], bool)
                 or not 1 <= inputs["target_chapters"] <= 10000 or not isinstance(inputs["brief"], dict)
@@ -740,6 +740,21 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 or not isinstance(inputs["language_contract"].get("required_language"), str)
                 or not inputs["language_contract"]["required_language"].strip()):
             raise ValueError("Creation requires a typed current work request")
+        from novel_forge.modules.creative.input_selection import validate_input_selection, require_input_scope, brief_input_assets
+        selection = validate_input_selection(inputs.get("input_selection") or {
+            "contract_version": "creative-input-selection.v1", "book_id": args.book_id,
+            "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION",
+            "intent_ref": args.idempotency_key})
+        if selection["book_id"] != args.book_id:
+            raise ValueError("CREATION_INPUT_BOOK_MISMATCH")
+        saved_selection = inputs["brief"].pop("creative_input_selection", None) if brief_source else None
+        if saved_selection:
+            require_input_scope({"creative_input_selection": saved_selection}, project_id=args.project_id,
+                workspace_id=args.workspace_id, book_id=args.book_id)
+            selection = validate_input_selection({key: value for key, value in saved_selection.items()
+                if key not in {"project_id", "workspace_id", "selected_by_actor_id", "selection_operation_id"}})
+            if inputs.get("input_selection") and inputs["input_selection"] != selection:
+                raise ValueError("CREATION_INPUT_SELECTION_DRIFT")
         author_direction = inputs.get("author_creative_foundation")
         automatic_comparison = args.creative_selection == "AUTO_COMPARISON" and not author_direction
         from novel_forge.modules.story_planning_runtime.narrative_search import CREATIVE_INTELLIGENCE_DIMENSIONS, validate_search_selection_policy
@@ -768,7 +783,10 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             policy = original.generation_policy or {}
             original_brief = AuthorityAssetQuery(settings.database_url).require(project_id=args.project_id, asset_version_id=original.creative_brief_asset_version_id)
             profile = policy.get("creation_input_policy", {}).get("profiles", {}).get("production_profile", {}).get("content", {})
-            if (replay[0] != args.workspace_id or {"project_id":args.project_id, **inputs["brief"]} != original_brief.content
+            original_selection = original_brief.content.get("creative_input_selection")
+            if original_selection and any(original_selection.get(key) != value for key, value in selection.items()):
+                raise ValueError("CREATION_INPUT_SELECTION_DRIFT")
+            if (replay[0] != args.workspace_id or {"project_id":args.project_id, **inputs["brief"]} != {key: value for key, value in original_brief.content.items() if key != "creative_input_selection"}
                     or any(inputs[field] != policy.get(field) for field in ("title", "target_chapters"))
                     or inputs["language_contract"] != profile.get("language_contract")
                     or candidate_count != policy.get("creative_candidates")
@@ -843,12 +861,14 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             raise ValueError("Creation Book is outside the current workspace")
         if brief_source:
             brief = AuthorityAssetQuery(settings.database_url).require(project_id=args.project_id, asset_version_id=brief_source[0])
-            if brief.asset_type != "creative_brief" or brief.content_hash != brief_source[1] or brief.content != {"project_id":args.project_id, **inputs["brief"]}:
+            if brief.asset_type != "creative_brief" or brief.content_hash != brief_source[1] or {key: value for key, value in brief.content.items() if key != "creative_input_selection"} != {"project_id":args.project_id, **inputs["brief"]}:
                 raise KernelError("CREATION_BRIEF_SOURCE_DRIFT", "Creation must bind the exact saved author brief")
         else:
             brief = content.execute(ContentOperationRequest(definition_name="creative.brief.create", project_id=args.project_id,
                 workspace_id=args.workspace_id, actor_id=principal.principal_id, trace_id="trace:" + args.idempotency_key,
-                correlation_id=formation_id, idempotency_key=args.idempotency_key + ":brief", payload={"brief": inputs["brief"]}), principal=principal)
+                correlation_id=formation_id, idempotency_key=args.idempotency_key + ":brief",
+                input_assets=brief_input_assets(inputs["brief"], selection),
+                payload={"brief": inputs["brief"], "input_selection": selection}), principal=principal)
         frozen = StoryFormationInput(creative_brief_asset_version_id=brief.asset_version_id,
             creative_brief_content_hash=brief.content_hash, generation_policy={
                 "contract_version": "formation-generation.v7" if automatic_comparison else "formation-generation.v5" if args.creative_selection == "AUTHOR_COMPARISON" or author_direction else "formation-generation.v4",

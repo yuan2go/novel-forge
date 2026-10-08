@@ -42,8 +42,8 @@ def test_native_creation_runners_preserve_isolated_object_store_configuration(mo
         monkeypatch.setattr(runner, 'authorize_execution', lambda *_args: {'accounting_basis': 'FIXTURE'})
         monkeypatch.setattr(runner, 'build_trusted_principal_resolver', lambda **_kwargs: Mock())
         monkeypatch.setattr(runner, 'build_content_authority_application', lambda *_args, **_kwargs: None)
-        source = Path(__file__).resolve().parents[2] / 'config/production/knowledge-closure'
-        args += ['--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
+        source = Path(__file__).resolve().parents[2] / 'tests/fixtures/creation/knowledge-closure'
+        args += ['--input-source', 'HISTORICAL_TEST_SAMPLE', '--input-purpose', 'ENGINEERING_REGRESSION', '--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
                  '--formation-policy', str(source / 'formation.json'), '--project-id', 'settings-project', '--book-id', 'settings-book']
     else:
         args += ['--input-snapshot-id', 'settings-snapshot']
@@ -58,3 +58,44 @@ def test_native_creation_runners_preserve_isolated_object_store_configuration(mo
         assert getattr(settings, f'minio_{field}') == values[f'NOVEL_FORGE_MINIO_{field.upper()}']
     assert settings.minio_secure is True
     assert values['NOVEL_FORGE_MINIO_SECRET_KEY'] not in ''.join(path.read_text() for path in (tmp_path / 'evidence').iterdir())
+
+
+def test_native_creation_content_identity_survives_input_file_move(tmp_path, monkeypatch):
+    import json
+    from novel_forge.cli.authority import _authority_parser
+    from novel_forge.cli.creation import run_creation_command
+    from novel_forge.api import authority_dependencies
+    from novel_forge.modules.book_authority import creation_runtime
+    principal = SimpleNamespace(principal_id='current-author')
+    monkeypatch.setattr(authority_dependencies, 'build_trusted_principal_resolver',
+        lambda: SimpleNamespace(resolve_api_principal=lambda: principal))
+    monkeypatch.setattr(creation_runtime, 'execute_creation_command',
+        lambda _settings, args: {'book_id': args.book_id, 'idempotency_key': args.idempotency_key})
+    parser = _authority_parser()
+    current, moved = tmp_path / 'current.json', tmp_path / 'moved.json'
+    current.write_text(json.dumps({'idea': 'A cook must price a failed pastry'}))
+    moved.write_bytes(current.read_bytes())
+    def start(path):
+        return run_creation_command(None, parser.parse_args(['authority-creation', 'start', '--input-file', str(path)]))
+    assert start(current) == start(moved)
+    moved.write_text(json.dumps({'idea': 'Sisters rehearse a play'}))
+    assert start(current) != start(moved)
+    with pytest.raises(ValueError, match='--input-file'):
+        run_creation_command(None, parser.parse_args(['authority-creation', 'start']))
+
+
+def test_synthesis_preview_freezes_explicit_generated_parent_without_provider(tmp_path):
+    import json
+    from scripts.run_creation_synthesis import main
+    source = Path(__file__).resolve().parents[2] / 'tests/fixtures/creation/knowledge-closure'
+    output = tmp_path / 'preview'
+    digest = 'sha256:' + 'd' * 64
+    assert main(['--brief', str(source / 'brief.json'), '--policy', str(source / 'creation.json'),
+        '--formation-policy', str(source / 'formation.json'), '--project-id', 'current-project',
+        '--book-id', 'current-book', '--root', str(tmp_path), '--run-key', 'derived-case',
+        '--evidence-dir', str(output), '--input-source', 'TASK_GENERATED',
+        '--input-purpose', 'CREATIVE_EVALUATION', '--intent-ref', 'current-task',
+        '--parent-input-version', 'brief:current', '--parent-input-hash', digest]) == 0
+    report = json.loads((output / 'creation-run.json').read_bytes())
+    assert report['input_selection']['parent_input'] == {'asset_version_id': 'brief:current', 'content_hash': digest}
+    assert report['real_provider'] == 'NOT_RUN'

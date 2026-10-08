@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def manifest():
-    source = json.loads((ROOT / "config/production/narrative-closure/samples.json").read_text())
-    budget = json.loads((ROOT / "config/production/narrative-closure/budget-proposal.json").read_text())
+    source = json.loads((ROOT / "config/evaluation/creative-inputs/narrative-closure/samples.json").read_text())
+    budget = json.loads((ROOT / "config/evaluation/creative-inputs/narrative-closure/budget-proposal.json").read_text())
     samples = []
     for sample in source["samples"]:
         arms = {}
