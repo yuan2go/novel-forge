@@ -2549,6 +2549,20 @@ class PostgresBookOpeningRecoveryApplication:
             WHERE generation.project_id=%s AND generation.workspace_id=%s
               AND generation.book_id=%s AND generation.narrative_search_id=%s
               AND generation.narrative_search_branch_key=%s
+              AND NOT EXISTS (
+                  SELECT 1 FROM authority_story_planning_runtime_continuation continuation
+                  JOIN authority_story_planning_generation successor
+                    ON successor.operation_id=continuation.successor_operation_id
+                   AND successor.project_id=continuation.project_id
+                   AND successor.workspace_id=continuation.workspace_id
+                   AND successor.book_id=continuation.book_id
+                  WHERE continuation.source_operation_id=generation.operation_id
+                    AND continuation.project_id=generation.project_id
+                    AND continuation.workspace_id=generation.workspace_id
+                    AND continuation.book_id=generation.book_id
+                    AND successor.narrative_search_id=generation.narrative_search_id
+                    AND successor.narrative_search_branch_key=generation.narrative_search_branch_key
+              )
             ORDER BY generation.repair_number DESC,generation.created_at DESC,
                      generation.operation_id DESC
             LIMIT 2
