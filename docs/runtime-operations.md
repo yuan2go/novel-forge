@@ -2825,8 +2825,10 @@ Source Codex requests allocate the Effect deadline to one local invocation, reta
 settlement headroom. The preview reports both the Effect timeout and actual local process
 timeout. A local CLI timeout/cancellation without a final usage receipt is an unknown
 remote outcome, not permission to resend. Source preflight/status exposes the original
-Effect and process receipt; admission and pre-send checks block new requests until governed
-reconciliation resolves it. Legacy retryable Effects with these receipts are diagnosed
+Effect and process receipt; pre-send checks block dependent requests in the original
+execution lineage until governed reconciliation resolves it. Independent curated research
+retains unresolved reservations in its finite project call/token ceilings; it does not
+release them, rewrite failed history or resend the original request. Legacy retryable Effects with these receipts are diagnosed
 without rewriting their terminal history. Local process termination is not proof of remote
 cancellation; missing remote identifiers or receipts can require external evidence.
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before

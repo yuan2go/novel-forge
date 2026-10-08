@@ -167,6 +167,7 @@ _OPERATIONAL_KEYS = {
     "created_by_operation_id",
     "evidence_level",
     "execution_evidence",
+    "execution_window",
     "frozen_inputs",
     "model_call_log_refs",
     "normalized_digest",

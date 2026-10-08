@@ -116,7 +116,6 @@ def admit_curated_analysis(
         )
         from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage
 
-        require_known_cli_outcomes(uow.cursor, request.project_id)
         spent = provider_project_usage(uow.cursor, request.project_id)
         payload = {
             "requested_manifest": frozen,
@@ -317,13 +316,18 @@ def curated_provider_gate(database_url: str, worker: Any) -> dict[str, Any]:
     with AuthorityUnitOfWork(database_url) as uow:
         require_current_fence(uow, worker)
         repository = SourceAuthorityRepository(uow.cursor)
-        require_known_cli_outcomes(uow.cursor, worker.project_id)
+        require_known_cli_outcomes(uow.cursor, worker.project_id, operation_id=worker.causation_id)
         return require_curated_operation_current(
             repository, worker.project_id, worker.causation_id
         )
 
 
-def require_known_cli_outcomes(cursor: Any, project: str) -> None:
+def require_known_cli_outcomes(cursor: Any, project: str, *, operation_id: str = "") -> None:
+    if operation_id:
+        from novel_forge.modules.command_kernel.budget_runtime import require_known_cli_lineage
+
+        require_known_cli_lineage(cursor, project_id=project, operation_id=operation_id)
+        return
     from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
 
     unresolved = unresolved_cli_outcomes(cursor, project)

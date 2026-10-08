@@ -680,6 +680,11 @@ class ProviderBudgetRuntimePostgresTests(unittest.TestCase):
             self.assertEqual(len(unresolved_cli_outcomes(cursor, original.project_id, book_id="original-book")), 1)
             self.assertEqual(unresolved_cli_outcomes(cursor, original.project_id, book_id="unrelated-book"), [])
             require_known_cli_lineage(cursor, project_id=unrelated.project_id, operation_id=unrelated.operation_id)
+            from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import require_known_cli_outcomes
+            require_known_cli_outcomes(cursor, original.project_id, operation_id=unrelated.operation_id)
+            with self.assertRaisesRegex(KernelError, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+                require_known_cli_outcomes(cursor, original.project_id, operation_id=replacement.operation_id)
+            self.assertEqual(len(unresolved_cli_outcomes(cursor, original.project_id, book_id="original-book")), 1)
         with self.assertRaises(KernelError) as blocked:
             prepare_effect_dispatch(DATABASE_URL, replacement, effect_id=replacement_effect)
         self.assertEqual(blocked.exception.code, "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED")

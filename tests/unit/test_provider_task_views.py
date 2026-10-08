@@ -664,6 +664,22 @@ def test_planning_provider_view_uses_command_and_projected_inputs_only() -> None
     )
 
 
+
+@pytest.mark.parametrize("stage", ["book_plan.generate", "volume_plan.generate", "chapter_plan.generate"])
+def test_delivery_cursor_stays_in_frozen_profile_outside_story_inputs(stage):
+    profile = {"target_chapters": 240, "chapter_length": {"minimum": 2500, "maximum": 3500},
+               "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 3}}
+    context = {"schema_version": "novelos.planning_context_bundle.v1", "book_id": "book:original",
+               "logical_key": "book:main", "planning_scope": "BOOK", "input_versions": [{
+                   "role": "production_profile", "asset_version_id": "profile:v1",
+                   "asset_type": "production_profile", "content_hash": "sha256:" + "a" * 64,
+                   "content": profile}]}
+    view = build_provider_context_view(stage, context, {})
+    assert view["segments"][0]["content"]["target_chapters"] == 240
+    assert view["segments"][0]["content"]["chapter_length"] == profile["chapter_length"]
+    assert "stop_after_chapter" not in json.dumps(view)
+    assert profile["execution_window"]["stop_after_chapter"] == 3
+
 def test_planning_provider_context_blocks_oversized_required_semantics() -> None:
     with pytest.raises(KernelError, match="required Planning Provider Context exceeds its budget"):
         build_provider_context_view(
