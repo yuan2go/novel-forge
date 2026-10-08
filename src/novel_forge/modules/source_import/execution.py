@@ -1371,7 +1371,11 @@ class PostgresContentIntelligenceExecutionPort:
                 raise KernelError("SOURCE_OBSERVATION_ROUTE", "selected route differs from research permission")
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
-            reasoning_effort=base_route.model_profile.reasoning_effort,
+            reasoning_effort=(base_route.model_profile.reasoning_effort
+                if base_route.model_profile.model_provider in {"deepseek", "openai"}
+                or (spec.stage == "source.deconstruction.observe"
+                    and spec.input_payload.get("observation_boundary", {}).get("boundary_type") == "SOURCE_OBSERVATION")
+                else ""),
             pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=base_route.model_profile.model_id,
             protocol=provider_request_protocol(base_route.model_profile.model_provider),
@@ -1582,21 +1586,21 @@ class PostgresContentIntelligenceExecutionPort:
                 cost_authorization_ref=account_authorization_ref,
             ),
         )
-        binding = self._binding(
-            worker=worker,
-            spec=spec,
-            definition=definition,
-            graph=graph,
-            documents=documents,
-            context=context,
-            provider_admission=admission_document,
-            request_payload=request_payload,
-            effect_id=effect_id,
-            stable_key=stable_key,
-            reservation_id=str(reservation["reservation_id"]),
-        )
-        adapter = _SourceGatewayEffectAdapter(transport=self.transport, binding=binding)
         try:
+            binding = self._binding(
+                worker=worker,
+                spec=spec,
+                definition=definition,
+                graph=graph,
+                documents=documents,
+                context=context,
+                provider_admission=admission_document,
+                request_payload=request_payload,
+                effect_id=effect_id,
+                stable_key=stable_key,
+                reservation_id=str(reservation["reservation_id"]),
+            )
+            adapter = _SourceGatewayEffectAdapter(transport=self.transport, binding=binding)
             dispatched = dispatch_external_effect(
                 self.database_url,
                 effect_context,

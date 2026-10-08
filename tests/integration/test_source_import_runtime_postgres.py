@@ -946,6 +946,28 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                     "historical_pack_consumption_blocked": blocked_pack.exception.code,
                     "provider_evidence": "SCRIPTED_TRANSPORT_ONLY"}, indent=2, default=str))
 
+    def test_binding_failure_before_send_releases_budget_and_native_retry_continues(self) -> None:
+        self._create_import("binding-failure-before-send", self.commit_a)
+        blocked = []
+        def reject_binding(**options):
+            blocked.append(options["worker"].causation_id)
+            raise KernelError("CONTROLLED_SOURCE_BINDING_REJECTION", "before dispatch")
+        with patch.object(self.execution_port, "_binding", side_effect=reject_binding):
+            with self.assertRaisesRegex(KernelError, "CONTROLLED_SOURCE_BINDING_REJECTION"):
+                self._run_ready_source_operations()
+        self.assertEqual(len(blocked), 1)
+        with transaction() as connection:
+            rows = connection.execute("""SELECT reservation.status,effect.status
+                FROM authority_budget_reservation reservation
+                JOIN authority_external_effect effect USING(external_effect_id)
+                WHERE reservation.operation_id=%s""", [blocked[0]]).fetchall()
+            self.assertEqual(rows, [("RELEASED", "READY")])
+            self.assertEqual(connection.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id IN (SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s)", [blocked[0]]).fetchone()[0], 0)
+        self.scheduler.run_or_recover(operation_id=blocked[0], project_id=self.project_id)
+        self._run_ready_source_operations()
+        with transaction() as connection:
+            self.assertEqual(connection.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [blocked[0]]).fetchone()[0], "SUCCEEDED")
+
     def test_source_provider_timeout_is_independent_from_worker_lease(self) -> None:
         self.assertEqual(self.execution_port.lease_seconds, 30)
         self.assertEqual(self.execution_port.provider_timeout_seconds, 900)
