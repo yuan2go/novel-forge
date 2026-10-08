@@ -2889,6 +2889,15 @@ Focused checks are `tests/unit/test_public_catalog.py` and
 Their synthetic pages and transports establish contracts only. Actual official-page
 acquisition and source reading require separately retained real evidence.
 
+Migration `0182` keys Source evidence inputs by exact span as well as chunk identity;
+multiple quoted ranges in one chunk retain complete provenance. A terminal local bounded
+reading Review completion failure with one durable successful Provider effect can use
+`corpus recover-stage --project-id <project> --operation-id <original-operation>`.
+The Source owner admits one idempotent successor with the unchanged reading payload,
+then `corpus run --job-id <original-job>` executes it through normal fences. It requires
+the exact original receipt and never falls back to a new send. Original failures remain;
+UNKNOWN, cancellation, changed inputs and chained completion recoveries are rejected.
+
 ## Author-guided single-Book production
 
 The retained `novels/yu-xian-zhi-wai/inputs/author-guided-twelve` input belongs to its

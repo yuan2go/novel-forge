@@ -6,6 +6,7 @@ import unittest
 from dataclasses import replace
 
 from psycopg.types.json import Jsonb
+from psycopg.errors import UniqueViolation
 
 from novel_forge.modules.authority_security import Principal, PrincipalType
 from novel_forge.modules.project_authority import (
@@ -245,6 +246,67 @@ class SourceDeconstructionAuthorityPostgresTests(unittest.TestCase):
         self.assertTrue(checks["cross_project_isolation"])
         self.assertFalse(checks["token_cost_traceability"])
         self.assertFalse(checks["mkaos_lineage"])
+
+    def test_multiple_spans_from_one_chunk_preserve_complete_lineage_and_replay(
+        self,
+    ) -> None:
+        from novel_forge.storage.source_intelligence_repositories import (
+            SourceIntelligenceRepository,
+        )
+
+        command = self._command("hook", default_analyzer_contracts()["hook"])
+        second = ObservationEvidenceSpan(
+            source_chunk_asset_version_id=self.chunk["asset_version_id"],
+            chunk_byte_start=10,
+            chunk_byte_end=20,
+            evidence_hash="sha256:" + hashlib.sha256(b"span:10:20").hexdigest(),
+        )
+        observation = dict(command.observation)
+        observation["findings"] = [
+            {
+                **observation["findings"][0],
+                "evidence_span_ids": [
+                    command.evidence_spans[0].evidence_span_id,
+                    second.evidence_span_id,
+                ],
+            }
+        ]
+        command = replace(
+            command,
+            observation=observation,
+            evidence_spans=(*command.evidence_spans, second),
+        )
+        committed = self.application.execute_observation(
+            command, principal=self.principal
+        )
+        replay = self.application.execute_observation(command, principal=self.principal)
+        self.assertTrue(replay["duplicate"])
+        self.assertEqual(replay["asset_version_id"], committed["asset_version_id"])
+        with transaction() as connection, connection.cursor() as cursor:
+            repository = SourceIntelligenceRepository(cursor)
+            spans = repository.observation_evidence_spans(
+                project_id=self.project_id,
+                asset_version_id=committed["asset_version_id"],
+            )
+            self.assertEqual(
+                [(item[1], item[2]) for item in spans], [(0, 10), (10, 20)]
+            )
+            cursor.execute(
+                """SELECT count(*) FROM authority_source_deconstruction_observation_input
+                WHERE observation_asset_version_id=%s AND role='SOURCE_CHUNK_EVIDENCE'""",
+                [committed["asset_version_id"]],
+            )
+            self.assertEqual(cursor.fetchone()[0], 2)
+            with self.assertRaises(UniqueViolation):
+                cursor.execute(
+                    """INSERT INTO authority_source_deconstruction_observation_input
+                    SELECT observation_asset_version_id,project_id,input_asset_version_id,evidence_span_id,
+                           role,ordinal+100,created_by_operation_id,created_at
+                    FROM authority_source_deconstruction_observation_input
+                    WHERE observation_asset_version_id=%s AND role='SOURCE_CHUNK_EVIDENCE' LIMIT 1""",
+                    [committed["asset_version_id"]],
+                )
+            connection.rollback()
 
     def _command(self, dimension: str, analyzer: object) -> CommitDeconstructionObservationCommand:
         span = ObservationEvidenceSpan(

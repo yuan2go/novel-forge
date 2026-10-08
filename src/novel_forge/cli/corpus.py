@@ -58,6 +58,7 @@ def add_corpus_parser(subparsers: Any) -> None:
             "preview",
             "import",
             "run",
+            "recover-stage",
             "status",
             "results",
             "targets",
@@ -136,6 +137,13 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         project,
     )
     build, sha = authority_release_identity()
+    if args.action == "recover-stage":
+        from novel_forge.modules.source_import.corpus_ingestion.reading_recovery import admit_completed_stage_recovery
+        if not args.operation_id:
+            raise ValueError("recover-stage requires the original --operation-id")
+        app = SourceImportApplication(settings.database_url, application_build_id=build, commit_sha=sha)
+        return admit_completed_stage_recovery(app, project_id=project,
+            operation_id=args.operation_id, principal=principal)
     if args.action.startswith("catalog-"):
         from novel_forge.modules.source_authority.public_catalog import CatalogCapture
         from novel_forge.modules.source_authority.public_catalog_application import CatalogCommand

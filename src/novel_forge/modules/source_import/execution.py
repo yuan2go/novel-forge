@@ -725,6 +725,7 @@ class PostgresContentIntelligenceExecutionPort:
         sampling_manifest: Mapping[str, Any] | None = None,
         narrative_context: dict[str, Any] | None = None,
         review_target: dict[str, Any] | None = None,
+        reuse_effect_id: str = "",
     ) -> dict[str, Any]:
         from .corpus_ingestion.narrative_contracts import (
             MECHANISM_OBSERVATION_SCHEMA, MECHANISM_POLICY, mechanism_observation_schema,
@@ -916,7 +917,7 @@ class PostgresContentIntelligenceExecutionPort:
                 )
             ),
         )
-        execution = self._execute(worker=worker, spec=spec)
+        execution = self._execute(worker=worker, spec=spec, reuse_effect_id=reuse_effect_id)
         if execution.get("output_validation_error"):
             raise KernelError(
                 execution["output_validation_error"],
@@ -1228,7 +1229,7 @@ class PostgresContentIntelligenceExecutionPort:
         }
 
     def _execute(
-        self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec
+        self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec, reuse_effect_id: str = ""
     ) -> dict[str, Any]:
         from novel_forge.storage.source_authority_repositories import (
             SourceAuthorityRepository,
@@ -1258,6 +1259,13 @@ class PostgresContentIntelligenceExecutionPort:
             }
         )
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
+        if reuse_effect_id and (
+            replay is None or replay.get("reused_external_effect_id") != reuse_effect_id
+        ):
+            raise KernelError(
+                "SOURCE_COMPLETION_RECOVERY_RECEIPT_MISMATCH",
+                "Local completion recovery requires the original successful receipt; sending is forbidden",
+            )
         if replay is not None:
             if spec.input_payload.get("narrative_contract"):
                 self._ensure_contract(

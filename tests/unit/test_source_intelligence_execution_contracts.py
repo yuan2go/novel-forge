@@ -726,3 +726,59 @@ def test_strict_projection_empty_optional_lineage_normalizes_without_weakening_e
     for changes in ({'evidence_span_ids':[]},{'input_observation_asset_version_ids':['observation:1']}):
         with pytest.raises(ValueError):
             validate_content_intelligence_output(DECONSTRUCTION_STAGE,content_intelligence_output_schema(DECONSTRUCTION_STAGE),{**value,'findings':[{**value['findings'][0],**changes}]})
+
+
+@pytest.mark.parametrize("receipt", [None, {"reused_external_effect_id": "other"}, {"reused_external_effect_id": "original"}])
+def test_completion_recovery_reuses_only_exact_receipt_without_dispatch(monkeypatch, receipt):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
+    from novel_forge.modules.command_kernel.errors import KernelError
+    import novel_forge.modules.source_import.execution as module
+    from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+    from novel_forge.modules.command_kernel import routing_bootstrap
+
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", MagicMock())
+    monkeypatch.setattr(SourceAuthorityRepository, "catalog_execution_binding", lambda *a: None)
+    monkeypatch.setattr(routing_bootstrap, "load_bootstrap_authorization", lambda *a, **k: None)
+    port = object.__new__(PostgresContentIntelligenceExecutionPort)
+    port.database_url = "fixture:no-database"
+    port._replay_succeeded_effect = MagicMock(return_value=receipt)
+    port.transport = MagicMock()
+    spec = SimpleNamespace(stage="deconstruction", capability="deconstruction.observe",
+        methodology_content_hash="fixture", input_payload={}, context_contract={})
+    worker = SimpleNamespace(project_id="fixture-project", causation_id="fixture-operation")
+    if receipt and receipt["reused_external_effect_id"] == "original":
+        assert port._execute(worker=worker, spec=spec, reuse_effect_id="original") == receipt
+    else:
+        with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_RECEIPT_MISMATCH"):
+            port._execute(worker=worker, spec=spec, reuse_effect_id="original")
+    assert port.transport.mock_calls == []
+
+
+@pytest.mark.parametrize("effect_status,operation_status,chained", [
+    ("UNKNOWN", "FAILED_FINAL", False), ("SUCCEEDED", "CANCELLED", False),
+    ("SUCCEEDED", "FAILED_FINAL", True), ("SUCCEEDED", "FAILED_FINAL", False),
+])
+def test_completion_recovery_admission_rejects_unknown_terminal_changes_and_chains(monkeypatch, effect_status, operation_status, chained):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.corpus_ingestion import reading_recovery as module
+
+    payload = {"phase": "REVIEW", "narrative_reading": {"identity": "fixture"}}
+    if chained:
+        payload["completion_recovery"] = {"source_operation_id": "earlier"}
+    repository = MagicMock()
+    repository.frozen_operation.return_value = {"name": "source.import.deconstruction.execute", "payload": payload}
+    repository.work_by_operation.return_value = {"status": "FAILED_FINAL", "failure": {"code": "PROGRAMMING_BUG"}, "import_job_id": "fixture-job"}
+    repository.job.return_value = {"status": "PROCESSING"}
+    monkeypatch.setattr(module, "SourceImportRepository", lambda *a: repository)
+    monkeypatch.setattr(module, "require_curated_operation_current", lambda *a: None)
+    uow = MagicMock()
+    uow.cursor.fetchone.return_value = (operation_status,)
+    uow.cursor.fetchall.return_value = [("original-effect", effect_status, "deconstruction.observe", "fixture-cache")]
+    if effect_status == "SUCCEEDED" and operation_status == "FAILED_FINAL" and not chained:
+        assert module._completed_stage_source(SimpleNamespace(), uow, "fixture-project", "original")[2] == "original-effect"
+    else:
+        with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_NOT_ELIGIBLE"):
+            module._completed_stage_source(SimpleNamespace(), uow, "fixture-project", "original")

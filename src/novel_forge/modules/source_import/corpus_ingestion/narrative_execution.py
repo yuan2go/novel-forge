@@ -86,6 +86,12 @@ def begin_reading(app, worker, job, plan, scope, strategy, plan_version):
 
 
 def _queue(app, uow, worker, job, payload):
+    return _queue_from_scope(app, uow, project_id=worker.project_id,
+        causation_id=worker.causation_id, trace_id=worker.trace_id,
+        correlation_id=worker.correlation_id, job=job, payload=payload)
+
+
+def _queue_from_scope(app, uow, *, project_id, causation_id, trace_id, correlation_id, job, payload, causation_operation_id=""):
     from novel_forge.modules.source_import.application import (
         SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
     )
@@ -95,14 +101,15 @@ def _queue(app, uow, worker, job, payload):
     )
     child = app._admit_child(
         definition_name=SOURCE_IMPORT_DECONSTRUCTION_OPERATION,
-        project_id=worker.project_id,
+        project_id=project_id,
         workspace_id=job["workspace_id"],
         actor_id=app.worker_id,
         idempotency_key=key,
-        trace_id=worker.trace_id,
-        correlation_id=worker.correlation_id,
-        causation_id=worker.causation_id,
+        trace_id=trace_id,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
         parent_operation_id=payload["reading_parent_operation_id"],
+        causation_operation_id=causation_operation_id,
         payload=payload,
         input_assets=(
             {
@@ -116,7 +123,7 @@ def _queue(app, uow, worker, job, payload):
         {
             "work_id": str(uuid4()),
             "import_job_id": job["import_job_id"],
-            "project_id": worker.project_id,
+            "project_id": project_id,
             "work_kind": "DECONSTRUCTION",
             "stable_key": key,
             "source_path": "reading:" + payload["narrative_reading"]["processing_id"],
@@ -129,11 +136,11 @@ def _queue(app, uow, worker, job, payload):
     )
     app._ready_child(
         operation_id=child,
-        project_id=worker.project_id,
+        project_id=project_id,
         actor_id=app.worker_id,
-        trace_id=worker.trace_id,
-        correlation_id=worker.correlation_id,
-        causation_id=worker.causation_id,
+        trace_id=trace_id,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
         reason="frozen bounded Source reading stage ready",
     )
     return child
@@ -197,6 +204,11 @@ def execute_reading(app, worker, payload):
     if work["status"] in {"SUCCEEDED", "REUSED"}:
         return work["result"]
     curated_provider_gate(app.database_url, worker)
+    from .reading_recovery import require_completed_stage_recovery
+    reuse_effect_id = (
+        require_completed_stage_recovery(app, worker.project_id, payload)
+        if payload.get("completion_recovery") else ""
+    )
     plan = payload["narrative_reading"]
     targets = [u for u in plan["units"] if u["role"] == "TARGET"]
     index = payload["unit_index"]
@@ -306,6 +318,7 @@ def execute_reading(app, worker, payload):
             input_observations=tuple(lower),
             analysis_plan_asset_version_id=payload["analysis_plan_asset_version_id"],
             narrative_context=context,
+            **({"reuse_effect_id": reuse_effect_id} if reuse_effect_id else {}),
             review_target={
                 "observation": candidate["observation"],
                 "evidence_spans": candidate["evidence_spans"],
@@ -423,7 +436,7 @@ def execute_reading(app, worker, payload):
                 accepted.append(observation)
         next_payload = None
         if not aggregate and (index + 1 < len(targets) or accepted):
-            next_payload = {k: v for k, v in payload.items() if k != "candidate"} | {
+            next_payload = {k: v for k, v in payload.items() if k not in {"candidate", "completion_recovery"}} | {
                 "phase": "SYNTHESIZE" if index + 1 == len(targets) else "OBSERVE",
                 "unit_index": index + 1,
                 "repair_round": 0,
@@ -517,7 +530,7 @@ def _input_evidence(app, worker, payload):
 
 
 def _repair(payload, issues, preserve_requirements=None):
-    return {k: v for k, v in payload.items() if k != "candidate"} | {
+    return {k: v for k, v in payload.items() if k not in {"candidate", "completion_recovery"}} | {
         "phase": "SYNTHESIZE"
         if payload["unit_index"]
         == len(

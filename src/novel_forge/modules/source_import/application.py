@@ -136,6 +136,7 @@ class ContentIntelligenceExecutionPort(Protocol):
         analysis_plan_asset_version_id: str = "",
         compound_analyzers: tuple[AnalyzerContract, ...] = (),
         sampling_manifest: Mapping[str, Any] | None = None,
+        reuse_effect_id: str = "",
     ) -> dict[str, Any]: ...
 
     def execute_mkaos_extraction(
