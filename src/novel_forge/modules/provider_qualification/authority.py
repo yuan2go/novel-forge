@@ -72,6 +72,7 @@ class D0QualificationAuthority:
         application_build_id: str,
         commit_sha: str,
         implementation_identity: str = "",
+        validation_release_sha: str = "",
         worker_id: str = "integration-worker:d0",
     ) -> None:
         self.database_url = database_url
@@ -79,6 +80,7 @@ class D0QualificationAuthority:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.implementation_identity = implementation_identity
+        self.validation_release_sha = validation_release_sha or commit_sha
         self.worker_id = worker_id
 
     def admit(self, command: D0QualificationCommand) -> dict[str, Any]:
@@ -252,6 +254,7 @@ class D0QualificationAuthority:
             "model_version": evidence.model_version,
             "release_sha": evidence.release_sha,
             "implementation_identity": evidence.implementation_identity,
+            "validation_release_sha": self.validation_release_sha,
             "auth_profile_ref": evidence.auth_profile_ref,
             "route_snapshot": provider["route_snapshot"],
             "fixture_protocol_only": False,

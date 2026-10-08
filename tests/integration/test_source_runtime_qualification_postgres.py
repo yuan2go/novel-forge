@@ -52,6 +52,7 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
             application_build_id="d0-live-authority-integration",
             commit_sha="a" * 40,
             implementation_identity="sha256:" + "b" * 64,
+            validation_release_sha="c" * 40,
         )
         config = D0ProbeConfig.from_mapping(
             {
@@ -345,6 +346,8 @@ class SourceRuntimeQualificationPostgresTests(unittest.TestCase):
                 assert report_content["monetary_cost_observability"] == "UNKNOWN"
                 assert report_content["usage_observability"] == "MEASURED"
                 assert all(not value for value in report_content["non_claims"].values())
+                assert report_content["release_sha"] == "a" * 40
+                assert report_content["validation_release_sha"] == "c" * 40
         assert require_source_runtime_qualification(DATABASE_URL, **kwargs, frozen=binding) == binding
         selector_cards = self._selector_cards(project_id, workspace_id, source_definition, binding, provider_evidence["result"]) if reservation_id else []
         if selector_cards:

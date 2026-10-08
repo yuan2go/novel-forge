@@ -2742,6 +2742,13 @@ receipt without resend. Unknown outcomes must recover the same operation. An ord
 successful stage without the required recovery evidence cannot be relabeled as this
 probe or resent just to acquire qualification. Resume the worker after this bounded step
 with `docker compose start source-import-worker`.
+If the original D0 stage already settled but report validation failed locally, rerun the
+same command against that exact Operation from a clean current release. It replays the
+original stage without sending again, requires the original single dispatch/receipt and
+ambiguity reconciliation, and derives the qualified implementation from its original Git
+release. `validation_release_sha` identifies the current validator; `qualified_release_sha`
+and the report's `release_sha` retain the actual Provider runtime. This cannot qualify a
+newer runtime or an ordinary success without the original D0 recovery evidence.
 
 The resulting D0 qualification binds the actual Source capability, Provider/model,
 account/runtime host, release, model profile, route, instruction/Prompt/Skill/schema hashes

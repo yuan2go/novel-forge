@@ -27,6 +27,22 @@ from novel_forge.modules.production_execution.security import (
 
 
 class ProductionExecutionSecurityBoundaryTests(unittest.TestCase):
+    def test_governed_author_grant_is_not_an_http_credential(self) -> None:
+        grant = {"authorization_id": "grant:fixture", "book_id": "book:fixture",
+                 "task_type": "source.mkaos.extract", "producer_contract_hash": "sha256:" + "a" * 64,
+                 "candidate_id": "candidate:fixture", "model_revision": "model:fixture",
+                 "author_id": "author:fixture", "expires_at": "2030-01-01T00:00:00+00:00",
+                 "maximum_tokens": 1000, "maximum_amount": "0", "reason": "Bounded author intent"}
+        def payload(value):
+            return {"routing_decision": {"author_supervision": {"authorization": value}}}
+        assert_no_inline_secrets(payload(grant))
+        for value in ("Bearer abcdefghijklmnop", {}, {**grant, "api_key": "opaque"},
+                      {**grant, "reason": "Bearer abcdefghijklmnop"}):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "inline secret material"):
+                assert_no_inline_secrets(payload(value))
+        with self.assertRaisesRegex(ValueError, "inline secret material"):
+            assert_no_inline_secrets({"headers": {"authorization": grant}})
+
     def test_credential_references_and_usage_counts_are_safe(self) -> None:
         assert_no_inline_secrets(
             {

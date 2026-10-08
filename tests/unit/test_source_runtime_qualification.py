@@ -3,6 +3,22 @@ from copy import deepcopy
 
 import pytest
 
+
+def test_settled_source_qualification_preserves_original_release(monkeypatch):
+    from scripts.source_qualification import qualification_release
+    from novel_forge.tools import implementation_tree_identity
+    monkeypatch.setattr(implementation_tree_identity, "build_git_implementation_tree_identity",
+                        lambda root, sha: {"implementation_tree_sha": "original-tree:" + sha})
+    identity = {"route": {"release_sha": "a" * 40}}
+    result = qualification_release(identity, scope={"status": "SUCCEEDED"}, root="unused",
+                                   commit_sha="b" * 40, implementation_identity="current-tree")
+    assert result == ("a" * 40, "original-tree:" + "a" * 40)
+    with pytest.raises(ValueError, match="settled original Source"):
+        qualification_release(identity, scope={"status": "READY"}, root="unused",
+                              commit_sha="b" * 40, implementation_identity="current-tree")
+    assert qualification_release(identity, scope={"status": "READY"}, root="unused",
+                                 commit_sha="a" * 40, implementation_identity="same-tree") == ("a" * 40, "same-tree")
+
 from novel_forge.modules.command_kernel.errors import KernelError
 
 
