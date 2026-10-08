@@ -5491,6 +5491,9 @@ class PostgresPlanningExecutionPreparer:
                 from novel_forge.modules.creative.input_selection import require_input_scope
                 require_input_scope(document.content, project_id=command.project_id,
                     workspace_id=command.workspace_id, book_id=command.book_id)
+            if document.content.get("book_id") and document.content["book_id"] != command.book_id:
+                raise KernelError("PLANNING_CONTEXT_INPUT_BOOK_INVALID",
+                    "Frozen Planning context belongs to another Book")
             documents.append(document)
             selected.append(
                 {

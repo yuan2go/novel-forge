@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from novel_forge.modules.authority_handler_runtime import AuthorityExecutionResult
 from novel_forge.modules.authority_security import Principal, PrincipalType
+from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation
 from novel_forge.modules.command_kernel.service import AdmissionContext, admit_command
 from novel_forge.modules.content_authority.definitions import (
@@ -107,6 +108,12 @@ class ContentAuthorityApplication:
                 selected = validate_input_selection(request.payload.get("input_selection"))
                 if selected["source_kind"] != "TASK_GENERATED" and (principal is None or principal.principal_type is not PrincipalType.LOCAL_OPERATOR):
                     raise PermissionError("Current input selection requires the authenticated author/operator; generated proposals inherit an exact selected input")
+                with AuthorityUnitOfWork(self.database_url) as book_uow:
+                    book_uow.cursor.execute("""SELECT project_id, workspace_id
+                        FROM authority_book WHERE book_id=%s""", [selected["book_id"]])
+                    if book_uow.cursor.fetchone() != (request.project_id, request.workspace_id):
+                        raise KernelError("CREATIVE_INPUT_BOOK_MISMATCH",
+                            "Selected input requires its existing Book in the exact Project and Workspace")
                 if selected["source_kind"] == "TASK_GENERATED":
                     from novel_forge.modules.creative.input_selection import require_selected_brief
                     with AuthorityUnitOfWork(self.database_url) as parent_uow:

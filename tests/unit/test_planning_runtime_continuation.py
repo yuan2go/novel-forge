@@ -9,6 +9,51 @@ from novel_forge.modules.story_planning_runtime.runtime_continuation import (
 )
 
 
+@pytest.mark.parametrize("changed", ["", "executor", "author", "book", "entitlement"])
+def test_author_capacity_registration_preserves_frozen_worker(monkeypatch, changed):
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    from novel_forge.modules.production_execution import execution_template
+    from novel_forge.storage import story_formation_repositories
+    auth = {"authorized_by_principal_id": "author", "authorization_ref": "author-grant"}
+    run = {"formation_run_id": "formation", "workspace_id": "workspace",
+        "frozen_input": {"generation_policy": {"auto_authorization": auth}}}
+    class Repository:
+        def __init__(self, cursor):
+            pass
+        def require(self, identity):
+            return run
+        def cancellation(self, identity):
+            return None
+    cursor = SimpleNamespace(execute=lambda *args: None, fetchall=lambda: [("formation",)])
+    monkeypatch.setattr(story_formation_repositories, "StoryFormationRepository", Repository)
+    monkeypatch.setattr(execution_template, "selected_book_template", lambda *args, **kwargs: {
+        "policy_snapshot": {"policy": {}, "policy_hash": "policy-hash"}})
+    monkeypatch.setattr(execution_template, "selected_template", lambda *args: {
+        "allowed_candidates": ["codex-cli:model:medium"], "member_authorization_ref": "membership"})
+    source = {"command": {"actor_id": "worker"}, "snapshot": {}}
+    successor = SimpleNamespace(project_id="project", book_id="book", workspace_id="workspace", actor_id="worker")
+    target = {"model_provider": "codex-cli", "model_id": "model", "reasoning_effort": "medium",
+        "cost_accounting_basis": "ACCOUNT_ENTITLEMENT", "account": {"entitlement": {"authorization_ref": "membership"}},
+        "pack_snapshot": {}}
+    principal = SimpleNamespace(principal_id="author")
+    if changed == "executor":
+        successor.actor_id = "foreign-worker"
+    elif changed == "author":
+        principal.principal_id = "other-author"
+    elif changed == "book":
+        successor.workspace_id = "foreign-workspace"
+    elif changed == "entitlement":
+        target["account"]["entitlement"]["authorization_ref"] = "other-grant"
+    if changed:
+        with pytest.raises(KernelError, match="AUTHORIZATION_REQUIRED"):
+            runtime._capacity_authorization(SimpleNamespace(cursor=cursor), source=source,
+                successor=successor, principal=principal, target=target)
+    else:
+        result = runtime._capacity_authorization(SimpleNamespace(cursor=cursor), source=source,
+            successor=successor, principal=principal, target=target)
+        assert result["formation_run_id"] == "formation"
+
+
 def source_uow(
     *,
     status="CANCELLED",

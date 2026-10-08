@@ -778,7 +778,7 @@ def _capacity_authorization(
     )
     if (
         auth.get("authorized_by_principal_id") != principal.principal_id
-        or successor.actor_id != principal.principal_id
+        or successor.actor_id != source["command"]["actor_id"]
         or run["workspace_id"] != successor.workspace_id
         or StoryFormationRepository(uow.cursor).cancellation(run["formation_run_id"])
         or not template

@@ -670,6 +670,19 @@ renew an author decision or confer model qualification.
 
 ## Governed corpus works and Book knowledge isolation
 
+Each Book owns its world, cast, relationships, plans, manuscripts, Canon, narrative
+state and revision history. A Project may contain several Book-bound Workspaces in
+one PostgreSQL deployment; a Project match alone does not authorize story input from
+another Book. Shared Prompt and Skill assets carry methods, not a default story or
+chapter structure. Shared worldlines, characters, Canon and plot memory are outside
+the current production contract.
+
+Common research and reference mechanisms enter through Source/MKAOS and the existing
+Book knowledge access policy. An approved abstract mechanism is neither a Book setting,
+an accepted event nor character knowledge. Its Book-specific translation becomes that
+Book's candidate plan. Historical briefs and test execution instructions are not
+KnowledgeCards and do not gain generation access by being moved or renamed.
+
 Source Import represents a collection as versioned `SourceWork` and ordered `SourceUnit`
 identities over existing AssetVersion, Source and object-store boundaries. Governed
 classical-corpus profiles parse catalogue-ordered HTML and explicitly shaped JSON,

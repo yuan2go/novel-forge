@@ -3048,18 +3048,20 @@ knowledge control. These fixtures are test inputs, not real-world professional e
 Preparation makes no Provider call and invents no approved Card or human verdict:
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare --output /tmp/kg-frozen
+PYTHONPATH=src .venv/bin/python -m scripts.prepare_knowledge_closure prepare \
+  --input-dir tests/fixtures/creation/knowledge-closure --synthetic-source-imports --output /tmp/kg-frozen
 PYTHONPATH=src .venv/bin/python -m scripts.run_creation_synthesis \
   --brief /tmp/kg-frozen/brief.json --policy /tmp/kg-frozen/creation.json \
   --formation-policy /tmp/kg-frozen/formation.json --knowledge-policy /tmp/kg-frozen/deny-all.json \
   --project-id kg-control --book-id kg-control-book --workspace-id kg-control-workspace \
+  --input-source HISTORICAL_TEST_SAMPLE --input-purpose ENGINEERING_REGRESSION --intent-ref knowledge-closure-regression \
   --root /tmp/kg-control-runtime --run-key kg-control-01 --evidence-dir /tmp/kg-control-config
 ```
 
 Follow the bounded deconstruction commands above to import, inspect, analyze and review
 the samples in the treatment project. After actual knowledge approval, save the exact
 Card AssetVersion IDs as a JSON string array. Freeze another directory with
-`prepare --approved-card-versions approved-card-versions.json --output /tmp/kg-approved`.
+`prepare --input-dir tests/fixtures/creation/knowledge-closure --approved-card-versions approved-card-versions.json --output /tmp/kg-approved`.
 This creates `allow-only.json`; execution rechecks ownership, version, withdrawal, rights
 and Book access. Do not give the control project any treatment plans. `DENY_ALL` removes
 external knowledge while retaining its own accepted Canon and memory.
@@ -3081,8 +3083,11 @@ Formation targets. At that cursor the runner closes the completed ChapterGroup a
 pauses the Book; `full_book_completion` stays `NOT_PROVEN`. An intervention or pilot
 boundary inside a group blocks dispatch until a legal scope change resolves it.
 
-The native scope binds one Book to each workspace. Reuse the existing Source project
-and primary workspace for A; create an independent project/workspace for B. Initialization
+The native scope binds one Book to each workspace. The historical A/B protocol uses
+independent projects/workspaces. Current native creation also supports a second Book in
+the same Project through `project_workspace.create` and `book.create`; each Book keeps
+its own inputs, state and knowledge policy. The chosen frozen budget must authorize
+that Book; creating another Workspace does not create another allowance. Initialization
 checks the existing project's active status and workspace ownership and preserves all
 source assets and ledger history. It never reassigns an already bound workspace.
 

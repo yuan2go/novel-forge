@@ -111,6 +111,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
     def run_op(self, name: str, inputs=(), payload=None, approval=None):
         self.counter += 1
         if name == "creative.brief.create":
+            self.ensure_brief_book()
             payload = {**payload, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": f"book:{self.project_id}", "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "explicit-test-case"}}
         result = self.app.execute(
             ContentOperationRequest(
@@ -140,6 +141,25 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
             row = uow.cursor.fetchone()
         self.assertIsNotNone(row)
         return dict(row[0])
+
+    def ensure_brief_book(self):
+        from tests.integration.authority_postgres_support import seed_authority_project_book
+        from novel_forge.modules.book_design_authority import BookDesignAuthorityApplication, BookDesignAuthorityCommand
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT 1 FROM authority_book WHERE book_id=%s", [f"book:{self.project_id}"])
+            if uow.cursor.fetchone():
+                return
+            uow.cursor.execute("SELECT 1 FROM authority_project WHERE project_id=%s", [self.project_id])
+            exists = uow.cursor.fetchone() is not None
+        if not exists:
+            seed_authority_project_book(project_id=self.project_id, book_id=f"book:{self.project_id}")
+        else:
+            BookDesignAuthorityApplication(DATABASE_URL, application_build_id="content-authority-integration", commit_sha="d" * 40).execute(
+                BookDesignAuthorityCommand(definition_name="book.create", project_id=self.project_id,
+                    workspace_id=f"workspace:{self.project_id}", book_id=f"book:{self.project_id}",
+                    actor_id=self.principal.principal_id, service_identity="fixture", idempotency_key="brief-book",
+                    trace_id="trace:brief-book", correlation_id=self.project_id,
+                    payload={"title": "Bound input fixture", "production_profile": {}, "runtime_policy": {}, "release_identity": "fixture"}), principal=self.principal)
 
     def test_unrelated_historical_definition_drift_does_not_block_brief(self) -> None:
         from copy import deepcopy
@@ -179,6 +199,7 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         MkaosAuthorityPostgresTests._create_project(self.project_id, f"workspace:{self.project_id}")
         card = create_approved_cooling_card(database_url=DATABASE_URL, project_id=self.project_id, workspace_id=f"workspace:{self.project_id}")
         raw = editorial_brief(card["card_asset_version_id"], card["content_hash"], f"book:{self.project_id}")
+        self.ensure_brief_book()
         request = ContentOperationRequest(definition_name="creative.brief.create", project_id=self.project_id, workspace_id=f"workspace:{self.project_id}", actor_id="content-operator", trace_id="trace:editorial", correlation_id="editorial", idempotency_key="editorial:v1", input_assets=({"asset_version_id": card["card_asset_version_id"], "content_hash": card["content_hash"]},), payload={"brief": raw, "input_selection": {"contract_version": "creative-input-selection.v1", "book_id": f"book:{self.project_id}", "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "explicit-test-case"}})
         first = self.app.execute(request, principal=self.principal)
         replay = self.app.execute(request, principal=self.principal)
