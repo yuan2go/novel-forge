@@ -1,0 +1,166 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index c0ad62c7..65745ad7 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -79,6 +79,10 @@ Root `skills/` is the source. Generate `.claude/skills/` with `make sync-skills`
+ hand-edit generated copies. Skills cannot bypass Authority, schema, storage, copyright,
+ Provider, permission or quality gates.
+ 
++Vendored `mattpocock/skills` are coding-agent tools governed by these rules. Their
++provenance and tool boundaries are recorded in `docs/development.md`. Writing methods
++do not authorize production draft inputs or change Capability Pack bindings.
++
+ ## Verification
+ 
+ Run the smallest focused check during development and the complete applicable matrix in
+diff --git a/architecture/manifests/ai-instruction-manifest.yaml b/architecture/manifests/ai-instruction-manifest.yaml
+index adbf63c9..84d7db32 100644
+--- a/architecture/manifests/ai-instruction-manifest.yaml
++++ b/architecture/manifests/ai-instruction-manifest.yaml
+@@ -21,7 +21,39 @@
+     {
+       "id": "runtime-skills",
+       "patterns": [
+-        "skills/*/SKILL.md",
++        "skills/agent-loop-governance/SKILL.md",
++        "skills/analysis-to-asset-conversion/SKILL.md",
++        "skills/anti-copy-abstraction/SKILL.md",
++        "skills/canon-continuity-graph/SKILL.md",
++        "skills/chapter-outline/SKILL.md",
++        "skills/character-design/SKILL.md",
++        "skills/classic-literary-depth-analysis/SKILL.md",
++        "skills/context-builder-source-isolation/SKILL.md",
++        "skills/evidence-fact-verification/SKILL.md",
++        "skills/hot-novel-business-deconstruction/SKILL.md",
++        "skills/hot-novel-deconstruction/SKILL.md",
++        "skills/long-outline/SKILL.md",
++        "skills/longform-temporal-query/SKILL.md",
++        "skills/material-curation/SKILL.md",
++        "skills/mkaos-knowledge-asset-os/SKILL.md",
++        "skills/multi-scale-pacing/SKILL.md",
++        "skills/multidisciplinary-knowledge/SKILL.md",
++        "skills/narrative-beat-design/SKILL.md",
++        "skills/novel-os-engineering-audit/SKILL.md",
++        "skills/platform-strategy-os/SKILL.md",
++        "skills/project-planning/SKILL.md",
++        "skills/prose-generation/SKILL.md",
++        "skills/provider-runtime-policy/SKILL.md",
++        "skills/publish-release-gate-os/SKILL.md",
++        "skills/published-fiction-craft-analysis/SKILL.md",
++        "skills/quality-review/SKILL.md",
++        "skills/reader-feedback/SKILL.md",
++        "skills/review-issue-gate/SKILL.md",
++        "skills/skill-governance/SKILL.md",
++        "skills/topic-development/SKILL.md",
++        "skills/training-exercise/SKILL.md",
++        "skills/world-consequence-modeling/SKILL.md",
++        "skills/worldbuilding/SKILL.md",
+         "skills/*/legacy-v1.md"
+       ],
+       "kind": "RUNTIME_SKILL_SOURCE",
+@@ -29,6 +61,53 @@
+       "consumer": "coding-agent-and-agent-runtime",
+       "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+     },
++    {
++      "id": "mattpocock-coding-skills",
++      "patterns": [
++        "skills/ask-matt/**",
++        "skills/code-review/**",
++        "skills/codebase-design/**",
++        "skills/diagnosing-bugs/**",
++        "skills/domain-modeling/**",
++        "skills/grill-with-docs/**",
++        "skills/implement/**",
++        "skills/implement-spec/**",
++        "skills/improve-codebase-architecture/**",
++        "skills/pr/**",
++        "skills/prototype/**",
++        "skills/research/**",
++        "skills/retro/**",
++        "skills/setup-matt-pocock-skills/**",
++        "skills/tdd/**",
++        "skills/to-spec/**",
++        "skills/to-tickets/**",
++        "skills/triage/**",
++        "skills/wayfinder/**",
++        "skills/wizard/**",
++        "skills/chief-of-staff/**",
++        "skills/claude-handoff/**",
++        "skills/loop-me/**",
++        "skills/setup-ts-deep-modules/**",
++        "skills/writing-beats/**",
++        "skills/writing-fragments/**",
++        "skills/writing-shape/**",
++        "skills/git-guardrails-claude-code/**",
++        "skills/migrate-to-shoehorn/**",
++        "skills/scaffold-exercises/**",
++        "skills/setup-pre-commit/**",
++        "skills/grill-me/**",
++        "skills/grilling/**",
++        "skills/handoff/**",
++        "skills/teach/**",
++        "skills/to-questionnaire/**",
++        "skills/wait-what/**",
++        "skills/writing-for-agents/**"
++      ],
++      "kind": "CODING_AGENT_SKILL_SOURCE",
++      "owner": "repository-governance",
++      "consumer": "coding-agent",
++      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
++    },
+     {
+       "id": "capability-pack-prompts",
+       "patterns": [
+diff --git a/architecture/reality-evidence.json b/architecture/reality-evidence.json
+index 650dda35..8dd1e5bc 100644
+--- a/architecture/reality-evidence.json
++++ b/architecture/reality-evidence.json
+@@ -9191,7 +9191,7 @@
+   "projection_source": {
+     "authority": "EXECUTABLE_CODE",
+     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
+-    "implementation_tree_sha": "sha256:b4deaa253c4f82645d321dee15fcde77830d3d8978f01b8ef94a2e31cb151968"
++    "implementation_tree_sha": "sha256:8a1394bcf0c0c7a1f3e544c0a6f439e07af9cc73cf76b139103653ce533b1f28"
+   },
+   "role_definitions": {
+     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
+diff --git a/docs/development.md b/docs/development.md
+index af9b4b2b..0d0c101b 100644
+--- a/docs/development.md
++++ b/docs/development.md
+@@ -121,6 +121,34 @@ make test-reality-check
+ Skills cannot bypass schema validation, Authority ownership, source isolation, Provider
+ controls, permissions, trace/cost evidence or quality gates.
+ 
++The 38 vendored Skills from [mattpocock/skills](https://github.com/mattpocock/skills/tree/6fd947921b935b7e1e69293a200400f0fdd5c15f)
++are pinned to commit `6fd947921b935b7e1e69293a200400f0fdd5c15f` (upstream package
++version `1.3.1`). Each directory retains the upstream MIT `LICENSE`, references,
++agent metadata and templates; `skills/pr/CREDITS.md` retains its additional attribution.
++The instruction manifest classifies these as coding-agent tools. Existing Novel OS
++Skills own production workflows; these additions do not alter Capability Pack bindings.
++The seven upstream `in-progress` Skills remain experimental. Files are flattened into
++the root Skills directory; the corresponding Codex discovery directory links to that source,
++and `make sync-skills` generates the Claude Code copies. Upstream invocation flags
++remain intact; installing a Skill does not run it or configure its external services.
++
++Installation requires Python and GitHub download access, with no npm packages needed.
++On invocation, tracker workflows can use authenticated `gh` or `glab`, research can
++use network retrieval, and `claude-handoff` can launch Claude CLI sessions. Package
++setup Skills can install Husky, lint-staged, Prettier, dependency-cruiser or
++the @total-typescript/shoehorn package through the project's package manager. These are optional
++workflow dependencies, not installed dependencies of Novel Forge. Provider calls,
++external writes and credentials remain subject to the user's task and repository rules.
++
++Bundled executable material is limited to `skills/diagnosing-bugs/scripts/hitl-loop.template.sh`
++(Bash prompts), `skills/git-guardrails-claude-code/scripts/block-dangerous-git.sh` (Bash and
++`jq`, rejects matching Git commands), `skills/wizard/template.sh` (Bash, browser opening,
++`.env` writes and optional GitHub secret/variable writes via `gh`), and
++`skills/setup-ts-deep-modules/dependency-cruiser.config.cjs` (Node configuration). Installation
++does not execute these files or install hooks. Verify intake with frontmatter and
++upstream byte comparisons, `make sync-skills-dry-run`, `make sync-skills`,
++`make check-skills`, `make instruction-reality-check` and `git diff --check`.
++
+ ## Adding or changing a capability
+ 
+ 1. Add or change executable behavior in the owning module.

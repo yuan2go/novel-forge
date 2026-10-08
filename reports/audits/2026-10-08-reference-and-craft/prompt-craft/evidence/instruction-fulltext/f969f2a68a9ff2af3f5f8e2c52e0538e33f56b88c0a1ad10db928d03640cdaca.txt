@@ -1,0 +1,30 @@
+{
+  "$id": "novel-forge://schemas/chapter-generation-pack-input/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canon_snapshot_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "chapter_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "chapter_plan_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "project_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "chapter_id",
+    "chapter_plan_asset_version_id",
+    "canon_snapshot_version_id"
+  ],
+  "type": "object"
+}

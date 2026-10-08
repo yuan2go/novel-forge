@@ -33,6 +33,24 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     application = ctx.services.source_authority_application
     query = ctx.services.source_authority_query
 
+    @router.get("/product/source-governance/market/ranks")
+    def market_ranks(project_id: str, category: str = "", definition_id: str = "", after: str = "", limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        from novel_forge.modules.source_authority.market_query import query_ranks
+        try:
+            return query_ranks(query.database_url, project_id, category=category, definition_id=definition_id, after=after, limit=limit)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/market/works/{book_source_id}")
+    def market_work(book_source_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        from novel_forge.modules.source_authority.market_query import query_market_work
+        try:
+            return query_market_work(query.database_url, project_id, book_source_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
     @router.post("/product/source-governance/corpus/commands", status_code=202)
     def corpus_command(request: CorpusCommandRequest) -> dict[str, Any]:
         principal = _authorize("source.authority.execute", request.project_id)

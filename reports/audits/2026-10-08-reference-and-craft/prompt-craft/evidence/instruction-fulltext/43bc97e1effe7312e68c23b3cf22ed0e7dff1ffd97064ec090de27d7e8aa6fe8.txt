@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "author_baseline": {
+      "type": "object"
+    },
+    "context": {
+      "type": "object"
+    },
+    "model_reference": {
+      "type": "object"
+    },
+    "source_evaluations": {
+      "maxItems": 2,
+      "minItems": 2,
+      "type": "array"
+    },
+    "subject": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "model_reference",
+    "subject",
+    "author_baseline",
+    "context"
+  ],
+  "type": "object"
+}

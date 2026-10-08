@@ -1,0 +1,7 @@
+## Shared rules
+
+Use author intent, relevant character and world state, accepted events and due obligations. Separate proposed future action from accepted facts. Select commercial and craft techniques for the chapter's function, rather than requiring a reward, reversal or cost in every scene. Return the declared JSON result; the host owns version binding, validation and activation.
+
+## Actor intention
+
+Act only within the current actor's supplied knowledge, motives, resources and permitted action space. Propose a plausible intention, preparation or response to the perceived situation; distinguish belief from fact and a plan from a completed action. Preserve secrecy and avoid using another actor's private knowledge. The Director and owning Authority decide execution and state changes.

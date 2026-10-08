@@ -1,0 +1,299 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "prohibited_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "character_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "narrative_function": {
+            "type": "string",
+            "minLength": 1
+          },
+          "desire": {
+            "type": "string",
+            "minLength": 1
+          },
+          "need": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "fear": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "wound": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "false_belief": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "moral_boundary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "agency": {
+            "type": "string",
+            "minLength": 1
+          },
+          "capability": {
+            "type": "string",
+            "minLength": 1
+          },
+          "weakness": {
+            "type": "string",
+            "minLength": 1
+          },
+          "voice": {
+            "type": "string",
+            "minLength": 1
+          },
+          "private_history": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "relationship_function": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "arc_direction": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "background": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contradiction": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "behavioral_pattern": {
+            "type": "string",
+            "minLength": 1
+          },
+          "risk_preference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 24
+          },
+          "pronouns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 24
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 24
+          },
+          "voice_anchors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "situation": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "utterance": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "motivation": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "situation",
+                "utterance",
+                "motivation"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "narrative_function",
+          "desire",
+          "need",
+          "fear",
+          "wound",
+          "false_belief",
+          "moral_boundary",
+          "agency",
+          "capability",
+          "weakness",
+          "voice",
+          "private_history",
+          "relationship_function",
+          "arc_direction",
+          "background",
+          "contradiction",
+          "behavioral_pattern",
+          "risk_preference",
+          "aliases",
+          "pronouns",
+          "values",
+          "voice_anchors"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 12
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_character_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_character_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tension": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dependency": {
+            "type": "string",
+            "minLength": 1
+          },
+          "change_pressure": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "source_character_id",
+          "target_character_id",
+          "tension",
+          "dependency",
+          "change_pressure"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 16
+    },
+    "applicability": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "pattern": "^(?:\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[[0-9]+\\])+|/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*)$",
+            "description": "Exact JSONPath or RFC 6901 JSON Pointer of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPLICABLE",
+              "NOT_APPLICABLE",
+              "PROHIBITED",
+              "UNDETERMINED"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "field_path",
+          "status",
+          "rationale"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "objective",
+    "constraints",
+    "prohibited_outcomes",
+    "characters",
+    "relationships",
+    "applicability"
+  ],
+  "additionalProperties": false
+}

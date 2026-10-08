@@ -7,13 +7,20 @@ import re
 
 
 METHODOLOGY_VERSIONS = {
-    "hot-novel-deconstruction": "2.0.0",
-    "hot-novel-business-deconstruction": "1.0.0",
+    "hot-novel-deconstruction": "2.1.0",
+    "hot-novel-business-deconstruction": "2.0.0",
     "published-fiction-craft-analysis": "1.0.0",
     "classic-literary-depth-analysis": "1.0.0",
     "multidisciplinary-knowledge": "1.1.0",
     "platform-strategy-os": "1.0.0",
-    "anti-copy-abstraction": "1.0.0",
+    "anti-copy-abstraction": "1.1.0",
+}
+
+LEGACY_METHODOLOGIES = {
+    "multidisciplinary-knowledge": {"1.0.0": "legacy-v1.md"},
+    "hot-novel-deconstruction": {"2.0.0": "legacy-v2.0.0.md"},
+    "hot-novel-business-deconstruction": {"1.0.0": "legacy-v1.0.0.md"},
+    "anti-copy-abstraction": {"1.0.0": "legacy-v1.0.0.md"},
 }
 
 
@@ -41,12 +48,7 @@ class SourceMethodologyRegistry:
     def require(self, skill_id: str, *, expected_digest: str = "") -> SourceMethodology:
         if skill_id not in self.versions:
             raise ValueError(f"Source analysis Skill is not governed: {skill_id}")
-        source_name = (
-            "legacy-v1.md"
-            if skill_id == "multidisciplinary-knowledge"
-            and self.versions[skill_id] == "1.0.0"
-            else "SKILL.md"
-        )
+        source_name = LEGACY_METHODOLOGIES.get(skill_id, {}).get(self.versions[skill_id], "SKILL.md")
         path = (self.skill_root / skill_id / source_name).resolve()
         if self.skill_root not in path.parents or not path.is_file():
             raise ValueError(f"Source analysis Skill is not available: {skill_id}")
@@ -56,13 +58,11 @@ class SourceMethodologyRegistry:
             raise ValueError(f"Source analysis Skill identity mismatch: {skill_id}")
         digest = "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
         version = self.versions[skill_id]
-        if (
-            expected_digest
-            and digest != expected_digest
-            and skill_id == "multidisciplinary-knowledge"
-        ):
-            legacy = self.skill_root / skill_id / "legacy-v1.md"
-            if legacy.is_file():
+        if expected_digest and digest != expected_digest:
+            for legacy_version, legacy_name in LEGACY_METHODOLOGIES.get(skill_id, {}).items():
+                legacy = self.skill_root / skill_id / legacy_name
+                if not legacy.is_file():
+                    continue
                 legacy_content = legacy.read_text(encoding="utf-8")
                 legacy_digest = (
                     "sha256:"
@@ -72,9 +72,10 @@ class SourceMethodologyRegistry:
                     content, digest, source_name, version = (
                         legacy_content,
                         legacy_digest,
-                        "legacy-v1.md",
-                        "1.0.0",
+                        legacy_name,
+                        legacy_version,
                     )
+                    break
         if expected_digest and digest != expected_digest:
             raise ValueError(
                 f"Source analysis Skill materialization digest mismatch: {skill_id}"

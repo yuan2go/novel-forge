@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal
+from novel_forge.modules.source_import.market_runtime import MarketRefreshRequest
 from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import (
     CuratedAnalysisRequest,
     admit_curated_analysis,
@@ -75,6 +76,25 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
     router = APIRouter(prefix="/product/source-imports", tags=["source-import"])
     application = ctx.services.source_import_application
     query = ctx.services.source_import_query
+
+    @router.post("/market/refresh", status_code=202)
+    def refresh_market(request: MarketRefreshRequest) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        from novel_forge.modules.source_import.market_runtime import admit_market_refresh
+        try:
+            return admit_market_refresh(application, request, principal)
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
+
+    @router.get("/market/operations/{operation_id}")
+    def market_operation(operation_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            if application._operation_definition(operation_id, project_id) != "source.import.market.refresh":
+                raise ValueError("Exact market refresh operation required")
+            return application.result(operation_id, project_id, replayed=True)
+        except (KernelError, ValueError) as exc:
+            raise _http_error(exc) from exc
 
     @router.post("/provider-samples", status_code=202)
     def provider_sample(request: SourceProviderSampleRequest, dry_run: bool = False) -> dict[str, Any]:

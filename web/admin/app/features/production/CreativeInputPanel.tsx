@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {CurrentManuscriptPanel} from "./CurrentManuscriptPanel";
 import { FormationReviewPanel } from "./FormationReviewPanel";
+import { MarketReferences } from "./MarketReferences";
 import { EditorialLearningInput } from "./EditorialLearningInput";
 import { eligibleEditorialCards, editorialProblems, editorialBriefExtension, type EditorialLearning, type EditorialCard } from "./editorial-learning";
 import { ApiError, fetchJson } from "../../shared/api";
@@ -134,6 +135,12 @@ export function CreativeInputPanel({project, book, release, formationId, onBook,
         <label>创作约束（每行一条）<textarea aria-label="创作约束" value={saved.constraints} disabled={disabled} onChange={e => change("constraints", e.target.value)} /></label>
         <label>素材使用边界（每行一条）<textarea aria-label="素材使用边界" value={saved.sources} disabled={disabled} onChange={e => change("sources", e.target.value)} /></label>
       </div>
+      {project && <MarketReferences projectId={project.project_id} disabled={disabled || !!saved.formationId} onCard={card=>{
+        setCards(current=>current.some(item=>item.asset_version_id===card.asset_version_id)?current:[...current,card]);
+        const editorial=saved.editorial || {contract_version:"editorial-learning.v1" as const,book_id:book.book_id,version:crypto.randomUUID(),evidence_class:"OPERATOR_AUTHORED_INPUT" as const,reader_promise:"",decisions:[]};
+        if(editorial.decisions.length >= 12) {setError("编辑取舍已达当前输入范围，请调整现有项。");return;}
+        retain({...saved,editorialEnabled:true,editorial:{...editorial,version:crypto.randomUUID(),decisions:[...editorial.decisions,{decision_id:crypto.randomUUID(),choice:"DEFER",finding:card.content.abstract_content?.mechanism||"",application:"",reader_effect:"",tradeoff:"",targets:["CREATIVE_FOUNDATION","BOOK"],chapter_range:[1,saved.target],knowledge_cards:[{asset_version_id:card.asset_version_id,content_hash:card.content_hash}]}]}});
+      }}/>}
       <label><input type="checkbox" checked={!!saved.editorialEnabled} disabled={disabled || !!saved.formationId} onChange={e => retain({...saved, editorialEnabled: e.target.checked, editorial: saved.editorial || {contract_version: "editorial-learning.v1", book_id: book.book_id, version: crypto.randomUUID(), evidence_class: "OPERATOR_AUTHORED_INPUT", reader_promise: "", decisions: []}})}/>将参考讨论与专业依据带入原创设计</label>
       {learning && <EditorialLearningInput value={learning} cards={cards} disabled={disabled || !!saved.formationId} problems={learningProblems} onChange={value => retain({...saved, editorial: {...value, version: crypto.randomUUID()}})}/>}
       {knowledgeError && <p role="alert">知识目录读取失败：{knowledgeError}</p>}

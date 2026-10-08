@@ -1,0 +1,24 @@
+{
+  "allowed_asset_types": [
+    "book_design",
+    "canon_snapshot",
+    "chapter_execution_intent",
+    "chapter_plan",
+    "chapter_plan_version",
+    "context_bundle",
+    "knowledge_pack",
+    "story_state"
+  ],
+  "forbidden_asset_types": [
+    "raw_source_chunk",
+    "raw_source_document"
+  ],
+  "max_tokens": 16000,
+  "policy_id": "context-policy:chapter-generation-pack:v1",
+  "reject_cross_project": true,
+  "required_version_refs": [
+    "canon_snapshot_version_id",
+    "chapter_plan_asset_version_id"
+  ],
+  "source_isolation": "ABSTRACT_ASSETS_ONLY"
+}

@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "prohibited_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "target_reader": {
+      "type": "string",
+      "minLength": 1
+    },
+    "why_worth_writing": {
+      "type": "string",
+      "minLength": 1
+    },
+    "genre": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subgenre": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "core_desire": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "core_fear": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "core_conflict": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "narrative_engine": {
+      "type": "string",
+      "minLength": 1
+    },
+    "differentiation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "emotional_contract": {
+      "type": "string",
+      "minLength": 1
+    },
+    "serialization_potential": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "style_profile": {
+      "type": "object",
+      "properties": {
+        "narrator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pov": {
+          "type": "string",
+          "minLength": 1
+        },
+        "genre_conventions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 24
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 24
+        },
+        "original_examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              },
+              "example": {
+                "type": "string",
+                "minLength": 1
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "purpose",
+              "example",
+              "explanation"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "narrator",
+        "pov",
+        "genre_conventions",
+        "constraints",
+        "original_examples"
+      ],
+      "additionalProperties": false
+    },
+    "applicability": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "pattern": "^(?:\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[[0-9]+\\])+|/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*)$",
+            "description": "Exact JSONPath or RFC 6901 JSON Pointer of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPLICABLE",
+              "NOT_APPLICABLE",
+              "PROHIBITED",
+              "UNDETERMINED"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "field_path",
+          "status",
+          "rationale"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "narrative_search_projection": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "const": "narrative-search-projection.v1"
+        },
+        "strategy_fingerprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assumptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "projected_consequences": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "narrative_opportunities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "narrative_risks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "irreversible_decisions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "future_options": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "repetition_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "creative_intelligence": {
+          "type": "object",
+          "properties": {
+            "conflict_escalation": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "character_agency": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "choice_cost_consequence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "reversal_reveal": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "setup_payoff": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "emotional_progression": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "pacing_variation": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "relationship_evolution": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "world_consequence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "pattern_diversity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "arc_momentum": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "reader_promise": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "future_optionality": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "conflict_escalation",
+            "character_agency",
+            "choice_cost_consequence",
+            "reversal_reveal",
+            "setup_payoff",
+            "emotional_progression",
+            "pacing_variation",
+            "relationship_evolution",
+            "world_consequence",
+            "pattern_diversity",
+            "arc_momentum",
+            "reader_promise",
+            "future_optionality"
+          ],
+          "additionalProperties": false
+        },
+        "selection_summary": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "contract_version",
+        "strategy_fingerprint",
+        "assumptions",
+        "projected_consequences",
+        "narrative_opportunities",
+        "narrative_risks",
+        "irreversible_decisions",
+        "future_options",
+        "repetition_keys",
+        "creative_intelligence",
+        "selection_summary"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "objective",
+    "constraints",
+    "prohibited_outcomes",
+    "target_reader",
+    "why_worth_writing",
+    "genre",
+    "subgenre",
+    "core_desire",
+    "core_fear",
+    "core_conflict",
+    "narrative_engine",
+    "differentiation",
+    "emotional_contract",
+    "serialization_potential",
+    "style_profile",
+    "applicability",
+    "narrative_search_projection"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,21 @@
+{
+  "captured_utc": "2026-10-08T10:40:30.060345+00:00",
+  "branch_head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "remote_main": "7540c51fe587266b8083ef4168271aa5a4ff9f3e",
+  "initial_remote_main": "7540c51fe587266b8083ef4168271aa5a4ff9f3e",
+  "remote_unchanged": true,
+  "status_identical": true,
+  "tracked_diff_identical": true,
+  "new_provider_calls": 0,
+  "production_mutations_by_audit": 0,
+  "database_read_status": "CONNECT_FAILED",
+  "docker_daemon": "UNAVAILABLE",
+  "installed_distribution": "6.0.0",
+  "module_spec_without_pythonpath": null,
+  "host_path_codex_version_check": "FAILED_ENOENT",
+  "actual_application_codex_binary_and_version": "UNVERIFIED",
+  "head_unchanged": true,
+  "supplementary_offline_checks": 11,
+  "supplementary_method_context_cases": 8,
+  "status_comparison_mode": "porcelain-v1 normal, same as opening; expanded inventory retained separately"
+}

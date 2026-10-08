@@ -1,0 +1,413 @@
+{
+  "contract_version": "foundation-generation.v4",
+  "role": "WORLD_BIBLE",
+  "task": "Compile the world depth needed by this work using the frozen typed world contract. Preserve laws, limits and knowledge boundaries. A rule need not impose a cost; distinguish an inapplicable cost from an unknown consequence. Explain deferred dimensions and extension triggers.",
+  "parent_roles": [
+    "CREATIVE_FOUNDATION",
+    "THEME_CONTRACT",
+    "ENDING_INTENT",
+    "READER_PROMISE"
+  ],
+  "authority_boundary": "Generate a candidate only. Upstream versions are immutable. No Canon, knowledge or accepted-history writes. Independent diagnosis and activation follow.",
+  "world_contract": {
+    "contract_version": "world-foundation.v1",
+    "compiled_scope": "BOOK",
+    "schema": {
+      "$defs": {
+        "WorldRuleContract": {
+          "additionalProperties": false,
+          "properties": {
+            "rule_id": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Rule Id",
+              "type": "string"
+            },
+            "category": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Category",
+              "type": "string"
+            },
+            "statement": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Statement",
+              "type": "string"
+            },
+            "enforcement": {
+              "enum": [
+                "HARD",
+                "QUANTITATIVE",
+                "TEMPORAL",
+                "SOFT_CAUSAL",
+                "MECHANISM"
+              ],
+              "title": "Enforcement",
+              "type": "string"
+            },
+            "applicability": {
+              "items": {
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Applicability",
+              "type": "array"
+            },
+            "consequences": {
+              "items": {
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Consequences",
+              "type": "array"
+            },
+            "predicate": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/_PredicateContract"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "mechanism": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/_MechanismContract"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "rule_id",
+            "category",
+            "statement",
+            "enforcement",
+            "applicability",
+            "consequences"
+          ],
+          "title": "WorldRuleContract",
+          "type": "object"
+        },
+        "_EntityContract": {
+          "additionalProperties": true,
+          "properties": {
+            "entity_id": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Entity Id",
+              "type": "string"
+            },
+            "kind": {
+              "default": null,
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          "required": [
+            "entity_id"
+          ],
+          "title": "_EntityContract",
+          "type": "object"
+        },
+        "_MechanismContract": {
+          "additionalProperties": false,
+          "properties": {
+            "contract_version": {
+              "const": "world-mechanism.v1",
+              "title": "Contract Version",
+              "type": "string"
+            },
+            "effect": {
+              "enum": [
+                "REVIVAL",
+                "INSTANT_TRAVEL",
+                "MULTIPRESENCE",
+                "POWER_TRANSITION"
+              ],
+              "title": "Effect",
+              "type": "string"
+            },
+            "entity_keys": {
+              "items": {
+                "minLength": 1,
+                "pattern": "\\S",
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Entity Keys",
+              "type": "array"
+            }
+          },
+          "required": [
+            "contract_version",
+            "effect",
+            "entity_keys"
+          ],
+          "title": "_MechanismContract",
+          "type": "object"
+        },
+        "_PredicateContract": {
+          "additionalProperties": false,
+          "properties": {
+            "requirement_id": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Requirement Id",
+              "type": "string"
+            },
+            "state_kind": {
+              "enum": [
+                "canon_fact",
+                "timeline_event",
+                "character_state",
+                "relationship_state",
+                "world_rule",
+                "resource_state",
+                "power_state",
+                "foreshadow_state",
+                "reader_promise",
+                "plot_thread",
+                "narrative_debt",
+                "mystery_state",
+                "antagonist_state",
+                "arc_state",
+                "reward_event",
+                "theme_movement",
+                "character_knowledge",
+                "character_belief",
+                "character_arc",
+                "reader_knowledge",
+                "disclosure_event",
+                "world_state",
+                "faction_state",
+                "location_state",
+                "consequence_state",
+                "conflict_state",
+                "narrative_obligation",
+                "payoff_event"
+              ],
+              "title": "State Kind",
+              "type": "string"
+            },
+            "entity_key": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Entity Key",
+              "type": "string"
+            },
+            "field": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Field",
+              "type": "string"
+            },
+            "operator": {
+              "enum": [
+                "EQUALS",
+                "AT_LEAST",
+                "AT_MOST",
+                "EXISTS"
+              ],
+              "title": "Operator",
+              "type": "string"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Value"
+            }
+          },
+          "required": [
+            "requirement_id",
+            "state_kind",
+            "entity_key",
+            "field",
+            "operator"
+          ],
+          "title": "_PredicateContract",
+          "type": "object"
+        },
+        "_SectionContract": {
+          "additionalProperties": true,
+          "properties": {
+            "depth": {
+              "enum": [
+                "SEED",
+                "WORKING",
+                "DETAILED"
+              ],
+              "title": "Depth",
+              "type": "string"
+            },
+            "content": {
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Content",
+              "type": "string"
+            }
+          },
+          "required": [
+            "depth",
+            "content"
+          ],
+          "title": "_SectionContract",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": "world-foundation.v1",
+          "title": "Contract Version",
+          "type": "string"
+        },
+        "genre_profile": {
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Genre Profile",
+          "type": "string"
+        },
+        "compiled_scope": {
+          "enum": [
+            "BOOK",
+            "VOLUME",
+            "ARC"
+          ],
+          "title": "Compiled Scope",
+          "type": "string",
+          "const": "BOOK"
+        },
+        "sections": {
+          "patternProperties": {
+            "\\S": {
+              "$ref": "#/$defs/_SectionContract"
+            }
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "title": "Sections",
+          "type": "object"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/WorldRuleContract"
+          },
+          "minItems": 1,
+          "title": "Rules",
+          "type": "array"
+        },
+        "entities": {
+          "items": {
+            "$ref": "#/$defs/_EntityContract"
+          },
+          "minItems": 1,
+          "title": "Entities",
+          "type": "array"
+        }
+      },
+      "required": [
+        "contract_version",
+        "genre_profile",
+        "compiled_scope",
+        "sections",
+        "rules",
+        "entities"
+      ],
+      "title": "WorldFoundationContract",
+      "type": "object",
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "example": {
+      "contract_version": "world-foundation.v1",
+      "genre_profile": "original-genre.v1",
+      "compiled_scope": "BOOK",
+      "sections": {
+        "core_laws": {
+          "depth": "SEED",
+          "content": "An original constraint changes choices."
+        }
+      },
+      "rules": [
+        {
+          "rule_id": "rule:choice",
+          "category": "core_laws",
+          "statement": "A faction may defend its interests.",
+          "enforcement": "SOFT_CAUSAL",
+          "applicability": [
+            "faction_state"
+          ],
+          "consequences": [
+            "A proposed response still needs accepted causes."
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "entity_id": "faction:example",
+          "kind": "FACTION"
+        }
+      ]
+    },
+    "enum_contract": "Every enum is one scalar string. Schema enum arrays list choices; they are never the field's returned value. compiled_scope is fixed by this task.",
+    "sections": {
+      "key_rule": "core_laws is required; include only needed ontology dimensions or genre:/book: extensions",
+      "ontology": [
+        "core_laws",
+        "ecology_resources",
+        "economy",
+        "history_culture",
+        "information_communication",
+        "life_death_disease",
+        "politics_factions",
+        "religion",
+        "society_class",
+        "space_time_geography",
+        "technology_power"
+      ],
+      "content": "concrete approved initial conditions, rules and limits"
+    },
+    "rules": {
+      "category": "one compiled section key",
+      "applicability_and_consequences": "nonempty string arrays",
+      "predicate": {
+        "required_for": "every enforcement except SOFT_CAUSAL",
+        "value": "typed scalar; only EXISTS may omit value"
+      },
+      "mechanism": "Use MECHANISM only when the existing typed WorldMechanism contract can express the rule; otherwise request explicit design clarification. Do not replace a hard rule with soft reasoning."
+    },
+    "entities": "nonempty array of unique entity_id and kind records; references must resolve; approved initial conditions are not accepted events"
+  },
+  "repair_contract": "When repair evidence is present, address each unresolved diagnosis, preserve unaffected constraints and explain uncertainty through the candidate rather than silently replacing upstream decisions.",
+  "applicability_contract": "Current declarations may use exact JSONPath or RFC 6901 JSON Pointer; bare field names are invalid. All fields remain required. Use null for an inapplicable or prohibited optional feature and declare its exact field path, status and rationale in applicability. UNDETERMINED records uncertainty, not permission to invent. Empty collections mean confirmed zero members, never missing input. Apply author requirements and accepted design at their original scope and strength; report conflicts rather than silently replacing them."
+}

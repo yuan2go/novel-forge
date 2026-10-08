@@ -16,6 +16,7 @@ from pydantic import (
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.source_authority.domain import decide_source_governance
+from novel_forge.modules.source_authority.market import UseScope, DefineMarketRank, ObserveMarketRank, LinkMarketEdition
 
 
 class CorpusPurpose(StrEnum):
@@ -58,6 +59,14 @@ class WorkRights(CorpusContract):
     allowed_uses: tuple[CorpusUse, ...] = Field(default=(), max_length=3)
     restrictions: tuple[Text, ...] = Field(default=(), max_length=30)
     evidence_refs: tuple[Text, ...] = Field(min_length=1, max_length=30)
+    use_scope: UseScope | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_compatibility(self, handler):
+        value = handler(self)
+        if self.use_scope is None:
+            value.pop("use_scope", None)
+        return value
 
     @model_validator(mode="after")
     def independent_license(self) -> WorkRights:
@@ -93,6 +102,14 @@ class RightsDeclaration(CorpusContract):
     scope: Literal["ALL_WORKS_IN_SNAPSHOT", "SELECTED_WORKS"]
     allowed_uses: tuple[CorpusUse, ...] = Field(default=(), max_length=3)
     work_grants: dict[str, WorkRights] = Field(default_factory=dict, max_length=1000)
+    use_scope: UseScope | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_compatibility(self, handler):
+        value = handler(self)
+        if self.use_scope is None:
+            value.pop("use_scope", None)
+        return value
 
     @model_validator(mode="after")
     def explicit_underlying_license(self) -> RightsDeclaration:
@@ -338,6 +355,8 @@ class ReviseCuratedCorpus(CorpusContract):
     reason: Text
 
 
+
+
 CorpusAction = Annotated[
     RegisterCorpusSource
     | RightsDeclaration
@@ -350,7 +369,10 @@ CorpusAction = Annotated[
     | DecideCorpusEquivalence
     | DeclareCorpusRelation
     | ResolveCanonicalWorks
-    | ReviseCuratedCorpus,
+    | ReviseCuratedCorpus
+    | DefineMarketRank
+    | ObserveMarketRank
+    | LinkMarketEdition,
     Field(discriminator="action"),
 ]
 CORPUS_ACTION = TypeAdapter(CorpusAction)
@@ -458,6 +480,7 @@ def effective_work_rights(
     return rights.model_copy(
         update={
             **grant.model_dump(),
+            "use_scope": grant.use_scope or rights.use_scope,
             "restrictions": rights.restrictions + grant.restrictions,
             "denied_purposes": tuple(
                 sorted(set(rights.denied_purposes) | set(grant.denied_purposes))
@@ -492,6 +515,13 @@ def corpus_use_admission(
         external_work_id=external_work_id,
     )
     reasons = [] if decision["decision"] == "ALLOW" else list(decision["reasons"])
+    if effective.use_scope is not None:
+        from datetime import datetime, timezone
+
+        try:
+            effective.use_scope.require_use(use.value, datetime.now(timezone.utc))
+        except ValueError:
+            reasons.append("CORPUS_PURPOSE_SCOPE_NOT_GRANTED")
     if use not in effective.allowed_uses:
         reasons.append("CORPUS_USE_NOT_GRANTED")
     private_analysis = (restricted_research and use == CorpusUse.SOURCE_ANALYSIS

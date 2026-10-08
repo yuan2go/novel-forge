@@ -1,0 +1,14 @@
+{
+  "audit_high_and_critical": true,
+  "critical_requires_approval": true,
+  "default": "DENY",
+  "empty_allowlist_semantics": "DENY_ALL",
+  "explicit_tool_refs": [
+    "model.provider.invoke",
+    "narrative.query_accepted",
+    "story_planning.generate_candidate",
+    "plan_change.submit"
+  ],
+  "inline_auth_material_allowed": false,
+  "policy_id": "tools:agent-session-pack:v1"
+}

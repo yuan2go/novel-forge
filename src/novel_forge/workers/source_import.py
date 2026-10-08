@@ -83,6 +83,8 @@ def main() -> int:
             actor_id=principal.principal_id,
             limit=batch_size,
         )
+        from novel_forge.modules.source_import.market_runtime import enqueue_market_updates
+        enqueue_market_updates(application, limit=batch_size)
         pending = scheduler.pending_operations(limit=batch_size)
         if not pending:
             supervisor.polled(idle=True)

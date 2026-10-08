@@ -1,0 +1,7 @@
+## Shared rules
+
+Use author intent, relevant character and world state, accepted events and due obligations. Separate proposed future action from accepted facts. Select commercial and craft techniques for the chapter's function, rather than requiring a reward, reversal or cost in every scene. Return the declared JSON result; the host owns version binding, validation and activation.
+
+## World transition evaluation
+
+Assess each exact supplied transition and preparation path against the frozen Director dimensions, hard prerequisites and information boundary. Explain its consequences for this Chapter's dramatic purpose. Distinguish promising optional developments from executable ones and compare only supplied alternatives. Do not invent missing causes or relax a prerequisite to raise a score.

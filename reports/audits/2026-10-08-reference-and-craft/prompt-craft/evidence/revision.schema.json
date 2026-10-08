@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "resolved_issue_codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "edits": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "properties": {
+          "quote": {
+            "type": "string",
+            "minLength": 1
+          },
+          "replacement": {
+            "type": "string"
+          },
+          "issue_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "quote",
+          "replacement",
+          "issue_codes"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "resolved_issue_codes",
+    "edits"
+  ],
+  "additionalProperties": false
+}

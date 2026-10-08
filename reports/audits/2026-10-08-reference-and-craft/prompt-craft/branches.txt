@@ -1,0 +1,257 @@
+  backup/v6-post-mkaos-industrialization-20260705                       e7b02421 [origin/backup/v6-post-mkaos-industrialization-20260705] Harden v7 runtime seams and docs
++ codex/all-branch-convergence-20260920                                 bf603778 (/Users/yuan/.codex/worktrees/all-branch-convergence-20260920/novel-forge) Merge branch 'codex/real-provider-campaign-delivery-20260920' into codex/all-branch-convergence-20260920
++ codex/all-local-and-yuxian-publication-20260912                       7dd516d5 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/publish-all-and-yuxian-20260912) archive: publish Rain Line pilot materials and evidence [skip ci]
++ codex/all-local-branches-convergence-20260824                         c8683671 (/Users/yuan/projects/novel-forge-worktrees/all-local-branches-convergence-20260824) [origin/codex/all-local-branches-convergence-20260824] merge: preserve longform provider prompt quality
+  codex/all-local-branches-convergence-20260922                         28c9b239 [origin/codex/all-local-branches-convergence-20260922] merge: include all local branch history without regressing current baselines [skip ci]
++ codex/author-first-production-closure                                 ebfe7315 (/Users/yuan/.codex/worktrees/author-first-production-closure/novel-forge) [origin/codex/author-first-production-closure] Deliver scoped author-first checks and preserve blocked real-provider evidence
++ codex/author-guided-twelve-chapter-production-01                      70f36cef (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-author-guided-twelve) [origin/main: behind 393] docs: retain requested author-guided delivery evidence
++ codex/book-opening-semantic-runtime-hardening-01                      a5401d8a (/Users/yuan/projects/novel-forge-worktrees/book-opening-semantic-runtime-hardening-01) [origin/main: behind 739] feat: close book opening workflow nodes
++ codex/classical-corpus-codex-20260908                                 5dc6e4ca (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/classical-corpus-codex-20260908) [origin/codex/classical-corpus-codex-20260908] docs: bind focused Corpus repair baseline
++ codex/context-governance-closure-01                                   de1a0c26 (/Users/yuan/projects/novel-forge-worktrees/context-governance-closure-01) [origin/main: behind 624] qualification: retain exact-sha context closure evidence
++ codex/context-router-acceptance-2cb74ed                               a736a443 (/Users/yuan/.codex/worktrees/context-router-acceptance-2cb74ed/novel-forge) [origin/codex/context-router-acceptance-2cb74ed] Preserve context routing failure denominators and current native receipt identity
++ codex/context-router-and-endpoint-publication-20261007                d87d9665 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/context-router-and-endpoint-publication-20261007) [origin/codex/context-router-and-endpoint-publication-20261007] Publish Context Router execution evidence and endpoint boundary audit
++ codex/corpus-deconstruction-20260910                                  e948bdf5 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-deconstruction-20260910) [origin/main: behind 453] evidence(source): compact native traces and retain final checks
++ codex/corpus-exact-main-qualification-20260908                        563a98c1 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-exact-main-qualification-20260908) [origin/main: behind 512] test(source): retain exact-revision Corpus convergence evidence
++ codex/corpus-foundation-20260908                                      194ff8e8 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-foundation-20260908) [origin/main: behind 551] test(source): retain exact-implementation Corpus runtime and PostgreSQL evidence
++ codex/corpus-normalization-20260909                                   0d515923 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-normalization-20260909) [origin/main: behind 475] evidence(source): bind normalization and longform validation to tested revision
++ codex/corpus-operations-closure-20260910                              93932182 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-operations-closure-20260910) [origin/main: behind 466] evidence(source): retain focused corpus operations and native EPUB validation
++ codex/corpus-quality-closure-20260909                                 217e1563 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/corpus-quality-closure-20260909) [origin/main: behind 471] docs(source): retain exact-revision corpus quality and curated activation evidence
+  codex/cost-aware-provider-router                                      c2ff5775 Merge pull request #87 from yuan2go/codex/provider-routing-convergence-20260919
++ codex/creative-grounded-canon-20260907                                ff531096 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/creative-grounded-canon-20260907) [origin/main: behind 571] test(qualification): retain grounded chapter P0 and production wiring evidence
++ codex/creative-input-evidence-publication-20261008                    03cd4454 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/creative-input-evidence-publication-20261008) [origin/codex/creative-input-evidence-publication-20261008] Publish creative input isolation execution evidence and proposal artifacts
+  codex/creative-validation-publication-20261006                        06208afb [origin/codex/creative-validation-publication-20261006] Publish sanitized creative validation execution records and archive
++ codex/creative-validation-resources                                   b333b08a (/Users/yuan/.codex/worktrees/creative-validation-resources/novel-forge) [origin/codex/creative-validation-resources] Bind semantic successor acknowledgment to supported frozen Canon contracts
+  codex/execution-artifacts-followup-20261006                           4830124e [origin/codex/execution-artifacts-followup-20261006] Retain concurrent model reference progress at publication cutoff
+  codex/execution-artifacts-publication-20261006                        14f3261c [origin/codex/execution-artifacts-publication-20261006] Publish frozen Draft position experiment and complete execution evidence
+  codex/execution-results-publication-20261007                          33847c18 [origin/codex/execution-results-publication-20261007] Publish append-only integration execution report update
++ codex/first-novel-creative-execution-01                               a179f481 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-creative-execution) [origin/main: behind 402] docs: reconcile first-arc knowledge and resource continuity
+  codex/guofeng-copy-before-qualified-alignment-005797d0                005797d0 Refresh proposal baselines after execution boundary fix
++ codex/guofeng-execution-profile-repair                                90543b35 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-profile-repair) Refresh proposal baselines after execution boundary fix
++ codex/guofeng-foundation-evaluation-repair                            b2541ecd (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-foundation-repair) docs: bind proposal baselines to pre-candidate recovery evidence
++ codex/guofeng-workspace-repair                                        d5c3dd3c (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-workspace-repair) Refresh scoped proposal baseline for Workspace entry support
++ codex/hierarchy-closure-01                                            47609019 (/Users/yuan/projects/novel-forge-worktrees/hierarchy-closure-01) [origin/codex/hierarchy-closure-01] docs: record hierarchy closure qualification
++ codex/industrial-convergence-20260905                                 80ffd047 (/Users/yuan/projects/novel-forge-worktrees/industrial-convergence-20260905) [origin/main: behind 618] merge: reconcile industrial convergence branches
++ codex/industrial-os-convergence-20260905-run                          f299b1ef (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/industrial-os-convergence-20260905-run) [origin/main: behind 615] merge: retain exact-sha qualification history
++ codex/inkos-creative-engineering-convergence                          ccc853a4 (/Users/yuan/projects/novel-forge-worktrees/inkos-creative-engineering-convergence) [origin/codex/inkos-creative-engineering-convergence] docs: normalize convergence qualification report
+  codex/instruction-audit-publication-20261003                          95a4e962 [origin/codex/instruction-audit-publication-20261003] docs(audit): publish instruction-chain forensic report and evidence
+  codex/integrated-production-publication-20261007                      b5a23d94 [origin/codex/integrated-production-publication-20261007] Retain sanitized integration and paired-review execution evidence
++ codex/knowledge-grounded-creative-closure-01                          f5ef91d8 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-knowledge-closure) [origin/main: behind 422] docs: bind proposal reviews to final context repair
+  codex/latest-canon-progress-snapshot-20261007                         00299b20 Retain completed Canon execution-window continuation progress snapshot
+  codex/latest-production-progress-publication-20261007                 1a082e0b [origin/codex/latest-production-progress-publication-20261007: behind 54] Preserve typed Schema rejections and bound exact Canon span selection
++ codex/longform-proof-quality-preservation                             004190d5 (/Users/yuan/projects/novel-forge-worktrees/longform-proof-quality-preservation) [origin/codex/longform-proof-quality-preservation] fix: bound provider prompt projections
++ codex/longform-recovery-publication-20261008                          c38f02c1 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/longform-recovery-publication-20261008) [origin/codex/longform-recovery-publication-20261008] Publish longform recovery audit logs and historical manuscript evidence
++ codex/longform-retrieval-context-01                                   f9df22a4 (/Users/yuan/projects/novel-forge-worktrees/longform-retrieval-context-01) [origin/main: behind 641] merge: reconcile longform retrieval with code reality
++ codex/narrative-capability-admission-closure-02                       105385db (/Users/yuan/.codex/worktrees/narrative-capability-admission-closure-02/novel-forge) [origin/codex/narrative-capability-admission-closure-02] docs: retain focused backend evidence and remaining closure scope [skip ci]
+  codex/narrative-closure-02-continuation                               df0a38e1 [origin/codex/narrative-closure-02-continuation] docs(narrative): retain recovery and focused closure evidence
+  codex/narrative-closure-02-p0                                         f329915b [origin/codex/narrative-closure-02-p0] fix(narrative): retain partial edition recovery and deployment evidence
+  codex/narrative-craft-20260920                                        8928f97e docs: retain qualified narrative craft P0 evidence
++ codex/narrative-evolution-engine                                      3cc6d8a5 (/Users/yuan/projects/novel-forge-worktrees/narrative-evolution-engine) [origin/codex/narrative-evolution-engine] feat: close the narrative evolution engine loop
+  codex/narrative-feedback-closure                                      46d8bff1 [origin/codex/narrative-feedback-closure] Record native narrative closure evidence and remaining live gates
++ codex/narrative-memory-lifecycle-closure                              4b061bfb (/Users/yuan/projects/novel-forge-worktrees/narrative-memory-lifecycle-closure) [origin/main: behind 635] docs: specify narrative memory lifecycle closure
++ codex/narrative-production-closure-01                                 8e92e946 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/narrative-production-closure-01) [origin/codex/narrative-production-closure-01] docs: retain necessary checks and user-directed full-suite interruption
++ codex/narrative-reality-causal-20260906                               8ba679c0 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/narrative-reality-causal-20260906) [origin/main: behind 597] evidence: qualify narrative reality and recovery at exact implementation
++ codex/novel-production-synthesis-20260907                             6e36cd0e (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/novel-production-synthesis-20260907) [origin/main: behind 564] docs(evidence): record scoped production synthesis and blocked creative comparison
+  codex/novel-system-quality-audit-publication-20260927                 54bef87e [origin/codex/novel-system-quality-audit-publication-20260927] docs(audit): publish novel system quality assessment and evidence
++ codex/p0-backend-qualification-ci-closure-01                          d49ff214 (/Users/yuan/projects/novel-forge-worktrees/p0-backend-qualification-ci-closure-01) [origin/main: behind 736] docs: design P0 backend qualification and CI closure
++ codex/p0-backend-qualification-ci-implementation-01                   481c8572 (/Users/yuan/projects/novel-forge-worktrees/p0-backend-qualification-ci-implementation-01) [origin/codex/p0-backend-qualification-ci-implementation-01] fix: close complete PostgreSQL qualification regressions
++ codex/post-merge-exact-sha-p0-20260905                                29ecb095 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/post-merge-exact-sha-p0-20260905) [origin/codex/post-merge-exact-sha-p0-20260905] Merge pull request #60 from yuan2go/codex/post-merge-exact-sha-p0-20260905
+  codex/pr133-native-production-integration-20261007                    e1bd3aa8 Bind proposal review to the completed migration index scope
++ codex/pr133-pr135-coordinated-integration-20261007                    3c4d6dc5 (/Users/yuan/.codex/worktrees/pr133-pr135-integration-20261007/novel-forge) [origin/codex/pr133-pr135-coordinated-integration-20261007: ahead 1] Merge pull request #138: coordinated PR133/135 recovery integration
+  codex/production-closure-router-publication-20261007                  59aefe82 [origin/codex/production-closure-router-publication-20261007] Publish sanitized Context Router acceptance records and evidence archive
++ codex/production-evidence-publication-20261007                        ad1c229d (/Users/yuan/.codex/worktrees/production-evidence-publication-20261007/novel-forge) Repair internal quality disposition and frozen World assessment recovery
+  codex/production-readiness-audit-publication-20261005                 848fe4ce [origin/codex/production-readiness-audit-publication-20261005] docs(audit): publish production readiness recheck
+  codex/prompt-generation-contract-convergence-01                       495b29a7 [origin/codex/prompt-generation-contract-convergence-01] Align convergence regressions with current contracts
+  codex/prompt-generation-runtime-closure-01                            156b6d6b [origin/codex/prompt-generation-runtime-closure-01] Refresh proposal lifecycle identities after generation closure
+  codex/prompt-skill-audit-publication-20261004                         bbc446fa [origin/codex/prompt-skill-audit-publication-20261004] docs(audit): publish prompt-skill pollution audit and evidence
+  codex/prompt-skill-calibration                                        e0284e84 [origin/main: behind 103] Rebind calibration source review after retrieval source closure
+  codex/prompt-skill-plan-publication-20261004                          7d997c5a [origin/codex/prompt-skill-plan-publication-20261004] docs(audit): expand prompt-skill audit into engineering plan
+  codex/provider-router-production-20260919                             7dc305d9 Refresh checked proposal baselines after router admission hardening
++ codex/provider-routing-closure-20260916                               7d5bef20 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/provider-routing-closure-20260916) Refresh checked proposal baselines for routing closure
+  codex/quality-context-publication-20261005                            ef572087 [origin/codex/quality-context-publication-20261005] Publish compatible planning and Canon version contract fixes
++ codex/real-corpus-first-novel-pilot-01                                085eceaa (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-first-novel-pilot) fix: consume the public execution accounting contract
++ codex/real-creative-pilot-20260908                                    05124a8e (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/real-creative-pilot-20260908) [origin/main: behind 556] docs(evidence): retain current pilot regressions and registry-blocked P0
+  codex/real-prose-author-entry                                         a33e57eb [origin/codex/real-prose-author-entry] docs: distinguish source checks from verbatim failure log whitespace
+  codex/real-prose-quality-closure-01                                   e74879d9 [origin/codex/real-prose-quality-closure-01] docs: refresh checked fixture implementation identities
+  codex/real-prose-security-handoff                                     055ab2f4 [origin/codex/real-prose-security-handoff] docs: normalize shared evidence whitespace with original hashes
+  codex/real-provider-benchmark-scope-20260920                          8f502267 Refresh unresolved proposal baselines after producer scope fix
+  codex/real-provider-campaign-20260920                                 22cf0354 docs: bind retained proposal gaps to grouped calibration identity
++ codex/real-provider-campaign-delivery-20260920                        a908f0dd (/Users/yuan/.codex/worktrees/real-provider-campaign-delivery-20260920/novel-forge) evidence(provider): retain campaign delivery package
+  codex/real-provider-campaign-final-20260920                           2be11a56 Merge branch 'codex/real-provider-source-recovery-20260920' into codex/real-provider-campaign-final-20260920
+  codex/real-provider-reference-20260920                                fc25159d docs: retain unresolved decisions at native reference sampling baseline
++ codex/real-provider-reference-kernel-20260920                         bf77e089 (/Users/yuan/.codex/worktrees/real-provider-reference-kernel-20260920/novel-forge) Keep retained proposal baseline aligned with migration regression
++ codex/real-provider-source-bootstrap-20260920                         bbca0e7a (/Users/yuan/.codex/worktrees/real-provider-source-bootstrap-20260920/novel-forge) Align retained proposal review with native Source sampling implementation
+  codex/real-provider-source-recovery-20260920                          66a64ce6 docs(evidence): project provider failure accounting
+  codex/reference-engineering-publication-20261002                      be53d297 [origin/codex/reference-engineering-publication-20261002] docs(reference): refresh bounded research runtime identity
+  codex/reference-recovery-publication-20261003                         65532f99 [origin/codex/reference-recovery-publication-20261003] fix(context): reject impossible mandatory unit budgets before model calls
++ codex/repository-historical-reality-closure-01                        d06a4469 (/Users/yuan/projects/novel-forge-worktrees/repository-historical-reality-closure-01) Retain current qualification evidence
+  codex/resolve-pr86-20260919                                           16d8ec1b [origin/docs/creative-capability-assimilation-20260914: gone] Merge main into PR #86, retaining the reviewed WP01 proposal
++ codex/retained-production-source-publication-20261007                 c9c7fc1d (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/retained-production-source-publication-20261007) Preserve prior published progress lineage with current production guards
++ codex/skills-main-publication-20261007                                1708ea95 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/skills-main-publication-20261007) [origin/codex/skills-main-publication-20261007] Publish pinned coding-agent Skills and production delivery artifacts
++ codex/universal-corpus-ingestion-20260909                             02d6f7f9 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/universal-corpus-ingestion-20260909) [origin/main: behind 488] evidence(source): retain focused ingestion, real-source and recovery results
+  codex/vendored-skills-evidence-publication-20261007                   c621e086 Merge pull request #136 from yuan2go/codex/execution-results-publication-20261007
+  codex/work-intent-consistency                                         bed701b2 [origin/codex/work-intent-consistency] Align current documentation with versioned work-intent production contracts
++ codex/work-intent-context-e2e-20261005                                d8c2e44e (/Users/yuan/.codex/worktrees/work-intent-context-e2e/novel-forge) docs(audit): retain model routing evidence and strict real-run blockers
+  codex/work-intent-evidence-publication-20261005                       a46a9934 [origin/codex/work-intent-evidence-publication-20261005] docs(evidence): publish work-intent engineering delivery
+  codex/work-intent-residual-publication-20261005                       6dfa13e0 [origin/codex/work-intent-residual-publication-20261005] fix: close residual work-intent production contracts
++ codex/world-causal-production-closure-20260906                        e0c56640 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/world-causal-production-closure-20260906) [origin/main: behind 593] Resume frozen planning repairs without replaying accepted history
++ codex/world-causal-resume-20260907                                    f5d4e023 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/world-causal-resume-20260907) [origin/main: behind 582] Retain exact implementation P0 and native world production evidence
++ codex/wp-book-opening-recovery-closure-01                             1da46286 (/Users/yuan/projects/novel-forge-worktrees/wp-book-opening-recovery-closure-01) [origin/main: behind 742] feat: close book opening recovery correctness
++ codex/wp-canonical-narrative-blueprint-01                             55a0041c (/Users/yuan/projects/novel-forge-worktrees/wp-canonical-narrative-blueprint-01) [origin/main: behind 637] Propose canonical industrial novel blueprint
++ codex/wp-code-reality-and-knowledge-reconstruction-01                 e3e1413b (/Users/yuan/projects/novel-forge-worktrees/wp-code-reality-and-knowledge-reconstruction-01) Retain current backend qualification evidence
++ codex/wp-context-router-merged-validation-01                          8d8f0b21 (/Users/yuan/.codex/worktrees/wp-context-router-validation-01/novel-forge) Fix current Chapter Context pack binding and verify native overflow consumption
++ codex/wp-creative-input-isolation-01                                  908c9fe5 (/Users/yuan/.codex/worktrees/creative-input-isolation-01/novel-forge) Canonicalize world schema source paths without changing input identity
++ codex/wp-documentation-reality-reset-01                               1de27e36 (/Users/yuan/projects/novel-forge-worktrees/wp-documentation-reality-reset-01) merge: reconcile documentation reality with P0 qualification
++ codex/wp-guofeng-volume-one-production-01                             38eb7b96 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-guofeng-volume-one) docs: retain requested Guofeng Xuanhuan output snapshot
++ codex/wp-industrial-novel-os-convergence-01                           4c6ebdb7 (/Users/yuan/projects/novel-forge-worktrees/wp-industrial-novel-os-convergence-01) [origin/main: behind 623] Merge pull request #56 from yuan2go/codex/context-governance-closure-01
++ codex/wp-live-01-liveness-closure                                     85705f30 (/Users/yuan/projects/novel-forge-worktrees/wp-live-01) [origin/codex/wp-live-01-liveness-closure] feat: close book chapter liveness critical path
++ codex/wp-live-02-qualification                                        3969e254 (/Users/yuan/projects/novel-forge-worktrees/wp-live-02) [origin/codex/wp-live-02-qualification] preserve longform foundation in proof admission
++ codex/wp-longform-01                                                  c609f103 (/Users/yuan/.codex/worktrees/wp-longform-01/novel-forge) fix: preserve original planning recovery and distinguish measured usage
++ codex/wp-narrative-orchestration-01                                   0619acf7 (/Users/yuan/projects/novel-forge-wp-narrative-orchestration-01) [origin/codex/wp-narrative-orchestration-01] docs: record narrative orchestration runtime boundary
++ codex/wp-narrative-orchestration-qualification-01                     164fe60e (/Users/yuan/projects/novel-forge-wp-narrative-orchestration-qualification-01) [origin/codex/wp-narrative-orchestration-qualification-01] docs: record narrative orchestration qualification
++ codex/wp-novel-production-closure-01                                  39c8b72a (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/wp-novel-production-closure-01) [origin/codex/wp-novel-production-closure-01: ahead 73] evidence: preserve original prose, unknown receipts and exact closure limits
++ codex/wp-post-merge-reality-qualification-closure-01                  3d9d59ad (/Users/yuan/projects/novel-forge-worktrees/wp-post-merge-reality-qualification-closure-01) docs: project exact-SHA P0 qualification
+  codex/wp-production-instruction-context-cleanup-01                    34d2d649 [origin/codex/wp-production-instruction-context-cleanup-01] docs: bind literal prose preservation verification scope
++ codex/wp-quality-proof-01                                             d2023705 (/Users/yuan/projects/novel-forge-worktrees/wp-quality-proof-01) [origin/codex/wp-quality-proof-01] docs: qualify quality correctness closure
++ codex/wp-real-provider-qualification-01                               475ab8d5 (/Users/yuan/projects/novel-forge-worktrees/wp-real-provider-qualification-01) evidence: retain exact-sha p0 qualification
+  codex/wp-task-context-512k-01                                         b0c07e69 [origin/codex/wp-task-context-512k-01] fix: close final task-context qualification boundaries
++ codex/wp-test-reality-reset-01                                        1192b695 (/Users/yuan/projects/novel-forge-worktrees/wp-test-reality-reset-01) docs: bind reality reset qualification evidence
++ codex/wp01-creative-assimilation-audit                                07ea4e54 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/wp01-creative-assimilation-audit) [origin/codex/wp01-creative-assimilation-audit] docs: complete WP01 code-backed creative assimilation audit
+* codex/wp02-author-approved-run                                        ceb69fa2 [origin/codex/wp02-author-approved-run] Merge main prompt convergence into approved author run
+  codex/wp02-author-production-editorial                                cf38ecd9 [origin/codex/wp02-author-production-editorial] docs: retain exact WP02 deployment and pending author handoff evidence
++ codex/wp02-cross-chapter-prose-repair                                 6f6ef62e (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-worktrees/wp02-cross-chapter-prose-repair) [origin/codex/wp02-cross-chapter-prose-repair] docs(architecture): bind final WP02 validation identity
+  docs/reference-logic-test-20261002                                    f20e8227 [origin/docs/reference-logic-test-20261002: behind 3] data: add offline exact-source importer and index verifier
+  feat/v6-post-mkaos-industrialization                                  275b5bf1 [origin/feat/v6-post-mkaos-industrialization] feat: advance MKAOS governance and skill operations
+  feat/v7-content-intelligence-and-longform-proof                       449c201b [origin/feat/v7-content-intelligence-and-longform-proof] feat: route source analysis by document intelligence
++ fix/cli-original-effect-reconciliation                                a26e94ef (/Users/yuan/.codex/worktrees/cli-effect-reconciliation/novel-forge) fix: reconcile original CLI effects without redispatch
+  main                                                                  7540c51f [origin/main] Merge pull request #142 from yuan2go/codex/creative-input-evidence-publication-20261008
+  v5                                                                    9fefdfe6 [origin/v5] docs: update README platform positioning
+  v6                                                                    35dc0fb6 [origin/v6] Merge remote-tracking branch 'origin/main' into v6
+  work/original-novel-100ch-20261003                                    a5dc0b36 feat(creative): rework direction from author voice feedback
+  work/reference-editorial-learning-20261003                            2a118e2d [origin/work/reference-editorial-learning-20261003] docs: review existing proposals against editorial input changes
+  work/reference-mechanism-logic-20261002                               986a611e research: preserve partial full-work analysis and external recovery evidence
+  work/reference-source-supplement-20261002                             9f37fdf8 docs(reference): record verified private source delivery
++ wp-corpus-real-analysis-01                                            0551b8b4 (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-wp-corpus-real-analysis-01) [origin/main: behind 447] evidence(corpus): retain focused recovery proof and authorization-blocked real preparation
++ wp-corpus-real-execution-01                                           570548bb (/Volumes/DevSSD/Development/Workspace/projects/novel-forge-wp-corpus-real-execution-01) [origin/main: behind 430] docs: record R1 real calls, unknown outcome, bounded coverage and recovery
+  remotes/origin/HEAD                                                   -> origin/main
+  remotes/origin/backup/v6-post-mkaos-industrialization-20260705        e7b02421 Harden v7 runtime seams and docs
+  remotes/origin/codex/all-branch-convergence-20260920                  bf603778 Merge branch 'codex/real-provider-campaign-delivery-20260920' into codex/all-branch-convergence-20260920
+  remotes/origin/codex/all-local-and-yuxian-publication-20260912        7dd516d5 archive: publish Rain Line pilot materials and evidence [skip ci]
+  remotes/origin/codex/all-local-branches-convergence-20260824          c8683671 merge: preserve longform provider prompt quality
+  remotes/origin/codex/all-local-branches-convergence-20260922          28c9b239 merge: include all local branch history without regressing current baselines [skip ci]
+  remotes/origin/codex/author-first-production-closure                  ebfe7315 Deliver scoped author-first checks and preserve blocked real-provider evidence
+  remotes/origin/codex/author-guided-twelve-chapter-production-01       70f36cef docs: retain requested author-guided delivery evidence
+  remotes/origin/codex/book-opening-semantic-runtime-hardening-01       a5401d8a feat: close book opening workflow nodes
+  remotes/origin/codex/classical-corpus-codex-20260908                  5dc6e4ca docs: bind focused Corpus repair baseline
+  remotes/origin/codex/context-governance-closure-01                    de1a0c26 qualification: retain exact-sha context closure evidence
+  remotes/origin/codex/context-router-acceptance-2cb74ed                a736a443 Preserve context routing failure denominators and current native receipt identity
+  remotes/origin/codex/context-router-and-endpoint-publication-20261007 d87d9665 Publish Context Router execution evidence and endpoint boundary audit
+  remotes/origin/codex/corpus-deconstruction-20260910                   e948bdf5 evidence(source): compact native traces and retain final checks
+  remotes/origin/codex/corpus-exact-main-qualification-20260908         563a98c1 test(source): retain exact-revision Corpus convergence evidence
+  remotes/origin/codex/corpus-foundation-20260908                       194ff8e8 test(source): retain exact-implementation Corpus runtime and PostgreSQL evidence
+  remotes/origin/codex/corpus-normalization-20260909                    0d515923 evidence(source): bind normalization and longform validation to tested revision
+  remotes/origin/codex/corpus-operations-closure-20260910               93932182 evidence(source): retain focused corpus operations and native EPUB validation
+  remotes/origin/codex/corpus-quality-closure-20260909                  217e1563 docs(source): retain exact-revision corpus quality and curated activation evidence
+  remotes/origin/codex/cost-aware-provider-router                       c2ff5775 Merge pull request #87 from yuan2go/codex/provider-routing-convergence-20260919
+  remotes/origin/codex/creative-grounded-canon-20260907                 ff531096 test(qualification): retain grounded chapter P0 and production wiring evidence
+  remotes/origin/codex/creative-input-evidence-publication-20261008     03cd4454 Publish creative input isolation execution evidence and proposal artifacts
+  remotes/origin/codex/creative-validation-publication-20261006         06208afb Publish sanitized creative validation execution records and archive
+  remotes/origin/codex/creative-validation-resources                    b333b08a Bind semantic successor acknowledgment to supported frozen Canon contracts
+  remotes/origin/codex/execution-artifacts-followup-20261006            4830124e Retain concurrent model reference progress at publication cutoff
+  remotes/origin/codex/execution-artifacts-publication-20261006         14f3261c Publish frozen Draft position experiment and complete execution evidence
+  remotes/origin/codex/execution-results-publication-20261007           33847c18 Publish append-only integration execution report update
+  remotes/origin/codex/first-novel-creative-execution-01                a179f481 docs: reconcile first-arc knowledge and resource continuity
+  remotes/origin/codex/guofeng-copy-before-qualified-alignment-005797d0 005797d0 Refresh proposal baselines after execution boundary fix
+  remotes/origin/codex/guofeng-execution-profile-repair                 90543b35 Refresh proposal baselines after execution boundary fix
+  remotes/origin/codex/guofeng-foundation-evaluation-repair             b2541ecd docs: bind proposal baselines to pre-candidate recovery evidence
+  remotes/origin/codex/guofeng-workspace-repair                         d5c3dd3c Refresh scoped proposal baseline for Workspace entry support
+  remotes/origin/codex/hierarchy-closure-01                             47609019 docs: record hierarchy closure qualification
+  remotes/origin/codex/industrial-convergence-20260905                  80ffd047 merge: reconcile industrial convergence branches
+  remotes/origin/codex/industrial-os-convergence-20260905-run           f299b1ef merge: retain exact-sha qualification history
+  remotes/origin/codex/inkos-creative-engineering-convergence           ccc853a4 docs: normalize convergence qualification report
+  remotes/origin/codex/instruction-audit-publication-20261003           95a4e962 docs(audit): publish instruction-chain forensic report and evidence
+  remotes/origin/codex/integrated-production-publication-20261007       b5a23d94 Retain sanitized integration and paired-review execution evidence
+  remotes/origin/codex/knowledge-grounded-creative-closure-01           f5ef91d8 docs: bind proposal reviews to final context repair
+  remotes/origin/codex/latest-production-progress-publication-20261007  c9c7fc1d Preserve prior published progress lineage with current production guards
+  remotes/origin/codex/longform-proof-quality-preservation              004190d5 fix: bound provider prompt projections
+  remotes/origin/codex/longform-recovery-publication-20261008           c38f02c1 Publish longform recovery audit logs and historical manuscript evidence
+  remotes/origin/codex/longform-retrieval-context-01                    f9df22a4 merge: reconcile longform retrieval with code reality
+  remotes/origin/codex/narrative-capability-admission-closure-02        105385db docs: retain focused backend evidence and remaining closure scope [skip ci]
+  remotes/origin/codex/narrative-closure-02-continuation                df0a38e1 docs(narrative): retain recovery and focused closure evidence
+  remotes/origin/codex/narrative-closure-02-p0                          f329915b fix(narrative): retain partial edition recovery and deployment evidence
+  remotes/origin/codex/narrative-craft-20260920                         8928f97e docs: retain qualified narrative craft P0 evidence
+  remotes/origin/codex/narrative-evolution-engine                       3cc6d8a5 feat: close the narrative evolution engine loop
+  remotes/origin/codex/narrative-feedback-closure                       46d8bff1 Record native narrative closure evidence and remaining live gates
+  remotes/origin/codex/narrative-memory-lifecycle-closure               4b061bfb docs: specify narrative memory lifecycle closure
+  remotes/origin/codex/narrative-production-closure-01                  8e92e946 docs: retain necessary checks and user-directed full-suite interruption
+  remotes/origin/codex/narrative-reality-causal-20260906                8ba679c0 evidence: qualify narrative reality and recovery at exact implementation
+  remotes/origin/codex/novel-production-synthesis-20260907              6e36cd0e docs(evidence): record scoped production synthesis and blocked creative comparison
+  remotes/origin/codex/novel-system-quality-audit-publication-20260927  54bef87e docs(audit): publish novel system quality assessment and evidence
+  remotes/origin/codex/p0-backend-qualification-ci-closure-01           d49ff214 docs: design P0 backend qualification and CI closure
+  remotes/origin/codex/p0-backend-qualification-ci-implementation-01    481c8572 fix: close complete PostgreSQL qualification regressions
+  remotes/origin/codex/post-merge-exact-sha-p0-20260905                 29ecb095 Merge pull request #60 from yuan2go/codex/post-merge-exact-sha-p0-20260905
+  remotes/origin/codex/pr133-pr135-coordinated-integration-20261007     d4382d36 Bind proposal source baselines without claiming runtime qualification
+  remotes/origin/codex/production-closure-router-publication-20261007   59aefe82 Publish sanitized Context Router acceptance records and evidence archive
+  remotes/origin/codex/production-readiness-audit-publication-20261005  848fe4ce docs(audit): publish production readiness recheck
+  remotes/origin/codex/prompt-generation-contract-convergence-01        495b29a7 Align convergence regressions with current contracts
+  remotes/origin/codex/prompt-generation-runtime-closure-01             156b6d6b Refresh proposal lifecycle identities after generation closure
+  remotes/origin/codex/prompt-skill-audit-publication-20261004          bbc446fa docs(audit): publish prompt-skill pollution audit and evidence
+  remotes/origin/codex/prompt-skill-plan-publication-20261004           7d997c5a docs(audit): expand prompt-skill audit into engineering plan
+  remotes/origin/codex/provider-router-production-20260919              7dc305d9 Refresh checked proposal baselines after router admission hardening
+  remotes/origin/codex/provider-routing-closure-20260916                7d5bef20 Refresh checked proposal baselines for routing closure
+  remotes/origin/codex/quality-context-publication-20261005             ef572087 Publish compatible planning and Canon version contract fixes
+  remotes/origin/codex/real-corpus-first-novel-pilot-01                 085eceaa fix: consume the public execution accounting contract
+  remotes/origin/codex/real-creative-pilot-20260908                     05124a8e docs(evidence): retain current pilot regressions and registry-blocked P0
+  remotes/origin/codex/real-prose-author-entry                          a33e57eb docs: distinguish source checks from verbatim failure log whitespace
+  remotes/origin/codex/real-prose-quality-closure-01                    e74879d9 docs: refresh checked fixture implementation identities
+  remotes/origin/codex/real-prose-security-handoff                      055ab2f4 docs: normalize shared evidence whitespace with original hashes
+  remotes/origin/codex/real-provider-benchmark-scope-20260920           8f502267 Refresh unresolved proposal baselines after producer scope fix
+  remotes/origin/codex/real-provider-campaign-20260920                  22cf0354 docs: bind retained proposal gaps to grouped calibration identity
+  remotes/origin/codex/real-provider-campaign-delivery-20260920         a908f0dd evidence(provider): retain campaign delivery package
+  remotes/origin/codex/real-provider-campaign-final-20260920            2be11a56 Merge branch 'codex/real-provider-source-recovery-20260920' into codex/real-provider-campaign-final-20260920
+  remotes/origin/codex/real-provider-reference-20260920                 fc25159d docs: retain unresolved decisions at native reference sampling baseline
+  remotes/origin/codex/real-provider-reference-calibration-20260921     5263f281 Publish calibration progress report and user-requested test interruption
+  remotes/origin/codex/real-provider-reference-kernel-20260920          bf77e089 Keep retained proposal baseline aligned with migration regression
+  remotes/origin/codex/real-provider-source-bootstrap-20260920          bbca0e7a Align retained proposal review with native Source sampling implementation
+  remotes/origin/codex/real-provider-source-recovery-20260920           66a64ce6 docs(evidence): project provider failure accounting
+  remotes/origin/codex/reference-engineering-publication-20261002       be53d297 docs(reference): refresh bounded research runtime identity
+  remotes/origin/codex/reference-recovery-publication-20261003          65532f99 fix(context): reject impossible mandatory unit budgets before model calls
+  remotes/origin/codex/repository-historical-reality-closure-01         d06a4469 Retain current qualification evidence
+  remotes/origin/codex/resolve-pr86-20260919                            16d8ec1b Merge main into PR #86, retaining the reviewed WP01 proposal
+  remotes/origin/codex/skills-main-publication-20261007                 1708ea95 Publish pinned coding-agent Skills and production delivery artifacts
+  remotes/origin/codex/universal-corpus-ingestion-20260909              02d6f7f9 evidence(source): retain focused ingestion, real-source and recovery results
+  remotes/origin/codex/work-intent-consistency                          bed701b2 Align current documentation with versioned work-intent production contracts
+  remotes/origin/codex/work-intent-evidence-publication-20261005        a46a9934 docs(evidence): publish work-intent engineering delivery
+  remotes/origin/codex/work-intent-residual-publication-20261005        6dfa13e0 fix: close residual work-intent production contracts
+  remotes/origin/codex/world-causal-production-closure-20260906         e0c56640 Resume frozen planning repairs without replaying accepted history
+  remotes/origin/codex/world-causal-resume-20260907                     f5d4e023 Retain exact implementation P0 and native world production evidence
+  remotes/origin/codex/wp-book-opening-recovery-closure-01              1da46286 feat: close book opening recovery correctness
+  remotes/origin/codex/wp-canonical-narrative-blueprint-01              55a0041c Propose canonical industrial novel blueprint
+  remotes/origin/codex/wp-code-reality-and-knowledge-reconstruction-01  e3e1413b Retain current backend qualification evidence
+  remotes/origin/codex/wp-documentation-reality-reset-01                1de27e36 merge: reconcile documentation reality with P0 qualification
+  remotes/origin/codex/wp-guofeng-volume-one-production-01              38eb7b96 docs: retain requested Guofeng Xuanhuan output snapshot
+  remotes/origin/codex/wp-industrial-novel-os-convergence-01            4c6ebdb7 Merge pull request #56 from yuan2go/codex/context-governance-closure-01
+  remotes/origin/codex/wp-live-01-liveness-closure                      85705f30 feat: close book chapter liveness critical path
+  remotes/origin/codex/wp-live-02-qualification                         3969e254 preserve longform foundation in proof admission
+  remotes/origin/codex/wp-narrative-orchestration-01                    0619acf7 docs: record narrative orchestration runtime boundary
+  remotes/origin/codex/wp-narrative-orchestration-qualification-01      164fe60e docs: record narrative orchestration qualification
+  remotes/origin/codex/wp-novel-production-closure-01                   adab5c86 Retain sanitized production checkpoint, comparisons and verification evidence
+  remotes/origin/codex/wp-post-merge-reality-qualification-closure-01   3d9d59ad docs: project exact-SHA P0 qualification
+  remotes/origin/codex/wp-production-instruction-context-cleanup-01     34d2d649 docs: bind literal prose preservation verification scope
+  remotes/origin/codex/wp-quality-proof-01                              d2023705 docs: qualify quality correctness closure
+  remotes/origin/codex/wp-real-provider-qualification-01                475ab8d5 evidence: retain exact-sha p0 qualification
+  remotes/origin/codex/wp-task-context-512k-01                          b0c07e69 fix: close final task-context qualification boundaries
+  remotes/origin/codex/wp-test-reality-reset-01                         1192b695 docs: bind reality reset qualification evidence
+  remotes/origin/codex/wp01-creative-assimilation-audit                 07ea4e54 docs: complete WP01 code-backed creative assimilation audit
+  remotes/origin/codex/wp02-author-approved-run                         ceb69fa2 Merge main prompt convergence into approved author run
+  remotes/origin/codex/wp02-author-production-editorial                 cf38ecd9 docs: retain exact WP02 deployment and pending author handoff evidence
+  remotes/origin/codex/wp02-cross-chapter-prose-repair                  6f6ef62e docs(architecture): bind final WP02 validation identity
+  remotes/origin/docs/reference-logic-test-20261002                     b13d0af8 docs(reference): add continuation instructions for research runtime unblock
+  remotes/origin/docs/requirements-prompt-generation-contract           6a8c5420 docs: specify generation contract and creative execution convergence
+  remotes/origin/feat/v6-post-mkaos-industrialization                   275b5bf1 feat: advance MKAOS governance and skill operations
+  remotes/origin/feat/v7-content-intelligence-and-longform-proof        449c201b feat: route source analysis by document intelligence
+  remotes/origin/main                                                   7540c51f Merge pull request #142 from yuan2go/codex/creative-input-evidence-publication-20261008
+  remotes/origin/v5                                                     9fefdfe6 docs: update README platform positioning
+  remotes/origin/v6                                                     35dc0fb6 Merge remote-tracking branch 'origin/main' into v6
+  remotes/origin/work/reference-editorial-learning-20261003             2a118e2d docs: review existing proposals against editorial input changes
+  remotes/origin/wp-corpus-real-analysis-01                             0551b8b4 evidence(corpus): retain focused recovery proof and authorization-blocked real preparation
+  remotes/origin/wp-corpus-real-execution-01                            570548bb docs: record R1 real calls, unknown outcome, bounded coverage and recovery

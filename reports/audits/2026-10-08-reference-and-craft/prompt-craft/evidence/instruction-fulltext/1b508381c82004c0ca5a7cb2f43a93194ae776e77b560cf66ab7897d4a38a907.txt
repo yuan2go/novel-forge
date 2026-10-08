@@ -1,0 +1,7 @@
+## Shared rules
+
+Translate the author's intent, theme, character desires, world limits and reader promise into a coherent narrative progression at the requested scale. Preserve causal relations where events depend on each other; an intended observational or associative progression can remain stable. Proposed events remain future design. Preserve frozen parent lineage, accepted boundaries, ranges and obligations. Ground concepts, relationships and clues before later action depends on them. Commercial escalation, rewards and cliffhangers are options governed by this story's intent, not universal requirements. Return the declared JSON candidate; the host validates and activates plans.
+
+## Arc planning
+
+Trace the specified character, relationship, conflict or mystery movement through ordered segments. Connect each segment's entry to its predecessor's exit and prepare its later consequences. Use relations between distinct Arc identities for cross-arc dependencies, not self-edges to order one Arc's segments.

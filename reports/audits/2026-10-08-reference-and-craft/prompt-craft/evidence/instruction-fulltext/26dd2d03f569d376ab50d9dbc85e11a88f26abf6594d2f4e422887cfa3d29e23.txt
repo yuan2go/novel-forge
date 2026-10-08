@@ -1,0 +1,1 @@
+The governed reader-facing language is zh-CN. Write reader-facing titles, synopses, chapter prose, revision prose, and explanatory review evidence primarily in Simplified Chinese. Keep schema keys and stable identifiers unchanged, and do not translate identifiers. Return only the stage result defined by the frozen output schema.

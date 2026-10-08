@@ -151,6 +151,11 @@ class SourceCorpusApplication:
             actor = principal.principal_id
         action = validate_corpus_action(command.action.model_dump(mode="json"))
         payload = action.model_dump(mode="json")
+        fetch_parent = ""
+        if action.action == "observe_market_rank" and action.acquisition == "OFFICIAL_PUBLIC_PAGE":
+            if parent_worker is None or parent_worker.causation_id != action.fetch_operation_id:
+                raise KernelError("MARKET_NATIVE_RECEIPT_REQUIRED", "Official observations must be delegated by the original fetch Attempt")
+            fetch_parent = parent_worker.causation_id
         key = command.idempotency_key
         if isinstance(action, ImportCorpusBatch):
             key = corpus_identity(
@@ -195,6 +200,7 @@ class SourceCorpusApplication:
                 uow,
                 {
                     "definition_name": CORPUS_OPERATION,
+                    **({"parent_operation_id": fetch_parent, "causation_operation_id": fetch_parent} if fetch_parent else {}),
                     "definition_version": CORPUS_VERSION,
                     "project_id": command.project_id,
                     "workspace_id": command.workspace_id,

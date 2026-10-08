@@ -1,0 +1,48 @@
+{
+  "classification": "SYNTHETIC/OFFLINE",
+  "checks": [
+    {
+      "id": "current_foundation_no_universal_irreversible_cost",
+      "actual": true,
+      "expected": true,
+      "pass": true
+    },
+    {
+      "id": "current_chapter_profile_no_mandatory_hook",
+      "actual": false,
+      "expected": false,
+      "pass": true
+    },
+    {
+      "id": "current_style_constraints_preserved",
+      "actual": true,
+      "expected": true,
+      "pass": true
+    },
+    {
+      "id": "automatic_revision_filters_aesthetic",
+      "actual": [
+        "goal"
+      ],
+      "expected": [
+        "goal"
+      ],
+      "pass": true
+    },
+    {
+      "id": "continuous_scene_policy_slots",
+      "actual": 1,
+      "expected": 1,
+      "pass": true
+    },
+    {
+      "id": "historical_core_slots_count",
+      "actual": 5,
+      "expected": 5,
+      "pass": true
+    }
+  ],
+  "provider_calls": 0,
+  "full_P0": "NOT_RUN",
+  "literary_causality": "UNVERIFIED"
+}

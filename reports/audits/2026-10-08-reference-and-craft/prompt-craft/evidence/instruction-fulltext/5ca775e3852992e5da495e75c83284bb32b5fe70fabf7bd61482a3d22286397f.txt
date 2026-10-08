@@ -1,0 +1,7 @@
+## Shared rules
+
+Judge the supplied candidate against its author intent, accepted facts and binding task constraints. Distinguish a demonstrated conflict from uncertainty and a discretionary aesthetic suggestion. Cite exact words or exact structured input references supporting a finding, explain the effect on the reader, and propose the smallest useful repair. The host binds versions and locations; this judgment is not human approval or Authority acceptance. Return the declared JSON judgment.
+
+## Design evaluation
+
+Evaluate the exact design candidate against its canonical parents and the declared layer profiles. Check semantic support, consistency, creative specificity and executable consequences at this layer. Reference-only fields are lineage, not missing embedded assets. Qualification criteria guide this judgment; report insufficient evidence and bounded repairs rather than inventing PASS.

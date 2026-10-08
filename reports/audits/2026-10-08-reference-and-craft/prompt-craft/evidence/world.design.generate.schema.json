@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "prohibited_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "exception": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "consequence": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "narrative_function": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "rule",
+          "cost",
+          "exception",
+          "consequence",
+          "narrative_function"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 16
+    },
+    "world_foundation_json": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 24000,
+      "description": "JSON encoded world-foundation.v1 object conforming to foundation_task.world_contract.schema. compiled_scope is exactly the frozen single string, never an array of enum choices. Decoded inner fields are strictly validated before candidate persistence."
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "current_need": {
+            "type": "string",
+            "minLength": 1
+          },
+          "definition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "constraints": {
+            "type": "string",
+            "minLength": 1
+          },
+          "extension_trigger": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "dimension",
+          "scope",
+          "current_need",
+          "definition",
+          "constraints",
+          "extension_trigger"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 20
+    },
+    "factions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "faction_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resources": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pressure": {
+            "type": "string",
+            "minLength": 1
+          },
+          "information_access": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "faction_id",
+          "goal",
+          "resources",
+          "pressure",
+          "information_access"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 16
+    },
+    "deferred_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "dimension",
+          "reason",
+          "trigger"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 16
+    },
+    "applicability": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "pattern": "^(?:\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[[0-9]+\\])+|/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*)$",
+            "description": "Exact JSONPath or RFC 6901 JSON Pointer of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPLICABLE",
+              "NOT_APPLICABLE",
+              "PROHIBITED",
+              "UNDETERMINED"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "field_path",
+          "status",
+          "rationale"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "objective",
+    "constraints",
+    "prohibited_outcomes",
+    "rules",
+    "world_foundation_json",
+    "dimensions",
+    "factions",
+    "deferred_dimensions",
+    "applicability"
+  ],
+  "additionalProperties": false
+}

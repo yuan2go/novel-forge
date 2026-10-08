@@ -671,10 +671,14 @@ class SourceImportApplication:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 effect = uow.repositories.external_effects.get_for_update(effect_id)
             adapter: Any | None = None
+            if effect["provider"] == "qidian_public_metadata":
+                from .market_runtime import market_adapter
+                market_adapter(self)
             for candidate in (
                 self.git_adapter,
                 self.object_store_adapter,
                 self.corpus_adapter,
+                getattr(self, "market_adapter", None),
             ):
                 if candidate is not None and str(candidate.provider) == str(
                     effect["provider"]
@@ -816,6 +820,9 @@ class SourceImportApplication:
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         sampling_authorization(self, worker)
         definition = self._operation_definition(worker.causation_id, worker.project_id)
+        if definition == "source.import.market.refresh":
+            from .market_runtime import execute_market_refresh
+            return execute_market_refresh(self, worker)
         if definition == "source.import.corpus.analysis":
             from .corpus_ingestion.curated_analysis import execute_curated_analysis
             from .corpus_ingestion.runtime import CorpusIngestionRuntime
@@ -871,6 +878,10 @@ class SourceImportApplication:
         self, operation_id: str, project_id: str, *, replayed: bool
     ) -> dict[str, Any]:
         definition = self._operation_definition(operation_id, project_id)
+        if definition == "source.import.market.refresh":
+            from .market_runtime import market_result
+            return {**market_result(self, operation_id, project_id), "operation_id": operation_id,
+                    "project_id": project_id, "status": self._operation_state(operation_id, project_id)["status"], "replayed": replayed}
         with AuthorityUnitOfWork(self.database_url) as uow:
             state = uow.repositories.attempt_runtime.operation_state(
                 operation_id, project_id
@@ -5102,6 +5113,8 @@ class SourceImportApplication:
             raise KernelError(
                 "SOURCE_IMPORT_EFFECT_FAILED_FINAL"
                 if dispatched["outcome"] in {"final_failure", "cancelled"}
+                else "EFFECT_EXTERNAL_STATE_UNKNOWN"
+                if dispatched["outcome"] == "unknown"
                 else "SOURCE_IMPORT_EFFECT_FAILED",
                 f"ExternalEffect returned {dispatched['outcome']}; "
                 f"{(dispatched.get('provider_evidence') or {}).get('error_code', '')}",

@@ -1,0 +1,30 @@
+{
+  "$id": "novel-forge://schemas/canon-patch/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_canon_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "claims": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "evidence_refs": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "base_canon_version_id",
+    "claims",
+    "evidence_refs"
+  ],
+  "type": "object"
+}

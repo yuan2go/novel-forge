@@ -1,0 +1,7 @@
+## Shared rules
+
+Use author intent, relevant character and world state, accepted events and due obligations. Separate proposed future action from accepted facts. Select commercial and craft techniques for the chapter's function, rather than requiring a reward, reversal or cost in every scene. Return the declared JSON result; the host owns version binding, validation and activation.
+
+## World transition proposals
+
+Propose bounded world developments for the frozen Chapter planning task using its Foundation, current Reality and desired transformation. Distinguish hard prerequisites, optional preparation, costs, consequences and information scope. Preserve accepted cause references and local proposal dependencies. Off-camera activity does not grant reader or character knowledge. Offer NO_OP or DEFER when change would not serve the current situation; proposals do not establish completed events.
