@@ -796,7 +796,7 @@ platform is added. See the market-reference procedure in `docs/runtime-operation
 
 ## Narrative Craft intelligence
 
-`narrative-craft-mechanism.v1` carries stable identity/version/family, narrative problem,
+Craft mechanism contracts carry stable identity/version/family, narrative problem,
 intended reader effect, abstract mechanism, prerequisites/applicability/contraindications,
 genre/scene/POV/pacing affinities, planning/scene/prose guidance, composition relations,
 success/failure/review/repair/preservation rules and typed provenance/evidence references.
@@ -808,7 +808,12 @@ supersession and KnowledgeCard lifecycle in its existing PostgreSQL tables/UoW.
 `mkaos.craft.original.author` requires the exact catalog hash; approval separately binds
 `repository-original-craft-v1:<catalog_hash>` and operator rationale. A later global catalog
 template binds an explicit project-specific immediate predecessor Card during authoring;
-only that predecessor varies, and template/instance hashes remain distinct. Recovery and
+only that predecessor varies, and template/instance hashes remain distinct. A new project
+may install the reviewed current catalog revision as its genesis when that mechanism has
+no earlier project identity; existing projects must bind the immediate active predecessor.
+Frozen authoring payloads retain their original candidate projection. Frozen Planning
+Contexts and requests retain their original selector and descriptive fields; concrete
+reselection inherits its predecessor selector contract. Recovery and
 approval use the frozen admitted catalog, so an unrelated catalog release cannot invalidate
 a pending candidate. Migration 0138 permits
 an absent Provider execution only for an explicitly original Craft candidate with a complete
@@ -825,10 +830,17 @@ Source prose remains restricted to analysis; only abstract approved Card project
 reach generation. Discovery does not approve a candidate. Legacy routing/frozen strategies
 retain their prior contracts.
 
-Existing narrative-intelligence retrieval filters eligible Book-scoped Cards and applicable
-conditions, then ranks bounded candidates using current task, scene goal, reader effect,
-conflict, POV/character, emotion, information/relationship state, genre, pacing, obligations
-and style evidence. Private author prose, examples and voice anchors are excluded from
+New Craft selections freeze `craft-need-driven-selection.v2`, separately from the
+unchanged density/frequency budget versions. Problem, scene demand and reader-effect
+matches use explicit semantic dimensions. Genre, POV, scene-type labels, identifiers
+and metadata cannot establish an optional need. Descriptive affinity is not applicability
+or a creative requirement. Only an exact governed affinity evidence binding can add a
+bounded adjustment after a need match and resolved applicability; hard protections win.
+`narrative-craft-mechanism.v2` adds typed affinity evidence bindings; v1 Cards remain
+usable without invented evidence. Core catalog revisions retain each mechanism's actual
+prerequisites, contraindications, knowledge boundaries and preservation rules. Family is
+classification, never an applicability predicate. Existing narrative-intelligence retrieval
+still filters eligible Book-scoped Cards and applicable conditions before composition. Private author prose, examples and voice anchors are excluded from
 Craft retrieval projections. Unknown textual conditions remain unknown and require explicit
 `ADAPT` prerequisite resolution. Every selected Card receives an `ADOPT`, `ADAPT` or `REJECT`
 translation. Adoption binds exact Card/hash and concrete text at a ChapterPlan scene pointer.
@@ -847,8 +859,10 @@ defaults bound six Craft candidates, three uses per scene, eight per chapter, a 
 history window, one-chapter cooldown and three recent uses, with repetition/salience and
 abstract-pattern Jaccard penalties plus a variation bonus. New selections use exact final
 accepted-prose observations; operational delivery receipts remain separate. Duplicate receipts,
-Review/Revision calls and future chapters do not inflate frequency. Abstract term similarity is only a retrieval heuristic, not a
-creative-effect score. Retry validates the complete frozen policy rather than filling it
+Review/Revision calls and future chapters do not inflate frequency. New pattern comparison uses abstract-mechanism terms without affinity. Accepted-use
+projections derive both signature contracts from the exact frozen mechanism; unsupported
+legacy-only signatures report noncomparability while frequency and caution evidence remain.
+Abstract term similarity is only a retrieval heuristic, not a creative-effect score. Retry validates the complete frozen policy rather than filling it
 from current defaults.
 
 Candidate composition uses deterministic bounded search over exact Card alternatives and

@@ -35,6 +35,8 @@ def bind_craft_realization(
         "POV, voice, knowledge, causality and satisfied mechanisms. Techniques do not "
         "authorize new facts, powers, characters, outcomes or additional uses."
     )
+    if any(scene["judgment_basis"].startswith("NEED_DRIVEN_") for scene in frozen["composition"]):
+        tasks["metadata_boundary"] = "Craft affinity and family are descriptive, not author requirements. Realize the frozen adopted needs and preserve their actual prerequisites and constraints."
     result["craft_tasks"] = tasks
     result["composition_method"] = (
         "Write one continuous chapter using the frozen scene strategies; serialize the "

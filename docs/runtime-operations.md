@@ -573,7 +573,16 @@ HTTP exposes `GET /product/mkaos/craft-catalog?project_id=...` and
 endpoint. These are existing MKAOS permissions and Kernel jobs, not direct table writes.
 Catalog inspection neither imports nor activates Cards. For a later mechanism version,
 pass `--supersedes-card-asset-version-id` (HTTP `supersedes_card_asset_version_id`) with
-the exact immediate active predecessor in that project. Review the candidate's frozen
+the exact immediate active predecessor in that project. A project with no earlier
+admitted identity for the mechanism installs the current catalog revision without a
+predecessor. An unfinished earlier installation must be recovered first; it cannot be
+renamed into a new genesis. Schema v2 affinity bindings require exact governed Editorial,
+Human Reader or Controlled Comparison effect evidence with `craft_affinity_claims` that
+bind mechanism ID, semantic hash, dimension, value and applicability conditions. The
+semantic hash includes actual guidance and constraints, excluding affinity, family and
+other descriptive identity metadata. Missing affinity
+evidence is neutral and does not prevent using a method for a matched need.
+Review the candidate's frozen
 catalog hash for approval, including after a newer application catalog is deployed.
 Existing Book knowledge-access
 policy must permit an approved Card before Planning can retrieve it.

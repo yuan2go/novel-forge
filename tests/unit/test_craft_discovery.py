@@ -20,6 +20,9 @@ from novel_forge.modules.source_import.profiling import SourceContentType
 def discovered():
     craft = core_catalog()[0]
     craft["mechanism_id"] = "fixture-source-discovery"
+    craft["version"] = 1
+    craft["schema_version"] = "narrative-craft-mechanism.v1"
+    craft.pop("affinity_evidence", None)
     craft["provenance"].update({"origin": "SOURCE_ABSTRACTION", "source_observation_asset_version_ids": ["observation:1"], "abstraction_policy_version": CRAFT_DISCOVERY_POLICY, "confidence": "HYPOTHESIS"})
     return craft_candidate(craft)
 

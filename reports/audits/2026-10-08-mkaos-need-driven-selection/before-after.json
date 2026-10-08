@@ -1,0 +1,97 @@
+{
+  "baseline_sha": "a3f8a6a71c2d0131cad9d948e0287848a8023847",
+  "implementation_sha": "897968a777f4cdadfbe29a89d67a0e0a8bf029a9",
+  "card_source": "immutable legacy v1 card",
+  "checks": [
+    {
+      "case": "genre-only xuanhuan",
+      "results": [
+        {
+          "policy": "craft-context-affinity-selection.v1",
+          "score": 2,
+          "rejection_reason": ""
+        },
+        {
+          "policy": "craft-need-driven-selection.v2",
+          "score": 0,
+          "rejection_reason": "CRAFT_NO_CONTEXT_MATCH"
+        }
+      ]
+    },
+    {
+      "case": "genre-only romance",
+      "results": [
+        {
+          "policy": "craft-context-affinity-selection.v1",
+          "score": 0,
+          "rejection_reason": "CRAFT_NO_CONTEXT_MATCH"
+        },
+        {
+          "policy": "craft-need-driven-selection.v2",
+          "score": 0,
+          "rejection_reason": "CRAFT_NO_CONTEXT_MATCH"
+        }
+      ]
+    },
+    {
+      "case": "pov-only first_person",
+      "results": [
+        {
+          "policy": "craft-context-affinity-selection.v1",
+          "score": 2,
+          "rejection_reason": ""
+        },
+        {
+          "policy": "craft-need-driven-selection.v2",
+          "score": 0,
+          "rejection_reason": "CRAFT_NO_CONTEXT_MATCH"
+        }
+      ]
+    },
+    {
+      "case": "pov-only omniscient",
+      "results": [
+        {
+          "policy": "craft-context-affinity-selection.v1",
+          "score": 0,
+          "rejection_reason": "CRAFT_NO_CONTEXT_MATCH"
+        },
+        {
+          "policy": "craft-need-driven-selection.v2",
+          "score": 0,
+          "rejection_reason": "CRAFT_NO_CONTEXT_MATCH"
+        }
+      ]
+    },
+    {
+      "case": "same need xuanhuan/limited",
+      "results": [
+        {
+          "policy": "craft-context-affinity-selection.v1",
+          "score": 5,
+          "rejection_reason": ""
+        },
+        {
+          "policy": "craft-need-driven-selection.v2",
+          "score": 3,
+          "rejection_reason": ""
+        }
+      ]
+    },
+    {
+      "case": "same need romance/omniscient",
+      "results": [
+        {
+          "policy": "craft-context-affinity-selection.v1",
+          "score": 3,
+          "rejection_reason": ""
+        },
+        {
+          "policy": "craft-need-driven-selection.v2",
+          "score": 3,
+          "rejection_reason": ""
+        }
+      ]
+    }
+  ]
+}

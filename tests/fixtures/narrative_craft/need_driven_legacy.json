@@ -1,0 +1,2005 @@
+{
+  "baseline_sha": "a3f8a6a71c2d0131cad9d948e0287848a8023847",
+  "mechanisms": [
+    {
+      "schema_version": "narrative-craft-mechanism.v1",
+      "mechanism_id": "intentional-gap",
+      "version": 1,
+      "family": "PROSE",
+      "name": "受控留白",
+      "narrative_problem": "每个动机和感受都被重复解释",
+      "desired_reader_effect": "读者在足够线索上自行完成推断",
+      "abstract_mechanism": "保留行动与后果，省去读者已能推得的连接说明。",
+      "prerequisites": [
+        "关键推断有充分可见依据",
+        "已有批准的场景目标、POV和事件边界"
+      ],
+      "applicability_conditions": [
+        "关键推断有充分可见依据",
+        "当前叙事问题涉及：每个动机和感受都被重复解释"
+      ],
+      "contraindications": [
+        "会省去因果、空间或知识边界必要环节",
+        "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+      ],
+      "affinity": {
+        "genre": [
+          "wuxia",
+          "xuanhuan",
+          "chinese_serial"
+        ],
+        "scene_type": [
+          "transition",
+          "action"
+        ],
+        "pov": [
+          "limited",
+          "first_person"
+        ],
+        "pacing": [
+          "variable"
+        ]
+      },
+      "planning_guidance": "列不可省的事实与可省的解释，保持连续性",
+      "scene_realization_guidance": "在当前场景选择一个明确使用位置；列不可省的事实与可省的解释，保持连续性。实现目标：读者在足够线索上自行完成推断。",
+      "prose_realization_guidance": "删动作后的同义心理总结，让回应承接",
+      "composition": {
+        "compatible": [],
+        "complementary": [],
+        "conflicting": [],
+        "requires": [],
+        "precedes": []
+      },
+      "success_signals": [
+        "留白后仍能还原事件且允许有限解释空间"
+      ],
+      "failure_modes": [
+        "把缺信息误当含蓄或任意跳时",
+        "为了显露技巧而压过人物声音、场景目标或必要信息"
+      ],
+      "review_checks": [
+        "定位正文证据检查：留白后仍能还原事件且允许有限解释空间。证据不足标记UNCERTAIN。",
+        "定位并检查副作用：把缺信息误当含蓄或任意跳时。不得仅凭技巧名称判定成功。"
+      ],
+      "repair_strategies": [
+        "恢复最小必要连接，继续省略重复评价",
+        "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+      ],
+      "preservation_constraints": [
+        "不得改变已接受Canon、世界规则或批准的场景结果",
+        "保留POV知识边界、人物声音与空间时间因果",
+        "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+      ],
+      "provenance": {
+        "origin": "REPOSITORY_ORIGINAL",
+        "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+        "abstraction_policy_version": "repository-original-craft-v1",
+        "source_observation_asset_version_ids": [],
+        "confidence": "HYPOTHESIS",
+        "supersedes_card_asset_version_id": ""
+      },
+      "validation_evidence": [],
+      "effect_evidence": []
+    },
+    {
+      "schema_version": "narrative-craft-mechanism.v1",
+      "mechanism_id": "martial-intent-consequence",
+      "version": 1,
+      "family": "WUXIA_XUANHUAN",
+      "name": "武学意图的可见后果",
+      "narrative_problem": "武学风格只靠抽象玄词",
+      "desired_reader_effect": "读者从行动方式辨认武学与人物取向",
+      "abstract_mechanism": "把已批准武学特性落实为进退、施力、节省或冒险的具体选择。",
+      "prerequisites": [
+        "世界规则已定义武学作用与限制",
+        "已有批准的场景目标、POV和事件边界"
+      ],
+      "applicability_conditions": [
+        "世界规则已定义武学作用与限制",
+        "当前叙事问题涉及：武学风格只靠抽象玄词"
+      ],
+      "contraindications": [
+        "新武学能力尚未获Canon批准",
+        "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+      ],
+      "affinity": {
+        "genre": [
+          "wuxia",
+          "xuanhuan",
+          "chinese_serial"
+        ],
+        "scene_type": [
+          "combat",
+          "power_display"
+        ],
+        "pov": [
+          "limited",
+          "first_person"
+        ],
+        "pacing": [
+          "variable"
+        ]
+      },
+      "planning_guidance": "从现有规则取一个可观察差异，绑定战术目标",
+      "scene_realization_guidance": "在当前场景选择一个明确使用位置；从现有规则取一个可观察差异，绑定战术目标。实现目标：读者从行动方式辨认武学与人物取向。",
+      "prose_realization_guidance": "以动作结果承载意境，控制术语密度",
+      "composition": {
+        "compatible": [],
+        "complementary": [],
+        "conflicting": [],
+        "requires": [],
+        "precedes": []
+      },
+      "success_signals": [
+        "删掉招式名仍可辨认行动特征"
+      ],
+      "failure_modes": [
+        "意境形容创造新效果或战斗变成说明书",
+        "为了显露技巧而压过人物声音、场景目标或必要信息"
+      ],
+      "review_checks": [
+        "定位正文证据检查：删掉招式名仍可辨认行动特征。证据不足标记UNCERTAIN。",
+        "定位并检查副作用：意境形容创造新效果或战斗变成说明书。不得仅凭技巧名称判定成功。"
+      ],
+      "repair_strategies": [
+        "移除未授权效果，把抽象词改成已知物理后果",
+        "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+      ],
+      "preservation_constraints": [
+        "不得改变已接受Canon、世界规则或批准的场景结果",
+        "保留POV知识边界、人物声音与空间时间因果",
+        "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+      ],
+      "provenance": {
+        "origin": "REPOSITORY_ORIGINAL",
+        "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+        "abstraction_policy_version": "repository-original-craft-v1",
+        "source_observation_asset_version_ids": [],
+        "confidence": "HYPOTHESIS",
+        "supersedes_card_asset_version_id": ""
+      },
+      "validation_evidence": [],
+      "effect_evidence": []
+    },
+    {
+      "schema_version": "narrative-craft-mechanism.v1",
+      "mechanism_id": "power-cost-shadow",
+      "version": 1,
+      "family": "WUXIA_XUANHUAN",
+      "name": "力量代价的余影",
+      "narrative_problem": "力量升级没有限制使冲突失重",
+      "desired_reader_effect": "读者相信强大同时收窄其他选择",
+      "abstract_mechanism": "在使用既定力量后显示现有规则要求的资源、暴露或恢复成本。",
+      "prerequisites": [
+        "Canon已有力量成本及当前资源事实",
+        "已有批准的场景目标、POV和事件边界"
+      ],
+      "applicability_conditions": [
+        "Canon已有力量成本及当前资源事实",
+        "当前叙事问题涉及：力量升级没有限制使冲突失重"
+      ],
+      "contraindications": [
+        "成本尚未定义或计划规定此次无需支付",
+        "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+      ],
+      "affinity": {
+        "genre": [
+          "wuxia",
+          "xuanhuan",
+          "chinese_serial"
+        ],
+        "scene_type": [
+          "combat",
+          "power_display"
+        ],
+        "pov": [
+          "limited",
+          "first_person"
+        ],
+        "pacing": [
+          "variable"
+        ]
+      },
+      "planning_guidance": "绑定当前账目和既定代价，不发明惩罚",
+      "scene_realization_guidance": "在当前场景选择一个明确使用位置；绑定当前账目和既定代价，不发明惩罚。实现目标：读者相信强大同时收窄其他选择。",
+      "prose_realization_guidance": "把代价写进下一步行动能力而非单列数值",
+      "composition": {
+        "compatible": [],
+        "complementary": [],
+        "conflicting": [],
+        "requires": [],
+        "precedes": []
+      },
+      "success_signals": [
+        "力量后果持续影响后续选择"
+      ],
+      "failure_modes": [
+        "临时加副作用以平衡剧情或下段成本消失",
+        "为了显露技巧而压过人物声音、场景目标或必要信息"
+      ],
+      "review_checks": [
+        "定位正文证据检查：力量后果持续影响后续选择。证据不足标记UNCERTAIN。",
+        "定位并检查副作用：临时加副作用以平衡剧情或下段成本消失。不得仅凭技巧名称判定成功。"
+      ],
+      "repair_strategies": [
+        "恢复批准成本的真实影响并删掉额外限制",
+        "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+      ],
+      "preservation_constraints": [
+        "不得改变已接受Canon、世界规则或批准的场景结果",
+        "保留POV知识边界、人物声音与空间时间因果",
+        "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+      ],
+      "provenance": {
+        "origin": "REPOSITORY_ORIGINAL",
+        "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+        "abstraction_policy_version": "repository-original-craft-v1",
+        "source_observation_asset_version_ids": [],
+        "confidence": "HYPOTHESIS",
+        "supersedes_card_asset_version_id": ""
+      },
+      "validation_evidence": [],
+      "effect_evidence": []
+    }
+  ],
+  "selections": [
+    {
+      "schema_version": "mkaos-narrative-intelligence-selection.v1",
+      "policy_version": "knowledge-grounded-selection-v2",
+      "need": {
+        "scope": "SCENE",
+        "target_stage": "chapter_plan.generate",
+        "current_state_terms": [],
+        "desired_transformation_terms": [],
+        "genre_tags": [],
+        "conflict_tags": [],
+        "reader_effect_tags": [],
+        "theme_tags": [],
+        "hard_constraints": [],
+        "recently_used_repetition_keys": [],
+        "semantic_families": [],
+        "required_card_asset_version_ids": [],
+        "craft_context": {
+          "genre": [
+            "xuanhuan"
+          ],
+          "pov": [
+            "first_person"
+          ],
+          "chapter_number": 7
+        },
+        "craft_policy": {},
+        "recent_craft_usage": [],
+        "condition_sources": {},
+        "need_digest": "sha256:9b3c4aacca6360c50b4e766f893dfec1dffd55fb9f9f429e410fd5fd2a3e5c5a"
+      },
+      "craft_policy": {
+        "schema_version": "narrative-craft-budget.v1",
+        "classification": "CONFIGURABLE_POLICY",
+        "max_craft_candidates": 6,
+        "max_uses_per_scene": 3,
+        "max_uses_per_chapter": 8,
+        "recent_chapter_window": 5,
+        "cooldown_chapters": 1,
+        "max_frequency_in_window": 3,
+        "repetition_penalty": 4,
+        "pattern_similarity_penalty": 2,
+        "pattern_similarity_threshold_percent": 60,
+        "salience_penalty": 2,
+        "variation_bonus": 1
+      },
+      "selected": [
+        {
+          "knowledge_card_asset_version_id": "card:intentional-gap",
+          "content_hash": "sha256:cd01da60d57d16b32e779f9d03ead9c95b1f4509df4da76638f495bc4aa1c226",
+          "knowledge_card_id": "",
+          "candidate_asset_version_id": "",
+          "governance_decision_asset_version_id": "",
+          "score": 3,
+          "match_reasons": [
+            "CRAFT_CONTEXT:genre:xuanhuan",
+            "CRAFT_CONTEXT:pov:first_person",
+            "CRAFT_VARIATION_BONUS"
+          ],
+          "usage_role": "MECHANISM",
+          "applicability_assessment": {
+            "schema_version": "knowledge-applicability-assessment.v1",
+            "status": "UNKNOWN",
+            "usage_role": "MECHANISM",
+            "checks": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "关键推断有充分可见依据",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：每个动机和感受都被重复解释",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:0",
+                "group": "exceptions",
+                "statement": "会省去因果、空间或知识边界必要环节",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:1",
+                "group": "exceptions",
+                "statement": "为使用技法必须改变未获批准的事件、人物知识或世界规则",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "hard_constraints": [],
+            "hard_constraint_semantics": "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS",
+            "unmet_prerequisites": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "关键推断有充分可见依据",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：每个动机和感受都被重复解释",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "exceptions": [],
+            "rejection_reasons": [],
+            "evidence_ceiling": "FROZEN_INPUT_RELATION_NOT_SEMANTIC_OR_CANON_PROOF",
+            "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          },
+          "selected_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "NARRATIVE_MECHANISM",
+            "concept_name": "受控留白",
+            "mechanism": "保留行动与后果，省去读者已能推得的连接说明。",
+            "applicability": [
+              "关键推断有充分可见依据",
+              "当前叙事问题涉及：每个动机和感受都被重复解释"
+            ],
+            "failure_conditions": [
+              "会省去因果、空间或知识边界必要环节",
+              "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+            ],
+            "constraints": [
+              "不得改变已接受Canon、世界规则或批准的场景结果",
+              "保留POV知识边界、人物声音与空间时间因果",
+              "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+            ],
+            "conflict_generators": [
+              "每个动机和感受都被重复解释"
+            ],
+            "review_checks": [
+              "定位正文证据检查：留白后仍能还原事件且允许有限解释空间。证据不足标记UNCERTAIN。",
+              "定位并检查副作用：把缺信息误当含蓄或任意跳时。不得仅凭技巧名称判定成功。"
+            ],
+            "copyright_boundaries": [
+              "只迁移抽象机制，不迁移作品表达、实体、独特事件序列或替名模板。"
+            ],
+            "selection_tags": {
+              "genre": [
+                "chinese_serial",
+                "wuxia",
+                "xuanhuan"
+              ],
+              "conflict": [
+                "action",
+                "transition"
+              ],
+              "reader_effect": [
+                "读者在足够线索上自行完成推断"
+              ],
+              "theme": []
+            },
+            "repetition_key": "intentional-gap",
+            "usage_role": "MECHANISM",
+            "craft_mechanism": {
+              "schema_version": "narrative-craft-mechanism.v1",
+              "mechanism_id": "intentional-gap",
+              "version": 1,
+              "family": "PROSE",
+              "name": "受控留白",
+              "narrative_problem": "每个动机和感受都被重复解释",
+              "desired_reader_effect": "读者在足够线索上自行完成推断",
+              "abstract_mechanism": "保留行动与后果，省去读者已能推得的连接说明。",
+              "prerequisites": [
+                "关键推断有充分可见依据",
+                "已有批准的场景目标、POV和事件边界"
+              ],
+              "applicability_conditions": [
+                "关键推断有充分可见依据",
+                "当前叙事问题涉及：每个动机和感受都被重复解释"
+              ],
+              "contraindications": [
+                "会省去因果、空间或知识边界必要环节",
+                "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+              ],
+              "affinity": {
+                "genre": [
+                  "wuxia",
+                  "xuanhuan",
+                  "chinese_serial"
+                ],
+                "scene_type": [
+                  "transition",
+                  "action"
+                ],
+                "pov": [
+                  "limited",
+                  "first_person"
+                ],
+                "pacing": [
+                  "variable"
+                ]
+              },
+              "planning_guidance": "列不可省的事实与可省的解释，保持连续性",
+              "scene_realization_guidance": "在当前场景选择一个明确使用位置；列不可省的事实与可省的解释，保持连续性。实现目标：读者在足够线索上自行完成推断。",
+              "prose_realization_guidance": "删动作后的同义心理总结，让回应承接",
+              "composition": {
+                "compatible": [],
+                "complementary": [],
+                "conflicting": [],
+                "requires": [],
+                "precedes": []
+              },
+              "success_signals": [
+                "留白后仍能还原事件且允许有限解释空间"
+              ],
+              "failure_modes": [
+                "把缺信息误当含蓄或任意跳时",
+                "为了显露技巧而压过人物声音、场景目标或必要信息"
+              ],
+              "review_checks": [
+                "定位正文证据检查：留白后仍能还原事件且允许有限解释空间。证据不足标记UNCERTAIN。",
+                "定位并检查副作用：把缺信息误当含蓄或任意跳时。不得仅凭技巧名称判定成功。"
+              ],
+              "repair_strategies": [
+                "恢复最小必要连接，继续省略重复评价",
+                "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+              ],
+              "preservation_constraints": [
+                "不得改变已接受Canon、世界规则或批准的场景结果",
+                "保留POV知识边界、人物声音与空间时间因果",
+                "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+              ],
+              "provenance": {
+                "origin": "REPOSITORY_ORIGINAL",
+                "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+                "abstraction_policy_version": "repository-original-craft-v1",
+                "source_observation_asset_version_ids": [],
+                "confidence": "HYPOTHESIS",
+                "supersedes_card_asset_version_id": ""
+              },
+              "validation_evidence": [],
+              "effect_evidence": []
+            }
+          },
+          "craft_assessment": {
+            "rejection_reason": "",
+            "score": 3,
+            "match_reasons": [
+              "CRAFT_CONTEXT:genre:xuanhuan",
+              "CRAFT_CONTEXT:pov:first_person",
+              "CRAFT_VARIATION_BONUS"
+            ],
+            "budget_assessment": {
+              "frequency": 0,
+              "repetition_penalty": 0,
+              "pattern_similarity_penalty": 0,
+              "salience_penalty": 0,
+              "feedback_penalty": 0,
+              "realization_cautions": [],
+              "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION",
+              "in_cooldown": false,
+              "pattern_signature": [
+                "abstract_mechanism",
+                "action",
+                "affinity",
+                "chinese_serial",
+                "first_person",
+                "genre",
+                "limited",
+                "pacing",
+                "pov",
+                "scene_type",
+                "transition",
+                "variable",
+                "wuxia",
+                "xuanhuan",
+                "与后",
+                "保留",
+                "保留行动与后果",
+                "动与",
+                "去读",
+                "后果",
+                "已能",
+                "得的",
+                "接说",
+                "推得",
+                "留行",
+                "的连",
+                "省去",
+                "省去读者已能推得的连接说明",
+                "者已",
+                "能推",
+                "行动",
+                "说明",
+                "读者",
+                "连接"
+              ],
+              "pattern_comparisons": [],
+              "recent_usage": [],
+              "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"
+            },
+            "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          }
+        },
+        {
+          "knowledge_card_asset_version_id": "card:martial-intent-consequence",
+          "content_hash": "sha256:4d81c3007f79e35208ca7c9fba3a41d7ffcc6af4ddb68401666616de9e13c0aa",
+          "knowledge_card_id": "",
+          "candidate_asset_version_id": "",
+          "governance_decision_asset_version_id": "",
+          "score": 3,
+          "match_reasons": [
+            "CRAFT_CONTEXT:genre:xuanhuan",
+            "CRAFT_CONTEXT:pov:first_person",
+            "CRAFT_VARIATION_BONUS"
+          ],
+          "usage_role": "MECHANISM",
+          "applicability_assessment": {
+            "schema_version": "knowledge-applicability-assessment.v1",
+            "status": "UNKNOWN",
+            "usage_role": "MECHANISM",
+            "checks": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "世界规则已定义武学作用与限制",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：武学风格只靠抽象玄词",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:0",
+                "group": "exceptions",
+                "statement": "新武学能力尚未获Canon批准",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:1",
+                "group": "exceptions",
+                "statement": "为使用技法必须改变未获批准的事件、人物知识或世界规则",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "hard_constraints": [],
+            "hard_constraint_semantics": "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS",
+            "unmet_prerequisites": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "世界规则已定义武学作用与限制",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：武学风格只靠抽象玄词",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "exceptions": [],
+            "rejection_reasons": [],
+            "evidence_ceiling": "FROZEN_INPUT_RELATION_NOT_SEMANTIC_OR_CANON_PROOF",
+            "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          },
+          "selected_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "NARRATIVE_MECHANISM",
+            "concept_name": "武学意图的可见后果",
+            "mechanism": "把已批准武学特性落实为进退、施力、节省或冒险的具体选择。",
+            "applicability": [
+              "世界规则已定义武学作用与限制",
+              "当前叙事问题涉及：武学风格只靠抽象玄词"
+            ],
+            "failure_conditions": [
+              "新武学能力尚未获Canon批准",
+              "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+            ],
+            "constraints": [
+              "不得改变已接受Canon、世界规则或批准的场景结果",
+              "保留POV知识边界、人物声音与空间时间因果",
+              "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+            ],
+            "conflict_generators": [
+              "武学风格只靠抽象玄词"
+            ],
+            "review_checks": [
+              "定位正文证据检查：删掉招式名仍可辨认行动特征。证据不足标记UNCERTAIN。",
+              "定位并检查副作用：意境形容创造新效果或战斗变成说明书。不得仅凭技巧名称判定成功。"
+            ],
+            "copyright_boundaries": [
+              "只迁移抽象机制，不迁移作品表达、实体、独特事件序列或替名模板。"
+            ],
+            "selection_tags": {
+              "genre": [
+                "chinese_serial",
+                "wuxia",
+                "xuanhuan"
+              ],
+              "conflict": [
+                "combat",
+                "power_display"
+              ],
+              "reader_effect": [
+                "读者从行动方式辨认武学与人物取向"
+              ],
+              "theme": []
+            },
+            "repetition_key": "martial-intent-consequence",
+            "usage_role": "MECHANISM",
+            "craft_mechanism": {
+              "schema_version": "narrative-craft-mechanism.v1",
+              "mechanism_id": "martial-intent-consequence",
+              "version": 1,
+              "family": "WUXIA_XUANHUAN",
+              "name": "武学意图的可见后果",
+              "narrative_problem": "武学风格只靠抽象玄词",
+              "desired_reader_effect": "读者从行动方式辨认武学与人物取向",
+              "abstract_mechanism": "把已批准武学特性落实为进退、施力、节省或冒险的具体选择。",
+              "prerequisites": [
+                "世界规则已定义武学作用与限制",
+                "已有批准的场景目标、POV和事件边界"
+              ],
+              "applicability_conditions": [
+                "世界规则已定义武学作用与限制",
+                "当前叙事问题涉及：武学风格只靠抽象玄词"
+              ],
+              "contraindications": [
+                "新武学能力尚未获Canon批准",
+                "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+              ],
+              "affinity": {
+                "genre": [
+                  "wuxia",
+                  "xuanhuan",
+                  "chinese_serial"
+                ],
+                "scene_type": [
+                  "combat",
+                  "power_display"
+                ],
+                "pov": [
+                  "limited",
+                  "first_person"
+                ],
+                "pacing": [
+                  "variable"
+                ]
+              },
+              "planning_guidance": "从现有规则取一个可观察差异，绑定战术目标",
+              "scene_realization_guidance": "在当前场景选择一个明确使用位置；从现有规则取一个可观察差异，绑定战术目标。实现目标：读者从行动方式辨认武学与人物取向。",
+              "prose_realization_guidance": "以动作结果承载意境，控制术语密度",
+              "composition": {
+                "compatible": [],
+                "complementary": [],
+                "conflicting": [],
+                "requires": [],
+                "precedes": []
+              },
+              "success_signals": [
+                "删掉招式名仍可辨认行动特征"
+              ],
+              "failure_modes": [
+                "意境形容创造新效果或战斗变成说明书",
+                "为了显露技巧而压过人物声音、场景目标或必要信息"
+              ],
+              "review_checks": [
+                "定位正文证据检查：删掉招式名仍可辨认行动特征。证据不足标记UNCERTAIN。",
+                "定位并检查副作用：意境形容创造新效果或战斗变成说明书。不得仅凭技巧名称判定成功。"
+              ],
+              "repair_strategies": [
+                "移除未授权效果，把抽象词改成已知物理后果",
+                "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+              ],
+              "preservation_constraints": [
+                "不得改变已接受Canon、世界规则或批准的场景结果",
+                "保留POV知识边界、人物声音与空间时间因果",
+                "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+              ],
+              "provenance": {
+                "origin": "REPOSITORY_ORIGINAL",
+                "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+                "abstraction_policy_version": "repository-original-craft-v1",
+                "source_observation_asset_version_ids": [],
+                "confidence": "HYPOTHESIS",
+                "supersedes_card_asset_version_id": ""
+              },
+              "validation_evidence": [],
+              "effect_evidence": []
+            }
+          },
+          "craft_assessment": {
+            "rejection_reason": "",
+            "score": 3,
+            "match_reasons": [
+              "CRAFT_CONTEXT:genre:xuanhuan",
+              "CRAFT_CONTEXT:pov:first_person",
+              "CRAFT_VARIATION_BONUS"
+            ],
+            "budget_assessment": {
+              "frequency": 0,
+              "repetition_penalty": 0,
+              "pattern_similarity_penalty": 0,
+              "salience_penalty": 0,
+              "feedback_penalty": 0,
+              "realization_cautions": [],
+              "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION",
+              "in_cooldown": false,
+              "pattern_signature": [
+                "abstract_mechanism",
+                "affinity",
+                "chinese_serial",
+                "combat",
+                "first_person",
+                "genre",
+                "limited",
+                "pacing",
+                "pov",
+                "power_display",
+                "scene_type",
+                "variable",
+                "wuxia",
+                "xuanhuan",
+                "为进",
+                "体选",
+                "具体",
+                "冒险",
+                "准武",
+                "学特",
+                "实为",
+                "已批",
+                "性落",
+                "或冒",
+                "批准",
+                "把已",
+                "把已批准武学特性落实为进退",
+                "施力",
+                "武学",
+                "特性",
+                "的具",
+                "省或",
+                "节省",
+                "节省或冒险的具体选择",
+                "落实",
+                "进退",
+                "选择",
+                "险的"
+              ],
+              "pattern_comparisons": [],
+              "recent_usage": [],
+              "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"
+            },
+            "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          }
+        },
+        {
+          "knowledge_card_asset_version_id": "card:power-cost-shadow",
+          "content_hash": "sha256:695abdb7c3fa5930e451164a359edb2da7787332968255c1cad98af827ad30d2",
+          "knowledge_card_id": "",
+          "candidate_asset_version_id": "",
+          "governance_decision_asset_version_id": "",
+          "score": 3,
+          "match_reasons": [
+            "CRAFT_CONTEXT:genre:xuanhuan",
+            "CRAFT_CONTEXT:pov:first_person",
+            "CRAFT_VARIATION_BONUS"
+          ],
+          "usage_role": "MECHANISM",
+          "applicability_assessment": {
+            "schema_version": "knowledge-applicability-assessment.v1",
+            "status": "UNKNOWN",
+            "usage_role": "MECHANISM",
+            "checks": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "Canon已有力量成本及当前资源事实",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：力量升级没有限制使冲突失重",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:0",
+                "group": "exceptions",
+                "statement": "成本尚未定义或计划规定此次无需支付",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:1",
+                "group": "exceptions",
+                "statement": "为使用技法必须改变未获批准的事件、人物知识或世界规则",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "hard_constraints": [],
+            "hard_constraint_semantics": "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS",
+            "unmet_prerequisites": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "Canon已有力量成本及当前资源事实",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：力量升级没有限制使冲突失重",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "exceptions": [],
+            "rejection_reasons": [],
+            "evidence_ceiling": "FROZEN_INPUT_RELATION_NOT_SEMANTIC_OR_CANON_PROOF",
+            "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          },
+          "selected_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "NARRATIVE_MECHANISM",
+            "concept_name": "力量代价的余影",
+            "mechanism": "在使用既定力量后显示现有规则要求的资源、暴露或恢复成本。",
+            "applicability": [
+              "Canon已有力量成本及当前资源事实",
+              "当前叙事问题涉及：力量升级没有限制使冲突失重"
+            ],
+            "failure_conditions": [
+              "成本尚未定义或计划规定此次无需支付",
+              "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+            ],
+            "constraints": [
+              "不得改变已接受Canon、世界规则或批准的场景结果",
+              "保留POV知识边界、人物声音与空间时间因果",
+              "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+            ],
+            "conflict_generators": [
+              "力量升级没有限制使冲突失重"
+            ],
+            "review_checks": [
+              "定位正文证据检查：力量后果持续影响后续选择。证据不足标记UNCERTAIN。",
+              "定位并检查副作用：临时加副作用以平衡剧情或下段成本消失。不得仅凭技巧名称判定成功。"
+            ],
+            "copyright_boundaries": [
+              "只迁移抽象机制，不迁移作品表达、实体、独特事件序列或替名模板。"
+            ],
+            "selection_tags": {
+              "genre": [
+                "chinese_serial",
+                "wuxia",
+                "xuanhuan"
+              ],
+              "conflict": [
+                "combat",
+                "power_display"
+              ],
+              "reader_effect": [
+                "读者相信强大同时收窄其他选择"
+              ],
+              "theme": []
+            },
+            "repetition_key": "power-cost-shadow",
+            "usage_role": "MECHANISM",
+            "craft_mechanism": {
+              "schema_version": "narrative-craft-mechanism.v1",
+              "mechanism_id": "power-cost-shadow",
+              "version": 1,
+              "family": "WUXIA_XUANHUAN",
+              "name": "力量代价的余影",
+              "narrative_problem": "力量升级没有限制使冲突失重",
+              "desired_reader_effect": "读者相信强大同时收窄其他选择",
+              "abstract_mechanism": "在使用既定力量后显示现有规则要求的资源、暴露或恢复成本。",
+              "prerequisites": [
+                "Canon已有力量成本及当前资源事实",
+                "已有批准的场景目标、POV和事件边界"
+              ],
+              "applicability_conditions": [
+                "Canon已有力量成本及当前资源事实",
+                "当前叙事问题涉及：力量升级没有限制使冲突失重"
+              ],
+              "contraindications": [
+                "成本尚未定义或计划规定此次无需支付",
+                "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+              ],
+              "affinity": {
+                "genre": [
+                  "wuxia",
+                  "xuanhuan",
+                  "chinese_serial"
+                ],
+                "scene_type": [
+                  "combat",
+                  "power_display"
+                ],
+                "pov": [
+                  "limited",
+                  "first_person"
+                ],
+                "pacing": [
+                  "variable"
+                ]
+              },
+              "planning_guidance": "绑定当前账目和既定代价，不发明惩罚",
+              "scene_realization_guidance": "在当前场景选择一个明确使用位置；绑定当前账目和既定代价，不发明惩罚。实现目标：读者相信强大同时收窄其他选择。",
+              "prose_realization_guidance": "把代价写进下一步行动能力而非单列数值",
+              "composition": {
+                "compatible": [],
+                "complementary": [],
+                "conflicting": [],
+                "requires": [],
+                "precedes": []
+              },
+              "success_signals": [
+                "力量后果持续影响后续选择"
+              ],
+              "failure_modes": [
+                "临时加副作用以平衡剧情或下段成本消失",
+                "为了显露技巧而压过人物声音、场景目标或必要信息"
+              ],
+              "review_checks": [
+                "定位正文证据检查：力量后果持续影响后续选择。证据不足标记UNCERTAIN。",
+                "定位并检查副作用：临时加副作用以平衡剧情或下段成本消失。不得仅凭技巧名称判定成功。"
+              ],
+              "repair_strategies": [
+                "恢复批准成本的真实影响并删掉额外限制",
+                "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+              ],
+              "preservation_constraints": [
+                "不得改变已接受Canon、世界规则或批准的场景结果",
+                "保留POV知识边界、人物声音与空间时间因果",
+                "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+              ],
+              "provenance": {
+                "origin": "REPOSITORY_ORIGINAL",
+                "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+                "abstraction_policy_version": "repository-original-craft-v1",
+                "source_observation_asset_version_ids": [],
+                "confidence": "HYPOTHESIS",
+                "supersedes_card_asset_version_id": ""
+              },
+              "validation_evidence": [],
+              "effect_evidence": []
+            }
+          },
+          "craft_assessment": {
+            "rejection_reason": "",
+            "score": 3,
+            "match_reasons": [
+              "CRAFT_CONTEXT:genre:xuanhuan",
+              "CRAFT_CONTEXT:pov:first_person",
+              "CRAFT_VARIATION_BONUS"
+            ],
+            "budget_assessment": {
+              "frequency": 0,
+              "repetition_penalty": 0,
+              "pattern_similarity_penalty": 0,
+              "salience_penalty": 0,
+              "feedback_penalty": 0,
+              "realization_cautions": [],
+              "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION",
+              "in_cooldown": false,
+              "pattern_signature": [
+                "abstract_mechanism",
+                "affinity",
+                "chinese_serial",
+                "combat",
+                "first_person",
+                "genre",
+                "limited",
+                "pacing",
+                "pov",
+                "power_display",
+                "scene_type",
+                "variable",
+                "wuxia",
+                "xuanhuan",
+                "使用",
+                "则要",
+                "力量",
+                "后显",
+                "在使",
+                "在使用既定力量后显示现有规则要求的资源",
+                "复成",
+                "定力",
+                "恢复",
+                "成本",
+                "或恢",
+                "既定",
+                "显示",
+                "暴露",
+                "暴露或恢复成本",
+                "有规",
+                "求的",
+                "现有",
+                "用既",
+                "的资",
+                "示现",
+                "要求",
+                "规则",
+                "资源",
+                "量后",
+                "露或"
+              ],
+              "pattern_comparisons": [],
+              "recent_usage": [],
+              "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"
+            },
+            "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          }
+        }
+      ],
+      "rejected": [],
+      "selection_status": "SELECTED",
+      "authority_boundary": {
+        "semantic_role": "POSSIBILITY_ONLY",
+        "may_mutate_story_authority": false,
+        "may_mutate_narrative_state": false,
+        "may_prove_accepted_reality": false,
+        "planning_must_recompose_for_project": true
+      },
+      "selection_digest": "sha256:5bac3c7aff26b697cc9478d2bda7a7ac616f2946e633b61e498150ec0794ed82"
+    },
+    {
+      "schema_version": "mkaos-narrative-intelligence-selection.v1",
+      "policy_version": "knowledge-grounded-selection-v2",
+      "need": {
+        "scope": "SCENE",
+        "target_stage": "chapter_plan.generate",
+        "current_state_terms": [],
+        "desired_transformation_terms": [],
+        "genre_tags": [],
+        "conflict_tags": [],
+        "reader_effect_tags": [],
+        "theme_tags": [],
+        "hard_constraints": [],
+        "recently_used_repetition_keys": [],
+        "semantic_families": [],
+        "required_card_asset_version_ids": [],
+        "craft_context": {
+          "scene_goal": [
+            "省去说明"
+          ],
+          "genre": [
+            "xuanhuan"
+          ],
+          "pov": [
+            "limited"
+          ],
+          "chapter_number": 7
+        },
+        "craft_policy": {},
+        "recent_craft_usage": [],
+        "condition_sources": {},
+        "need_digest": "sha256:7d989e54f3b320ab3cd8ba266e03d4490c31e7cbdbe9d0e50f32ec3b2770b496"
+      },
+      "craft_policy": {
+        "schema_version": "narrative-craft-budget.v1",
+        "classification": "CONFIGURABLE_POLICY",
+        "max_craft_candidates": 6,
+        "max_uses_per_scene": 3,
+        "max_uses_per_chapter": 8,
+        "recent_chapter_window": 5,
+        "cooldown_chapters": 1,
+        "max_frequency_in_window": 3,
+        "repetition_penalty": 4,
+        "pattern_similarity_penalty": 2,
+        "pattern_similarity_threshold_percent": 60,
+        "salience_penalty": 2,
+        "variation_bonus": 1
+      },
+      "selected": [
+        {
+          "knowledge_card_asset_version_id": "card:intentional-gap",
+          "content_hash": "sha256:cd01da60d57d16b32e779f9d03ead9c95b1f4509df4da76638f495bc4aa1c226",
+          "knowledge_card_id": "",
+          "candidate_asset_version_id": "",
+          "governance_decision_asset_version_id": "",
+          "score": 5,
+          "match_reasons": [
+            "CRAFT_CONTEXT:genre:xuanhuan",
+            "CRAFT_CONTEXT:pov:limited",
+            "CRAFT_CONTEXT:scene_goal:省去,说明",
+            "CRAFT_VARIATION_BONUS"
+          ],
+          "usage_role": "MECHANISM",
+          "applicability_assessment": {
+            "schema_version": "knowledge-applicability-assessment.v1",
+            "status": "UNKNOWN",
+            "usage_role": "MECHANISM",
+            "checks": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "关键推断有充分可见依据",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：每个动机和感受都被重复解释",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:0",
+                "group": "exceptions",
+                "statement": "会省去因果、空间或知识边界必要环节",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:1",
+                "group": "exceptions",
+                "statement": "为使用技法必须改变未获批准的事件、人物知识或世界规则",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "hard_constraints": [],
+            "hard_constraint_semantics": "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS",
+            "unmet_prerequisites": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "关键推断有充分可见依据",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：每个动机和感受都被重复解释",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "exceptions": [],
+            "rejection_reasons": [],
+            "evidence_ceiling": "FROZEN_INPUT_RELATION_NOT_SEMANTIC_OR_CANON_PROOF",
+            "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          },
+          "selected_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "NARRATIVE_MECHANISM",
+            "concept_name": "受控留白",
+            "mechanism": "保留行动与后果，省去读者已能推得的连接说明。",
+            "applicability": [
+              "关键推断有充分可见依据",
+              "当前叙事问题涉及：每个动机和感受都被重复解释"
+            ],
+            "failure_conditions": [
+              "会省去因果、空间或知识边界必要环节",
+              "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+            ],
+            "constraints": [
+              "不得改变已接受Canon、世界规则或批准的场景结果",
+              "保留POV知识边界、人物声音与空间时间因果",
+              "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+            ],
+            "conflict_generators": [
+              "每个动机和感受都被重复解释"
+            ],
+            "review_checks": [
+              "定位正文证据检查：留白后仍能还原事件且允许有限解释空间。证据不足标记UNCERTAIN。",
+              "定位并检查副作用：把缺信息误当含蓄或任意跳时。不得仅凭技巧名称判定成功。"
+            ],
+            "copyright_boundaries": [
+              "只迁移抽象机制，不迁移作品表达、实体、独特事件序列或替名模板。"
+            ],
+            "selection_tags": {
+              "genre": [
+                "chinese_serial",
+                "wuxia",
+                "xuanhuan"
+              ],
+              "conflict": [
+                "action",
+                "transition"
+              ],
+              "reader_effect": [
+                "读者在足够线索上自行完成推断"
+              ],
+              "theme": []
+            },
+            "repetition_key": "intentional-gap",
+            "usage_role": "MECHANISM",
+            "craft_mechanism": {
+              "schema_version": "narrative-craft-mechanism.v1",
+              "mechanism_id": "intentional-gap",
+              "version": 1,
+              "family": "PROSE",
+              "name": "受控留白",
+              "narrative_problem": "每个动机和感受都被重复解释",
+              "desired_reader_effect": "读者在足够线索上自行完成推断",
+              "abstract_mechanism": "保留行动与后果，省去读者已能推得的连接说明。",
+              "prerequisites": [
+                "关键推断有充分可见依据",
+                "已有批准的场景目标、POV和事件边界"
+              ],
+              "applicability_conditions": [
+                "关键推断有充分可见依据",
+                "当前叙事问题涉及：每个动机和感受都被重复解释"
+              ],
+              "contraindications": [
+                "会省去因果、空间或知识边界必要环节",
+                "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+              ],
+              "affinity": {
+                "genre": [
+                  "wuxia",
+                  "xuanhuan",
+                  "chinese_serial"
+                ],
+                "scene_type": [
+                  "transition",
+                  "action"
+                ],
+                "pov": [
+                  "limited",
+                  "first_person"
+                ],
+                "pacing": [
+                  "variable"
+                ]
+              },
+              "planning_guidance": "列不可省的事实与可省的解释，保持连续性",
+              "scene_realization_guidance": "在当前场景选择一个明确使用位置；列不可省的事实与可省的解释，保持连续性。实现目标：读者在足够线索上自行完成推断。",
+              "prose_realization_guidance": "删动作后的同义心理总结，让回应承接",
+              "composition": {
+                "compatible": [],
+                "complementary": [],
+                "conflicting": [],
+                "requires": [],
+                "precedes": []
+              },
+              "success_signals": [
+                "留白后仍能还原事件且允许有限解释空间"
+              ],
+              "failure_modes": [
+                "把缺信息误当含蓄或任意跳时",
+                "为了显露技巧而压过人物声音、场景目标或必要信息"
+              ],
+              "review_checks": [
+                "定位正文证据检查：留白后仍能还原事件且允许有限解释空间。证据不足标记UNCERTAIN。",
+                "定位并检查副作用：把缺信息误当含蓄或任意跳时。不得仅凭技巧名称判定成功。"
+              ],
+              "repair_strategies": [
+                "恢复最小必要连接，继续省略重复评价",
+                "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+              ],
+              "preservation_constraints": [
+                "不得改变已接受Canon、世界规则或批准的场景结果",
+                "保留POV知识边界、人物声音与空间时间因果",
+                "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+              ],
+              "provenance": {
+                "origin": "REPOSITORY_ORIGINAL",
+                "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+                "abstraction_policy_version": "repository-original-craft-v1",
+                "source_observation_asset_version_ids": [],
+                "confidence": "HYPOTHESIS",
+                "supersedes_card_asset_version_id": ""
+              },
+              "validation_evidence": [],
+              "effect_evidence": []
+            }
+          },
+          "craft_assessment": {
+            "rejection_reason": "",
+            "score": 5,
+            "match_reasons": [
+              "CRAFT_CONTEXT:genre:xuanhuan",
+              "CRAFT_CONTEXT:pov:limited",
+              "CRAFT_CONTEXT:scene_goal:省去,说明",
+              "CRAFT_VARIATION_BONUS"
+            ],
+            "budget_assessment": {
+              "frequency": 0,
+              "repetition_penalty": 0,
+              "pattern_similarity_penalty": 0,
+              "salience_penalty": 0,
+              "feedback_penalty": 0,
+              "realization_cautions": [],
+              "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION",
+              "in_cooldown": false,
+              "pattern_signature": [
+                "abstract_mechanism",
+                "action",
+                "affinity",
+                "chinese_serial",
+                "first_person",
+                "genre",
+                "limited",
+                "pacing",
+                "pov",
+                "scene_type",
+                "transition",
+                "variable",
+                "wuxia",
+                "xuanhuan",
+                "与后",
+                "保留",
+                "保留行动与后果",
+                "动与",
+                "去读",
+                "后果",
+                "已能",
+                "得的",
+                "接说",
+                "推得",
+                "留行",
+                "的连",
+                "省去",
+                "省去读者已能推得的连接说明",
+                "者已",
+                "能推",
+                "行动",
+                "说明",
+                "读者",
+                "连接"
+              ],
+              "pattern_comparisons": [],
+              "recent_usage": [],
+              "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"
+            },
+            "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          }
+        },
+        {
+          "knowledge_card_asset_version_id": "card:martial-intent-consequence",
+          "content_hash": "sha256:4d81c3007f79e35208ca7c9fba3a41d7ffcc6af4ddb68401666616de9e13c0aa",
+          "knowledge_card_id": "",
+          "candidate_asset_version_id": "",
+          "governance_decision_asset_version_id": "",
+          "score": 3,
+          "match_reasons": [
+            "CRAFT_CONTEXT:genre:xuanhuan",
+            "CRAFT_CONTEXT:pov:limited",
+            "CRAFT_VARIATION_BONUS"
+          ],
+          "usage_role": "MECHANISM",
+          "applicability_assessment": {
+            "schema_version": "knowledge-applicability-assessment.v1",
+            "status": "UNKNOWN",
+            "usage_role": "MECHANISM",
+            "checks": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "世界规则已定义武学作用与限制",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：武学风格只靠抽象玄词",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:0",
+                "group": "exceptions",
+                "statement": "新武学能力尚未获Canon批准",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:1",
+                "group": "exceptions",
+                "statement": "为使用技法必须改变未获批准的事件、人物知识或世界规则",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "hard_constraints": [],
+            "hard_constraint_semantics": "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS",
+            "unmet_prerequisites": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "世界规则已定义武学作用与限制",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：武学风格只靠抽象玄词",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "exceptions": [],
+            "rejection_reasons": [],
+            "evidence_ceiling": "FROZEN_INPUT_RELATION_NOT_SEMANTIC_OR_CANON_PROOF",
+            "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          },
+          "selected_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "NARRATIVE_MECHANISM",
+            "concept_name": "武学意图的可见后果",
+            "mechanism": "把已批准武学特性落实为进退、施力、节省或冒险的具体选择。",
+            "applicability": [
+              "世界规则已定义武学作用与限制",
+              "当前叙事问题涉及：武学风格只靠抽象玄词"
+            ],
+            "failure_conditions": [
+              "新武学能力尚未获Canon批准",
+              "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+            ],
+            "constraints": [
+              "不得改变已接受Canon、世界规则或批准的场景结果",
+              "保留POV知识边界、人物声音与空间时间因果",
+              "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+            ],
+            "conflict_generators": [
+              "武学风格只靠抽象玄词"
+            ],
+            "review_checks": [
+              "定位正文证据检查：删掉招式名仍可辨认行动特征。证据不足标记UNCERTAIN。",
+              "定位并检查副作用：意境形容创造新效果或战斗变成说明书。不得仅凭技巧名称判定成功。"
+            ],
+            "copyright_boundaries": [
+              "只迁移抽象机制，不迁移作品表达、实体、独特事件序列或替名模板。"
+            ],
+            "selection_tags": {
+              "genre": [
+                "chinese_serial",
+                "wuxia",
+                "xuanhuan"
+              ],
+              "conflict": [
+                "combat",
+                "power_display"
+              ],
+              "reader_effect": [
+                "读者从行动方式辨认武学与人物取向"
+              ],
+              "theme": []
+            },
+            "repetition_key": "martial-intent-consequence",
+            "usage_role": "MECHANISM",
+            "craft_mechanism": {
+              "schema_version": "narrative-craft-mechanism.v1",
+              "mechanism_id": "martial-intent-consequence",
+              "version": 1,
+              "family": "WUXIA_XUANHUAN",
+              "name": "武学意图的可见后果",
+              "narrative_problem": "武学风格只靠抽象玄词",
+              "desired_reader_effect": "读者从行动方式辨认武学与人物取向",
+              "abstract_mechanism": "把已批准武学特性落实为进退、施力、节省或冒险的具体选择。",
+              "prerequisites": [
+                "世界规则已定义武学作用与限制",
+                "已有批准的场景目标、POV和事件边界"
+              ],
+              "applicability_conditions": [
+                "世界规则已定义武学作用与限制",
+                "当前叙事问题涉及：武学风格只靠抽象玄词"
+              ],
+              "contraindications": [
+                "新武学能力尚未获Canon批准",
+                "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+              ],
+              "affinity": {
+                "genre": [
+                  "wuxia",
+                  "xuanhuan",
+                  "chinese_serial"
+                ],
+                "scene_type": [
+                  "combat",
+                  "power_display"
+                ],
+                "pov": [
+                  "limited",
+                  "first_person"
+                ],
+                "pacing": [
+                  "variable"
+                ]
+              },
+              "planning_guidance": "从现有规则取一个可观察差异，绑定战术目标",
+              "scene_realization_guidance": "在当前场景选择一个明确使用位置；从现有规则取一个可观察差异，绑定战术目标。实现目标：读者从行动方式辨认武学与人物取向。",
+              "prose_realization_guidance": "以动作结果承载意境，控制术语密度",
+              "composition": {
+                "compatible": [],
+                "complementary": [],
+                "conflicting": [],
+                "requires": [],
+                "precedes": []
+              },
+              "success_signals": [
+                "删掉招式名仍可辨认行动特征"
+              ],
+              "failure_modes": [
+                "意境形容创造新效果或战斗变成说明书",
+                "为了显露技巧而压过人物声音、场景目标或必要信息"
+              ],
+              "review_checks": [
+                "定位正文证据检查：删掉招式名仍可辨认行动特征。证据不足标记UNCERTAIN。",
+                "定位并检查副作用：意境形容创造新效果或战斗变成说明书。不得仅凭技巧名称判定成功。"
+              ],
+              "repair_strategies": [
+                "移除未授权效果，把抽象词改成已知物理后果",
+                "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+              ],
+              "preservation_constraints": [
+                "不得改变已接受Canon、世界规则或批准的场景结果",
+                "保留POV知识边界、人物声音与空间时间因果",
+                "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+              ],
+              "provenance": {
+                "origin": "REPOSITORY_ORIGINAL",
+                "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+                "abstraction_policy_version": "repository-original-craft-v1",
+                "source_observation_asset_version_ids": [],
+                "confidence": "HYPOTHESIS",
+                "supersedes_card_asset_version_id": ""
+              },
+              "validation_evidence": [],
+              "effect_evidence": []
+            }
+          },
+          "craft_assessment": {
+            "rejection_reason": "",
+            "score": 3,
+            "match_reasons": [
+              "CRAFT_CONTEXT:genre:xuanhuan",
+              "CRAFT_CONTEXT:pov:limited",
+              "CRAFT_VARIATION_BONUS"
+            ],
+            "budget_assessment": {
+              "frequency": 0,
+              "repetition_penalty": 0,
+              "pattern_similarity_penalty": 0,
+              "salience_penalty": 0,
+              "feedback_penalty": 0,
+              "realization_cautions": [],
+              "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION",
+              "in_cooldown": false,
+              "pattern_signature": [
+                "abstract_mechanism",
+                "affinity",
+                "chinese_serial",
+                "combat",
+                "first_person",
+                "genre",
+                "limited",
+                "pacing",
+                "pov",
+                "power_display",
+                "scene_type",
+                "variable",
+                "wuxia",
+                "xuanhuan",
+                "为进",
+                "体选",
+                "具体",
+                "冒险",
+                "准武",
+                "学特",
+                "实为",
+                "已批",
+                "性落",
+                "或冒",
+                "批准",
+                "把已",
+                "把已批准武学特性落实为进退",
+                "施力",
+                "武学",
+                "特性",
+                "的具",
+                "省或",
+                "节省",
+                "节省或冒险的具体选择",
+                "落实",
+                "进退",
+                "选择",
+                "险的"
+              ],
+              "pattern_comparisons": [],
+              "recent_usage": [],
+              "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"
+            },
+            "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          }
+        },
+        {
+          "knowledge_card_asset_version_id": "card:power-cost-shadow",
+          "content_hash": "sha256:695abdb7c3fa5930e451164a359edb2da7787332968255c1cad98af827ad30d2",
+          "knowledge_card_id": "",
+          "candidate_asset_version_id": "",
+          "governance_decision_asset_version_id": "",
+          "score": 3,
+          "match_reasons": [
+            "CRAFT_CONTEXT:genre:xuanhuan",
+            "CRAFT_CONTEXT:pov:limited",
+            "CRAFT_VARIATION_BONUS"
+          ],
+          "usage_role": "MECHANISM",
+          "applicability_assessment": {
+            "schema_version": "knowledge-applicability-assessment.v1",
+            "status": "UNKNOWN",
+            "usage_role": "MECHANISM",
+            "checks": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "Canon已有力量成本及当前资源事实",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：力量升级没有限制使冲突失重",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:0",
+                "group": "exceptions",
+                "statement": "成本尚未定义或计划规定此次无需支付",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:failure_conditions:1",
+                "group": "exceptions",
+                "statement": "为使用技法必须改变未获批准的事件、人物知识或世界规则",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "hard_constraints": [],
+            "hard_constraint_semantics": "UNVERIFIED_EXCEPT_EXPLICIT_TYPED_CHECKS",
+            "unmet_prerequisites": [
+              {
+                "condition_id": "semantic:applicability:0",
+                "group": "prerequisites",
+                "statement": "Canon已有力量成本及当前资源事实",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              },
+              {
+                "condition_id": "semantic:applicability:1",
+                "group": "prerequisites",
+                "statement": "当前叙事问题涉及：力量升级没有限制使冲突失重",
+                "result": "UNKNOWN",
+                "method": "SEMANTIC_UNVERIFIED",
+                "reason": "TEXT_REQUIRES_PROJECT_SPECIFIC_REVIEW"
+              }
+            ],
+            "exceptions": [],
+            "rejection_reasons": [],
+            "evidence_ceiling": "FROZEN_INPUT_RELATION_NOT_SEMANTIC_OR_CANON_PROOF",
+            "craft_applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          },
+          "selected_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE",
+            "semantic_family": "NARRATIVE_MECHANISM",
+            "concept_name": "力量代价的余影",
+            "mechanism": "在使用既定力量后显示现有规则要求的资源、暴露或恢复成本。",
+            "applicability": [
+              "Canon已有力量成本及当前资源事实",
+              "当前叙事问题涉及：力量升级没有限制使冲突失重"
+            ],
+            "failure_conditions": [
+              "成本尚未定义或计划规定此次无需支付",
+              "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+            ],
+            "constraints": [
+              "不得改变已接受Canon、世界规则或批准的场景结果",
+              "保留POV知识边界、人物声音与空间时间因果",
+              "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+            ],
+            "conflict_generators": [
+              "力量升级没有限制使冲突失重"
+            ],
+            "review_checks": [
+              "定位正文证据检查：力量后果持续影响后续选择。证据不足标记UNCERTAIN。",
+              "定位并检查副作用：临时加副作用以平衡剧情或下段成本消失。不得仅凭技巧名称判定成功。"
+            ],
+            "copyright_boundaries": [
+              "只迁移抽象机制，不迁移作品表达、实体、独特事件序列或替名模板。"
+            ],
+            "selection_tags": {
+              "genre": [
+                "chinese_serial",
+                "wuxia",
+                "xuanhuan"
+              ],
+              "conflict": [
+                "combat",
+                "power_display"
+              ],
+              "reader_effect": [
+                "读者相信强大同时收窄其他选择"
+              ],
+              "theme": []
+            },
+            "repetition_key": "power-cost-shadow",
+            "usage_role": "MECHANISM",
+            "craft_mechanism": {
+              "schema_version": "narrative-craft-mechanism.v1",
+              "mechanism_id": "power-cost-shadow",
+              "version": 1,
+              "family": "WUXIA_XUANHUAN",
+              "name": "力量代价的余影",
+              "narrative_problem": "力量升级没有限制使冲突失重",
+              "desired_reader_effect": "读者相信强大同时收窄其他选择",
+              "abstract_mechanism": "在使用既定力量后显示现有规则要求的资源、暴露或恢复成本。",
+              "prerequisites": [
+                "Canon已有力量成本及当前资源事实",
+                "已有批准的场景目标、POV和事件边界"
+              ],
+              "applicability_conditions": [
+                "Canon已有力量成本及当前资源事实",
+                "当前叙事问题涉及：力量升级没有限制使冲突失重"
+              ],
+              "contraindications": [
+                "成本尚未定义或计划规定此次无需支付",
+                "为使用技法必须改变未获批准的事件、人物知识或世界规则"
+              ],
+              "affinity": {
+                "genre": [
+                  "wuxia",
+                  "xuanhuan",
+                  "chinese_serial"
+                ],
+                "scene_type": [
+                  "combat",
+                  "power_display"
+                ],
+                "pov": [
+                  "limited",
+                  "first_person"
+                ],
+                "pacing": [
+                  "variable"
+                ]
+              },
+              "planning_guidance": "绑定当前账目和既定代价，不发明惩罚",
+              "scene_realization_guidance": "在当前场景选择一个明确使用位置；绑定当前账目和既定代价，不发明惩罚。实现目标：读者相信强大同时收窄其他选择。",
+              "prose_realization_guidance": "把代价写进下一步行动能力而非单列数值",
+              "composition": {
+                "compatible": [],
+                "complementary": [],
+                "conflicting": [],
+                "requires": [],
+                "precedes": []
+              },
+              "success_signals": [
+                "力量后果持续影响后续选择"
+              ],
+              "failure_modes": [
+                "临时加副作用以平衡剧情或下段成本消失",
+                "为了显露技巧而压过人物声音、场景目标或必要信息"
+              ],
+              "review_checks": [
+                "定位正文证据检查：力量后果持续影响后续选择。证据不足标记UNCERTAIN。",
+                "定位并检查副作用：临时加副作用以平衡剧情或下段成本消失。不得仅凭技巧名称判定成功。"
+              ],
+              "repair_strategies": [
+                "恢复批准成本的真实影响并删掉额外限制",
+                "只修复相关句段，保留已成功的其他机制和已批准事件结果"
+              ],
+              "preservation_constraints": [
+                "不得改变已接受Canon、世界规则或批准的场景结果",
+                "保留POV知识边界、人物声音与空间时间因果",
+                "保留其他已满足的Craft效果及未到兑现时点的伏笔义务"
+              ],
+              "provenance": {
+                "origin": "REPOSITORY_ORIGINAL",
+                "attribution": "Novel Forge original abstract mechanism catalog; no reference-work prose or entity templates",
+                "abstraction_policy_version": "repository-original-craft-v1",
+                "source_observation_asset_version_ids": [],
+                "confidence": "HYPOTHESIS",
+                "supersedes_card_asset_version_id": ""
+              },
+              "validation_evidence": [],
+              "effect_evidence": []
+            }
+          },
+          "craft_assessment": {
+            "rejection_reason": "",
+            "score": 3,
+            "match_reasons": [
+              "CRAFT_CONTEXT:genre:xuanhuan",
+              "CRAFT_CONTEXT:pov:limited",
+              "CRAFT_VARIATION_BONUS"
+            ],
+            "budget_assessment": {
+              "frequency": 0,
+              "repetition_penalty": 0,
+              "pattern_similarity_penalty": 0,
+              "salience_penalty": 0,
+              "feedback_penalty": 0,
+              "realization_cautions": [],
+              "feedback_policy": "SOFT_REPETITION_WEIGHT_WITHOUT_QUALIFICATION_OR_REJECTION",
+              "in_cooldown": false,
+              "pattern_signature": [
+                "abstract_mechanism",
+                "affinity",
+                "chinese_serial",
+                "combat",
+                "first_person",
+                "genre",
+                "limited",
+                "pacing",
+                "pov",
+                "power_display",
+                "scene_type",
+                "variable",
+                "wuxia",
+                "xuanhuan",
+                "使用",
+                "则要",
+                "力量",
+                "后显",
+                "在使",
+                "在使用既定力量后显示现有规则要求的资源",
+                "复成",
+                "定力",
+                "恢复",
+                "成本",
+                "或恢",
+                "既定",
+                "显示",
+                "暴露",
+                "暴露或恢复成本",
+                "有规",
+                "求的",
+                "现有",
+                "用既",
+                "的资",
+                "示现",
+                "要求",
+                "规则",
+                "资源",
+                "量后",
+                "露或"
+              ],
+              "pattern_comparisons": [],
+              "recent_usage": [],
+              "evidence_ceiling": "ACCEPTED_PROSE_OBSERVATION_NOT_READER_EFFECT"
+            },
+            "applicability_judgment": "CONTEXTUAL_ADAPTATION_REQUIRED"
+          }
+        }
+      ],
+      "rejected": [],
+      "selection_status": "SELECTED",
+      "authority_boundary": {
+        "semantic_role": "POSSIBILITY_ONLY",
+        "may_mutate_story_authority": false,
+        "may_mutate_narrative_state": false,
+        "may_prove_accepted_reality": false,
+        "planning_must_recompose_for_project": true
+      },
+      "selection_digest": "sha256:ec33e2f983b0df83448351da7bd1577f627995ff03c7ed5a0f463d46deeabfe8"
+    }
+  ],
+  "catalog_semantic_hashes": {
+    "attention-relay": "sha256:b67f165e181ad2e5c46f20115651b4a2d927b7f39193395dce2d5ba49b6e866b",
+    "object-escalation": "sha256:fb3eab29d666da53a2e414b1f03ab9d701a747dc57eb01fdc8ae3e7345584e6c",
+    "action-causal-relay": "sha256:0b785cc4c1b1282b8f2ccca3dc93b1e7a8fd31354fbdc3fe29caa6f02cfd44db",
+    "spatial-anchor": "sha256:b363dc8dd8849e6afd7892e6c0baa06c7ccc94eabe375cebc0bbef6f2b4703d8",
+    "exchange-response-cost": "sha256:aca3c0814e1a27a96f2d5779aa99ce24e2b14b2c771658b098d15b03feabb24c",
+    "tactical-purpose-break": "sha256:0a95492c9f94bc6ab9a9ba915700b961d2a92de34f73653456f247b87d92fbf2",
+    "indirect-mastery": "sha256:7a77c0114d2e65ecc9748c6b46846dc1e2fb69e4034ab43fcc9162b0bcd6e0cb",
+    "subtext-pressure": "sha256:fded41d8330fdd95e319bec07b0df46bf9b64837c78b0ae41dc7967ecc3d5e48",
+    "answer-adjacent": "sha256:be1aaac4bbcfed31a5d2eed7284263fe2578a1188b26b3e142e262acadf1c461",
+    "dialogue-power-transfer": "sha256:b1c1d69f755ae8a1579c4d735fdf33003d19fd86f81901b1e8ab517e94046c24",
+    "behavior-inference": "sha256:e3c181e0274b092ea66142baadac499fc7eb7d7d71e7ac73b49fe8ba414e49e5",
+    "choice-exposes-value": "sha256:ff95819b0c0ddc35ed698f87a3081a010aacf56c3b9c1bdcdb1e0e82ab91fecd",
+    "social-refraction": "sha256:23e51cec8f4122fc64f566bb85be95810b0452c4d63bf1239427c70afaa55adb",
+    "emotional-residue": "sha256:16a5524ed98a9be4e8dc805bbfd040a2c10e58824cfc1db87c3ea25449f43eb0",
+    "restraint-release": "sha256:164384647e4936b55387b4801c41c662665d1a7f03b7ab0ebb22d4c4fac26836",
+    "delayed-satisfaction": "sha256:41c38ea4fd1ac9fa9038bc0af5caabde288ab390010d1ccb15333d65f5a1039f",
+    "information-asymmetry": "sha256:9c1a5b05eec5f5b03fb5f1d60ce7cabec3b0af2c9b693bd57769fb35dfb580a7",
+    "answer-delay": "sha256:f64d4b9e8034439a7a48bb47a6e7f56756fd7f06fc0690533524eeb0829c00c1",
+    "plausible-misreading": "sha256:9d94edc1dac55eee22f94d669a4fcece6d6586f9585c30e0b30c89ac5f66905d",
+    "progressive-reveal": "sha256:e020fcbad7c81cda6090bbab7207b21e6591c86367f6b31a34d3866ba1759ec6",
+    "result-before-cause": "sha256:ccf0197b3bf8b36dea8187956b6a07d2847638b99dca762120992ee76911eab2",
+    "setup-progress-payoff": "sha256:0f5caa358128dacea9ae034d58f7608a0a4095771deb54e27157961563ad1b85",
+    "seed-recovery": "sha256:c3668176a406ab5f495cc53314f4d56848ac96bfe4e472182724b12d67ec03d2",
+    "earned-expectation-turn": "sha256:acd8d883e8c9e6865be6b1056997a4b34391e2d3cacc8dfc55ccde8966180c79",
+    "meaningful-callback": "sha256:07246017b08c1502daaf4e1c5acc6b2de84f2891f6ab5518820a17a09d5c442a",
+    "deadpan-contrast": "sha256:9d1e6ac1c89fe3431779b853b50611d457cb5ad431365142292d381a8d664113",
+    "scene-value-turn": "sha256:58fb840225ce14e960baf3e990af1a85ac3db1734af3781dfa7462888eb74baa",
+    "entry-escalation-exit": "sha256:4ea706e6e2fbb8eddf90ff89d6fc20521f40ab4ec0956150ff2aff583cf056e4",
+    "duration-allocation": "sha256:19b8c00074dd10ee4b559a08a5c583411d3584d1785179dc93fdf8ace46ad678",
+    "acceleration-pause": "sha256:e7e358a8dfc3c6288533acf5140b775ee50def811f0789b11376dd8b08cdb267",
+    "functional-detail": "sha256:470ee4f28c09db54fb9339e4057c5f2b523cfc3a5bd047a8ca30a2e8a7c9e959",
+    "pov-filtered-description": "sha256:e66bdf1013d700879e7345296ec22875284e13160a91d4bfdf43d41a42853390",
+    "boundary-test-retreat": "sha256:4048dcea2113a088477d7a033f0e10ea88c75a94e8c14222832f955ee4e04243",
+    "shared-risk-bond": "sha256:4882b1c101764ef5abed0e4b6c85d768f546a5c4b3d71f1420dd356e2dec5f4f",
+    "satisfaction-settlement": "sha256:dc0e96cbff73f0436d013c1633346cde73e4982fc2339b830373772204ada471",
+    "cognitive-reframe": "sha256:b61142cfb0f836cb6d6e2f8a143963ff1ac0e07908e5e6e9c148a3df416af899",
+    "unfinished-action-hook": "sha256:5bccae9f8d4cb8088de846b58347c57d3ea404eea92174a8bc34934122cbd6f4",
+    "new-question-hook": "sha256:58bfdf77ee9e60c6b3cd39b01653d70bd132c8c48858d5637dbccb0eae5b0d4a",
+    "sentence-pulse": "sha256:c9eef9f10e36565c98d4502e8adbdcc68f9d9df8177bb2acb52416e5bf70fd80",
+    "intentional-gap": "sha256:231b5273c9f21466325fd98def51fee3de8d02c51a7171a726053f10d6705023",
+    "paragraph-handoff": "sha256:5acdbc5fc2d4d17aa485886ba1b0bd4f781be3b0a70adf42de93b7d1a9a96a20",
+    "martial-intent-consequence": "sha256:eb379e4d931bbec142e6fbb43e42e35ea7e0c876a6f3f324dda8039d42966693",
+    "power-cost-shadow": "sha256:9307daba9d2e2554c376a231c8a8301391906be3a73189d23db4895e681fbc58"
+  }
+}

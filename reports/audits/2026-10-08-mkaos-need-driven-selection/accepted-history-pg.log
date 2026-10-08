@@ -1,0 +1,46 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance[False] _
+tests/integration/test_narrative_craft_chapter_postgres.py:605: in test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance
+    tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:379: in execute
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly
+_ test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance[True] _
+tests/integration/test_narrative_craft_chapter_postgres.py:605: in test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance
+    tick = chapter.scheduler(principal=worker).tick(project_id=project, root_operation_id=dispatched["chapter_root_operation_id"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:379: in execute
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly
+=========================== short test summary info ============================
+FAILED tests/integration/test_narrative_craft_chapter_postgres.py::test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance[False]
+FAILED tests/integration/test_narrative_craft_chapter_postgres.py::test_same_chapter_combines_accepted_history_and_adopted_craft_through_book_acceptance[True]
+2 failed, 6 deselected in 2.44s

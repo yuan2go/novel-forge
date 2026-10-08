@@ -60,7 +60,7 @@ def test_governed_catalog_retrieval_is_bounded_replay_stable_and_retains_exact_c
 
 def test_accepted_uses_have_numeric_window_deduplication_and_explicit_pattern_evidence():
     mechanism = core_catalog()[0]
-    row = {"chapter": 6, "use_id": "u1", "scene_id": "scene-1", "mechanism_id": mechanism["mechanism_id"], "family": mechanism["family"], "role": "PRIMARY", "external_effect_id": "effect-1", "external_receipt_ids": ["receipt-1"], "pattern_signature": craft_pattern_signature(mechanism)}
+    row = {"chapter": 6, "use_id": "u1", "scene_id": "scene-1", "mechanism_id": mechanism["mechanism_id"], "family": mechanism["family"], "role": "PRIMARY", "external_effect_id": "effect-1", "external_receipt_ids": ["receipt-1"], "pattern_signature": craft_pattern_signature(mechanism), "pattern_signature_version": "abstract-mechanism-terms.v2"}
     row.update(_accepted_usage_binding())
     recent = [row, {**row, "external_effect_id": "effect-2"}, {**row, "use_id": "u2", "chapter": 2}, {**row, "use_id": "u3", "chapter": 9}, {**row, "use_id": "u4", "chapter": 5, "acceptance_id": ""}, {**row, "use_id": "u5", "chapter": 5, "mechanism_id": "similar-pattern"}]
     policy = validate_craft_policy({"recent_chapter_window": 2})
@@ -70,7 +70,7 @@ def test_accepted_uses_have_numeric_window_deduplication_and_explicit_pattern_ev
     assert budget["frequency"] == 1
     assert budget["salience_penalty"] == policy["salience_penalty"]
     assert len(budget["recent_usage"]) == 2
-    assert budget["pattern_comparisons"] == [{"use_id": "u5", "chapter": 5, "method": "ABSTRACT_MECHANISM_AFFINITY_TERM_JACCARD", "similarity_percent": 100}]
+    assert budget["pattern_comparisons"] == [{"use_id": "u5", "chapter": 5, "method": "ABSTRACT_MECHANISM_TERM_JACCARD", "similarity_percent": 100}]
     assert budget["pattern_similarity_penalty"] == policy["pattern_similarity_penalty"]
 
 
@@ -152,6 +152,7 @@ def test_chapter_plan_and_production_preparation_preserve_and_verify_the_exact_m
     projection = service._bind_translated_knowledge(request=request, plan=plan_asset, selected_by_type={"chapter_plan": [plan_asset], "knowledge_card": [card]}, selections=[], rejections=[], blocked=blocked, knowledge_access=access)
     assert blocked == []
     assert projection[card.asset_version_id]["craft_uses"] == strategy["uses"]
+    assert "do not impose author requirements" in projection[card.asset_version_id]["craft_metadata_boundary"]
     altered = deepcopy(card.content)
     altered["abstract_content"]["craft_mechanism"]["abstract_mechanism"] += "绕过世界规则。"
     blocked = []

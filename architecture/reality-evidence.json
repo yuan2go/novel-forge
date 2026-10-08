@@ -9230,6 +9230,10 @@
         {
           "path": "src/novel_forge/modules/mkaos_authority/craft_scope.py",
           "symbol": "validate_scope_transition_decision"
+        },
+        {
+          "path": "src/novel_forge/modules/mkaos_authority/craft_matching.py",
+          "symbol": "assess_need"
         }
       ],
       "commands_operations": [
@@ -9362,6 +9366,10 @@
         {
           "path": "tests/unit/test_craft_closure.py",
           "locator": "def test_"
+        },
+        {
+          "path": "tests/unit/test_craft_need_driven_selection.py",
+          "symbol": "test_exact_baseline_selections_replay_under_legacy_contract"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9989,7 +9997,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:30570dcec77bd6b5327d3b4df6c8dbcb698ab1c51ff9d6813761401792a38538"
+    "implementation_tree_sha": "sha256:7eac775f858ba4c5d63c9fd8fe8e35630f84224eecf47a8fb252632a362efcf7"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

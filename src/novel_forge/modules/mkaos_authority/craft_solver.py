@@ -170,6 +170,11 @@ def solve_candidates(
     if solution is None:
         raise KernelError("CRAFT_CONCRETE_PLACEMENT_INFEASIBLE" if concrete_scenes is not None else "MKAOS_REQUIRED_KNOWLEDGE_UNAVAILABLE", "Exhaustive eligible-pool search proved no combination for required cards " + ", ".join(sorted(required_ids)) + "; constraints=" + ", ".join(sorted(failures)))
     selected = [ranked[index] for index in solution]
+    for index, item in zip(solution, selected):
+        if not item.get("craft_assessment", {}).get("matching_assessment"):
+            continue
+        item["craft_assessment"]["selection_reason"] = (
+            "AUTHOR_OR_PARENT_REQUIRED" if index in required else "REQUIRED_DEPENDENCY" if index in dependency_only else "NEED_MATCH_IN_FEASIBLE_COMBINATION")
     selected_names = {names[index] for index in solution if names[index]}
     rejected = []
     for index, item in enumerate(ranked):

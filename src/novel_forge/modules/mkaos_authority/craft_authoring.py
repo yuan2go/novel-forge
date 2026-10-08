@@ -7,7 +7,7 @@ from typing import Any, Mapping
 from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.mkaos_authority.craft import (
-    CRAFT_ORIGINAL_POLICY, craft_candidate, craft_hash, require_core_mechanism, validate_craft_mechanism,
+    CRAFT_ORIGINAL_POLICY, craft_candidate, craft_hash, craft_semantic_hash, require_core_mechanism, validate_craft_mechanism,
 )
 from novel_forge.modules.mkaos_authority.definitions import (
     MKAOS_CRAFT_AUTHOR_DEFINITION_VERSION, MKAOS_CRAFT_AUTHOR_HANDLER_KEY, MKAOS_CRAFT_AUTHOR_OPERATION,
@@ -41,6 +41,8 @@ def validate_craft_lineage(cursor: Any, project_id: str, candidate: Mapping[str,
         return {}
     mechanism = validate_craft_mechanism(candidate["craft_mechanism"])
     provenance = mechanism["provenance"]
+    cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+        [f"mkaos-craft-identity:{project_id}:{mechanism['mechanism_id']}"])
     if original != (provenance["origin"] == "REPOSITORY_ORIGINAL") or set(provenance["source_observation_asset_version_ids"]) != set(observation_ids):
         raise KernelError("MKAOS_CRAFT_PROVENANCE_CONFLICT", "Craft origin and Observation identities must match the canonical authoring path")
     cursor.execute(
@@ -51,7 +53,8 @@ def validate_craft_lineage(cursor: Any, project_id: str, candidate: Mapping[str,
            WHERE candidate.project_id=%s AND candidate.craft_mechanism_id IS NOT NULL
            FOR SHARE OF candidate""", [project_id],
     )
-    for identity, version, content_hash, stored in cursor.fetchall():
+    prior_candidates = cursor.fetchall()
+    for identity, version, content_hash, stored in prior_candidates:
         if identity == mechanism["mechanism_id"] and version == mechanism["version"] and content_hash != craft_hash(mechanism):
             raise KernelError("MKAOS_CRAFT_VERSION_CONFLICT", "An immutable Craft identity/version already has different content; author a new version")
         if identity != mechanism["mechanism_id"] and stored and " ".join(stored["abstract_mechanism"].split()) == " ".join(mechanism["abstract_mechanism"].split()):
@@ -69,8 +72,20 @@ def validate_craft_lineage(cursor: Any, project_id: str, candidate: Mapping[str,
         row = cursor.fetchone()
         if not row or not row[0] or row[0]["mechanism_id"] != mechanism["mechanism_id"] or row[0]["version"] + 1 != mechanism["version"] or row[1:] != ("ACTIVE", "ACTIVE", "ELIGIBLE", "CLEAR"):
             raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Craft revision requires the immediately preceding active governed version in this project")
-    elif mechanism["version"] != 1:
-        raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Craft revisions require an explicit preceding Card")
+    elif (not original and mechanism["version"] != 1) or any(
+        identity == mechanism["mechanism_id"] and version != mechanism["version"]
+        for identity, version, _, _ in prior_candidates
+    ):
+        raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Existing Craft revisions require an explicit immediate predecessor")
+    if original and not predecessor:
+        cursor.execute("""SELECT operation_id FROM authority_operation
+            WHERE project_id=%s AND definition_name='mkaos.craft.original.author'
+              AND command_payload->'payload'->>'mechanism_id'=%s
+              AND command_payload->'payload'->'candidate'->'craft_mechanism'->>'version' <> %s
+            LIMIT 1""", [project_id, mechanism["mechanism_id"], str(mechanism["version"])])
+        if cursor.fetchone():
+            raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "An earlier admitted mechanism identity requires recovery and an explicit immediate predecessor")
+    resolved_evidence = {}
     for evidence in mechanism["validation_evidence"] + mechanism["effect_evidence"]:
         cursor.execute(
             """SELECT asset.asset_type,version.content,version.governance
@@ -82,8 +97,15 @@ def validate_craft_lineage(cursor: Any, project_id: str, candidate: Mapping[str,
         if not row or row[2] != "CLEAR":
             raise KernelError("MKAOS_CRAFT_EVIDENCE_INVALID", "Craft evidence must resolve to an immutable clear asset in the same project")
         content = dict(row[1] or {})
+        resolved_evidence[evidence["asset_version_id"]] = content
         if evidence["kind"] in {"HUMAN_READER", "EDITORIAL", "CONTROLLED_COMPARISON"} and content.get("evidence_class") != evidence["kind"]:
             raise KernelError("MKAOS_CRAFT_EVIDENCE_CLASS_INVALID", "Evidence cannot upgrade a model judgment to independent human or comparison evidence")
+    for binding in mechanism.get("affinity_evidence", []):
+        expected = {"mechanism_id": mechanism["mechanism_id"], "dimension": binding["dimension"],
+            "value": binding["value"], "applicability_conditions": mechanism["applicability_conditions"],
+            "mechanism_semantic_hash": craft_semantic_hash(mechanism)}
+        if expected not in resolved_evidence[binding["asset_version_id"]].get("craft_affinity_claims", []):
+            raise KernelError("MKAOS_CRAFT_AFFINITY_EVIDENCE_INVALID", "Affinity evidence must attest this exact mechanism, dimension, value and applicability scope")
     return {"craft_mechanism_id": mechanism["mechanism_id"], "craft_mechanism_version": mechanism["version"], "craft_mechanism_hash": craft_hash(mechanism)}
 
 
@@ -97,8 +119,8 @@ def _bind_original_template(template: Mapping[str, Any], predecessor: str) -> di
     mechanism = validate_craft_mechanism(template)
     if mechanism["provenance"]["origin"] != "REPOSITORY_ORIGINAL" or mechanism["provenance"]["supersedes_card_asset_version_id"]:
         raise KernelError("MKAOS_CRAFT_PROVENANCE_CONFLICT", "Original catalog templates must be independent of project Card identities")
-    if bool(predecessor) != (mechanism["version"] > 1):
-        raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Original Craft revision requires an explicit immediate predecessor; first versions forbid one")
+    if predecessor and mechanism["version"] == 1:
+        raise KernelError("MKAOS_CRAFT_PREDECESSOR_INVALID", "Original Craft first versions forbid a predecessor")
     mechanism["provenance"]["supersedes_card_asset_version_id"] = predecessor
     return validate_craft_mechanism(mechanism)
 
@@ -125,6 +147,8 @@ def admit_core_craft(application: Any, command: AuthorCoreCraftCommand, *, princ
     with AuthorityUnitOfWork(application.database_url) as uow:
         repository = MkaosAuthorityRepository(uow.cursor)
         repository.require_scope(project_id=command.project_id, workspace_id=command.workspace_id)
+        uow.cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+            [f"mkaos-craft-identity:{command.project_id}:{command.mechanism_id}"])
         admitted = repository.existing_original_craft_admission(project_id=command.project_id,
             mechanism_id=command.mechanism_id, catalog_hash=command.catalog_hash)
         if not admitted:
@@ -158,19 +182,19 @@ def admit_core_craft(application: Any, command: AuthorCoreCraftCommand, *, princ
                              "candidate_hash": original["candidate_hash"]})
         else:
             validate_craft_lineage(uow.cursor, command.project_id, candidate, (), original=True)
-    if existing:
-        if existing["operation_status"] != "SUCCEEDED":
-            raise KernelError("MKAOS_CANDIDATE_RECOVERY_REQUIRED", "Original Craft candidate Operation requires recovery")
-        return {**existing, "project_id": command.project_id, "status": "SUCCEEDED", "replayed": True, "duplicate": True}
-    return application._admit(
-        definition_name=MKAOS_CRAFT_AUTHOR_OPERATION, definition_version=MKAOS_CRAFT_AUTHOR_DEFINITION_VERSION,
-        handler_key=MKAOS_CRAFT_AUTHOR_HANDLER_KEY, permission="mkaos.authority.execute",
-        project_id=command.project_id, workspace_id=command_payload["workspace_id"], actor_id=actor,
-        idempotency_scope="project:mkaos-craft-original", idempotency_key=f"craft-original:{command.project_id}:{candidate_hash}",
-        trace_id=command.trace_id, correlation_id=command.correlation_id, causation_id=command_payload["payload"]["catalog_hash"],
-        command_payload=command_payload,
-        input_assets=[], ready_reason="Repository original Craft requires a separate exact-catalog governance approval",
-    )
+        if existing:
+            if existing["operation_status"] != "SUCCEEDED":
+                raise KernelError("MKAOS_CANDIDATE_RECOVERY_REQUIRED", "Original Craft candidate Operation requires recovery")
+            return {**existing, "project_id": command.project_id, "status": "SUCCEEDED", "replayed": True, "duplicate": True}
+        return application._admit(
+            definition_name=MKAOS_CRAFT_AUTHOR_OPERATION, definition_version=MKAOS_CRAFT_AUTHOR_DEFINITION_VERSION,
+            handler_key=MKAOS_CRAFT_AUTHOR_HANDLER_KEY, permission="mkaos.authority.execute",
+            project_id=command.project_id, workspace_id=command_payload["workspace_id"], actor_id=actor,
+            idempotency_scope="project:mkaos-craft-original", idempotency_key=f"craft-original:{command.project_id}:{candidate_hash}",
+            trace_id=command.trace_id, correlation_id=command.correlation_id, causation_id=command_payload["payload"]["catalog_hash"],
+            command_payload=command_payload,
+            input_assets=[], ready_reason="Repository original Craft requires a separate exact-catalog governance approval",
+        )
 
 
 def execute_core_craft_fenced(application: Any, worker: Any) -> dict[str, Any]:

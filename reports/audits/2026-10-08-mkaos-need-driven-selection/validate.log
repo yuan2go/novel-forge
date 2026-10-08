@@ -1,0 +1,8 @@
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m compileall -q src tests
+ruff check src/novel_forge/modules/agent_runtime src/novel_forge/modules/agent_collaboration src/novel_forge/modules/command_kernel src/novel_forge/modules/production_execution src/novel_forge/modules/chapter_authority
+All checks passed!
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python scripts/check_ruff_ratchet.py --ruff ruff
+ruff-ratchet: FAIL
+- new Ruff diagnostic is not baselined: tests/unit/test_source_runtime_qualification.py E402=1
+- modified baseline file did not reduce Ruff debt: tests/unit/test_creative_domain.py 8->8
+make: *** [lint-ratchet] Error 1

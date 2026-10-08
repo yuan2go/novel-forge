@@ -68,6 +68,7 @@ def test_source_null_execution_db_guard_and_original_masquerade_rejected():
     with transaction() as connection:
         with pytest.raises(KernelError, match="canonical authoring path"):
             validate_craft_lineage(connection.cursor(), command.project_id, candidate, ("unrelated-observation",))
+        candidate["craft_mechanism"]["version"] = 1
         candidate["craft_mechanism"]["provenance"]["origin"] = "SOURCE_ABSTRACTION"
         candidate["craft_mechanism"]["provenance"]["source_observation_asset_version_ids"] = ["other-observation"]
         with pytest.raises(KernelError, match="canonical authoring path"):
@@ -106,3 +107,32 @@ def test_all_core_mechanisms_can_be_governed_in_native_store_without_provider_cl
     assert len(cards) == len(catalog)
     assert {card["content"]["abstract_content"]["craft_mechanism"]["mechanism_id"] for card in cards} == {item["mechanism_id"] for item in catalog}
     assert all(card["content"]["source_policy"]["review_class"] == "ORIGINAL_CATALOG_OPERATOR_APPROVAL" for card in cards)
+
+
+def test_affinity_evidence_resolves_exact_project_dimension_and_applicability_scope():
+    from copy import deepcopy
+    from psycopg.types.json import Jsonb
+    from novel_forge.modules.mkaos_authority.craft import craft_hash, craft_semantic_hash
+    application, command = setup_craft()
+    mechanism = core_catalog()[0]
+    evidence_id = 'comparison:'+command.project_id
+    mechanism['effect_evidence'] = [{'kind':'CONTROLLED_COMPARISON','asset_version_id':evidence_id+':v1','claim':'Exact affinity comparison; fixture data is not reader proof'}]
+    tag = mechanism['affinity']['scene_type'][0]
+    mechanism['affinity_evidence'] = [{'dimension':'scene_type','value':tag,'asset_version_id':evidence_id+':v1'}]
+    claim = {'mechanism_id':mechanism['mechanism_id'],'dimension':'scene_type','value':tag,'applicability_conditions':mechanism['applicability_conditions'], 'mechanism_semantic_hash':craft_semantic_hash(mechanism)}
+    content = {'evidence_class':'CONTROLLED_COMPARISON','craft_affinity_claims':[claim]}
+    with transaction() as connection:
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'evaluation_report')", [evidence_id,command.project_id])
+        cursor.execute("INSERT INTO authority_asset_version(asset_version_id,asset_id,version_number,lifecycle,eligibility,governance,content,content_hash,schema_version) VALUES (%s,%s,1,'ACTIVE','ELIGIBLE','CLEAR',%s,%s,'craft-comparison.v1')", [evidence_id+':v1',evidence_id,Jsonb(content),craft_hash(content)])
+        validate_craft_lineage(cursor, command.project_id, craft_candidate(mechanism), (), original=True)
+        altered = deepcopy(mechanism)
+        altered['applicability_conditions'].append('Different untested necessary context')
+        with pytest.raises(KernelError, match='exact mechanism, dimension, value and applicability scope'):
+            validate_craft_lineage(cursor, command.project_id, craft_candidate(altered), (), original=True)
+        changed_semantics = deepcopy(mechanism)
+        changed_semantics['abstract_mechanism'] += ' Change the causal method.'
+        with pytest.raises(KernelError, match='exact mechanism, dimension, value and applicability scope'):
+            validate_craft_lineage(cursor, command.project_id, craft_candidate(changed_semantics), (), original=True)
+        with pytest.raises(KernelError, match='same project'):
+            validate_craft_lineage(cursor, 'other-project', craft_candidate(mechanism), (), original=True)

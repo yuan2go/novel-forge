@@ -461,6 +461,8 @@ class ProductionPreparationService:
                 "chapter_plan_asset_version_id": plan.asset_version_id,
                 "chapter_plan_content_hash": plan.content_hash,
                 **({"craft_uses": bound_uses, "craft_strategy_digest": strategy["strategy_digest"]} if bound_uses else {}),
+                **({"craft_metadata_boundary": "Affinity, family and selection labels describe a method; they do not impose author requirements or change its frozen intended effects."}
+                    if bound_uses and any(scene["judgment_basis"].startswith("NEED_DRIVEN_") for scene in strategy["composition"]) else {}),
             }
         return result
 
@@ -753,6 +755,8 @@ class ProductionPreparationService:
             }
             if knowledge_projection:
                 projected.update(knowledge_projection)
+                if knowledge_projection.get("craft_metadata_boundary") and projected.get("craft_mechanism"):
+                    projected["selection_tags"] = {**(projected.get("selection_tags") or {}), "genre": [], "conflict": []}
             safe_summary = json.dumps(
                 projected,
                 ensure_ascii=False,
