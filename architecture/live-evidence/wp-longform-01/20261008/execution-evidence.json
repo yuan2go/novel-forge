@@ -1,0 +1,215 @@
+{
+  "schema_version": "wp-longform-01.execution-evidence.v1",
+  "recorded_at": "2026-10-08T03:36:13.736058+00:00",
+  "baseline": {
+    "main_sha": "fae50391c8e5e4b323aa303a922b8332e4e14666",
+    "pr": 140,
+    "implementation_tree_sha": "sha256:7e01fe7fe1d5b15172225c311878698ed1aa8a19d5e8f60da62e96c628f4bea9",
+    "source_state": "MODIFIED_ISOLATED_WORKTREE",
+    "original_dirty_checkout_preserved": true
+  },
+  "outcome": {
+    "engineering": "PARTIAL_EXECUTABLE",
+    "real_production": "BLOCKED",
+    "real_author_operations": "NOT_RUN",
+    "work_package_complete": false,
+    "quality": "NOT_PROVEN"
+  },
+  "original_work": {
+    "title": "潮痕档案",
+    "project_id": "closure-original-20261006",
+    "book_id": "closure-original-book",
+    "workspace_id": "closure-original-workspace",
+    "formation_run_id": "story-formation:0b15b18326b245b7822ba64cc748c18bfc6a329523c2c449af79b1767040ac60",
+    "book_run_id": "book-run:8a36f67a-85da-4123-8dcc-879f763b5920",
+    "whole_book_target": 12,
+    "current_ledger_and_selected_manuscript_version": "UNVERIFIED_DATABASE_UNAVAILABLE",
+    "new_chapters_delivered": 0,
+    "historical_cache_verified_this_turn": [
+      {
+        "chapter": 1,
+        "status": "HISTORICAL_ACCEPTED_CACHE",
+        "unicode_code_points": 1265,
+        "non_whitespace_code_points": 1245,
+        "sha256": "6758c9025584e941a5b930720c3c7e1d33c62634a1a7c88f1cec56ac1d9b0aa7",
+        "replacement_characters": 0
+      },
+      {
+        "chapter": 2,
+        "status": "HISTORICAL_SELECTED_CANDIDATE_CACHE",
+        "unicode_code_points": 1286,
+        "non_whitespace_code_points": 1264,
+        "sha256": "226e99fe71a820495f980ba79ca4da1263b29e64f2a87ba9c39f3928a02ee9aa",
+        "replacement_characters": 0
+      }
+    ],
+    "native_export_this_turn": "NOT_RUN",
+    "next_chapter": "UNVERIFIED_UNTIL_ORIGINAL_LEDGER_RESTORED"
+  },
+  "runtime": {
+    "original_database": "novel_forge_production_closure_live",
+    "original_database_connection": "UNAVAILABLE",
+    "original_migration_head": "NOT_VERIFIABLE",
+    "docker_engine": "UNAVAILABLE_AFTER_OFFICIAL_START_RESTART",
+    "object_storage": "UNVERIFIED_ORIGINAL_SERVICE_UNAVAILABLE",
+    "original_provider_authorization": "PRIVATE_CONFIGURATION_PRESENT_NOT_LIVE_VERIFIED",
+    "remote_threads": {
+      "ids": [
+        "01a1157c-2885-79b0-97f0-f5e8203ebedf",
+        "01a11580-4edd-70d3-9a32-5c7898ebf711",
+        "01a117aa-94f4-7ac1-973f-e9bc73db2f43"
+      ],
+      "read_only_host_query": "UNAVAILABLE_DURABLE_HOST",
+      "meaning": "Not cancellation, not not_found, no original result recovered"
+    },
+    "new_provider_dispatches": 0,
+    "new_cumulative_member_budget": false,
+    "production_database_writes": 0
+  },
+  "repairs": [
+    {
+      "owner": "Story Planning Gateway Effect adapter",
+      "change": "query/cancel never submit; exact existing contract and handle required; local CLI cancellation needs upstream confirmation",
+      "evidence_state": "EXECUTABLE"
+    },
+    {
+      "owner": "Book Creation runtime",
+      "change": "historical unresolved CLI outcomes stop Formation before retry/resume",
+      "evidence_state": "EXECUTABLE"
+    },
+    {
+      "owner": "Native read-only runtime inspection",
+      "change": "v2 separates recorded tokens, measured receipt usage, conservative estimates and unknown reservations; no ledger rewrite",
+      "evidence_state": "EXECUTABLE"
+    }
+  ],
+  "documentation_cleanup": {
+    "before_production_edits": true,
+    "files": [
+      "docs/current-system.md",
+      "docs/runtime-operations.md",
+      "architecture/proposals/prompt-and-generation-contract-convergence-01.md"
+    ],
+    "superseded_requirements": "ordinary draft delivery gated on review/strict acceptance",
+    "history": "Git history and frozen evidence/migrations/ledger retained"
+  },
+  "separate_pr140_validation_runtime": {
+    "original_work": false,
+    "project_id": "author-first-live-20261008T023028-final",
+    "database": "nf_author_first_live",
+    "database_oid": 224588,
+    "migration_head": "20261008_0181_author_manuscript_delivery",
+    "migration_count": 182,
+    "effect_counts": {
+      "FAILED_RETRYABLE": 1,
+      "SUCCEEDED": 5
+    },
+    "budget_reservations": [
+      {
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "cost_status": "UNKNOWN",
+        "count": 6,
+        "recorded_tokens": "222501",
+        "measured_tokens": "116645",
+        "conservative_estimate_tokens": "105856",
+        "unmeasured_reservations": 1,
+        "reserved_amount": null,
+        "settled_amount": null
+      }
+    ],
+    "native_creation_status": "RECONCILIATION_REQUIRED",
+    "native_failed_formation_resume_blocker": "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED",
+    "ledger_unchanged": true,
+    "prose_delivery": 0
+  },
+  "controlled_author_journey": {
+    "status": "PASS",
+    "real_provider": false,
+    "test": "tests/integration/test_author_first_manuscript_postgres.py",
+    "scope": [
+      "six consecutive chapters across groups",
+      "saved draft read",
+      "continue",
+      "interrupted delivery/recovery without regenerating completed result",
+      "optional review outage",
+      "selected-range edit",
+      "diff adoption and original retention",
+      "stale version conflict",
+      "exact current-version export"
+    ]
+  },
+  "checks": [
+    {
+      "private_log": "focused-unit.log",
+      "status": "PASS",
+      "details": "83 passed",
+      "sha256": "32ec3502211aa93095fb3e59206d756e1ece1b82e1d9a0bfb08ed52076c00642"
+    },
+    {
+      "private_log": "focused-postgres.log",
+      "status": "PARTIAL",
+      "details": "16 passed, 1 failed, 4 subtests; strict Context failure also reproduces on frozen main",
+      "sha256": "3f765b28f78e2090f64c1553d2e31d1944677fe2ab6929721ec87b90cc88bb04"
+    },
+    {
+      "private_log": "baseline-strict-context.log",
+      "status": "FAIL",
+      "details": "PROTECTED_CONTEXT_BUDGET_EXCEEDED: requires=3889, available=2456, used=3544, total=6000",
+      "sha256": "3a47d6a3865325b4e936f539af96e93aae73264e7e7e6531fa46ea890da5b043"
+    },
+    {
+      "private_log": "gateway-kernel-postgres.log",
+      "status": "PASS",
+      "details": "24 passed, 7 subtests",
+      "sha256": "c089be85f01015954d9b2d749a03c659d3b63561bd475b6d6b0baab26ce5c5df"
+    },
+    {
+      "private_log": "architecture-tests.log",
+      "status": "PASS",
+      "details": "20 passed, 10 subtests",
+      "sha256": "0c6bcb3bdde536fafc099bee48927bd422aa4734b4fc3eaafb446c5e05e94a8e"
+    },
+    {
+      "private_log": "documentation-reality-final.json",
+      "status": "PASS",
+      "details": "checked projection and documentation",
+      "sha256": "d5d37ec46b39f6e6c8fb25eb72b5b071f76b73376aca55fcee6a6acf007cc34a"
+    },
+    {
+      "private_log": "static-governance.log",
+      "status": "PARTIAL",
+      "details": "manifests, architecture fitness, test reality PASS; proposal lifecycle FAIL",
+      "sha256": "cfb7346ab6ce6ed94cdaf27faa8fed9578a854d2c4d9f6d6d044138988aa4087"
+    },
+    {
+      "private_log": "baseline-proposal-lifecycle.json",
+      "status": "FAIL",
+      "details": "same four stale proposal scopes on frozen main",
+      "sha256": "90b5f08626d272e5d064a3019afc5c0248b40bc12b2345599831415b5d24ecab"
+    },
+    {
+      "private_log": "pr140-readonly-ledger-proof.json",
+      "status": "PASS",
+      "details": "Effect/Dispatch/budget/Formation/Operation hashes unchanged",
+      "sha256": "e2ae103c2d5068a85053e9d46fc549ef8adb71c7e4da666412816b39ededae1a"
+    }
+  ],
+  "full_backend_qualification": "NOT_RUN",
+  "literary_independent_review": "NOT_RUN",
+  "remaining": [
+    "Unlock/start Docker and resolve original containers/volumes before trusting ports; do not create a replacement database",
+    "Recover or obtain authoritative remote terminal/result evidence for original UNKNOWN Effects, append evidence through owning native recovery; no new IDs or blind resend",
+    "Verify actual original migrations, assets and frozen bindings; use native manuscript workflow adoption only when lineage reconciled",
+    "Deliver the remaining consecutive chapter batch and verify real author save/continue/pause/resume/edit/diff/export on this same Book"
+  ],
+  "private_evidence_root": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-01-20261008",
+  "publication": "NOT_RUN",
+  "merge": "NOT_RUN",
+  "test_database_cleanup": {
+    "database": "nf_wp_longform_test_626b34eb0c54_test",
+    "status": "PASS",
+    "owned_test_database_dropped": true,
+    "production_databases_modified": false
+  }
+}

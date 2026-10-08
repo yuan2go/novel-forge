@@ -33,13 +33,21 @@ def inspect_runtime(database_url: str, *, project_id: str, expected_database: st
         effects = dict(cur.fetchall())
         cur.execute("SELECT external_effect_id,status,effect_type,provider,model_id,manual_resolution_required FROM authority_external_effect WHERE project_id=%s AND status NOT IN ('SUCCEEDED','CANCELLED') ORDER BY external_effect_id LIMIT 101", [project_id])
         unresolved = [dict(zip(("external_effect_id", "status", "effect_type", "provider", "model_id", "manual_resolution_required"), row, strict=True)) for row in cur.fetchall()]
-        cur.execute("SELECT status,accounting_basis,settled_cost_status,count(*),sum(actual_tokens),sum(reserved_amount),sum(settled_amount) FROM authority_budget_reservation WHERE project_id=%s GROUP BY 1,2,3 ORDER BY 1,2,3", [project_id])
-        budgets = [dict(zip(("status", "accounting_basis", "cost_status", "count", "actual_tokens", "reserved_amount", "settled_amount"), row, strict=True)) for row in cur.fetchall()]
+        cur.execute("""SELECT status,accounting_basis,settled_cost_status,count(*),sum(actual_tokens),
+            sum(actual_tokens) FILTER (WHERE evidence->>'usage_settlement_basis'='PROVIDER_USAGE_RECEIPT'
+                AND evidence->>'measurement_available' IS DISTINCT FROM 'false'),
+            sum(actual_tokens) FILTER (WHERE evidence->>'usage_settlement_basis'='RESERVATION_CEILING'),
+            count(*) FILTER (WHERE evidence->>'usage_settlement_basis' IS DISTINCT FROM 'PROVIDER_USAGE_RECEIPT'
+                OR evidence->>'measurement_available'='false'),sum(reserved_amount),sum(settled_amount)
+            FROM authority_budget_reservation WHERE project_id=%s GROUP BY 1,2,3 ORDER BY 1,2,3""", [project_id])
+        budgets = [dict(zip(("status", "accounting_basis", "cost_status", "count", "recorded_tokens",
+            "measured_tokens", "conservative_estimate_tokens", "unmeasured_reservations", "reserved_amount", "settled_amount"),
+            row, strict=True)) for row in cur.fetchall()]
         cur.execute("SELECT budget_scope_id,owner_kind,owner_id,deadline_at,deadline_at<=NOW(),policy_snapshot->>'authorization_ref',policy_snapshot->>'provider_call_limit',policy_snapshot->>'token_limit' FROM authority_provider_budget_scope WHERE project_id=%s ORDER BY budget_scope_id", [project_id])
         scopes = [dict(zip(("budget_scope_id", "owner_kind", "owner_id", "deadline_at", "expired", "authorization_ref", "provider_call_limit", "token_limit"), row, strict=True)) for row in cur.fetchall()]
         cur.execute("SELECT book_id,state,accepted_through_chapter FROM authority_book_production WHERE project_id=%s ORDER BY book_run_id", [project_id])
         production = [dict(zip(("book_id", "state", "accepted_through_chapter"), row, strict=True)) for row in cur.fetchall()]
-    return {"schema_version": "runtime-ledger-inspection.v1", "database_identity": identity, "project_id": project_id,
+    return {"schema_version": "runtime-ledger-inspection.v2", "database_identity": identity, "project_id": project_id,
             "migration_head_expected": LATEST_MIGRATION_ID, "migration_head_present": LATEST_MIGRATION_ID in applied,
             "applied_migration_count": len(applied), "books": books, "book_production": production,
             "effect_counts": effects, "unresolved_effects": unresolved[:100], "unresolved_list_truncated": len(unresolved) > 100,

@@ -105,6 +105,107 @@ def test_planning_gateway_uses_durable_submission_phase_after_lost_response(
     _assert_unknown_after_send(adapter)
 
 
+@pytest.mark.parametrize("action", ["query", "cancel"])
+def test_planning_recovery_without_original_record_never_submits(action):
+    from unittest.mock import Mock
+    session = SimpleNamespace(gateway=Mock(), evidence_store=Mock())
+    session.evidence_store.find_record.return_value = None
+    adapter = _PlanningGatewayEffectAdapter(transport=SimpleNamespace(provider="provider",
+        reconciliation_mode="query", capability_profile=_profile()), session=session,
+        binding=SimpleNamespace(request=_request()))
+    values = dict(stable_idempotency_key="provider-key", capability="model.fixture",
+        request_payload={"external_effect_id": "effect:1"})
+    if action == "cancel":
+        values["provider_request_id"] = ""
+    assert getattr(adapter, action)(**values).outcome == "ambiguous"
+    session.gateway.submit.assert_not_called()
+    session.gateway.reconcile.assert_not_called()
+    session.gateway.cancel.assert_not_called()
+
+
+@pytest.mark.parametrize("action", ["query", "cancel"])
+def test_planning_recovery_rejects_a_changed_frozen_contract(action):
+    from unittest.mock import Mock
+    request = _request()
+    request.contract_hash = "original"
+    session = SimpleNamespace(gateway=Mock(), evidence_store=Mock())
+    session.evidence_store.find_record.return_value = SimpleNamespace(request=SimpleNamespace(contract_hash="changed"))
+    adapter = _PlanningGatewayEffectAdapter(transport=SimpleNamespace(provider="provider",
+        reconciliation_mode="query", capability_profile=_profile()), session=session,
+        binding=SimpleNamespace(request=request))
+    values = dict(stable_idempotency_key="provider-key", capability="model.fixture",
+        request_payload={"external_effect_id": "effect:1"})
+    if action == "cancel":
+        values["provider_request_id"] = ""
+    with pytest.raises(ExternalEffectAdapterError, match="original execution contract"):
+        getattr(adapter, action)(**values)
+    session.gateway.submit.assert_not_called()
+    session.gateway.reconcile.assert_not_called()
+    session.gateway.cancel.assert_not_called()
+
+
+@pytest.mark.parametrize("transport,local_outcome,upstream_outcome,expected", [
+    ("LOCAL_CLI_REMOTE_INFERENCE", "CANCELLED", "UNKNOWN", "ambiguous"),
+    ("LOCAL_CLI_REMOTE_INFERENCE", "CANCELLED", "CANCELLED", "cancelled"),
+    ("LOCAL_CLI_REMOTE_INFERENCE", "UNKNOWN", "CANCELLED", "ambiguous"),
+    ("FIXTURE_CONTROLLED", "CANCELLED", "UNKNOWN", "cancelled"),
+])
+def test_planning_cancel_requires_remote_confirmation_for_local_cli(
+    transport, local_outcome, upstream_outcome, expected,
+):
+    from unittest.mock import Mock
+    request = _request()
+    request.contract_hash = "original"
+    handle = SimpleNamespace(transport=transport, backend_execution_id="original")
+    cancellation = SimpleNamespace(outcome=local_outcome,
+        upstream_cancellation_outcome=upstream_outcome, to_dict=lambda: {
+            "outcome": local_outcome, "upstream_cancellation_outcome": upstream_outcome})
+    session = SimpleNamespace(gateway=Mock(), evidence_store=Mock())
+    session.evidence_store.find_record.return_value = SimpleNamespace(request=request, handle=handle)
+    session.gateway.cancel.return_value = cancellation
+    adapter = _PlanningGatewayEffectAdapter(transport=SimpleNamespace(provider="provider",
+        reconciliation_mode="query", capability_profile=_profile()), session=session,
+        binding=SimpleNamespace(request=request))
+    proof = adapter.cancel(stable_idempotency_key="provider-key", capability="model.fixture",
+        request_payload={"external_effect_id": "effect:1"}, provider_request_id="original-provider-request")
+    assert proof.outcome == expected
+    assert proof.provider_request_id == "original-provider-request"
+    session.gateway.submit.assert_not_called()
+    session.gateway.cancel.assert_called_once_with(handle, "Planning cancellation")
+
+
+@pytest.mark.parametrize("execution_outcome,expected", [
+    ("SUCCEEDED", "success"), ("FINAL_FAILURE", "failed_final"),
+    ("RETRYABLE_FAILURE", "ambiguous"), ("UNKNOWN", "ambiguous"),
+    ("CANCELLED", "ambiguous"), ("TIMED_OUT", "ambiguous"),
+])
+def test_planning_query_reuses_original_handle_and_kernel_query_outcomes(execution_outcome, expected):
+    from unittest.mock import Mock
+    request = _request()
+    request.contract_hash = "original"
+    request.to_dict = lambda: {"execution_id": request.execution_id}
+    handle = SimpleNamespace(transport="LOCAL_CLI_REMOTE_INFERENCE", backend_execution_id="original",
+        provider_request_id=None, to_dict=lambda: {"backend_execution_id": "original"})
+    result = SimpleNamespace(outcome=execution_outcome, normalized_output_ref=None,
+        usage_receipt_ref=None, cost_receipt_ref=None, to_dict=lambda: {"outcome": execution_outcome})
+    record = SimpleNamespace(request=request, handle=handle, raw_evidence={})
+    session = SimpleNamespace(gateway=Mock(), evidence_store=Mock())
+    session.evidence_store.find_record.return_value = record
+    session.evidence_store.get_record.return_value = record
+    session.gateway.reconcile.return_value = result
+    adapter = _PlanningGatewayEffectAdapter(transport=SimpleNamespace(provider="provider",
+        reconciliation_mode="query", capability_profile=_profile()), session=session,
+        binding=SimpleNamespace(request=request, route_snapshot=SimpleNamespace(model_provider="codex-cli",
+            model_id="model", to_dict=lambda: {}), input_manifest=SimpleNamespace(
+                prompt_bundle_version="prompt", skill_bundle_version="skill", to_dict=lambda: {})))
+    proof = adapter.query(stable_idempotency_key="provider-key", capability="model.fixture",
+        request_payload={"external_effect_id": "effect:1"})
+    assert proof.outcome == expected
+    session.gateway.submit.assert_not_called()
+    session.gateway.reconcile.assert_called_once_with(handle)
+    assert proof.evidence["production_execution"]["execution_handle"] == {"backend_execution_id": "original"}
+
+
 @pytest.mark.parametrize(
     "submission_phase",
     [

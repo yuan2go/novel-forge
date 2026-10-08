@@ -80,3 +80,31 @@ def test_author_fixed_direction_reuses_one_exact_approved_input_with_continuous_
         replace(frozen,generation_policy={**policy,"creative_candidates":2})
     with pytest.raises(ValueError):
         replace(frozen,generation_policy={**policy,"creative_selection":"AUTHOR_COMPARISON"})
+
+
+def test_formation_recovery_blocks_legacy_cli_unknown_before_policy_or_retry_mutation(monkeypatch):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.modules.book_authority import creation_runtime
+    from novel_forge.modules.command_kernel import budget_runtime
+    from novel_forge.modules.production_execution import execution_template
+
+    cursor = Mock()
+    monkeypatch.setattr(creation_runtime, "AuthorityUnitOfWork", lambda _: nullcontext(SimpleNamespace(cursor=cursor)))
+    unknown = Mock(return_value=[{"effect_status": "FAILED_RETRYABLE", "usage": "UNKNOWN"}])
+    monkeypatch.setattr(budget_runtime, "unresolved_cli_outcomes", unknown)
+    selected = Mock()
+    monkeypatch.setattr(execution_template, "selected_book_template", selected)
+    run = {"formation_run_id": "formation", "project_id": "project", "book_id": "book",
+        "recovery_instruction": {"action": "RESUME_WITH_SAME_FROZEN_INPUTS"},
+        "failure": {"code": "MODEL_EFFECT_RETRYABLE_PLANNING"}}
+    policy = {"approval_mode": "AUTO", "auto_authorization": {
+        "formation_run_id": "formation", "project_id": "project", "book_id": "book",
+        "authorized_by_principal_id": "operator"}}
+    composition = SimpleNamespace(authority=SimpleNamespace(database_url="unused"),
+        principal=SimpleNamespace(principal_id="operator"))
+    assert creation_runtime._formation_resume_blocker(composition, run, policy) == "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED"
+    unknown.assert_called_once_with(cursor, "project", book_id="book")
+    selected.assert_not_called()
+    cursor.execute.assert_not_called()

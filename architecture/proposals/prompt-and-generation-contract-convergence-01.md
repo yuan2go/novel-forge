@@ -363,7 +363,7 @@ Writer 原生约束和适用创作方法可以保留；移除的是错误任务�
 
 **来源：**真实生产要求及“单份正文进入现有接纳链”；必要工程约束。
 
-保留 Plan、候选、Review、Canon proposal、正式 Canon 和 Narrative State 的区别。合法 Schema、模型自评分或审稿服务故障均不能自动批准章节。采用现有批准模式与权限；本规格不打开 AUTO、不创造人工批准或独立文学资格。
+保留 Plan、候选、Review、Canon proposal、正式 Canon 和 Narrative State 的区别。合法 Schema、模型自评分或审稿服务故障均不能自动正式接纳章节。普通作者稿件交付采用 `docs/runtime-operations.md` 的作者优先入口及 `config/execution_templates/author_first.json`；必要策划、完整正文保存、续写、编辑与当前版本导出不依赖文学资格或严格接纳。本提案原有将普通正文交付绑定审读、Canon 和正式接纳的要求已被该现行合同替代，旧文本由 Git 历史保留。严格接纳及对外发布继续采用其原有批准模式与权限。
 
 保全所选稿件自己的审读/质量/事实支持绑定、人物信息边界、原稿优点保护以及较差修订可被拒绝的能力。Book acceptance 继续在其正式事务边界提交 Outcome、Canon、State、投影和审定游标。严格接纳读取正式接纳边界；普通续写的作者工作稿来源必须独立绑定精确版本，不得伪称审定事实。审读顺序属于可调整产品策略。
 

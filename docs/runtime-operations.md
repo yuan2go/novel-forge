@@ -118,6 +118,12 @@ persistent data, exercise upgrades against a restore, verify object references a
 ledger identity before/after service restart. Dynamically published container ports must be
 resolved from the same verified volume; never substitute a fresh database at the old port.
 
+Inspection v2 labels the stored token total as `recorded_tokens` and separately reports
+`measured_tokens`, `conservative_estimate_tokens` and `unmeasured_reservations` from the
+original settlement evidence. A historical `SETTLED` reservation can contain a ceiling
+estimate; its status alone does not establish measured consumption. Null measured usage
+and subscription cost remain unknown, and inspection does not rewrite the ledger.
+
 ## Migrations
 
 Inspect or apply the registered chain with:
@@ -2097,6 +2103,13 @@ engineering scenario freezes 20,000 tokens; Provider usage is still settled from
 4. Preserve terminal attempts and effects. Resume or replace through new versioned
    records allowed by the owning recovery policy.
 5. Re-query the complete state graph and verify audit/outbox/checkpoint convergence.
+
+Resolve the original work's private launcher and persistent storage binding before
+using these commands. A separate validation database or a default local endpoint is
+not a replacement for that work's ledger. Keep the whole-book target frozen when
+delivering a smaller chapter batch. Saved manuscript reads, edits and current-version
+exports remain available independently of unresolved later Provider work; strict
+Edition export retains its separate validated-selection requirement.
 
 For Book Opening, use its progress query and recovery application. A process exit, an
 expired lease, or a completed inner semantic operation alone is insufficient to decide
