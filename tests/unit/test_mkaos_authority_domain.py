@@ -5,6 +5,8 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from novel_forge.modules.command_kernel.errors import KernelError
+
+
 from novel_forge.modules.mkaos_authority.application import (
     ExperimentalKnowledgeApprovalPolicy,
     MkaosAuthorityApplication,
@@ -580,3 +582,13 @@ class MkaosAuthorityDomainTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_narrative_method_activation_rejects_operational_strings_in_semantic_fields():
+    from novel_forge.modules.mkaos_authority.domain import assert_narrative_method_activation_safe
+    valid = {"knowledge_kind": "NARRATIVE_INTELLIGENCE", "constraints": ["能力进步须由下一次行动显示；不强制牺牲。"],
+             "lineage": {"project_id": "research-project"}, "source_finding_codes": ["F_ACTION"]}
+    assert_narrative_method_activation_safe(valid)
+    for field in ("mechanism", "constraints", "review_checks"):
+        with unittest.TestCase().assertRaisesRegex(KernelError, "OPERATIONAL_LEAK"):
+            assert_narrative_method_activation_safe({**valid, field: ["project_id=research; observation_hash=sha256:fixture"]})

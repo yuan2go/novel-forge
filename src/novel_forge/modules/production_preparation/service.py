@@ -726,6 +726,8 @@ class ProductionPreparationService:
                     "KnowledgeCard lacks governed abstract content",
                 )
             assert_abstract_content_safe(abstract_content)
+            from novel_forge.modules.mkaos_authority.domain import assert_narrative_method_activation_safe
+            assert_narrative_method_activation_safe(abstract_content)
             projected = {
                 key: abstract_content.get(key)
                 for key in (

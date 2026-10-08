@@ -695,6 +695,23 @@ def assert_abstract_content_safe(payload: Mapping[str, Any]) -> None:
     _validate_string_bounds(payload)
 
 
+def assert_narrative_method_activation_safe(candidate: Mapping[str, Any]) -> None:
+    if candidate.get("knowledge_kind") != "NARRATIVE_INTELLIGENCE":
+        return
+    operational_binding = re.compile(r"\b(?:project_id|book_id|target_scope_id|input_observation_asset_version_id|observation_hash|evidence_manifest_hash|abstraction_policy_version|processing_id)\s*[:=]")
+    def check(value: Any, path: str) -> None:
+        if isinstance(value, str) and operational_binding.search(value):
+            raise KernelError("MKAOS_NARRATIVE_METHOD_OPERATIONAL_LEAK", f"Narrative method field {path} contains operational binding text; retain it in research lineage instead")
+        if isinstance(value, Mapping):
+            for key, item in value.items():
+                check(item, f"{path}.{key}")
+        elif isinstance(value, (list, tuple)):
+            for index, item in enumerate(value):
+                check(item, f"{path}[{index}]")
+    for field in ("concept_name", "abstract_principle", "mechanism", "applicability", "failure_conditions", "constraints", "conflict_generators", "review_checks", "preconditions", "exceptions", "misuse_risks"):
+        check(candidate.get(field), field)
+
+
 def _validate_structured_narrative_intelligence(candidate: Mapping[str, Any]) -> None:
     if str(candidate.get("knowledge_kind") or "").strip().upper() not in (
         NARRATIVE_INTELLIGENCE_KINDS

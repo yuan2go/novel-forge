@@ -2781,6 +2781,10 @@ reviewed Card AssetVersion IDs in the JSON array supplied to preparation's
 `--approved-card-versions`; they become arm A's exact allowlist. Empty findings need no
 approval. Source analysis, Card approval, delivered context and correct prose realization
 remain separate evidence states; no command above records human literary approval.
+Narrative method activation and generation preparation reject operational binding text
+embedded in semantic method fields such as `constraints` or `mechanism`. Research lineage
+retains those identifiers; a rejected candidate stays pending and is not silently cleaned
+or activated. This check does not establish narrative quality or replace editorial review.
 
 The EPUB logical profile example selects v5. Copy it locally, retain original work constants
 and any validated continuation declarations, then use `corpus reprocess --edition-id
