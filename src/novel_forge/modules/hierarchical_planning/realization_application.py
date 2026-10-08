@@ -599,8 +599,19 @@ class PostgresNarrativeRealizationApplication:
         realization_id = "narrative-realization:" + hashlib.sha256(
             realization_seed.encode()
         ).hexdigest()
+        working = arc_working_set.get("working_manuscript")
+        if working is not None:
+            from types import SimpleNamespace
+            from novel_forge.storage.authority_repositories import AuthorityRepositories
+            from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, verify_working_context
+            cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s FOR SHARE", [book_run_id])
+            owner = cursor.fetchone()
+            if (owner is None or effective_workflow(cursor, owner[0]) != AUTHOR_WORKFLOW
+                    or owner[0]["current_chapter"] != chapter_range[0] - 1):
+                raise KernelError("REALIZATION_WORKING_BOUNDARY_INVALID", "Working realization requires its current Book-owned writing checkpoint")
+            verify_working_context(SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor)), owner[0], working)
         contract = {
-            "schema_version": "narrative-realization-contract.v2"
+            "schema_version": "narrative-realization-contract.v3" if working is not None else "narrative-realization-contract.v2"
             if work_requirements
             else NARRATIVE_REALIZATION_SCHEMA_VERSION,
             "realization_id": realization_id,
@@ -649,6 +660,8 @@ class PostgresNarrativeRealizationApplication:
             "proof_hash": proof_hash,
             "lifecycle": NarrativeRealizationLifecycle.ADMITTED.value if creative_admission else NarrativeRealizationLifecycle.QUALIFIED.value,
         }
+        if working is not None:
+            contract["working_manuscript"] = working
         return NarrativeRealizationContract.from_mapping(contract)
 
     def _execute_transaction(

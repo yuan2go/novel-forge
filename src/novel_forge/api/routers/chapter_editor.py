@@ -36,6 +36,22 @@ class AuthorEditRequest(BaseModel):
     source_lineage_id: str = ""
 
 
+class AuthorWorkflowRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    expected_version: int = Field(ge=0)
+    idempotency_key: str = Field(min_length=1)
+
+
+class ManuscriptExportRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    version_ids: list[str] = Field(min_length=1, max_length=10000)
+    chapters: list[int] | None = None
+
+
 class AuthorBookReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: str = Field(min_length=1)
@@ -111,6 +127,30 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             raise HTTPException(status_code=409, detail={"code": error.code, "message": error.message}) from error
         except (ValueError, TypeError, KeyError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
+
+    @router.post("/manuscripts/adopt-author-workflow")
+    def adopt_workflow(request: AuthorWorkflowRequest):
+        from novel_forge.modules.book_authority.manuscript import adopt_author_workflow
+        def adopt(principal):
+            authority = ctx.services.book_production.authority
+            owner = authority.require(request.book_run_id)
+            if owner["project_id"] != request.project_id:
+                raise PermissionError("Work is outside this Project")
+            return adopt_author_workflow(authority, request.book_run_id, principal=principal,
+                expected_version=request.expected_version, idempotency_key=request.idempotency_key, settings=ctx.app_settings)
+        return execute(adopt)
+
+    @router.get("/manuscripts")
+    def manuscript(project_id: str, book_run_id: str):
+        from novel_forge.modules.book_authority.manuscript import require_manuscript
+        return execute(lambda principal: require_manuscript(ctx.services.chapter_query.database_url,
+            project_id=project_id, book_run_id=book_run_id, principal=principal))
+
+    @router.post("/manuscripts/export")
+    def export_current(request: ManuscriptExportRequest):
+        from novel_forge.modules.book_authority.manuscript import require_manuscript
+        return execute(lambda principal: require_manuscript(ctx.services.chapter_query.database_url,
+            **request.model_dump(), principal=principal))
 
     def editions():
         from novel_forge.modules.book_authority.edition_application import BookEditionApplication
@@ -198,11 +238,22 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                        WHERE asset.project_id=%s AND asset.asset_type IN ('draft_chapter','draft_version','best_draft_candidate')
                        ORDER BY version.created_at DESC LIMIT 200""", [project_id])
                 rows = uow.cursor.fetchall()
-            return [{"project_id": project_id, "workspace_id": row[4],
+            with AuthorityUnitOfWork(application().database_url) as uow:
+                uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE project_id=%s ORDER BY created_at DESC LIMIT 100", [project_id])
+                books = uow.cursor.fetchall()
+            from novel_forge.modules.book_authority.manuscript import current_manuscript
+            current = []
+            for book, in books:
+                manifest = current_manuscript(application().database_url, book=book, principal=principal)
+                current.extend({"project_id": project_id, "workspace_id": book["workspace_id"], "book_id": book["book_id"],
+                    "chapter": unit["chapter"], "asset_version_id": unit["asset_version_id"], "asset_type": "draft_chapter",
+                    "title": unit["title"], "content_hash": unit["content_hash"]} for unit in manifest["units"])
+            current_ids = {item["asset_version_id"] for item in current}
+            return current + [{"project_id": project_id, "workspace_id": row[4],
                      "book_id": row[6] or row[5].get("book_id") or (row[5].get("preparation_report") or {}).get("book_id") or "",
                      "chapter": int(row[5].get("chapter") or 0), "asset_version_id": row[0], "asset_type": row[1],
                      "title": row[2].get("title") or f"第 {row[5].get('chapter')} 章", "content_hash": row[3]}
-                    for row in rows]
+                    for row in rows if row[0] not in current_ids]
         return execute(read)
 
     @router.get("/draft")

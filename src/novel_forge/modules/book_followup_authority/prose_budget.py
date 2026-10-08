@@ -23,7 +23,7 @@ def frozen_prose_budget_scope(cursor: Any, identity: dict[str, Any], *, project_
     cursor.execute("SELECT version.content,version.content_hash FROM authority_asset_version version JOIN authority_asset asset USING(asset_id) WHERE asset.project_id=%s AND version.asset_version_id=%s AND asset.asset_type='longform_prose_review_window'", [project_id, binding["asset_version_id"]])
     row = cursor.fetchone()
     if (not row or row[1] != binding["content_hash"] or completion_digest(row[0]) != row[1]
-        or row[0].get("source_isolation") != "ACCEPTED_PROSE_ONLY"):
+        or row[0].get("source_isolation") not in {"ACCEPTED_PROSE_ONLY", "AUTHOR_SELECTED_UNREVIEWED_PROSE"}):
         raise failure
     frozen = row[0]
     if any(command.get(key) != frozen.get(key) for key in ("book_run_id", "manifest_digest")) or command.get("window_id") != frozen["window"]["window_id"]:
@@ -48,8 +48,14 @@ def frozen_prose_budget_scope(cursor: Any, identity: dict[str, Any], *, project_
     if not spans or any(type(span.get("chapter_number")) is not int or span["chapter_number"] < 1 for span in spans):
         raise failure
     for span in spans:
-        cursor.execute("SELECT acceptance.chapter_number,draft.asset_version_id,draft.content_hash,draft.content FROM authority_book_chapter_acceptance acceptance JOIN authority_asset_version outcome ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id JOIN authority_asset_version draft ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id' WHERE acceptance.project_id=%s AND acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.acceptance_id=%s AND acceptance.status='COMMITTED'", [project_id, frozen["book_run_id"], span["acceptance_id"]])
-        accepted = cursor.fetchone()
+        if frozen["source_isolation"] == "AUTHOR_SELECTED_UNREVIEWED_PROSE":
+            cursor.execute("""SELECT %s,v.asset_version_id,v.content_hash,v.content FROM authority_asset_version v
+                JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND v.asset_version_id=%s
+                  AND v.governance='CLEAR' AND v.eligibility='ELIGIBLE'""", [span["chapter_number"], project_id, span["asset_version_id"]])
+            accepted = cursor.fetchone()
+        else:
+            cursor.execute("SELECT acceptance.chapter_number,draft.asset_version_id,draft.content_hash,draft.content FROM authority_book_chapter_acceptance acceptance JOIN authority_asset_version outcome ON outcome.asset_version_id=acceptance.chapter_outcome_asset_version_id JOIN authority_asset_version draft ON draft.asset_version_id=outcome.content->>'accepted_draft_asset_version_id' WHERE acceptance.project_id=%s AND acceptance.book_run_id=authority_book_source_run(%s,acceptance.chapter_number) AND acceptance.acceptance_id=%s AND acceptance.status='COMMITTED'", [project_id, frozen["book_run_id"], span["acceptance_id"]])
+            accepted = cursor.fetchone()
         if (not accepted or accepted[:3] != (span["chapter_number"], span["asset_version_id"], span["asset_hash"])
             or completion_digest(accepted[3]) != accepted[2] or text_digest(accepted[3]["text"]) != span["text_hash"]
             or accepted[3]["text"][span["start"]:span["end"]] != span["text"]):

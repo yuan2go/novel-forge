@@ -97,7 +97,7 @@ def test_native_start_freezes_current_work_and_reuses_original_formation(tmp_pat
     args = parser.parse_args(["authority-creation", "start", "--project-id", project,
         "--workspace-id", harness.workspace_id + "-new", "--book-id", book, "--input-file", str(input_file),
         "--idempotency-key", "native-create", "--repository-root", str(root), "--maximum-ticks", "100",
-        "--creative-selection", "FIRST_ADMITTED", "--foreground"])
+        "--creative-selection", "FIRST_ADMITTED", "--foreground", "--execution-template-file", str(root / "config/execution_templates/creative_validation.json")])
     if not full_creation:
         args.yield_after_window = True
         monkeypatch.setattr("novel_forge.modules.book_authority.creation_runtime.continue_creation",

@@ -42,7 +42,7 @@ try {
   steps.push('actual database commit with simulated lost response replays same idempotency key');
   await page.getByLabel('决定理由').fill('浏览器检查：动作次序修改已核对。');
   await page.getByRole('button', {name: '采用候选', exact: true}).click();
-  await page.getByText('已采用候选，等待章节复核。', {exact: false}).waitFor();
+  await page.getByText('已采用候选，可继续写作并按需复核。', {exact: false}).waitFor();
   assert.equal(await page.getByRole('button', {name: '提交章节复核', exact: true}).isEnabled(), true);
   const reviewAdmission = page.waitForResponse(response => response.url().endsWith('/chapter-authority/commands'));
   await page.getByRole('button', {name: '提交章节复核', exact: true}).click();

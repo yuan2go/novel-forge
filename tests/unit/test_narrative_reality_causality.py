@@ -597,6 +597,12 @@ def test_structured_realization_scopes_specialists_and_preserves_slot_revisions(
     revised[0]["text"] = "as an AI"
     with pytest.raises(KernelError, match="VOICE_DRIFT"):
         integrate_realization(contract=contract, artifacts=revised, text=text(revised))
+    working = integrate_realization(contract=contract, artifacts=revised, text=text(revised), enforce_voice_contract=False)
+    assert working["scene_artifacts"] == revised
+    assert working["voice_evidence"][0]["status"] == "DRIFT_DETECTED"
+    revised[1]["used_fact_ids"] = ["reader-only-secret"]
+    with pytest.raises(KernelError, match="EPISTEMIC_SCOPE_VIOLATION"):
+        integrate_realization(contract=contract, artifacts=revised, text=text(revised), enforce_voice_contract=False)
 
 
 @pytest.mark.parametrize(

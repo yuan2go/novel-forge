@@ -261,7 +261,9 @@ class PostgresBookProductionQuery:
             row = uow.cursor.fetchone()
             if row is None:
                 raise KernelError("BOOK_RUN_NOT_FOUND", "Original Book scope is required to query unresolved receipts")
-            return unresolved_cli_outcomes(uow.cursor, str(row[0]), book_id=str(row[1]))
+            from .manuscript import blocking_working_cli_outcomes
+            return blocking_working_cli_outcomes(uow.cursor, project_id=str(row[0]), book_id=str(row[1]),
+                book_run_id=book_run_id, outcomes=unresolved_cli_outcomes(uow.cursor, str(row[0]), book_id=str(row[1])))
 
     def pending_plan_generation(self, *, project_id: str, book_id: str, logical_key: str) -> dict[str, Any] | None:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -356,6 +358,10 @@ class PostgresBookProductionQuery:
                           )
                       )
                   )
+                  AND NOT (book.state='READY' AND book.current_chapter>=book.target_chapter_count
+                      AND EXISTS (SELECT 1 FROM authority_book_manuscript_delivery delivery
+                          WHERE delivery.book_run_id=book.book_run_id
+                            AND delivery.chapter_number=book.target_chapter_count))
                   AND (%s='' OR book.book_run_id=%s)
                   AND NOT EXISTS (
                       SELECT 1 FROM authority_runtime_job job WHERE job.job_kind='BOOK_COORDINATION_TICK'
@@ -1557,7 +1563,8 @@ class PostgresBookProductionQuery:
             uow.cursor.execute(
                 """
                 SELECT book.project_id, book.book_id,
-                       snapshot.initial_story_state_version
+                       snapshot.initial_story_state_version, book.accepted_through_chapter, to_jsonb(book),
+                       (SELECT content->'author_workflow' FROM authority_asset_version WHERE asset_version_id=book.production_profile_version)
                 FROM authority_book_production AS book
                 JOIN authority_book_production_input_snapshot AS snapshot
                   ON snapshot.snapshot_id=book.input_snapshot_id
@@ -1615,7 +1622,11 @@ class PostgresBookProductionQuery:
                     "ARC_WORKING_SET_LOAD_POLICY_INVALID",
                     "Current Arc Plans must share one frozen Narrative Load Policy",
                 )
-            if chapter_number == 1:
+            from .manuscript import AUTHOR_WORKFLOW, freeze_working_context
+            from .manuscript import effective_workflow
+            working = freeze_working_context(uow, scope[4], chapter_number) if effective_workflow(uow.cursor, scope[4]) == AUTHOR_WORKFLOW else None
+            formal_chapter = int(scope[3]) if working else chapter_number - 1
+            if formal_chapter == 0:
                 initial_story_state_id = str(scope[2] or "")
                 obligation_states: list[dict[str, Any]] = []
                 uow.cursor.execute(
@@ -1678,7 +1689,7 @@ class PostgresBookProductionQuery:
                       AND projection.chapter_number=%s
                       AND projection.status='COMPLETE'
                     """,
-                    [book_run_id, project_id, book_id, chapter_number - 1],
+                    [book_run_id, project_id, book_id, formal_chapter],
                 )
                 projection_row = uow.cursor.fetchone()
                 if projection_row is None:
@@ -1721,7 +1732,7 @@ class PostgresBookProductionQuery:
                 accepted_projection = {
                     "projection_set_id": projection_set_id,
                     "projection_hash": str(projection_row[1]),
-                    "accepted_boundary": {"chapter_number": chapter_number - 1},
+                    "accepted_boundary": {"chapter_number": formal_chapter},
                     "arc_states": list(projection_row[2] or ()),
                     # WHY: The persisted projection records the obligation at the
                     # accepted Chapter N boundary.  Scheduling Chapter N+1
@@ -1753,6 +1764,7 @@ class PostgresBookProductionQuery:
             accepted_narrative_state=accepted_narrative_state,
             narrative_load_policy=next(iter(policies.values())),
             schedule_row=row,
+            working_manuscript=working,
             reader_intent=(
                 dict(row.get("reader_experience") or {})
                 if isinstance(row.get("reader_experience"), Mapping)
@@ -1772,7 +1784,13 @@ class PostgresBookProductionQuery:
         active_story_state_version_id: str = "",
         active_canon_snapshot_version_id: str = "",
     ) -> dict[str, Any]:
-        if chapter_number != accepted_through_chapter + 1:
+        from .manuscript import writing_frontier
+        with AuthorityUnitOfWork(self.database_url) as owned:
+            owned.cursor.execute("SELECT to_jsonb(b),v.content FROM authority_book_production b JOIN authority_asset_version v ON v.asset_version_id=b.production_profile_version WHERE b.book_run_id=%s", [book_run_id])
+            native = owned.cursor.fetchone()
+            from .manuscript import effective_workflow
+            bound_book = {**native[0], "author_workflow": effective_workflow(owned.cursor, native[0])} if native else {}
+        if not bound_book or chapter_number != writing_frontier(bound_book) + 1:
             raise KernelError(
                 "CHAPTER_PRODUCTION_SEQUENCE_INVALID",
                 "Chapter production admission must target the next unaccepted chapter",

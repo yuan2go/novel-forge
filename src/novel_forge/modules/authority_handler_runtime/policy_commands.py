@@ -71,13 +71,20 @@ def owned_policy_definition(
     coordinated_templates = execution_templates and any(
         value.get("version") in {"creative-execution-template.v7", "creative-execution-template.v8",
                                 "creative-execution-template.v9", "creative-execution-template.v10",
-                                "creative-execution-template.v11"}
+                                "creative-execution-template.v11", "creative-execution-template.v12"}
         for value in content["execution_templates"]
     )
+    author_templates = execution_templates and any(value.get("version") == "creative-execution-template.v12" for value in content["execution_templates"])
     routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
         policy_schema = AUTHOR_SUPERVISED_POLICY_SCHEMA if any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else POLICY_SCHEMA if routing_sources or execution_templates else LEGACY_POLICY_SCHEMA
+        if coordinated_templates and not author_templates:
+            policy_schema = deepcopy(policy_schema)
+            historical = policy_schema["properties"]["execution_templates"]["items"]
+            historical["properties"].pop("author_workflow", None)
+            historical.get("$defs", {}).pop("AuthorWorkflowConfiguration", None)
+            historical["properties"]["version"]["enum"].remove("creative-execution-template.v12")
         if not coordinated_templates and "execution_templates" in policy_schema["properties"]:
             from novel_forge.modules.production_execution.historical_template_schema import MAIN_TEMPLATE_SCHEMA
             policy_schema = deepcopy(policy_schema)
@@ -146,7 +153,7 @@ def owned_policy_definition(
         command_schema["properties"]["expected_policy_hash"] = {"type": "string"}
     return {
         "name": name,
-        "definition_version": "2.0.0" if coordinated_templates else "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "2.1.0" if author_templates else "2.0.0" if coordinated_templates else "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",
@@ -338,6 +345,9 @@ def configure_execution_template(settings: Any, args: Any) -> dict[str, Any]:
     if value.get("deepseek") is not None:
         raise ValueError("PAID_TEMPLATE_MUST_INHERIT_CONFIGURED_AUTHORIZATION")
     paid, paid_unavailable = load_paid_configuration(os.environ)
+    inherited = getattr(args, "inherited_template", None)
+    if inherited and inherited.get("deepseek"):
+        paid = dict(inherited["deepseek"])
     if paid is not None:
         value["deepseek"] = paid
         from novel_forge.modules.production_execution.routing_catalog import deepseek_candidates

@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "runtime_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+  "fixture_transport": true,
+  "book_run_id": "book-run:410e61d7-3319-476e-9b09-08b2d5be2ef8",
+  "saved_chapters": 6,
+  "accepted_chapters": 0,
+  "checks": [
+    "scoped selection edit",
+    "candidate diff shown",
+    "one-click author adoption with optional rationale",
+    "unaffected later source versions preserved",
+    "exact current version browser download",
+    "pause/resume with unavailable Provider",
+    "review failed without withholding prose"
+  ],
+  "before_version": "bda0de91-9a12-47eb-a511-2a6e14723bfb",
+  "after_version": "064484ee-0056-48f7-86f5-af5cc6533326",
+  "export_manifest_digest": "sha256:490357bcd2ad0a005a5f4be03ca39c7dc76293743c1b8203496b51d9272a3d32",
+  "download_sha256": "sha256:64770aa0244c3b272a134aaff532f9ff8a79ba3303cab8f00c14362b2fb514a0",
+  "provider_invocations_during_browser_actions": 0
+}

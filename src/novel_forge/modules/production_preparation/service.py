@@ -116,6 +116,7 @@ class ProductionPreparationService:
                     asset=candidate,
                     requested_chapter=request.chapter,
                     requested_book_id=request.book_id,
+                    accepted_through_chapter=request.accepted_through_chapter,
                     stage=request.stage,
                     forbidden_types=profile.forbidden_asset_types,
                 )
@@ -315,7 +316,7 @@ class ProductionPreparationService:
                 else [item.asset_version_id for item in values]
             )
         accepted_boundary = {
-            "accepted_through_chapter": max(0, request.chapter - 1),
+            "accepted_through_chapter": request.accepted_through_chapter if request.accepted_through_chapter is not None else max(0, request.chapter - 1),
             "story_state_snapshot_version": version_refs.get(
                 "story_state_snapshot_version",
                 version_refs.get("story_state_snapshot_versions", ""),
@@ -523,7 +524,7 @@ class ProductionPreparationService:
                     project_id=request.project_id,
                     book_id=request.book_id,
                     asset_type=asset_type,
-                    accepted_chapter=request.chapter - 1,
+                    accepted_chapter=request.accepted_through_chapter if request.accepted_through_chapter is not None else request.chapter - 1,
                 )
             )
         elif hasattr(self.resolver, "resolve_all"):
@@ -1079,6 +1080,7 @@ class ProductionPreparationService:
         requested_book_id: str,
         stage: str,
         forbidden_types: tuple[str, ...],
+        accepted_through_chapter: int | None = None,
     ) -> str:
         content = asset.content
         if asset_type == "operator_checklist" and content.get("contract_version") == "author-reading-review.v1":
@@ -1135,7 +1137,7 @@ class ProductionPreparationService:
             try:
                 if (
                     int(content.get("accepted_through_chapter"))
-                    != requested_chapter - 1
+                    != (accepted_through_chapter if accepted_through_chapter is not None else requested_chapter - 1)
                 ):
                     return "HISTORICAL_SNAPSHOT_CHAPTER_MISMATCH"
             except (TypeError, ValueError):

@@ -1469,7 +1469,7 @@ def _codex_process_failure(
     if status is ProcessReceiptStatus.START_FAILED:
         return "PROCESS_START_FAILURE", ExecutionOutcome.RETRYABLE_FAILURE
     if status is ProcessReceiptStatus.FAILED:
-        return "PROCESS_EXIT_FAILURE", ExecutionOutcome.RETRYABLE_FAILURE
+        return "PROCESS_EXIT_FAILURE", ExecutionOutcome.UNKNOWN
     if status is ProcessReceiptStatus.TIMED_OUT:
         return "PROCESS_TIMEOUT", ExecutionOutcome.TIMED_OUT
     if status is ProcessReceiptStatus.CORRUPT_RESULT:
@@ -1758,6 +1758,7 @@ class CodexCliExecutionBackend:
                     "failure_code": failure_code,
                     "failure_message": recovery.receipt.failure_reason or failure_code,
                     "failure_disposition": (
+                        "RECONCILIATION_REQUIRED" if outcome is ExecutionOutcome.UNKNOWN else
                         "RETRYABLE"
                         if outcome
                         in {

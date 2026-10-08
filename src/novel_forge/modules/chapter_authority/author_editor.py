@@ -32,6 +32,7 @@ def edit_map(before: str, after: str) -> list[dict[str, Any]]:
 def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[dict[str, Any]] | None = None,
                             separators: list[str] | None = None) -> list[dict[str, Any]]:
     from .realization_composition import integrate_realization, realization_separators, serialize_realization
+    enforce_voice = source.get("author_workflow") != {"version": "author-workflow.v1", "mode": "AUTHOR_FIRST", "deep_review": False}
     artifacts = source.get("scene_artifacts") or []
     before = str(source.get("text") or "")
     original_joins = realization_separators(artifacts, source.get("scene_separators"))
@@ -52,7 +53,7 @@ def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[di
         if serialize_realization(supplied, joins) != text:
             raise KernelError("AUTHOR_SCENE_TEXT_CONFLICT", "Scene mapping must exactly serialize the submitted text")
         if source.get("realization_contract"):
-            integrate_realization(contract=source["realization_contract"], artifacts=supplied, text=text, separators=joins)
+            integrate_realization(contract=source["realization_contract"], artifacts=supplied, text=text, separators=joins, enforce_voice_contract=enforce_voice)
         return supplied
     if not artifacts:
         return []
@@ -76,7 +77,7 @@ def reconcile_author_scenes(source: dict[str, Any], text: str, supplied: list[di
     if any(not item["text"].strip() for item in result):
         raise KernelError("AUTHOR_SCENE_SCOPE_CONFLICT", "Removing a Scene requires native Plan Change")
     if source.get("realization_contract"):
-        integrate_realization(contract=source["realization_contract"], artifacts=result, text=text, separators=joins)
+        integrate_realization(contract=source["realization_contract"], artifacts=result, text=text, separators=joins, enforce_voice_contract=enforce_voice)
     return result
 
 
@@ -235,6 +236,7 @@ class ChapterAuthorEditingApplication:
         operation = uow.repositories.chapter_authority.operation_execution(operation_id, project_id)
         payload, actor = operation["command_payload"], operation["actor_id"]
         scope, action = _scope(payload), payload["action"]
+        uow.cursor.execute("SELECT book_id FROM authority_book WHERE project_id=%s AND book_id=%s FOR UPDATE", [project_id, scope["book_id"]])
         uow.cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", [f"{project_id}:{_session_ref(scope)}"])
         _book_scope(uow, scope)
         session = self._session(uow, scope)
@@ -242,6 +244,8 @@ class ChapterAuthorEditingApplication:
         if version != payload["expected_version"]:
             raise KernelError("AUTHOR_VERSION_CONFLICT", "A concurrent edit changed the chapter editor; preserve input and reload the current version")
         source = require_source(uow, scope, payload["base_asset_version_id"])
+        from novel_forge.modules.book_authority.manuscript import require_current_editor_base
+        require_current_editor_base(uow, scope, source.asset_version_id)
         draft_source = source_draft_content(source)
         before = str(draft_source.get("text") or "")
         if payload.get("base_text_hash") != text_hash(before) or payload.get("base_asset_hash") != source.content_hash:
@@ -277,6 +281,10 @@ class ChapterAuthorEditingApplication:
                 separators = source.content.get("scene_separators")
             scenes = reconcile_author_scenes(draft_source, text, payload.get("scene_artifacts"), separators)
             mapping = {"scene_separators": separators} if separators is not None else {}
+            if draft_source.get("realization_contract"):
+                from .realization_composition import integrate_realization
+                mapping.update(integrate_realization(contract=draft_source["realization_contract"], artifacts=scenes,
+                    text=text, separators=separators, enforce_voice_contract=draft_source.get("author_workflow") != {"version": "author-workflow.v1", "mode": "AUTHOR_FIRST", "deep_review": False}))
             content = {**scope, "contract_version": EDITOR_CONTRACT, "base_asset_version_id": source.asset_version_id,
                        "base_asset_hash": source.content_hash, "base_text_hash": text_hash(before), "text_hash": text_hash(text),
                        "originating_draft_asset_version_id": source.content.get("originating_draft_asset_version_id", source.asset_version_id) if source.asset_type == "author_edit_candidate" else source.asset_version_id,
@@ -335,7 +343,8 @@ class ChapterAuthorEditingApplication:
                                 {**scope, "contract_version": EDITOR_CONTRACT, "status": state,
                                  "base_asset_version_id": source.asset_version_id, "base_text_hash": text_hash(before),
                                  "candidate_asset_version_id": candidate_id, "decision_asset_version_id": decision_id,
-                                 "actor_id": actor}, previous=session)
+                                 "actor_id": actor,
+                                 "selected_asset_version_id": candidate_id if action == "accept" else (session.content.get("selected_asset_version_id", source.asset_version_id) if session else source.asset_version_id)}, previous=session)
         result = {**scope, "version": state_doc.version_number, "asset_version_id": state_doc.asset_version_id,
                   "candidate_asset_version_id": candidate_id, "decision_asset_version_id": decision_id, "editor_status": state}
         uow.repositories.operation_graph.record_event({

@@ -164,7 +164,7 @@ class ChapterAuthorityScheduler:
             trace_id=root["trace_id"],
             correlation_id=root["correlation_id"],
         )
-        if root["definition_version"] == "3.10.0" and root["status"] == "CANCELLATION_REQUESTED":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1"} and root["status"] == "CANCELLATION_REQUESTED":
             coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             _, _, existing = self._graph_state(project_id, root_operation_id)
             cancellable = next(((node, child) for node, child in existing.items()
@@ -174,7 +174,7 @@ class ChapterAuthorityScheduler:
                 coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             return ChapterSchedulerTick(root_operation_id, saga["saga_id"], coordinated["status"], root_operation_id,
                 "", "CANCELLATION_REQUESTED", "cancel_existing_children_only")
-        if root["definition_version"] == "3.10.0" and root["status"] == "WAITING_GATE":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1"} and root["status"] == "WAITING_GATE":
             blocked = self._admission_gate(root_operation_id, project_id)
             if blocked:
                 with AuthorityUnitOfWork(self.database_url) as uow:
@@ -209,8 +209,10 @@ class ChapterAuthorityScheduler:
         coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
         if any(c["status"] == "ADMITTED" for c in children.values()):
             root, saga, children = self._graph_state(project_id, root_operation_id)
+        from novel_forge.modules.book_authority.manuscript import AUTHOR_ROOT_VERSION
+        active_nodes = tuple(ChapterNode)[:6] if root["definition_version"] == AUTHOR_ROOT_VERSION else tuple(ChapterNode)
         chapter_complete = all(
-            children.get(node, {}).get("status") == "SUCCEEDED" for node in ChapterNode
+            children.get(node, {}).get("status") == "SUCCEEDED" for node in active_nodes
         )
         if (coordinated["status"] == "SUCCEEDED" and chapter_complete) or coordinated[
             "status"
@@ -264,7 +266,7 @@ class ChapterAuthorityScheduler:
             if admitted_fanout:
                 coordinate_saga(self.database_url, context, saga["saga_id"])
                 root, saga, children = self._graph_state(project_id, root_operation_id)
-        node, operation = self._current_or_next(children)
+        node, operation = self._current_or_next(children, nodes=active_nodes)
         if node is ChapterNode.CANON and operation is None:
             proposal_operation = children[ChapterNode.CANON_PROPOSAL]
             proposal_ref = self._primary_output(
@@ -304,7 +306,7 @@ class ChapterAuthorityScheduler:
                     node=node,
                 )
             except KernelError as error:
-                if root["definition_version"] != "3.10.0" or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
+                if root["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1"} or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
                     raise
                 fresh_root, fresh_saga, fresh_children = self._graph_state(project_id, root_operation_id)
                 if node in fresh_children or fresh_root["status"] not in {"EXECUTING", "WAITING_CHILDREN"}:
@@ -629,7 +631,7 @@ class ChapterAuthorityScheduler:
         saga: dict[str, Any],
         children: dict[ChapterNode, dict[str, Any]],
     ) -> ChapterSchedulerTick | None:
-        if root["definition_version"] == "3.10.0":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1"}:
             return self._advance_coordinated_quality_correction(request=request, root=root, saga=saga, children=children)
         root_key = request.idempotency_key or (
             f"{request.project_id}:chapter:{request.chapter}:root"
@@ -879,7 +881,7 @@ class ChapterAuthorityScheduler:
                     OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
                         AND operation.definition_version = ANY(%s))
                   )
-                  AND NOT (operation.definition_version='3.10.0' AND operation.status='WAITING_GATE'
+                  AND NOT (operation.definition_version IN ('3.10.0','3.10.0-author-first.v1') AND operation.status='WAITING_GATE'
                     AND COALESCE(latest_transition.reason, '') LIKE %s AND COALESCE(latest_transition.reason, '') LIKE %s)
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
@@ -917,7 +919,7 @@ class ChapterAuthorityScheduler:
         uow.cursor.execute("SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s AND project_id=%s FOR UPDATE",
             [root["operation_id"], root["project_id"]])
         row = uow.cursor.fetchone()
-        if (not row or row[0]["definition_version"] != "3.10.0" or row[0]["definition_name"] != "chapter.slice.run"
+        if (not row or row[0]["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1"} or row[0]["definition_name"] != "chapter.slice.run"
             or row[0]["status"] not in {"EXECUTING", "WAITING_CHILDREN", "WAITING_GATE"}
             or any(row[0].get(key) != root.get(key) for key in ("workspace_id", "actor_id", "command_payload", "input_asset_snapshot", "definition_snapshot"))):
             raise KernelError("CHAPTER_TECHNICAL_GATE_SCOPE_DRIFT", "Technical admission may only retain its exact unfinished native Root")
@@ -940,9 +942,9 @@ class ChapterAuthorityScheduler:
             uow.commit()
 
     def _current_or_next(
-        self, children: dict[ChapterNode, dict[str, Any]]
+        self, children: dict[ChapterNode, dict[str, Any]], *, nodes=tuple(ChapterNode)
     ) -> tuple[ChapterNode, dict[str, Any] | None]:
-        for node in ChapterNode:
+        for node in nodes:
             operation = children.get(node)
             if operation is None:
                 dependencies = _admission_dependencies(node)
@@ -1006,7 +1008,7 @@ class ChapterAuthorityScheduler:
                     "CHAPTER_INPUT_NOT_COMPLETE",
                     f"{node.value} input {source.value} has not completed",
                 )
-            if source is ChapterNode.PUBLISH_GATE and node is ChapterNode.FINAL_RELEASE_GATE and root["definition_version"] == "3.10.0":
+            if source is ChapterNode.PUBLISH_GATE and node is ChapterNode.FINAL_RELEASE_GATE and root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1"}:
                 export = children[ChapterNode.EXPORT]
                 with AuthorityUnitOfWork(self.database_url) as u:
                     u.cursor.execute("SELECT asset_version_id FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='chapter.export.revalidated_publish_gate' AND role='completion_evidence'", [export["operation_id"]])
@@ -1059,7 +1061,7 @@ class ChapterAuthorityScheduler:
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0"}
+                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0", "3.10.0-author-first.v1"}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )
@@ -1115,6 +1117,10 @@ class ChapterAuthorityScheduler:
                     root_operation_id=str(root["operation_id"]),
                 )
             )
+        if node in {ChapterNode.CONTEXT, ChapterNode.EXECUTION_INTENT}:
+            working = (request.preparation_report or {}).get("working_manuscript")
+            if working:
+                inputs.extend({"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]} for row in working["sources"])
         if explicit_inputs is not None:
             inputs = list(explicit_inputs)
         if node is ChapterNode.QUALITY_LONGFORM and self.registry.model_effects_required:

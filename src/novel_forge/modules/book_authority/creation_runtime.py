@@ -84,59 +84,63 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         worker.require("book.authority.execute", book["project_id"])
         if book["state"] == "COMPLETED":
             return "COMPLETED"
+        from .manuscript import author_first, writing_frontier
+        if author_first(book) and writing_frontier(book) >= book["target_chapter_count"]:
+            return "MANUSCRIPT_READY"
         if book["state"] in {"ABORTED", "CANCELLED"}:
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
-        from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract, recover_completed_canon_window
-        recover(lambda: recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        recover(lambda: recover_completed_canon_window(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
-        recover(lambda: recover_known_draft_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.current_semantic_recovery import retire_semantic_frontier
-        try:
-            recover(lambda: retire_semantic_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        except KernelError as error:
-            if error.code == "CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED":
-                return error.code
-            raise
-        from .retained_recovery import recover_retained_quality
-        if recover(lambda: recover_retained_quality(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
-            events({"kind": "CHAPTER_RETAINED_GRAPH_CONTINUATION", "book_run_id": book_run_id})
-        from novel_forge.modules.chapter_authority.derived_recovery import recover_derived_frontier
-        while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
-            events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_quality_frontier
-        recover(lambda: recover_quality_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_support_frontier
-        recover(lambda: recover_support_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_information_frontier
-        recover(lambda: recover_information_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_review_frontier
-        recover(lambda: recover_review_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_length_frontier
-        recover(lambda: recover_length_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_length_retry_phase
-        recover(lambda: recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_capacity_frontier
-        recover(lambda: recover_canon_capacity_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_protocol_frontier
-        recover(lambda: recover_canon_protocol_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_schema_retry_phase
-        recover(lambda: recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier
-        recover(lambda: recover_realization_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
-        from .execution_recovery_v2 import recover_timeout as recover_timeout_v2
-        if recover(lambda: recover_timeout_v2(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
-            book = composition.authority.require(book_run_id)
-        from .execution_recovery import recover_timeout
-        if recover(lambda: recover_timeout(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
-            book = composition.authority.require(book_run_id)
-        from novel_forge.modules.story_planning_runtime.stage_repairs import resume_rejected_book_plan
-        if recover(lambda: resume_rejected_book_plan(composition, composition.authority.require(book_run_id), worker=worker, execution_probe=execution_probe)):
-            book=composition.authority.require(book_run_id)
+        if not author_first(book):
+            from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract, recover_completed_canon_window
+            recover(lambda: recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            recover(lambda: recover_completed_canon_window(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.receipt_recovery import recover_known_draft_receipt
+            recover(lambda: recover_known_draft_receipt(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.current_semantic_recovery import retire_semantic_frontier
+            try:
+                recover(lambda: retire_semantic_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            except KernelError as error:
+                if error.code == "CURRENT_SEMANTIC_REPAIR_CONTROL_EXHAUSTED":
+                    return error.code
+                raise
+            from .retained_recovery import recover_retained_quality
+            if recover(lambda: recover_retained_quality(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                events({"kind": "CHAPTER_RETAINED_GRAPH_CONTINUATION", "book_run_id": book_run_id})
+            from novel_forge.modules.chapter_authority.derived_recovery import recover_derived_frontier
+            while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                events({'kind':'CHAPTER_DERIVED_REVALIDATION','book_run_id':book_run_id})
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_quality_frontier
+            recover(lambda: recover_quality_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_support_frontier
+            recover(lambda: recover_support_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_information_frontier
+            recover(lambda: recover_information_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_review_frontier
+            recover(lambda: recover_review_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_length_frontier
+            recover(lambda: recover_length_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_length_retry_phase
+            recover(lambda: recover_length_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_capacity_frontier
+            recover(lambda: recover_canon_capacity_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_protocol_frontier
+            recover(lambda: recover_canon_protocol_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.candidate_repair import recover_canon_schema_retry_phase
+            recover(lambda: recover_canon_schema_retry_phase(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from novel_forge.modules.chapter_authority.contract_recovery import recover_realization_frontier
+            recover(lambda: recover_realization_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+            from .execution_recovery_v2 import recover_timeout as recover_timeout_v2
+            if recover(lambda: recover_timeout_v2(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                book = composition.authority.require(book_run_id)
+            from .execution_recovery import recover_timeout
+            if recover(lambda: recover_timeout(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
+                book = composition.authority.require(book_run_id)
+            from novel_forge.modules.story_planning_runtime.stage_repairs import resume_rejected_book_plan
+            if recover(lambda: resume_rejected_book_plan(composition, composition.authority.require(book_run_id), worker=worker, execution_probe=execution_probe)):
+                book=composition.authority.require(book_run_id)
         schedule_book_coordination_jobs(composition.query, jobs, limit=1, book_run_id=book_run_id)
         claim = jobs.claim(runtime_group="book", worker_id=worker.principal_id, lease_seconds=30,
             job_kinds=("BOOK_COORDINATION_TICK",), subject_kind="BOOK_RUN", subject_id=book_run_id)
@@ -159,6 +163,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
                     events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
+                    if author_first(book):
+                        return error.code
                     if recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
                         while recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
                             pass
@@ -440,7 +446,7 @@ def creation_progress(database_url: str, *, project_id: str, formation_run_id: s
 
 
 def creation_wait_class(reason: str) -> str:
-    if reason == "COMPLETED":
+    if reason in {"COMPLETED", "MANUSCRIPT_READY"}:
         return "COMPLETED"
     if reason in {"CANCELLED", "ABORTED"}:
         return "CANCELLED"
@@ -607,9 +613,11 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
             ORDER BY job.created_at DESC,job.runtime_job_id DESC LIMIT 1""", [formation_run_id, project_id])
         latest = uow.cursor.fetchone()
         cancellation = StoryFormationRepository(uow.cursor).cancellation(formation_run_id)
-        uow.cursor.execute("SELECT book_run_id,state,accepted_through_chapter,target_chapter_count,version FROM authority_book_production WHERE project_id=%s AND stable_idempotency_key=%s", [project_id, formation_run_id + ":production"])
+        uow.cursor.execute("SELECT book_run_id,state,accepted_through_chapter,target_chapter_count,version,current_chapter FROM authority_book_production WHERE project_id=%s AND stable_idempotency_key=%s", [project_id, formation_run_id + ":production"])
         production_row = uow.cursor.fetchone()
-        production = dict(zip(("book_run_id", "state", "accepted_chapters", "target_chapters", "version"), production_row, strict=True)) if production_row else None
+        production = dict(zip(("book_run_id", "state", "accepted_chapters", "target_chapters", "version", "saved_chapters"), production_row, strict=True)) if production_row else None
+        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+        formation_unresolved = unresolved_cli_outcomes(uow.cursor, project_id, book_id=run["book_id"]) if not production else []
         candidates = []
         candidate_ids = run["recovery_instruction"].get("candidate_asset_version_ids") or StoryFormationRepository(uow.cursor).approval_wait(formation_run_id, "CREATIVE_SEARCH").get("candidate_asset_version_ids", [])
         for ordinal, identity in enumerate(candidate_ids, 1):
@@ -624,10 +632,10 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
     if latest and latest[1] == "SUCCEEDED" and state == "PRODUCING":
         state = str((latest[4] or {}).get("wait_class") or state)
         if state == "COMPLETED":
-            state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "OWNER_RECOVERY_REQUIRED"
+            state = "INTERNAL_ACCEPTANCE_COMPLETE" if production and production["state"] == "COMPLETED" else "MANUSCRIPT_READY" if production and production["saved_chapters"] >= production["target_chapters"] else "OWNER_RECOVERY_REQUIRED"
     from .queries import PostgresBookProductionQuery
 
-    unresolved = PostgresBookProductionQuery(database_url).unresolved_chapter_effects(book_run_id=production["book_run_id"]) if production and not cancellation else []
+    unresolved = PostgresBookProductionQuery(database_url).unresolved_chapter_effects(book_run_id=production["book_run_id"]) if production else formation_unresolved
     if unresolved:
         state = "RECONCILIATION_REQUIRED"
     return {
@@ -648,8 +656,9 @@ def creation_status(database_url: str, *, project_id: str, formation_run_id: str
         if state == "AUTHOR_DECISION"
         else "BOOK_AUTHORITY_WORKER",
         "delivery": {
-            "required_action": "SELECT_EXACT_EDITION_AND_EXPORT",
-            "export_status": "QUERY_EDITION_AUTHORITY",
+            "required_action": "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT",
+            "export_status": "AVAILABLE_FOR_SAVED_PROSE",
+            "query_url": f"/product/editor/manuscripts?project_id={project_id}&book_run_id={production['book_run_id']}" if production else "",
             "literary_quality": "NOT_PROVEN",
         },
         "formation_lifecycle": run["lifecycle"],
@@ -693,8 +702,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
     from novel_forge.modules.capability_packs.longform_profiles import build_story_planning_pack_profile
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
-    if settings.environment != "validation" or args.maximum_ticks <= 0 or args.work_window_seconds <= 0:
-        raise ValueError("Creative creation requires validation runtime and positive execution window")
+    if args.maximum_ticks <= 0 or args.work_window_seconds <= 0:
+        raise ValueError("Creative creation requires a positive execution window")
     args = SimpleNamespace(**vars(args))
     explicit_creation_policy = args.creation_policy_file is not None
     if args.creation_policy_file is None:
@@ -774,6 +783,12 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
         if not windows or max(windows) <= 0:
             raise ValueError("CREATION_CONTEXT_WINDOW_REQUIRED")
         profile_content = profiles["profiles"]["production_profile"]["content"]
+        template_config = json.loads(args.execution_template_file.read_text())
+        if template_config.get("author_workflow"):
+            from .manuscript import AUTHOR_WORKFLOW
+            if template_config["author_workflow"] != AUTHOR_WORKFLOW:
+                raise ValueError("AUTHOR_WORKFLOW_INVALID")
+            profile_content["author_workflow"] = dict(AUTHOR_WORKFLOW)
         profile_content.setdefault("chapter_context_policy", {"version": "book-chapter-context.v1",
             "draft_profile": "draft-context-profile-v4", "draft_token_budget": max(windows), "quality_token_budget": max(windows)})
         profile_content.setdefault("world_production_policy", {"version": "world-production-policy.v4",
@@ -865,13 +880,13 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             install_chapter_validation_pack(settings.database_url, repository_root=repository_root,
             project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
-            pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"])
+            pack_id_override=runtime_values["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"], runtime_environment=settings.environment)
             profile = build_story_planning_pack_profile(repository_root, operation_definition_hash=hashes["planning"],
             pack_id=runtime_values["NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID"])
             install_longform_validation_pack(settings.database_url, profile=profile, pack_version=str(profile.manifest["identity"]["version"]), agent_generation=1,
             expected_activation_version=0, project_id=args.project_id, workspace_id=args.workspace_id, book_id=args.book_id,
             application_build_id=build_id, commit_sha=sha, compiler=principal, approver=principal, agent_admin=principal,
-            agent_domain="story_planning", agent_scope_type="BOOK")
+            agent_domain="story_planning", agent_scope_type="BOOK", runtime_environment=settings.environment)
     elif not formation_id:
         raise ValueError("Continue requires the original Formation identity")
     execution = build_production_execution_composition(settings, env=runtime_values)

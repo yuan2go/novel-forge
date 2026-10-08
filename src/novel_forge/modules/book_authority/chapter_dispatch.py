@@ -17,7 +17,8 @@ def reserved_chapter_command(database_url: str, *, book: dict[str, Any], persist
     chapter = int(persisted["chapter_number"])
     if payload["book_run_id"] != book["book_run_id"] or payload["chapter_number"] != chapter:
         raise KernelError("BOOK_CHAPTER_RECOVERY_SCOPE_DRIFT", "Frozen Chapter request identity must match its owned Book reservation")
-    candidates = context_candidates_for_dispatch(database_url, book_id=book["book_id"], book_run_id=book["book_run_id"],
+    from .manuscript import author_first
+    candidates = tuple(payload.get("context_candidates") or ()) if author_first(book) else context_candidates_for_dispatch(database_url, book_id=book["book_id"], book_run_id=book["book_run_id"],
         project_id=book["project_id"], chapter_number=chapter, requested=tuple(payload.get("context_candidates") or ()))
     return SingleChapterRequest(project_id=book["project_id"], workspace_id=book["workspace_id"], actor_id=actor_id,
         chapter=chapter, title=payload["title"], premise=payload["premise"],

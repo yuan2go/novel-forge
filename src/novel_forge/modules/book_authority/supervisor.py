@@ -43,6 +43,7 @@ from .production import (
     book_production_state_semantics,
 )
 from .queries import PostgresBookProductionQuery
+from .manuscript import author_first, writing_frontier, deliver_manuscript
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +138,13 @@ class PostgresBookProductionSupervisor:
     def _tick(self, book_run_id: str) -> BookProductionSupervisorTick:
         book = self.authority.require(book_run_id)
         before = str(book["state"])
+        if author_first(book) and book.get("active_chapter_request_id"):
+            request = self.authority.require_chapter_request(book["active_chapter_request_id"])
+            progress = self.query.progress(book_run_id=book_run_id)
+            if (progress.active_operation_id == request["chapter_root_operation_id"]
+                    and progress.active_operation_status == "SUCCEEDED"):
+                receipt = deliver_manuscript(self.authority, request["chapter_request_id"], principal=self.principal)
+                return self._result(book_run_id, before, SupervisorAction.RECONCILE_CHAPTER, evidence_ref=receipt["source_asset_version_id"])
         semantics = book_production_state_semantics(before)
         if (semantics.state_class is not BookProductionStateClass.TERMINAL
                 and self.query.unresolved_chapter_effects(book_run_id=book_run_id)):
@@ -313,7 +321,7 @@ class PostgresBookProductionSupervisor:
                 )
         if before == BookProductionState.REPLAN_REQUIRED.value:
             return self._start_replan(book)
-        next_chapter = int(book["accepted_through_chapter"]) + 1
+        next_chapter = writing_frontier(book) + 1
         group_run = self._active_group_run(book)
         if (
             group_run is not None
@@ -332,6 +340,8 @@ class PostgresBookProductionSupervisor:
         if before == BookProductionState.COMPLETED.value:
             return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
         if next_chapter > int(book["target_chapter_count"]):
+            if author_first(book):
+                return self._result(book_run_id, before, SupervisorAction.NO_ACTION)
             self.authority.complete_book_checkpoint(
                 str(book["book_run_id"]),
                 chapter_number=int(book["accepted_through_chapter"]),
@@ -434,7 +444,7 @@ class PostgresBookProductionSupervisor:
                 str(frozen["realization_id"]),
             )
         group_run = self._active_group_run(book, str(group["asset_version_id"]))
-        if group_run is None:
+        if group_run is None and not author_first(book):
             started = self.chapter_groups.start(
                 StartChapterGroupCommand(
                     project_id=str(book["project_id"]),
@@ -557,7 +567,7 @@ class PostgresBookProductionSupervisor:
             )
         # INVARIANT: Freeze the Working Set's exact Planning-owned Arc versions into the production manifest.
         explicit_overrides["arc_plan"] = selected_arc_versions
-        if next_chapter > 1:
+        if int(book["accepted_through_chapter"]) > 0:
             previous_story_state = str(book.get("active_story_state_version_id") or "")
             previous_canon = str(book.get("active_canon_snapshot_version_id") or "")
             if not previous_story_state or not previous_canon:
@@ -614,9 +624,12 @@ class PostgresBookProductionSupervisor:
             "chapter_production_admission_hash": chapter_admission["admission_hash"],
         }
         preparation_report = self._stage_budgeted_preparation_report(prepared, book=book)
+        if author_first(book):
+            preparation_report["author_workflow"] = book["author_workflow"]
+            context_version_refs["accepted_through_chapter"] = int(book["accepted_through_chapter"])
         preparation_report["chapter_production_admission"] = chapter_admission
-        dispatched_group = self.chapter_groups.dispatch(
-            str(group_run["group_run_id"]),
+        dispatch = self.authority.submit_chapter if author_first(book) else lambda command, **options: self.chapter_groups.dispatch(str(group_run["group_run_id"]), command, **options)
+        dispatched_group = dispatch(
             SubmitBookChapterCommand(
                 book_run_id=book_run_id,
                 chapter_number=next_chapter,
@@ -642,7 +655,7 @@ class PostgresBookProductionSupervisor:
             principal=self.principal,
         )
         dispatched = self.authority.require_chapter_request(
-            str(dispatched_group["active_chapter_request_id"])
+            str(dispatched_group.get("active_chapter_request_id") or dispatched_group["chapter_request_id"])
         )
         return self._result(
             book_run_id,
@@ -666,7 +679,7 @@ class PostgresBookProductionSupervisor:
     def _resume_pending_plan(self, book: dict[str, Any]) -> BookProductionSupervisorTick:
         from novel_forge.modules.story_design_authority.qualification import uses_work_requirements
 
-        chapter = int(book["accepted_through_chapter"]) + 1
+        chapter = writing_frontier(book) + 1
         group = self._active_plan(book, "CHAPTER_GROUP", chapter)
         active = self._active_plan(book, "CHAPTER", chapter) if group else None
         if active or group is None:
@@ -751,6 +764,7 @@ class PostgresBookProductionSupervisor:
                 f"{book['stable_idempotency_key']}:chapter:{next_chapter}"
             ),
             explicit_asset_version_overrides=explicit_overrides,
+            accepted_through_chapter=int(book["accepted_through_chapter"]) if author_first(book) else None,
             capability_required_asset_types=("character_cast", "reader_promise"),
             context_token_budget=context_policy["draft_token_budget"] if context_policy else self.context_token_budget,
             knowledge_access_policy=knowledge_access_policy,
@@ -1132,7 +1146,7 @@ class PostgresBookProductionSupervisor:
             "previous_chapter_outcome": book.get("last_chapter_outcome_version_id"),
         }
         group = self._active_plan(
-            book, "CHAPTER_GROUP", int(book["accepted_through_chapter"]) + 1
+            book, "CHAPTER_GROUP", writing_frontier(book) + 1
         )
         if group:
             fixed["chapter_group_plan"] = group["asset_version_id"]
@@ -1152,7 +1166,7 @@ class PostgresBookProductionSupervisor:
     def _latest_role_asset(self, book: dict[str, Any], role: str) -> str:
         if role == "reader_state":
             observed = self.query.previous_reader_state(book_run_id=str(book["book_run_id"]),
-                chapter_number=int(book["accepted_through_chapter"]) + 1)
+                chapter_number=writing_frontier(book) + 1)
             if observed != "NONE":
                 return observed
         aliases = {
@@ -1346,7 +1360,7 @@ class PostgresBookProductionSupervisor:
     ) -> dict[str, Any]:
         projection = self.query.require_cursor_plan_projection(
             snapshot_id=str(book["input_snapshot_id"]),
-            chapter_cursor=int(book["accepted_through_chapter"]) + 1,
+            chapter_cursor=writing_frontier(book) + 1,
         )
         envelope = (chapter_plan.get("content") or {}).get("constraint_envelope")
         working_set = dict(

@@ -1302,11 +1302,13 @@ class ProductionProviderRouter:
                 "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
             )
         if snapshot.get("resource_control_version"):
-            if snapshot.get("mode") == "CREATIVE_VALIDATION" and self.execution_environment != "validation":
-                raise KernelError("CREATIVE_ROUTING_ENVIRONMENT_INVALID", "Creative validation requires the validation runtime profile")
             from .execution_template import verify_template_provenance
             with AuthorityUnitOfWork(self.registry.database_url) as uow:
                 template = verify_template_provenance(uow.cursor, snapshot)
+                if snapshot.get("mode") == "CREATIVE_VALIDATION" and self.execution_environment != "validation":
+                    if not (template and template.get("version") == "creative-execution-template.v12"
+                            and template.get("author_workflow") == {"version": "author-workflow.v1", "mode": "AUTHOR_FIRST", "deep_review": False}):
+                        raise KernelError("CREATIVE_ROUTING_ENVIRONMENT_INVALID", "Historical creative validation requires validation; author writing requires its governed current Book policy")
                 if snapshot["task"].get("declared_requirements", {}).get("native_planning_repair"):
                     if self.registry.legacy_planning_repair_validator is None:
                         raise KernelError("ROUTING_REPAIR_READER_REQUIRED", "Frozen Planning evidence requires its owning validator")

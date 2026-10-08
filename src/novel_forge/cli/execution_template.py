@@ -11,7 +11,7 @@ def add_execution_template_parser(subparsers: Any) -> None:
     parser.add_argument("--book-id", required=True)
     parser.add_argument("--policy-version", required=True)
     parser.add_argument("--idempotency-key", required=True)
-    parser.add_argument("--template-file", type=Path, default=Path("config/execution_templates/creative_validation.json"))
+    parser.add_argument("--template-file", type=Path, default=Path("config/execution_templates/author_first.json"))
 
 
 def run_execution_template_command(settings: Any, args: Any) -> dict[str, Any]:

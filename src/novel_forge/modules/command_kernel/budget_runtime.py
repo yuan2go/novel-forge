@@ -4194,8 +4194,13 @@ def require_known_cli_lineage(cursor: Any, *, project_id: str, operation_id: str
     lineage = cursor.fetchone()
     if lineage is None:
         raise KernelError("CROSS_PROJECT_REFERENCE", "Provider dispatch Operation scope is missing")
-    if unresolved_cli_outcomes(cursor, project_id,
-        root_operation_id="" if lineage[1] else str(lineage[0]), book_id=str(lineage[1])):
+    unresolved = unresolved_cli_outcomes(cursor, project_id,
+        root_operation_id="" if lineage[1] else str(lineage[0]), book_id=str(lineage[1]))
+    if lineage[1] and unresolved:
+        from ..book_authority.manuscript import blocking_working_cli_outcomes
+        unresolved = blocking_working_cli_outcomes(cursor, project_id=project_id, book_id=str(lineage[1]),
+            outcomes=unresolved, operation_id=operation_id)
+    if unresolved:
         raise KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED",
             "Reconcile original local-CLI receipts before another send in this execution lineage")
 
@@ -4222,7 +4227,9 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: 
             NULLIF(root.command_payload->>'book_id',''),NULLIF(root.command_payload#>>'{payload,book_id}',''),
             NULLIF(b.evidence->>'work_id',''))=%s)
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
-          AND d.evidence #>> '{production_execution,execution_result,outcome}' IN ('TIMED_OUT','CANCELLED','ORPHANED')
+          AND (d.evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
+            OR (d.evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
+              AND d.evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))
           AND (d.evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
             OR NOT COALESCE(d.evidence #> '{production_execution,execution_result,started_at}'='null'::jsonb,false))
           AND NULLIF(d.evidence #>> '{production_execution,execution_result,usage_receipt_ref}', '') IS NULL

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261007_0180_foundation_direction_search",
+  "migration_head": "20261008_0181_author_manuscript_delivery",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7065,6 +7065,10 @@
         {
           "path": "src/novel_forge/workers/book_authority.py",
           "symbol": "execute_book_coordination_claim"
+        },
+        {
+          "path": "src/novel_forge/api/routers/chapter_editor.py",
+          "locator": "@router.post(\"/manuscripts/export\")"
         }
       ],
       "application": [
@@ -7087,6 +7091,18 @@
         {
           "path": "src/novel_forge/modules/book_authority/creation_runtime.py",
           "symbol": "continue_creation"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "deliver_manuscript"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "require_manuscript"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "adopt_author_workflow"
         }
       ],
       "domain_symbols": [
@@ -7118,7 +7134,9 @@
           "book production run",
           "production cursor",
           "delegation and reconciliation state",
-          "terminal completion state"
+          "terminal completion state",
+          "immutable manuscript delivery and separate writing cursor",
+          "versioned author workflow adoption"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -7129,6 +7147,10 @@
           {
             "path": "src/novel_forge/modules/book_authority/supervisor.py",
             "symbol": "PostgresBookProductionSupervisor.tick"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/manuscript.py",
+            "symbol": "deliver_manuscript"
           }
         ]
       },
@@ -7140,6 +7162,14 @@
         {
           "path": "src/novel_forge/modules/book_authority/supervisor.py",
           "symbol": "PostgresBookProductionSupervisor.tick"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "deliver_manuscript"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "adopt_author_workflow"
         }
       ],
       "persistence": [
@@ -7177,6 +7207,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20260928_0148_author_supervised_design.py",
           "locator": "MIGRATION_ID = \"20260928_0148_author_supervised_design\"",
           "id": "20260928_0148_author_supervised_design"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261008_0181_author_manuscript_delivery.py",
+          "id": "20261008_0181_author_manuscript_delivery",
+          "locator": "MIGRATION_ID = \"20261008_0181_author_manuscript_delivery\""
         }
       ],
       "external_effects": {
@@ -7227,6 +7262,10 @@
         {
           "path": "tests/integration/test_synthesis_formation_postgres.py",
           "symbol": "test_creative_validation_native_controlled_process_to_internal_acceptance"
+        },
+        {
+          "path": "tests/integration/test_author_first_manuscript_postgres.py",
+          "symbol": "test_native_author_first_cross_chapter_edit_and_export"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9898,7 +9937,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:f43973bd2ac14bb4caecb035c0ed48e298c9e445d1384e3fed74b06e140daf82"
+    "implementation_tree_sha": "sha256:f7bd9308639025908de305cb9bf8806ecdc45bb03e8d728fae0767c7298b24c3"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -10391,6 +10430,38 @@
         {
           "path": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
           "symbol": "replace_derived_step"
+        }
+      ]
+    },
+    {
+      "id": "author-first-delivery-versus-formal-acceptance",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "The default v12 author policy saves complete native Drafts, advances writing progress and permits exact current manuscript export without optional Review, Canon extraction, grouped Quality or strict finalization. Formal accepted State/Canon and publication gates remain separate. Frozen v11 contracts retain their historical strict sequence.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "deliver_manuscript"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "current_manuscript"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/orchestrator.py",
+          "symbol": "admit_single_chapter_saga"
+        }
+      ]
+    },
+    {
+      "id": "bounded-author-working-source-window",
+      "classification": "CURRENT_RUNTIME_FACT",
+      "statement": "Working continuation binds the most recent four selected chapters with bounded exact prose excerpts, source hashes and explicit unreviewed status. This window is an implementation bound, not a proof of long-form continuity or a second formal fact authority.",
+      "design_review_required": false,
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "freeze_working_context"
         }
       ]
     }
@@ -11615,13 +11686,14 @@
         }
       ],
       "downstream": [
-        "chapter-group"
+        "chapter-group",
+        "chapter-plan"
       ]
     },
     {
       "id": "chapter-group",
       "order": 9,
-      "path_role": "REQUIRED",
+      "path_role": "CONDITIONAL",
       "owner": "chapter-group-authority",
       "evidence": [
         {
@@ -11636,7 +11708,7 @@
     {
       "id": "world-preparation",
       "order": 10,
-      "path_role": "REQUIRED",
+      "path_role": "CONDITIONAL",
       "owner": "planning-authority",
       "evidence": [
         {
@@ -11710,13 +11782,33 @@
         }
       ],
       "downstream": [
-        "review-quality"
+        "review-quality",
+        "manuscript-delivery"
+      ]
+    },
+    {
+      "id": "manuscript-delivery",
+      "order": 15,
+      "path_role": "CONDITIONAL",
+      "owner": "book-authority",
+      "evidence": [
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "deliver_manuscript"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "current_manuscript"
+        }
+      ],
+      "downstream": [
+        "active-planning"
       ]
     },
     {
       "id": "review-quality",
-      "order": 15,
-      "path_role": "REQUIRED",
+      "order": 16,
+      "path_role": "CONDITIONAL",
       "owner": "chapter-authority",
       "evidence": [
         {
@@ -11730,8 +11822,8 @@
     },
     {
       "id": "book-acceptance",
-      "order": 16,
-      "path_role": "REQUIRED",
+      "order": 17,
+      "path_role": "CONDITIONAL",
       "owner": "book-authority",
       "evidence": [
         {
@@ -11747,8 +11839,8 @@
     },
     {
       "id": "accepted-projections",
-      "order": 17,
-      "path_role": "REQUIRED",
+      "order": 18,
+      "path_role": "CONDITIONAL",
       "owner": "book-authority",
       "evidence": [
         {
@@ -11763,7 +11855,7 @@
     },
     {
       "id": "reader-followup",
-      "order": 18,
+      "order": 19,
       "path_role": "ASYNCHRONOUS_FOLLOWUP",
       "owner": "reader-evidence-authority",
       "evidence": [
@@ -11778,7 +11870,7 @@
     },
     {
       "id": "future-plan-change",
-      "order": 19,
+      "order": 20,
       "path_role": "FUTURE_ONLY_CHANGE",
       "owner": "plan-change-authority",
       "evidence": [
@@ -11793,7 +11885,7 @@
     },
     {
       "id": "whole-book-completion",
-      "order": 20,
+      "order": 21,
       "path_role": "CONDITIONAL",
       "owner": "whole-book-completion-authority",
       "evidence": [

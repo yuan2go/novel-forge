@@ -10,6 +10,7 @@ import { loadEditorProjects, loadEditorDrafts, loadDraftEditor, submitEditorComm
 import { ProseReviewPanel, type ReviewSource } from "./ProseReviewPanel";
 import { exactOffset, retainExactLineEndings } from "./text";
 import { EditionPanel } from "./EditionPanel";
+import { CurrentManuscriptPanel } from "../production/CurrentManuscriptPanel";
 
 const EDITOR_COMMANDS = ["保存候选", "采用候选", "拒绝候选", "提交章节复核"];
 const storageKey = (draft: EditorDraft) => `novel-forge:author-input:${draft.project_id}:${draft.asset_version_id}`;
@@ -20,6 +21,8 @@ export function EditorPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [projectId, setProjectId] = useState("");
   const [preferredBookRun, setPreferredBookRun] = useState("");
+  const [editionOpened, setEditionOpened] = useState(false);
+  const [proseReviewOpened, setProseReviewOpened] = useState(false);
   const [drafts, setDrafts] = useState<EditorDraft[]>([]);
   const [draftId, setDraftId] = useState("");
   const [state, setState] = useState<DraftEditorState | null>(null);
@@ -46,7 +49,7 @@ export function EditorPage() {
   useEffect(() => {
     if (!projectId) return;
     let active = true;
-    loadEditorDrafts(projectId).then((rows) => { if (active) {const params = new URLSearchParams(window.location.search); const requested = params.get("project_id") === projectId ? params.get("book_id") : null; const scoped = requested ? rows.filter(item => item.book_id === requested) : rows; setDrafts(scoped); setDraftId(scoped.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
+    loadEditorDrafts(projectId).then((rows) => { if (active) {const params = new URLSearchParams(window.location.search); const requested = params.get("project_id") === projectId ? params.get("book_id") : null; const scoped = requested ? rows.filter(item => item.book_id === requested) : rows; setDrafts(scoped); setDraftId(scoped.find(item => item.asset_version_id === params.get("base_asset_version_id"))?.asset_version_id || scoped.find((item) => item.book_id)?.asset_version_id || "");} }).catch(showError);
     return () => {active = false;};
   }, [projectId]);
   useEffect(() => {
@@ -109,7 +112,7 @@ export function EditorPage() {
         const next = await loadDraftEditor(draft); setState(next); setSavedText(workingText(next));
         setEditorText(workingText(next));
       }
-      setNotice(result.editor_status === "ADOPTED_PENDING_REVIEW" ? "已采用候选，等待章节复核。尚未接纳章节或完成整书。" :
+      setNotice(result.editor_status === "ADOPTED_PENDING_REVIEW" ? "已采用候选，可继续写作并按需复核。尚未审定章节或完成整书。" :
         result.editor_status === "REJECTED" ? "已拒绝候选，原正文未改变。" : "作者实际输入已保存为独立候选。请检查修改对照后采用或拒绝。");
     } catch (caught) {
       showError(caught);
@@ -123,7 +126,7 @@ export function EditorPage() {
     void send(command);
   }
   function decide(action: "accept" | "reject") {
-    void send({...baseCommand(action), candidate_asset_version_id: candidate?.asset_version_id, rationale});
+    void send({...baseCommand(action), candidate_asset_version_id: candidate?.asset_version_id, rationale: rationale.trim() || (action === "accept" ? "作者采用当前候选" : "作者拒绝当前候选")});
   }
   async function review() {
     if (!state || lock.current) return;
@@ -139,7 +142,7 @@ export function EditorPage() {
     } catch (caught) {showError(caught);} finally {lock.current = false; setBusy(false);}
   }
 
-  return <FeatureShell title="作者编辑器" subtitle="读取精确版本，保存真实作者输入，检查对照并采用候选，再进入章节复核。">
+  return <FeatureShell title="作者编辑器" subtitle="读取当前稿件，保存作者修改，查看差异并采用或拒绝；审读和严格定稿按需进行。">
     {notice ? <div role="status" className="noticeLine">{notice}</div> : null}
     {error ? <div role="alert" className="errorLine">{error}<button className="secondaryButton" disabled={busy} onClick={() => reload()}>重新加载并保留输入</button></div> : null}
     <section className="panel"><div className="studioActions">
@@ -149,6 +152,7 @@ export function EditorPage() {
         <option value="">选择已绑定 Book 的稿件</option>{drafts.map((item) => <option disabled={!item.book_id} key={item.asset_version_id} value={item.asset_version_id}>{item.title} · {item.asset_type} · {item.asset_version_id.slice(-8)}</option>)}</select></label>
       <span>{dirty ? "有未保存修改" : "无未保存修改"}</span>
     </div></section>
+    {projectId && preferredBookRun && <CurrentManuscriptPanel project={projectId} bookRun={preferredBookRun} />}
     <section className="editorWorkbenchGrid">
       <aside className="panel"><PanelHeader title="相关资料侧栏" icon={<FileSearch size={18} />} />
         <p>项目：{state?.project_id || "—"}</p><p>工作区：{state?.workspace_id || "—"}</p><p>Book：{state?.book_id || "—"}</p>
@@ -189,16 +193,16 @@ export function EditorPage() {
     </section>
     <section className="panel"><PanelHeader title="修改对照与决定" icon={<GitPullRequest size={18} />} />
       {candidate?.content.edits.map((edit, index) => <div key={index}><p>基准位置 [{edit.start}, {edit.end})</p><del>{edit.before || "（插入位置）"}</del><ins>{edit.after || "（删除）"}</ins></div>)}
-      <p>诊断与语义影响：新候选尚需独立复核。作者采用不代表连续性、Craft 或正文质量已通过。</p>
-      <textarea aria-label="决定理由" value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="说明采用或拒绝本候选的理由" rows={3} />
+      <p>诊断与语义影响：新候选可按需复核。作者采用不代表连续性或正文质量已验证。</p>
+      <textarea aria-label="决定理由" value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="可选：说明采用或拒绝本候选的理由" rows={3} />
       <div className="studioActions">
-        <button className="primaryButton" disabled={busy || !!pending || dirty || state?.session?.status !== "SAVED_CANDIDATE" || !rationale.trim()} onClick={() => decide("accept")}>{EDITOR_COMMANDS[1]}</button>
-        <button className="secondaryButton" disabled={busy || !!pending || state?.session?.status !== "SAVED_CANDIDATE" || !rationale.trim()} onClick={() => decide("reject")}>{EDITOR_COMMANDS[2]}</button>
+        <button className="primaryButton" disabled={busy || !!pending || dirty || state?.session?.status !== "SAVED_CANDIDATE"} onClick={() => decide("accept")}>{EDITOR_COMMANDS[1]}</button>
+        <button className="secondaryButton" disabled={busy || !!pending || state?.session?.status !== "SAVED_CANDIDATE"} onClick={() => decide("reject")}>{EDITOR_COMMANDS[2]}</button>
         <button className="primaryButton" disabled={busy || !!pending || dirty || !!reviewStatus || (!!state?.book_request && (!state.book_request.is_current || !state.book_request.unaccepted)) || state?.session?.status !== "ADOPTED_PENDING_REVIEW"} onClick={review}>{EDITOR_COMMANDS[3]}</button>
       </div>
     </section>
     <section className="panel">
-      <p>提交章节复核会登记模型工作，沿用项目现有的 Provider 资格、授权与预算门控。</p>
+      <p>按需复核会使用作品已授权的执行模板；当前稿件仍可阅读、修改和导出。</p>
       {reviewStatus ? <>
         <h3>章节复核进度</h3><p style={{overflowWrap: "anywhere"}}>{reviewStatus.root_operation_id} · {reviewStatus.run.status}</p>
         <button className="secondaryButton" disabled={busy} onClick={() => state && loadAuthorReview(state.project_id, reviewStatus.root_operation_id).then(setReviewStatus).catch(showError)}>刷新章节复核状态</button>
@@ -208,9 +212,11 @@ export function EditorPage() {
         <a href="/manuscript">前往章节生产工作台查看后续接纳门控</a>
       </> : null}
     </section>
-    {state ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} preferredBookRun={preferredBookRun} /> : null}
-    {state ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
+    <details className="panel" onToggle={event => {if (event.currentTarget.open) setEditionOpened(true);}}><summary>严格定稿与整稿版本（按需）</summary>
+    {state && editionOpened ? <EditionPanel key={`edition:${state.project_id}:${state.book_id}`} state={state} preferredBookRun={preferredBookRun} /> : null}</details>
+    <details className="panel" onToggle={event => {if (event.currentTarget.open) setProseReviewOpened(true);}}><summary>深度正文审读（按需）</summary>
+    {state && proseReviewOpened ? <ProseReviewPanel key={`${state.project_id}:${state.book_id}`} state={state} onSelect={(source) => {
       setReviewSource(source); setNotice("已选定审读问题；编辑正文并保存后，可显式关联修改候选。"); editor.current?.focus();
-    }} /> : null}
+    }} /> : null}</details>
   </FeatureShell>;
 }

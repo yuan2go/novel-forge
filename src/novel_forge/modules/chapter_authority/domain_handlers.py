@@ -172,7 +172,7 @@ def build_context_bundle(
         )
     refs = {**(version_refs or {}), "chapter_plan_version": plan_asset_version_id}
     ref_boundary = {
-        "accepted_through_chapter": max(0, int(plan["chapter"]) - 1),
+        "accepted_through_chapter": int(refs.get("accepted_through_chapter", max(0, int(plan["chapter"]) - 1))),
         "story_state_snapshot_version": refs.get(
             "story_state_snapshot_version",
             refs.get("story_state_snapshot_versions", ""),
@@ -575,6 +575,7 @@ def normalize_draft_result(
     core_policy: str = "EXPLICIT_SKELETON_V1",
     information_policy: str = "ENTRY_ONLY_V1",
     realization_contract: dict[str, Any] | None = None,
+    enforce_voice_contract: bool = True,
 ) -> dict[str, Any]:
     from .realization_composition import prose_from_output
 
@@ -631,6 +632,7 @@ def normalize_draft_result(
             information_policy=information_policy,
         ),
         artifacts=result.get("scene_artifacts", []),
+        enforce_voice_contract=enforce_voice_contract,
         text=text,
         separators=result.get("scene_separators"),
     )

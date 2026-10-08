@@ -2042,17 +2042,21 @@ def build_book_production_composition(
     chapter_application: ChapterAuthorityApplication,
     env: Mapping[str, str] | None = None,
     planning_post_provider_fault_injector: Callable[[str], None] | None = None,
+    authority: PostgresBookAuthority | None = None,
 ) -> BookProductionComposition:
 
     if not settings.database_url:
         raise RuntimeError("PostgreSQL database is required for Book production")
     values = os.environ if env is None else env
-    authority = build_book_authority_application(
+    authority = authority or build_book_authority_application(
         settings,
         execution=execution,
         chapter_application=chapter_application,
         env=values,
     )
+    if (authority.database_url != settings.database_url
+            or (authority.application_build_id, authority.commit_sha) != authority_release_identity(env=values)):
+        raise ValueError("Book composition must reuse the exact database and release Authority")
     planning = build_story_planning_generation_application(
         settings,
         execution=execution,

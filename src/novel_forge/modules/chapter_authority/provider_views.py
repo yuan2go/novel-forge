@@ -1761,6 +1761,8 @@ def build_provider_context_view(
             (correctness or {}).get("receipt_hash") or ""
         ),
     }
+    if context_bundle.get("working_manuscript") is not None and stage in {"draft", "memo", "revision"}:
+        view["working_manuscript"] = deepcopy(context_bundle["working_manuscript"])
     serialized_size = len(json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")) if task_scoped_context else _serialized_character_count(view)
     serialization_limit = 8_388_608 if task_scoped_context else maximum_characters
     if serialized_size > serialization_limit:
@@ -3067,8 +3069,8 @@ def _cross_chapter_task(inputs: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def project_longform_prose_review_context_input(asset_type: str, content: Mapping[str, Any]) -> dict[str, Any]:
-    if asset_type != "longform_prose_review_window" or content.get("schema_version") not in {"longform-prose-window.v1", "longform-prose-window.v2"}:
-        raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "only a frozen accepted prose window may enter longform review")
+    if asset_type != "longform_prose_review_window" or content.get("schema_version") not in {"longform-prose-window.v1", "longform-prose-window.v2", "longform-prose-window.v3"}:
+        raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "Only a frozen source-bound prose window may enter longform review")
     return {key: content[key] for key in ("schema_version", "manifest_digest", "window", "policy", "source_isolation")}
 
 

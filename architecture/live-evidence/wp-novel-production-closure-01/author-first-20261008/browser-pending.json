@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "runtime_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+  "fixture_transport": true,
+  "fault": "ISOLATED_BROWSER_ABORT_BEFORE_SERVER_SEND",
+  "checks": [
+    "optional panels make zero requests before author opens them",
+    "uncertain review request persists across browser refresh",
+    "retry retains exact original body/idempotency/trace",
+    "strict Edition absence is a separate condition with readable current export"
+  ],
+  "aborted_requests": 2,
+  "provider_calls": 0,
+  "new_server_review_operations": 0
+}

@@ -442,7 +442,7 @@ def uses_work_requirements(content: Mapping[str, Any]) -> bool:
     envelope = payload.get("constraint_envelope")
     return isinstance(envelope, Mapping) and (
         envelope.get("contract_version")
-        in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4"}
+        in {"foundation-generation.v2", "foundation-generation.v3", "foundation-generation.v4", "foundation-generation.v5"}
         or envelope.get("creative_requirements_contract")
         in {"work-requirements.v1", "work-requirements.v2"}
     )
@@ -477,7 +477,7 @@ def qualification_profile_options(content: Mapping[str, Any]) -> dict[str, Any]:
     aligned = content.get("schema_version") == "book-design.v7" or (
         isinstance(envelope, Mapping)
         and (
-            envelope.get("contract_version") in {"foundation-generation.v3", "foundation-generation.v4"}
+            envelope.get("contract_version") in {"foundation-generation.v3", "foundation-generation.v4", "foundation-generation.v5"}
             or envelope.get("creative_requirements_contract") == "work-requirements.v2"
         )
     )

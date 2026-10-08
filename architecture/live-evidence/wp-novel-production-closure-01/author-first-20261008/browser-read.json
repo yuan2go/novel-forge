@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "runtime_sha": "03b52c7bdd3c3e8b69530a597ae7d4ac9e8844a7",
+  "phase": "SAVED_PROSE_VISIBLE_WITH_REVIEW_FAILED",
+  "saved_chapters_at_api_read": 6,
+  "target_chapters": 6,
+  "formal_accepted_chapters": 0,
+  "browser": "Chrome headless",
+  "next_runtime": "16.2.12",
+  "ui_url": "http://127.0.0.1:59092/editor?project_id=project%3Aauthor%3Ac888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd&book_id=book%3Aauthor%3Ac888cd206d300100d7d0242221e5bce961e1f7260f35137619ae4257a2720dfd&book_run_id=book-run%3A410e61d7-3319-476e-9b09-08b2d5be2ef8&base_asset_version_id=bda0de91-9a12-47eb-a511-2a6e14723bfb",
+  "optional_provider_calls": 0,
+  "automatic_edition_or_deep_review_requests": 0,
+  "fixture_transport": true
+}

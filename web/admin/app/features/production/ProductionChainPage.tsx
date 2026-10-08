@@ -1,5 +1,6 @@
 "use client";
 
+import {CurrentManuscriptPanel} from "./CurrentManuscriptPanel";
 import { AuthorSupervisionPanel } from "./AuthorSupervisionPanel";
 
 import { ReferenceReviewPanel } from "./ReferenceReviewPanel";
@@ -90,27 +91,28 @@ export function ProductionChainPage() {
     setRunId(result.book_run_id); pending.current = null; persist();
   }
   const effectiveProfile = run ? run.frozen_profile : profile?.content;
-  return <FeatureShell title="作品生产" subtitle="选择作品和已批准输入，确认生产快照，再阅读、审改和继续。">
+  return <FeatureShell title="作品生产" subtitle="输入写作想法，持续取得稿件；随时阅读、修改和导出，审读按需开启。">
     <section className="panel">
       <h2>作品与输入</h2>
       {workspace.dispatch_control && <p role="status">模型派发：{workspace.dispatch_control.process_dispatch_suspended ? "进程总暂停" : workspace.dispatch_control.state} · {workspace.dispatch_control.reason || "以持久项目控制和任务授权为准"}。排队输入尚未完成时请查询任务状态。</p>}
       <div className="formGrid wide">
         <label>项目<select aria-label="项目" value={project} disabled={busy} onChange={e => { setProject(e.target.value); setBookId(""); setRunId(""); setSnapshotId(""); setProfileId(""); setWorkspace(empty); }}><option value="">选择项目</option>{projects.map(p => <option key={p.project_id} value={p.project_id}>{p.title || p.project_id}</option>)}</select></label>
         <label>作品<select aria-label="作品" value={bookId} disabled={busy} onChange={e => { setBookId(e.target.value); setRunId(""); setSnapshotId(""); setProfileId(""); }}><option value="">选择作品</option>{workspace.books.map(b => <option key={b.book_id} value={b.book_id}>{b.title} · {b.status}</option>)}</select></label>
-        <label>已批准生产配置<select aria-label="已批准生产配置" value={profileId} onChange={e => { setProfileId(e.target.value); setSnapshotId(""); }}><option value="">选择配置</option>{workspace.profiles.map(p => <option key={p.asset_version_id} value={p.asset_version_id}>{String(p.content.name || p.content.profile_id || p.asset_version_id)}</option>)}</select></label>
+        <details><summary>高级诊断与手动生产</summary><label>已批准生产配置<select aria-label="已批准生产配置" value={profileId} onChange={e => { setProfileId(e.target.value); setSnapshotId(""); }}><option value="">选择配置</option>{workspace.profiles.map(p => <option key={p.asset_version_id} value={p.asset_version_id}>{String(p.content.name || p.content.profile_id || p.asset_version_id)}</option>)}</select></label>
         <button className="secondaryButton" disabled={busy || !book || !profileId} onClick={() => act(resolve, "生产输入已解析并冻结，请核对快照和预算。")}>解析生产快照</button>
         <label>生产快照<select aria-label="生产快照" value={snapshotId} onChange={e => setSnapshotId(e.target.value)}><option value="">选择已冻结快照</option>{workspace.snapshots.map(s => <option key={s.snapshot_id} value={s.snapshot_id}>第 {s.narrative_chapter_cursor} 章起 · {s.snapshot_hash.slice(-12)}</option>)}</select></label>
         <label>本次生产到第几章<input aria-label="生产到第几章" type="number" min={1} value={target} onChange={e => setTarget(Number(e.target.value))} /></label>
         <button className="primaryButton" disabled={busy || !snapshot || !book || target < 1} onClick={() => act(start, "生产请求已接收。进度和停点由原生任务更新。")}>确认快照并启动</button>
-        <button className="secondaryButton" disabled={busy || !project} onClick={() => act(refresh, "已刷新持久状态。")}>查询最新状态</button>
+        <button className="secondaryButton" disabled={busy || !project} onClick={() => act(refresh, "已刷新持久状态。")}>查询最新状态</button></details>
       </div>
       {book && !workspace.profiles.length && <p>此作品尚无可选择的已批准生产配置。现有设计、开书输入和资格需先补齐；解析会保留具体缺项。</p>}
       {snapshot && <p>设计准入：{snapshot.design_admission_status === "AUTHOR_SUPERVISED_DESIGN" ? "作者监督试生产 · 独立文学资格未证明" : String(snapshot.design_admission_status || "历史未标记")} · 快照校验：{snapshot.snapshot_hash} · 冻结版本：{snapshot.release_sha}</p>}
     </section>
     {(!bookId || book) && <CreativeInputPanel key={`${project}:${bookId}`} project={projects.find(p => p.project_id === project)} book={book} formationId={workspace.formation_run_id} release={workspace.release_identity} onBook={setBookId} onRefresh={refresh} />}
-    {book && <ProductionPolicyPanel key={`${project}:${bookId}:${profileId}`} project={project} book={book} profile={profile} characters={workspace.approved_characters} onRefresh={refresh} onSelect={id => {setProfileId(id); setSnapshotId("");}} />}
+    {book && <details><summary>高级作品策略</summary><ProductionPolicyPanel key={`${project}:${bookId}:${profileId}`} project={project} book={book} profile={profile} characters={workspace.approved_characters} onRefresh={refresh} onSelect={id => {setProfileId(id); setSnapshotId("");}} /></details>}
     {book && <EditorialControlPanel key={project} project={project} book={book} current={workspace.editorial_control} onRefresh={refresh} />}
     {book && <AuthorSupervisionPanel key={`supervision:${project}:${bookId}`} project={project} book={book} />}
+    {runId && <CurrentManuscriptPanel project={project} bookRun={runId} />}
     {book && <ReferenceReviewPanel key={`reference:${project}:${bookId}`} project={project} book={book} />}
     <section className="panel">
       <h2>进度与恢复</h2>
@@ -119,13 +121,13 @@ export function ProductionChainPage() {
       <label>操作原因<input aria-label="操作原因" value={reason} onChange={e => setReason(e.target.value)} placeholder="记录暂停、恢复或取消的原因" /></label>
       <div className="studioActions">
         <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => pauseBookProduction(runId, reason), "暂停请求已保存。")}>暂停</button>
-        <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => resumeBookProduction(runId, reason), "恢复请求已保存；资格、预算和项目暂停仍由原生门禁检查。")}>恢复</button>
+        <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => resumeBookProduction(runId, reason), "恢复请求已保存；系统自动核对授权、版本与可用资源。")}>恢复</button>
         <button disabled={busy || !run?.active_chapter_request_id} onClick={() => act(() => recoverBookChapter(run!.active_chapter_request_id), "已核对并恢复原章节提交；未知外部结果仍需对账。")}>恢复章节提交</button>
         <button className="dangerButton" disabled={busy || !run || !reason.trim()} onClick={() => act(() => cancelBookProduction(runId, reason), "取消请求已保存。")}>取消</button>
         <Link className="secondaryButton" href={`/editor?${new URLSearchParams({project_id: project, book_id: bookId, book_run_id: runId})}`}>阅读正文、审稿与整稿版本</Link>
       </div>
     </section>
-    <section className="panel">
+    <details className="panel"><summary>执行配置与资源诊断</summary>
       <h2>{run ? "本次生产的冻结配置" : "新请求待选择的配置"}</h2>
       <p>{run ? `来源：${run.production_profile_version} · ${run.profile_hash}。恢复沿用此版本。` : "选择配置后解析快照；尚未冻结的设置不表示已用于正文。"}</p>
       {effectiveProfile && <><PolicySummary content={effectiveProfile} /><details><summary>完整冻结配置与来源</summary><pre>{JSON.stringify(effectiveProfile, null, 2)}</pre></details></>}
@@ -135,7 +137,7 @@ export function ProductionChainPage() {
       {book && <details><summary>作品策略来源</summary><pre>{JSON.stringify(book.runtime_policy, null, 2)}</pre></details>}
       <h3>项目预算范围</h3><p>范围上限不是实际用量；项目预算不自动授权每个任务。</p>
       {!workspace.budget_scopes.length ? <p>未查到持久预算范围。</p> : workspace.budget_scopes.map(b => <details key={b.budget_scope_id}><summary>{b.owner_kind} · {b.expired ? "已过期" : "有效期内"} · {b.deadline_at}</summary><pre>{JSON.stringify(b.policy, null, 2)}</pre></details>)}
-    </section>
+    </details>
     {notice && <p role="status" className="noticeLine">{notice}</p>}
     {error && <p role="alert" className="errorLine" style={{whiteSpace:"pre-wrap"}}>{error}</p>}
   </FeatureShell>;

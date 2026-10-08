@@ -1078,7 +1078,8 @@ class NarrativeRealizationRepository:
                    COALESCE(production.active_story_state_version_id,
                             snapshot.initial_story_state_version),
                    COALESCE(production.active_canon_snapshot_version_id,
-                            snapshot.initial_canon_snapshot_version)
+                            snapshot.initial_canon_snapshot_version), production.current_chapter,
+                   to_jsonb(production)
             FROM authority_book_production AS production
             JOIN authority_book_production_input_snapshot AS snapshot
               ON snapshot.snapshot_id=production.input_snapshot_id
@@ -1093,7 +1094,10 @@ class NarrativeRealizationRepository:
             [project_id, book_id, book_run_id, book_run_id, book_run_id],
         )
         boundaries = self.cursor.fetchall()
-        if len(boundaries) != 1 or int(boundaries[0][0]) != chapter_number - 1:
+        from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow
+        workflow = effective_workflow(self.cursor, boundaries[0][4]) if len(boundaries) == 1 else None
+        working_adjacent = len(boundaries) == 1 and workflow == AUTHOR_WORKFLOW and int(boundaries[0][3]) == chapter_number - 1
+        if len(boundaries) != 1 or (int(boundaries[0][0]) != chapter_number - 1 and not working_adjacent):
             raise KernelError(
                 "NARRATIVE_REALIZATION_ACCEPTED_BOUNDARY_STALE",
                 "realization slice is not adjacent to the complete accepted boundary",
@@ -1101,7 +1105,7 @@ class NarrativeRealizationRepository:
         accepted_through = int(boundaries[0][0])
         original_boundary = int(row[4])
         if accepted_through == original_boundary:
-            if tuple(str(item) for item in boundaries[0][1:]) != (
+            if tuple(str(item) for item in boundaries[0][1:3]) != (
                 str(row[5]),
                 str(row[7]),
             ):

@@ -60,6 +60,28 @@ def load_accepted_sources(
     return sources
 
 
+def load_review_sources(uow: AuthorityUnitOfWork, book_run_id: str, project_id: str) -> list[dict[str, Any]]:
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW, effective_workflow, selected_source
+    from novel_forge.modules.chapter_authority.author_editor import source_draft_content
+    uow.cursor.execute("""SELECT to_jsonb(b),v.content FROM authority_book_production b
+        JOIN authority_asset_version v ON v.asset_version_id=b.production_profile_version
+        WHERE b.book_run_id=%s AND b.project_id=%s""", [book_run_id, project_id])
+    row = uow.cursor.fetchone()
+    if not row or effective_workflow(uow.cursor, row[0]) != AUTHOR_WORKFLOW:
+        return load_accepted_sources(uow, book_run_id, project_id)
+    book = row[0]
+    uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR SHARE", [book["book_id"]])
+    uow.cursor.execute("SELECT chapter_number FROM authority_book_manuscript_delivery WHERE book_run_id=%s ORDER BY chapter_number", [book_run_id])
+    result = []
+    for number, in uow.cursor.fetchall():
+        source = selected_source(uow, book, number)
+        content = source_draft_content(source)
+        result.append({"chapter_number": number, "acceptance_id": "", "asset_version_id": source.asset_version_id,
+            "asset_hash": source.content_hash, "text": content["text"], "creative_baseline": content.get("creative_baseline"),
+            "source_isolation": "AUTHOR_SELECTED_UNREVIEWED_PROSE"})
+    return result
+
+
 def load_review_run(
     uow: AuthorityUnitOfWork,
     *,
@@ -180,9 +202,9 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
         project_id=run["project_id"],
         workspace_id=run["workspace_id"],
         book_run_id=run["book_run_id"],
-        sources=load_accepted_sources(uow, run["book_run_id"], run["project_id"]),
+        sources=load_review_sources(uow, run["book_run_id"], run["project_id"]),
         policy=run["manifest"]["policy"],
-        work_intent=run["manifest"]["schema_version"] == "longform-prose-manifest.v2",
+        work_intent=run["manifest"]["schema_version"] in {"longform-prose-manifest.v2", "longform-prose-manifest.v3"},
     )
     result.update(
         run_id=run["run_id"],
@@ -247,7 +269,7 @@ class BookProseReviewCoordinator:
         def handler(
             uow: AuthorityUnitOfWork, operation_id: str, checkpoint: Any
         ) -> dict[str, Any]:
-            sources = load_accepted_sources(uow, book_run_id, project_id)
+            sources = load_review_sources(uow, book_run_id, project_id)
             manifest = freeze_manifest(**scope, sources=sources, policy=policy)
             if evidence_ranges:
                 self._append_evidence_window(manifest, sources, evidence_ranges)
@@ -265,12 +287,12 @@ class BookProseReviewCoordinator:
             run_id = str(uuid4())
             for window in manifest["windows"]:
                 content = {
-                    "schema_version": "longform-prose-window.v2" if manifest["schema_version"] == "longform-prose-manifest.v2" else "longform-prose-window.v1",
+                    "schema_version": "longform-prose-window.v3" if manifest["schema_version"] == "longform-prose-manifest.v3" else "longform-prose-window.v2" if manifest["schema_version"] == "longform-prose-manifest.v2" else "longform-prose-window.v1",
                     **scope,
                     "manifest_digest": manifest["manifest_digest"],
                     "window": window,
                     "policy": policy,
-                    "source_isolation": "ACCEPTED_PROSE_ONLY",
+                    "source_isolation": manifest.get("source_isolation", "ACCEPTED_PROSE_ONLY"),
                 }
                 document = uow.repositories.asset_documents.materialize_output(
                     AuthorityAssetWriteCommand(
@@ -284,7 +306,7 @@ class BookProseReviewCoordinator:
                         output_key="longform.prose_review.window",
                         role="source_window",
                         content=content,
-                        qualification_policy="accepted-prose-window.v2" if content["schema_version"] == "longform-prose-window.v2" else "accepted-prose-window.v1",
+                        qualification_policy="author-manuscript-window.v1" if content["schema_version"] == "longform-prose-window.v3" else "accepted-prose-window.v2" if content["schema_version"] == "longform-prose-window.v2" else "accepted-prose-window.v1",
                         trace_id=metadata["trace_id"],
                         correlation_id=metadata["correlation_id"],
                     )

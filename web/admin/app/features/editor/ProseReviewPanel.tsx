@@ -26,10 +26,17 @@ export function ProseReviewPanel({state, onSelect}: {state: DraftEditorState; on
   const [message, setMessage] = useState("");
   const [impacts, setImpacts] = useState<Record<string, Impact>>({});
   const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [policy, setPolicy] = useState({policy_version: "author-prose-review.v1", window_codepoints: 4000, overlap_codepoints: 200, context_token_budget: 16000, maximum_windows: 8});
+  const [policy, setPolicy] = useState({policy_version: "author-prose-review.v1", window_codepoints: 4000, overlap_codepoints: 200, context_token_budget: 16000, maximum_windows: 8, execution_mode: "AUTOMATIC"});
   const planPrefix = `/product/production/book-authority/books/${encodeURIComponent(state.book_id)}/plan-changes`;
   const proposalKey = `novel-forge:review-plan:${state.project_id}:${runId}`;
   const pending = useRef<{path: string; body: Record<string, unknown>} | null>(null);
+  const pendingKey = `novel-forge:prose-review-pending:${state.project_id}:${bookRun}`;
+  useEffect(() => {
+    const stored = localStorage.getItem(pendingKey);
+    pending.current = stored ? JSON.parse(stored) : null;
+    if (pending.current) setMessage("已恢复未确认的审读请求；重试将复用原请求身份。");
+  }, [pendingKey]);
+  function clearPending() {pending.current = null; localStorage.removeItem(pendingKey);}
   const prefix = `/product/production/book-authority/runs/${encodeURIComponent(bookRun)}/prose-reviews`;
   const query = new URLSearchParams({project_id: state.project_id, workspace_id: state.workspace_id});
   function showError(error: unknown) {setMessage(error instanceof Error ? error.message : String(error));}
@@ -54,10 +61,11 @@ export function ProseReviewPanel({state, onSelect}: {state: DraftEditorState; on
     setBusy(true); setMessage("");
     pending.current ||= {path, body: {...body, project_id: state.project_id, workspace_id: state.workspace_id,
       idempotency_key: crypto.randomUUID(), trace_id: `trace:${crypto.randomUUID()}`, correlation_id: `correlation:${crypto.randomUUID()}`}};
+    localStorage.setItem(pendingKey, JSON.stringify(pending.current));
     try {
       const result = await fetchJson<{run_id?: string; proposal?: Proposal; semantic_impact?: Impact}>(pending.current.path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(pending.current.body)});
       if (result.proposal) {setProposal(result.proposal); localStorage.setItem(proposalKey, result.proposal.proposal_id);}
-      pending.current = null;
+      clearPending();
       if (result.run_id) {
         setRuns(await fetchJson<Array<{run_id: string}>>(`${prefix}?${query}`)); setRunId(result.run_id);
         setReport(await fetchJson<Report>(`${prefix}/${encodeURIComponent(result.run_id)}?${query}`));
@@ -66,7 +74,7 @@ export function ProseReviewPanel({state, onSelect}: {state: DraftEditorState; on
     } catch (error) {
       showError(error);
       const detail = error instanceof Error ? error.message : String(error);
-      if (/LONGFORM_PROSE_.*(CONFLICT|INVALID|MISSING|STALE)|PERMISSION_DENIED/.test(detail)) pending.current = null;
+      if (/LONGFORM_PROSE_.*(CONFLICT|INVALID|MISSING|STALE)|PERMISSION_DENIED/.test(detail)) clearPending();
     } finally {setBusy(false);}
   }
   function disposition(finding: Finding, decision: string) {
@@ -101,27 +109,27 @@ export function ProseReviewPanel({state, onSelect}: {state: DraftEditorState; on
     <p>覆盖表示本次实际提供给审稿的正文范围，不代表所有质量问题均已排除。</p>
     {message ? <p role="status">{message}</p> : null}
     {!state.book_runs.length ? <p>当前 Book 尚无可查询的生产批次。</p> : <div className="studioActions">
-      <label>生产批次 <select aria-label="审读生产批次" value={bookRun} onChange={(event) => {pending.current = null; setBookRun(event.target.value);}}>
+      <label>生产批次 <select aria-label="审读生产批次" value={bookRun} disabled={busy || !!pending.current} onChange={(event) => setBookRun(event.target.value)}>
         {state.book_runs.map((id) => <option key={id} value={id}>{id}</option>)}</select></label>
-      <label>审读版本 <select aria-label="审读版本" value={runId} onChange={(event) => {pending.current = null; setRunId(event.target.value);}}>
+      <label>审读版本 <select aria-label="审读版本" value={runId} disabled={busy || !!pending.current} onChange={(event) => setRunId(event.target.value)}>
         <option value="">暂无审读</option>{runs.map((run) => <option key={run.run_id} value={run.run_id}>{run.run_id}</option>)}</select></label>
       <button className="secondaryButton" disabled={busy || !runId} onClick={() => refresh().catch(showError)}>刷新覆盖与处理</button>
     </div>}
-    {bookRun ? <details><summary>冻结新的正文审读范围与额度</summary>
-      <p>冻结本身不调用模型。每次推进一个窗口，费用仍受已批准的 Provider 与预算约束；暂停和恢复不会增加额度。正文变化后须重新冻结。</p>
+    {bookRun ? <details><summary>审读范围与高级容量设置</summary>
+      <p>只在选择审读后运行。资源使用作品已有授权，暂停与恢复不追加付费；正文变化后重新绑定版本。</p>
       <label>审读策略版本<input aria-label="审读策略版本" value={policy.policy_version} onChange={event => setPolicy({...policy, policy_version: event.target.value})} /></label>
       {([['window_codepoints', '每窗字数'], ['overlap_codepoints', '相邻重叠字数'], ['context_token_budget', '完整请求 token 上限'], ['maximum_windows', '最多审读窗口']] as const).map(([key, label]) => <label key={key}>{label}<input type="number" min={key === 'overlap_codepoints' ? 0 : 1} aria-label={label} value={policy[key]} onChange={event => setPolicy({...policy, [key]: Number(event.target.value)})} /></label>)}
-      <button className="secondaryButton" disabled={busy || !!pending.current || !policy.policy_version.trim() || policy.window_codepoints < 1 || policy.overlap_codepoints < 0 || policy.overlap_codepoints >= policy.window_codepoints || policy.context_token_budget < 1 || policy.maximum_windows < 1} onClick={() => submit(prefix, {policy})}>冻结正文审读</button>
     </details> : null}
-    {pending.current ? <div className="studioActions"><button className="secondaryButton" disabled={busy} onClick={() => {const action = pending.current; if (action) void submit(action.path, action.body);}}>重试上次审读处理</button><button className="secondaryButton" disabled={busy} onClick={() => {pending.current = null; setMessage("已停止客户端重试；服务器进度按实际回执保留。"); void refresh().catch(showError);}}>放弃此次重试并刷新</button></div> : null}
+    {bookRun ? <button className="secondaryButton" disabled={busy || !!pending.current || !policy.policy_version.trim() || policy.window_codepoints < 1 || policy.overlap_codepoints < 0 || policy.overlap_codepoints >= policy.window_codepoints || policy.context_token_budget < 1 || policy.maximum_windows < 1} onClick={() => submit(prefix, {policy})}>开始按需审读当前稿件</button> : null}
+    {pending.current ? <div className="studioActions"><button className="secondaryButton" disabled={busy} onClick={() => {const action = pending.current; if (action) void submit(action.path, action.body);}}>重试上次审读处理</button><button className="secondaryButton" disabled={busy} onClick={() => {clearPending(); setMessage("已停止客户端重试；服务器进度按实际回执保留。"); void refresh().catch(showError);}}>放弃此次重试并刷新</button></div> : null}
     {report ? <>
-      <p>正文身份：{report.source_current ? "仍与接纳版本一致" : "版本已漂移，旧结果不可用于新决定"} · 实现身份：{report.implementation_current ? "与冻结版本一致" : "实现已变化，需重新冻结"} · 正文覆盖：{report.coverage_complete ? "已覆盖冻结正文" : "仍有未覆盖范围"} · 审读任务：{report.review_complete ? "全部窗口已完成" : "仍有待审窗口或跨窗比较"} · {report.paused ? "已暂停" : "可继续"}</p>
+      <p>正文身份：{report.source_current ? "仍与选定来源版本一致" : "版本已漂移，旧结果不可用于新决定"} · 实现身份：{report.implementation_current ? "与冻结版本一致" : "实现已变化，需重新冻结"} · 正文覆盖：{report.coverage_complete ? "已覆盖冻结正文" : "仍有未覆盖范围"} · 审读任务：{report.review_complete ? "全部窗口已完成" : "仍有待审窗口或跨窗比较"} · {report.paused ? "已暂停" : "可继续"}</p>
       <p style={{overflowWrap: "anywhere"}}>冻结整稿：{report.manifest_digest}</p>
       {report.uncovered_ranges.map((range, index) => <p key={index}>未覆盖：{JSON.stringify(range)}</p>)}
       <label>处理理由<textarea aria-label="审读处理理由" value={reason} onChange={(event) => setReason(event.target.value)} rows={2} /></label>
       <div className="studioActions">
         <button className="primaryButton" disabled={busy || !!pending.current || !report.source_current || !report.implementation_current || report.paused || report.review_complete} onClick={() => submit(`${prefix}/${runId}/advance`, {expected_version: report.expected_version})}>推进一个审读窗口</button>
-        <button className="secondaryButton" disabled={busy || !!pending.current || !report.source_current || !report.implementation_current || !reason.trim()} onClick={() => submit(`${prefix}/${runId}/control`, {expected_version: report.expected_version, paused: !report.paused, reason})}>{report.paused ? "恢复审读（原额度）" : "暂停审读"}</button>
+        <button className="secondaryButton" disabled={busy || !!pending.current || !report.source_current || !report.implementation_current || !reason.trim()} onClick={() => submit(`${prefix}/${runId}/control`, {expected_version: report.expected_version, paused: !report.paused, reason})}>{report.paused ? "恢复审读" : "暂停审读"}</button>
       </div>
       {report.findings.map((finding) => <article key={finding.lineage_id} className="panel">
         <p style={{overflowWrap: "anywhere"}}>问题 {finding.lineage_id} · {finding.status} · {finding.disposition?.decision || "待处理"}</p>

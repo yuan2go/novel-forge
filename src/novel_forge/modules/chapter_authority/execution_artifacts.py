@@ -216,6 +216,7 @@ def build_chapter_execution_intent(
     accepted_inputs: Iterable[Mapping[str, Any]],
     work_requirements: bool = False,
     style_view: Mapping[str, Any] | None = None,
+    accepted_through_chapter: int | None = None,
 ) -> dict[str, Any]:
     current_contract = None
     if chapter_plan.get("chapter_contract_schema_version"):
@@ -242,7 +243,9 @@ def build_chapter_execution_intent(
     }
     story = accepted_by_type.get("story_state_snapshot")
     canon = accepted_by_type.get("canon_snapshot")
-    expected_boundary = chapter - 1
+    expected_boundary = chapter - 1 if accepted_through_chapter is None else accepted_through_chapter
+    if not 0 <= expected_boundary < chapter:
+        raise KernelError("CHAPTER_EXECUTION_INTENT_BOUNDARY_MISMATCH", "Formal evidence must precede the target chapter")
     if bool(story) != bool(canon):
         raise KernelError(
             "CHAPTER_EXECUTION_INTENT_BOUNDARY_INCOMPLETE",

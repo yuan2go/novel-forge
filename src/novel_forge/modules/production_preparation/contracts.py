@@ -38,6 +38,7 @@ class ProductionPreparationRequest:
     stage: str = "draft"
     capability_required_asset_types: tuple[str, ...] = ()
     knowledge_access_policy: dict[str, Any] = field(default_factory=dict)
+    accepted_through_chapter: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

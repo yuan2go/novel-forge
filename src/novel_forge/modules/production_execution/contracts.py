@@ -59,7 +59,7 @@ def local_cli_remote_outcome_unknown(
 ) -> bool:
     return (
         transport == ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
-        and outcome in {ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED, ExecutionOutcome.ORPHANED}
+        and outcome in {ExecutionOutcome.UNKNOWN, ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED, ExecutionOutcome.ORPHANED}
         and (started_at is not None or outcome == ExecutionOutcome.ORPHANED)
         and not usage_receipt_ref
     )
