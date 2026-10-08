@@ -1,0 +1,56 @@
+{
+  "receipt_before_sha256": "74ae9e281a66e86c9628836daae26b909f3c5599c56efbb71ae804f12fa29f5e",
+  "receipt_after_sha256": "74ae9e281a66e86c9628836daae26b909f3c5599c56efbb71ae804f12fa29f5e",
+  "receipt_unchanged": true,
+  "recovery": {
+    "receipt": {
+      "receipt_id": "process-receipt:4984bef5986fc5fe6baaa613",
+      "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+      "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+      "attempt_id": "6192d1cd-06d9-4480-9684-95b7db23de1e",
+      "fencing_token": 1,
+      "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+      "status": "FAILED",
+      "process_group": {
+        "pid": 42402,
+        "pgid": 42402,
+        "process_start_token": "Thu Oct  8 19:18:44 2026"
+      },
+      "execution_directory": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8",
+      "receipt_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/process-receipt.json",
+      "stdout_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/stdout.log",
+      "stderr_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/stderr.log",
+      "result_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/last-message.json",
+      "result_filename": "last-message.json",
+      "result_format": "json",
+      "result_integrity": "MISSING",
+      "request_digest": "4984bef5986fc5fe6baaa6130f174222183662738a739df354b7d242ad846748",
+      "command_sha256": "b6561b0590cb256e1fc5ecd831cf45feec1db97e904e57e8d8625ba9f434f64c",
+      "input_sha256": "37dfa7cd1f59d6dc2165a95edf26bf1175b2a3d80a384f04c9f9d1aa940fde4b",
+      "environment_keys": [
+        "CODEX_HOME",
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "PATH",
+        "TMPDIR"
+      ],
+      "process_started_at": "2026-10-08T11:18:44.146299Z",
+      "supervisor_pid": 33973,
+      "supervisor_process_start_token": "4e84b23363f942c68fc5cb13f3c880a91a3bd881b0d0cf6ed69524d44b319ee8",
+      "last_supervisor_heartbeat_at": "2026-10-08T11:22:56.222017Z",
+      "completed_at": "2026-10-08T11:22:58.041217Z",
+      "elapsed_ms": 253911,
+      "returncode": 1,
+      "termination_signal": null,
+      "termination_reason": null,
+      "failure_reason": "local process exited with code 1",
+      "recovery_reason": null,
+      "local_termination_only": false,
+      "provider_request_id": null,
+      "receipt_version": "process-receipt.v1"
+    },
+    "result_recoverable": false,
+    "safe_to_signal": false
+  }
+}

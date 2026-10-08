@@ -1,0 +1,23 @@
+{
+  "source_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/before-source-span-0182.dump",
+  "sha256": "43894704331369cb25469005bab2ad2443db03dc9d9eee35f8d2452f84318f9b",
+  "dump_time": "2026-10-08 20:18:23 CST",
+  "dbname": "nf_qidian_learning_20261008_test",
+  "scope": "HISTORICAL_RECOVERED_SNAPSHOT",
+  "original_latest_not_verified": true,
+  "restore_exit_code": 0,
+  "workers_started": 0,
+  "provider_dispatches": 0,
+  "recovered_conninfo": "user=yuan dbname=nf_qidian_learning_20261008_test host=/tmp/nf-wp-adaptation-socket port=55689",
+  "source_dump_unchanged": true,
+  "original_workspace_status_unchanged": true,
+  "recovered_instance_stopped": true,
+  "recovered_database_identity": {
+    "database": "nf_qidian_learning_20261008_test",
+    "role": "yuan",
+    "address": null,
+    "port": null,
+    "server_started_at": "2026-10-08 14:45:30.027830+00:00",
+    "database_oid": 16384
+  }
+}

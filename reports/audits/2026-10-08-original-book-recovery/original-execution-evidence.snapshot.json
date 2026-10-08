@@ -1,0 +1,60 @@
+[
+  [
+    "d45f6b0d-1029-4a4e-b03f-14df48e4f3ef",
+    "sha256:5b31fa5fd25fd9185d7a283098ffe13252cc6c2356add2097ed4e2f66fde7d36",
+    {
+      "kind": "process-receipt",
+      "payload": {
+        "status": "FAILED",
+        "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+        "attempt_id": "6192d1cd-06d9-4480-9684-95b7db23de1e",
+        "elapsed_ms": 253911,
+        "receipt_id": "process-receipt:4984bef5986fc5fe6baaa613",
+        "returncode": 1,
+        "result_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/last-message.json",
+        "stderr_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/stderr.log",
+        "stdout_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/stdout.log",
+        "completed_at": "2026-10-08T11:22:58.041217Z",
+        "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+        "input_sha256": "37dfa7cd1f59d6dc2165a95edf26bf1175b2a3d80a384f04c9f9d1aa940fde4b",
+        "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+        "receipt_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8/process-receipt.json",
+        "fencing_token": 1,
+        "process_group": {
+          "pid": 42402,
+          "pgid": 42402,
+          "process_start_token": "Thu Oct  8 19:18:44 2026"
+        },
+        "result_format": "json",
+        "command_sha256": "b6561b0590cb256e1fc5ecd831cf45feec1db97e904e57e8d8625ba9f434f64c",
+        "failure_reason": "local process exited with code 1",
+        "request_digest": "4984bef5986fc5fe6baaa6130f174222183662738a739df354b7d242ad846748",
+        "supervisor_pid": 33973,
+        "authority_bound": true,
+        "receipt_version": "process-receipt.v1",
+        "recovery_reason": null,
+        "result_filename": "last-message.json",
+        "environment_keys": [
+          "CODEX_HOME",
+          "HOME",
+          "LANG",
+          "LC_ALL",
+          "PATH",
+          "TMPDIR"
+        ],
+        "result_integrity": "MISSING",
+        "process_started_at": "2026-10-08T11:18:44.146299Z",
+        "termination_reason": null,
+        "termination_signal": null,
+        "execution_directory": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/executions/planning-execution-30421df5-8e89-46ab-8aff-ebb9c-c258db8467b216c8",
+        "provider_request_id": null,
+        "local_termination_only": false,
+        "last_supervisor_heartbeat_at": "2026-10-08T11:22:56.222017Z",
+        "supervisor_process_start_token": "4e84b23363f942c68fc5cb13f3c880a91a3bd881b0d0cf6ed69524d44b319ee8"
+      },
+      "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+      "payload_hash": "03173a4a1c037580cfccfbe8d0e6e0c468fce9942fd105a9eefaecf20a784386",
+      "contract_version": "authority-execution-evidence.v1"
+    }
+  ]
+]
