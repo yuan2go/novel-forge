@@ -1,0 +1,330 @@
+{
+  "baseline_main_sha": "7540c51fe587266b8083ef4168271aa5a4ff9f3e",
+  "implementation_sha": "2e41ba857fd262238b764ae3479e147ccaa06948",
+  "api_release_sha": "2e41ba857fd262238b764ae3479e147ccaa06948",
+  "source_authority_worker_release_sha": "c96f126020ee6dafac13b6f13f8b238cb1939fca",
+  "source_qualification_validator_release_sha": "175b4fed911d4141e9c2cc937aa09038d28d28c6",
+  "worktree_clean": true,
+  "whole_work_package_complete": false,
+  "human_feedback_count": 0,
+  "external_effect_counts": [
+    {
+      "capability": "character.cast.generate",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "capability": "creative.proposal.generate",
+      "status": "SUCCEEDED",
+      "count": 2
+    },
+    {
+      "capability": "deconstruction.observe",
+      "status": "SUCCEEDED",
+      "count": 12
+    },
+    {
+      "capability": "ending.intent.generate",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "capability": "mkaos.rule.extract",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "capability": "object_store.put",
+      "status": "SUCCEEDED",
+      "count": 12
+    },
+    {
+      "capability": "planning.book.generate",
+      "status": "SUCCEEDED",
+      "count": 2
+    },
+    {
+      "capability": "planning.book.generate",
+      "status": "UNKNOWN",
+      "count": 1
+    },
+    {
+      "capability": "reader.promise.generate",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "capability": "source.content.classify",
+      "status": "READY",
+      "count": 1
+    },
+    {
+      "capability": "source.content.classify",
+      "status": "SUCCEEDED",
+      "count": 3
+    },
+    {
+      "capability": "source.remote.fetch",
+      "status": "FAILED_FINAL",
+      "count": 1
+    },
+    {
+      "capability": "source.remote.fetch",
+      "status": "SUCCEEDED",
+      "count": 3
+    },
+    {
+      "capability": "theme.question.generate",
+      "status": "SUCCEEDED",
+      "count": 1
+    },
+    {
+      "capability": "world.design.generate",
+      "status": "SUCCEEDED",
+      "count": 2
+    }
+  ],
+  "unknown_original": {
+    "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+    "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+    "status": "UNKNOWN"
+  },
+  "project_asset_type_counts": [
+    {
+      "asset_type": "arc_portfolio",
+      "count": 1
+    },
+    {
+      "asset_type": "book_design",
+      "count": 1
+    },
+    {
+      "asset_type": "book_record",
+      "count": 1
+    },
+    {
+      "asset_type": "canon_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "capability_materialization_manifest",
+      "count": 35
+    },
+    {
+      "asset_type": "capability_pack_artifact_catalog",
+      "count": 3
+    },
+    {
+      "asset_type": "capability_pack_manifest",
+      "count": 3
+    },
+    {
+      "asset_type": "character_arc_portfolio",
+      "count": 1
+    },
+    {
+      "asset_type": "character_state_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "compiled_capability_pack",
+      "count": 5
+    },
+    {
+      "asset_type": "conflict_state",
+      "count": 1
+    },
+    {
+      "asset_type": "context_bundle",
+      "count": 11
+    },
+    {
+      "asset_type": "corpus_record",
+      "count": 18
+    },
+    {
+      "asset_type": "cost_ledger",
+      "count": 10
+    },
+    {
+      "asset_type": "creative_brief",
+      "count": 1
+    },
+    {
+      "asset_type": "d0_provider_qualification_report",
+      "count": 1
+    },
+    {
+      "asset_type": "ending_reachability",
+      "count": 1
+    },
+    {
+      "asset_type": "execution_evidence",
+      "count": 183
+    },
+    {
+      "asset_type": "execution_recovery_session",
+      "count": 81
+    },
+    {
+      "asset_type": "fallback_policy",
+      "count": 10
+    },
+    {
+      "asset_type": "foreshadow_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "foreshadowing_ledger",
+      "count": 1
+    },
+    {
+      "asset_type": "input_manifest",
+      "count": 27
+    },
+    {
+      "asset_type": "knowledge_card_candidate",
+      "count": 1
+    },
+    {
+      "asset_type": "model_call_log",
+      "count": 26
+    },
+    {
+      "asset_type": "model_profile",
+      "count": 12
+    },
+    {
+      "asset_type": "planning_generation_candidate",
+      "count": 10
+    },
+    {
+      "asset_type": "planning_runtime_continuation",
+      "count": 5
+    },
+    {
+      "asset_type": "platform_profile",
+      "count": 1
+    },
+    {
+      "asset_type": "previous_chapter_group_outcome",
+      "count": 1
+    },
+    {
+      "asset_type": "previous_chapter_outcome",
+      "count": 1
+    },
+    {
+      "asset_type": "previous_volume_outcome",
+      "count": 1
+    },
+    {
+      "asset_type": "production_profile",
+      "count": 1
+    },
+    {
+      "asset_type": "project_record",
+      "count": 1
+    },
+    {
+      "asset_type": "promise_ledger_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "provider_request_admission_manifest",
+      "count": 28
+    },
+    {
+      "asset_type": "public_catalog_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "quality_rubric",
+      "count": 1
+    },
+    {
+      "asset_type": "quality_trend",
+      "count": 1
+    },
+    {
+      "asset_type": "reader_contract",
+      "count": 1
+    },
+    {
+      "asset_type": "reader_segment_profile",
+      "count": 1
+    },
+    {
+      "asset_type": "reader_state",
+      "count": 1
+    },
+    {
+      "asset_type": "reward_ledger_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "route_policy",
+      "count": 12
+    },
+    {
+      "asset_type": "route_snapshot",
+      "count": 27
+    },
+    {
+      "asset_type": "routing_decision",
+      "count": 35
+    },
+    {
+      "asset_type": "source_analysis_plan",
+      "count": 3
+    },
+    {
+      "asset_type": "source_chunk",
+      "count": 4
+    },
+    {
+      "asset_type": "source_content_profile",
+      "count": 3
+    },
+    {
+      "asset_type": "source_deconstruction_observation",
+      "count": 1
+    },
+    {
+      "asset_type": "source_document",
+      "count": 2
+    },
+    {
+      "asset_type": "source_execution_context_manifest",
+      "count": 25
+    },
+    {
+      "asset_type": "source_transform_manifest",
+      "count": 2
+    },
+    {
+      "asset_type": "source_work",
+      "count": 2
+    },
+    {
+      "asset_type": "story_design_transition_receipt",
+      "count": 54
+    },
+    {
+      "asset_type": "story_state_snapshot",
+      "count": 1
+    },
+    {
+      "asset_type": "style_policy",
+      "count": 1
+    },
+    {
+      "asset_type": "workspace_record",
+      "count": 1
+    }
+  ],
+  "native_knowledge_candidate_count": 1,
+  "native_active_knowledge_card_count": 0,
+  "draft_provider_effect_count": 0,
+  "source05_model_release_sha": "e6fb3b2ae1575517793e443e3059b9129502d4d9"
+}
