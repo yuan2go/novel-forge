@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261008_0183_source_observation_span_identity",
+  "head": "20261009_0184_cli_original_reconciliation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -186,6 +186,7 @@
     "20261007_0180_foundation_direction_search",
     "20261008_0181_author_manuscript_delivery",
     "20261008_0182_source_market_observations",
-    "20261008_0183_source_observation_span_identity"
+    "20261008_0183_source_observation_span_identity",
+    "20261009_0184_cli_original_reconciliation"
   ]
 }

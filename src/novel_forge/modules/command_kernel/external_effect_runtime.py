@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.logging.execution import execution_event, execution_step
+
 import hashlib
 import json
 import math
@@ -118,17 +120,24 @@ def read_succeeded_external_effect(
     context: EffectCommandContext,
     *,
     effect_id: str,
+    attempt_command: WorkerLeaseCommand | None = None,
 ) -> dict[str, Any] | None:
     """INVARIANT: Read one verified synchronous success without dispatching it again.
 
     Operation recovery may consume a Provider result that reached the durable
     receipt boundary before the owning Attempt committed its candidate.  This
-    read is deliberately narrower than reconciliation: only an already
-    terminal SUCCEEDED Effect with a VERIFIED receipt is eligible.
+    read requires a verified receipt or an immutable original CLI reconciliation.
+    A recovery consumer may additionally bind its active Attempt fence.
     """
     with AuthorityUnitOfWork(database_url) as uow:
         repository = uow.repositories.external_effects
         _require_context(repository, context)
+        if attempt_command is not None:
+            runtime = uow.repositories.attempt_runtime
+            attempt = runtime.get_for_update(attempt_command.attempt_id, context.project_id)
+            valid, _ = runtime.current_fence(attempt_command.attempt_id, attempt_command.worker_id, attempt_command.fencing_token)
+            if not valid or attempt_command.project_id != context.project_id or attempt["operation_id"] != context.operation_id:
+                raise KernelError("PLANNING_RECOVERY_FENCE_DRIFT", "Original result consumption requires the owning active Attempt fence")
         return _read_verified_success(uow, repository, context, effect_id)
 
 
@@ -180,47 +189,53 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
             "EFFECT_OPERATION_CONFLICT",
             "ExternalEffect belongs to another Operation",
         )
-    if effect["status"] != "SUCCEEDED":
+    from .cli_effect_reconciliation import read_success
+    reconciled = read_success(uow, effect) if effect["status"] != "SUCCEEDED" else None
+    if effect["status"] != "SUCCEEDED" and reconciled is None:
         return None
     frozen_capability_profile = _validated_frozen_provider_capability_profile(
         effect
     )
-    uow.cursor.execute(
-        """
-        SELECT dispatch.generation, dispatch.evidence,
-               receipt.payload_hash, receipt.payload, receipt.status
-        FROM authority_external_effect_dispatch AS dispatch
-        JOIN authority_external_receipt AS receipt
-          ON receipt.dispatch_id=dispatch.dispatch_id
-        WHERE dispatch.external_effect_id=%s
-          AND dispatch.status='SUCCEEDED'
-          AND receipt.status='VERIFIED'
-        ORDER BY dispatch.generation DESC
-        LIMIT 1
-        """,
-        [effect_id],
-    )
-    receipt = uow.cursor.fetchone()
-    if receipt is None:
-        raise KernelError(
-            "EFFECT_SUCCESS_RECEIPT_MISSING",
-            "succeeded ExternalEffect has no verified receipt",
+    if reconciled is not None:
+        generation = reconciled["generation"]
+        provider_evidence = reconciled["provider_evidence"]
+    else:
+        uow.cursor.execute(
+            """
+            SELECT dispatch.generation, dispatch.evidence,
+                   receipt.payload_hash, receipt.payload, receipt.status
+            FROM authority_external_effect_dispatch AS dispatch
+            JOIN authority_external_receipt AS receipt
+              ON receipt.dispatch_id=dispatch.dispatch_id
+            WHERE dispatch.external_effect_id=%s
+              AND dispatch.status='SUCCEEDED'
+              AND receipt.status='VERIFIED'
+            ORDER BY dispatch.generation DESC
+            LIMIT 1
+            """,
+            [effect_id],
         )
-    generation, dispatch_evidence, payload_hash, payload, receipt_status = receipt
-    provider_evidence = (
-        payload.get("evidence") if isinstance(payload, dict) else None
-    )
-    if (
-        receipt_status != "VERIFIED"
-        or not isinstance(provider_evidence, dict)
-        or not provider_evidence
-        or provider_evidence != dispatch_evidence
-        or _hash(provider_evidence) != payload_hash
-    ):
-        raise KernelError(
-            "EFFECT_SUCCESS_RECEIPT_INVALID",
-            "succeeded ExternalEffect receipt evidence failed integrity checks",
+        receipt = uow.cursor.fetchone()
+        if receipt is None:
+            raise KernelError(
+                "EFFECT_SUCCESS_RECEIPT_MISSING",
+                "succeeded ExternalEffect has no verified receipt",
+            )
+        generation, dispatch_evidence, payload_hash, payload, receipt_status = receipt
+        provider_evidence = (
+            payload.get("evidence") if isinstance(payload, dict) else None
         )
+        if (
+            receipt_status != "VERIFIED"
+            or not isinstance(provider_evidence, dict)
+            or not provider_evidence
+            or provider_evidence != dispatch_evidence
+            or _hash(provider_evidence) != payload_hash
+        ):
+            raise KernelError(
+                "EFFECT_SUCCESS_RECEIPT_INVALID",
+                "succeeded ExternalEffect receipt evidence failed integrity checks",
+            )
     uow.cursor.execute(
         """
         SELECT reservation_id,status,reserved_amount,estimated_tokens,version,accounting_basis
@@ -238,6 +253,8 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
             "EFFECT_SUCCESS_BUDGET_MISSING",
             "succeeded Provider Effect has no recoverable budget reservation",
         )
+    if reconciled and (str(budget[0]) != reconciled["budget_usage_correction"]["reservation_id"] or budget[1] != "SETTLED"):
+        raise KernelError("EFFECT_SUCCESS_BUDGET_INVALID", "Reconciled result must consume its original settled reservation")
     return {
         "external_effect_id": effect_id,
         "generation": int(generation),
@@ -250,6 +267,7 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
         "budget_estimated_tokens": int(budget[3]),
         "budget_reservation_version": int(budget[4]),
         "recovered": True,
+        **({"budget_usage_correction": reconciled["budget_usage_correction"]} if reconciled else {}),
     }
 
 
@@ -395,6 +413,7 @@ def read_external_effect_intent(
         return effect
 
 
+@execution_step("command_kernel.plan_external_effect")
 def plan_external_effect(
     database_url: str,
     context: EffectCommandContext,
@@ -568,6 +587,9 @@ def prepare_effect_dispatch(
 
             require_dispatch_enabled(uow.cursor, context.project_id)
             require_known_cli_lineage(uow.cursor, project_id=context.project_id, operation_id=context.operation_id)
+        from .cli_effect_reconciliation import resolution
+        if resolution(uow.cursor, effect_id) is not None:
+            raise KernelError("EFFECT_ALREADY_RECONCILED", "Original generation has a confirmed outcome; consume it through its owner")
         require_effect_retry_ready(uow.cursor, effect_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
         reconciliation_required = bool(result.get("reconciliation_required"))
@@ -643,6 +665,7 @@ def acquire_effect_dispatch(
         ) from exc
 
 
+@execution_step("command_kernel.dispatch_external_effect")
 def dispatch_external_effect(
     database_url: str,
     context: EffectCommandContext,
@@ -769,6 +792,8 @@ def dispatch_external_effect(
             if effect["effect_type"] in MODEL_DISPATCH_EFFECT_TYPES:
                 assert_dispatch_enabled(database_url, context.project_id)
             provider_send_started = True
+            execution_event("kernel.provider_send", "started", dispatch_id=dispatch["dispatch_id"],
+                external_effect_id=effect_id)
             provider_result = adapter.execute(
                 stable_idempotency_key=effect["stable_idempotency_key"],
                 capability=effect["capability"],
@@ -780,6 +805,8 @@ def dispatch_external_effect(
                     "timeout_seconds": int(effect.get("request_timeout_seconds") or 30),
                 },
             )
+            execution_event("kernel.provider_send", "completed", dispatch_id=dispatch["dispatch_id"],
+                external_effect_id=effect_id, outcome=provider_result.outcome)
     except ExternalEffectAdapterError as exc:
         recorded = "unknown" if exc.request_sent else "retryable_failure"
         submit_effect_dispatch_result(
@@ -979,6 +1006,7 @@ def heartbeat_effect_dispatch(
     return {"dispatch_id": dispatch_id, "expires_at": expires_at}
 
 
+@execution_step("command_kernel.submit_effect_dispatch_result")
 def submit_effect_dispatch_result(
     database_url: str,
     context: EffectCommandContext,
@@ -1124,6 +1152,7 @@ def _validated_frozen_provider_capability_profile(
     return profile.to_dict()
 
 
+@execution_step("command_kernel.accept_external_effect_receipt")
 def accept_external_effect_receipt(
     database_url: str,
     context: EffectCommandContext,
@@ -1290,6 +1319,7 @@ def accept_external_effect_receipt(
     return {**stored, "replayed": False}
 
 
+@execution_step("command_kernel.reconcile_external_effect")
 def reconcile_external_effect(
     database_url: str,
     context: EffectCommandContext,
@@ -1299,12 +1329,21 @@ def reconcile_external_effect(
     attempt_command: WorkerLeaseCommand | None = None,
 ) -> dict[str, Any]:
     effect = _read_effect(database_url, effect_id, context.project_id)
+    from .cli_effect_reconciliation import historical_cli_dispatch, confirmed_query_result
+    if effect["operation_id"] != context.operation_id:
+        raise KernelError("EFFECT_OPERATION_CONFLICT", "Reconcile only the original owning Operation")
+    with AuthorityUnitOfWork(database_url) as uow:
+        effect = uow.repositories.external_effects.get_for_update(effect_id)
+        historical = historical_cli_dispatch(uow.cursor, effect)
+        confirmed = confirmed_query_result(uow.cursor, effect, historical)
+        if confirmed is not None:
+            return confirmed
     if effect["status"] not in {
         "DISPATCHING",
         "DISPATCHED",
         "UNKNOWN",
         "RECONCILIATION_REQUIRED",
-    }:
+    } and historical is None:
         raise KernelError(
             "EFFECT_STATUS_CONFLICT", "effect does not require reconciliation"
         )
@@ -1332,7 +1371,10 @@ def reconcile_external_effect(
             if not valid or attempt_command.project_id != context.project_id or attempt["operation_id"] != context.operation_id:
                 raise KernelError("ATTEMPT_FENCING_TOKEN_STALE", "Gateway reconciliation requires the owning active recovery lease")
             operation = runtime.operation_state(context.operation_id, context.project_id)
-            if operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
+            if historical is not None:
+                if operation["status"] not in {"EXECUTING", "FAILED_RETRYABLE", "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED", "FAILED_FINAL", "DEAD_LETTER"}:
+                    raise KernelError("OPERATION_STATUS_CONFLICT", "Original CLI owner cannot reconcile in this state")
+            elif operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
                 _cas_operation(uow, operation_id=context.operation_id, project_id=context.project_id,
                     expected_status=operation["status"], expected_version=int(operation["version"]), target_status="EXECUTING",
                     actor_id=attempt_command.worker_id, reason="fenced execution evidence reconciliation",
@@ -1341,7 +1383,11 @@ def reconcile_external_effect(
                 raise KernelError("OPERATION_STATUS_CONFLICT", "Gateway evidence reconciliation requires recoverable durable work")
             uow.commit()
     try:
-        result = adapter.query(
+        query = adapter.query
+        if fenced_gateway and callable(getattr(adapter, "query_recovered", None)):
+            def query(**kwargs):
+                return adapter.query_recovered(attempt_command=attempt_command, **kwargs)
+        result = query(
             stable_idempotency_key=effect["stable_idempotency_key"],
             capability=effect["capability"],
             request_payload={
@@ -1372,6 +1418,27 @@ def reconcile_external_effect(
         **result.evidence,
         "provider_correlation_id": result.provider_correlation_id,
     }
+    if historical is not None:
+        if result.outcome != "ambiguous":
+            raise KernelError("EFFECT_CLI_REMOTE_RECEIPT_REQUIRED", "Historical CLI terminal outcomes require original verified remote evidence")
+        with AuthorityUnitOfWork(database_url) as uow:
+            current = uow.repositories.external_effects.get_for_update(effect_id)
+            if historical_cli_dispatch(uow.cursor, current) != historical:
+                raise KernelError("EFFECT_DISPATCH_CONFLICT", "Original CLI dispatch changed during query")
+            confirmed = confirmed_query_result(uow.cursor, current, historical)
+            if confirmed is not None:
+                return confirmed
+            uow.repositories.external_effects.record_reconciliation_evidence({
+                "reconciliation_id": str(uuid4()), "external_effect_id": effect_id,
+                "provider": effect["provider"], "stable_idempotency_key": effect["stable_idempotency_key"],
+                "outcome": "ambiguous", "evidence": {**reconciliation_evidence,
+                    "contract_version": "cli-original-query.v1", "dispatch_id": historical["dispatch_id"],
+                    "generation": historical["generation"], "request_hash": effect["request_hash"]},
+                "trace_id": context.trace_id, "correlation_id": context.correlation_id})
+            _record(uow.repositories.external_effects, context, effect_id, "external_effect.reconciliation_required",
+                {"dispatch_id": historical["dispatch_id"], "generation": historical["generation"], "outcome": "ambiguous"})
+            uow.commit()
+        return {"external_effect_id": effect_id, "outcome": "ambiguous", "recovery_state": "RECONCILIATION_REQUIRED"}
     if result.outcome == "success":
         with AuthorityUnitOfWork(database_url) as uow:
             uow.cursor.execute(
@@ -2086,6 +2153,7 @@ def _resolve_reconciled_budget(
         )
 
 
+@execution_step("command_kernel.resolve_external_effect_receipt_budget")
 def resolve_external_effect_receipt_budget(
     database_url: str,
     *,

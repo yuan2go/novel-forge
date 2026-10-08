@@ -52,6 +52,11 @@ class ManuscriptExportRequest(BaseModel):
     chapters: list[int] | None = None
 
 
+class DeliveryWindowRequest(AuthorWorkflowRequest):
+    expected_version: int = Field(ge=0, strict=True)
+    stop_after_chapter: int = Field(ge=1, strict=True)
+
+
 class AuthorBookReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: str = Field(min_length=1)
@@ -139,6 +144,18 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             return adopt_author_workflow(authority, request.book_run_id, principal=principal,
                 expected_version=request.expected_version, idempotency_key=request.idempotency_key, settings=ctx.app_settings)
         return execute(adopt)
+
+    @router.post("/manuscripts/extend-delivery-window")
+    def extend_window(request: DeliveryWindowRequest):
+        from novel_forge.modules.book_authority.creation_window import extend_delivery_window
+        def extend(principal):
+            authority = ctx.services.book_authority_application
+            if authority.require(request.book_run_id)["project_id"] != request.project_id:
+                raise PermissionError("Work is outside this Project")
+            return extend_delivery_window(authority, request.book_run_id, principal=principal,
+                expected_version=request.expected_version, stop_after_chapter=request.stop_after_chapter,
+                idempotency_key=request.idempotency_key)
+        return execute(extend)
 
     @router.get("/manuscripts")
     def manuscript(project_id: str, book_run_id: str):

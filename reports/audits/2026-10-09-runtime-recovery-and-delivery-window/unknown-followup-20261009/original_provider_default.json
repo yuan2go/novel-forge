@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "1791477143s since unix epoch",
+  "overallStatus": "warning",
+  "codexVersion": "0.159.2",
+  "checks": {
+    "app_server.status": {
+      "id": "app_server.status",
+      "category": "app-server",
+      "status": "ok",
+      "summary": "background server is not running",
+      "details": {
+        "control socket": "/Users/yuan/.codex/app-server-control/app-server-control.sock",
+        "daemon state dir": "/Users/yuan/.codex/app-server-daemon",
+        "dedicated pid file": "/Users/yuan/.codex/app-server-daemon/daemon.pid (missing)",
+        "dedicated update-loop pid file": "/Users/yuan/.codex/app-server-daemon/daemon-updater.pid (missing)",
+        "mode": "ephemeral",
+        "pid file": "/Users/yuan/.codex/app-server-daemon/app-server.pid (missing)",
+        "settings": "/Users/yuan/.codex/app-server-daemon/settings.json (missing)",
+        "status": "not running",
+        "update-loop pid file": "/Users/yuan/.codex/app-server-daemon/app-server-updater.pid (missing)"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "auth.credentials": {
+      "id": "auth.credentials",
+      "category": "auth",
+      "status": "ok",
+      "summary": "auth is configured",
+      "details": {
+        "auth file": "/Users/yuan/.codex/auth.json",
+        "auth storage mode": "File",
+        "stored API key": "false",
+        "stored ChatGPT tokens": "true",
+        "stored agent identity": "false",
+        "stored auth mode": "chatgpt"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "config.load": {
+      "id": "config.load",
+      "category": "config",
+      "status": "ok",
+      "summary": "config loaded",
+      "details": {
+        "CODEX_HOME": "/Users/yuan/.codex",
+        "active thread overrides": "not inspected",
+        "config.toml": "/Users/yuan/.codex/config.toml",
+        "config.toml parse": "ok",
+        "configuration load ms": "167",
+        "configuration scope": "invocation config, including cloud-managed policy",
+        "cwd": "/Users/yuan/.codex/worktrees/work-adaptation-reader-prose-01/novel-forge",
+        "enabled feature flags": "daemon_auto_start, shell_tool, view_image, sleep_tool, unified_exec, unified_exec_tty, unified_exec_zsh_fork, shell_snapshot, content_item_kinds, code_mode_host, terminal_resize_reflow, sqlite, memories, chronicle, write_stdin_approval, hooks, enable_request_compression, unbounded_connection_retries, worktrees, system_proxy_fallback, multi_agent, apps, tool_search_always_defer_mcp_tools, tool_suggest, plugins, in_app_browser, in_app_chat, in_app_dictation, in_app_local_automation, in_app_updates, browser_use, browser_use_full_cdp_access, browser_use_external, computer_use, remote_plugin, plugin_sharing, image_generation, resize_all_images, item_ids, skill_mcp_dependency_install, skill_search, mentions_v2, steer, guardian_approval, guardian_reuse_parent_compaction, goals, collaboration_modes, tool_call_mcp_elicitation, auth_elicitation, fast_mode, realtime_conversation, tui_app_server, compaction_image_budget, workspace_dependencies",
+        "feature flag overrides": "memories=true, chronicle=true",
+        "feature flags enabled": "54",
+        "log dir": "/Users/yuan/.codex/log",
+        "mcp servers": "2",
+        "model": "gpt-6.1-sol",
+        "model provider": "novel_forge_openai_no_retry",
+        "sqlite home": "/Users/yuan/.codex"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "desktop.app.version": {
+      "id": "desktop.app.version",
+      "category": "desktop",
+      "status": "ok",
+      "summary": "the desktop application is installed",
+      "details": {
+        "log directory": "$HOME/Library/Logs/com.openai.codex",
+        "running": "true",
+        "version": "26.928.31416"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "desktop.app_server.handshake": {
+      "id": "desktop.app_server.handshake",
+      "category": "desktop",
+      "status": "ok",
+      "summary": "the desktop app-server initialized successfully",
+      "details": {},
+      "remediation": null,
+      "durationMs": 0
+    },
+    "desktop.security.enforcement": {
+      "id": "desktop.security.enforcement",
+      "category": "desktop",
+      "status": "ok",
+      "summary": "the desktop application passed available macos security assessments",
+      "details": {
+        "gatekeeper": "accepted"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "git.environment": {
+      "id": "git.environment",
+      "category": "git",
+      "status": "ok",
+      "summary": "git executable found; execution not verified",
+      "details": {
+        ".git entry": "file -> /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.git/worktrees/novel-forge1",
+        "PATH git #1": "/opt/homebrew/bin/git",
+        "PATH git #2": "/usr/bin/git",
+        "PATH git #3": "/Users/yuan/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback/git",
+        "PATH git entries": "3",
+        "git execution": "not inspected (PATH helpers are not executed)",
+        "repo detected": "true",
+        "repo root": "/Users/yuan/.codex/worktrees/work-adaptation-reader-prose-01/novel-forge",
+        "selected git": "/opt/homebrew/bin/git"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "installation": {
+      "id": "installation",
+      "category": "install",
+      "status": "ok",
+      "summary": "installation looks consistent",
+      "details": {
+        "PATH codex #1": "/opt/homebrew/bin/codex",
+        "PATH codex #2": "/Users/yuan/.local/state/fnm_multishells/1087_1791467730385/bin/codex",
+        "PATH codex #3": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+        "PATH codex entries": "3",
+        "current executable": "/Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/bin/../CodexCLI.app/Contents/MacOS/codex",
+        "install context": "other (package /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli, bin /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/bin, resources /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/codex-resources, path /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/codex-path)",
+        "managed by Vite+": "false",
+        "managed by bun": "false",
+        "managed by npm": "false",
+        "managed by pnpm": "false",
+        "managed package root": "not set"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "mcp.config": {
+      "id": "mcp.config",
+      "category": "mcp",
+      "status": "ok",
+      "summary": "MCP configuration is locally consistent",
+      "details": {
+        "configured servers": "2",
+        "disabled servers": "1",
+        "stdio servers": "2"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "network.env": {
+      "id": "network.env",
+      "category": "network",
+      "status": "ok",
+      "summary": "network-related environment looks readable",
+      "details": {
+        "managed proxy": "not configured",
+        "proxy env vars": "none",
+        "respect system proxy": "disabled",
+        "system proxy": "manual"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "network.provider_reachability": {
+      "id": "network.provider_reachability",
+      "category": "reachability",
+      "status": "warning",
+      "summary": "desktop update and runtime CDN is unreachable",
+      "details": {
+        "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+        "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+        "reachability mode": "ChatGPT auth"
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "cause": "desktop update and runtime CDN is unreachable",
+          "measured": "https://chatgpt.com/backend-api/<redacted> request timed out",
+          "expected": "desktop update and runtime CDN reachable over HTTPS",
+          "remedy": "check proxy, firewall, DNS, and certificate access to chatgpt.com",
+          "fields": [
+            "desktop assets CDN"
+          ]
+        }
+      ],
+      "remediation": null,
+      "durationMs": 2407
+    },
+    "network.websocket_reachability": {
+      "id": "network.websocket_reachability",
+      "category": "websocket",
+      "status": "ok",
+      "summary": "Responses WebSocket is not enabled for the active provider",
+      "details": {
+        "model provider": "novel_forge_openai_no_retry",
+        "provider name": "OpenAI",
+        "proxy env vars": "none",
+        "supports websockets": "false",
+        "wire API": "responses"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "runtime.provenance": {
+      "id": "runtime.provenance",
+      "category": "runtime",
+      "status": "ok",
+      "summary": "running local build on macos-aarch64",
+      "details": {
+        "commit": "unknown",
+        "current executable": "/Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/bin/../CodexCLI.app/Contents/MacOS/codex",
+        "install method": "other (package /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli, bin /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/bin, resources /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/codex-resources, path /Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/codex-path)",
+        "platform": "macos-aarch64",
+        "version": "0.159.2"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "runtime.search": {
+      "id": "runtime.search",
+      "category": "search",
+      "status": "ok",
+      "summary": "search command found (bundled); execution not verified",
+      "details": {
+        "search command": "/Users/yuan/.codex/plugins/.plugin-appserver/codex-cli/codex-path/rg",
+        "search command readiness": "file exists",
+        "search provider": "bundled"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "sandbox.filesystem_paths": {
+      "id": "sandbox.filesystem_paths",
+      "category": "sandbox",
+      "status": "ok",
+      "summary": "no explicit filesystem paths to probe",
+      "details": {},
+      "remediation": null,
+      "durationMs": 0
+    },
+    "sandbox.helpers": {
+      "id": "sandbox.helpers",
+      "category": "sandbox",
+      "status": "ok",
+      "summary": "sandbox configuration is readable",
+      "details": {
+        "approval policy": "Never",
+        "codex-linux-sandbox helper": "none",
+        "denied-read glob rules": "0",
+        "denied-read rules": "0",
+        "execve wrapper helper": "/Users/yuan/.codex/tmp/arg0/codex-arg0tthA7h/codex-execve-wrapper",
+        "filesystem sandbox": "unrestricted",
+        "glob scan max depth": "unbounded",
+        "managed filesystem source": "none",
+        "network sandbox": "enabled"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "security.endpoint": {
+      "id": "security.endpoint",
+      "category": "security",
+      "status": "ok",
+      "summary": "no supported endpoint protection detected",
+      "details": {
+        "endpoint products": "none detected"
+      },
+      "remediation": null,
+      "durationMs": 16
+    },
+    "state.paths": {
+      "id": "state.paths",
+      "category": "state",
+      "status": "ok",
+      "summary": "state paths and databases are inspectable",
+      "details": {
+        "CODEX_HOME": "/Users/yuan/.codex (dir)",
+        "active rollout files": "459 files, 5440778452 total bytes, 11853547 average bytes",
+        "archived rollout files": "65 files, 300522716 total bytes, 4623426 average bytes",
+        "goals DB": "/Users/yuan/.codex/goals_1.sqlite (file)",
+        "goals DB integrity": "ok",
+        "log DB": "/Users/yuan/.codex/logs_2.sqlite (file)",
+        "log DB integrity": "ok",
+        "log dir": "/Users/yuan/.codex/log (missing)",
+        "memories DB": "/Users/yuan/.codex/memories_1.sqlite (file)",
+        "memories DB integrity": "ok",
+        "memories v2 DB": "/Users/yuan/.codex/memories_v2_1.sqlite (missing)",
+        "memories v2 DB integrity": "skipped (missing)",
+        "queue DB": "/Users/yuan/.codex/queue_1.sqlite (file)",
+        "queue DB integrity": "ok",
+        "sqlite home": "/Users/yuan/.codex (dir)",
+        "state DB": "/Users/yuan/.codex/state_5.sqlite (file)",
+        "state DB integrity": "ok",
+        "thread history DB": "/Users/yuan/.codex/thread_history_1.sqlite (file)",
+        "thread history DB integrity": "ok"
+      },
+      "remediation": null,
+      "durationMs": 18980
+    },
+    "state.rollout_db_parity": {
+      "id": "state.rollout_db_parity",
+      "category": "threads",
+      "status": "warning",
+      "summary": "rollout files and state DB thread inventory differ",
+      "details": {
+        "default model provider": "novel_forge_openai_no_retry",
+        "rollout DB active files": "459",
+        "rollout DB active rows": "458",
+        "rollout DB archive mismatches": "0",
+        "rollout DB archived files": "65",
+        "rollout DB archived rows": "65",
+        "rollout DB duplicate DB paths": "0",
+        "rollout DB duplicate rollout thread id sample": "01a03b0b-157d-7830-9884-b1d362c2a75e",
+        "rollout DB duplicate rollout thread ids": "1",
+        "rollout DB malformed file names": "0",
+        "rollout DB missing active rows": "1",
+        "rollout DB missing active sample": "/Users/yuan/.codex/sessions/2026/08/26/rollout-2026-08-26T06-29-37-01a03b0b-157d-7830-9884-b1d362c2a75e.jsonl",
+        "rollout DB missing archived rows": "0",
+        "rollout DB model providers": "openai=523",
+        "rollout DB rows": "523",
+        "rollout DB scan cap reached": "false",
+        "rollout DB scan errors": "0",
+        "rollout DB sources": "subagent:thread_spawn=262, vscode=261",
+        "rollout DB stale rows": "0"
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "cause": "rollout files are missing from the state DB",
+          "measured": "1 active, 0 archived",
+          "expected": "every rollout file has a matching threads row",
+          "remedy": null,
+          "fields": []
+        },
+        {
+          "severity": "warning",
+          "cause": "duplicate thread inventory entries found",
+          "measured": "1 duplicate rollout thread ids, 0 duplicate DB paths",
+          "expected": "one rollout path and thread id per thread",
+          "remedy": "Attach the doctor report to a bug report so support can inspect samples.",
+          "fields": []
+        }
+      ],
+      "remediation": null,
+      "durationMs": 552
+    },
+    "system.disk": {
+      "id": "system.disk",
+      "category": "disk",
+      "status": "ok",
+      "summary": "sufficient free disk space (70.9 GiB)",
+      "details": {
+        "CODEX_HOME available": "70.9 GiB",
+        "failure threshold": "1.0 GiB",
+        "warning threshold": "5.0 GiB",
+        "worktree available": "70.9 GiB"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "system.environment": {
+      "id": "system.environment",
+      "category": "system",
+      "status": "ok",
+      "summary": "OS language zh-Hans-CN",
+      "details": {
+        "EDITOR": "set",
+        "GH_PAGER": "set",
+        "GIT_PAGER": "set",
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "LC_CTYPE": "C.UTF-8",
+        "LESS": "set",
+        "PAGER": "set",
+        "VISUAL": "set",
+        "os": "Mac OS 26.5.2 [64-bit]",
+        "os language": "zh-Hans-CN",
+        "os type": "Mac OS",
+        "os version": "26.5.2"
+      },
+      "remediation": null,
+      "durationMs": 14
+    },
+    "terminal.env": {
+      "id": "terminal.env",
+      "category": "terminal",
+      "status": "warning",
+      "summary": "TERM=dumb - colors and cursor control are disabled in this non-interactive run",
+      "details": {
+        "COLORTERM": "present",
+        "NO_COLOR": "1",
+        "TERM": "dumb",
+        "color output": "disabled (NO_COLOR)",
+        "effective locale": "C.UTF-8",
+        "stderr is terminal": "false",
+        "stdin is terminal": "false",
+        "stdout is terminal": "false",
+        "terminal": "dumb",
+        "terminal size": "80x24"
+      },
+      "issues": [
+        {
+          "severity": "warning",
+          "cause": "TERM=dumb - colors and cursor control are disabled in this non-interactive run",
+          "measured": "TERM=dumb",
+          "expected": null,
+          "remedy": null,
+          "fields": [
+            "TERM"
+          ]
+        }
+      ],
+      "remediation": null,
+      "durationMs": 32
+    },
+    "terminal.title": {
+      "id": "terminal.title",
+      "category": "title",
+      "status": "ok",
+      "summary": "terminal title default",
+      "details": {
+        "terminal title activity": "true",
+        "terminal title items": "activity, project-name",
+        "terminal title project source": "git repo root",
+        "terminal title project value": "novel-forge",
+        "terminal title source": "default"
+      },
+      "remediation": null,
+      "durationMs": 0
+    },
+    "updates.status": {
+      "id": "updates.status",
+      "category": "updates",
+      "status": "ok",
+      "summary": "update configuration is locally consistent",
+      "details": {
+        "cached latest version": "0.154.0",
+        "check for update on startup": "true",
+        "last checked at": "2026-09-11T14:28:43.928680Z",
+        "latest version": "0.161.0",
+        "latest version status": "newer version is available",
+        "update action": "manual or unknown",
+        "version cache": "/Users/yuan/.codex/version.json"
+      },
+      "remediation": null,
+      "durationMs": 695
+    }
+  }
+}

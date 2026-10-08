@@ -1,0 +1,15 @@
+{
+  "database": true,
+  "authority_operation": true,
+  "authority_external_effect": true,
+  "authority_external_effect_dispatch": true,
+  "authority_external_receipt": true,
+  "authority_budget_reservation": true,
+  "authority_book": true,
+  "authority_book_foundation_binding": true,
+  "authority_asset_version": true,
+  "authority_story_planning_generation": true,
+  "authority_book_production": true,
+  "authority_book_chapter_acceptance": true,
+  "authority_book_prose_review_run": true
+}

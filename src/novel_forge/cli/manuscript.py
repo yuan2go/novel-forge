@@ -7,7 +7,7 @@ from typing import Any
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "adopt-author-workflow", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -17,6 +17,9 @@ def add_manuscript_parser(subparsers: Any) -> None:
     parser.add_argument("--versions", nargs="+")
     parser.add_argument("--chapters", nargs="+", type=int)
     parser.add_argument("--reason", default="")
+    parser.add_argument("--stop-after-chapter", type=int)
+    parser.add_argument("--expected-version", type=int)
+    parser.add_argument("--idempotency-key", default="")
 
 
 def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
@@ -36,7 +39,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
 
-    if args.action in {"adopt-author-workflow", "pause", "resume", "continue"}:
+    if args.action in {"adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
         from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
         from novel_forge.modules.book_authority.manuscript import adopt_author_workflow
@@ -46,6 +49,13 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         book = authority.require(args.book_run_id)
         if book["project_id"] != args.project_id:
             raise PermissionError("Work is outside this Project")
+        if args.action == "extend-delivery-window":
+            if args.expected_version is None or args.stop_after_chapter is None or not args.idempotency_key:
+                raise ValueError("Delivery extension requires --expected-version, --stop-after-chapter and --idempotency-key; retain them on retry")
+            from novel_forge.modules.book_authority.creation_window import extend_delivery_window
+            return extend_delivery_window(authority, args.book_run_id, principal=principal,
+                expected_version=args.expected_version, stop_after_chapter=args.stop_after_chapter,
+                idempotency_key=args.idempotency_key)
         if args.action in {"pause", "resume"}:
             return getattr(authority, args.action)(args.book_run_id, reason=args.reason or "Author " + args.action, principal=principal)
         if args.action == "continue":

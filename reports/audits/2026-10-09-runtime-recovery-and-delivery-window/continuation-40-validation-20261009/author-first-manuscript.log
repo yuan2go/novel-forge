@@ -1,0 +1,132 @@
+EE                                                                       [100%]
+==================================== ERRORS ====================================
+___ ERROR at setup of test_native_author_first_cross_chapter_edit_and_export ___
+
+database_name = 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -> str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+>           return require_disposable_database_name(database_name)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+    def require_disposable_database_name(database_name: object) -> str:
+        if not isinstance(database_name, str) or not database_name:
+            raise ValueError(
+                "database safety preflight returned an invalid name; refusing writes"
+            )
+        if database_name in PROTECTED_DATABASE_NAMES:
+            raise ValueError(
+                f"database safety preflight resolved a protected name; refusing writes for {database_name!r}"
+            )
+        if not database_name.endswith("_test"):
+>           raise ValueError(
+                f"database safety requires an _test suffix; refusing writes for {database_name!r}"
+            )
+E           ValueError: database safety requires an _test suffix; refusing writes for 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+src/novel_forge/tools/backend_qualification_resources.py:639: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+>       preflight_database_name = preflight_integration_database(database_url)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/conftest.py:48: in preflight_integration_database
+    return require_disposable_test_database(row[0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -> str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+            return require_disposable_database_name(database_name)
+        except ValueError as exc:
+>           raise AssertionError(str(exc)) from exc
+E           AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+tests/integration/conftest.py:24: AssertionError
+_ ERROR at setup of test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint _
+
+database_name = 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -> str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+>           return require_disposable_database_name(database_name)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+    def require_disposable_database_name(database_name: object) -> str:
+        if not isinstance(database_name, str) or not database_name:
+            raise ValueError(
+                "database safety preflight returned an invalid name; refusing writes"
+            )
+        if database_name in PROTECTED_DATABASE_NAMES:
+            raise ValueError(
+                f"database safety preflight resolved a protected name; refusing writes for {database_name!r}"
+            )
+        if not database_name.endswith("_test"):
+>           raise ValueError(
+                f"database safety requires an _test suffix; refusing writes for {database_name!r}"
+            )
+E           ValueError: database safety requires an _test suffix; refusing writes for 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+src/novel_forge/tools/backend_qualification_resources.py:639: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -> Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+>       preflight_database_name = preflight_integration_database(database_url)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/conftest.py:48: in preflight_integration_database
+    return require_disposable_test_database(row[0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -> str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+            return require_disposable_database_name(database_name)
+        except ValueError as exc:
+>           raise AssertionError(str(exc)) from exc
+E           AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_author_first_manuscript_ad6449bc3b714238'
+
+tests/integration/conftest.py:24: AssertionError
+=========================== short test summary info ============================
+ERROR tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export
+ERROR tests/integration/test_author_first_manuscript_postgres.py::test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint
+2 errors in 0.63s

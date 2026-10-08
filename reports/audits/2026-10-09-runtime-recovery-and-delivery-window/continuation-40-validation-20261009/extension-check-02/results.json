@@ -1,0 +1,54 @@
+{
+  "run_id": "318f005d269b44b3a32f1ff3be9ad2d9",
+  "baseline_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+  "test_service_identity": [
+    "postgres",
+    55690,
+    "yuan",
+    "2026-10-09 01:46:46.208207+08:00"
+  ],
+  "groups": [
+    {
+      "name": "delivery-window",
+      "database": "nf_40_delivery_window_318f005d269b44b3_test",
+      "files": [
+        "tests/integration/test_book_delivery_window_postgres.py"
+      ],
+      "started_at": "2026-10-08T18:05:50.624793+00:00",
+      "log": "delivery-window.log",
+      "command": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_book_delivery_window_postgres.py",
+        "--junitxml=/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/continuation-40-validation-20261009/extension-check-02/delivery-window.xml"
+      ],
+      "exit_code": 0,
+      "test_database_removed": true,
+      "completed_at": "2026-10-08T18:05:55.126138+00:00"
+    },
+    {
+      "name": "cross-chapter-review",
+      "database": "nf_40_cross_chapter_review_318f005d269b44b3_test",
+      "files": [
+        "tests/integration/test_cross_chapter_prose_review_postgres.py"
+      ],
+      "started_at": "2026-10-08T18:05:55.178799+00:00",
+      "log": "cross-chapter-review.log",
+      "command": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_cross_chapter_prose_review_postgres.py",
+        "--junitxml=/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/continuation-40-validation-20261009/extension-check-02/cross-chapter-review.xml"
+      ],
+      "exit_code": 1,
+      "test_database_removed": true,
+      "completed_at": "2026-10-08T18:06:00.561339+00:00"
+    }
+  ],
+  "real_model_calls": 0,
+  "original_database_used": false
+}

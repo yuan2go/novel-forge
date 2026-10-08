@@ -1,0 +1,25 @@
+{
+  "base_commit_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+  "patch_sha256": "59d9cd2acad9aeb6d0033fd8d7d4144150787e30b49c7aa1ca1e2405b1f409cf",
+  "release": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/releases/acb6d06befac33d6f9a7f07abe41b16e0fff68b8-diagnostics-59d9cd2acad9",
+  "modified_files": {
+    "architecture/reality-evidence.json": "a63071430bdd6ab07bcb734a2a67e8c70a79d3022b4e49e6a10021a3ce05e7ab",
+    "docs/runtime-operations.md": "7b6b3fe36993dd6decc28705ef0afc91f10ca53d0241d5cad3f1a0ef1432f5f3",
+    "src/novel_forge/logging/execution.py": "6878482c6cc823fc94f6ea4492a65345d73303ccdf6e0bfb7c7a9f23e9f42fe8",
+    "src/novel_forge/modules/book_authority/recovery.py": "d952e7e2d2407d932eab9fbbd760e99beb21b97ec83c975323a0de062bcaa53f",
+    "src/novel_forge/modules/command_kernel/external_effect_runtime.py": "aedc969f31f1f8531af38a9ea60250a3260567cbf5983ae8de6b2d7cf5a3a723",
+    "src/novel_forge/modules/production_execution/backends.py": "beacdcac408daf0142a9659891cbd122acb1978a3ab6bfad9eab7dc254d64839",
+    "src/novel_forge/modules/production_execution/gateway.py": "7a175489e0afb88c61e82c4a520713984eb68e531c0918641df6786988207a0f",
+    "src/novel_forge/modules/production_execution/process_supervisor.py": "37c41c0d484cd53c2eb1d6c5cbb3ec431575b9fefa53815a058745cb8e361b88",
+    "src/novel_forge/modules/production_execution/provider_protocol_failure.py": "5ab96471711e6b92337dbdbe1de23a0b1e63e0a2e8846704582c7d7ab940eeaf",
+    "src/novel_forge/modules/production_execution/recovery.py": "3ee134ed612c8bc46a48897882f074dfe336280615dc68a05a268f8b9dae9318",
+    "src/novel_forge/modules/story_planning_runtime/execution.py": "2f04652645d2cd048c5efbfbfe15b24100b3110519c985ea0a094326d8b4eb03",
+    "src/novel_forge/storage/migrations/runner.py": "188614e1a86bae2afcaa3ad54f8bd19db4e517314ca82b21040b26fb15d92695",
+    "tests/integration/test_migration_history_admission_postgres.py": "e9f3da8033fdd784b48d60f969125cba53e17f566fdf500a25106d57e693359f",
+    "tests/integration/test_production_execution_recovery_postgres.py": "f6edf0e46a4f98eb8e0799fade74eb8c40f40d9eff85225e4a995114b3f7c1ea",
+    "tests/unit/test_execution_diagnostics.py": "937ff0077bda95ce26a43062398889b5466a400832ae972c18335c89920d134b"
+  },
+  "git_commit_created": false,
+  "scope": "original-request-diagnostics-no-model-dispatch",
+  "api_pid": 52141
+}

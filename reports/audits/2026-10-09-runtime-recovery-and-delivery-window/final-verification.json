@@ -1,0 +1,37 @@
+{
+  "database_identity": {
+    "database": "nf_qidian_learning_20261008_test",
+    "cluster_system_identifier": 7694308142111706022,
+    "data_directory": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/pgdata",
+    "default_read_only": "on"
+  },
+  "native_reads": {
+    "health": 200,
+    "original-book": 200,
+    "original-opening": 200
+  },
+  "original_operation": {
+    "status": "FAILED_FINAL",
+    "version": 3
+  },
+  "original_effect": "UNKNOWN",
+  "provider_dispatch_count_before": 39,
+  "provider_dispatch_count_after": 39,
+  "new_provider_dispatches": 0,
+  "actual_release": {
+    "base_commit_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+    "patch_sha256": "8bb333bbb67a7ec36beea79f4bfd693b9c6e87e13b13f332c2eac04899db9a9b",
+    "release": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/releases/acb6d06befac33d6f9a7f07abe41b16e0fff68b8-patch-8bb333bbb67a",
+    "modified_files": {
+      "architecture/reality-evidence.json": "e7f6c2fb2de208472b312760715eb5ca19307a4cf94e31fe9edb63e20c115f54",
+      "docs/runtime-operations.md": "5a7038da83f10dcd5e2291d85e770381ca72d3c9e5b2aeb93ebaaecdebde453f",
+      "src/novel_forge/storage/migrations/runner.py": "188614e1a86bae2afcaa3ad54f8bd19db4e517314ca82b21040b26fb15d92695",
+      "tests/integration/test_migration_history_admission_postgres.py": "e9f3da8033fdd784b48d60f969125cba53e17f566fdf500a25106d57e693359f"
+    },
+    "git_commit_created": false
+  },
+  "checked_at": "2026-10-08T15:47:55.739922+00:00",
+  "inspection_failures_preserved": [
+    "Initial final verification referenced absent dispatch.project_id; corrected read-only verification to compare complete immutable dispatch rows"
+  ]
+}

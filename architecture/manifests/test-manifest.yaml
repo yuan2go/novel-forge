@@ -8,6 +8,33 @@
   ],
   "classification_rules": [
     {
+      "id": "cli-original-recovery-unit",
+      "patterns": [
+        "tests/unit/test_codex_original_recovery.py",
+        "tests/unit/test_planning_query_recovery.py",
+        "tests/unit/test_cli_effect_reconciliation_migration.py",
+        "tests/unit/test_execution_diagnostics.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "production-execution",
+      "capability": "original-cli-reconciliation",
+      "production_target": "src/novel_forge/modules/production_execution/backends.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "cli-original-recovery-postgres",
+      "patterns": [
+        "tests/integration/test_cli_effect_reconciliation_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "original-cli-reconciliation",
+      "production_target": "src/novel_forge/modules/command_kernel/cli_effect_reconciliation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
       "id": "public-catalog-domain-and-transport",
       "patterns": [
         "tests/unit/test_public_catalog.py"
@@ -46,7 +73,8 @@
     {
       "id": "author-first-native-manuscript",
       "patterns": [
-        "tests/integration/test_author_first_manuscript_postgres.py"
+        "tests/integration/test_author_first_manuscript_postgres.py",
+        "tests/integration/test_book_delivery_window_postgres.py"
       ],
       "classification": "FIXTURE_PROTOCOL",
       "owner": "book-authority",

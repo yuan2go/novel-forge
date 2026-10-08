@@ -1,0 +1,24 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_stale_unknown_cannot_overwrite_a_recovered_terminal_result ________
+
+    def test_stale_unknown_cannot_overwrite_a_recovered_terminal_result():
+        ensure_migrated()
+        project_id, operation_id = ProductionExecutionRecoveryPostgresTests._operation()
+        request = ProductionExecutionRecoveryPostgresTests._request(project_id, operation_id)
+        store = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id)
+        record = ExecutionRecord(request=request,
+            handle=ProductionExecutionRecoveryPostgresTests._handle(request),
+            started_at='2026-10-09T00:00:00Z', raw_evidence={})
+        store.put_record(record)
+        stale = store.get_record(request.execution_id)
+        from novel_forge.modules.production_execution.backends import ExecutionReconciler
+        record.result = ExecutionReconciler.non_success(record, ExecutionOutcome.FINAL_FAILURE)
+        store.save_record(record)
+>       with pytest.raises(ValueError, match='terminal execution'):
+E       Failed: DID NOT RAISE ValueError
+
+tests/integration/test_production_execution_recovery_postgres.py:376: Failed
+=========================== short test summary info ============================
+FAILED tests/integration/test_production_execution_recovery_postgres.py::test_stale_unknown_cannot_overwrite_a_recovered_terminal_result
+1 failed in 1.24s

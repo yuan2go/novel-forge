@@ -319,7 +319,8 @@ def test_codex_invocation_is_derived_from_frozen_route_not_backend_defaults(retr
     assert f"model_reasoning_effort={route.reasoning_effort}" in prepared.command
     assert "--ignore-user-config" in prepared.command
     assert "--ignore-rules" in prepared.command
-    assert "--ephemeral" in prepared.command
+    assert "--ephemeral" not in prepared.command
+    assert evidence["local_session_persistence"] == "DURABLE"
     assert "features.memories=false" in prepared.command
     assert "features.shell_tool=false" in prepared.command
     assert prepared.environment_overrides["CODEX_HOME"] == str(Path(tmp).resolve())

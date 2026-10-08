@@ -1,0 +1,76 @@
+{
+  "database_recovery": "RECOVERED_FROM_ORIGINAL_BACKUP",
+  "recovery_point": "2026-10-08 20:18:23 CST",
+  "original_post_backup_ledger": "UNVERIFIED",
+  "source_backup_retained": true,
+  "empty_database_substitution": false,
+  "readonly_migration_status_regression_before": "2 FAILED: CREATE TABLE in read-only transaction",
+  "focused_regressions_after": {
+    "passed": 12,
+    "log": "service-recovery/focused-after-fix.log"
+  },
+  "private_backup_restore": "PASS: 12 critical tables match",
+  "forward_migration": {
+    "status": "PASS",
+    "head": "20261008_0183_source_observation_span_identity"
+  },
+  "persistent_restart": "PASS",
+  "selected_foundation_exact_version_hashes": "PASS: 6 of 6",
+  "original_object_readback": "PASS: 14 objects; original Etags match",
+  "native_api_readback": {
+    "health": 200,
+    "original-book": 200,
+    "original-opening": 200
+  },
+  "model_identity_and_catalog": "Identity matches original; configured model listed; no inference qualification claim",
+  "original_native_thread_read": "thread not loaded",
+  "original_opening_assessment": {
+    "disposition": "UNKNOWN_AMBIGUOUS",
+    "assessment_id": "book-opening-recovery-assessment:95eef96218e16454e138d5e11b442432f9ae6dff3122398e7b2625b98a0a20d7",
+    "idempotent_replay": "PASS"
+  },
+  "original_operation": {
+    "status": "FAILED_FINAL",
+    "version": 3
+  },
+  "original_effect": "UNKNOWN",
+  "provider_dispatches": 0,
+  "documentation_reality": "PASS after implementation projection refresh",
+  "full_validate": "FAIL: existing main Ruff ratchet failures and stale proposal scope checks; remaining checks executed",
+  "baseline_failures_proof": [
+    "service-recovery/proposal-baseline-scope-comparison.json",
+    "baseline archive Ruff ratchet returned the same 2 failures"
+  ],
+  "workers": "NOT_STARTED",
+  "runtime_readiness": "503: dispatch suspended; Provider and current Pack activation qualification not established",
+  "real_prose_delivery": "NOT_RUN",
+  "model_original_outcome_recovery": "STILL_UNRESOLVED",
+  "release": {
+    "base_commit_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+    "patch_sha256": "8bb333bbb67a7ec36beea79f4bfd693b9c6e87e13b13f332c2eac04899db9a9b",
+    "release": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/releases/acb6d06befac33d6f9a7f07abe41b16e0fff68b8-patch-8bb333bbb67a",
+    "modified_files": {
+      "architecture/reality-evidence.json": "e7f6c2fb2de208472b312760715eb5ca19307a4cf94e31fe9edb63e20c115f54",
+      "docs/runtime-operations.md": "5a7038da83f10dcd5e2291d85e770381ca72d3c9e5b2aeb93ebaaecdebde453f",
+      "src/novel_forge/storage/migrations/runner.py": "188614e1a86bae2afcaa3ad54f8bd19db4e517314ca82b21040b26fb15d92695",
+      "tests/integration/test_migration_history_admission_postgres.py": "e9f3da8033fdd784b48d60f969125cba53e17f566fdf500a25106d57e693359f"
+    },
+    "git_commit_created": false
+  },
+  "code_changes": [
+    "Read-only migration status no longer performs DDL; missing ledger remains missing",
+    "Focused PostgreSQL coverage on partial restored history and absent ledger",
+    "Current migration-head wording and implementation projection refreshed"
+  ],
+  "business_mutations": [
+    "Registered forward migrations through native authority-migrate",
+    "Native project PAUSED dispatch control receipt",
+    "Native versioned Opening recovery assessment; same-key replay verified"
+  ],
+  "remaining_required": [
+    "Authenticated original Provider terminal result, original request binding and measured usage; no blind resend",
+    "Latest post-backup original ledger or newer original backup, if retained elsewhere",
+    "Native recovery/author-first policy succession after original Effect reconciles",
+    "Continuous prose, explicit literary review and warranted revision candidates remain undelivered"
+  ]
+}

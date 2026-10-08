@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import json
+import logging
 import unittest
+
+import pytest
 
 from novel_forge.modules.production_execution import (
     CapabilityAvailability,
@@ -28,6 +32,33 @@ from tests.integration.authority_postgres_support import (
     insert_operation,
     transaction,
 )
+
+
+def test_diagnostics_distinguish_committed_record_from_failed_authority_write(caplog, monkeypatch):
+    ensure_migrated()
+    caplog.set_level(logging.INFO, logger="novel_forge.execution")
+    project_id, operation_id = ProductionExecutionRecoveryPostgresTests._operation()
+    request = ProductionExecutionRecoveryPostgresTests._request(project_id, operation_id)
+    record = ExecutionRecord(request=request,
+        handle=ProductionExecutionRecoveryPostgresTests._handle(request),
+        started_at="2026-07-26T00:00:00Z", raw_evidence={"provider_state": "unknown"})
+    store = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id)
+    store.put_record(record)
+    before = store.get_record(request.execution_id)
+
+    def fail_write(*args, **kwargs):
+        raise OSError("PRIVATE CONNECTION STRING")
+
+    monkeypatch.setattr(store.writer, "materialize_output", fail_write)
+    record.raw_evidence = {"provider_state": "observed"}
+    with pytest.raises(OSError):
+        store.save_record(record)
+    recovered = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id).get_record(request.execution_id)
+    assert recovered.raw_evidence == before.raw_evidence
+    rows = [json.loads(row.message) for row in caplog.records if row.name == "novel_forge.execution"]
+    assert any(row["step"].endswith("._save_record") and row["phase"] == "failed"
+        and row["execution_id"] == request.execution_id for row in rows)
+    assert "PRIVATE CONNECTION STRING" not in caplog.text
 
 
 class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
@@ -327,3 +358,21 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_stale_unknown_cannot_overwrite_a_recovered_terminal_result():
+    ensure_migrated()
+    project_id, operation_id = ProductionExecutionRecoveryPostgresTests._operation()
+    request = ProductionExecutionRecoveryPostgresTests._request(project_id, operation_id)
+    store = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id)
+    record = ExecutionRecord(request=request,
+        handle=ProductionExecutionRecoveryPostgresTests._handle(request),
+        started_at='2026-10-09T00:00:00Z', raw_evidence={})
+    store.put_record(record)
+    stale = store.get_record(request.execution_id)
+    from novel_forge.modules.production_execution.backends import ExecutionReconciler
+    record.result = ExecutionReconciler.non_success(record, ExecutionOutcome.FINAL_FAILURE)
+    store.save_record(record)
+    with pytest.raises(ValueError, match='terminal execution'):
+        store.save_record(stale)
+    assert store.get_record(request.execution_id).result == record.result

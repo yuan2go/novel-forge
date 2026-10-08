@@ -1,0 +1,19 @@
+{
+  "original_operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+  "original_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+  "original_thread_id": "01a11b3c-af18-7c31-aed1-93488738769d",
+  "original_files_unchanged": true,
+  "file_hashes": {
+    "process-receipt.json": "74ae9e281a66e86c9628836daae26b909f3c5599c56efbb71ae804f12fa29f5e",
+    "execution-metadata.json": "dad488eb6c1249748331cc063a1898d021586d43de594b75ec5bc78b70ea412e",
+    "stdout.log": "1ea7966afe85660f6cc176b8229542a71862c76650fa4b5ba7b74da4fcb3cf30",
+    "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "new_inference_requests": 0,
+  "database_or_business_mutations": 0,
+  "code_changes_this_followup": false,
+  "custom_provider_preexists_user_config": false,
+  "current_implicit_proxy_may_include_tunnel": true,
+  "network_at_original_time": "NOT_RECONSTRUCTED",
+  "original_remote_outcome": "UNKNOWN"
+}

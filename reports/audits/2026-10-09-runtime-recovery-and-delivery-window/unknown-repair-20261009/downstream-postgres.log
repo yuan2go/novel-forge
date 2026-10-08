@@ -1,0 +1,363 @@
+............................................FF                           [100%]
+=================================== FAILURES ===================================
+___ test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible ___
+
+    def test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible():
+        ensure_migrated()
+        project_id = f"planning-bootstrap:{uuid4().hex}"
+        workspace_id, book_id = f"workspace:{project_id}", f"book:{project_id}"
+        seed_authority_project_book(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+        )
+        inputs = _seed_inputs(project_id, book_id, target_chapter_count=6)
+        principal = _principal(project_id)
+        binder = _ExternalEffectPepFixturePlanningBinder(target_chapter_count=6)
+        binder.resolver = SimpleNamespace(environment="validation")
+        application = StoryPlanningGenerationApplication(
+            DATABASE_URL,
+            execution_binder=binder,
+            application_build_id="bootstrap-isolation-test",
+            commit_sha=RELEASE_SHA,
+            allow_scripted_evaluation_fixture=True,
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=project_id,
+            workspace_id=workspace_id,
+            book_id=book_id,
+            actor_id=principal.principal_id,
+            generator_operation_name="book_plan.generate",
+            logical_key="book:bootstrap",
+            input_versions={
+                role: inputs[role] for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            },
+            idempotency_key=f"{project_id}:generate",
+            trace_id=f"trace:{project_id}",
+            correlation_id=f"correlation:{project_id}",
+            routing_bootstrap_authorization_id="bootstrap:one",
+        )
+        candidate = deepseek_candidates(available=True)[0]
+        authorization = {
+            "authorization_id": "bootstrap:one",
+            "reason": "bounded candidate isolation test",
+            "environment": "validation",
+            "book_id": book_id,
+            "task_type": "book_plan.generate",
+            "logical_key": command.logical_key,
+            "generation_idempotency_key": command.idempotency_key,
+            "input_versions_hash": snapshot_hash(dict(command.input_versions)),
+            "command_hash": bootstrap_command_hash(_command_payload(command)),
+            "producer_contract_hash": snapshot_hash({"fixture_prompt": "v1"}),
+            "candidate_id": candidate.candidate_id,
+            "model_revision": candidate.model_revision,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+            "maximum_calls": 1,
+            "maximum_tokens": 4096,
+            "maximum_amount": "0.1",
+            "currency": "USD",
+            "purpose": "BENCHMARK_CHALLENGER",
+            "production_eligible": False,
+        }
+        configuration = {
+            "policy_version": "bootstrap-isolation:v1",
+            "reason": "explicit bounded validation",
+            "task_overrides": [],
+            "bootstrap_authorizations": [authorization],
+        }
+    
+        def configure(policy, key):
+            return configure_owned_policy(
+                database_url=DATABASE_URL,
+                owner="PROVIDER_ROUTING",
+                content=policy,
+                project_id=project_id,
+                workspace_id=workspace_id,
+                idempotency_key=key,
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                application_build_id="bootstrap-isolation-test",
+                commit_sha=RELEASE_SHA,
+                principal=principal,
+            )
+    
+        configure(configuration, "configure:v1")
+        generated = application.generate(command, principal=principal)
+        assert generated.status is PlanningGenerationStatus.EVALUATION_PENDING
+        frozen = application.frozen_generation_command(generated.generation_operation_id)
+        snapshot = frozen["routing_bootstrap_authorization"]
+        assert snapshot["authorization"] == authorization
+        document = AuthorityAssetQuery(DATABASE_URL).require(
+            project_id=project_id,
+            asset_version_id=generated.candidate_asset_version_id,
+        )
+        assert document.content["routing_eligibility"] == "BENCHMARK_ONLY"
+        assert document.content["routing_bootstrap_authorization"] == snapshot
+        assert document.eligibility == "INELIGIBLE"
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute(
+                "SELECT COUNT(*) FROM authority_narrative_design_qualification WHERE generation_operation_id=%s",
+                [generated.generation_operation_id],
+            )
+            assert uow.cursor.fetchone()[0] == 0
+        configure(
+            {
+                **configuration,
+                "policy_version": "bootstrap-isolation:v2",
+                "bootstrap_authorizations": [],
+            },
+            "configure:v2",
+        )
+        replay = application.generate(command, principal=principal)
+        assert replay.replayed
+        assert replay.candidate_asset_version_id == generated.candidate_asset_version_id
+        assert (
+            application.frozen_generation_command(generated.generation_operation_id)
+            == frozen
+        )
+        with pytest.raises(KernelError, match="PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT"):
+            application.generate(
+                replace(command, routing_bootstrap_authorization_id="bootstrap:forged"),
+                principal=principal,
+            )
+    
+        evaluator = replace(principal, principal_id="independent-fixture-evaluator")
+>       evaluated = application.evaluate_candidate(
+            StoryPlanningEvaluationCommand(
+                project_id=project_id,
+                workspace_id=workspace_id,
+                book_id=book_id,
+                actor_id=evaluator.principal_id,
+                candidate_asset_version_id=document.asset_version_id,
+                generation_operation_id=generated.generation_operation_id,
+                generator_operation_name=command.generator_operation_name,
+                candidate_content_hash=document.content_hash,
+                evaluator_execution_class="SCRIPTED_FIXTURE",
+                idempotency_key="evaluate:bootstrap",
+                trace_id=command.trace_id,
+                correlation_id=command.correlation_id,
+                evaluation=scripted_qualification(command.generator_operation_name),
+            ),
+            principal=evaluator,
+            transition_principal=principal,
+        )
+
+tests/integration/test_planning_routing_bootstrap_postgres.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/application.py:883: in evaluate_candidate
+    evaluated = self.semantic_evaluation.execute(
+src/novel_forge/modules/story_design_authority/evaluation_runtime.py:1213: in execute
+    ).run_or_recover(operation_id=operation_id, project_id=command.project_id)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/content_authority/scheduler.py:242: in run_or_recover
+    output = execute_content_handler(
+src/novel_forge/modules/content_authority/runtime.py:22: in execute_content_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/story_design_authority/evaluation_runtime.py:577: in execute
+    qualification = validate_narrative_qualification(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+generator_operation_name = 'book_plan.generate'
+value = {'evaluations': [{'layer': 'BOOK_ARCHITECTURE', 'criteria': [{'verdict': 'PASS', 'criterion': 'NARRATIVE_CAPACITY', 'r..., 'profile_id': 'disclosure-obligation-semantic-v1', ...}], 'schema_version': 'progressive-narrative-qualification.v1'}
+require_pass = False, work_requirements = True, profile_version = '3.0.0'
+
+    def validate_narrative_qualification(
+        *,
+        generator_operation_name: str,
+        value: Any,
+        require_pass: bool = True,
+        work_requirements: bool = False,
+        profile_version: str = "2.0.0",
+    ) -> NarrativeQualificationResult:
+        profiles = required_qualification_profiles(
+            generator_operation_name,
+            work_requirements=work_requirements,
+            profile_version=profile_version,
+        )
+        if not isinstance(value, Mapping) or (
+            value.get("schema_version") != NARRATIVE_QUALIFICATION_SCHEMA_VERSION
+        ):
+            raise KernelError(
+                "NARRATIVE_SEMANTIC_EVALUATION_REQUIRED",
+                "candidate requires a versioned Narrative Semantic Evaluation",
+            )
+        evaluations = value.get("evaluations")
+        if not isinstance(evaluations, list):
+            raise KernelError(
+                "NARRATIVE_SEMANTIC_EVALUATION_INVALID",
+                "Narrative Semantic Evaluation entries must be an array",
+            )
+        by_layer: dict[NarrativeDesignLayer, Mapping[str, Any]] = {}
+        for item in evaluations:
+            if not isinstance(item, Mapping):
+                raise KernelError(
+                    "NARRATIVE_SEMANTIC_EVALUATION_INVALID",
+                    "Narrative Semantic Evaluation entries must be objects",
+                )
+            try:
+                layer = NarrativeDesignLayer(str(item.get("layer") or ""))
+            except ValueError as exc:
+                raise KernelError(
+                    "NARRATIVE_SEMANTIC_EVALUATION_INVALID",
+                    "Narrative Semantic Evaluation uses an unknown design layer",
+                ) from exc
+            if layer in by_layer:
+                raise KernelError(
+                    "NARRATIVE_SEMANTIC_EVALUATION_INVALID",
+                    "Narrative Semantic Evaluation repeats one design layer",
+                )
+            by_layer[layer] = item
+        expected_layers = {profile.layer for profile in profiles}
+        if set(by_layer) != expected_layers:
+            raise KernelError(
+                "NARRATIVE_SEMANTIC_EVALUATION_INVALID",
+                "Narrative Semantic Evaluation layers differ from the stage profile",
+            )
+    
+        receipts: list[NarrativeQualificationReceipt] = []
+        failures: list[str] = []
+        for profile in profiles:
+            evaluation = by_layer[profile.layer]
+            profile_verdicts: list[str] = []
+            identity = (
+                str(evaluation.get("profile_id") or ""),
+                str(evaluation.get("profile_version") or ""),
+                str(evaluation.get("profile_hash") or ""),
+                str(evaluation.get("capability_id") or ""),
+                str(evaluation.get("skill_ref") or ""),
+            )
+            expected_identity = (
+                profile.profile_id,
+                profile.profile_version,
+                profile.profile_hash,
+                profile.capability_id,
+                profile.skill_ref,
+            )
+            if identity != expected_identity:
+>               raise KernelError(
+                    "NARRATIVE_SEMANTIC_PROFILE_DRIFT",
+                    f"{profile.layer.value} evaluation differs from its frozen profile",
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: NARRATIVE_SEMANTIC_PROFILE_DRIFT: BOOK_ARCHITECTURE evaluation differs from its frozen profile
+
+src/novel_forge/modules/story_design_authority/qualification.py:671: KernelError
+____ test_semantic_planning_repair_retains_real_authority_candidate_lineage ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ba557f0>
+
+    def test_semantic_planning_repair_retains_real_authority_candidate_lineage(monkeypatch):
+        from novel_forge.modules.story_planning_runtime import application as planning_application
+    
+        ensure_migrated()
+        project_id = f"planning-semantic-repair:{uuid4().hex}"
+        workspace_id, book_id = f"workspace:{project_id}", f"book:{project_id}"
+        seed_authority_project_book(project_id=project_id, workspace_id=workspace_id, book_id=book_id)
+        inputs = _seed_inputs(project_id, book_id, target_chapter_count=6)
+        principal = _principal(project_id)
+        evaluations = []
+    
+        def independent_fixture_evaluation(generator):
+            result = scripted_qualification(generator)
+            if not evaluations:
+                criterion = result["evaluations"][0]["criteria"][0]
+                criterion.update(verdict="FAIL", repair_directive="Make the causal conflict sustainable")
+            evaluations.append(result)
+            return result
+    
+        monkeypatch.setattr(planning_application, "scripted_qualification", independent_fixture_evaluation)
+        application = StoryPlanningGenerationApplication(
+            DATABASE_URL, execution_binder=_ExternalEffectPepFixturePlanningBinder(target_chapter_count=6),
+            application_build_id="semantic-repair-lineage-test", commit_sha=RELEASE_SHA,
+            allow_scripted_evaluation_fixture=True,
+        )
+        command = StoryPlanningGenerationCommand(
+            project_id=project_id, workspace_id=workspace_id, book_id=book_id,
+            actor_id=principal.principal_id, generator_operation_name="book_plan.generate",
+            logical_key="book:semantic-repair", input_versions={
+                role: inputs[role] for role in GENERATOR_INPUT_ROLES["book_plan.generate"]
+            }, idempotency_key=f"{project_id}:generate", trace_id=f"trace:{project_id}",
+            correlation_id=f"correlation:{project_id}",
+        )
+>       generated = application.generate(command, principal=principal)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_planning_routing_bootstrap_postgres.py:307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/application.py:834: in generate
+    return self._evaluate_pending_if_required(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novel_forge.modules.story_planning_runtime.application.StoryPlanningGenerationApplication object at 0x10bdad1c0>
+advanced = PlanningGenerationResult(generation_operation_id='87706689-0b68-4e11-a531-9fa05fd2a397', candidate_asset_version_id='a...updated_by_operation_id': 'b4e4c3e3-1457-46fa-bf15-f07522c42509', 'version': 2}, planning_binding=None, replayed=False)
+generation_command = StoryPlanningGenerationCommand(project_id='planning-semantic-repair:314f0a51629c416690fd95480412f236', workspace_id='w...ng_execution_binding=None, world_preparation_request=None, edition_execution=None, execution_contract_version='1.21.0')
+principal = Principal(principal_id='planning-operator:planning-semantic-repair:314f0a51629c416690fd95480412f236', principal_type=<...planning-semantic-repair:314f0a51629c416690fd95480412f236'}), authentication_source='postgres-functional-loop-fixture')
+execution_probe = None
+
+    def _evaluate_pending_if_required(
+        self,
+        *,
+        advanced: PlanningGenerationResult,
+        generation_command: StoryPlanningGenerationCommand,
+        principal: Principal,
+        execution_probe: Callable[[], object] | None = None,
+    ) -> PlanningGenerationResult:
+        if advanced.status is not PlanningGenerationStatus.EVALUATION_PENDING:
+            return advanced
+        if generation_command.routing_bootstrap_authorization_id:
+            return advanced
+        candidate = self._require_asset(
+            project_id=generation_command.project_id,
+            asset_version_id=advanced.candidate_asset_version_id,
+        )
+        execution = dict(candidate["content"].get("execution_evidence") or {})
+        fixture = bool(execution.get("fixture_protocol_only"))
+        evaluator_principal = (
+            principal if fixture else self.narrative_evaluator_principal
+        )
+        if evaluator_principal is None:
+            raise KernelError(
+                "NARRATIVE_EVALUATION_PRINCIPAL_REQUIRED",
+                "production Planning evaluation has no independent trusted Principal",
+            )
+        self._probe(execution_probe)
+        return self.evaluate_candidate(
+            StoryPlanningEvaluationCommand(
+                project_id=generation_command.project_id,
+                workspace_id=generation_command.workspace_id,
+                book_id=generation_command.book_id,
+                actor_id=evaluator_principal.principal_id,
+                candidate_asset_version_id=advanced.candidate_asset_version_id,
+                generation_operation_id=advanced.generation_operation_id,
+                generator_operation_name=generation_command.generator_operation_name,
+                candidate_content_hash=str(candidate["content_hash"]),
+                evaluator_execution_class=(
+                    "SCRIPTED_FIXTURE" if fixture else "MODEL_PROVIDER"
+                ),
+                evaluation=(
+>                   scripted_qualification(
+                        generation_command.generator_operation_name,
+                        **qualification_profile_options(candidate["content"]),
+                    )
+                    if fixture
+                    else None
+                ),
+                idempotency_key=(
+                    f"{generation_command.idempotency_key}:semantic-evaluation"
+                ),
+                trace_id=generation_command.trace_id,
+                correlation_id=generation_command.correlation_id,
+            ),
+            principal=evaluator_principal,
+            transition_principal=principal,
+            execution_probe=execution_probe,
+        )
+E       TypeError: test_semantic_planning_repair_retains_real_authority_candidate_lineage.<locals>.independent_fixture_evaluation() got an unexpected keyword argument 'work_requirements'
+
+src/novel_forge/modules/story_planning_runtime/application.py:977: TypeError
+=========================== short test summary info ============================
+FAILED tests/integration/test_planning_routing_bootstrap_postgres.py::test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible
+FAILED tests/integration/test_planning_routing_bootstrap_postgres.py::test_semantic_planning_repair_retains_real_authority_candidate_lineage
+2 failed, 44 passed in 51.38s

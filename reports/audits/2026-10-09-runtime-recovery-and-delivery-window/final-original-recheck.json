@@ -1,0 +1,190 @@
+{
+  "project_id": "qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+  "provider_dispatches": 0,
+  "snapshot_fallback": false,
+  "membership_matches_original": true,
+  "local_recovery": {
+    "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+    "result_recoverable": false,
+    "process_status": "FAILED",
+    "receipt_unchanged": true,
+    "remote_outcome": "UNKNOWN",
+    "usage": "UNKNOWN"
+  },
+  "ledger_recovery_provenance": {
+    "source_backup": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/before-source-span-0182.dump",
+    "source_backup_sha256": "43894704331369cb25469005bab2ad2443db03dc9d9eee35f8d2452f84318f9b",
+    "source_time": "2026-10-08 20:18:23 CST",
+    "recovered_from_existing_backup_restore": true,
+    "empty_database_created": false,
+    "pgdata": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/pgdata",
+    "release_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+    "original_endpoint": "127.0.0.1:55489",
+    "source_snapshot_pgdata_retained": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/pgdata",
+    "currentness": "BACKUP_RECOVERY_POINT; post-backup ledger changes UNVERIFIED",
+    "provider_dispatches": 0,
+    "worker_started": false,
+    "object_store_original_data": "/Users/yuan/.codex/author-first-live/20261008T021735/minio"
+  },
+  "original_latest_ledger": "UNVERIFIED: original endpoint serves the explicitly restored backup recovery point",
+  "original_ledger": {
+    "schema_version": "runtime-ledger-inspection.v2",
+    "database_identity": {
+      "database": "nf_qidian_learning_20261008_test",
+      "role": "yuan",
+      "address": "127.0.0.1/32",
+      "port": 55489,
+      "server_started_at": "2026-10-08 15:43:08.961897+00:00",
+      "database_oid": 16384
+    },
+    "project_id": "qid-learning-prose-01",
+    "migration_head_expected": "20261008_0183_source_observation_span_identity",
+    "migration_head_present": true,
+    "applied_migration_count": 184,
+    "books": [
+      "book:qinglan-wendao-20261008"
+    ],
+    "book_production": [],
+    "effect_counts": {
+      "FAILED_FINAL": 1,
+      "READY": 1,
+      "SUCCEEDED": 37,
+      "UNKNOWN": 1
+    },
+    "unresolved_effects": [
+      {
+        "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+        "status": "UNKNOWN",
+        "effect_type": "model.invoke",
+        "provider": "production_execution_gateway",
+        "model_id": "gpt-6.1-sol",
+        "manual_resolution_required": false
+      },
+      {
+        "external_effect_id": "364241cb-7b36-498c-bce8-b14ef6912c84",
+        "status": "READY",
+        "effect_type": "model.invoke",
+        "provider": "production_execution_gateway",
+        "model_id": "gpt-6.1-sol",
+        "manual_resolution_required": false
+      },
+      {
+        "external_effect_id": "dc78b963-258b-491d-a038-21aae61909d7",
+        "status": "FAILED_FINAL",
+        "effect_type": "source.public_catalog.fetch",
+        "provider": "public_catalog_http",
+        "model_id": "",
+        "manual_resolution_required": false
+      }
+    ],
+    "unresolved_list_truncated": false,
+    "budget_reservations": [
+      {
+        "status": "HELD_UNKNOWN",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "cost_status": "PENDING",
+        "count": 1,
+        "recorded_tokens": "0",
+        "measured_tokens": null,
+        "conservative_estimate_tokens": null,
+        "unmeasured_reservations": 1,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "status": "RELEASED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "cost_status": "PENDING",
+        "count": 1,
+        "recorded_tokens": "0",
+        "measured_tokens": null,
+        "conservative_estimate_tokens": null,
+        "unmeasured_reservations": 1,
+        "reserved_amount": null,
+        "settled_amount": null
+      },
+      {
+        "status": "SETTLED",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "cost_status": "UNKNOWN",
+        "count": 22,
+        "recorded_tokens": "703762",
+        "measured_tokens": "430688",
+        "conservative_estimate_tokens": null,
+        "unmeasured_reservations": 12,
+        "reserved_amount": null,
+        "settled_amount": null
+      }
+    ],
+    "budget_scopes": [
+      {
+        "budget_scope_id": "budget-scope:76e661383987c283da1090e3f7170347c93ba67b6a86d9d90246a33e65dfc521",
+        "owner_kind": "BOOK_OPENING",
+        "owner_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+        "deadline_at": "2026-10-08 12:02:54.520687+00:00",
+        "expired": true,
+        "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+        "provider_call_limit": null,
+        "token_limit": null
+      }
+    ],
+    "production_authorization": "NOT_ESTABLISHED_BY_INSPECTION",
+    "provider_dispatches": 0,
+    "recovery": "Use the existing owner-specific recovery and Effect reconciliation commands; inspection never resends or releases reservations."
+  },
+  "creation": {
+    "formation_run_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+    "production": null,
+    "author_state": "RECONCILIATION_REQUIRED",
+    "unresolved_external_effects": [
+      {
+        "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+        "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+        "effect_status": "UNKNOWN",
+        "process_receipt_ref": "authority-asset-version:d45f6b0d-1029-4a4e-b03f-14df48e4f3ef",
+        "state": "RECONCILIATION_REQUIRED",
+        "usage": "UNKNOWN"
+      }
+    ],
+    "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS",
+    "responsible_party": "RUNTIME_OWNER",
+    "delivery": {
+      "required_action": "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT",
+      "export_status": "AVAILABLE_FOR_SAVED_PROSE",
+      "query_url": "",
+      "literary_quality": "NOT_PROVEN"
+    },
+    "formation_lifecycle": "READY",
+    "stage": "COMPLETE",
+    "version": 14,
+    "cancellation": null,
+    "candidates": [],
+    "failure": {},
+    "recovery_instruction": {},
+    "coordination": {
+      "runtime_job_id": "runtime-job:91720dba0fb9f464c350ddcba76fb9308d3c389b235e79a390d39bc9f6389c09",
+      "status": "READY",
+      "next_attempt_at": "2026-10-08 09:37:23.927285+00:00",
+      "error": {},
+      "result": null
+    },
+    "progress": [
+      "COMPLETE",
+      "READY",
+      14,
+      10,
+      0,
+      null,
+      {
+        "chapter": null,
+        "opening": [
+          "FAILED",
+          1
+        ],
+        "cancel_requested": false
+      }
+    ]
+  }
+}

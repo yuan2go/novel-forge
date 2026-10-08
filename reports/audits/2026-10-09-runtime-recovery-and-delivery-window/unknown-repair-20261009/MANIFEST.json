@@ -1,0 +1,254 @@
+{
+  "files": [
+    {
+      "path": "REPAIR.md",
+      "sha256": "ba2e4a38c3f1f213d8781d3f95c288d4abbd3b8410e89307fe6e1302bead50be",
+      "bytes": 6402
+    },
+    {
+      "path": "api-supervisor.log",
+      "sha256": "a8daf87d8c08ca84d0db24fdfb56c9257b5aea4d049d59aec3acc375327c189a",
+      "bytes": 1585
+    },
+    {
+      "path": "api.log",
+      "sha256": "87024fa869f2457c6bac52bee8de29f4d25446d852ec5b35969403f1c6615b2a",
+      "bytes": 256
+    },
+    {
+      "path": "backup.json",
+      "sha256": "aff2ef26adea8e25b02a76f6968da07b8d111789226218c40bf1350abdf59be2",
+      "bytes": 153
+    },
+    {
+      "path": "backup.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "baseline-routing-failures.log",
+      "sha256": "e0adb61976cb0fadc974fda45ccd7a9e2d308b4a0187561c1c06074ab9c3a603",
+      "bytes": 18707
+    },
+    {
+      "path": "before.patch",
+      "sha256": "b4557b05d4ce7bf4e9ca8d814158de6dcf084f4436a7afb39ee0a6706cbf89c9",
+      "bytes": 29760
+    },
+    {
+      "path": "codex-recovery-tests.log",
+      "sha256": "94bb663a6f75c3913a681eb14f82f90d829a7a1136c7007af4bdb183ed6a41b7",
+      "bytes": 99
+    },
+    {
+      "path": "deploy-repair.py",
+      "sha256": "789b667416a65f92a86839c0ca116a8d92a194a39d64cf297072a819674402a2",
+      "bytes": 4578
+    },
+    {
+      "path": "documentation-final.json",
+      "sha256": "a9affb0dcf3f652d719a1774989cdc763ced29758bb246743b93dca208aa01a4",
+      "bytes": 771
+    },
+    {
+      "path": "documentation-final.log",
+      "sha256": "a9affb0dcf3f652d719a1774989cdc763ced29758bb246743b93dca208aa01a4",
+      "bytes": 771
+    },
+    {
+      "path": "documentation.json",
+      "sha256": "365f0a0ab32da356d13ea94c3ce2f02ec89ba6e7e3d53372bd0d2539fc22b7b1",
+      "bytes": 771
+    },
+    {
+      "path": "documentation.log",
+      "sha256": "365f0a0ab32da356d13ea94c3ce2f02ec89ba6e7e3d53372bd0d2539fc22b7b1",
+      "bytes": 771
+    },
+    {
+      "path": "downstream-postgres.log",
+      "sha256": "0bbad99ab2f4f25a24379b1f29dfe89d1092ca5bf25fdf1b5e97937a11081407",
+      "bytes": 18718
+    },
+    {
+      "path": "final-api-auth.log",
+      "sha256": "c32da0870b898e9bd0ffc3780e1e3f3049c273026858d4dad3ca21e933a0ae38",
+      "bytes": 1584
+    },
+    {
+      "path": "final-concurrency.log",
+      "sha256": "83d6b6eccb049277a9385735449b549af424dc7073334c1f62ecbfd5e62c34e3",
+      "bytes": 98
+    },
+    {
+      "path": "final-recovery-postgres.log",
+      "sha256": "800b248fe1a6cc6f69a3f1e76f3844fd4fe079889caa0c95ecade6a6896481c0",
+      "bytes": 116
+    },
+    {
+      "path": "final-ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    {
+      "path": "final-unit.log",
+      "sha256": "a59b095b2081e121e664b533c7bc017c436f4443fe9174afa313f589fcfcbc07",
+      "bytes": 9634
+    },
+    {
+      "path": "health.json",
+      "sha256": "2c67e5a4f5eec40916cd2c875ebae6a9353f82b5777550f16bf282647a4fd910",
+      "bytes": 100
+    },
+    {
+      "path": "late-evidence-tests.log",
+      "sha256": "63f295cc6133a136ddd040741137ca75f1b4ba1b7bd143ce509e103421ba8f67",
+      "bytes": 99
+    },
+    {
+      "path": "ledger-after.json",
+      "sha256": "03cf1023389570d88d61d91ca64a163e301a1d5bf34157a963bd905237ef5f3b",
+      "bytes": 1696
+    },
+    {
+      "path": "ledger-before.json",
+      "sha256": "03cf1023389570d88d61d91ca64a163e301a1d5bf34157a963bd905237ef5f3b",
+      "bytes": 1696
+    },
+    {
+      "path": "ledger-unchanged.json",
+      "sha256": "6f25b6770c484fa326bdfce243f596c8961fe937eeaca23cb8d207d3d1563b63",
+      "bytes": 493
+    },
+    {
+      "path": "native-migration.json",
+      "sha256": "0eabd1fbf49dfe32f74f67894031644460fad392ff8ac68558e9731cd5df3185",
+      "bytes": 33859
+    },
+    {
+      "path": "native-migration.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "original-readback.json",
+      "sha256": "a2fd0914d8c11da003c0c85a6d53c6d37e0c4f7fd1ab7e006de2d2e5f7b88ce6",
+      "bytes": 6857
+    },
+    {
+      "path": "original-readback.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "owner-postgres.log",
+      "sha256": "01b7cdc325ecdddbc2d8462bf716e466d1daf753680817e62672c61a6e17d22c",
+      "bytes": 176
+    },
+    {
+      "path": "port-0.patch",
+      "sha256": "8a0ea6901e99bb4bf9ea245f6777b5b394e6a27c08f42fb949a1093c05d963a0",
+      "bytes": 18165
+    },
+    {
+      "path": "port-1.patch",
+      "sha256": "71421a1714dbfecbe62cb764efb64968127ad3f5238cd844698a2a282f9322c3",
+      "bytes": 8095
+    },
+    {
+      "path": "port-2.patch",
+      "sha256": "f8b2b7860cb042f7f6a81bdb16afadd4abd9250404062331606c8238c14d9c4a",
+      "bytes": 12362
+    },
+    {
+      "path": "port-3.patch",
+      "sha256": "40c94b185f0f385db275b16e859f35b0e7f702328bdb9b119a6a237786988acf",
+      "bytes": 5775
+    },
+    {
+      "path": "port-4.patch",
+      "sha256": "e373ae5d9aa8afa1d19bcb1aab5005141da8e764dec6462db860ea23e230814a",
+      "bytes": 1186
+    },
+    {
+      "path": "port-5.patch",
+      "sha256": "e625f95dc3728a427ac971390a3e1604bd67efa7262ffc94e3c261201d4e1dd5",
+      "bytes": 890
+    },
+    {
+      "path": "port-6.patch",
+      "sha256": "b1dafcd9ed4452dd922890358da7510955d92cea4e0447f03a1b1b88089b0b1e",
+      "bytes": 761
+    },
+    {
+      "path": "reconciliation-tests.log",
+      "sha256": "cdd477d5090cab28c4f31aa7026a65cfb0309d298e733d7b6e12596bfa81e44c",
+      "bytes": 99
+    },
+    {
+      "path": "red-cache.log",
+      "sha256": "0cae23f47670022d262d2e354961e97b5e8cd4d63cd00416fdc4b029675370fd",
+      "bytes": 3721
+    },
+    {
+      "path": "red-original-reconciliation.log",
+      "sha256": "ff6e65700baec1d3ba3f5c3b9293bc72d3bb19b296af3aa8cc1f592b19041e9b",
+      "bytes": 3495
+    },
+    {
+      "path": "red-stale-record.log",
+      "sha256": "9f21dcc3774e8bf07082a46fa9e241723912f0d1a2b0115cc8a4962da7dcdffb",
+      "bytes": 1535
+    },
+    {
+      "path": "release-manifest.json",
+      "sha256": "1714a6f6f44a66ca02e9af95ee082d223d6dc356210a55e770b5d271e158a0c1",
+      "bytes": 4721
+    },
+    {
+      "path": "snapshot-and-backup.py",
+      "sha256": "6075fd88235b58ddd71ac1e29781f1881d5c140a21946cb540f4088281e237ab",
+      "bytes": 2598
+    },
+    {
+      "path": "source.patch",
+      "sha256": "75dbc8744c77c491fc8d6120b8d9a58c0c1770e90efc88e9d8f1c8d4bba2db35",
+      "bytes": 89377
+    },
+    {
+      "path": "test-postgres-stop.log",
+      "sha256": "ca19178a35ab4153b75b494963b66ce8243e1b94c173107c87b44d09db23652d",
+      "bytes": 56
+    },
+    {
+      "path": "test-postgres.log",
+      "sha256": "fa9f88808c8f9994b2a0ff839cf505282c9e9f8a0d918cd8877136463f79428d",
+      "bytes": 14062
+    },
+    {
+      "path": "unit-architecture.log",
+      "sha256": "da76acca565724fef689e97042ae7444ab36ea0ac909c13f9b82bec53b10fa7e",
+      "bytes": 253
+    },
+    {
+      "path": "validate-all.log",
+      "sha256": "be8182ad8a5153ba9e4abb5e42c2064d9cee04f64f129cb5676e096b8f3b03e9",
+      "bytes": 1293605
+    },
+    {
+      "path": "validate.log",
+      "sha256": "7eed45932c14d9a2218f1bf7df217f81a1556c4e1eb4e9df77d113c0e79be28f",
+      "bytes": 865
+    },
+    {
+      "path": "verification.json",
+      "sha256": "851697f69a788f8b6f4a63b40aa1988df0fbf99055493794d283e3ac6cb05b8c",
+      "bytes": 2565
+    }
+  ],
+  "excluded": [
+    "*.private.json",
+    "*.dump"
+  ],
+  "privacy": "LOCAL_PRIVATE_ONLY"
+}

@@ -55,11 +55,12 @@ class ExecutionOutcome(StrEnum):
 
 
 def local_cli_remote_outcome_unknown(
-    *, transport: str, outcome: str, started_at: Any, usage_receipt_ref: str | None,
+    *, transport: str, outcome: str, started_at: Any, usage_receipt_ref: str | None, failure_code: str | None = None,
 ) -> bool:
     return (
         transport == ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
-        and outcome in {ExecutionOutcome.UNKNOWN, ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED, ExecutionOutcome.ORPHANED}
+        and (outcome in {ExecutionOutcome.UNKNOWN, ExecutionOutcome.TIMED_OUT, ExecutionOutcome.CANCELLED, ExecutionOutcome.ORPHANED}
+            or (outcome == ExecutionOutcome.RETRYABLE_FAILURE and failure_code == "PROCESS_EXIT_FAILURE"))
         and (started_at is not None or outcome == ExecutionOutcome.ORPHANED)
         and not usage_receipt_ref
     )

@@ -1,0 +1,34 @@
+{
+  "run_id": "f4c4bfa0d6ef4cbd8e022f6a34ac4804",
+  "baseline_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+  "test_service_identity": [
+    "postgres",
+    55690,
+    "yuan",
+    "2026-10-09 01:46:46.208207+08:00"
+  ],
+  "groups": [
+    {
+      "name": "delivery-window-final",
+      "database": "nf_40_delivery_window_final_f4c4bfa0d6ef4cbd_test",
+      "files": [
+        "tests/integration/test_book_delivery_window_postgres.py"
+      ],
+      "started_at": "2026-10-08T18:10:55.378708+00:00",
+      "log": "delivery-window-final.log",
+      "command": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_book_delivery_window_postgres.py",
+        "--junitxml=/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/continuation-40-validation-20261009/extension-check-04/delivery-window-final.xml"
+      ],
+      "exit_code": 0,
+      "test_database_removed": true,
+      "completed_at": "2026-10-08T18:10:59.996684+00:00"
+    }
+  ],
+  "real_model_calls": 0,
+  "original_database_used": false
+}

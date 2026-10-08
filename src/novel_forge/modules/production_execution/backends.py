@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.logging.execution import execution_event, execution_step
+
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
@@ -48,7 +50,7 @@ from .process_supervisor import (
     ProcessTimeout,
     ResultIntegrity,
 )
-from .provider_protocol_failure import codex_protocol_failure
+from .provider_protocol_failure import codex_protocol_failure, read_codex_stream_summary
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
     CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
@@ -283,6 +285,7 @@ _CODEX_TOOL_ITEM_TYPES = {
 }
 
 
+@execution_step("production_execution.parse_codex_jsonl_evidence")
 def parse_codex_jsonl_evidence(
     stdout: str,
     *,
@@ -312,8 +315,11 @@ def parse_codex_jsonl_evidence(
     if not isinstance(usage, Mapping):
         raise ValueError("Codex JSONL has no terminal measured usage")
 
+    if events[-1] is not terminal or sum(event.get("type") == "turn.completed" for event in events) != 1 or any(event.get("type") == "turn.failed" for event in events):
+        raise ValueError("Codex JSONL has conflicting terminal evidence")
+
     def token(name: str) -> int:
-        value = usage.get(name, 0)
+        value = usage.get(name) if name in {"input_tokens", "output_tokens"} else usage.get(name, 0)
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise ValueError(f"Codex usage {name} must be a non-negative integer")
         return value
@@ -577,6 +583,7 @@ class ResultValidator:
     def __init__(self, store: ExecutionRecordStore) -> None:
         self.store = store
 
+    @execution_step("production_execution.ResultValidator.successful_result")
     def successful_result(
         self,
         record: ExecutionRecord,
@@ -1568,6 +1575,7 @@ class CodexCliExecutionBackend:
         )
         return self._submit(request, admission)
 
+    @execution_step("production_execution.CodexCliExecutionBackend._submit")
     def _submit(
         self,
         request: ExecutionRequest,
@@ -1703,21 +1711,53 @@ class CodexCliExecutionBackend:
         self.record_store.save_record(record)
         return handle
 
+    @execution_step("production_execution.CodexCliExecutionBackend.reconcile")
     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
         record = self.record_store.get_record(handle.execution_id)
         recovery = self.supervisor.recover(handle.execution_id)
+        if record.handle.contract_hash != handle.contract_hash:
+            raise ValueError("execution handle identity differs from frozen recovery record")
+        for key in ("execution_id", "operation_id", "attempt_id", "fencing_token"):
+            if getattr(recovery.receipt, key) != getattr(record.request, key):
+                raise ValueError("original process receipt identity differs from frozen execution")
+        if record.process_receipt is not None and any(
+            getattr(record.process_receipt, key) != getattr(recovery.receipt, key)
+            for key in ("request_digest", "command_sha256", "input_sha256")
+        ):
+            raise ValueError("original process receipt identity digest drift")
         record.process_receipt = recovery.receipt
         receipt_ref = self.record_store.put_evidence(
             "process-receipt", handle.execution_id, recovery.receipt.to_dict()
         )
-        if record.result is not None:
+        stream_summary = read_codex_stream_summary(recovery.receipt.stdout_path)
+        execution_event("codex.stream", "observed", **stream_summary)
+        uncertain = {ExecutionOutcome.ACCEPTED, ExecutionOutcome.RUNNING, ExecutionOutcome.UNKNOWN, ExecutionOutcome.ORPHANED}
+        from .provider_protocol_failure import codex_completed_turn
+        orphan_completion = (recovery.receipt.status is ProcessReceiptStatus.ORPHANED
+            and recovery.receipt.result_integrity is ResultIntegrity.VALID
+            and (self.pricing is not None or self.account_entitlement is not None)
+            and codex_completed_turn(Path(recovery.receipt.stdout_path).read_text(encoding="utf-8")))
+        fingerprint = _sha256({"receipt_ref": receipt_ref, "stdout_sha256": stream_summary.get("stdout_sha256")})
+        changed = record.raw_evidence.get("reconciliation_fingerprint") != fingerprint
+        if record.result is not None and (record.result.outcome not in uncertain or not (changed or orphan_completion)):
+            execution_event("codex.recovery", "cached", cached_result=True,
+                outcome=record.result.outcome, usage_present=bool(record.result.usage_receipt_ref),
+                cost_present=bool(record.result.cost_receipt_ref))
             return record.result
+        if record.result is not None:
+            prior_ref = self.record_store.put_evidence("execution-result-history", handle.execution_id, record.result.to_dict())
+            history = record.raw_evidence.setdefault("prior_result_refs", [])
+            if prior_ref not in history:
+                history.append(prior_ref)
+            record.result = None
+        record.raw_evidence["stream_diagnostics"] = stream_summary
+        record.raw_evidence["reconciliation_fingerprint"] = fingerprint
         self.record_store.save_record(record)
         if (
             recovery.receipt.status
             in {ProcessReceiptStatus.SUCCEEDED, ProcessReceiptStatus.CORRUPT_RESULT}
             and recovery.receipt.returncode == 0
-        ):
+        ) or orphan_completion:
             try:
                 self._validate_successful_process(record, recovery.receipt)
             except _CodexResultFailure as failure:
@@ -1726,6 +1766,7 @@ class CodexCliExecutionBackend:
                         "failure_code": failure.code,
                         "failure_message": str(failure),
                         "failure_disposition": (
+                            "RECONCILIATION_REQUIRED" if failure.code == "CODEX_JSONL_EVIDENCE_INVALID" else
                             "RETRYABLE" if failure.retryable else "FINAL"
                         ),
                     }
@@ -1733,6 +1774,7 @@ class CodexCliExecutionBackend:
                 record.result = ExecutionReconciler.non_success(
                     record,
                     (
+                        ExecutionOutcome.UNKNOWN if failure.code == "CODEX_JSONL_EVIDENCE_INVALID" else
                         ExecutionOutcome.RETRYABLE_FAILURE
                         if failure.retryable
                         else ExecutionOutcome.FINAL_FAILURE
@@ -1743,6 +1785,8 @@ class CodexCliExecutionBackend:
                     record, recovery.receipt, record.result
                 )
             else:
+                for key in ("failure_code", "failure_message", "failure_disposition"):
+                    record.raw_evidence.pop(key, None)
                 record.result = ResultValidator(self.record_store).successful_result(
                     record, process_receipt_ref=receipt_ref
                 )
@@ -1803,6 +1847,7 @@ class CodexCliExecutionBackend:
                 )
         return replace(result, **refs)
 
+    @execution_step("production_execution.CodexCliExecutionBackend._prepare_payload")
     def _prepare_payload(
         self,
         request: ExecutionRequest,
@@ -1864,7 +1909,6 @@ class CodexCliExecutionBackend:
             "never",
             "--ignore-user-config",
             "--ignore-rules",
-            "--ephemeral",
             "--cd",
             self.execution_policy.fixed_working_directory,
             "-",
@@ -1940,10 +1984,13 @@ class CodexCliExecutionBackend:
             + hashlib.sha256(
                 json.dumps(command, separators=(",", ":")).encode("utf-8")
             ).hexdigest(),
+            "local_session_persistence": "EPHEMERAL" if "--ephemeral" in command else "DURABLE",
+            "session_recovery_policy": "codex-local-session-evidence.v1",
             "local_user_config_ignored": ignores_user_config,
             "local_user_config_is_model_authority": False,
         }
 
+    @execution_step("production_execution.CodexCliExecutionBackend._validate_successful_process")
     def _validate_successful_process(
         self,
         record: ExecutionRecord,
@@ -2088,6 +2135,7 @@ class CodexCliExecutionBackend:
             ),
         }
 
+    @execution_step("production_execution.CodexCliExecutionBackend.cancel")
     def cancel(
         self, handle: ExecutionHandle, reason: str
     ) -> ExecutionCancellationResult:

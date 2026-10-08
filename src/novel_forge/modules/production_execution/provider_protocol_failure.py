@@ -1,6 +1,63 @@
 from __future__ import annotations
 
 import json
+import hashlib
+from pathlib import Path
+
+from novel_forge.logging.execution import execution_error_message
+
+
+def codex_stream_summary(stdout: str) -> dict:
+    summary = {"version": "codex-stream-diagnostics.v1", "event_counts": {},
+        "turn_completed": False, "usage_present": False, "stream_disconnected": False,
+        "response_body_decode_failed": False, "remote_outcome": "UNESTABLISHED"}
+    allowed = {"thread.started", "turn.started", "turn.completed", "turn.failed",
+        "error", "item.started", "item.updated", "item.completed"}
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except (ValueError, TypeError, RecursionError):
+            continue
+        if not isinstance(event, dict):
+            continue
+        kind = event.get("type")
+        if not isinstance(kind, str) or kind not in allowed:
+            continue
+        counts = summary["event_counts"]
+        counts[kind] = counts.get(kind, 0) + 1
+        if kind == "thread.started" and isinstance(event.get("thread_id"), str):
+            summary["local_thread_id"] = event["thread_id"]
+        if kind == "turn.completed":
+            summary["turn_completed"] = True
+            summary["usage_present"] = isinstance(event.get("usage"), dict)
+        if kind in {"error", "turn.failed"}:
+            error = event.get("error")
+            message = event.get("message") or (error.get("message") if isinstance(error, dict) else "")
+            if isinstance(message, str):
+                execution_error_message("codex.stream", message)
+                summary["stream_disconnected"] |= "stream disconnected before completion" in message
+                summary["response_body_decode_failed"] |= "error decoding response body" in message
+    return summary
+
+
+def read_codex_stream_summary(path: str) -> dict:
+    try:
+        with Path(path).open("rb") as stream:
+            size = stream.seek(0, 2)
+            stream.seek(0)
+            data = stream.read(524288)
+            if size > 1048576:
+                stream.seek(-524288, 2)
+                data += b"\n" + stream.read(524288)
+            else:
+                data += stream.read(524288)
+        with Path(path).open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        return {**codex_stream_summary(data.decode("utf-8", errors="replace")),
+            "stdout_sha256": digest, "stdout_bytes": size, "scan_truncated": size > 1048576}
+    except OSError:
+        return {"version": "codex-stream-diagnostics.v1", "status": "UNAVAILABLE",
+            "remote_outcome": "UNESTABLISHED"}
 
 
 def codex_protocol_failure(stdout: str) -> str | None:
@@ -19,3 +76,18 @@ def codex_protocol_failure(stdout: str) -> str | None:
             continue
     return None
 
+
+def codex_completed_turn(stdout: str) -> bool:
+    try:
+        events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+    except (ValueError, TypeError, RecursionError):
+        return False
+    if not events or any(not isinstance(event, dict) for event in events):
+        return False
+    kinds = [event.get("type") for event in events]
+    return (kinds[-1] == "turn.completed" and kinds.count("turn.completed") == 1
+        and kinds.count("turn.started") <= 1 and kinds.count("thread.started") <= 1
+        and "turn.failed" not in kinds and "error" not in kinds
+        and isinstance(events[-1].get("usage"), dict)
+        and all(type(events[-1]["usage"].get(key)) is int and events[-1]["usage"][key] >= 0
+            for key in ("input_tokens", "output_tokens")))

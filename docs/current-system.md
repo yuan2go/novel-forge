@@ -28,6 +28,12 @@ canonicalized JSON input. Moving an unchanged input file preserves that identity
 input values derive a different ordinary CLI identity; after an uncertain response, continue
 or reconcile the returned original work handles before considering any new input.
 A current-manuscript command may resolve its Project from the selected Book run.
+At a settled idle author-first checkpoint, `authority-manuscript extend-delivery-window`
+extends that same run within its frozen full-book target. Book Authority atomically appends
+versioned policy and mutation receipts and advances only the delivery target and Book
+version. Original Formation requests, profiles, saved prose and accepted cursor retain
+their identities. Exact checkpoint/key replay recovers a lost response; pending effects,
+unknown usage and held execution leases block extension.
 The default is authorized automatic direction comparison; an approved fixed direction
 and explicit author selection remain available. Formation and Opening create the existing
 Book, plans, source snapshots and Pack bindings. The native Chapter Saga uses
@@ -612,9 +618,12 @@ environment. Neither an adapter name nor protocol compatibility identifies the s
 operator or inference engine. The current production Router candidate selection admits
 DeepSeek and/or Codex CLI; a configured `openai` adapter is not thereby a Router candidate.
 
-Membership Codex invocations force ChatGPT login, ignore user configuration/rules and
-use an ephemeral session. Initial and explicitly authorized recovered submission share
-the same command builder; reconciliation reads existing process/receipt evidence.
+Membership Codex invocations force ChatGPT login and ignore user configuration/rules.
+Initial and explicitly authorized recovered submission share the same command builder.
+New commands retain local session evidence; historical ephemeral requests are unchanged.
+Reconciliation reads original process/receipt evidence
+and may recover a complete validated turn without another model request. Verified original
+remote receipts can append a Kernel reconciliation while preserving terminal history.
 The default child environment excludes `OPENAI_BASE_URL` and API-key variables but
 inherits allowlisted HTTP/HTTPS proxies. This limits environment inheritance, not all
 possible managed configuration or network intermediaries. Endpoint attribution requires

@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from novel_forge.logging.execution import execution_step
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation
@@ -3222,9 +3224,10 @@ class _PlanningGatewayEffectAdapter:
         return self._invoke(stable_idempotency_key=stable_idempotency_key,
             capability=capability, request_payload=request_payload, reconciliation=False)
 
+    @execution_step("story_planning_runtime._PlanningGatewayEffectAdapter._invoke")
     def _invoke(
         self, *, stable_idempotency_key: str, capability: str,
-        request_payload: dict[str, Any], reconciliation: bool,
+        request_payload: dict[str, Any], reconciliation: bool, authorization: Any = None,
     ) -> ProviderResult:
         request = self.binding.request
         if (
@@ -3249,7 +3252,8 @@ class _PlanningGatewayEffectAdapter:
             else:
                 handle = self.session.gateway.submit(request)
             request_sent = True
-            result = self.session.gateway.reconcile(handle)
+            result = (self.session.gateway.recover_existing_execution(request, handle, authorization)
+                if authorization is not None else self.session.gateway.reconcile(handle))
         except ExternalEffectAdapterError:
             raise
         except Exception as exc:
@@ -3330,6 +3334,22 @@ class _PlanningGatewayEffectAdapter:
 
     def query(self, **kwargs: Any) -> ProviderResult:
         return self._invoke(**kwargs, reconciliation=True)
+
+    def query_recovered(self, *, attempt_command, **kwargs):
+        from novel_forge.modules.production_execution.contracts import ExecutionRecoveryAction, ExecutionRecoveryAuthorization
+
+        request = self.binding.request
+        if attempt_command.attempt_id != request.attempt_id or attempt_command.project_id != request.project_id:
+            raise ExternalEffectAdapterError("Planning query requires the original Attempt", request_sent=False)
+        authorization = ExecutionRecoveryAuthorization(
+            authorization_id=f"planning-query:{request.execution_id}:{attempt_command.fencing_token}",
+            execution_id=request.execution_id, external_effect_id=request.external_effect_id,
+            operation_id=request.operation_id, attempt_id=request.attempt_id,
+            execution_fencing_token=request.fencing_token, recovery_fencing_token=attempt_command.fencing_token,
+            recovery_worker_id=attempt_command.worker_id, action=ExecutionRecoveryAction.QUERY,
+            trace_id=request.trace_id, correlation_id=request.correlation_id,
+        )
+        return self._invoke(**kwargs, reconciliation=True, authorization=authorization)
 
     def _existing_handle(self) -> Any:
         record = self.session.evidence_store.find_record(self.binding.request.execution_id)
@@ -3691,12 +3711,15 @@ class _PlanningPepPort:
     external_effect_backed = True
     production_execution_gateway_backed = True
 
+    @execution_step("story_planning_runtime._PlanningPepPort.execute")
     def execute(self, command: DomainExecutionCommand) -> DomainExecutionCandidate:
         if command.capability != self.binding.request.capability:
             raise KernelError(
                 "PLANNING_PEP_CAPABILITY_DRIFT",
                 "Planning command differs from the frozen execution capability",
             )
+        if self.recovered_completion and self.recovered_completion.get("budget_usage_correction"):
+            self.recovered_completion = self._verified_reconciled_completion()
         try:
             dispatched = self.recovered_completion or dispatch_external_effect(
                 self.database_url,
@@ -3842,6 +3865,10 @@ class _PlanningPepPort:
             reserved_amount=self.reserved_amount,
             reserved_tokens=self.reserved_tokens,
         )
+        if self.recovered_completion and self.recovered_completion.get("budget_usage_correction"):
+            correction = self.recovered_completion["budget_usage_correction"]
+            settlement = {**settlement, "total_tokens": correction["actual_tokens"], "usage_basis": "ORIGINAL_RECEIPT_RECONCILIATION",
+                "usage": {**dict(usage), "budget_settlement_basis": "ORIGINAL_RECEIPT_RECONCILIATION"}}
         amount_value = settlement["amount"]
         amount = str(amount_value) if amount_value is not None else None
         total_tokens = int(settlement["total_tokens"])
@@ -3920,7 +3947,7 @@ class _PlanningPepPort:
             candidate_kind=CandidateKind.GENERATION,
             raw_output=dict(raw),
             evidence=DomainExecutionEvidence(
-                execution_id=request.execution_id,
+                execution_id=str(execution_result["execution_id"]) if dispatched.get("budget_usage_correction") else request.execution_id,
                 operation_id=request.operation_id,
                 attempt_id=request.attempt_id,
                 fencing_token=request.fencing_token,
@@ -3941,6 +3968,30 @@ class _PlanningPepPort:
             ),
         )
 
+    def _verified_reconciled_completion(self):
+        from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+
+        request = self.binding.request
+        if request.operation_id != self.context.operation_id or request.project_id != self.context.project_id:
+            raise KernelError("PLANNING_RECOVERY_FENCE_DRIFT", "Recovery consumer differs from the original owner")
+        verified = read_succeeded_external_effect(self.database_url, self.context, effect_id=self.effect_id,
+            attempt_command=WorkerLeaseCommand(request.attempt_id, request.project_id, self.worker_id,
+                request.fencing_token, request.trace_id, request.correlation_id))
+        if verified is None or verified.get("budget_usage_correction") != self.recovered_completion.get("budget_usage_correction"):
+            raise KernelError("PLANNING_RECOVERY_RECEIPT_DRIFT", "Consume only the current verified original reconciliation")
+        production = verified["provider_evidence"]["production_execution"]
+        if production["execution_request"].get("capability") != request.capability:
+            raise KernelError("PLANNING_PEP_CAPABILITY_DRIFT", "Recovered capability differs from the original request")
+        for original, current, identity_keys in (
+            (production["input_manifest"], self.binding.input_manifest.to_dict(), {"manifest_id", "operation_id", "attempt_id", "fencing_token"}),
+            (production["route_snapshot"], self.binding.route_snapshot.to_dict(), {"route_snapshot_id", "route_decision_id", "operation_id", "attempt_id"}),
+        ):
+            if ({k: v for k, v in original.items() if k not in identity_keys}
+                    != {k: v for k, v in current.items() if k not in identity_keys}):
+                raise KernelError("PLANNING_RECOVERY_INPUT_DRIFT", "Recovery must retain the original input hashes and frozen route")
+        return verified
+
+    @execution_step("story_planning_runtime._PlanningPepPort._record_model_evidence")
     def _record_model_evidence(
         self,
         *,
@@ -3989,6 +4040,7 @@ class _PlanningPepPort:
             },
         )
 
+    @execution_step("story_planning_runtime._PlanningPepPort._record_evidence")
     def _record_evidence(self, asset_type: str, content: dict[str, Any]) -> None:
         request = self.binding.request
         logical_ref = (

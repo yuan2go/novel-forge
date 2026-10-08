@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from novel_forge.logging.execution import execution_step
+
 from dataclasses import dataclass
 import hashlib
 import json
@@ -578,6 +580,7 @@ class PostgresBookOpeningRecoveryApplication:
             self._checkpoint("after_execution_loss_commit_before_response")
         return self._receipt_result(receipt, replayed=False)
 
+    @execution_step("book_authority.PostgresBookOpeningRecoveryApplication.assess_recovery")
     def assess_recovery(
         self,
         opening_run_id: str,
@@ -632,6 +635,7 @@ class PostgresBookOpeningRecoveryApplication:
             uow.commit()
         return self._assessment_result(row, replayed=False)
 
+    @execution_step("book_authority.PostgresBookOpeningRecoveryApplication.recover")
     def recover(
         self,
         recovery_assessment_id: str,
@@ -2773,13 +2777,33 @@ class PostgresBookOpeningRecoveryApplication:
                             ),
                         }
                     )
+        from novel_forge.modules.command_kernel.cli_effect_reconciliation import (
+            resolution, historical_cli_dispatch, verify_receipt,
+        )
+        classification_evidence = [dict(item) for item in evidence]
+        for effect_id in effect_ids:
+            resolved = resolution(uow.cursor, effect_id)
+            if resolved is None:
+                continue
+            effect = uow.repositories.external_effects.get_for_update(effect_id)
+            dispatch = historical_cli_dispatch(uow.cursor, effect)
+            if dispatch is None or resolved["dispatch_id"] != dispatch["dispatch_id"]:
+                self._stale("Original CLI reconciliation generation differs")
+            receipt = verify_receipt(uow.cursor, effect, dispatch,
+                resolved["original_remote_receipt_ref"], resolved["verified_by"])
+            for original, projected in zip(evidence, classification_evidence, strict=True):
+                if original["effect_id"] == effect_id and original["dispatch_id"] == dispatch["dispatch_id"]:
+                    original["original_cli_reconciliation"] = resolved
+                    projected.update(effect_status="SUCCEEDED" if receipt["outcome"] == "success" else "FAILED_FINAL",
+                        dispatch_status="SUCCEEDED" if receipt["outcome"] == "success" else "FAILED_FINAL",
+                        receipt_status="VERIFIED")
         classification = classify_narrative_evaluation_external_effects(
             {
                 **item,
                 "external_effect_id": item["effect_id"],
                 "dispatch_id": item["dispatch_id"] or None,
             }
-            for item in evidence
+            for item in classification_evidence
         ).value
         return {
             "classification": classification,

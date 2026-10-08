@@ -1,0 +1,18 @@
+{
+  "isolated_postgres_start": {
+    "error": "default port5432 already in use",
+    "recovery": "explicit55690 socket and cluster only"
+  },
+  "api_first_read": {
+    "error": "RemoteDisconnected via default opener",
+    "recovery": "direct loopback opener"
+  },
+  "api_wrong_route": {
+    "error": "404",
+    "recovery": "canonical route from runtime OpenAPI"
+  },
+  "documentation_first_check": {
+    "error": "new comments/docstring violate ratchet",
+    "recovery": "removed new comments/docstring; canonical runtime docs retained; final PASS"
+  }
+}

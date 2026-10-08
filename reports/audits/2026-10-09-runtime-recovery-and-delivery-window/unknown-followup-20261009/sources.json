@@ -1,0 +1,9 @@
+{
+  "official_sources": [
+    "https://learn.chatgpt.com/docs/config-file/config-reference",
+    "https://learn.chatgpt.com/docs/app-server",
+    "https://learn.chatgpt.com/docs/glossary"
+  ],
+  "local_runtime_version": "codex-cli 0.159.2",
+  "do_not_infer_old_outcome_from_current_probe": true
+}
