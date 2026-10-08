@@ -4192,13 +4192,19 @@ class SourceImportApplication:
         return result
 
     def _admit_mkaos_child(
-        self,
-        worker: WorkerLeaseCommand,
-        job: dict[str, Any],
-        observation: dict[str, Any],
-        *,
+        self, worker: WorkerLeaseCommand, job: dict[str, Any],
+        observation: dict[str, Any], *, payload: dict[str, Any],
+    ) -> str | None:
+        return self._admit_mkaos_from_scope(project_id=worker.project_id,
+            parent_operation_id=worker.causation_id, trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id, job=job,
+            observation=observation, payload=payload)
+
+    def _admit_mkaos_from_scope(
+        self, *, project_id: str, parent_operation_id: str, trace_id: str,
+        correlation_id: str, job: dict[str, Any], observation: dict[str, Any],
         payload: dict[str, Any],
-    ) -> None:
+    ) -> str | None:
         if observation.get("has_findings") is False:
             return
         capability = str(payload["mkaos_capability"])
@@ -4207,7 +4213,7 @@ class SourceImportApplication:
         observation_version = str(observation["observation_asset_version_id"])
         child = self._admit_child(
             definition_name=SOURCE_IMPORT_MKAOS_OPERATION,
-            project_id=worker.project_id,
+            project_id=project_id,
             workspace_id=str(job["workspace_id"]),
             actor_id=self.worker_id,
             idempotency_key=(
@@ -4217,10 +4223,10 @@ class SourceImportApplication:
                 f"{mkaos_methodology.skill_version}:"
                 f"{mkaos_methodology.content_digest}"
             ),
-            trace_id=worker.trace_id,
-            correlation_id=worker.correlation_id,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
             causation_id=observation_version,
-            parent_operation_id=worker.causation_id,
+            parent_operation_id=parent_operation_id,
             payload={
                 "import_job_id": job["import_job_id"],
                 "observation_asset_version_id": observation_version,
@@ -4247,7 +4253,7 @@ class SourceImportApplication:
                 {
                     "work_id": str(uuid4()),
                     "import_job_id": job["import_job_id"],
-                    "project_id": worker.project_id,
+                    "project_id": project_id,
                     "work_kind": "MKAOS_EXTRACTION",
                     "stable_key": (
                         f"{observation_version}:{abstraction_policy_version}:"
@@ -4265,13 +4271,15 @@ class SourceImportApplication:
             uow.commit()
         self._ready_child(
             operation_id=child,
-            project_id=worker.project_id,
+            project_id=project_id,
             actor_id=self.worker_id,
-            trace_id=worker.trace_id,
-            correlation_id=worker.correlation_id,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
             causation_id=observation_version,
             reason="MKAOS Observation abstraction ready",
         )
+
+        return child
 
     def _execute_mkaos(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

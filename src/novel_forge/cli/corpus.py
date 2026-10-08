@@ -59,6 +59,7 @@ def add_corpus_parser(subparsers: Any) -> None:
             "import",
             "run",
             "recover-stage",
+            "abstract",
             "status",
             "results",
             "targets",
@@ -94,6 +95,7 @@ def add_corpus_parser(subparsers: Any) -> None:
     parser.add_argument("--decision", type=Path)
     parser.add_argument("--job-id", default="")
     parser.add_argument("--operation-id", default="")
+    parser.add_argument("--observation-id", default="")
     parser.add_argument("--chunk-id", default="")
     parser.add_argument("--byte-start", type=int, default=0)
     parser.add_argument("--byte-end", type=int, default=0)
@@ -137,6 +139,13 @@ def run_corpus_command(settings: Any, args: argparse.Namespace) -> dict[str, Any
         project,
     )
     build, sha = authority_release_identity()
+    if args.action == "abstract":
+        from novel_forge.modules.source_import.corpus_ingestion.narrative_execution import admit_observation_abstraction
+        if not args.job_id or not args.observation_id:
+            raise ValueError("abstract requires --job-id and the exact --observation-id")
+        app = SourceImportApplication(settings.database_url, application_build_id=build, commit_sha=sha)
+        return admit_observation_abstraction(app, project_id=project,
+            import_job_id=args.job_id, observation_id=args.observation_id, principal=principal)
     if args.action == "recover-stage":
         from novel_forge.modules.source_import.corpus_ingestion.reading_recovery import admit_completed_stage_recovery
         if not args.operation_id:

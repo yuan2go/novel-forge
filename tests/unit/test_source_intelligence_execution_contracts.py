@@ -801,3 +801,23 @@ def test_completion_recovery_cannot_change_reading_task_or_receipt(monkeypatch):
                     {**payload, "completion_recovery": {**recovery, "original_effect_id": "other"}}):
         with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_INPUT_CHANGED"):
             module.require_completed_stage_recovery(SimpleNamespace(database_url="fixture"), "fixture-project", changed)
+
+
+@pytest.mark.parametrize("rows", [[], [("one", {}, {})], [("one", {}, {}), ("two", {}, {})]])
+def test_selective_abstraction_rejects_unreviewed_or_ambiguous_observations(monkeypatch, rows):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.corpus_ingestion import narrative_execution as module
+    uow = MagicMock()
+    uow.cursor.fetchall.return_value = rows
+    context = MagicMock()
+    context.__enter__.return_value = uow
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", lambda *a, **k: context)
+    repository = MagicMock()
+    repository.job.return_value = {"status": "PROCESSING"}
+    monkeypatch.setattr(module, "SourceImportRepository", lambda *a: repository)
+    app = SimpleNamespace(database_url="fixture", _admit_mkaos_from_scope=MagicMock())
+    with pytest.raises(KernelError, match="SOURCE_APPROVED_OBSERVATION_REQUIRED|SOURCE_ABSTRACTION_FINDINGS_REQUIRED"):
+        module.admit_observation_abstraction(app, project_id="fixture-project",
+            import_job_id="fixture-job", observation_id="fixture-observation", principal=MagicMock())
+    app._admit_mkaos_from_scope.assert_not_called()

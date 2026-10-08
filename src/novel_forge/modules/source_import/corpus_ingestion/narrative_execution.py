@@ -7,6 +7,7 @@ from typing import Any
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.authority_handler_runtime.runtime import require_current_fence
 from novel_forge.modules.source_authority.corpus import corpus_hash
+from novel_forge.modules.source_authority.curation import require_curated_operation_current
 from novel_forge.modules.source_authority.deconstruction import (
     AnalyzerContract,
     ObservationScope,
@@ -51,6 +52,45 @@ def narrative_strategy(strategy: Any) -> Any:
         profile_id="bounded-narrative." + strategy.profile_id,
         profile_version="2.0.0",
     )
+
+
+def admit_observation_abstraction(app, *, project_id, import_job_id, observation_id, principal):
+    principal.require("source.authority.execute", project_id)
+    with AuthorityUnitOfWork(app.database_url, coordinate_nested=True) as uow:
+        repository = SourceImportRepository(uow.cursor)
+        job = repository.job(project_id=project_id, import_job_id=import_job_id)
+        if job["status"] in {"PAUSED", "CANCELLED", "FAILED_FINAL"}:
+            raise KernelError("SOURCE_ABSTRACTION_JOB_BLOCKED", "The original job does not permit abstraction")
+        uow.cursor.execute(
+            """SELECT work.operation_id,operation.command_payload->'payload',version.content
+            FROM authority_source_import_work work JOIN authority_operation operation USING(operation_id,project_id)
+            JOIN authority_asset_version version ON version.asset_version_id=%s
+            JOIN authority_asset asset ON asset.asset_id=version.asset_id AND asset.project_id=work.project_id
+            WHERE work.project_id=%s AND work.import_job_id=%s
+              AND work.work_kind='DECONSTRUCTION' AND work.status IN ('SUCCEEDED','REUSED')
+              AND operation.status='SUCCEEDED' AND asset.asset_type='source_deconstruction_observation'
+              AND version.lifecycle='ACTIVE' AND version.governance='CLEAR'
+              AND work.result->>'observation_asset_version_id'=version.asset_version_id
+              AND work.result#>>'{review,decision}'='ACCEPT_IN_SCOPE'
+              AND work.result->>'semantic_evidence'='AGENT_REVIEW_ONLY'
+            ORDER BY work.created_at,work.operation_id LIMIT 2 FOR SHARE OF work,operation,version
+            """, [observation_id, project_id, import_job_id],
+        )
+        rows = uow.cursor.fetchall()
+        if len(rows) != 1:
+            raise KernelError("SOURCE_APPROVED_OBSERVATION_REQUIRED", "Select one exact active Observation from a completed in-scope Review in this job")
+        parent, payload, observation = rows[0]
+        if not payload.get("narrative_reading") or not observation["observation"]["findings"]:
+            raise KernelError("SOURCE_ABSTRACTION_FINDINGS_REQUIRED", "Only reviewed bounded-reading findings can enter selective abstraction")
+        require_curated_operation_current(SourceAuthorityRepository(uow.cursor), project_id, parent)
+        child = app._admit_mkaos_from_scope(project_id=project_id,
+            parent_operation_id=parent, trace_id=f"trace:selective-abstraction:{observation_id}",
+            correlation_id=import_job_id, job=job,
+            observation={"observation_asset_version_id": observation_id}, payload=payload)
+        uow.commit()
+    return {"operation_id": child, "observation_asset_version_id": observation_id,
+            "import_job_id": import_job_id, "scope": observation["scope"],
+            "whole_job_complete": False, "knowledge_approved": False, "model_calls": 0}
 
 
 def initial_reading_payload(parent, job, plan, scope, strategy, plan_version):

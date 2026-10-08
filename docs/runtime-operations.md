@@ -2897,6 +2897,12 @@ The Source owner admits one idempotent successor with the unchanged reading payl
 then `corpus run --job-id <original-job>` executes it through normal fences. It requires
 the exact original receipt and never falls back to a new send. Original failures remain;
 UNKNOWN, cancellation, changed inputs and chained completion recoveries are rejected.
+Use `corpus abstract --project-id <project> --job-id <job> --observation-id <version>`
+to select an exact active Observation whose bounded Review accepted its findings.
+The existing Source owner derives the extraction task, evidence and methodology from
+that Review; callers cannot supply replacement Source or methods. Other blocked reading
+units remain blocked. This selective path reuses the existing MKAOS extraction, runtime
+qualification and approval gates and does not declare the whole research job complete.
 
 ## Author-guided single-Book production
 
