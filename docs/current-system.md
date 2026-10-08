@@ -748,6 +748,16 @@ analysis and comparative prose benefit require their own evidence.
 
 ## Popular-work reference access
 
+Current integration boundaries, resolved from executable entry points:
+
+| Disposition | Existing owner and actual call path | Remaining limit |
+| --- | --- | --- |
+| Direct reuse | Corpus command → Source-owned UoW; Source Import scheduler/worker → Kernel ExternalEffect; `analysis_profiles.py` → bounded Corpus analysis; `craft_discovery.py` → Observation/Candidate extraction | Real authorized text and Provider execution are not established by controlled tests. |
+| Direct reuse | `MkaosAuthorityQuery._planning_cards` and current-origin checks → exact editorial-learning Card/hash binding → Formation/Planning filtered selection; `runtime_usage.py` → delivery/adoption/acceptance projections | Actual Card delivery and prose benefit require the corresponding current Book receipts. |
+| Supplemented | Native `source.import.market.refresh` → Qidian metadata adapter → `source.corpus.commit`; PostgreSQL market records → existing author panel/API/CLI | Official navigation, access and use evidence must still support every enabled definition. |
+| Separate existing path | `git_adapter.py` → repository discovery/import, retained for actual Git sources; Corpus authorized-file import → independently scoped text editions | Web sources never become synthetic Git repositories. |
+| Unverified | Current Qidian live rankings, lawful real-text learning, current-model context/paid dispatch, real A/B prose, and source-specific text/cache/index deletion receipts | Source retirement prevents new use; it does not by itself prove physical deletion or longitudinal quality. |
+
 One project/platform Source owns stable Qidian numeric work IDs and existing Corpus book
 identities. Different ranks, categories, periods and observation times remain separate.
 Migration 0182 adds metadata versions, immutable rank definitions, complete/partial/failed
