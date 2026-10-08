@@ -381,6 +381,10 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
         "EFFECT_BUDGET_EXECUTION_ASSERTION_FAILED", "RESOURCE_ROUTE_RESELECT_REQUIRED"}:
         return "FORMATION_OWNER_RECOVERY_REQUIRED"
     with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+        from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
+
+        if unresolved_cli_outcomes(uow.cursor, run["project_id"], book_id=run["book_id"]):
+            return "FORMATION_RECONCILIATION_OR_LEASE_REQUIRED"
         if selected_book_template(uow.cursor, project_id=run["project_id"], book_id=run["book_id"]) is None:
             return "FORMATION_OWNER_RECOVERY_REQUIRED"
         uow.cursor.execute("""SELECT count(DISTINCT job.input_snapshot->>'observed_version') FROM authority_runtime_job_attempt attempt

@@ -4,8 +4,10 @@
 
 Novel Forge is a local-first, PostgreSQL-authoritative AI novel production runtime. It
 combines versioned story-design and planning Authorities with durable book/chapter
-coordination, governed Provider and object-store effects, candidate review gates, and an
-atomic transition from a qualified chapter candidate to accepted narrative facts.
+coordination, governed Provider and object-store effects, and versioned manuscript
+delivery. Ordinary author-first writing saves complete drafts for reading, editing,
+continuation and exact-version export. Strict acceptance separately commits qualified
+chapter candidates as accepted narrative facts; it is not the ordinary delivery gate.
 
 It is not a one-shot prompt generator, a complete autonomous Agent product, or proof of
 long-form production quality. The current machine projection is

@@ -3216,6 +3216,13 @@ class _PlanningGatewayEffectAdapter:
         capability: str,
         request_payload: dict[str, Any],
     ) -> ProviderResult:
+        return self._invoke(stable_idempotency_key=stable_idempotency_key,
+            capability=capability, request_payload=request_payload, reconciliation=False)
+
+    def _invoke(
+        self, *, stable_idempotency_key: str, capability: str,
+        request_payload: dict[str, Any], reconciliation: bool,
+    ) -> ProviderResult:
         request = self.binding.request
         if (
             stable_idempotency_key != request.stable_idempotency_key
@@ -3229,9 +3236,19 @@ class _PlanningGatewayEffectAdapter:
             )
         request_sent = False
         try:
-            handle = self.session.gateway.submit(request)
+            if reconciliation:
+                handle = self._existing_handle()
+                if handle is None:
+                    return ProviderResult("ambiguous", "", {
+                        "external_state_unknown": True,
+                        "recovery_instruction": "Recover original execution evidence before reconciliation; query cannot submit",
+                    }, "")
+            else:
+                handle = self.session.gateway.submit(request)
             request_sent = True
             result = self.session.gateway.reconcile(handle)
+        except ExternalEffectAdapterError:
+            raise
         except Exception as exc:
             recovered = self.session.evidence_store.find_record(request.execution_id)
             submission_phase = (
@@ -3299,6 +3316,8 @@ class _PlanningGatewayEffectAdapter:
             ExecutionOutcome.FINAL_FAILURE: "final_failure",
             ExecutionOutcome.CANCELLED: "cancelled",
         }.get(result.outcome, "unknown")
+        if reconciliation:
+            outcome = {"success": "success", "final_failure": "failed_final"}.get(outcome, "ambiguous")
         return ProviderResult(
             outcome,
             handle.backend_execution_id,
@@ -3307,7 +3326,15 @@ class _PlanningGatewayEffectAdapter:
         )
 
     def query(self, **kwargs: Any) -> ProviderResult:
-        return self.execute(**kwargs)
+        return self._invoke(**kwargs, reconciliation=True)
+
+    def _existing_handle(self) -> Any:
+        record = self.session.evidence_store.find_record(self.binding.request.execution_id)
+        if record is None:
+            return None
+        if record.request.contract_hash != self.binding.request.contract_hash:
+            raise ExternalEffectAdapterError("Planning recovery differs from its original execution contract", request_sent=False)
+        return record.handle
 
     def cancel(
         self,
@@ -3318,10 +3345,19 @@ class _PlanningGatewayEffectAdapter:
         provider_request_id: str,
     ) -> ProviderResult:
         request = self.binding.request
-        handle = self.session.gateway.submit(request)
+        if (stable_idempotency_key != request.stable_idempotency_key or capability != request.capability
+                or str(request_payload.get("external_effect_id") or "") != request.external_effect_id):
+            raise ExternalEffectAdapterError("Planning cancellation differs from its frozen request", request_sent=False)
+        handle = self._existing_handle()
+        if handle is None:
+            return ProviderResult("ambiguous", "", {"external_state_unknown": True}, provider_request_id)
         cancellation = self.session.gateway.cancel(handle, "Planning cancellation")
+        cancelled = cancellation.outcome == "CANCELLED" and (
+            handle.transport != ExecutionRuntimeClass.LOCAL_CLI_REMOTE_INFERENCE
+            or cancellation.upstream_cancellation_outcome == "CANCELLED"
+        )
         return ProviderResult(
-            "cancelled",
+            "cancelled" if cancelled else "ambiguous",
             handle.backend_execution_id,
             {"production_execution_cancellation": cancellation.to_dict()},
             provider_request_id,
