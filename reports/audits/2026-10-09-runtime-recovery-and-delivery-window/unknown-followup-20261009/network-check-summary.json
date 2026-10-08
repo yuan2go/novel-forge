@@ -1,0 +1,190 @@
+{
+  "codex-doctor.json": {
+    "auth.credentials": {
+      "status": "ok",
+      "summary": "auth is configured",
+      "details": {
+        "auth file": "/Users/yuan/.codex/auth.json",
+        "auth storage mode": "File",
+        "stored API key": "false",
+        "stored ChatGPT tokens": "true",
+        "stored agent identity": "false",
+        "stored auth mode": "chatgpt"
+      }
+    },
+    "network.env": {
+      "status": "ok",
+      "summary": "network-related environment looks readable",
+      "details": {
+        "managed proxy": "not configured",
+        "proxy env vars": "none",
+        "respect system proxy": "disabled",
+        "system proxy": "manual"
+      }
+    },
+    "network.provider_reachability": {
+      "status": "ok",
+      "summary": "active provider endpoints are reachable over HTTP",
+      "details": {
+        "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+        "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 200)",
+        "reachability mode": "ChatGPT auth"
+      }
+    },
+    "network.websocket_reachability": {
+      "status": "warning",
+      "summary": "Responses WebSocket failed; HTTPS fallback may still work",
+      "details": {
+        "DNS": "1 IPv4, 1 IPv6, first IPv4",
+        "auth mode": "chatgpt",
+        "connect timeout": "15000 ms",
+        "endpoint": "wss://chatgpt.com/backend-api/<redacted>",
+        "handshake transport error": "network error: tls handshake eof",
+        "model provider": "openai",
+        "provider name": "OpenAI",
+        "proxy env vars": "none",
+        "supports websockets": "true",
+        "wire API": "responses"
+      }
+    }
+  },
+  "original_provider_default.json": {
+    "auth.credentials": {
+      "status": "ok",
+      "summary": "auth is configured",
+      "details": {
+        "auth file": "/Users/yuan/.codex/auth.json",
+        "auth storage mode": "File",
+        "stored API key": "false",
+        "stored ChatGPT tokens": "true",
+        "stored agent identity": "false",
+        "stored auth mode": "chatgpt"
+      }
+    },
+    "network.env": {
+      "status": "ok",
+      "summary": "network-related environment looks readable",
+      "details": {
+        "managed proxy": "not configured",
+        "proxy env vars": "none",
+        "respect system proxy": "disabled",
+        "system proxy": "manual"
+      }
+    },
+    "network.provider_reachability": {
+      "status": "warning",
+      "summary": "desktop update and runtime CDN is unreachable",
+      "details": {
+        "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+        "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+        "reachability mode": "ChatGPT auth"
+      }
+    },
+    "network.websocket_reachability": {
+      "status": "ok",
+      "summary": "Responses WebSocket is not enabled for the active provider",
+      "details": {
+        "model provider": "novel_forge_openai_no_retry",
+        "provider name": "OpenAI",
+        "proxy env vars": "none",
+        "supports websockets": "false",
+        "wire API": "responses"
+      }
+    }
+  },
+  "original_provider_explicit_proxy.json": {
+    "auth.credentials": {
+      "status": "ok",
+      "summary": "auth is configured",
+      "details": {
+        "auth file": "/Users/yuan/.codex/auth.json",
+        "auth storage mode": "File",
+        "stored API key": "false",
+        "stored ChatGPT tokens": "true",
+        "stored agent identity": "false",
+        "stored auth mode": "chatgpt"
+      }
+    },
+    "network.env": {
+      "status": "ok",
+      "summary": "network-related environment looks readable",
+      "details": {
+        "managed proxy": "not configured",
+        "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+        "respect system proxy": "disabled",
+        "system proxy": "manual"
+      }
+    },
+    "network.provider_reachability": {
+      "status": "warning",
+      "summary": "desktop update and runtime CDN is unreachable",
+      "details": {
+        "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+        "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+        "reachability mode": "ChatGPT auth"
+      }
+    },
+    "network.websocket_reachability": {
+      "status": "ok",
+      "summary": "Responses WebSocket is not enabled for the active provider",
+      "details": {
+        "model provider": "novel_forge_openai_no_retry",
+        "provider name": "OpenAI",
+        "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+        "supports websockets": "false",
+        "wire API": "responses"
+      }
+    }
+  },
+  "openai_explicit_proxy.json": {
+    "auth.credentials": {
+      "status": "ok",
+      "summary": "auth is configured",
+      "details": {
+        "auth file": "/Users/yuan/.codex/auth.json",
+        "auth storage mode": "File",
+        "stored API key": "false",
+        "stored ChatGPT tokens": "true",
+        "stored agent identity": "false",
+        "stored auth mode": "chatgpt"
+      }
+    },
+    "network.env": {
+      "status": "ok",
+      "summary": "network-related environment looks readable",
+      "details": {
+        "managed proxy": "not configured",
+        "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+        "respect system proxy": "disabled",
+        "system proxy": "manual"
+      }
+    },
+    "network.provider_reachability": {
+      "status": "warning",
+      "summary": "desktop update and runtime CDN is unreachable",
+      "details": {
+        "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+        "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+        "reachability mode": "ChatGPT auth"
+      }
+    },
+    "network.websocket_reachability": {
+      "status": "ok",
+      "summary": "Responses WebSocket handshake succeeded",
+      "details": {
+        "DNS": "1 IPv4, 1 IPv6, first IPv4",
+        "auth mode": "chatgpt",
+        "connect timeout": "15000 ms",
+        "endpoint": "wss://chatgpt.com/backend-api/<redacted>",
+        "handshake result": "HTTP 101 Switching Protocols",
+        "model provider": "openai",
+        "provider name": "OpenAI",
+        "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+        "reasoning header": "false",
+        "server model present": "false",
+        "supports websockets": "true",
+        "wire API": "responses"
+      }
+    }
+  }
+}

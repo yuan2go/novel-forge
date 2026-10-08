@@ -1,0 +1,22 @@
+..                                                                       [100%]
+=============================== warnings summary ===============================
+tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export
+  /Users/yuan/.codex/worktrees/work-adaptation-reader-prose-01/novel-forge/src/novel_forge/api/authority_app.py:783: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 2 warnings in 177.10s (0:02:57)

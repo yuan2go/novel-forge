@@ -1,0 +1,204 @@
+[
+  {
+    "scenario": "original_provider_default",
+    "returncode": 0,
+    "network": {
+      "network.env": {
+        "id": "network.env",
+        "category": "network",
+        "status": "ok",
+        "summary": "network-related environment looks readable",
+        "details": {
+          "managed proxy": "not configured",
+          "proxy env vars": "none",
+          "respect system proxy": "disabled",
+          "system proxy": "manual"
+        },
+        "remediation": null,
+        "durationMs": 0
+      },
+      "network.provider_reachability": {
+        "id": "network.provider_reachability",
+        "category": "reachability",
+        "status": "warning",
+        "summary": "desktop update and runtime CDN is unreachable",
+        "details": {
+          "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+          "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+          "reachability mode": "ChatGPT auth"
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "cause": "desktop update and runtime CDN is unreachable",
+            "measured": "https://chatgpt.com/backend-api/<redacted> request timed out",
+            "expected": "desktop update and runtime CDN reachable over HTTPS",
+            "remedy": "check proxy, firewall, DNS, and certificate access to chatgpt.com",
+            "fields": [
+              "desktop assets CDN"
+            ]
+          }
+        ],
+        "remediation": null,
+        "durationMs": 2407
+      },
+      "network.websocket_reachability": {
+        "id": "network.websocket_reachability",
+        "category": "websocket",
+        "status": "ok",
+        "summary": "Responses WebSocket is not enabled for the active provider",
+        "details": {
+          "model provider": "novel_forge_openai_no_retry",
+          "provider name": "OpenAI",
+          "proxy env vars": "none",
+          "supports websockets": "false",
+          "wire API": "responses"
+        },
+        "remediation": null,
+        "durationMs": 0
+      }
+    },
+    "provider_config": {
+      "model": "gpt-6.1-sol",
+      "model provider": "novel_forge_openai_no_retry"
+    },
+    "inference_dispatched": false
+  },
+  {
+    "scenario": "original_provider_explicit_proxy",
+    "returncode": 0,
+    "network": {
+      "network.env": {
+        "id": "network.env",
+        "category": "network",
+        "status": "ok",
+        "summary": "network-related environment looks readable",
+        "details": {
+          "managed proxy": "not configured",
+          "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+          "respect system proxy": "disabled",
+          "system proxy": "manual"
+        },
+        "remediation": null,
+        "durationMs": 0
+      },
+      "network.provider_reachability": {
+        "id": "network.provider_reachability",
+        "category": "reachability",
+        "status": "warning",
+        "summary": "desktop update and runtime CDN is unreachable",
+        "details": {
+          "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+          "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+          "reachability mode": "ChatGPT auth"
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "cause": "desktop update and runtime CDN is unreachable",
+            "measured": "https://chatgpt.com/backend-api/<redacted> request timed out",
+            "expected": "desktop update and runtime CDN reachable over HTTPS",
+            "remedy": "check proxy, firewall, DNS, and certificate access to chatgpt.com",
+            "fields": [
+              "desktop assets CDN"
+            ]
+          }
+        ],
+        "remediation": null,
+        "durationMs": 2327
+      },
+      "network.websocket_reachability": {
+        "id": "network.websocket_reachability",
+        "category": "websocket",
+        "status": "ok",
+        "summary": "Responses WebSocket is not enabled for the active provider",
+        "details": {
+          "model provider": "novel_forge_openai_no_retry",
+          "provider name": "OpenAI",
+          "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+          "supports websockets": "false",
+          "wire API": "responses"
+        },
+        "remediation": null,
+        "durationMs": 0
+      }
+    },
+    "provider_config": {
+      "model": "gpt-6.1-sol",
+      "model provider": "novel_forge_openai_no_retry"
+    },
+    "inference_dispatched": false
+  },
+  {
+    "scenario": "openai_explicit_proxy",
+    "returncode": 0,
+    "network": {
+      "network.env": {
+        "id": "network.env",
+        "category": "network",
+        "status": "ok",
+        "summary": "network-related environment looks readable",
+        "details": {
+          "managed proxy": "not configured",
+          "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+          "respect system proxy": "disabled",
+          "system proxy": "manual"
+        },
+        "remediation": null,
+        "durationMs": 0
+      },
+      "network.provider_reachability": {
+        "id": "network.provider_reachability",
+        "category": "reachability",
+        "status": "warning",
+        "summary": "desktop update and runtime CDN is unreachable",
+        "details": {
+          "ChatGPT inference URL": "https://chatgpt.com/backend-api/<redacted> reachable (HTTP 405)",
+          "desktop assets CDN": "https://chatgpt.com/backend-api/<redacted> request timed out (optional)",
+          "reachability mode": "ChatGPT auth"
+        },
+        "issues": [
+          {
+            "severity": "warning",
+            "cause": "desktop update and runtime CDN is unreachable",
+            "measured": "https://chatgpt.com/backend-api/<redacted> request timed out",
+            "expected": "desktop update and runtime CDN reachable over HTTPS",
+            "remedy": "check proxy, firewall, DNS, and certificate access to chatgpt.com",
+            "fields": [
+              "desktop assets CDN"
+            ]
+          }
+        ],
+        "remediation": null,
+        "durationMs": 2407
+      },
+      "network.websocket_reachability": {
+        "id": "network.websocket_reachability",
+        "category": "websocket",
+        "status": "ok",
+        "summary": "Responses WebSocket handshake succeeded",
+        "details": {
+          "DNS": "1 IPv4, 1 IPv6, first IPv4",
+          "auth mode": "chatgpt",
+          "connect timeout": "15000 ms",
+          "endpoint": "wss://chatgpt.com/backend-api/<redacted>",
+          "handshake result": "HTTP 101 Switching Protocols",
+          "model provider": "openai",
+          "provider name": "OpenAI",
+          "proxy env vars present": "HTTP_PROXY, HTTPS_PROXY, NO_PROXY",
+          "reasoning header": "false",
+          "server model present": "false",
+          "supports websockets": "true",
+          "wire API": "responses"
+        },
+        "remediation": null,
+        "durationMs": 2652
+      }
+    },
+    "provider_config": {
+      "model": "gpt-6.1-sol",
+      "model provider": "openai"
+    },
+    "inference_dispatched": false
+  }
+]

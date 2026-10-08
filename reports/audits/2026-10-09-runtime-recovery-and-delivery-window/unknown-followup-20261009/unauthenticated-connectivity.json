@@ -1,0 +1,62 @@
+[
+  {
+    "route": "direct",
+    "url": "https://chatgpt.com/backend-api/codex/models",
+    "returncode": 0,
+    "http_code": 401,
+    "http_connect": 0,
+    "http_version": "2",
+    "time_connect": 0.004123,
+    "time_appconnect": 0.296953,
+    "time_total": 0.468028,
+    "ssl_verify_result": 0,
+    "error": "",
+    "model_request": false,
+    "credentials_sent": false
+  },
+  {
+    "route": "system_proxy",
+    "url": "https://chatgpt.com/backend-api/codex/models",
+    "returncode": 0,
+    "http_code": 401,
+    "http_connect": 200,
+    "http_version": "2",
+    "time_connect": 0.000305,
+    "time_appconnect": 0.282609,
+    "time_total": 0.450247,
+    "ssl_verify_result": 0,
+    "error": "",
+    "model_request": false,
+    "credentials_sent": false
+  },
+  {
+    "route": "direct",
+    "url": "https://chatgpt.com/",
+    "returncode": 0,
+    "http_code": 403,
+    "http_connect": 0,
+    "http_version": "2",
+    "time_connect": 0.004106,
+    "time_appconnect": 0.290899,
+    "time_total": 0.458813,
+    "ssl_verify_result": 0,
+    "error": "",
+    "model_request": false,
+    "credentials_sent": false
+  },
+  {
+    "route": "system_proxy",
+    "url": "https://chatgpt.com/",
+    "returncode": 0,
+    "http_code": 403,
+    "http_connect": 200,
+    "http_version": "2",
+    "time_connect": 0.000341,
+    "time_appconnect": 0.27525,
+    "time_total": 0.395638,
+    "ssl_verify_result": 0,
+    "error": "",
+    "model_request": false,
+    "credentials_sent": false
+  }
+]

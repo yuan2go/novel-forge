@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="26" time="8.924" timestamp="2026-10-09T02:04:29.270285+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_acceptance_freezes_typed_execution_plan_for_chapter_outcome" time="2.641" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_author_workspace_keeps_frozen_profile_and_project_book_scope" time="0.161" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_accept_requires_all_evidence" time="0.200" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership" time="0.543"><failure message="novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership&gt;
+
+    def test_book_acceptance_atomically_materializes_projection_set_without_sidecar_ownership(
+        self,
+    ) -&gt; None:
+        project_id = identifier("book-chapter-vertical")
+        with tempfile.TemporaryDirectory() as root:
+            settings = IndustrialSettings(
+                root=Path(root),
+                environment="test",
+                storage_authority="postgresql",
+                database_url=DATABASE_URL,
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
+                "NOVEL_FORGE_AUTHORITY_WORKER_ID": "book-chapter-pep-worker",
+                "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
+            }
+            execution = build_production_execution_composition(settings, env=env)
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            followup = BookFollowupAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="book-chapter-vertical",
+                commit_sha="e" * 40,
+                model_port=build_reader_outcome_model_port(
+                    settings, execution=execution, env=env
+                ),
+                worker_id="book-followup-vertical-worker",
+            )
+            port = _SynchronousCommandPort(chapter)
+            authority = PostgresBookAuthority(
+                DATABASE_URL,
+                chapter_port=port,
+                followup_application=followup,
+                application_build_id="book-chapter-vertical",
+                commit_sha="e" * 40,
+                legacy_fixture_input_allowed=True,
+            )
+            principal = Principal(
+                principal_id="book-authority-operator",
+                principal_type=PrincipalType.LOCAL_OPERATOR,
+                permissions=frozenset(
+                    {
+                        "book.authority.execute",
+                        "book.followup:*",
+                        "chapter.authority.execute",
+                    }
+                ),
+                project_scope=frozenset({project_id}),
+                authentication_source="integration-test",
+            )
+            candidates = (
+                chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
+                    project_id, current_state_contract=True
+                )
+            )
+            longform_versions = self._seed_book_inputs(project_id)
+            book = authority.start(
+                StartBookProductionCommand(
+                    project_id=project_id,
+                    workspace_id=f"workspace:{project_id}",
+                    book_id=f"book:{project_id}",
+                    actor_id=principal.principal_id,
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                    stable_idempotency_key=f"{project_id}:book:v1",
+                    book_design_version=longform_versions.pop("book_design_version"),
+                    book_plan_version=longform_versions.pop("book_plan_version"),
+                    production_profile_version="production-profile:v1",
+                    longform_context_versions=longform_versions,
+                    target_chapter_count=1,
+                    input_mode="LEGACY_FIXTURE_INPUT_MODE",
+                    light_recap_cadence=1,
+                    formal_recap_cadence=1,
+                ),
+                principal=principal,
+            )
+            paused = authority.pause(
+                book.book_run_id, reason="fixture pause", principal=principal
+            )
+            resumed = authority.resume(
+                book.book_run_id, reason="fixture resume", principal=principal
+            )
+            self.assertEqual(paused["state"], "PAUSED")
+            self.assertEqual(resumed["state"], "READY")
+            plan = next(
+                item for item in candidates if item["asset_type"] == "chapter_plan"
+            )
+            chapter_command = SubmitBookChapterCommand(
+                context_token_budget=64_000,
+                book_run_id=book.book_run_id,
+                chapter_number=1,
+                title="The Cost of a Promise",
+                premise="The protagonist must pay a visible cost.",
+                chapter_plan_asset_version_id=str(plan["asset_version_id"]),
+                chapter_plan_content_hash=str(plan["content_hash"]),
+                context_candidates=tuple(candidates),
+            )
+    
+&gt;           request = authority.submit_chapter(chapter_command, principal=principal)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/book_authority/production.py:947: in submit_chapter
+    return self._dispatch_reserved_chapter(str(existing[0]), principal=principal)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/production.py:972: in _dispatch_reserved_chapter
+    admission = self.chapter_port.submit(chapter_command, principal=principal)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:69: in submit
+    result = self.application.run(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/application.py:128: in run
+    return run_single_chapter_slice(
+src/novel_forge/modules/chapter_authority/orchestrator.py:501: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:574: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='b190c8d6-e61b-44b1-9b93-c0cd4028b155', project_id='book-chapter-vertical-9c721a3d-...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -&gt; dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+&gt;           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_cancel_preserves_accepted_chapter_history" time="0.567"><failure message="novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_cancel_preserves_accepted_chapter_history&gt;
+
+    def test_book_cancel_preserves_accepted_chapter_history(self) -&gt; None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        delegated = fixture["authority"].submit_chapter(self._chapter_command(fixture, chapter_number=1), principal=fixture["principal"])
+&gt;       self._run_child(fixture, delegated["chapter_root_operation_id"])
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1353: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='f2f004c0-fb38-4295-add5-8f679cb9c7e4', project_id='book-authority-control-542c3c6d...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -&gt; dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+&gt;           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_cancel_preserves_successful_unaccepted_child" time="0.499"><failure message="novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_cancel_preserves_successful_unaccepted_child&gt;
+
+    def test_book_cancel_preserves_successful_unaccepted_child(self) -&gt; None:
+        fixture = self._new_book_fixture(target_chapter_count=2)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1), principal=fixture["principal"])
+&gt;       self._run_child(fixture, delegated["chapter_root_operation_id"])
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1333: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='66575629-5072-41c2-9f5d-64bfeb646d6c', project_id='book-authority-control-f8b89591...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -&gt; dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+&gt;           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_cancel_propagates_to_child" time="0.131" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_chapter_dispatch_idempotency" time="0.110" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_cursor_advances_once" time="0.565"><failure message="novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_cursor_advances_once&gt;
+
+    def test_book_cursor_advances_once(self) -&gt; None:
+        failure = {"enabled": True}
+    
+        def inject(point: str) -&gt; None:
+            if failure["enabled"] and point == "after_acceptance_before_cursor":
+                raise RuntimeError("injected crash inside acceptance transaction")
+    
+        fixture = self._new_book_fixture(
+            target_chapter_count=1, failure_injector=inject
+        )
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+&gt;       self._run_child(fixture, delegated["chapter_root_operation_id"])
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1444: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='0297fed1-fb6c-4f08-9e36-df8ae9f16a28', project_id='book-authority-control-50be81ad...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -&gt; dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+&gt;           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_does_not_precreate_all_chapters" time="0.053" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_mutations_are_transaction_commands_with_business_events" time="0.117" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_pause_blocks_new_child" time="0.073" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_reconcile_after_worker_restart" time="0.112" /><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_reconcile_running_child_versions_preserves_receipts_and_acceptance" time="0.518"><failure message="novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_reconcile_running_child_versions_preserves_receipts_and_acceptance&gt;
+
+    def test_book_reconcile_running_child_versions_preserves_receipts_and_acceptance(self) -&gt; None:
+        fixture = self._new_book_fixture(target_chapter_count=1)
+        authority = fixture['authority']
+        request = authority.submit_chapter(self._chapter_command(fixture,chapter_number=1),principal=fixture['principal'])
+        request_id,root_id = request['chapter_request_id'],request['chapter_root_operation_id']
+        authority.reconcile_chapter(request_id)
+        before = authority.require(fixture['book'].book_run_id)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT operation_id,request_digest,status FROM authority_operation WHERE project_id=%s AND command_payload #&gt;&gt; '{payload,action}'='chapter_reconcile' ORDER BY operation_id",[fixture['project_id']])
+            receipts = uow.cursor.fetchall()
+        scheduler = fixture['chapter'].scheduler(principal=fixture['worker'])
+        for _ in range(2):
+            scheduler.tick(project_id=fixture['project_id'],root_operation_id=root_id)
+            authority.reconcile_chapter(request_id)
+            self.assertEqual(authority.require(fixture['book'].book_run_id),before)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT operation_id,request_digest,status FROM authority_operation WHERE project_id=%s AND command_payload #&gt;&gt; '{payload,action}'='chapter_reconcile' ORDER BY operation_id",[fixture['project_id']])
+            self.assertEqual(uow.cursor.fetchall(),receipts)
+&gt;       self._run_child(fixture,root_id)
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1384: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='c78b723e-2783-4891-b1b7-effee322678f', project_id='book-authority-control-7f7e8090...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -&gt; dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+&gt;           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_resume_reconciles_existing_child" time="0.547"><failure message="novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_resume_reconciles_existing_child&gt;
+
+    def test_book_resume_reconciles_existing_child(self) -&gt; None:
+        fixture = self._new_book_fixture(target_chapter_count=1)
+        delegated = fixture["authority"].submit_chapter(
+            self._chapter_command(fixture, chapter_number=1),
+            principal=fixture["principal"],
+        )
+        fixture["authority"].pause(
+            fixture["book"].book_run_id,
+            reason="pause while child runs",
+            principal=fixture["principal"],
+        )
+&gt;       self._run_child(fixture, delegated["chapter_root_operation_id"])
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1303: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='92376cf7-d462-406c-9e50-c60f590fd58f', project_id='book-authority-control-002d5611...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -&gt; dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+&gt;           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_to_chapter_two_chapter_vertical_postgres" time="0.155"><failure message="novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly">self = &lt;tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests testMethod=test_book_to_chapter_two_chapter_vertical_postgres&gt;
+
+    def test_book_to_chapter_two_chapter_vertical_postgres(self) -&gt; None:
+        project_id = identifier("book-two-chapter-vertical")
+        with tempfile.TemporaryDirectory() as root:
+            settings = IndustrialSettings(
+                root=Path(root),
+                environment="test",
+                storage_authority="postgresql",
+                database_url=DATABASE_URL,
+            )
+            env = {
+                "NOVEL_FORGE_ENVIRONMENT": "test",
+                "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
+                "NOVEL_FORGE_MODEL_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_EMBEDDING_PROVIDER": "scripted_provider_v2",
+                "NOVEL_FORGE_EMBEDDING_MODEL": "scripted-embedding-v1",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root) / "objects"),
+                "NOVEL_FORGE_AUTHORITY_WORKER_ID": "two-chapter-pep-worker",
+            }
+            execution = build_production_execution_composition(settings, env=env)
+            chapter = build_chapter_authority_application(
+                settings, execution=execution, env=env
+            )
+            followup = BookFollowupAuthorityApplication(
+                DATABASE_URL,
+                application_build_id="two-chapter-vertical",
+                commit_sha="e" * 40,
+                model_port=build_reader_outcome_model_port(
+                    settings, execution=execution, env=env
+                ),
+                worker_id="two-chapter-followup-worker",
+            )
+            authority = PostgresBookAuthority(
+                DATABASE_URL,
+                chapter_port=ChapterAuthorityCommandAdapter(
+                    chapter,
+                    external_effect_adapters=execution.external_effect_adapters,
+                ),
+                followup_application=followup,
+                application_build_id="two-chapter-vertical",
+                commit_sha="e" * 40,
+                legacy_fixture_input_allowed=True,
+            )
+            principal = self._principal(project_id)
+            worker = Principal(
+                principal_id="two-chapter-worker",
+                principal_type=PrincipalType.WORKER,
+                permissions=frozenset(
+                    {"chapter.authority.execute", "external_effect.execute"}
+                ),
+                project_scope=frozenset({project_id}),
+                authentication_source="integration-test",
+            )
+            candidates = list(
+                chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(
+                    project_id
+                )
+            )
+            plans = self._seed_two_chapter_plans(
+                project_id, candidates, canonical_execution=True
+            )
+            longform_versions = self._seed_book_inputs(project_id)
+            book = authority.start(
+                StartBookProductionCommand(
+                    project_id=project_id,
+                    workspace_id=f"workspace:{project_id}",
+                    book_id=f"book:{project_id}",
+                    actor_id=principal.principal_id,
+                    trace_id=identifier("trace"),
+                    correlation_id=identifier("correlation"),
+                    stable_idempotency_key=f"{project_id}:book:v1",
+                    book_design_version=longform_versions.pop("book_design_version"),
+                    book_plan_version=longform_versions.pop("book_plan_version"),
+                    production_profile_version="production-profile:v1",
+                    longform_context_versions=longform_versions,
+                    target_chapter_count=2,
+                    input_mode="LEGACY_FIXTURE_INPUT_MODE",
+                ),
+                principal=principal,
+            )
+    
+            accepted_versions: list[tuple[str, str]] = []
+            for chapter_number in (1, 2):
+                chapter_candidates = tuple(
+                    plans[chapter_number]
+                    if item["asset_type"] == "chapter_plan"
+                    else item
+                    for item in candidates
+                )
+                plan = plans[chapter_number]
+                command = SubmitBookChapterCommand(
+                context_token_budget=64_000,
+                    book_run_id=book.book_run_id,
+                    chapter_number=chapter_number,
+                    title=f"Chapter {chapter_number}",
+                    premise=f"Chapter {chapter_number} pays a visible cost.",
+                    chapter_plan_asset_version_id=str(plan["asset_version_id"]),
+                    chapter_plan_content_hash=str(plan["content_hash"]),
+                    context_candidates=chapter_candidates,
+                )
+                delegated = authority.submit_chapter(command, principal=principal)
+                replay = authority.submit_chapter(command, principal=principal)
+                self.assertEqual(
+                    delegated["chapter_root_operation_id"],
+                    replay["chapter_root_operation_id"],
+                )
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute(
+                        """
+                        SELECT COUNT(*) FROM authority_operation
+                        WHERE project_id=%s AND definition_name='chapter.slice.run'
+                        """,
+                        [project_id],
+                    )
+                    self.assertEqual(int(uow.cursor.fetchone()[0]), chapter_number)
+    
+                # A quality-gated Chapter may execute one bounded correction loop.
+                # Keep the proof bounded without assuming exactly one operation per
+                # canonical node.
+                for _ in range(len(ChapterNode) * 2 + 4):
+                    scheduler = chapter.scheduler(principal=worker)
+&gt;                   tick = scheduler.tick(
+                        project_id=project_id,
+                        root_operation_id=delegated["chapter_root_operation_id"],
+                    )
+
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:732: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = _ExecutionIntentHandler()
+request = ChapterHandlerRequest(operation_id='09cdafd7-8f6e-4f17-991b-e9c222c029f5', project_id='book-two-chapter-vertical-1a7ac...er=yuan dbname=nf_40_delivery_window_50dce5aad17f400d_test', definition_version='3.10.0', source_definition_version='')
+
+    def execute(self, request: ChapterHandlerRequest) -&gt; ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        style_view = None
+        if request.work_requirements_enabled:
+            policies = [
+                item for item in request.inputs if item.asset_type == "style_policy"
+            ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+&gt;                   raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly
+
+src/novel_forge/modules/chapter_authority/handlers.py:379: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_extension_preserves_start_and_frontier_and_replays_response_loss" time="0.055"><failure message="novel_forge.modules.command_kernel.errors.KernelError: AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority">work = (&lt;novel_forge.modules.book_authority.production.PostgresBookAuthority object at 0x10bcde6c0&gt;, Principal(principal_id='...ow-7bc5cc4e-9051-4590-b7ba-28a21b38b887', 'book_id': 'book:delivery-window-7bc5cc4e-9051-4590-b7ba-28a21b38b887', ...})
+
+    def test_extension_preserves_start_and_frontier_and_replays_response_loss(work):
+        authority, principal, command, before = work
+        def lose_response(checkpoint):
+            if checkpoint == "after_operation_completion_before_response":
+                raise RuntimeError("lost committed response")
+        authority.failure_injector = lose_response
+        with pytest.raises(RuntimeError, match="lost committed response"):
+            extend(work)
+        authority.failure_injector = None
+        replay = extend(work)
+        assert replay["replayed"] and replay["stop_after_chapter"] == 40
+        after = authority.require(before["book_run_id"])
+        assert after["target_chapter_count"] == 40 and after["version"] == before["version"] + 1
+        for key in ("production_profile_version", "root_operation_id", "saga_id", "book_plan_version", "book_design_version",
+                    "current_chapter", "accepted_through_chapter", "input_snapshot_id", "state"):
+            assert after[key] == before[key]
+        assert after["delivery_window_policy"]["full_book_target_chapters"] == 240
+        assert authority.start(command, principal=principal).replayed
+        assert authority.require(before["book_run_id"])["target_chapter_count"] == 40
+        manifest = current_manuscript(DATABASE_URL, book=after, principal=principal)
+        assert manifest["target_chapters"] == 40 and manifest["units"] == []
+        assert manifest["delivery_window_policy"]["asset_version_id"] == replay["policy_asset_version_id"]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT content FROM authority_asset_version WHERE asset_version_id=%s", [before["production_profile_version"]])
+            assert uow.cursor.fetchone()[0]["execution_window"]["stop_after_chapter"] == 3
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s", [before["project_id"]])
+            assert uow.cursor.fetchone()[0] == 0
+&gt;       second = extend(work, target=80, key="extend-80", version=after["version"])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_book_delivery_window_postgres.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_book_delivery_window_postgres.py:52: in extend
+    return extend_delivery_window(authority, book["book_run_id"], principal=principal,
+src/novel_forge/modules/book_authority/creation_window.py:119: in extend_delivery_window
+    return authority._execute_mutation(book=book, action="delivery_window_extend",
+src/novel_forge/modules/book_authority/production.py:3302: in _execute_mutation
+    return execute_transaction_command(
+src/novel_forge/modules/command_kernel/service.py:91: in execute_transaction_command
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/production.py:3275: in governed_handler
+    result = handler(uow, operation_id, checkpoint)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/book_authority/creation_window.py:105: in commit
+    asset = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;novel_forge.storage.authority_asset_store.AuthorityAssetDocumentRepository object at 0x10bf95fd0&gt;
+command = AuthorityAssetWriteCommand(operation_id='28e717cf-7e4f-4417-82c5-509c6d53b267', project_id='delivery-window-7bc5cc4e-9...rsion_id=None, reference_asset_ids=(), causation_id='', lifecycle='ACTIVE', eligibility='ELIGIBLE', governance='CLEAR')
+
+    def materialize_output(self, command: AuthorityAssetWriteCommand) -&gt; AuthorityAssetDocument:
+        self._lock_identity(command.project_id, command.logical_ref)
+        self._require_executing_operation(command.operation_id, command.project_id)
+        self._require_project_references(command.project_id, command.reference_asset_ids)
+        locator = self._locator_for_update(command.project_id, command.logical_ref)
+        if locator is not None and locator["asset_id"] != command.asset_id:
+            raise KernelError(
+                "AUTHORITY_ASSET_LOCATOR_CONFLICT",
+                "logical asset reference is already bound to a different Asset",
+            )
+        current_version_id = locator["asset_version_id"] if locator else None
+        if current_version_id != command.expected_current_asset_version_id:
+&gt;           raise KernelError(
+                "AUTHORITY_ASSET_VERSION_CONFLICT",
+                "expected current AssetVersion does not match PostgreSQL authority",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: AUTHORITY_ASSET_VERSION_CONFLICT: expected current AssetVersion does not match PostgreSQL authority
+
+src/novel_forge/storage/authority_asset_store.py:68: KernelError</failure></testcase><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_invalid_extension_keeps_original_work[0]" time="0.035" /><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_invalid_extension_keeps_original_work[3]" time="0.033" /><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_invalid_extension_keeps_original_work[241]" time="0.034" /><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_extension_rollback_and_concurrent_checkpoint" time="0.095" /><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_unknown_original_effect_and_scope_block_extension" time="0.050" /><testcase classname="tests.integration.test_book_delivery_window_postgres" name="test_key_cannot_change_target_or_principal" time="0.046" /></testsuite></testsuites>

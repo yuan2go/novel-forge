@@ -1,0 +1,97 @@
+2026-10-09 00:54:50.346 CST [64314] LOG:  starting PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit
+2026-10-09 00:54:50.348 CST [64314] LOG:  could not bind IPv6 address "::1": Address already in use
+2026-10-09 00:54:50.348 CST [64314] HINT:  Is another postmaster already running on port 5432? If not, wait a few seconds and retry.
+2026-10-09 00:54:50.348 CST [64314] LOG:  could not bind IPv4 address "127.0.0.1": Address already in use
+2026-10-09 00:54:50.348 CST [64314] HINT:  Is another postmaster already running on port 5432? If not, wait a few seconds and retry.
+2026-10-09 00:54:50.348 CST [64314] WARNING:  could not create listen socket for "localhost"
+2026-10-09 00:54:50.348 CST [64314] FATAL:  could not create any TCP/IP sockets
+2026-10-09 00:54:50.349 CST [64314] LOG:  database system is shut down
+2026-10-09 00:55:02.054 CST [64326] LOG:  starting PostgreSQL 16.15 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit
+2026-10-09 00:55:02.054 CST [64326] LOG:  listening on IPv4 address "127.0.0.1", port 55690
+2026-10-09 00:55:02.055 CST [64326] LOG:  listening on Unix socket "/tmp/nf-recovery-test-socket/.s.PGSQL.55690"
+2026-10-09 00:55:02.074 CST [64329] LOG:  database system was shut down at 2026-10-09 00:14:28 CST
+2026-10-09 00:55:02.081 CST [64326] LOG:  database system is ready to accept connections
+2026-10-09 00:58:24.808 CST [64951] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 00:58:24.808 CST [64951] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 00:58:24.808 CST [64951] STATEMENT:  UPDATE authority_effect_reconciliation_evidence SET evidence='{}'::jsonb WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 00:58:24.811 CST [64952] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 00:58:24.811 CST [64952] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 00:58:24.811 CST [64952] STATEMENT:  DELETE FROM authority_effect_reconciliation_evidence WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:00:02.467 CST [64327] LOG:  checkpoint starting: time
+2026-10-09 01:00:59.645 CST [64327] LOG:  checkpoint complete: wrote 563 buffers (3.4%); 0 WAL file(s) added, 1 removed, 0 recycled; write=56.723 s, sync=0.224 s, total=57.178 s; sync files=5755, longest=0.022 s, average=0.001 s; distance=6204 kB, estimate=6204 kB; lsn=0/1A093880, redo lsn=0/1A093848
+2026-10-09 01:02:22.412 CST [65470] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:02:22.412 CST [65470] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:02:22.412 CST [65470] STATEMENT:  UPDATE authority_effect_reconciliation_evidence SET evidence='{}'::jsonb WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:02:22.419 CST [65471] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:02:22.419 CST [65471] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:02:22.419 CST [65471] STATEMENT:  DELETE FROM authority_effect_reconciliation_evidence WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:02:24.730 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:02:24.916 CST [64327] LOG:  checkpoint complete: wrote 528 buffers (3.2%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.017 s, sync=0.072 s, total=0.186 s; sync files=2877, longest=0.001 s, average=0.001 s; distance=30449 kB, estimate=30449 kB; lsn=0/1BE4FD60, redo lsn=0/1BE4FD28
+2026-10-09 01:02:26.608 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:02:26.610 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.001 s, sync=0.001 s, total=0.003 s; sync files=4, longest=0.001 s, average=0.001 s; distance=26678 kB, estimate=30072 kB; lsn=0/1D85D6B0, redo lsn=0/1D85D678
+2026-10-09 01:04:54.781 CST [66139] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:04:54.781 CST [66139] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:04:54.781 CST [66139] STATEMENT:  UPDATE authority_effect_reconciliation_evidence SET evidence='{}'::jsonb WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:04:54.785 CST [66140] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:04:54.785 CST [66140] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:04:54.785 CST [66140] STATEMENT:  DELETE FROM authority_effect_reconciliation_evidence WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:04:57.127 CST [66215] FATAL:  terminating connection due to administrator command
+2026-10-09 01:04:57.213 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:04:57.418 CST [64327] LOG:  checkpoint complete: wrote 597 buffers (3.6%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.031 s, sync=0.078 s, total=0.205 s; sync files=2901, longest=0.001 s, average=0.001 s; distance=31817 kB, estimate=31817 kB; lsn=0/1F76FB20, redo lsn=0/1F76FAE8
+2026-10-09 01:04:59.053 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:04:59.055 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.001 s, sync=0.001 s, total=0.002 s; sync files=4, longest=0.001 s, average=0.001 s; distance=26678 kB, estimate=31303 kB; lsn=0/2117D678, redo lsn=0/2117D640
+2026-10-09 01:08:19.506 CST [66804] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:08:19.506 CST [66804] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:08:19.506 CST [66804] STATEMENT:  UPDATE authority_effect_reconciliation_evidence SET evidence='{}'::jsonb WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:08:19.510 CST [66805] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:08:19.510 CST [66805] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:08:19.510 CST [66805] STATEMENT:  DELETE FROM authority_effect_reconciliation_evidence WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:08:21.482 CST [66880] FATAL:  terminating connection due to administrator command
+2026-10-09 01:08:21.578 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:08:22.055 CST [64327] LOG:  checkpoint complete: wrote 3372 buffers (20.6%); 0 WAL file(s) added, 0 removed, 3 recycled; write=0.059 s, sync=0.227 s, total=0.477 s; sync files=8939, longest=0.002 s, average=0.001 s; distance=60689 kB, estimate=60689 kB; lsn=0/24CC1B48, redo lsn=0/24CC1B10
+2026-10-09 01:08:23.598 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:08:23.600 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.001 s, sync=0.001 s, total=0.002 s; sync files=4, longest=0.001 s, average=0.001 s; distance=26690 kB, estimate=57289 kB; lsn=0/266D23D0, redo lsn=0/266D2398
+2026-10-09 01:08:28.948 CST [66704] ERROR:  effect dispatch already has a held lease
+2026-10-09 01:08:28.948 CST [66704] CONTEXT:  PL/pgSQL function authority_acquire_effect_dispatch_lease(text,text,text,integer) line 30 at RAISE
+2026-10-09 01:08:28.948 CST [66704] STATEMENT:  
+	            SELECT lease_id, fencing_token, acquired_at, expires_at
+	            FROM authority_acquire_effect_dispatch_lease($1, $2, $3, $4)
+	            
+2026-10-09 01:08:30.805 CST [66922] ERROR:  time zone "Not/A_Real_Zone" not recognized
+2026-10-09 01:08:30.805 CST [66922] STATEMENT:  SELECT NOW() AT TIME ZONE $1
+2026-10-09 01:13:23.394 CST [64327] LOG:  checkpoint starting: time
+2026-10-09 01:14:55.393 CST [68668] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:14:55.393 CST [68668] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:14:55.393 CST [68668] STATEMENT:  UPDATE authority_effect_reconciliation_evidence SET evidence='{}'::jsonb WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:14:55.396 CST [68669] ERROR:  Original CLI reconciliation evidence is immutable
+2026-10-09 01:14:55.396 CST [68669] CONTEXT:  PL/pgSQL function authority_cli_original_reconciliation_guard() line 6 at RAISE
+2026-10-09 01:14:55.396 CST [68669] STATEMENT:  DELETE FROM authority_effect_reconciliation_evidence WHERE external_effect_id=$1 AND evidence->>'contract_version'='cli-original-reconciliation.v1'
+2026-10-09 01:14:57.632 CST [68764] FATAL:  terminating connection due to administrator command
+2026-10-09 01:15:00.850 CST [64327] LOG:  checkpoint complete: wrote 1922 buffers (11.7%); 0 WAL file(s) added, 0 removed, 7 recycled; write=94.398 s, sync=1.532 s, total=97.457 s; sync files=40378, longest=0.020 s, average=0.001 s; distance=109346 kB, estimate=109346 kB; lsn=0/30E9C668, redo lsn=0/2D19ACD0
+2026-10-09 01:15:00.855 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:01.321 CST [64327] LOG:  checkpoint complete: wrote 3941 buffers (24.1%); 0 WAL file(s) added, 0 removed, 3 recycled; write=0.144 s, sync=0.041 s, total=0.467 s; sync files=727, longest=0.002 s, average=0.001 s; distance=62470 kB, estimate=104658 kB; lsn=0/30E9C718, redo lsn=0/30E9C6E0
+2026-10-09 01:15:03.306 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:03.308 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.001 s, sync=0.001 s, total=0.003 s; sync files=4, longest=0.001 s, average=0.001 s; distance=26690 kB, estimate=96861 kB; lsn=0/328AD168, redo lsn=0/328AD130
+2026-10-09 01:15:05.077 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:05.078 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.001 s, sync=0.001 s, total=0.002 s; sync files=4, longest=0.001 s, average=0.001 s; distance=26688 kB, estimate=89844 kB; lsn=0/342BD3E8, redo lsn=0/342BD3B0
+2026-10-09 01:15:09.830 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:10.202 CST [64327] LOG:  checkpoint complete: wrote 314 buffers (1.9%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.015 s, sync=0.156 s, total=0.372 s; sync files=5736, longest=0.005 s, average=0.001 s; distance=32275 kB, estimate=84087 kB; lsn=0/362420D8, redo lsn=0/362420A0
+2026-10-09 01:15:10.414 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:10.415 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.002 s; sync files=4, longest=0.001 s, average=0.001 s; distance=4509 kB, estimate=76129 kB; lsn=0/366A9568, redo lsn=0/366A9530
+2026-10-09 01:15:12.153 CST [68964] FATAL:  terminating connection due to administrator command
+2026-10-09 01:15:12.153 CST [68965] FATAL:  terminating connection due to administrator command
+2026-10-09 01:15:12.255 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:12.258 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.001 s, sync=0.001 s, total=0.003 s; sync files=4, longest=0.001 s, average=0.001 s; distance=26747 kB, estimate=71191 kB; lsn=0/380C8238, redo lsn=0/380C8200
+2026-10-09 01:15:14.451 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:14.453 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.001 s, sync=0.001 s, total=0.002 s; sync files=4, longest=0.001 s, average=0.001 s; distance=25956 kB, estimate=66668 kB; lsn=0/39A21450, redo lsn=0/39A21418
+2026-10-09 01:15:16.088 CST [64327] LOG:  checkpoint starting: immediate force wait
+2026-10-09 01:15:16.089 CST [64327] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 1 removed, 1 recycled; write=0.001 s, sync=0.001 s, total=0.002 s; sync files=4, longest=0.001 s, average=0.001 s; distance=25956 kB, estimate=62596 kB; lsn=0/3B37A6F0, redo lsn=0/3B37A6B8
+2026-10-09 01:20:16.044 CST [64327] LOG:  checkpoint starting: time
+2026-10-09 01:21:05.274 CST [64327] LOG:  checkpoint complete: wrote 484 buffers (3.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=48.924 s, sync=0.112 s, total=49.231 s; sync files=2869, longest=0.003 s, average=0.001 s; distance=3388 kB, estimate=56676 kB; lsn=0/3B6C97B0, redo lsn=0/3B6C9778
+2026-10-09 01:26:45.539 CST [64326] LOG:  received fast shutdown request
+2026-10-09 01:26:45.540 CST [64326] LOG:  aborting any active transactions
+2026-10-09 01:26:45.541 CST [64326] LOG:  background worker "logical replication launcher" (PID 64332) exited with exit code 1
+2026-10-09 01:26:45.541 CST [64327] LOG:  shutting down
+2026-10-09 01:26:45.541 CST [64327] LOG:  checkpoint starting: shutdown immediate
+2026-10-09 01:26:45.544 CST [64327] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.003 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=51008 kB; lsn=0/3B6C9860, redo lsn=0/3B6C9860
+2026-10-09 01:26:45.555 CST [64326] LOG:  database system is shut down

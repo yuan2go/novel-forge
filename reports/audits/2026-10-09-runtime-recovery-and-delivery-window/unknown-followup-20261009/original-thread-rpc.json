@@ -1,0 +1,50 @@
+{
+  "original_thread_id": "01a11b3c-af18-7c31-aed1-93488738769d",
+  "responses": [
+    {
+      "method": "thread/read",
+      "params": {
+        "threadId": "01a11b3c-af18-7c31-aed1-93488738769d",
+        "includeTurns": false
+      },
+      "response": {
+        "error": {
+          "code": -32600,
+          "message": "thread not loaded: 01a11b3c-af18-7c31-aed1-93488738769d"
+        },
+        "id": 2
+      }
+    },
+    {
+      "method": "thread/turns/list",
+      "params": {
+        "threadId": "01a11b3c-af18-7c31-aed1-93488738769d",
+        "limit": 1
+      },
+      "response": {
+        "error": {
+          "code": -32600,
+          "message": "thread not loaded: 01a11b3c-af18-7c31-aed1-93488738769d"
+        },
+        "id": 3
+      }
+    },
+    {
+      "method": "thread/items/list",
+      "params": {
+        "threadId": "01a11b3c-af18-7c31-aed1-93488738769d",
+        "limit": 1
+      },
+      "response": {
+        "error": {
+          "code": -32601,
+          "message": "thread/items/list is not supported yet"
+        },
+        "id": 4
+      }
+    }
+  ],
+  "inference_calls": 0,
+  "thread_start_calls": 0,
+  "thread_resume_calls": 0
+}

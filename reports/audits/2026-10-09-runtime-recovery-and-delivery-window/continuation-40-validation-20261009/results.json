@@ -1,0 +1,92 @@
+{
+  "run_id": "ad6449bc3b7142388580185bffa706f8",
+  "baseline_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+  "test_service_identity": [
+    "postgres",
+    55690,
+    "yuan",
+    "2026-10-09 01:46:46.208207+08:00"
+  ],
+  "groups": [
+    {
+      "name": "opening-recovery",
+      "database": "nf_40_opening_recovery_ad6449bc3b714238",
+      "files": [
+        "tests/integration/test_book_opening_recovery_protocol_postgres.py",
+        "tests/integration/test_book_opening_recovery_regression_postgres.py",
+        "tests/integration/test_book_opening_recovery_crash_boundaries_postgres.py",
+        "tests/integration/test_book_opening_recovery_review_blockers_postgres.py",
+        "tests/integration/test_book_opening_branch_reconciliation_postgres.py",
+        "tests/integration/test_book_opening_legacy_reconciliation_postgres.py",
+        "tests/integration/test_book_opening_runtime_hardening_postgres.py",
+        "tests/integration/test_book_opening_branch_reconciliation_upgrade_postgres.py",
+        "tests/integration/test_book_opening_workflow_concurrency_postgres.py",
+        "tests/integration/test_book_opening_workflow_failures_postgres.py"
+      ],
+      "started_at": "2026-10-08T17:47:34.242669+00:00",
+      "log": "opening-recovery.log",
+      "command": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_book_opening_recovery_protocol_postgres.py",
+        "tests/integration/test_book_opening_recovery_regression_postgres.py",
+        "tests/integration/test_book_opening_recovery_crash_boundaries_postgres.py",
+        "tests/integration/test_book_opening_recovery_review_blockers_postgres.py",
+        "tests/integration/test_book_opening_branch_reconciliation_postgres.py",
+        "tests/integration/test_book_opening_legacy_reconciliation_postgres.py",
+        "tests/integration/test_book_opening_runtime_hardening_postgres.py",
+        "tests/integration/test_book_opening_branch_reconciliation_upgrade_postgres.py",
+        "tests/integration/test_book_opening_workflow_concurrency_postgres.py",
+        "tests/integration/test_book_opening_workflow_failures_postgres.py",
+        "--junitxml=/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/continuation-40-validation-20261009/opening-recovery.xml"
+      ],
+      "exit_code": 1,
+      "test_database_removed": true,
+      "completed_at": "2026-10-08T17:47:36.576885+00:00"
+    },
+    {
+      "name": "author-first-manuscript",
+      "database": "nf_40_author_first_manuscript_ad6449bc3b714238",
+      "files": [
+        "tests/integration/test_author_first_manuscript_postgres.py"
+      ],
+      "started_at": "2026-10-08T17:47:36.626375+00:00",
+      "log": "author-first-manuscript.log",
+      "command": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_author_first_manuscript_postgres.py",
+        "--junitxml=/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/continuation-40-validation-20261009/author-first-manuscript.xml"
+      ],
+      "exit_code": 1,
+      "test_database_removed": true,
+      "completed_at": "2026-10-08T17:47:37.733790+00:00"
+    },
+    {
+      "name": "cross-chapter-review",
+      "database": "nf_40_cross_chapter_review_ad6449bc3b714238",
+      "files": [
+        "tests/integration/test_cross_chapter_prose_review_postgres.py"
+      ],
+      "started_at": "2026-10-08T17:47:37.783309+00:00",
+      "log": "cross-chapter-review.log",
+      "command": [
+        "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_cross_chapter_prose_review_postgres.py",
+        "--junitxml=/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/continuation-40-validation-20261009/cross-chapter-review.xml"
+      ],
+      "exit_code": 1,
+      "test_database_removed": true,
+      "completed_at": "2026-10-08T17:47:38.913376+00:00"
+    }
+  ],
+  "real_model_calls": 0,
+  "original_database_used": false
+}

@@ -1,0 +1,12 @@
+diff --git a/src/novel_forge/modules/chapter_authority/execution_gateway.py b/src/novel_forge/modules/chapter_authority/execution_gateway.py
+index 36a3d579..d8ffbd60 100644
+--- a/src/novel_forge/modules/chapter_authority/execution_gateway.py
++++ b/src/novel_forge/modules/chapter_authority/execution_gateway.py
+@@ -5408,6 +5408,7 @@ class ProductionExecutionGatewayExternalEffectAdapter:
+         if local_cli_remote_outcome_unknown(
+             transport=handle.transport, outcome=result.outcome,
+             started_at=result.started_at, usage_receipt_ref=result.usage_receipt_ref,
++            failure_code=evidence["production_execution"]["process_evidence"].get("failure_code"),
+         ):
+             evidence["external_state_unknown"] = True
+             evidence["recovery_instruction"] = "Reconcile the original receipt; local termination does not confirm remote cancellation"

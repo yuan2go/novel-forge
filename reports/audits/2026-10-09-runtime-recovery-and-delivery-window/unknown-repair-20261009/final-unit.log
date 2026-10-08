@@ -1,0 +1,180 @@
+F...................................................                     [100%]
+=================================== FAILURES ===================================
+_ AuthorityApiSurfaceTests.test_project_scoped_principal_cannot_query_another_project _
+
+self = <tests.unit.test_authority_api_surface.AuthorityApiSurfaceTests testMethod=test_project_scoped_principal_cannot_query_another_project>
+
+    def test_project_scoped_principal_cannot_query_another_project(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(
+                "os.environ",
+                {
+                    "NOVEL_FORGE_APPLICATION_BUILD_ID": "authority-api-unit",
+                    "NOVEL_FORGE_COMMIT_SHA": "d" * 40,
+                    "NOVEL_FORGE_ENVIRONMENT": "test",
+                    "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+                    "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": directory,
+                    "NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE": "project-allowed",
+                },
+                clear=False,
+            ),
+        ):
+            app = create_authority_app(
+                IndustrialSettings(
+                    root=Path(directory),
+                    environment="test",
+                    storage_authority="postgresql",
+                    database_url="postgresql://authority-test.invalid/test",
+                )
+            )
+            with TestClient(app) as client:
+                responses = (
+                    client.post("/product/content-authority/external-effects/effect-original/resolve", json={
+                        "operation_id": "operation-original", "project_id": "project-denied",
+                        "actor_id": "attacker-supplied", "decision": "MARK_SUCCEEDED", "reason": "test",
+                        "evidence": {"original_remote_receipt_ref": "authority-asset-version:untrusted"},
+                        "idempotency_key": "resolution-denied", "expected_operation_version": 3,
+                    }),
+                    client.get(
+                        "/product/tasks", params={"project_id": "project-denied"}
+                    ),
+                    client.get(
+                        "/product/analysis/reports",
+                        params={"project_id": "project-denied"},
+                    ),
+                    client.get("/product/projects/project-denied"),
+                    client.get("/product/projects/project-denied/bindings"),
+                    client.post("/product/projects/project-denied/workspaces", json={
+                        "workspace_id": "denied-workspace", "expected_project_version": 1,
+                        "expected_project_asset_version_id": "denied-asset", "idempotency_key": "denied-create",
+                    }),
+                    client.post(
+                        "/product/tasks/cancel",
+                        json={
+                            "operation_id": "operation-denied",
+                            "project_id": "project-denied",
+                            "expected_version": 1,
+                            "idempotency_key": "cancel-denied",
+                            "reason": "test",
+                            "actor_id": "attacker-supplied",
+                            "trace_id": "trace-denied",
+                            "correlation_id": "correlation-denied",
+                        },
+                    ),
+                    client.post(
+                        "/product/tasks/operation-denied/recover",
+                        json={
+                            "project_id": "project-denied",
+                            "expected_version": 1,
+                            "idempotency_key": "recover-denied",
+                            "reason": "test",
+                        },
+                    ),
+                    client.post(
+                        "/product/tasks/outbox/outbox-denied/requeue",
+                        json={
+                            "project_id": "project-denied",
+                            "expected_attempt_count": 3,
+                            "idempotency_key": "outbox-denied",
+                            "reason": "test",
+                        },
+                    ),
+                    client.post(
+                        "/product/source-governance/documents",
+                        json={
+                            "project_id": "project-denied",
+                            "workspace_id": "workspace-denied",
+                            "blob_id": "blob-denied",
+                            "title": "denied",
+                            "source_kind": "text",
+                            "rights_authorization": "owned",
+                            "idempotency_key": "source-denied",
+                        },
+                    ),
+                    client.post(
+                        "/product/source-governance/documents/source-denied/transforms",
+                        json={
+                            "project_id": "project-denied",
+                            "workspace_id": "workspace-denied",
+                            "normalization_version": "normalize:v1",
+                            "chunking_version": "chunk:v1",
+                            "chunking_policy_hash": "sha256:" + "a" * 64,
+                            "chunks": [
+                                {
+                                    "chunk_index": 0,
+                                    "blob_id": "blob-denied",
+                                    "content_hash": "sha256:" + "b" * 64,
+                                    "byte_size": 1,
+                                    "character_count": 1,
+                                    "token_count": 1,
+                                    "source_byte_start": 0,
+                                    "source_byte_end": 1,
+                                }
+                            ],
+                            "idempotency_key": "transform-denied",
+                        },
+                    ),
+                    client.post(
+                        "/product/mkaos/knowledge-candidates",
+                        json={
+                            "project_id": "project-denied",
+                            "workspace_id": "workspace-denied",
+                            "execution_asset_version_id": "execution-denied:v1",
+                            "candidate": {"concept_name": "denied"},
+                            "evidence_spans": [
+                                {
+                                    "source_chunk_asset_version_id": "chunk-denied:v1",
+                                    "chunk_byte_start": 0,
+                                    "chunk_byte_end": 1,
+                                    "evidence_hash": "sha256:" + "c" * 64,
+                                }
+                            ],
+                            "abstraction_policy_version": "anti-copy:v1",
+                            "idempotency_key": "mkaos-denied",
+                        },
+                    ),
+                    client.get(
+                        "/product/source-imports/import-denied",
+                        params={"project_id": "project-denied"},
+                    ),
+                )
+    
+>       self.assertEqual([response.status_code for response in responses], [403] * 12)
+E       AssertionError: Lists differ: [403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403] != [403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403]
+E       
+E       First list contains 1 additional elements.
+E       First extra element 12:
+E       403
+E       
+E       - [403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403]
+E       ?                                                         -----
+E       
+E       + [403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403]
+
+tests/unit/test_authority_api_surface.py:227: AssertionError
+=============================== warnings summary ===============================
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_project_scoped_principal_cannot_query_another_project
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_required_product_reads_are_exposed_by_postgresql_app
+  /Users/yuan/.codex/worktrees/work-adaptation-reader-prose-01/novel-forge/src/novel_forge/api/authority_app.py:783: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_project_scoped_principal_cannot_query_another_project
+tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_required_product_reads_are_exposed_by_postgresql_app
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/unit/test_authority_api_surface.py::AuthorityApiSurfaceTests::test_project_scoped_principal_cannot_query_another_project
+1 failed, 51 passed, 4 warnings in 8.11s

@@ -1,0 +1,221 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+____ test_book_accepted_prose_drives_targeted_repair_and_acceptance[False] _____
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-38/test_book_accepted_prose_drive0')
+receipt_loss = False
+
+    @pytest.mark.parametrize("receipt_loss", [False, True])
+    def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
+        tmp_path, receipt_loss
+    ):
+        transport = ProseTransport(receipt_loss)
+        project, authority, chapter, principal, worker, book, candidates, plans, restart = (
+            make_book(tmp_path, transport)
+        )
+        interrupted_effect = None
+        workspaces = []
+        for number in (1, 2):
+            plan = plans[number]
+            command = SubmitBookChapterCommand(
+                book_run_id=book.book_run_id,
+                chapter_number=number,
+                title=f"Chapter {number}",
+                premise="A choice has an irreversible cost.",
+                chapter_plan_asset_version_id=plan["asset_version_id"],
+                chapter_plan_content_hash=plan["content_hash"],
+                context_candidates=tuple(
+                    plan if item["asset_type"] == "chapter_plan" else item
+                    for item in candidates
+                ),
+                preparation_report={
+                    "stage_context_token_budgets": {
+                        "review": 64000,
+                        "rereview": 64000,
+                        "revision": 64000,
+                    }
+                },
+            )
+            dispatched = authority.submit_chapter(command, principal=principal)
+            assert (
+                authority.submit_chapter(command, principal=principal)[
+                    "chapter_root_operation_id"
+                ]
+                == dispatched["chapter_root_operation_id"]
+            )
+            for _ in range(len(ChapterNode) * 3):
+                try:
+>                   tick = chapter.scheduler(principal=worker).tick(
+                        project_id=project,
+                        root_operation_id=dispatched["chapter_root_operation_id"],
+                    )
+
+tests/integration/test_cross_chapter_prose_review_postgres.py:353: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = _ExecutionIntentHandler()
+request = ChapterHandlerRequest(operation_id='224c6382-510c-4c2d-b2fa-76e53ae5ae19', project_id='project-3ed2f5ec05ba49849106970...an dbname=nf_40_cross_chapter_review_318f005d269b44b3_test', definition_version='3.10.0', source_definition_version='')
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        style_view = None
+        if request.work_requirements_enabled:
+            policies = [
+                item for item in request.inputs if item.asset_type == "style_policy"
+            ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+>                   raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly
+
+src/novel_forge/modules/chapter_authority/handlers.py:379: KernelError
+_____ test_book_accepted_prose_drives_targeted_repair_and_acceptance[True] _____
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-38/test_book_accepted_prose_drive1')
+receipt_loss = True
+
+    @pytest.mark.parametrize("receipt_loss", [False, True])
+    def test_book_accepted_prose_drives_targeted_repair_and_acceptance(
+        tmp_path, receipt_loss
+    ):
+        transport = ProseTransport(receipt_loss)
+        project, authority, chapter, principal, worker, book, candidates, plans, restart = (
+            make_book(tmp_path, transport)
+        )
+        interrupted_effect = None
+        workspaces = []
+        for number in (1, 2):
+            plan = plans[number]
+            command = SubmitBookChapterCommand(
+                book_run_id=book.book_run_id,
+                chapter_number=number,
+                title=f"Chapter {number}",
+                premise="A choice has an irreversible cost.",
+                chapter_plan_asset_version_id=plan["asset_version_id"],
+                chapter_plan_content_hash=plan["content_hash"],
+                context_candidates=tuple(
+                    plan if item["asset_type"] == "chapter_plan" else item
+                    for item in candidates
+                ),
+                preparation_report={
+                    "stage_context_token_budgets": {
+                        "review": 64000,
+                        "rereview": 64000,
+                        "revision": 64000,
+                    }
+                },
+            )
+            dispatched = authority.submit_chapter(command, principal=principal)
+            assert (
+                authority.submit_chapter(command, principal=principal)[
+                    "chapter_root_operation_id"
+                ]
+                == dispatched["chapter_root_operation_id"]
+            )
+            for _ in range(len(ChapterNode) * 3):
+                try:
+>                   tick = chapter.scheduler(principal=worker).tick(
+                        project_id=project,
+                        root_operation_id=dispatched["chapter_root_operation_id"],
+                    )
+
+tests/integration/test_cross_chapter_prose_review_postgres.py:353: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = _ExecutionIntentHandler()
+request = ChapterHandlerRequest(operation_id='26f0a430-2a29-419c-b900-ba29752d475c', project_id='project-2c4f231dcea44d8f9c5a489...an dbname=nf_40_cross_chapter_review_318f005d269b44b3_test', definition_version='3.10.0', source_definition_version='')
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        style_view = None
+        if request.work_requirements_enabled:
+            policies = [
+                item for item in request.inputs if item.asset_type == "style_policy"
+            ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") != "foundation-style-projection.v4"
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+>                   raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
+E                   novel_forge.modules.command_kernel.errors.KernelError: STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly
+
+src/novel_forge/modules/chapter_authority/handlers.py:379: KernelError
+_ test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_effect _
+
+tmp_path = PosixPath('/private/var/folders/w_/lgbn5hqd16gf9xy9nhl32j7h0000gn/T/pytest-of-yuan/pytest-38/test_cross_chapter_context_ove0')
+
+    def test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_effect(
+        tmp_path,
+    ):
+        transport = ProseTransport()
+        project, authority, chapter, principal, worker, book, candidates, plans, _ = (
+            make_book(tmp_path, transport)
+        )
+        plan = plans[1]
+        dispatched = authority.submit_chapter(
+            SubmitBookChapterCommand(
+                book_run_id=book.book_run_id,
+                chapter_number=1,
+                title="A bounded review",
+                premise="A choice costs a safe exit.",
+                chapter_plan_asset_version_id=plan["asset_version_id"],
+                chapter_plan_content_hash=plan["content_hash"],
+                context_candidates=tuple(
+                    plan if item["asset_type"] == "chapter_plan" else item
+                    for item in candidates
+                ),
+                preparation_report={"stage_context_token_budgets": {"review": 1}},
+            ),
+            principal=principal,
+        )
+>       with pytest.raises(KernelError, match="CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT'
+E         Actual message: 'STYLE_PROJECTION_MIGRATION_REQUIRED: Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly'
+
+tests/integration/test_cross_chapter_prose_review_postgres.py:552: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_cross_chapter_prose_review_postgres.py::test_book_accepted_prose_drives_targeted_repair_and_acceptance[False]
+FAILED tests/integration/test_cross_chapter_prose_review_postgres.py::test_book_accepted_prose_drives_targeted_repair_and_acceptance[True]
+FAILED tests/integration/test_cross_chapter_prose_review_postgres.py::test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_effect
+3 failed in 4.63s

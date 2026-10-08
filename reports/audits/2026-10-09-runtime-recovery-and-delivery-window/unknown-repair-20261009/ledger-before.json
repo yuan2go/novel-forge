@@ -1,0 +1,51 @@
+{
+  "database": "nf_qidian_learning_20261008_test",
+  "authority_operation": {
+    "rows": 208,
+    "sha256": "443c16216edea3a37f0831e4f6b3c3e8a03af532987a4c23cc2a0fad037f9496"
+  },
+  "authority_external_effect": {
+    "rows": 40,
+    "sha256": "720cc2311c85928ea43faa92d8881817e66c270710e73ef0ef07af5c11e5572a"
+  },
+  "authority_external_effect_dispatch": {
+    "rows": 39,
+    "sha256": "e9e20fd708841b90ed8a87009c4ceef3837e5e72e5be6c83a4886e26bc2b1891"
+  },
+  "authority_external_receipt": {
+    "rows": 37,
+    "sha256": "2cbf02be34d9c57941d6f265ff792f2e8ed10b40c3f9111af4a1ae06a426ec52"
+  },
+  "authority_budget_reservation": {
+    "rows": 24,
+    "sha256": "5e0197e801766688bcdae0ed62af124cb140fe7d679dc30e0e09c702ae5e1259"
+  },
+  "authority_book": {
+    "rows": 1,
+    "sha256": "4407a97523e38294b39a35f3e73251f418fe4f127a8810498dda2babbdfd5246"
+  },
+  "authority_book_foundation_binding": {
+    "rows": 6,
+    "sha256": "a5be55e6745fce5a7a3853c61fa2d83cb49288ab7e775c6269a15b2f2f036861"
+  },
+  "authority_asset_version": {
+    "rows": 589,
+    "sha256": "279da8ec78f102abdb8bb72bd1829125d52636cd8fb300eacd874f558ee939ef"
+  },
+  "authority_story_planning_generation": {
+    "rows": 16,
+    "sha256": "4c591b01dac961712e38e986a249cbc0c99c77974084a25dbf68b4fb058fdbce"
+  },
+  "authority_book_production": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "authority_book_chapter_acceptance": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "authority_book_prose_review_run": {
+    "rows": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

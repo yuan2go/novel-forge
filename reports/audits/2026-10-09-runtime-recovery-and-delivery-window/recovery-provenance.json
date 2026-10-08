@@ -1,0 +1,15 @@
+{
+  "source_backup": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/before-source-span-0182.dump",
+  "source_backup_sha256": "43894704331369cb25469005bab2ad2443db03dc9d9eee35f8d2452f84318f9b",
+  "source_time": "2026-10-08 20:18:23 CST",
+  "recovered_from_existing_backup_restore": true,
+  "empty_database_created": false,
+  "pgdata": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/pgdata",
+  "release_sha": "acb6d06befac33d6f9a7f07abe41b16e0fff68b8",
+  "original_endpoint": "127.0.0.1:55489",
+  "source_snapshot_pgdata_retained": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/pgdata",
+  "currentness": "BACKUP_RECOVERY_POINT; post-backup ledger changes UNVERIFIED",
+  "provider_dispatches": 0,
+  "worker_started": false,
+  "object_store_original_data": "/Users/yuan/.codex/author-first-live/20261008T021735/minio"
+}

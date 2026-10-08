@@ -1,0 +1,143 @@
+{
+  "index_kind": "DERIVED_FROM_RETAINED_JUNIT",
+  "overlap_policy": "BATCHES_MUST_NOT_BE_SUMMED_AS_UNIQUE_TESTS",
+  "index_note": "The copied extension runner reused attempt-03 results.json; retained original Opening and manuscript JUnit/log files are indexed directly. No execution identities are inferred from the replaced index.",
+  "files": [
+    {
+      "file": "attempt-02/author-first-manuscript.xml",
+      "tests": 2,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "sha256": "7600277bc5eb96d5e262ec8122b46354c7266acbf255e58cb849482848e4d6a6"
+    },
+    {
+      "file": "attempt-02/cross-chapter-review.xml",
+      "tests": 3,
+      "errors": 0,
+      "failures": 3,
+      "skipped": 0,
+      "sha256": "c5dc6628527c6206cadf430969343d0308dac0a173e7cc09d8e0730753cbf095"
+    },
+    {
+      "file": "attempt-02/opening-recovery.xml",
+      "tests": 71,
+      "errors": 0,
+      "failures": 61,
+      "skipped": 0,
+      "sha256": "67c5bdf34746664c364c03ed43fcc4e6e072a2701eb1ff8856c5e5e4ed73a608"
+    },
+    {
+      "file": "attempt-03/author-first-extended.xml",
+      "tests": 2,
+      "errors": 0,
+      "failures": 1,
+      "skipped": 0,
+      "sha256": "6bc3b3de4e5f97d0cb18f308d3779c3419bd79536876369937c2a6abda2860d8"
+    },
+    {
+      "file": "attempt-03/author-first-manuscript.xml",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "9fca3adac39a46ca7e9bc309b78f59c29bd040dce6d25fd5e8ce95d0f208551c"
+    },
+    {
+      "file": "attempt-03/delivery-window.xml",
+      "tests": 26,
+      "errors": 0,
+      "failures": 8,
+      "skipped": 0,
+      "sha256": "a2a15181081c478c3b1c72e77d60c9e3626b3342d245e4c54c62349763f6f01d"
+    },
+    {
+      "file": "attempt-03/opening-recovery.xml",
+      "tests": 71,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "4a9b97503875de283954e1cbe24a2fbebff230d96abf5e4fa301caafc6f9f299"
+    },
+    {
+      "file": "author-first-manuscript.xml",
+      "tests": 2,
+      "errors": 2,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "894142c160182831bd0ff817494184c6e7c4346eb7f6aa21692c4f8cd34822f9"
+    },
+    {
+      "file": "baseline-check/baseline-cross-chapter-review.xml",
+      "tests": 3,
+      "errors": 0,
+      "failures": 3,
+      "skipped": 0,
+      "sha256": "43eea4cdabbdbfd8d0c0ee314a631e30deaf75b726206868837effe4c30a80fa"
+    },
+    {
+      "file": "cross-chapter-review.xml",
+      "tests": 3,
+      "errors": 3,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "2fdd91ede29083ed91fd3451069b7e1a497840eaa07f4d5a364e80dc9e7f9b75"
+    },
+    {
+      "file": "extension-check-02/cross-chapter-review.xml",
+      "tests": 3,
+      "errors": 0,
+      "failures": 3,
+      "skipped": 0,
+      "sha256": "40b85df8833b7abf667db2f48b580eb917b6e6523ff6974125620d00fd26212c"
+    },
+    {
+      "file": "extension-check-02/delivery-window.xml",
+      "tests": 7,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "496f0c4ea8a1bb7b5c680827348b1e0faf10bf16e67345fe0152115d5f8a6571"
+    },
+    {
+      "file": "extension-check-03/author-first-extended.xml",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "2e379cd82b423f4f675c8da78abc01e8ca1625c0f1222535a89446ae834c2a94"
+    },
+    {
+      "file": "extension-check-04/delivery-window-final.xml",
+      "tests": 9,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "0e91fa55b1b0e93802ff3ac37d4ebf9ce4c067bbc3d0f3aa7564c04507ed7cf0"
+    },
+    {
+      "file": "opening-recovery.xml",
+      "tests": 71,
+      "errors": 71,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "ab27cd7625d1e467c59b88b61e4a969522c6d0d2549e5efafbc194e1fbd2ea6b"
+    },
+    {
+      "file": "remaining-unit.xml",
+      "tests": 106,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "34d263c61fc12828d44a11fc0fb512446cbb236530e5615c1bf236d819a3ace2"
+    },
+    {
+      "file": "window-unit-final.xml",
+      "tests": 14,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "c6cabb7cd327094a1d66838d0f623f88d564c5639015b6dc540d46c37781799e"
+    }
+  ]
+}

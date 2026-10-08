@@ -1,0 +1,43 @@
+{
+  "original": {
+    "project_id": "qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+    "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+    "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+    "attempt_id": "6192d1cd-06d9-4480-9684-95b7db23de1e",
+    "fencing_token": 1
+  },
+  "local_receipt": {
+    "status": "FAILED",
+    "result_integrity": "MISSING",
+    "returncode": 1,
+    "elapsed_ms": 253911
+  },
+  "stream": {
+    "version": "codex-stream-diagnostics.v1",
+    "event_counts": {
+      "thread.started": 1,
+      "item.completed": 3,
+      "turn.started": 1,
+      "error": 1,
+      "turn.failed": 1
+    },
+    "turn_completed": false,
+    "usage_present": false,
+    "stream_disconnected": true,
+    "response_body_decode_failed": true,
+    "remote_outcome": "UNESTABLISHED",
+    "stdout_bytes": 1137,
+    "scan_truncated": false
+  },
+  "original_files_unchanged": true,
+  "before_hashes": {
+    "process-receipt.json": "74ae9e281a66e86c9628836daae26b909f3c5599c56efbb71ae804f12fa29f5e",
+    "execution-metadata.json": "dad488eb6c1249748331cc063a1898d021586d43de594b75ec5bc78b70ea412e",
+    "stdout.log": "1ea7966afe85660f6cc176b8229542a71862c76650fa4b5ba7b74da4fcb3cf30",
+    "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "new_provider_dispatches": 0,
+  "remote_result": "UNKNOWN"
+}

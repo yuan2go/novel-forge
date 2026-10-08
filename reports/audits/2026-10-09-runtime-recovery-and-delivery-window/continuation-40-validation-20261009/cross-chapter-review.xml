@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="3" failures="0" skipped="0" tests="3" time="0.646" timestamp="2026-10-09T01:47:38.075367+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_cross_chapter_prose_review_postgres" name="test_book_accepted_prose_drives_targeted_repair_and_acceptance[False]" time="0.027"><error message="failed on setup with &quot;AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'&quot;">database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -&gt; str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+&gt;           return require_disposable_database_name(database_name)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_database_name(database_name: object) -&gt; str:
+        if not isinstance(database_name, str) or not database_name:
+            raise ValueError(
+                "database safety preflight returned an invalid name; refusing writes"
+            )
+        if database_name in PROTECTED_DATABASE_NAMES:
+            raise ValueError(
+                f"database safety preflight resolved a protected name; refusing writes for {database_name!r}"
+            )
+        if not database_name.endswith("_test"):
+&gt;           raise ValueError(
+                f"database safety requires an _test suffix; refusing writes for {database_name!r}"
+            )
+E           ValueError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+src/novel_forge/tools/backend_qualification_resources.py:639: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+&gt;       preflight_database_name = preflight_integration_database(database_url)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/conftest.py:48: in preflight_integration_database
+    return require_disposable_test_database(row[0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -&gt; str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+            return require_disposable_database_name(database_name)
+        except ValueError as exc:
+&gt;           raise AssertionError(str(exc)) from exc
+E           AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+tests/integration/conftest.py:24: AssertionError</error></testcase><testcase classname="tests.integration.test_cross_chapter_prose_review_postgres" name="test_book_accepted_prose_drives_targeted_repair_and_acceptance[True]" time="0.000"><error message="failed on setup with &quot;AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'&quot;">database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -&gt; str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+&gt;           return require_disposable_database_name(database_name)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_database_name(database_name: object) -&gt; str:
+        if not isinstance(database_name, str) or not database_name:
+            raise ValueError(
+                "database safety preflight returned an invalid name; refusing writes"
+            )
+        if database_name in PROTECTED_DATABASE_NAMES:
+            raise ValueError(
+                f"database safety preflight resolved a protected name; refusing writes for {database_name!r}"
+            )
+        if not database_name.endswith("_test"):
+&gt;           raise ValueError(
+                f"database safety requires an _test suffix; refusing writes for {database_name!r}"
+            )
+E           ValueError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+src/novel_forge/tools/backend_qualification_resources.py:639: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+&gt;       preflight_database_name = preflight_integration_database(database_url)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/conftest.py:48: in preflight_integration_database
+    return require_disposable_test_database(row[0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -&gt; str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+            return require_disposable_database_name(database_name)
+        except ValueError as exc:
+&gt;           raise AssertionError(str(exc)) from exc
+E           AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+tests/integration/conftest.py:24: AssertionError</error></testcase><testcase classname="tests.integration.test_cross_chapter_prose_review_postgres" name="test_cross_chapter_context_overflow_keeps_candidate_and_creates_no_review_effect" time="0.000"><error message="failed on setup with &quot;AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'&quot;">database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -&gt; str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+&gt;           return require_disposable_database_name(database_name)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_database_name(database_name: object) -&gt; str:
+        if not isinstance(database_name, str) or not database_name:
+            raise ValueError(
+                "database safety preflight returned an invalid name; refusing writes"
+            )
+        if database_name in PROTECTED_DATABASE_NAMES:
+            raise ValueError(
+                f"database safety preflight resolved a protected name; refusing writes for {database_name!r}"
+            )
+        if not database_name.endswith("_test"):
+&gt;           raise ValueError(
+                f"database safety requires an _test suffix; refusing writes for {database_name!r}"
+            )
+E           ValueError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+src/novel_forge/tools/backend_qualification_resources.py:639: ValueError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+&gt;       preflight_database_name = preflight_integration_database(database_url)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/conftest.py:48: in preflight_integration_database
+    return require_disposable_test_database(row[0])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+database_name = 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+    def require_disposable_test_database(database_name: object) -&gt; str:
+        """Validate the server-reported database identity without touching PostgreSQL."""
+        try:
+            return require_disposable_database_name(database_name)
+        except ValueError as exc:
+&gt;           raise AssertionError(str(exc)) from exc
+E           AssertionError: database safety requires an _test suffix; refusing writes for 'nf_40_cross_chapter_review_ad6449bc3b714238'
+
+tests/integration/conftest.py:24: AssertionError</error></testcase></testsuite></testsuites>

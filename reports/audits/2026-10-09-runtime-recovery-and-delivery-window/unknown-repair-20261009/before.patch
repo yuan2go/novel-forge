@@ -1,0 +1,648 @@
+diff --git a/architecture/reality-evidence.json b/architecture/reality-evidence.json
+index 4518e286..f9745c92 100644
+--- a/architecture/reality-evidence.json
++++ b/architecture/reality-evidence.json
+@@ -9997,7 +9997,7 @@
+   "projection_source": {
+     "authority": "EXECUTABLE_CODE",
+     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
+-    "implementation_tree_sha": "sha256:7eac775f858ba4c5d63c9fd8fe8e35630f84224eecf47a8fb252632a362efcf7"
++    "implementation_tree_sha": "sha256:d18e5775a5a1476ea6b0d19ffd01a870d70cb7f8b9e8773888100cbaadfcc513"
+   },
+   "role_definitions": {
+     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
+diff --git a/docs/runtime-operations.md b/docs/runtime-operations.md
+index 843a94aa..4852df85 100644
+--- a/docs/runtime-operations.md
++++ b/docs/runtime-operations.md
+@@ -136,6 +136,8 @@ PYTHONPATH=src .venv/bin/python -m novel_forge.cli.authority authority-migrate
+ The authoritative registry is `src/novel_forge/storage/migrations/versions/__init__.py`;
+ the head is also checked by `architecture/manifests/migration-manifest.yaml`. Applied IDs
+ live in `nf_schema_migrations`.
++Status runs in a read-only transaction and reports an absent migration ledger as missing
++migrations. Only the apply command initializes that ledger.
+ 
+ The Source convergence segment includes two distinct `0121` entries connected by
+ declared parents. Use full identities and the registry's parent chain, not numeric
+@@ -146,7 +148,7 @@ forward-only, backup and downgrade properties. Run clean-install and upgrade tes
+ using a new migration outside an isolated test database.
+ 
+ The published chain through 0168 is immutable. The current forward segment is
+-0169–0180, ending at Foundation direction search. Resolve each full
++0169–0183, ending at Source observation span identity. Resolve each full
+ identity from the migration manifest and runtime registry. Supported upgrade histories are
+ exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
+ before pending migration DDL. Preserve a foreign branch database and its migration
+@@ -188,6 +190,37 @@ The offline snapshot importer is the separate `novel-forge-migrate` entry. Impor
+ records remain governed candidates; import does not infer approval or production
+ activation.
+ 
++## Execution diagnostics
++
++Set `NOVEL_FORGE_EXECUTION_DIAGNOSTICS=1` on the API/worker process to emit
++`execution-diagnostics.v1` JSON lines to stderr. The existing Kernel, Planning adapter,
++execution admission/gateway, Codex supervisor, result validation, Authority evidence
++store and Book recovery paths share nested span IDs and the available original
++Project/Book/Operation/Effect/Execution/Attempt/fence identities. An operation started
++before diagnostics were enabled cannot gain historical spans retroactively.
++
++Use the first failed span and its enclosing spans to distinguish admission, process,
++validation and persistence failures. A completed span only means that function returned;
++inspect its outcome and durable receipts before interpreting success. A `codex.stream`
++observation reports terminal-event and usage presence, stream-disconnect and response-body
++decode markers from a bounded first/last stdout scan. `scan_truncated=true` makes that
++observation incomplete. By default it retains no error message, prompt, prose, command arguments,
++environment values or connection string. Logging failure cannot alter an execution.
++
++For local diagnosis, also set `NOVEL_FORGE_EXECUTION_DIAGNOSTICS_EXCEPTION_TEXT=1`
++to retain exception messages, chained tracebacks and Codex error-event messages with
++credential patterns redacted. These details can contain author/source text and local
++paths; capture them in access-restricted operational logs outside the repository.
++Raw subprocess stdout/stderr remain in the original private execution directory.
++The optional text does not enter request contracts or change frozen Provider policies.
++
++`codex.recovery` with `cached_result=true` means local stored-result reuse, not a remote
++Provider query. A disconnect with no terminal result or measured usage remains UNKNOWN;
++diagnostics do not establish remote nonexecution, release a held reservation or authorize
++resending the original Effect. Keep original receipts unchanged. Test injected failures
++with isolated identities and resources; a later successful diagnostic request cannot
++resolve an earlier request's remote outcome.
++
+ ## Validation matrix
+ 
+ For creative-requirement changes, focused regression coverage includes
+diff --git a/src/novel_forge/modules/book_authority/recovery.py b/src/novel_forge/modules/book_authority/recovery.py
+index 933bf00c..e788daf2 100644
+--- a/src/novel_forge/modules/book_authority/recovery.py
++++ b/src/novel_forge/modules/book_authority/recovery.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from novel_forge.logging.execution import execution_step
++
+ from dataclasses import dataclass
+ import hashlib
+ import json
+@@ -578,6 +580,7 @@ class PostgresBookOpeningRecoveryApplication:
+             self._checkpoint("after_execution_loss_commit_before_response")
+         return self._receipt_result(receipt, replayed=False)
+ 
++    @execution_step("book_authority.PostgresBookOpeningRecoveryApplication.assess_recovery")
+     def assess_recovery(
+         self,
+         opening_run_id: str,
+@@ -632,6 +635,7 @@ class PostgresBookOpeningRecoveryApplication:
+             uow.commit()
+         return self._assessment_result(row, replayed=False)
+ 
++    @execution_step("book_authority.PostgresBookOpeningRecoveryApplication.recover")
+     def recover(
+         self,
+         recovery_assessment_id: str,
+diff --git a/src/novel_forge/modules/command_kernel/external_effect_runtime.py b/src/novel_forge/modules/command_kernel/external_effect_runtime.py
+index f8db7644..1e6c449e 100644
+--- a/src/novel_forge/modules/command_kernel/external_effect_runtime.py
++++ b/src/novel_forge/modules/command_kernel/external_effect_runtime.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from novel_forge.logging.execution import execution_event, execution_step
++
+ import hashlib
+ import json
+ import math
+@@ -395,6 +397,7 @@ def read_external_effect_intent(
+         return effect
+ 
+ 
++@execution_step("command_kernel.plan_external_effect")
+ def plan_external_effect(
+     database_url: str,
+     context: EffectCommandContext,
+@@ -643,6 +646,7 @@ def acquire_effect_dispatch(
+         ) from exc
+ 
+ 
++@execution_step("command_kernel.dispatch_external_effect")
+ def dispatch_external_effect(
+     database_url: str,
+     context: EffectCommandContext,
+@@ -769,6 +773,8 @@ def dispatch_external_effect(
+             if effect["effect_type"] in MODEL_DISPATCH_EFFECT_TYPES:
+                 assert_dispatch_enabled(database_url, context.project_id)
+             provider_send_started = True
++            execution_event("kernel.provider_send", "started", dispatch_id=dispatch["dispatch_id"],
++                external_effect_id=effect_id)
+             provider_result = adapter.execute(
+                 stable_idempotency_key=effect["stable_idempotency_key"],
+                 capability=effect["capability"],
+@@ -780,6 +786,8 @@ def dispatch_external_effect(
+                     "timeout_seconds": int(effect.get("request_timeout_seconds") or 30),
+                 },
+             )
++            execution_event("kernel.provider_send", "completed", dispatch_id=dispatch["dispatch_id"],
++                external_effect_id=effect_id, outcome=provider_result.outcome)
+     except ExternalEffectAdapterError as exc:
+         recorded = "unknown" if exc.request_sent else "retryable_failure"
+         submit_effect_dispatch_result(
+@@ -979,6 +987,7 @@ def heartbeat_effect_dispatch(
+     return {"dispatch_id": dispatch_id, "expires_at": expires_at}
+ 
+ 
++@execution_step("command_kernel.submit_effect_dispatch_result")
+ def submit_effect_dispatch_result(
+     database_url: str,
+     context: EffectCommandContext,
+@@ -1124,6 +1133,7 @@ def _validated_frozen_provider_capability_profile(
+     return profile.to_dict()
+ 
+ 
++@execution_step("command_kernel.accept_external_effect_receipt")
+ def accept_external_effect_receipt(
+     database_url: str,
+     context: EffectCommandContext,
+@@ -1290,6 +1300,7 @@ def accept_external_effect_receipt(
+     return {**stored, "replayed": False}
+ 
+ 
++@execution_step("command_kernel.reconcile_external_effect")
+ def reconcile_external_effect(
+     database_url: str,
+     context: EffectCommandContext,
+@@ -2086,6 +2097,7 @@ def _resolve_reconciled_budget(
+         )
+ 
+ 
++@execution_step("command_kernel.resolve_external_effect_receipt_budget")
+ def resolve_external_effect_receipt_budget(
+     database_url: str,
+     *,
+diff --git a/src/novel_forge/modules/production_execution/backends.py b/src/novel_forge/modules/production_execution/backends.py
+index 7c70e3a7..bfc547c5 100644
+--- a/src/novel_forge/modules/production_execution/backends.py
++++ b/src/novel_forge/modules/production_execution/backends.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from novel_forge.logging.execution import execution_event, execution_step
++
+ from dataclasses import dataclass, replace
+ from datetime import UTC, datetime
+ from decimal import Decimal, InvalidOperation
+@@ -48,7 +50,7 @@ from .process_supervisor import (
+     ProcessTimeout,
+     ResultIntegrity,
+ )
+-from .provider_protocol_failure import codex_protocol_failure
++from .provider_protocol_failure import codex_protocol_failure, read_codex_stream_summary
+ from .security import assert_no_inline_secrets
+ from .codex_configuration import (
+     CODEX_INPUT_ONLY_OVERRIDES, CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
+@@ -283,6 +285,7 @@ _CODEX_TOOL_ITEM_TYPES = {
+ }
+ 
+ 
++@execution_step("production_execution.parse_codex_jsonl_evidence")
+ def parse_codex_jsonl_evidence(
+     stdout: str,
+     *,
+@@ -577,6 +580,7 @@ class ResultValidator:
+     def __init__(self, store: ExecutionRecordStore) -> None:
+         self.store = store
+ 
++    @execution_step("production_execution.ResultValidator.successful_result")
+     def successful_result(
+         self,
+         record: ExecutionRecord,
+@@ -1568,6 +1572,7 @@ class CodexCliExecutionBackend:
+         )
+         return self._submit(request, admission)
+ 
++    @execution_step("production_execution.CodexCliExecutionBackend._submit")
+     def _submit(
+         self,
+         request: ExecutionRequest,
+@@ -1703,6 +1708,7 @@ class CodexCliExecutionBackend:
+         self.record_store.save_record(record)
+         return handle
+ 
++    @execution_step("production_execution.CodexCliExecutionBackend.reconcile")
+     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
+         record = self.record_store.get_record(handle.execution_id)
+         recovery = self.supervisor.recover(handle.execution_id)
+@@ -1710,8 +1716,14 @@ class CodexCliExecutionBackend:
+         receipt_ref = self.record_store.put_evidence(
+             "process-receipt", handle.execution_id, recovery.receipt.to_dict()
+         )
++        stream_summary = read_codex_stream_summary(recovery.receipt.stdout_path)
++        execution_event("codex.stream", "observed", **stream_summary)
+         if record.result is not None:
++            execution_event("codex.recovery", "cached", cached_result=True,
++                outcome=record.result.outcome, usage_present=bool(record.result.usage_receipt_ref),
++                cost_present=bool(record.result.cost_receipt_ref))
+             return record.result
++        record.raw_evidence["stream_diagnostics"] = stream_summary
+         self.record_store.save_record(record)
+         if (
+             recovery.receipt.status
+@@ -1803,6 +1815,7 @@ class CodexCliExecutionBackend:
+                 )
+         return replace(result, **refs)
+ 
++    @execution_step("production_execution.CodexCliExecutionBackend._prepare_payload")
+     def _prepare_payload(
+         self,
+         request: ExecutionRequest,
+@@ -1944,6 +1957,7 @@ class CodexCliExecutionBackend:
+             "local_user_config_is_model_authority": False,
+         }
+ 
++    @execution_step("production_execution.CodexCliExecutionBackend._validate_successful_process")
+     def _validate_successful_process(
+         self,
+         record: ExecutionRecord,
+@@ -2088,6 +2102,7 @@ class CodexCliExecutionBackend:
+             ),
+         }
+ 
++    @execution_step("production_execution.CodexCliExecutionBackend.cancel")
+     def cancel(
+         self, handle: ExecutionHandle, reason: str
+     ) -> ExecutionCancellationResult:
+diff --git a/src/novel_forge/modules/production_execution/gateway.py b/src/novel_forge/modules/production_execution/gateway.py
+index 6d0c69ef..a127d716 100644
+--- a/src/novel_forge/modules/production_execution/gateway.py
++++ b/src/novel_forge/modules/production_execution/gateway.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from novel_forge.logging.execution import execution_step
++
+ from dataclasses import dataclass
+ from typing import Iterable, Protocol
+ 
+@@ -191,6 +193,7 @@ class AdmissionController:
+             )
+         return route
+ 
++    @execution_step("production_execution.AdmissionController.admit")
+     def admit(
+         self,
+         request: ExecutionRequest,
+@@ -201,6 +204,7 @@ class AdmissionController:
+         )
+         return self._admit_frozen_contracts(request, capability)
+ 
++    @execution_step("production_execution.AdmissionController.admit_recovery")
+     def admit_recovery(
+         self,
+         request: ExecutionRequest,
+@@ -398,6 +402,7 @@ class ProductionExecutionGateway:
+         self.backends = backends
+         self.admission = admission
+ 
++    @execution_step("production_execution.ProductionExecutionGateway.submit")
+     def submit(self, request: ExecutionRequest) -> ExecutionHandle:
+         route = self.admission.resolve_route(request)
+         backend = self.backends.resolve(route.backend_id)
+@@ -408,6 +413,7 @@ class ProductionExecutionGateway:
+         )
+         return handle
+ 
++    @execution_step("production_execution.ProductionExecutionGateway.resume_planned_execution")
+     def resume_planned_execution(
+         self,
+         request: ExecutionRequest,
+@@ -493,6 +499,7 @@ class ProductionExecutionGateway:
+         self._validate_cancellation(handle, result)
+         return result
+ 
++    @execution_step("production_execution.ProductionExecutionGateway.reconcile")
+     def reconcile(self, handle: ExecutionHandle) -> ExecutionResult:
+         self.admission.assert_handle_current(handle)
+         backend = self.backends.resolve(handle.backend_id)
+@@ -500,6 +507,7 @@ class ProductionExecutionGateway:
+         self._validate_result(handle, result)
+         return result
+ 
++    @execution_step("production_execution.ProductionExecutionGateway.cancel")
+     def cancel(
+         self, handle: ExecutionHandle, reason: str
+     ) -> ExecutionCancellationResult:
+diff --git a/src/novel_forge/modules/production_execution/process_supervisor.py b/src/novel_forge/modules/production_execution/process_supervisor.py
+index 21e66151..afd5b6dd 100644
+--- a/src/novel_forge/modules/production_execution/process_supervisor.py
++++ b/src/novel_forge/modules/production_execution/process_supervisor.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from novel_forge.logging.execution import execution_step
++
+ from contextlib import contextmanager
+ from dataclasses import dataclass, replace
+ from datetime import UTC, datetime
+@@ -412,6 +414,7 @@ class PersistentExecutionDirectory:
+         self._validate_receipt_paths(layout, receipt)
+         return receipt
+ 
++    @execution_step("production_execution.PersistentExecutionDirectory.write_receipt")
+     def write_receipt(self, receipt: ProcessReceipt) -> ExecutionDirectoryLayout:
+         layout = self.prepare(receipt.execution_id)
+         with self.exclusive(layout):
+@@ -419,6 +422,7 @@ class PersistentExecutionDirectory:
+             self._write_receipt_unlocked(layout, receipt)
+         return layout
+ 
++    @execution_step("production_execution.PersistentExecutionDirectory._write_receipt_unlocked")
+     def _write_receipt_unlocked(
+         self, layout: ExecutionDirectoryLayout, receipt: ProcessReceipt
+     ) -> None:
+@@ -645,6 +649,7 @@ class CodexProcessSupervisor:
+         ] = {}
+         self._active_processes_lock = Lock()
+ 
++    @execution_step("production_execution.CodexProcessSupervisor.run")
+     def run(self, request: ProcessLaunchRequest, *, controller: Any | None = None) -> SupervisedProcessResult:
+         layout = self.execution_directory.prepare(request.execution_id)
+         existing: ProcessReceipt | None = None
+@@ -896,6 +901,7 @@ class CodexProcessSupervisor:
+             stderr=self._read_text(layout.stderr_path),
+         )
+ 
++    @execution_step("production_execution.CodexProcessSupervisor.recover")
+     def recover(self, execution_id: str) -> ProcessRecoveryResult:
+         receipt = self.execution_directory.read_receipt(execution_id)
+         if receipt is None:
+@@ -1041,6 +1047,7 @@ class CodexProcessSupervisor:
+             duplicate_submission=True,
+         )
+ 
++    @execution_step("production_execution.CodexProcessSupervisor.cancel")
+     def cancel(
+         self,
+         execution_id: str,
+diff --git a/src/novel_forge/modules/production_execution/provider_protocol_failure.py b/src/novel_forge/modules/production_execution/provider_protocol_failure.py
+index 83bb630c..65836b26 100644
+--- a/src/novel_forge/modules/production_execution/provider_protocol_failure.py
++++ b/src/novel_forge/modules/production_execution/provider_protocol_failure.py
+@@ -1,6 +1,58 @@
+ from __future__ import annotations
+ 
+ import json
++from pathlib import Path
++
++from novel_forge.logging.execution import execution_error_message
++
++
++def codex_stream_summary(stdout: str) -> dict:
++    summary = {"version": "codex-stream-diagnostics.v1", "event_counts": {},
++        "turn_completed": False, "usage_present": False, "stream_disconnected": False,
++        "response_body_decode_failed": False, "remote_outcome": "UNESTABLISHED"}
++    allowed = {"thread.started", "turn.started", "turn.completed", "turn.failed",
++        "error", "item.started", "item.updated", "item.completed"}
++    for line in stdout.splitlines():
++        try:
++            event = json.loads(line)
++        except (ValueError, TypeError, RecursionError):
++            continue
++        if not isinstance(event, dict):
++            continue
++        kind = event.get("type")
++        if not isinstance(kind, str) or kind not in allowed:
++            continue
++        counts = summary["event_counts"]
++        counts[kind] = counts.get(kind, 0) + 1
++        if kind == "turn.completed":
++            summary["turn_completed"] = True
++            summary["usage_present"] = isinstance(event.get("usage"), dict)
++        if kind in {"error", "turn.failed"}:
++            error = event.get("error")
++            message = event.get("message") or (error.get("message") if isinstance(error, dict) else "")
++            if isinstance(message, str):
++                execution_error_message("codex.stream", message)
++                summary["stream_disconnected"] |= "stream disconnected before completion" in message
++                summary["response_body_decode_failed"] |= "error decoding response body" in message
++    return summary
++
++
++def read_codex_stream_summary(path: str) -> dict:
++    try:
++        with Path(path).open("rb") as stream:
++            size = stream.seek(0, 2)
++            stream.seek(0)
++            data = stream.read(524288)
++            if size > 1048576:
++                stream.seek(-524288, 2)
++                data += b"\n" + stream.read(524288)
++            else:
++                data += stream.read(524288)
++        return {**codex_stream_summary(data.decode("utf-8", errors="replace")),
++            "stdout_bytes": size, "scan_truncated": size > 1048576}
++    except OSError:
++        return {"version": "codex-stream-diagnostics.v1", "status": "UNAVAILABLE",
++            "remote_outcome": "UNESTABLISHED"}
+ 
+ 
+ def codex_protocol_failure(stdout: str) -> str | None:
+@@ -18,4 +70,3 @@ def codex_protocol_failure(stdout: str) -> str | None:
+         except (ValueError, TypeError):
+             continue
+     return None
+-
+diff --git a/src/novel_forge/modules/production_execution/recovery.py b/src/novel_forge/modules/production_execution/recovery.py
+index 3125f743..863c8819 100644
+--- a/src/novel_forge/modules/production_execution/recovery.py
++++ b/src/novel_forge/modules/production_execution/recovery.py
+@@ -1,5 +1,7 @@
+ from __future__ import annotations
+ 
++from novel_forge.logging.execution import execution_step
++
+ from dataclasses import asdict
+ import hashlib
+ import json
+@@ -224,6 +226,7 @@ class AuthorityExecutionRecoveryStore:
+     def save_record(self, record: ExecutionRecord) -> None:
+         self._save_record(record)
+ 
++    @execution_step("production_execution.AuthorityExecutionRecoveryStore.get_record")
+     def get_record(self, execution_id: str) -> ExecutionRecord:
+         existing = self._require_session(execution_id)
+         record_payload = existing.content.get("record")
+@@ -286,6 +289,7 @@ class AuthorityExecutionRecoveryStore:
+             raise ValueError("manifest evidence kind must identify a manifest")
+         return self.put_evidence(kind, execution_id, payload)
+ 
++    @execution_step("production_execution.AuthorityExecutionRecoveryStore.put_evidence")
+     def put_evidence(
+         self,
+         kind: str,
+@@ -302,6 +306,7 @@ class AuthorityExecutionRecoveryStore:
+             correlation_id=record.request.correlation_id,
+         )
+ 
++    @execution_step("production_execution.AuthorityExecutionRecoveryStore.read_evidence")
+     def read_evidence(self, ref: str) -> dict[str, Any]:
+         if not ref.startswith(_EVIDENCE_REF_PREFIX):
+             raise ValueError("execution evidence ref is not Authority-backed")
+@@ -321,6 +326,7 @@ class AuthorityExecutionRecoveryStore:
+             raise ValueError("execution evidence payload hash is corrupt")
+         return dict(payload)
+ 
++    @execution_step("production_execution.AuthorityExecutionRecoveryStore._save_record")
+     def _save_record(self, record: ExecutionRecord) -> None:
+         request = record.request
+         if request.project_id != self.project_id:
+diff --git a/src/novel_forge/modules/story_planning_runtime/execution.py b/src/novel_forge/modules/story_planning_runtime/execution.py
+index 0d6a229a..c89ca1d0 100644
+--- a/src/novel_forge/modules/story_planning_runtime/execution.py
++++ b/src/novel_forge/modules/story_planning_runtime/execution.py
+@@ -1,4 +1,6 @@
+ from __future__ import annotations
++
++from novel_forge.logging.execution import execution_step
+ from collections.abc import Mapping, Sequence
+ from dataclasses import dataclass, replace
+ from decimal import Decimal, InvalidOperation
+@@ -3222,6 +3224,7 @@ class _PlanningGatewayEffectAdapter:
+         return self._invoke(stable_idempotency_key=stable_idempotency_key,
+             capability=capability, request_payload=request_payload, reconciliation=False)
+ 
++    @execution_step("story_planning_runtime._PlanningGatewayEffectAdapter._invoke")
+     def _invoke(
+         self, *, stable_idempotency_key: str, capability: str,
+         request_payload: dict[str, Any], reconciliation: bool,
+@@ -3691,6 +3694,7 @@ class _PlanningPepPort:
+     external_effect_backed = True
+     production_execution_gateway_backed = True
+ 
++    @execution_step("story_planning_runtime._PlanningPepPort.execute")
+     def execute(self, command: DomainExecutionCommand) -> DomainExecutionCandidate:
+         if command.capability != self.binding.request.capability:
+             raise KernelError(
+@@ -3941,6 +3945,7 @@ class _PlanningPepPort:
+             ),
+         )
+ 
++    @execution_step("story_planning_runtime._PlanningPepPort._record_model_evidence")
+     def _record_model_evidence(
+         self,
+         *,
+@@ -3989,6 +3994,7 @@ class _PlanningPepPort:
+             },
+         )
+ 
++    @execution_step("story_planning_runtime._PlanningPepPort._record_evidence")
+     def _record_evidence(self, asset_type: str, content: dict[str, Any]) -> None:
+         request = self.binding.request
+         logical_ref = (
+diff --git a/src/novel_forge/storage/migrations/runner.py b/src/novel_forge/storage/migrations/runner.py
+index aed71ee2..00b21ec4 100644
+--- a/src/novel_forge/storage/migrations/runner.py
++++ b/src/novel_forge/storage/migrations/runner.py
+@@ -139,8 +139,9 @@ def get_migration_status(database_url: str) -> dict[str, Any]:
+     validate_migration_chain()
+     with _connect(database_url) as connection:
+         with connection.cursor() as cursor:
+-            _ensure_migration_table(cursor)
+-            applied = _applied_migration_rows(cursor)
++            cursor.execute("SET TRANSACTION READ ONLY")
++            cursor.execute("SELECT to_regclass('nf_schema_migrations')")
++            applied = _applied_migration_rows(cursor) if cursor.fetchone()[0] is not None else []
+     return _status_from_rows(applied)
+ 
+ 
+diff --git a/tests/integration/test_migration_history_admission_postgres.py b/tests/integration/test_migration_history_admission_postgres.py
+index ac076fb9..9f81af28 100644
+--- a/tests/integration/test_migration_history_admission_postgres.py
++++ b/tests/integration/test_migration_history_admission_postgres.py
+@@ -3,13 +3,37 @@ from __future__ import annotations
+ import psycopg
+ import pytest
+ 
+-from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, run_migrations
++from novel_forge.storage.migrations import LATEST_MIGRATION_ID, MIGRATIONS, get_migration_status, run_migrations
++from psycopg.conninfo import make_conninfo
+ from tests.integration import authority_postgres_support as support
+ from tests.integration.migration_window_postgres_support import disposable_database_at_migration
+ 
+ MAIN_HEAD = "20261007_0159_planning_dead_letter_result_recovery"
+ 
+ 
++def test_restored_migration_status_is_read_only_and_preserves_partial_history():
++    with disposable_database_at_migration(support.DATABASE_URL, prefix="status_restore", target_migration_id=MAIN_HEAD) as url:
++        before = _snapshot(url)
++        readonly = make_conninfo(url, options="-c default_transaction_read_only=on")
++        result = get_migration_status(readonly)
++        assert not result["ok"] and not result["extra"]
++        assert result["applied"][-1]["migration_id"] == MAIN_HEAD
++        assert result["missing"][-1] == LATEST_MIGRATION_ID
++        assert _snapshot(url) == before
++        assert get_migration_status(readonly) == result
++
++
++def test_missing_migration_ledger_is_reported_without_bootstrapping():
++    with disposable_database_at_migration(support.DATABASE_URL, prefix="status_empty", target_migration_id=MIGRATIONS[0].migration_id) as url:
++        with psycopg.connect(url) as connection:
++            connection.execute("DROP TABLE nf_schema_migrations")
++        result = get_migration_status(make_conninfo(url, options="-c default_transaction_read_only=on"))
++        assert not result["ok"] and result["applied"] == []
++        assert result["missing"] == result["available"]
++        with psycopg.connect(url) as connection:
++            assert connection.execute("SELECT to_regclass('nf_schema_migrations')").fetchone() == (None,)
++
++
+ def _snapshot(url):
+     with psycopg.connect(url) as connection:
+         return (
+diff --git a/tests/integration/test_production_execution_recovery_postgres.py b/tests/integration/test_production_execution_recovery_postgres.py
+index e90dafa3..30834816 100644
+--- a/tests/integration/test_production_execution_recovery_postgres.py
++++ b/tests/integration/test_production_execution_recovery_postgres.py
+@@ -1,8 +1,12 @@
+ from __future__ import annotations
+ 
+ from dataclasses import replace
++import json
++import logging
+ import unittest
+ 
++import pytest
++
+ from novel_forge.modules.production_execution import (
+     CapabilityAvailability,
+     CompletionMode,
+@@ -30,6 +34,33 @@ from tests.integration.authority_postgres_support import (
+ )
+ 
+ 
++def test_diagnostics_distinguish_committed_record_from_failed_authority_write(caplog, monkeypatch):
++    ensure_migrated()
++    caplog.set_level(logging.INFO, logger="novel_forge.execution")
++    project_id, operation_id = ProductionExecutionRecoveryPostgresTests._operation()
++    request = ProductionExecutionRecoveryPostgresTests._request(project_id, operation_id)
++    record = ExecutionRecord(request=request,
++        handle=ProductionExecutionRecoveryPostgresTests._handle(request),
++        started_at="2026-07-26T00:00:00Z", raw_evidence={"provider_state": "unknown"})
++    store = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id)
++    store.put_record(record)
++    before = store.get_record(request.execution_id)
++
++    def fail_write(*args, **kwargs):
++        raise OSError("PRIVATE CONNECTION STRING")
++
++    monkeypatch.setattr(store.writer, "materialize_output", fail_write)
++    record.raw_evidence = {"provider_state": "observed"}
++    with pytest.raises(OSError):
++        store.save_record(record)
++    recovered = AuthorityExecutionRecoveryStore(DATABASE_URL, project_id=project_id).get_record(request.execution_id)
++    assert recovered.raw_evidence == before.raw_evidence
++    rows = [json.loads(row.message) for row in caplog.records if row.name == "novel_forge.execution"]
++    assert any(row["step"].endswith("._save_record") and row["phase"] == "failed"
++        and row["execution_id"] == request.execution_id for row in rows)
++    assert "PRIVATE CONNECTION STRING" not in caplog.text
++
++
+ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
+     @classmethod
+     def setUpClass(cls) -> None:

@@ -1,0 +1,133 @@
+{
+  "observed_at": "2026-10-08T17:55:11.810205+00:00",
+  "project_id": "qid-learning-prose-01",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "formation_run_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+  "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+  "requested_delivery_end_chapter": 40,
+  "full_book_target": 240,
+  "original_production_profile_version": "authority-output:e028f0a6-b242-4990-b707-b2f4b09ca34f:book.bootstrap.production_profile:v1",
+  "original_profile_hash": "sha256:461bc496bf591908b24377a3adb228076641a569c19771bb5ad03ec2b449180d",
+  "original_execution_window": {
+    "version": "creation-execution-window.v1",
+    "stop_after_chapter": 3
+  },
+  "original_author_workflow": {
+    "mode": "AUTHOR_FIRST",
+    "version": "author-workflow.v1",
+    "deep_review": false
+  },
+  "original_snapshot_changed": false,
+  "creation_status": {
+    "formation_run_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+    "production": null,
+    "author_state": "RECONCILIATION_REQUIRED",
+    "unresolved_external_effects": [
+      {
+        "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+        "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+        "effect_status": "UNKNOWN",
+        "process_receipt_ref": "authority-asset-version:d45f6b0d-1029-4a4e-b03f-14df48e4f3ef",
+        "state": "RECONCILIATION_REQUIRED",
+        "usage": "UNKNOWN"
+      }
+    ],
+    "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS",
+    "responsible_party": "RUNTIME_OWNER",
+    "delivery": {
+      "required_action": "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT",
+      "export_status": "AVAILABLE_FOR_SAVED_PROSE",
+      "query_url": "",
+      "literary_quality": "NOT_PROVEN"
+    },
+    "formation_lifecycle": "READY",
+    "stage": "COMPLETE",
+    "version": 14,
+    "cancellation": null,
+    "candidates": [],
+    "failure": {},
+    "recovery_instruction": {},
+    "coordination": {
+      "runtime_job_id": "runtime-job:91720dba0fb9f464c350ddcba76fb9308d3c389b235e79a390d39bc9f6389c09",
+      "status": "READY",
+      "next_attempt_at": "2026-10-08 09:37:23.927285+00:00",
+      "error": {},
+      "result": null
+    },
+    "progress": [
+      "COMPLETE",
+      "READY",
+      14,
+      10,
+      0,
+      null,
+      {
+        "chapter": null,
+        "opening": [
+          "FAILED",
+          1
+        ],
+        "cancel_requested": false
+      }
+    ]
+  },
+  "book_runs": [],
+  "project_prose_asset_counts": {
+    "draft_chapter": 0,
+    "review_report": 0,
+    "draft_version": 0,
+    "re_review_report": 0
+  },
+  "new_window_value_validation_only": {
+    "version": "creation-execution-window.v1",
+    "stop_after_chapter": 40
+  },
+  "new_window_adopted": false,
+  "native_continuation_chain": [
+    {
+      "action": "RECONCILE_ORIGINAL_EFFECT",
+      "effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+      "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+      "status": "REQUIRES_AUTHENTICATED_ORIGINAL_PROVIDER_EVIDENCE"
+    },
+    {
+      "action": "RECOVER_ORIGINAL_OPENING_AND_START",
+      "status": "NOT_RUN",
+      "frozen_stop_after_chapter": 3
+    },
+    {
+      "action": "DELIVER_ORIGINAL_THREE_CHAPTER_WINDOW",
+      "status": "NOT_RUN"
+    },
+    {
+      "action": "EXTEND_SAME_IDLE_AUTHOR_FIRST_BOOK_RUN",
+      "status": "NOT_RUN",
+      "stop_after_chapter": 40,
+      "command": "authority-manuscript extend-delivery-window",
+      "frozen_full_book_target": 240
+    },
+    {
+      "action": "CONTINUE_NATIVE_SELECTED_MANUSCRIPT_FRONTIER_TO_40",
+      "status": "NOT_RUN"
+    },
+    {
+      "action": "EXPLICIT_PROSE_REVIEW_AND_UNADOPTED_NECESSARY_REVISION_CANDIDATES",
+      "status": "NOT_RUN"
+    }
+  ],
+  "source_coverage": "Original endpoint serves explicitly restored backup point; latest post-backup state unverified",
+  "new_real_provider_calls": 0,
+  "readiness_version": "native-40-delivery-readiness.v2",
+  "supersedes_readiness_sha256": "20683830711ec43cd5c17e6d0063debbf9d53ad7f934d7cc4f0be384a132d1f0",
+  "implementation_evidence": {
+    "release_root": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/releases/acb6d06befac33d6f9a7f07abe41b16e0fff68b8-delivery-window-57e155e644f2",
+    "patch_sha256": "57e155e644f28b439d5597f3ae2f26853ee6584ffec7453bf8d2eb250e9c7286",
+    "verified_modified_file_count": 41,
+    "api_pid": 86161,
+    "extension_route_exposed": true,
+    "original_book_extension_executed": false,
+    "provider_dispatches": 0
+  },
+  "original_latest_ledger": "UNVERIFIED_BEYOND_RESTORED_2026_10_08_20_18_23_CST_BACKUP"
+}

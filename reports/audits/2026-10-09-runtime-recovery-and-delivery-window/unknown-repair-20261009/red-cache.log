@@ -1,0 +1,55 @@
+FF
+=================================== FAILURES ===================================
+__ test_late_original_receipt_replaces_uncertain_cache_without_launch[FAILED] __
+
+execution = (<novel_forge.modules.production_execution.backends.CodexCliExecutionBackend object at 0x10cf48fe0>, ExecutionHandle(e...0a0>, <novel_forge.modules.production_execution.process_supervisor.PersistentExecutionDirectory object at 0x10cf48fb0>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cf19f40>
+initial = <ProcessReceiptStatus.FAILED: 'FAILED'>
+
+    @pytest.mark.parametrize('initial', [ProcessReceiptStatus.FAILED, ProcessReceiptStatus.RUNNING])
+    def test_late_original_receipt_replaces_uncertain_cache_without_launch(execution, monkeypatch, initial):
+        backend, handle, store, directory = execution
+        final = backend.supervisor.recover(handle.execution_id)
+        early = replace(final, receipt=replace(final.receipt, status=initial, returncode=None, completed_at=None))
+        monkeypatch.setattr(backend.supervisor, 'recover', lambda _: early)
+        first = backend.reconcile(handle)
+        assert first.outcome in {ExecutionOutcome.UNKNOWN, ExecutionOutcome.RUNNING}
+        monkeypatch.setattr(backend.supervisor, 'recover', lambda _: final)
+        monkeypatch.setattr(backend.supervisor, 'run', lambda _: pytest.fail('recovery must never launch'))
+        result = backend.reconcile(handle)
+>       assert result.outcome == ExecutionOutcome.SUCCEEDED
+E       AssertionError: assert <ExecutionOut...WN: 'UNKNOWN'> == <ExecutionOut...: 'SUCCEEDED'>
+E         
+E         - SUCCEEDED
+E         + UNKNOWN
+
+tests/unit/test_codex_original_recovery.py:52: AssertionError
+_ test_late_original_receipt_replaces_uncertain_cache_without_launch[RUNNING] __
+
+execution = (<novel_forge.modules.production_execution.backends.CodexCliExecutionBackend object at 0x10cf4a000>, ExecutionHandle(e...f70>, <novel_forge.modules.production_execution.process_supervisor.PersistentExecutionDirectory object at 0x10cf49e80>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10cf4aa20>
+initial = <ProcessReceiptStatus.RUNNING: 'RUNNING'>
+
+    @pytest.mark.parametrize('initial', [ProcessReceiptStatus.FAILED, ProcessReceiptStatus.RUNNING])
+    def test_late_original_receipt_replaces_uncertain_cache_without_launch(execution, monkeypatch, initial):
+        backend, handle, store, directory = execution
+        final = backend.supervisor.recover(handle.execution_id)
+        early = replace(final, receipt=replace(final.receipt, status=initial, returncode=None, completed_at=None))
+        monkeypatch.setattr(backend.supervisor, 'recover', lambda _: early)
+        first = backend.reconcile(handle)
+        assert first.outcome in {ExecutionOutcome.UNKNOWN, ExecutionOutcome.RUNNING}
+        monkeypatch.setattr(backend.supervisor, 'recover', lambda _: final)
+        monkeypatch.setattr(backend.supervisor, 'run', lambda _: pytest.fail('recovery must never launch'))
+        result = backend.reconcile(handle)
+>       assert result.outcome == ExecutionOutcome.SUCCEEDED
+E       AssertionError: assert <ExecutionOut...NG: 'RUNNING'> == <ExecutionOut...: 'SUCCEEDED'>
+E         
+E         - SUCCEEDED
+E         + RUNNING
+
+tests/unit/test_codex_original_recovery.py:52: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_codex_original_recovery.py::test_late_original_receipt_replaces_uncertain_cache_without_launch[FAILED]
+FAILED tests/unit/test_codex_original_recovery.py::test_late_original_receipt_replaces_uncertain_cache_without_launch[RUNNING]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 2 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+2 failed in 1.14s
