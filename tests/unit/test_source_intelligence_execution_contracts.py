@@ -557,6 +557,35 @@ def test_recorded_usage_requires_observed_nonnegative_integer_counts():
         assert _recorded_token_usage(usage) is None
 
 
+@pytest.mark.parametrize("stage,inputs,quotes", [
+    (DECONSTRUCTION_STAGE, {"reading_context": {"dimensions": ["character_choice_cost"]}, "source_segments": [{"text": "research"}]}, True),
+    (DECONSTRUCTION_STAGE, {"reading_context": {"phase": "REVIEW"}, "source_segments": [{"text": "research"}], "review_target": {}}, False),
+    (DECONSTRUCTION_STAGE, {"reading_context": {"phase": "SYNTHESIZE"}, "input_observations": [{}]}, False),
+    (CLASSIFICATION_STAGE, {"classification_samples": [{"content": "research"}]}, False),
+    (MKAOS_STAGE, {"input_observations": [{}]}, False),
+])
+def test_actual_source_prompt_separates_exact_research_evidence_from_abstraction(stage, inputs, quotes):
+    from hashlib import sha256
+    from types import SimpleNamespace
+    from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
+    from novel_forge.modules.chapter_authority.execution_gateway import _materialize_source_intelligence_prompt
+
+    spec = SimpleNamespace(stage=stage, input_payload=inputs, methodology_content="Governed methodology",
+        methodology_content_hash="sha256:" + sha256(b"Governed methodology").hexdigest(),
+        capability="deconstruction.observe" if stage == DECONSTRUCTION_STAGE else "source.content.classify" if stage == CLASSIFICATION_STAGE else "mkaos.knowledge.extract",
+        prompt_id="source.contract", prompt_version="2.0.0", skill_id="source.skill", skill_version="1.0",
+        output_schema={"type": "object", "properties": {}})
+    materialization = PostgresContentIntelligenceExecutionPort._materialization(None, spec)
+    prompt, evidence = _materialize_source_intelligence_prompt(
+        target_scope={"scope_kind": "chapter", "scope_id": "s", "project_id": "p", "book_id": "source-corpus:p"},
+        stage=stage, inputs=inputs, materialization=materialization)
+    assert ("supports[].support_text" in prompt) == quotes
+    assert ("Do not quote, reproduce, or preserve source expression" in prompt) != quotes
+    assert evidence["source_bytes_persisted_in_external_effect"] is False
+    assert evidence["system_instruction"]["version"] == "1.1"
+    assert materialization["source_isolation"]["raw_source_allowed_in_generation_context"] is False
+
+
 def test_source_local_timeout_is_unknown_remote_outcome():
     from novel_forge.modules.source_import.execution import _source_gateway_provider_result
     from novel_forge.modules.production_execution import ExecutionOutcome, ExecutionRuntimeClass

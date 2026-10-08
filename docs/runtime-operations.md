@@ -2536,6 +2536,12 @@ claims. Fiction dimensions retain choices, costs, consequences, information and 
 payoffs. Literal support spans are checked against delivered bytes and passed with the
 candidate execution version to review; matching bytes alone do not prove semantic truth.
 
+Bounded observation prompts permit only the shortest necessary exact source spans in
+`supports[].support_text`, with checked chunk IDs and UTF-8 offsets. These restricted
+research evidence fields are distinct from original analytical statements and reusable
+mechanisms. Classification, review, synthesis and MKAOS extraction retain the no-expression
+output boundary; evidence permission never authorizes raw reference text in Draft Context.
+
 Evidence offsets address the actual input chunk, not original EPUB bytes or chapter
 numbers. Both endpoints must be UTF-8 boundaries, with at most 4096 bytes per request.
 Current Source query permission and curated eligibility are required for raw evidence.

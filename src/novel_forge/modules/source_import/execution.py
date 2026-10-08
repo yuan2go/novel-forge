@@ -2046,10 +2046,12 @@ class PostgresContentIntelligenceExecutionPort:
         return ChapterExecutionBinding(request, route, manifest)
 
     def _materialization(self, spec: _ExecutionSpec) -> dict[str, Any]:
+        from .execution_contracts import source_analysis_output_instruction
+
         system_text = (
             "You analyze governed source evidence for reusable abstract mechanisms. "
-            "Never reproduce protected expression or treat an Observation as reusable "
-            "knowledge before MKAOS governance."
+            "Never treat an Observation as reusable knowledge before MKAOS governance. "
+            + source_analysis_output_instruction(spec.stage, spec.input_payload)
         )
         skill_text = spec.methodology_content
         actual_skill_hash = (
@@ -2073,7 +2075,7 @@ class PostgresContentIntelligenceExecutionPort:
             "capability": spec.capability,
             "system_instruction": {
                 "ref": "source-intelligence-system",
-                "version": "1.0",
+                "version": "1.1",
                 "content_hash": _hash(system_text),
                 "text": system_text,
             },
