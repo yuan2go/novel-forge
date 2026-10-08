@@ -2509,7 +2509,7 @@ def world_schema_evidence_identity(
 ) -> dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
     sources = sorted((root / "worldbuilding").glob("*.py")) + [
-        Path(__file__),
+        Path(__file__).resolve(),
         root / "story_planning_runtime" / "world_preparation.py",
         root / "chapter_authority" / "provider_views.py",
     ]

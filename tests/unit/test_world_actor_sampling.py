@@ -95,3 +95,16 @@ def test_world_schema_identity_shares_only_instance_ids_and_preserves_semantics(
     assert world_schema_evidence_identity(one, director_ref) == world_schema_evidence_identity(two, director_ref)
     two["properties"]["evaluations"]["items"]["properties"]["dimensions"]["properties"]["causal_coherence"] = {"type": "number", "minimum": 0, "maximum": .5}
     assert world_schema_evidence_identity(one, director_ref) != world_schema_evidence_identity(two, director_ref)
+
+
+def test_world_schema_identity_preserves_factory_identity_through_module_path_alias(tmp_path, monkeypatch):
+    from pathlib import Path
+    from novel_forge.modules.story_planning_runtime import execution
+
+    schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+    expected = execution.world_schema_evidence_identity(schema, "schema:world:path-isolation")
+    root = Path(execution.__file__).resolve().parents[1]
+    alias = tmp_path / "modules-alias"
+    alias.symlink_to(root, target_is_directory=True)
+    monkeypatch.setattr(execution, "__file__", str(alias / "story_planning_runtime" / "execution.py"))
+    assert execution.world_schema_evidence_identity(schema, "schema:world:path-isolation") == expected
