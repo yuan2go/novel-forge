@@ -2750,6 +2750,11 @@ release. `validation_release_sha` identifies the current validator; `qualified_r
 and the report's `release_sha` retain the actual Provider runtime. This cannot qualify a
 newer runtime or an ordinary success without the original D0 recovery evidence.
 
+Source results scope reconciliation guidance to the original job root. Reading previews
+report project UNKNOWN observations separately; execution still checks the actual Source
+Kernel lineage and shared project budget before any send. An unrelated Book UNKNOWN
+retains its reservation and recovery obligations without becoming a Source job blocker.
+
 The resulting D0 qualification binds the actual Source capability, Provider/model,
 account/runtime host, release, model profile, route, instruction/Prompt/Skill/schema hashes
 and immutable effect/receipt. Production approval freezes that binding at admission and

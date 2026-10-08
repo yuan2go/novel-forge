@@ -46,3 +46,21 @@ def test_paused_analysis_requires_cli_reconciliation_before_resume(monkeypatch, 
     assert result["analysis_state"] == "PAUSED"
     assert result["budget"] == budget
     assert result["next_action"] == ("RECONCILE_CLI_OUTCOME" if unknown else "RESUME")
+
+
+def test_source_budget_scopes_unknown_guidance_to_its_original_root(monkeypatch):
+    from novel_forge.storage.source_import_operations_records import SourceImportOperationsRecords
+    from novel_forge.modules.command_kernel import budget_runtime
+    scopes = []
+    def unresolved(cursor, project, **kwargs):
+        scopes.append(kwargs.get("root_operation_id"))
+        return [] if kwargs else [{"operation_id": "unrelated-book-unknown"}]
+    monkeypatch.setattr(budget_runtime, "unresolved_cli_outcomes", unresolved)
+    monkeypatch.setattr(budget_runtime, "provider_project_usage", lambda *_: {"unmeasured_reserved_tokens": 100})
+    repository = SourceImportOperationsRecords()
+    repository.cursor = SimpleNamespace(execute=lambda *_: None, fetchall=lambda: [], fetchone=lambda: ("source-original-root",))
+    result = repository.analysis_budget("project:1", "source-job:1")
+    assert scopes == ["source-original-root", None]
+    assert result["unresolved_cli_outcomes"] == []
+    assert result["project_unresolved_cli_outcomes"] == [{"operation_id": "unrelated-book-unknown"}]
+    assert result["project_cumulative"]["unmeasured_reserved_tokens"] == 100

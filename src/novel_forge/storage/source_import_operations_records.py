@@ -461,12 +461,17 @@ class SourceImportOperationsRecords:
         )
         effects = dict(self.cursor.fetchall())
         from novel_forge.modules.command_kernel.budget_runtime import provider_project_usage, unresolved_cli_outcomes
+        self.cursor.execute("SELECT discovery_operation_id FROM authority_source_import_job WHERE project_id=%s AND import_job_id=%s", [project, job])
+        root = self.cursor.fetchone()
+        if root is None or not root[0]:
+            raise KernelError("SOURCE_ROOT_LINEAGE_REQUIRED", "Source budget query requires the original job root")
 
         return {
             "reservations": rows,
             "effects": effects,
             "project_cumulative": provider_project_usage(self.cursor, project),
-            "unresolved_cli_outcomes": unresolved_cli_outcomes(self.cursor, project),
+            "unresolved_cli_outcomes": unresolved_cli_outcomes(self.cursor, project, root_operation_id=str(root[0])),
+            "project_unresolved_cli_outcomes": unresolved_cli_outcomes(self.cursor, project),
             "scope": "JOB_OWNED_EFFECTS_ONLY",
             "hidden_backend_usage": "NOT_OBSERVED",
         }
