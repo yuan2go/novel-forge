@@ -67,6 +67,7 @@ def test_frozen_editorial_decisions_follow_native_parent_and_exact_chapter_scope
 
 
 def test_task_generated_editorial_brief_keeps_parent_and_exact_knowledge_inputs():
+    from novel_forge.modules.creative.input_selection import brief_input_assets
     selection = {"contract_version": "creative-input-selection.v1", "book_id": "b",
         "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION", "intent_ref": "author-task"}
     parent = AuthorityInputAsset(asset_version_id="brief:current", asset_type="creative_brief",
@@ -76,6 +77,8 @@ def test_task_generated_editorial_brief_keeps_parent_and_exact_knowledge_inputs(
         content_hash="sha256:" + "c" * 64, content={"project_id": "p", "abstract_content": {"mechanism": "Cooling consumes water"}})
     derived = {**selection, "source_kind": "TASK_GENERATED", "parent_input": {
         "asset_version_id": parent.asset_version_id, "content_hash": parent.content_hash}}
+    assert brief_input_assets(editorial_brief(), derived) == (
+        derived["parent_input"], {"asset_version_id": card.asset_version_id, "content_hash": card.content_hash})
     request = AuthorityHandlerRequest(operation_id="derive", project_id="p", workspace_id="w", actor_id="assistant",
         trace_id="trace", correlation_id="corr", definition_name="creative.brief.create", definition_version="2.1.5",
         command={"project_id": "p", "input_asset_version_ids": [parent.asset_version_id, card.asset_version_id],

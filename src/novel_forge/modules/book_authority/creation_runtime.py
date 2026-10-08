@@ -740,7 +740,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
                 or not isinstance(inputs["language_contract"].get("required_language"), str)
                 or not inputs["language_contract"]["required_language"].strip()):
             raise ValueError("Creation requires a typed current work request")
-        from novel_forge.modules.creative.input_selection import validate_input_selection, require_input_scope
+        from novel_forge.modules.creative.input_selection import validate_input_selection, require_input_scope, brief_input_assets
         selection = validate_input_selection(inputs.get("input_selection") or {
             "contract_version": "creative-input-selection.v1", "book_id": args.book_id,
             "source_kind": "CURRENT_AUTHOR_INPUT", "purpose": "WORK_PRODUCTION",
@@ -867,7 +867,7 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             brief = content.execute(ContentOperationRequest(definition_name="creative.brief.create", project_id=args.project_id,
                 workspace_id=args.workspace_id, actor_id=principal.principal_id, trace_id="trace:" + args.idempotency_key,
                 correlation_id=formation_id, idempotency_key=args.idempotency_key + ":brief",
-                input_assets=(dict(selection["parent_input"]),) if selection.get("parent_input") else (),
+                input_assets=brief_input_assets(inputs["brief"], selection),
                 payload={"brief": inputs["brief"], "input_selection": selection}), principal=principal)
         frozen = StoryFormationInput(creative_brief_asset_version_id=brief.asset_version_id,
             creative_brief_content_hash=brief.content_hash, generation_policy={

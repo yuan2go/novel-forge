@@ -73,6 +73,20 @@ def narrative_brief(content: Mapping[str, Any]) -> dict[str, Any]:
     return {key: deepcopy(content[key]) for key in ("creative_brief_contract_version", *sorted(fields)) if key in content}
 
 
+def brief_input_assets(brief: Mapping[str, Any], selection: Mapping[str, Any] | None) -> tuple[dict[str, str], ...]:
+    references = []
+    if selection and selection.get("parent_input"):
+        references.append(dict(selection["parent_input"]))
+    if brief.get("editorial_learning"):
+        from .editorial_learning import validate_editorial_learning
+        learning = validate_editorial_learning(brief["editorial_learning"])
+        for decision in learning["decisions"]:
+            for card in decision["knowledge_cards"]:
+                if card not in references:
+                    references.append(dict(card))
+    return tuple(references)
+
+
 def require_selected_brief(cursor: Any, *, asset_version_id: str, content_hash: str,
                            project_id: str, workspace_id: str, book_id: str,
                            allow_legacy_frozen: bool = False) -> dict[str, Any]:

@@ -1803,7 +1803,9 @@ The full host Context keeps exact source versions and hashes for request provena
 
 `scripts.run_creation_synthesis` requires explicit `--brief`, `--policy` and
 `--formation-policy`. For a new run also supply `--input-source`, `--input-purpose`
-and optionally `--intent-ref`; use CURRENT_AUTHOR_INPUT / WORK_PRODUCTION for the
+and optionally `--intent-ref`. TASK_GENERATED also freezes `--parent-input-version`
+and `--parent-input-hash`; its intent reference and purpose must match that parent.
+Use CURRENT_AUTHOR_INPUT / WORK_PRODUCTION for the
 currently selected work, and the explicit case source/purpose for validation.
 `scripts.prepare_knowledge_closure prepare` requires `--input-dir`; it never chooses
 an old experiment. Synthetic Source admission files additionally require explicit
