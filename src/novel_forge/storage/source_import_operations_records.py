@@ -228,6 +228,21 @@ class SourceImportOperationsRecords:
             """SELECT w.work_kind,w.status,o.status,count(*) FROM authority_source_import_work w
             JOIN authority_operation o USING(operation_id,project_id) WHERE w.project_id=%s AND w.import_job_id=%s
               AND NOT (o.command_payload->'payload' ? 'source_sampling')
+              AND NOT EXISTS (
+                  SELECT 1 FROM authority_source_import_work recovered
+                  JOIN authority_operation successor ON successor.operation_id=recovered.operation_id
+                  JOIN authority_external_effect original_effect
+                    ON original_effect.external_effect_id=
+                       successor.command_payload#>>'{payload,completion_recovery,original_effect_id}'
+                   AND original_effect.operation_id=o.operation_id
+                   AND original_effect.status='SUCCEEDED'
+                  WHERE recovered.import_job_id=w.import_job_id AND recovered.project_id=w.project_id
+                    AND recovered.status IN ('SUCCEEDED','REUSED') AND successor.status='SUCCEEDED'
+                    AND recovered.result->>'provider_execution_reused'='true'
+                    AND successor.causation_operation_id=o.operation_id
+                    AND successor.command_payload#>>'{payload,completion_recovery,source_operation_id}'=o.operation_id
+                    AND (successor.command_payload->'payload')-'completion_recovery'=o.command_payload->'payload'
+              )
             GROUP BY w.work_kind,w.status,o.status ORDER BY 1,2,3""",
             [project, job],
         )

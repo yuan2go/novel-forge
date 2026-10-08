@@ -782,3 +782,22 @@ def test_completion_recovery_admission_rejects_unknown_terminal_changes_and_chai
     else:
         with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_NOT_ELIGIBLE"):
             module._completed_stage_source(SimpleNamespace(), uow, "fixture-project", "original")
+
+
+
+def test_completion_recovery_cannot_change_reading_task_or_receipt(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.corpus_ingestion import reading_recovery as module
+    from novel_forge.modules.source_authority.corpus import corpus_hash
+    original = {"payload": {"phase": "REVIEW", "candidate": {"execution_asset_version_id": "original-candidate"}}}
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", MagicMock())
+    monkeypatch.setattr(module, "_completed_stage_source", lambda *a: (original, {}, "original-effect"))
+    recovery = {"source_operation_id": "failed-original", "original_effect_id": "original-effect",
+        "source_payload_hash": corpus_hash(original["payload"])}
+    payload = {**original["payload"], "completion_recovery": recovery}
+    assert module.require_completed_stage_recovery(SimpleNamespace(database_url="fixture"), "fixture-project", payload) == "original-effect"
+    for changed in ({**payload, "candidate": {"execution_asset_version_id": "other"}},
+                    {**payload, "completion_recovery": {**recovery, "original_effect_id": "other"}}):
+        with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_INPUT_CHANGED"):
+            module.require_completed_stage_recovery(SimpleNamespace(database_url="fixture"), "fixture-project", changed)
