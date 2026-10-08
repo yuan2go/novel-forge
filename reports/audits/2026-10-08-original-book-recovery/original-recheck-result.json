@@ -1,0 +1,21 @@
+{
+  "project_id": "qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+  "provider_dispatches": 0,
+  "snapshot_fallback": false,
+  "membership_matches_original": true,
+  "local_recovery": {
+    "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+    "result_recoverable": false,
+    "process_status": "FAILED",
+    "receipt_unchanged": true,
+    "remote_outcome": "UNKNOWN",
+    "usage": "UNKNOWN"
+  },
+  "original_ledger": {
+    "status": "UNVERIFIED",
+    "error_class": "OperationalError",
+    "code": null
+  }
+}

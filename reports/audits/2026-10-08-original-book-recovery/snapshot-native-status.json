@@ -1,0 +1,55 @@
+{
+  "formation_run_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+  "production": null,
+  "author_state": "RECONCILIATION_REQUIRED",
+  "unresolved_external_effects": [
+    {
+      "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+      "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+      "effect_status": "UNKNOWN",
+      "process_receipt_ref": "authority-asset-version:d45f6b0d-1029-4a4e-b03f-14df48e4f3ef",
+      "state": "RECONCILIATION_REQUIRED",
+      "usage": "UNKNOWN"
+    }
+  ],
+  "next_action": "RECONCILE_ORIGINAL_EXTERNAL_EFFECTS",
+  "responsible_party": "RUNTIME_OWNER",
+  "delivery": {
+    "required_action": "READ_EDIT_OR_EXPORT_CURRENT_MANUSCRIPT",
+    "export_status": "AVAILABLE_FOR_SAVED_PROSE",
+    "query_url": "",
+    "literary_quality": "NOT_PROVEN"
+  },
+  "formation_lifecycle": "READY",
+  "stage": "COMPLETE",
+  "version": 14,
+  "cancellation": null,
+  "candidates": [],
+  "failure": {},
+  "recovery_instruction": {},
+  "coordination": {
+    "runtime_job_id": "runtime-job:91720dba0fb9f464c350ddcba76fb9308d3c389b235e79a390d39bc9f6389c09",
+    "status": "READY",
+    "next_attempt_at": "2026-10-08 09:37:23.927285+00:00",
+    "error": {},
+    "result": null
+  },
+  "progress": [
+    "COMPLETE",
+    "READY",
+    14,
+    10,
+    0,
+    null,
+    {
+      "chapter": null,
+      "opening": [
+        "FAILED",
+        1
+      ],
+      "cancel_requested": false
+    }
+  ],
+  "project_id": "qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008"
+}

@@ -1,0 +1,105 @@
+{
+  "schema_version": "runtime-ledger-inspection.v2",
+  "database_identity": {
+    "database": "nf_qidian_learning_20261008_test",
+    "role": "yuan",
+    "address": null,
+    "port": null,
+    "server_started_at": "2026-10-08 14:45:30.027830+00:00",
+    "database_oid": 16384
+  },
+  "project_id": "qid-learning-prose-01",
+  "migration_head_expected": "20261008_0183_source_observation_span_identity",
+  "migration_head_present": false,
+  "applied_migration_count": 182,
+  "books": [
+    "book:qinglan-wendao-20261008"
+  ],
+  "book_production": [],
+  "effect_counts": {
+    "FAILED_FINAL": 1,
+    "READY": 1,
+    "SUCCEEDED": 37,
+    "UNKNOWN": 1
+  },
+  "unresolved_effects": [
+    {
+      "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+      "status": "UNKNOWN",
+      "effect_type": "model.invoke",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6.1-sol",
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "364241cb-7b36-498c-bce8-b14ef6912c84",
+      "status": "READY",
+      "effect_type": "model.invoke",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6.1-sol",
+      "manual_resolution_required": false
+    },
+    {
+      "external_effect_id": "dc78b963-258b-491d-a038-21aae61909d7",
+      "status": "FAILED_FINAL",
+      "effect_type": "source.public_catalog.fetch",
+      "provider": "public_catalog_http",
+      "model_id": "",
+      "manual_resolution_required": false
+    }
+  ],
+  "unresolved_list_truncated": false,
+  "budget_reservations": [
+    {
+      "status": "HELD_UNKNOWN",
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "cost_status": "PENDING",
+      "count": 1,
+      "recorded_tokens": "0",
+      "measured_tokens": null,
+      "conservative_estimate_tokens": null,
+      "unmeasured_reservations": 1,
+      "reserved_amount": null,
+      "settled_amount": null
+    },
+    {
+      "status": "RELEASED",
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "cost_status": "PENDING",
+      "count": 1,
+      "recorded_tokens": "0",
+      "measured_tokens": null,
+      "conservative_estimate_tokens": null,
+      "unmeasured_reservations": 1,
+      "reserved_amount": null,
+      "settled_amount": null
+    },
+    {
+      "status": "SETTLED",
+      "accounting_basis": "ACCOUNT_ENTITLEMENT",
+      "cost_status": "UNKNOWN",
+      "count": 22,
+      "recorded_tokens": "703762",
+      "measured_tokens": "430688",
+      "conservative_estimate_tokens": null,
+      "unmeasured_reservations": 12,
+      "reserved_amount": null,
+      "settled_amount": null
+    }
+  ],
+  "budget_scopes": [
+    {
+      "budget_scope_id": "budget-scope:76e661383987c283da1090e3f7170347c93ba67b6a86d9d90246a33e65dfc521",
+      "owner_kind": "BOOK_OPENING",
+      "owner_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+      "deadline_at": "2026-10-08 12:02:54.520687+00:00",
+      "expired": true,
+      "authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+      "provider_call_limit": null,
+      "token_limit": null
+    }
+  ],
+  "production_authorization": "NOT_ESTABLISHED_BY_INSPECTION",
+  "provider_dispatches": 0,
+  "recovery": "Use the existing owner-specific recovery and Effect reconciliation commands; inspection never resends or releases reservations."
+}

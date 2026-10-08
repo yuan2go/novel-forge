@@ -1,0 +1,396 @@
+{
+  "work_package": "WP-WORK-ADAPTATION-AND-READER-PROMISE-TO-PROSE-01",
+  "overall_complete": false,
+  "baseline_main_sha": "a3f8a6a71c2d0131cad9d948e0287848a8023847",
+  "evidence_scope": "RECONSTRUCTED_ORIGINAL_BACKUP_20261008T121823Z_NOT_CURRENT_LEDGER",
+  "original_current_ledger": "UNVERIFIED",
+  "book_id": "book:qinglan-wendao-20261008",
+  "project_id": "qid-learning-prose-01",
+  "workspace_id": "workspace:qid-learning-prose-01",
+  "formation_run_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+  "opening_run_id": "book-opening:6cdfa1d6a184d7fb840be300c488e6b70b42889dcf1149eaff99327dc512e113",
+  "book_run_id": null,
+  "selected_prose": [],
+  "prose_exports": [],
+  "saved_chapters_in_snapshot": 0,
+  "current_saved_chapters": "UNVERIFIED",
+  "new_provider_calls": 0,
+  "first_drafts": [],
+  "prose_reviews": [],
+  "revision_candidates": [],
+  "revision_differences": [],
+  "author_manuscript_selections": [],
+  "formal_acceptance": "NOT_RUN",
+  "literary_revision": "NOT_RUN_NO_PROSE_AVAILABLE_IN_VERIFIED_SNAPSHOT",
+  "reader_feedback": "NOT_OBSERVED",
+  "selected_input_receipt": "8bb703c5-c9fc-4027-80f3-c781cc7332cf",
+  "book_design_asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31",
+  "book_design_choice_receipt": "de7688e9-1ce5-460d-8303-8586921d62bd",
+  "choice_kind": "FROZEN_AUTO_AUTHORIZATION_NOT_NEW_HUMAN_MANUSCRIPT_SELECTION",
+  "foundation_versions": [
+    {
+      "role": "CREATIVE_FOUNDATION",
+      "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1",
+      "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba"
+    },
+    {
+      "role": "THEME_CONTRACT",
+      "asset_version_id": "authority-output:01d50954-728c-47bb-85fb-06fd785130e0:story_planning.candidate:v1",
+      "content_hash": "sha256:2675b7877af6f6cce0e11301031fa9d16930416fec74ba856ec5d071716387b6"
+    },
+    {
+      "role": "ENDING_INTENT",
+      "asset_version_id": "authority-output:847cd4f1-7763-473d-8c46-0785ffa7b1f3:story_planning.candidate:v1",
+      "content_hash": "sha256:d9f50e929ae9d09537c95ae88d54afe4b29ec019fcc9d5586d776d8adacbcba8"
+    },
+    {
+      "role": "READER_PROMISE",
+      "asset_version_id": "authority-output:6b3fab3d-e978-45b0-a1d6-97df7254d134:story_planning.candidate:v1",
+      "content_hash": "sha256:a47a74192fa9c6f53e92c6a892ed357860826895b0364940c66da65a3f36d626"
+    },
+    {
+      "role": "WORLD_BIBLE",
+      "asset_version_id": "authority-output:bd11fa76-a76e-4b65-8e32-093f8f6e6bac:story_planning.candidate:v1",
+      "content_hash": "sha256:7ef530a1dd5335664a8bfffede178ad5c612ba1a4009473e461f02d104ecbb15"
+    },
+    {
+      "role": "CHARACTER_CAST",
+      "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1",
+      "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4"
+    }
+  ],
+  "original_external_identity": {
+    "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+    "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+    "root_operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+    "saga_id": "5e214c34-6dc2-40a5-8ed8-0da14c84c79f",
+    "attempt_id": "6192d1cd-06d9-4480-9684-95b7db23de1e",
+    "fencing_token": 1,
+    "project_id": "qid-learning-prose-01",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "target_scope": {
+      "scope_kind": "book",
+      "scope_id": "book:main",
+      "project_id": "qid-learning-prose-01",
+      "book_id": "book:qinglan-wendao-20261008"
+    },
+    "domain": "planning",
+    "task_kind": "story_planning.generate",
+    "stage": "book_plan.generate",
+    "capability": "planning.book.generate",
+    "importance_class": "HIGH",
+    "risk_class": "high",
+    "route_snapshot_id": "production_execution/routes/c89b06cfbd191b800781",
+    "workspace_snapshot_ref": "workspace:qid-learning-prose-01",
+    "input_manifest_ref": "production_execution/inputs/c89b06cfbd191b800781",
+    "resource_claims": [
+      "book:book:qinglan-wendao-20261008",
+      "planning:book:main"
+    ],
+    "timeout_policy_ref": "timeout:planning-book-generate:v3",
+    "budget_policy_ref": "budget:planning-book-generate:v1",
+    "permission_policy_ref": "permission:planning-book-generate:v1",
+    "validation_policy_ref": "validation:planning-book-generate:v1",
+    "commit_policy_ref": "commit:planning-book-generate:v1",
+    "stable_idempotency_key": "bf6e1d58-97ec-412d-bf91-19d4687d3f24:planning.book.generate:planning-pep-v2",
+    "origin_chain": [
+      "story_planning.generate",
+      "book_plan.generate"
+    ],
+    "agent_hop_count": 0,
+    "trace_id": "trace:story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening",
+    "correlation_id": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d",
+    "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+    "budget_reservation_id": "24365fde-13e7-4297-a8e1-da2b2b648de6"
+  },
+  "original_idempotency_key": "story-formation:0a8aa0c2dc447a252fad800a5a31b0663fd6f167087d18bfeb5a980a8afe261d:opening:book_plan.generate:book:main:narrative-search:future-3:runtime-continuation:1",
+  "original_schema_version": "schema:planning-provider-output:book:v1:work-v4:host-selectors-v2",
+  "original_model_authority": {
+    "schema_version": "novelos.model_authority_evidence.v1",
+    "route_policy_id": "planning.book.route.sha256.4b60cb4f4c24b95890a978bfe052e31967d9969909a9ebb9bae23799b364be65",
+    "invocation_model": "gpt-6.1-sol",
+    "model_profile_id": "planning.book.default.sha256.4b60cb4f4c24b95890a978bfe052e31967d9969909a9ebb9bae23799b364be65",
+    "route_policy_hash": "84b10e13491a3e1e76ae2b403eeac9b0f0dc863d9f7880107a40b7bb98e48b7f",
+    "route_snapshot_id": "production_execution/routes/c89b06cfbd191b800781",
+    "frozen_route_model": "gpt-6.1-sol",
+    "model_profile_hash": "5ff8788dbf8d2d1e6def8ba6ee59485ccc59901d75d34f4b10ea610f64e0d3bb",
+    "route_snapshot_hash": "8191c6060d8ed495ac80b997a6aa1681ff95d9b93469392a3edf832bdff5e568",
+    "route_policy_version": 1,
+    "model_profile_version": 1,
+    "policy_requested_model": "gpt-6.1-sol",
+    "invocation_command_hash": "sha256:5e3f46f4fef717ac3940043f77b968cefd3f44e45975772dcbc03c5b06780cbb",
+    "provider_observed_model": "unavailable",
+    "local_user_config_ignored": true,
+    "invocation_reasoning_effort": "high",
+    "frozen_route_reasoning_effort": "high",
+    "policy_requested_reasoning_effort": "high",
+    "provider_observed_reasoning_effort": "unavailable",
+    "local_user_config_is_model_authority": false
+  },
+  "original_prompt_skill_evidence": {
+    "skill": {
+      "ref": "long-outline",
+      "version": "long-outline-v3",
+      "content_hash": "sha256:e619875c466e7b3b07b93c394c0ecb05414a9bf454ec5e30775a00b0b7fa5e29"
+    },
+    "allowed_tools": [
+      "model.provider.invoke"
+    ],
+    "provider_view": {
+      "component_hashes": {
+        "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+        "output_schema": "sha256:4654e211d96e9d4fdbee2f50e7c38f92b3f5022eeb6693659f9d192cf2a97c76",
+        "governed_skill": "sha256:57a904dc159727c5282563bd01fa3aedd65c1e0ce30ec20dae1a3198e89d9204",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:a05d5671a176746c67c31e68907f4de1f3dd2a6e0421b03c94d68af761f3b2d5",
+        "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+        "fully_rendered_prompt": "sha256:37dfa7cd1f59d6dc2165a95edf26bf1175b2a3d80a384f04c9f9d1aa940fde4b",
+        "provider_context_view": "sha256:42d94a04f291d38d1a0653dd922a329c39854ca2eedd1b388f3ff7f5e5c1a63e",
+        "stage_semantic_contract": "sha256:2c8b59bfcf6407315f994bca089bc91ae0099117536f09a964bba6af5ab893d3"
+      },
+      "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+      "component_characters": {
+        "tool_policy": 258,
+        "output_schema": 12899,
+        "governed_skill": 1287,
+        "provider_knowledge": 559,
+        "provider_task_view": 22169,
+        "system_instruction": 9358,
+        "fully_rendered_prompt": 98125,
+        "provider_context_view": 49703,
+        "stage_semantic_contract": 1107
+      },
+      "representation_policy": "authority-projection-task-provider-v1",
+      "selection_explanation": {
+        "policy": "minimum-sufficient-planning-context-v2",
+        "loss_receipt": {
+          "audit_hash": "sha256:43644542156d0baa0157630e3b4e081d8b6fb7a785144a78d5373524dbc98afc",
+          "json_pointer": "/context_manifest/projection_audit",
+          "loss_record_count": 60,
+          "source_input_hash": "sha256:b80d42b88fc6a53d9110e5e98fa02c67023be51abc45031265a19dff12a1b3f6"
+        },
+        "field_classes": {
+          "invariants": "HARD_CONSTRAINT",
+          "constraints": "HARD_CONSTRAINT",
+          "inspiration": "OPTIONAL_GUIDANCE",
+          "required_facts": "REQUIRED_FACT",
+          "due_obligations": "DUE_OBLIGATION",
+          "forbidden_events": "PROHIBITION",
+          "hard_constraints": "HARD_CONSTRAINT",
+          "required_payoffs": "DUE_OBLIGATION",
+          "soft_suggestions": "OPTIONAL_GUIDANCE",
+          "forbidden_payoffs": "PROHIBITION",
+          "optional_guidance": "OPTIONAL_GUIDANCE",
+          "required_fact_ids": "REQUIRED_FACT",
+          "story_constraints": "HARD_CONSTRAINT",
+          "style_suggestions": "OPTIONAL_GUIDANCE",
+          "prohibited_outcomes": "PROHIBITION",
+          "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+          "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+          "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+          "required_obligation_ids": "DUE_OBLIGATION",
+          "unresolved_obligation_ids": "DUE_OBLIGATION"
+        },
+        "compiler_version": "scope-preserving-planning-context-v2",
+        "maximum_segments": 24,
+        "token_accounting": "utf8-byte-upper-bound.v1",
+        "literal_references": "A literal_source_role/json_pointer object means the exact full string at that selected segment content path. It inherits the original Book Design requirement.",
+        "omitted_fact_count": 0,
+        "omitted_item_count": 118,
+        "task_target_tokens": 128000,
+        "included_fact_count": 0,
+        "inherited_invariants": "Selected Foundation constraints remain mandatory Book invariants; exact duplicate strings are represented once.",
+        "omitted_segment_count": 0,
+        "included_segment_count": 10,
+        "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+        "maximum_serialized_bytes": 8388608,
+        "maximum_facts_per_segment": null,
+        "truncated_character_count": 0
+      },
+      "task_contract_version": "provider-task-view-v1",
+      "context_contract_version": "provider-context-view-v4",
+      "context_projection_ratio": 0.333765,
+      "component_estimated_tokens": {
+        "tool_policy": 86,
+        "output_schema": 4300,
+        "governed_skill": 429,
+        "provider_knowledge": 187,
+        "provider_task_view": 13501,
+        "system_instruction": 3120,
+        "fully_rendered_prompt": 53663,
+        "provider_context_view": 31411,
+        "stage_semantic_contract": 369
+      },
+      "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+      "component_utf8_byte_upper_bounds": {
+        "tool_policy": 258,
+        "output_schema": 12899,
+        "governed_skill": 1287,
+        "provider_knowledge": 559,
+        "provider_task_view": 40503,
+        "system_instruction": 9358,
+        "fully_rendered_prompt": 160989,
+        "provider_context_view": 94233,
+        "stage_semantic_contract": 1107
+      },
+      "provider_context_estimated_tokens": 31411,
+      "authority_context_estimated_tokens": 94111,
+      "rendered_prompt_to_semantic_input_ratio": 1.189893,
+      "provider_admission_uses_component_estimates": false
+    },
+    "prompt_template": {
+      "ref": "prompt-template:story-planning-pack",
+      "version": "v1",
+      "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+    },
+    "method_selection": {
+      "skill_sections": [
+        "Shared rules",
+        "Book planning"
+      ],
+      "system_sections": [
+        "Shared rules",
+        "Foundation",
+        "Realization references",
+        "Book plan",
+        "Volume plan",
+        "Arc plan",
+        "Chapter group",
+        "Chapter plan",
+        "World proposals",
+        "World evaluation",
+        "Actor intention",
+        "Chapter serialization realization",
+        "Host source selectors and scheduled Arc scope"
+      ],
+      "contract_version": "production-stage-methods.v1"
+    },
+    "output_schema_ref": "schema:planning-provider-output:book:v1:work-v4:host-selectors-v2",
+    "output_schema_hash": "sha256:4654e211d96e9d4fdbee2f50e7c38f92b3f5022eeb6693659f9d192cf2a97c76",
+    "provider_admission": {
+      "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+      "status": "ADMITTED",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "envelope_hash": "sha256:ce9982ac26072ab1583095d6a0978bd96d4a0cd183f86dad76775ee8e89e518a",
+      "total_reserved": 193261,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 32000,
+        "provider_input": 160989,
+        "request_framing": 16
+      },
+      "applicable_limit": 258400,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "gpt-6.1-sol",
+        "provider": "codex-cli",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+        "output_reserve": 32000,
+        "route_identity": "book_plan.generate:codex-cli:gpt-6.1-sol:c96f126020ee6dafac13b6f13f8b238cb1939fca:sha256:3c22163cf6e8f5360e1fa7c30343380b77f75491e8c8daeeb6b88ba89fb233a5",
+        "contract_version": "provider-token-accounting-v3",
+        "framing_overhead": 16,
+        "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        "model_context_limit": 258400,
+        "execution_token_limit": 258400,
+        "serialization_contract": "codex-cli-application-stdin-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 94111,
+      "input_component_hashes": {
+        "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+        "output_schema": "sha256:4654e211d96e9d4fdbee2f50e7c38f92b3f5022eeb6693659f9d192cf2a97c76",
+        "governed_skill": "sha256:57a904dc159727c5282563bd01fa3aedd65c1e0ce30ec20dae1a3198e89d9204",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:a05d5671a176746c67c31e68907f4de1f3dd2a6e0421b03c94d68af761f3b2d5",
+        "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+        "fully_rendered_prompt": "sha256:37dfa7cd1f59d6dc2165a95edf26bf1175b2a3d80a384f04c9f9d1aa940fde4b",
+        "provider_context_view": "sha256:42d94a04f291d38d1a0653dd922a329c39854ca2eedd1b388f3ff7f5e5c1a63e",
+        "stage_semantic_contract": "sha256:2c8b59bfcf6407315f994bca089bc91ae0099117536f09a964bba6af5ab893d3"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "system_instruction": {
+      "ref": "prompt-system:story-planning-pack",
+      "version": "v11",
+      "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+    },
+    "materialization_hash": "sha256:87baeef3e9e8d7a4d84c4d9b435fe54f043b34a416db91c5bef5b1ccab94c9bd",
+    "rendered_prompt_bytes": 160989,
+    "reusable_prefix_bytes": 10725,
+    "knowledge_content_hashes": [
+      "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+    ],
+    "context_asset_version_ids": [
+      "4d60e140-ca68-4451-a0cb-1382e8ec3a67"
+    ],
+    "embedding_output_contract": null,
+    "fully_rendered_prompt_hash": "sha256:37dfa7cd1f59d6dc2165a95edf26bf1175b2a3d80a384f04c9f9d1aa940fde4b",
+    "provider_request_envelope_hash": "sha256:ce9982ac26072ab1583095d6a0978bd96d4a0cd183f86dad76775ee8e89e518a",
+    "required_reader_facing_language": "zh-CN",
+    "rendered_prompt_estimated_tokens": 53663,
+    "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+    "provider_admission_asset_version_id": "17e44c99-588a-44a8-999e-9e7b5150b2d5"
+  },
+  "original_process_receipt": "original-process-receipt.json",
+  "original_remote_thread_id": "01a11b3c-af18-7c31-aed1-93488738769d",
+  "original_remote_thread_read": "UNAVAILABLE_DURABLE_HOST",
+  "original_actual_tokens": "UNKNOWN",
+  "original_membership_cost": "UNKNOWN",
+  "original_unknown_reservation": {
+    "status": "HELD_UNKNOWN",
+    "estimated_tokens": 193261,
+    "actual_tokens": "UNKNOWN"
+  },
+  "engineering_changes": [
+    "docs/current-system.md: correct input-content CLI work identity guidance"
+  ],
+  "verification_file": "verification.json",
+  "next_original_identity_check": "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python /Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/recheck-original.py",
+  "next_mutation": "NOT_ADMISSIBLE_WITHOUT_ORIGINAL_LEDGER_AND_CONFIRMED_REMOTE_OUTCOME_USAGE",
+  "recovery_owners": [
+    "PostgreSQL persistent binding",
+    "ProductionExecution CodexProcessSupervisor/AuthorityExecutionRecoveryStore",
+    "CommandKernel ExternalEffect reconciliation",
+    "BookOpeningRecoveryApplication",
+    "Formation creation recovery"
+  ],
+  "snapshot_restore": {
+    "source_path": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-qidian-learning-prose-01-20261008/before-source-span-0182.dump",
+    "sha256": "43894704331369cb25469005bab2ad2443db03dc9d9eee35f8d2452f84318f9b",
+    "dump_time": "2026-10-08 20:18:23 CST",
+    "dbname": "nf_qidian_learning_20261008_test",
+    "scope": "HISTORICAL_RECOVERED_SNAPSHOT",
+    "original_latest_not_verified": true,
+    "restore_exit_code": 0,
+    "workers_started": 0,
+    "provider_dispatches": 0,
+    "recovered_conninfo": "user=yuan dbname=nf_qidian_learning_20261008_test host=/tmp/nf-wp-adaptation-socket port=55689",
+    "source_dump_unchanged": true,
+    "original_workspace_status_unchanged": true,
+    "recovered_instance_stopped": true,
+    "recovered_database_identity": {
+      "database": "nf_qidian_learning_20261008_test",
+      "role": "yuan",
+      "address": null,
+      "port": null,
+      "server_started_at": "2026-10-08 14:45:30.027830+00:00",
+      "database_oid": 16384
+    }
+  }
+}
