@@ -1770,6 +1770,8 @@ class MkaosAuthorityApplication:
                 "only a clear Candidate awaiting review can be approved",
             )
         from .craft_authoring import original_craft_approval
+        from .domain import assert_narrative_method_activation_safe
+        assert_narrative_method_activation_safe(candidate["content"].get("candidate") or {})
         original_approval = original_craft_approval(candidate, project_id=project_id,
             workspace_id=workspace_id, policy_version=policy_version,
             reviewer_id=reviewer_id, approval_class=approval_class)

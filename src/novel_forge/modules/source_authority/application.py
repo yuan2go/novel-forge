@@ -55,6 +55,8 @@ from novel_forge.modules.source_authority.domain import (
 from novel_forge.modules.source_authority.corpus_application import (
     CORPUS_OPERATION, CorpusCommand, SourceCorpusApplication,
 )
+from novel_forge.modules.source_authority.public_catalog import CATALOG_OPERATION
+from novel_forge.modules.source_authority.public_catalog_application import CatalogCommand, PublicCatalogApplication
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
 
@@ -149,6 +151,7 @@ class SourceAuthorityApplication:
         self.application_build_id = application_build_id
         self.commit_sha = commit_sha
         self.worker_id = worker_id
+        self.public_catalog = PublicCatalogApplication(database_url, application_build_id=application_build_id, commit_sha=commit_sha, worker_id=worker_id)
         self.corpus = SourceCorpusApplication(
             database_url, application_build_id=application_build_id, commit_sha=commit_sha,
         )
@@ -1226,6 +1229,9 @@ class SourceAuthorityApplication:
             "content_hash": transform_content_hash,
         }
 
+    def admit_catalog(self, command: CatalogCommand, *, principal: Principal) -> dict[str, Any]:
+        return self.public_catalog.admit(command, principal=principal)
+
     def execute_fenced(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -1238,6 +1244,8 @@ class SourceAuthorityApplication:
             row = uow.cursor.fetchone()
         if row is None:
             raise KernelError("OPERATION_NOT_FOUND", "Source Operation does not exist")
+        if row[0] == CATALOG_OPERATION:
+            return self.public_catalog.execute_fenced(worker)
         if row[0] == CORPUS_OPERATION:
             return self.corpus.execute_fenced(worker)
         if row[0] == SOURCE_AUTHORITY_OPERATION:
@@ -1319,6 +1327,8 @@ class SourceAuthorityApplication:
             raise KernelError("OPERATION_NOT_FOUND", "Source Operation does not exist")
         if row[0] == SOURCE_AUTHORITY_OPERATION:
             return self._result(operation_id, project_id, replayed=replayed)
+        if row[0] == CATALOG_OPERATION:
+            return self.public_catalog.result(operation_id, project_id, replayed=replayed)
         if row[0] == CORPUS_OPERATION:
             return self.corpus.result(operation_id, project_id, replayed=replayed)
         if row[0] in {SOURCE_OBSERVATION_OPERATION, SOURCE_REPROCESSING_OPERATION}:

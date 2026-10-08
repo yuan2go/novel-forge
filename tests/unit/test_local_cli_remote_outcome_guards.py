@@ -136,3 +136,21 @@ def test_author_review_of_saved_prefix_does_not_depend_on_unknown_future_chapter
         operation_id='own-review', outcomes=original) == original[1:]
     assert cursor.execute.call_args.args[1][3] == 3
     assert original[0]['operation_id'] == 'future-draft'
+
+
+@pytest.mark.parametrize("unresolved", [False, True])
+def test_curated_source_gate_checks_own_lineage_before_reading_or_dispatch(monkeypatch, unresolved):
+    from novel_forge.modules.source_import.corpus_ingestion.curated_analysis import require_known_cli_outcomes
+
+    cursor = Mock()
+    guard = Mock(side_effect=KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED", "Original research outcome unknown") if unresolved else None)
+    project_wide = Mock(side_effect=AssertionError("Independent Book requests are not Source dependencies"))
+    monkeypatch.setattr(budget_runtime, "require_known_cli_lineage", guard)
+    monkeypatch.setattr(budget_runtime, "unresolved_cli_outcomes", project_wide)
+    if unresolved:
+        with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+            require_known_cli_outcomes(cursor, "project", operation_id="research-operation")
+    else:
+        require_known_cli_outcomes(cursor, "project", operation_id="research-operation")
+    guard.assert_called_once_with(cursor, project_id="project", operation_id="research-operation")
+    project_wide.assert_not_called()

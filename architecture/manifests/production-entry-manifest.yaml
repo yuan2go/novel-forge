@@ -380,6 +380,15 @@
       "definition_factory": "novel_forge.modules.story_planning_runtime.world_optional:world_optional_deferral_definition"
     },
     {
+      "name": "source.public_catalog.capture",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_catalog",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
       "name": "source.import.market.refresh",
       "source": "src/novel_forge/api/routers/source_import.py",
       "application_source": "src/novel_forge/modules/source_import/market_runtime.py",

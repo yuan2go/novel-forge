@@ -108,6 +108,6 @@ description: Use when analyzing popular novels or genre samples to extract abstr
 
 ## 与其他模块的关系
 
-- 上游：Source Authority / Corpus 冻结的合法文本、用途范围与 SourceUnit / EvidenceSpan。
+- 上游：Source Authority / Corpus 冻结的合法文本、用途范围与精确 Document、Transform、Chunk、SourceUnit / EvidenceSpan，以及 `docs/current-system.md` 的来源隔离合同。
 - 下游：`anti-copy-abstraction`、Source Deconstruction Authority、MKAOS Candidate/Governance；任何 operator handoff 都不是生产 Authority。
 - Agent：Knowledge Agent、Material Agent、Chief Editor Agent。

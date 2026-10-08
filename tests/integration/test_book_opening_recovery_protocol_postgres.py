@@ -447,3 +447,123 @@ def test_commit_response_loss_and_duplicate_recovery_replay_one_receipt() -> Non
         row = uow.cursor.fetchone()
     assert row == ("ADMITTED", 2, 1, 1, 1, 1, 1)
     assert _effect_count(orphan) == 0
+
+
+@pytest.mark.parametrize("bound", [True, False])
+def test_search_recovery_retains_only_registered_continuation_frontier(
+    bound: bool,
+) -> None:
+    from novel_forge.modules.book_authority.recovery import (
+        PostgresBookOpeningRecoveryApplication,
+    )
+    from tests.integration.authority_postgres_support import (
+        identifier,
+        insert_definition,
+        insert_operation,
+        seed_authority_project_book,
+    )
+
+    ensure_migrated()
+    project, workspace, book = (
+        identifier("project"),
+        identifier("workspace"),
+        identifier("book"),
+    )
+    seed_authority_project_book(
+        project_id=project, workspace_id=workspace, book_id=book
+    )
+    source, successor, registration = (
+        identifier("preflight"),
+        identifier("successor"),
+        identifier("registration"),
+    )
+    search, branch, definition = (
+        identifier("search"),
+        "future-3",
+        identifier("definition"),
+    )
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        insert_definition(uow.cursor, definition)
+        uow.cursor.execute(
+            """
+            INSERT INTO authority_story_narrative_search(
+                search_id,project_id,workspace_id,book_id,generator_operation_name,
+                planning_scope,logical_key,accepted_through_chapter,planning_horizon,
+                desired_transformation,hard_constraints,input_snapshot_hash,
+                strategy_directives,candidate_target,status,stable_idempotency_key
+            ) VALUES (%s,%s,%s,%s,'book_plan.generate','BOOK','book:main',0,
+                '{}','{}','[]',%s,'["future one","future two","future three"]',
+                3,'GENERATING',%s)
+            """,
+            [search, project, workspace, book, "sha256:" + "a" * 64, search],
+        )
+        for identity in (source, successor, registration):
+            insert_operation(
+                uow.cursor,
+                operation_id=identity,
+                definition_name=definition,
+                project_id=project,
+                workspace_id=workspace,
+                status="FAILED_FINAL",
+                command_payload={"payload": {"book_id": book}},
+            )
+        for identity in (source, successor):
+            uow.cursor.execute(
+                """INSERT INTO authority_story_planning_generation(generation_id,operation_id,project_id,workspace_id,book_id,
+                generator_operation_name,planning_scope,logical_key,input_snapshot,input_snapshot_hash,status,narrative_search_id,narrative_search_branch_key)
+                VALUES (%s,%s,%s,%s,%s,'book_plan.generate','BOOK','book:main','[]',%s,'ADMITTED',%s,%s)""",
+                [
+                    identifier("generation"),
+                    identity,
+                    project,
+                    workspace,
+                    book,
+                    "sha256:" + "a" * 64,
+                    search,
+                    branch,
+                ],
+            )
+        if bound:
+            uow.cursor.execute(
+                """INSERT INTO authority_story_planning_runtime_continuation(continuation_id,project_id,workspace_id,book_id,source_operation_id,
+                source_evidence_asset_version_id,registered_by_operation_id,successor_operation_id,source_command,successor_command,target_runtime,decision_evidence,source_release_sha,target_release_sha,chain_depth)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'{}','{}','{}','{}',%s,%s,1)""",
+                [
+                    identifier("continuation"),
+                    project,
+                    workspace,
+                    book,
+                    source,
+                    f"scope-fixture:book:{book}:v1",
+                    registration,
+                    successor,
+                    "a" * 40,
+                    "b" * 40,
+                ],
+            )
+        uow.commit()
+    owner = object.__new__(PostgresBookOpeningRecoveryApplication)
+    owner._current_search_branch = lambda *args, **kwargs: (search, branch)
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        if bound:
+            current = owner._pending_planning_generation(
+                uow,
+                {"project_id": project, "workspace_id": workspace, "book_id": book},
+                checkpoint={},
+            )
+            assert current["operation_id"] == successor
+            assert current["operation_status"] == "FAILED_FINAL"
+        else:
+            with pytest.raises(
+                KernelError, match="BOOK_OPENING_RECOVERY_REASSESSMENT_REQUIRED"
+            ):
+                owner._pending_planning_generation(
+                    uow,
+                    {"project_id": project, "workspace_id": workspace, "book_id": book},
+                    checkpoint={},
+                )
+        uow.cursor.execute(
+            "SELECT count(*) FROM authority_story_planning_generation WHERE project_id=%s",
+            [project],
+        )
+        assert uow.cursor.fetchone()[0] == 2

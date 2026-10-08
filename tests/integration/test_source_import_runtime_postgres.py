@@ -818,6 +818,25 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         with self.assertRaisesRegex(KernelError, "SOURCE_RUNTIME_QUALIFICATION_REQUIRED"):
             source_runtime_identity(evidence)
 
+    def test_settled_effect_before_source_commit_reuses_verified_receipt(self) -> None:
+        imported = self._create_import("settled-before-source-commit", self.commit_a, mode="PREVIEW")
+        original = self.application._execute_external_effect
+
+        def lose_local_completion(**kwargs):
+            original(**kwargs)
+            raise KernelError("EFFECT_EXTERNAL_STATE_UNKNOWN", "Fixture local completion lost after verified receipt")
+
+        with patch.object(self.application, "_execute_external_effect", side_effect=lose_local_completion):
+            with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
+                self.scheduler.run_or_recover(operation_id=imported["operation_id"], project_id=self.project_id)
+        recovered = self.scheduler.run_or_recover(operation_id=imported["operation_id"], project_id=self.project_id)
+        self.assertEqual(recovered["status"], "SUCCEEDED")
+        self.assertEqual(recovered["recovery_mode"], "external_effect_receipt_reuse")
+        self.assertTrue(self.scheduler.run_or_recover(operation_id=imported["operation_id"], project_id=self.project_id)["replayed"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s", [imported["operation_id"]])
+            self.assertEqual(cursor.fetchone()[0], 1)
+
     def test_unknown_effect_checkpoints_and_reconciles_without_redispatch(self) -> None:
         adapter = _UnknownOnceGitAdapter(self.git_adapter)
         self.application.git_adapter = adapter
@@ -945,6 +964,28 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
                     "new_approval_blocked": blocked.exception.code,
                     "historical_pack_consumption_blocked": blocked_pack.exception.code,
                     "provider_evidence": "SCRIPTED_TRANSPORT_ONLY"}, indent=2, default=str))
+
+    def test_binding_failure_before_send_releases_budget_and_native_retry_continues(self) -> None:
+        self._create_import("binding-failure-before-send", self.commit_a)
+        blocked = []
+        def reject_binding(**options):
+            blocked.append(options["worker"].causation_id)
+            raise KernelError("CONTROLLED_SOURCE_BINDING_REJECTION", "before dispatch")
+        with patch.object(self.execution_port, "_binding", side_effect=reject_binding):
+            with self.assertRaisesRegex(KernelError, "CONTROLLED_SOURCE_BINDING_REJECTION"):
+                self._run_ready_source_operations()
+        self.assertEqual(len(blocked), 1)
+        with transaction() as connection:
+            rows = connection.execute("""SELECT reservation.status,effect.status
+                FROM authority_budget_reservation reservation
+                JOIN authority_external_effect effect USING(external_effect_id)
+                WHERE reservation.operation_id=%s""", [blocked[0]]).fetchall()
+            self.assertEqual(rows, [("RELEASED", "READY")])
+            self.assertEqual(connection.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id IN (SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s)", [blocked[0]]).fetchone()[0], 0)
+        self.scheduler.run_or_recover(operation_id=blocked[0], project_id=self.project_id)
+        self._run_ready_source_operations()
+        with transaction() as connection:
+            self.assertEqual(connection.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [blocked[0]]).fetchone()[0], "SUCCEEDED")
 
     def test_source_provider_timeout_is_independent_from_worker_lease(self) -> None:
         self.assertEqual(self.execution_port.lease_seconds, 30)

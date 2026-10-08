@@ -83,6 +83,6 @@ description: Use when converting concrete reference-work analysis into reusable 
 
 ## 与其他模块的关系
 
-- 上游：`hot-novel-deconstruction`、`hot-novel-business-deconstruction` 与冻结的 Observation AssetVersion。
-- 下游：现行 MKAOS Candidate / KnowledgeCard、单书检索和 `quality-review`。
+- 上游：`hot-novel-deconstruction`、`hot-novel-business-deconstruction` 与已提交且冻结的 Source Observation AssetVersion。
+- 下游：现行 MKAOS Candidate/Governance、KnowledgeCard、KnowledgePack、单书检索与 `quality-review`。
 - Agent：Knowledge Agent、Review Agent、Quality Agent。

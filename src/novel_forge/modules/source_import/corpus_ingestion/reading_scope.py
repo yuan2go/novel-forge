@@ -216,7 +216,7 @@ def preview_reading(
             unresolved_cli_outcomes,
         )
 
-        execution_blockers = unresolved_cli_outcomes(uow.cursor, project)
+        project_unresolved = unresolved_cli_outcomes(uow.cursor, project)
         plans = freeze_reading_scope(
             repository,
             project,
@@ -317,7 +317,8 @@ def preview_reading(
         "runtime": runtime or {"state": "NOT_INSPECTED"},
         "prepared_source_checks": input_checks,
         **({"local_codex_preflight": local_codex} if local_codex is not None else {}),
-        "execution_blockers": execution_blockers,
+        "execution_blockers": [],
+        "project_unresolved_cli_outcomes": project_unresolved,
         "requested_budget": {
             "max_calls": max_calls,
             "max_tokens": max_tokens,

@@ -557,6 +557,35 @@ def test_recorded_usage_requires_observed_nonnegative_integer_counts():
         assert _recorded_token_usage(usage) is None
 
 
+@pytest.mark.parametrize("stage,inputs,quotes", [
+    (DECONSTRUCTION_STAGE, {"reading_context": {"dimensions": ["character_choice_cost"]}, "source_segments": [{"text": "research"}]}, True),
+    (DECONSTRUCTION_STAGE, {"reading_context": {"phase": "REVIEW"}, "source_segments": [{"text": "research"}], "review_target": {}}, False),
+    (DECONSTRUCTION_STAGE, {"reading_context": {"phase": "SYNTHESIZE"}, "input_observations": [{}]}, False),
+    (CLASSIFICATION_STAGE, {"classification_samples": [{"content": "research"}]}, False),
+    (MKAOS_STAGE, {"input_observations": [{}]}, False),
+])
+def test_actual_source_prompt_separates_exact_research_evidence_from_abstraction(stage, inputs, quotes):
+    from hashlib import sha256
+    from types import SimpleNamespace
+    from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
+    from novel_forge.modules.chapter_authority.execution_gateway import _materialize_source_intelligence_prompt
+
+    spec = SimpleNamespace(stage=stage, input_payload=inputs, methodology_content="Governed methodology",
+        methodology_content_hash="sha256:" + sha256(b"Governed methodology").hexdigest(),
+        capability="deconstruction.observe" if stage == DECONSTRUCTION_STAGE else "source.content.classify" if stage == CLASSIFICATION_STAGE else "mkaos.knowledge.extract",
+        prompt_id="source.contract", prompt_version="2.0.0", skill_id="source.skill", skill_version="1.0",
+        output_schema={"type": "object", "properties": {}})
+    materialization = PostgresContentIntelligenceExecutionPort._materialization(None, spec)
+    prompt, evidence = _materialize_source_intelligence_prompt(
+        target_scope={"scope_kind": "chapter", "scope_id": "s", "project_id": "p", "book_id": "source-corpus:p"},
+        stage=stage, inputs=inputs, materialization=materialization)
+    assert ("supports[].support_text" in prompt) == quotes
+    assert ("Do not quote, reproduce, or preserve source expression" in prompt) != quotes
+    assert evidence["source_bytes_persisted_in_external_effect"] is False
+    assert evidence["system_instruction"]["version"] == "1.1"
+    assert materialization["source_isolation"]["raw_source_allowed_in_generation_context"] is False
+
+
 def test_source_local_timeout_is_unknown_remote_outcome():
     from novel_forge.modules.source_import.execution import _source_gateway_provider_result
     from novel_forge.modules.production_execution import ExecutionOutcome, ExecutionRuntimeClass
@@ -697,3 +726,98 @@ def test_strict_projection_empty_optional_lineage_normalizes_without_weakening_e
     for changes in ({'evidence_span_ids':[]},{'input_observation_asset_version_ids':['observation:1']}):
         with pytest.raises(ValueError):
             validate_content_intelligence_output(DECONSTRUCTION_STAGE,content_intelligence_output_schema(DECONSTRUCTION_STAGE),{**value,'findings':[{**value['findings'][0],**changes}]})
+
+
+@pytest.mark.parametrize("receipt", [None, {"reused_external_effect_id": "other"}, {"reused_external_effect_id": "original"}])
+def test_completion_recovery_reuses_only_exact_receipt_without_dispatch(monkeypatch, receipt):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
+    from novel_forge.modules.command_kernel.errors import KernelError
+    import novel_forge.modules.source_import.execution as module
+    from novel_forge.storage.source_authority_repositories import SourceAuthorityRepository
+    from novel_forge.modules.command_kernel import routing_bootstrap
+
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", MagicMock())
+    monkeypatch.setattr(SourceAuthorityRepository, "catalog_execution_binding", lambda *a: None)
+    monkeypatch.setattr(routing_bootstrap, "load_bootstrap_authorization", lambda *a, **k: None)
+    port = object.__new__(PostgresContentIntelligenceExecutionPort)
+    port.database_url = "fixture:no-database"
+    port._replay_succeeded_effect = MagicMock(return_value=receipt)
+    port.transport = MagicMock()
+    spec = SimpleNamespace(stage="deconstruction", capability="deconstruction.observe",
+        methodology_content_hash="fixture", input_payload={}, context_contract={})
+    worker = SimpleNamespace(project_id="fixture-project", causation_id="fixture-operation")
+    if receipt and receipt["reused_external_effect_id"] == "original":
+        assert port._execute(worker=worker, spec=spec, reuse_effect_id="original") == receipt
+    else:
+        with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_RECEIPT_MISMATCH"):
+            port._execute(worker=worker, spec=spec, reuse_effect_id="original")
+    assert port.transport.mock_calls == []
+
+
+@pytest.mark.parametrize("effect_status,operation_status,chained", [
+    ("UNKNOWN", "FAILED_FINAL", False), ("SUCCEEDED", "CANCELLED", False),
+    ("SUCCEEDED", "FAILED_FINAL", True), ("SUCCEEDED", "FAILED_FINAL", False),
+])
+def test_completion_recovery_admission_rejects_unknown_terminal_changes_and_chains(monkeypatch, effect_status, operation_status, chained):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.corpus_ingestion import reading_recovery as module
+
+    payload = {"phase": "REVIEW", "narrative_reading": {"identity": "fixture"}}
+    if chained:
+        payload["completion_recovery"] = {"source_operation_id": "earlier"}
+    repository = MagicMock()
+    repository.frozen_operation.return_value = {"name": "source.import.deconstruction.execute", "payload": payload}
+    repository.work_by_operation.return_value = {"status": "FAILED_FINAL", "failure": {"code": "PROGRAMMING_BUG"}, "import_job_id": "fixture-job"}
+    repository.job.return_value = {"status": "PROCESSING"}
+    monkeypatch.setattr(module, "SourceImportRepository", lambda *a: repository)
+    monkeypatch.setattr(module, "require_curated_operation_current", lambda *a: None)
+    uow = MagicMock()
+    uow.cursor.fetchone.return_value = (operation_status,)
+    uow.cursor.fetchall.return_value = [("original-effect", effect_status, "deconstruction.observe", "fixture-cache")]
+    if effect_status == "SUCCEEDED" and operation_status == "FAILED_FINAL" and not chained:
+        assert module._completed_stage_source(SimpleNamespace(), uow, "fixture-project", "original")[2] == "original-effect"
+    else:
+        with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_NOT_ELIGIBLE"):
+            module._completed_stage_source(SimpleNamespace(), uow, "fixture-project", "original")
+
+
+
+def test_completion_recovery_cannot_change_reading_task_or_receipt(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.corpus_ingestion import reading_recovery as module
+    from novel_forge.modules.source_authority.corpus import corpus_hash
+    original = {"payload": {"phase": "REVIEW", "candidate": {"execution_asset_version_id": "original-candidate"}}}
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", MagicMock())
+    monkeypatch.setattr(module, "_completed_stage_source", lambda *a: (original, {}, "original-effect"))
+    recovery = {"source_operation_id": "failed-original", "original_effect_id": "original-effect",
+        "source_payload_hash": corpus_hash(original["payload"])}
+    payload = {**original["payload"], "completion_recovery": recovery}
+    assert module.require_completed_stage_recovery(SimpleNamespace(database_url="fixture"), "fixture-project", payload) == "original-effect"
+    for changed in ({**payload, "candidate": {"execution_asset_version_id": "other"}},
+                    {**payload, "completion_recovery": {**recovery, "original_effect_id": "other"}}):
+        with pytest.raises(KernelError, match="SOURCE_COMPLETION_RECOVERY_INPUT_CHANGED"):
+            module.require_completed_stage_recovery(SimpleNamespace(database_url="fixture"), "fixture-project", changed)
+
+
+@pytest.mark.parametrize("rows", [[], [("one", {}, {})], [("one", {}, {}), ("two", {}, {})]])
+def test_selective_abstraction_rejects_unreviewed_or_ambiguous_observations(monkeypatch, rows):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.source_import.corpus_ingestion import narrative_execution as module
+    uow = MagicMock()
+    uow.cursor.fetchall.return_value = rows
+    context = MagicMock()
+    context.__enter__.return_value = uow
+    monkeypatch.setattr(module, "AuthorityUnitOfWork", lambda *a, **k: context)
+    repository = MagicMock()
+    repository.job.return_value = {"status": "PROCESSING"}
+    monkeypatch.setattr(module, "SourceImportRepository", lambda *a: repository)
+    app = SimpleNamespace(database_url="fixture", _admit_mkaos_from_scope=MagicMock())
+    with pytest.raises(KernelError, match="SOURCE_APPROVED_OBSERVATION_REQUIRED|SOURCE_ABSTRACTION_FINDINGS_REQUIRED"):
+        module.admit_observation_abstraction(app, project_id="fixture-project",
+            import_job_id="fixture-job", observation_id="fixture-observation", principal=MagicMock())
+    app._admit_mkaos_from_scope.assert_not_called()

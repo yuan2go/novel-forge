@@ -4880,6 +4880,8 @@ def _materialize_source_intelligence_prompt(
         }}
         provider_inputs["chapter_bindings"] = [{key: binding[key] for key in ("evidence_span_id", "chapter")} for binding in inputs.get("chapter_bindings", [])]
         provider_inputs["observation_limit"] = {"mode": boundary["mode"], "visible_chapters": sorted({span["chapter"] for span in boundary["spans"]})}
+    from novel_forge.modules.source_import.execution_contracts import source_analysis_output_instruction
+
     prompt = "\n\n".join(
         (
             "<system_instruction>\n" + texts[0] + "\n</system_instruction>",
@@ -4892,8 +4894,7 @@ def _materialize_source_intelligence_prompt(
             + _canonical(provider_inputs)
             + "\n</source_analysis_input>",
             "<output_schema>\n" + _canonical(schema_content) + "\n</output_schema>",
-            "Return only one JSON object matching the frozen schema. Do not quote, "
-            "reproduce, or preserve source expression in analysis output.",
+            source_analysis_output_instruction(stage, provider_inputs),
         )
     )
     prompt_hash = "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()

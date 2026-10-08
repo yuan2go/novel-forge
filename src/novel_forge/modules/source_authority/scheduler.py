@@ -50,6 +50,7 @@ class SourceAuthorityScheduler:
         self.output_keys = frozenset(
             {
                 "source.corpus.record",
+                "source.public_catalog.snapshot",
                 "source.document",
                 "source.transform.manifest",
                 "source.deconstruction.observation",
@@ -294,6 +295,12 @@ class SourceAuthorityScheduler:
         }
 
     def _reconcile_waiting_operation(self, worker: WorkerLeaseCommand) -> str:
+        from novel_forge.modules.source_authority.public_catalog import CATALOG_OPERATION
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT definition_name FROM authority_operation WHERE operation_id=%s AND project_id=%s", [worker.causation_id, worker.project_id])
+            row = uow.cursor.fetchone()
+        if row and row[0] == CATALOG_OPERATION:
+            return self.application.public_catalog.reconcile(worker)
         raise KernelError(
             "SOURCE_EXTERNAL_EFFECT_RECONCILER_MISSING",
             "waiting Source Operation has no external-effect recovery adapter",

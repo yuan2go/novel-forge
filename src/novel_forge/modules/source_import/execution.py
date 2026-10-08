@@ -725,6 +725,7 @@ class PostgresContentIntelligenceExecutionPort:
         sampling_manifest: Mapping[str, Any] | None = None,
         narrative_context: dict[str, Any] | None = None,
         review_target: dict[str, Any] | None = None,
+        reuse_effect_id: str = "",
     ) -> dict[str, Any]:
         from .corpus_ingestion.narrative_contracts import (
             MECHANISM_OBSERVATION_SCHEMA, MECHANISM_POLICY, mechanism_observation_schema,
@@ -916,7 +917,7 @@ class PostgresContentIntelligenceExecutionPort:
                 )
             ),
         )
-        execution = self._execute(worker=worker, spec=spec)
+        execution = self._execute(worker=worker, spec=spec, reuse_effect_id=reuse_effect_id)
         if execution.get("output_validation_error"):
             raise KernelError(
                 execution["output_validation_error"],
@@ -1228,7 +1229,7 @@ class PostgresContentIntelligenceExecutionPort:
         }
 
     def _execute(
-        self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec
+        self, *, worker: WorkerLeaseCommand, spec: _ExecutionSpec, reuse_effect_id: str = ""
     ) -> dict[str, Any]:
         from novel_forge.storage.source_authority_repositories import (
             SourceAuthorityRepository,
@@ -1258,6 +1259,13 @@ class PostgresContentIntelligenceExecutionPort:
             }
         )
         replay = self._replay_succeeded_effect(worker=worker, cache_key=cache_key)
+        if reuse_effect_id and (
+            replay is None or replay.get("reused_external_effect_id") != reuse_effect_id
+        ):
+            raise KernelError(
+                "SOURCE_COMPLETION_RECOVERY_RECEIPT_MISMATCH",
+                "Local completion recovery requires the original successful receipt; sending is forbidden",
+            )
         if replay is not None:
             if spec.input_payload.get("narrative_contract"):
                 self._ensure_contract(
@@ -1371,7 +1379,11 @@ class PostgresContentIntelligenceExecutionPort:
                 raise KernelError("SOURCE_OBSERVATION_ROUTE", "selected route differs from research permission")
         envelope = ProviderRequestEnvelope(
             provider=base_route.model_profile.model_provider,
-            reasoning_effort=base_route.model_profile.reasoning_effort,
+            reasoning_effort=(base_route.model_profile.reasoning_effort
+                if base_route.model_profile.model_provider in {"deepseek", "openai"}
+                or (spec.stage == "source.deconstruction.observe"
+                    and spec.input_payload.get("observation_boundary", {}).get("boundary_type") == "SOURCE_OBSERVATION")
+                else ""),
             pricing_policy_json=json.dumps(routing_decision["selected"]["candidate"]["pricing"], sort_keys=True) if routing_decision else "",
             model=base_route.model_profile.model_id,
             protocol=provider_request_protocol(base_route.model_profile.model_provider),
@@ -1582,21 +1594,21 @@ class PostgresContentIntelligenceExecutionPort:
                 cost_authorization_ref=account_authorization_ref,
             ),
         )
-        binding = self._binding(
-            worker=worker,
-            spec=spec,
-            definition=definition,
-            graph=graph,
-            documents=documents,
-            context=context,
-            provider_admission=admission_document,
-            request_payload=request_payload,
-            effect_id=effect_id,
-            stable_key=stable_key,
-            reservation_id=str(reservation["reservation_id"]),
-        )
-        adapter = _SourceGatewayEffectAdapter(transport=self.transport, binding=binding)
         try:
+            binding = self._binding(
+                worker=worker,
+                spec=spec,
+                definition=definition,
+                graph=graph,
+                documents=documents,
+                context=context,
+                provider_admission=admission_document,
+                request_payload=request_payload,
+                effect_id=effect_id,
+                stable_key=stable_key,
+                reservation_id=str(reservation["reservation_id"]),
+            )
+            adapter = _SourceGatewayEffectAdapter(transport=self.transport, binding=binding)
             dispatched = dispatch_external_effect(
                 self.database_url,
                 effect_context,
@@ -2042,10 +2054,12 @@ class PostgresContentIntelligenceExecutionPort:
         return ChapterExecutionBinding(request, route, manifest)
 
     def _materialization(self, spec: _ExecutionSpec) -> dict[str, Any]:
+        from .execution_contracts import source_analysis_output_instruction
+
         system_text = (
             "You analyze governed source evidence for reusable abstract mechanisms. "
-            "Never reproduce protected expression or treat an Observation as reusable "
-            "knowledge before MKAOS governance."
+            "Never treat an Observation as reusable knowledge before MKAOS governance. "
+            + source_analysis_output_instruction(spec.stage, spec.input_payload)
         )
         skill_text = spec.methodology_content
         actual_skill_hash = (
@@ -2069,7 +2083,7 @@ class PostgresContentIntelligenceExecutionPort:
             "capability": spec.capability,
             "system_instruction": {
                 "ref": "source-intelligence-system",
-                "version": "1.0",
+                "version": "1.1",
                 "content_hash": _hash(system_text),
                 "text": system_text,
             },

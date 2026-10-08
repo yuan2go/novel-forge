@@ -27,6 +27,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     dispatch_external_effect,
     plan_external_effect,
     reconcile_external_effect,
+    resume_operation_from_completed_effect,
 )
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
@@ -135,6 +136,7 @@ class ContentIntelligenceExecutionPort(Protocol):
         analysis_plan_asset_version_id: str = "",
         compound_analyzers: tuple[AnalyzerContract, ...] = (),
         sampling_manifest: Mapping[str, Any] | None = None,
+        reuse_effect_id: str = "",
     ) -> dict[str, Any]: ...
 
     def execute_mkaos_extraction(
@@ -649,18 +651,21 @@ class SourceImportApplication:
                 )
             uow.cursor.execute(
                 """
-                SELECT external_effect_id
+                SELECT external_effect_id,status
                 FROM authority_external_effect
                 WHERE project_id=%s AND operation_id=%s
-                  AND status IN (
-                      'DISPATCHING', 'DISPATCHED', 'UNKNOWN',
-                      'RECONCILIATION_REQUIRED'
-                  )
                 ORDER BY created_at, external_effect_id
                 """,
                 [worker.project_id, worker.causation_id],
             )
-            effect_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            effects = tuple((str(row[0]), str(row[1])) for row in uow.cursor.fetchall())
+            effect_ids = tuple(identity for identity, status in effects if status in {
+                "DISPATCHING", "DISPATCHED", "UNKNOWN", "RECONCILIATION_REQUIRED"
+            })
+        if not effect_ids and effects and all(status == "SUCCEEDED" for _, status in effects):
+            for identity, _ in effects:
+                resume_operation_from_completed_effect(self.database_url, self._effect_context(worker), effect_id=identity)
+            return "external_effect_receipt_reuse"
         if not effect_ids:
             raise KernelError(
                 "SOURCE_RECONCILIATION_EFFECT_MISSING",
@@ -4198,13 +4203,19 @@ class SourceImportApplication:
         return result
 
     def _admit_mkaos_child(
-        self,
-        worker: WorkerLeaseCommand,
-        job: dict[str, Any],
-        observation: dict[str, Any],
-        *,
+        self, worker: WorkerLeaseCommand, job: dict[str, Any],
+        observation: dict[str, Any], *, payload: dict[str, Any],
+    ) -> str | None:
+        return self._admit_mkaos_from_scope(project_id=worker.project_id,
+            parent_operation_id=worker.causation_id, trace_id=worker.trace_id,
+            correlation_id=worker.correlation_id, job=job,
+            observation=observation, payload=payload)
+
+    def _admit_mkaos_from_scope(
+        self, *, project_id: str, parent_operation_id: str, trace_id: str,
+        correlation_id: str, job: dict[str, Any], observation: dict[str, Any],
         payload: dict[str, Any],
-    ) -> None:
+    ) -> str | None:
         if observation.get("has_findings") is False:
             return
         capability = str(payload["mkaos_capability"])
@@ -4213,7 +4224,7 @@ class SourceImportApplication:
         observation_version = str(observation["observation_asset_version_id"])
         child = self._admit_child(
             definition_name=SOURCE_IMPORT_MKAOS_OPERATION,
-            project_id=worker.project_id,
+            project_id=project_id,
             workspace_id=str(job["workspace_id"]),
             actor_id=self.worker_id,
             idempotency_key=(
@@ -4223,10 +4234,10 @@ class SourceImportApplication:
                 f"{mkaos_methodology.skill_version}:"
                 f"{mkaos_methodology.content_digest}"
             ),
-            trace_id=worker.trace_id,
-            correlation_id=worker.correlation_id,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
             causation_id=observation_version,
-            parent_operation_id=worker.causation_id,
+            parent_operation_id=parent_operation_id,
             payload={
                 "import_job_id": job["import_job_id"],
                 "observation_asset_version_id": observation_version,
@@ -4253,7 +4264,7 @@ class SourceImportApplication:
                 {
                     "work_id": str(uuid4()),
                     "import_job_id": job["import_job_id"],
-                    "project_id": worker.project_id,
+                    "project_id": project_id,
                     "work_kind": "MKAOS_EXTRACTION",
                     "stable_key": (
                         f"{observation_version}:{abstraction_policy_version}:"
@@ -4271,13 +4282,15 @@ class SourceImportApplication:
             uow.commit()
         self._ready_child(
             operation_id=child,
-            project_id=worker.project_id,
+            project_id=project_id,
             actor_id=self.worker_id,
-            trace_id=worker.trace_id,
-            correlation_id=worker.correlation_id,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
             causation_id=observation_version,
             reason="MKAOS Observation abstraction ready",
         )
+
+        return child
 
     def _execute_mkaos(self, worker: WorkerLeaseCommand) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

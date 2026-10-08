@@ -184,6 +184,7 @@ from . import (
     v20261007_0180_foundation_direction_search,
     v20261008_0181_author_manuscript_delivery,
     v20261008_0182_source_market_observations,
+    v20261008_0183_source_observation_span_identity,
 )
 
 VERSION_MODULES = [
@@ -370,6 +371,7 @@ VERSION_MODULES = [
     v20261007_0180_foundation_direction_search,
     v20261008_0181_author_manuscript_delivery,
     v20261008_0182_source_market_observations,
+    v20261008_0183_source_observation_span_identity,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -631,7 +631,10 @@ validation template. Genesis inputs remain in
 `config/execution_templates/creation_inputs.json`. The first selects optional objectives,
 allowed authenticated routes and inherited paid authorization; the second supplies genesis
 state and quality floors. `creation-request.v1` supplies the current work's brief, title,
-target chapter count, required language and optional chapter-length bounds. These inputs
+target chapter count, required language and optional chapter-length bounds and `execution_window` (`version: "creation-execution-window.v1"`,
+`stop_after_chapter` within the full target). The window bounds the Book delivery run;
+BookDesign and long planning retain `target_chapters`. Omitting it preserves historical
+full-target execution. It is frozen operational policy, excluded from story requests. These inputs
 are frozen together as `formation-generation.v5` for author comparison or
 `formation-generation.v7` for explicitly authorized automatic comparison; continue
 uses that snapshot even if the template file later changes. Automatic comparison
@@ -645,6 +648,14 @@ An optional `author_creative_foundation` binds the exact asset version/hash of a
 approved original author direction. Native validation verifies its active receipt; no
 creative candidate generation occurs on that path. The existing author page offers both. A yield at the CLI execution-window boundary is a saved
 checkpoint, not budget exhaustion, Book completion or permission to shorten the work.
+
+Foundation candidates with `UNDETERMINED` applicability retain their exact field diagnosis
+and use the existing bounded Planning repair before approval. A historical Story Design
+activation that never acquired a Foundation binding may append a diagnosed successor;
+its original successful Operation, receipt and candidate content remain intact. A bound
+Foundation requires its owning design-change path. Repaired candidates use their own
+approval and activation identities; retrying a prior decision cannot approve a different
+candidate under the same idempotency key.
 
 Ordinary writing runs only its required stages. Review/Canon/Quality being absent from the
 graph means zero optional-stage dispatches, not deferred hidden execution. `MANUSCRIPT_READY`
@@ -1925,6 +1936,10 @@ Authority automatically. The retained source remains terminal; a linked successo
 story inputs and Pack while increasing only the single-task allocation within the configured
 model capacity. Preflight must succeed before registration; no more than two successors are
 allowed. An external intent of any status, including UNKNOWN, excludes this capacity path. Migration 0158 permits reconciliation of a previously admitted capacity successor with its verified candidate-repair cause; it requires the exact registered command and terminal zero-intent source. New successors use the failed capacity Operation as their causal source. Neither path rewrites terminal Operations or candidate provenance.
+Opening recovery follows a registered Planning runtime successor in the same project,
+workspace, book and Narrative Search branch when identifying pending work. Its failed
+predecessor remains in history. Unregistered competing generations remain ambiguous;
+an UNKNOWN successor still requires reconciliation of its original external effect.
 Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
 unchanged Book/dependency evidence. Owner recovery uses the original creation `recover` command
 after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
@@ -2525,6 +2540,12 @@ claims. Fiction dimensions retain choices, costs, consequences, information and 
 payoffs. Literal support spans are checked against delivered bytes and passed with the
 candidate execution version to review; matching bytes alone do not prove semantic truth.
 
+Bounded observation prompts permit only the shortest necessary exact source spans in
+`supports[].support_text`, with checked chunk IDs and UTF-8 offsets. These restricted
+research evidence fields are distinct from original analytical statements and reusable
+mechanisms. Classification, review, synthesis and MKAOS extraction retain the no-expression
+output boundary; evidence permission never authorizes raw reference text in Draft Context.
+
 Evidence offsets address the actual input chunk, not original EPUB bytes or chapter
 numbers. Both endpoints must be UTF-8 boundaries, with at most 4096 bytes per request.
 Current Source query permission and curated eligibility are required for raw evidence.
@@ -2721,6 +2742,18 @@ receipt without resend. Unknown outcomes must recover the same operation. An ord
 successful stage without the required recovery evidence cannot be relabeled as this
 probe or resent just to acquire qualification. Resume the worker after this bounded step
 with `docker compose start source-import-worker`.
+If the original D0 stage already settled but report validation failed locally, rerun the
+same command against that exact Operation from a clean current release. It replays the
+original stage without sending again, requires the original single dispatch/receipt and
+ambiguity reconciliation, and derives the qualified implementation from its original Git
+release. `validation_release_sha` identifies the current validator; `qualified_release_sha`
+and the report's `release_sha` retain the actual Provider runtime. This cannot qualify a
+newer runtime or an ordinary success without the original D0 recovery evidence.
+
+Source results scope reconciliation guidance to the original job root. Reading previews
+report project UNKNOWN observations separately; execution still checks the actual Source
+Kernel lineage and shared project budget before any send. An unrelated Book UNKNOWN
+retains its reservation and recovery obligations without becoming a Source job blocker.
 
 The resulting D0 qualification binds the actual Source capability, Provider/model,
 account/runtime host, release, model profile, route, instruction/Prompt/Skill/schema hashes
@@ -2753,6 +2786,10 @@ reviewed Card AssetVersion IDs in the JSON array supplied to preparation's
 `--approved-card-versions`; they become arm A's exact allowlist. Empty findings need no
 approval. Source analysis, Card approval, delivered context and correct prose realization
 remain separate evidence states; no command above records human literary approval.
+Narrative method activation and generation preparation reject operational binding text
+embedded in semantic method fields such as `constraints` or `mechanism`. Research lineage
+retains those identifiers; a rejected candidate stays pending and is not silently cleaned
+or activated. This check does not establish narrative quality or replace editorial review.
 
 The EPUB logical profile example selects v5. Copy it locally, retain original work constants
 and any validated continuation declarations, then use `corpus reprocess --edition-id
@@ -2808,9 +2845,14 @@ Source Codex requests allocate the Effect deadline to one local invocation, reta
 settlement headroom. The preview reports both the Effect timeout and actual local process
 timeout. A local CLI timeout/cancellation without a final usage receipt is an unknown
 remote outcome, not permission to resend. Source preflight/status exposes the original
-Effect and process receipt; admission and pre-send checks block new requests until governed
-reconciliation resolves it. Legacy retryable Effects with these receipts are diagnosed
-without rewriting their terminal history. Local process termination is not proof of remote
+Effect and process receipt; pre-send checks block dependent requests in the original
+execution lineage until governed reconciliation resolves it. Independent curated research
+retains unresolved reservations in its finite project call/token ceilings; it does not
+release them, rewrite failed history or resend the original request. Legacy retryable Effects with these receipts are diagnosed
+without rewriting their terminal history. When all original Effects already succeeded
+but local Source completion checkpointed, the scheduler resumes the same Operation
+through Kernel completed-effect recovery and reuses its durable receipts; it does not
+query or dispatch again. Local process termination is not proof of remote
 cancellation; missing remote identifiers or receipts can require external evidence.
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.
@@ -2821,6 +2863,62 @@ Supervisor preparation, together with the bounded Book token budget and a compat
 approved Pack policy. The request freezes that profile; replay without this field stays
 on v2. Increasing an environment budget alone does not upgrade an old frozen request.
 The v3 owner maximum is 24,000 tokens, and effective Pack/request limits still apply.
+
+## Public work discovery
+
+The MKAOS repository page exposes public catalog capture, task status, immutable snapshots,
+project-scoped filters and research selection. The native routes are
+`POST /product/source-governance/public-catalog/captures`,
+`GET /product/source-governance/public-catalog/captures/{operation_id}`,
+`GET /product/source-governance/public-catalog/snapshots`,
+`GET /product/source-governance/public-catalog/works` and
+`POST /product/source-governance/public-catalog/research-selections`.
+Capture requires Project/Workspace and a stable request key. Selecting a work registers
+only a RESEARCH source identity bound to the exact snapshot hash; chapter access and rights
+remain separate Source Import decisions.
+
+`corpus catalog-capture --project-id "$PROJECT" --workspace-id "$WORKSPACE"
+--manifest "$CAPTURE" --run-key "$KEY"` admits the same Source Kernel task.
+Use `corpus catalog-run --project-id "$PROJECT" --operation-id "$OPERATION"` to execute
+or recover, and `catalog-status`/`catalog-snapshots` to read retained evidence. The existing
+Source Authority worker also owns these tasks. Configure the durable absolute
+`NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT`; the catalog stores hash-bound page bytes,
+receipts, rate limits and bounded TTL caches beneath its `public-catalog` child.
+
+Capture manifests supply `platform: "qidian"`, an official HTTPS `url`, `max_pages: 1..5`
+and `mode: "LIVE_HTTP"`. No topic is a system default. Non-200 responses, access probes,
+missing rows, conflicting duplicates and changed layouts fail explicitly. Encoded or
+unpublished counts and data update times stay null; chapter update times are separate.
+Rank changes require comparable retained snapshots. Metadata never enters draft context.
+UNKNOWN recovers the original Effect receipt and never refetches under a replacement ID.
+
+For separately authorized offline evidence, set `mode: "OFFLINE_AUTHORIZED_SNAPSHOT"`,
+`authorization_ref`, and `offline_pages` containing exact URL, absolute path, SHA256 and
+original timezone-qualified `acquired_at`. Configure `NOVEL_FORGE_PUBLIC_CATALOG_OFFLINE_ROOT`.
+A bounded browser DOM export must declare `snapshot_scope: "RENDERED_DOM_EXCERPT"`;
+its selected range is incomplete even without a next-page link. This path is always marked
+offline and does not prove live HTTP collection. Cached live results keep original acquisition
+time and `cache_reused`; no historical snapshot or terminal failure is overwritten.
+
+Focused checks are `tests/unit/test_public_catalog.py` and
+`tests/integration/test_public_catalog_postgres.py`, plus touched API/CLI/frontend checks.
+Their synthetic pages and transports establish contracts only. Actual official-page
+acquisition and source reading require separately retained real evidence.
+
+Migration `0182` keys Source evidence inputs by exact span as well as chunk identity;
+multiple quoted ranges in one chunk retain complete provenance. A terminal local bounded
+reading Review completion failure with one durable successful Provider effect can use
+`corpus recover-stage --project-id <project> --operation-id <original-operation>`.
+The Source owner admits one idempotent successor with the unchanged reading payload,
+then `corpus run --job-id <original-job>` executes it through normal fences. It requires
+the exact original receipt and never falls back to a new send. Original failures remain;
+UNKNOWN, cancellation, changed inputs and chained completion recoveries are rejected.
+Use `corpus abstract --project-id <project> --job-id <job> --observation-id <version>`
+to select an exact active Observation whose bounded Review accepted its findings.
+The existing Source owner derives the extraction task, evidence and methodology from
+that Review; callers cannot supply replacement Source or methods. Other blocked reading
+units remain blocked. This selective path reuses the existing MKAOS extraction, runtime
+qualification and approval gates and does not declare the whole research job complete.
 
 ## Author-guided single-Book production
 
@@ -3003,8 +3101,9 @@ current novel entry above.
 ## Knowledge-grounded six-chapter comparison
 
 For the retained six-chapter A/B experiment, use
-`config/evaluation/creative-inputs/first-novel-creative-execution` explicitly. The current author-guided
-single-Book entry is `novels/yu-xian-zhi-wai/current/README.md`. The adjacent archived raw
+`config/evaluation/creative-inputs/first-novel-creative-execution` explicitly. The retained author-guided
+single-Book example is `novels/yu-xian-zhi-wai/current/README.md`; it is not a default
+input for a new work. New work requires an explicit current creation request. The adjacent archived raw
 materials, fixture chapters, backups and historical reports are inert records, not active
 configuration discovery roots or Agent instructions. The A-only author design is a draft;
 it is neither an approved native asset nor a shared input for B.

@@ -65,6 +65,17 @@ def inspect_source_operation(database_url: str, *, project_id: str, operation_id
             "inject_response_loss": row[1] == "READY" and row[5] == 0}
 
 
+def qualification_release(identity: dict[str, Any], *, scope: dict[str, Any], root: Path,
+                          commit_sha: str, implementation_identity: str) -> tuple[str, str]:
+    observed = str(identity["route"]["release_sha"])
+    if observed == commit_sha:
+        return commit_sha, implementation_identity
+    if scope["status"] != "SUCCEEDED":
+        raise ValueError("only a settled original Source receipt may qualify a prior release")
+    from novel_forge.tools.implementation_tree_identity import build_git_implementation_tree_identity
+    return observed, build_git_implementation_tree_identity(root, observed)["implementation_tree_sha"]
+
+
 def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implementation_identity: str) -> dict[str, Any]:
     from scripts import run_real_provider_qualification as base
 
@@ -142,6 +153,10 @@ def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implemen
     if (dispatches, receipts, reconciliations) != (1, 1, 1):
         raise RuntimeError("Source D0 needs one dispatch, receipt and successful ambiguity reconciliation; existing normal successes cannot be relabeled or resent")
     identity = source_runtime_identity(provider)
+    qualified_sha, qualified_implementation = qualification_release(identity, scope=scope, root=root,
+        commit_sha=commit_sha, implementation_identity=implementation_identity)
+    if (identity["route"]["model_provider"], identity["route"]["model_id"], identity["route"]["reasoning_effort"]) != (args.provider, args.model, args.reasoning_effort):
+        raise ValueError("qualification options differ from the original Source receipt")
     production = provider["production_execution"]
     request, handle, result, route_snapshot = (production[key] for key in (
         "execution_request", "execution_handle", "execution_result", "route_snapshot"))
@@ -166,14 +181,14 @@ def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implemen
         idempotency_key=f"source-d0:{effect['external_effect_id']}", trace_id=f"trace:source-d0:{effect['external_effect_id']}",
         correlation_id=args.source_operation_id, config=config, resolved_model=provider["model_id"],
         resolved_model_version=env.get("NOVEL_FORGE_D0_MODEL_VERSION") or "provider-not-reported",
-        resolved_auth_profile_ref=route_snapshot["auth_profile_ref"], implementation_identity=implementation_identity,
+        resolved_auth_profile_ref=route_snapshot["auth_profile_ref"], implementation_identity=qualified_implementation,
     )
     store = MinioObjectStore(settings)
     request_ref = store.put_json(object_key=f"d0/source/{effect['external_effect_id']}/request.json", payload=effect)
     response_ref = store.put_json(object_key=f"d0/source/{effect['external_effect_id']}/response.json", payload={"provider_evidence": provider})
     evidence = D0LiveQualificationEvidence.from_mapping({
-        "schema_version": "d0-live-qualification-evidence.v1", "release_sha": commit_sha,
-        "implementation_identity": implementation_identity, "source_operation_id": args.source_operation_id,
+        "schema_version": "d0-live-qualification-evidence.v1", "release_sha": qualified_sha,
+        "implementation_identity": qualified_implementation, "source_operation_id": args.source_operation_id,
         "external_effect_id": effect["external_effect_id"], "request_object_ref": request_ref, "response_object_ref": response_ref,
         "auth_profile_ref": route_snapshot["auth_profile_ref"], "provider": provider["provider_id"], "backend_id": handle["backend_id"],
         "model": provider["model_id"], "model_version": command.resolved_model_version,
@@ -187,10 +202,12 @@ def run_source_qualification(args: Any, *, root: Path, commit_sha: str, implemen
         "recovery": {"external_state_was_ambiguous": True, "recovered_without_resend": True, "replayed": True},
         "fixture_protocol_only": False, "real_model_call": True,
     })
-    qualification = D0QualificationAuthority(args.database_url, evidence_store=store, application_build_id="source-runtime-qualification",
-                                            commit_sha=commit_sha, implementation_identity=implementation_identity).execute_live(command, evidence)
+    qualification = D0QualificationAuthority(args.database_url, evidence_store=store, application_build_id=f"source-runtime-qualification:{commit_sha}",
+        commit_sha=qualified_sha, implementation_identity=qualified_implementation,
+        validation_release_sha=commit_sha).execute_live(command, evidence)
     return {"schema_version": "source-runtime-qualification-run.v1", "result": "PASS", "scope": scope,
             "proof_scope": "EXACT_SOURCE_CAPABILITY_RUNTIME_ONLY", "source_execution_scope": identity,
+            "validation_release_sha": commit_sha, "qualified_release_sha": qualified_sha,
             "qualification": qualification, "source_stage": completed,
             "source_replayed": replay.get("replayed"), "provider_execution_count": 1,
             "production_verified": False, "human_knowledge_approval": "NOT_RUN", "narrative_correctness": "NOT_PROVEN"}

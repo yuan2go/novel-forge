@@ -156,7 +156,17 @@ def assert_no_inline_secrets(
             for raw_key, item in value.items():
                 key = _normalized_key(raw_key)
                 child_path = f"{path}.{raw_key}"
-                if _is_prohibited_key(key):
+                governed_grant = False
+                if key == "authorization" and child_path.endswith(".routing_decision.author_supervision.authorization") and isinstance(item, Mapping):
+                    from novel_forge.modules.command_kernel.errors import KernelError
+                    from novel_forge.modules.command_kernel.service import _validate_json_schema
+                    from novel_forge.modules.production_execution.author_supervision import GRANT_SCHEMA
+                    try:
+                        _validate_json_schema(GRANT_SCHEMA, dict(item))
+                        governed_grant = True
+                    except KernelError:
+                        pass
+                if _is_prohibited_key(key) and not governed_grant:
                     raise ValueError(
                         f"{label} contains inline secret material at {child_path}; "
                         "store auth_profile_ref, credential_scope, and "

@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261008_0182_source_market_observations",
+  "migration_head": "20261008_0183_source_observation_span_identity",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -5996,6 +5996,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261008_0182_source_market_observations.py",
           "id": "20261008_0182_source_market_observations",
           "locator": "MIGRATION_ID = \"20261008_0182_source_market_observations\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261008_0183_source_observation_span_identity.py",
+          "id": "20261008_0183_source_observation_span_identity",
+          "locator": "MIGRATION_ID = \"20261008_0183_source_observation_span_identity\""
         }
       ],
       "external_effects": {
@@ -9984,7 +9989,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:6a36853ee4ae9db0e5df0d263cc2e610a45550eb4827edc7b5403c12af1e18f8"
+    "implementation_tree_sha": "sha256:30570dcec77bd6b5327d3b4df6c8dbcb698ab1c51ff9d6813761401792a38538"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

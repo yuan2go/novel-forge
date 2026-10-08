@@ -2496,7 +2496,7 @@ class PostgresBookAuthority:
             or tuple(command.longform_context_versions["arc_plan_versions"])
             != tuple(str(item) for item in row[7])
             or command.target_chapter_count
-            != int(dict(row[19]).get("target_chapter_count") or 0)
+            != self._profile_execution_stop(dict(row[19]))
         ):
             raise KernelError(
                 "BOOK_PRODUCTION_INPUT_SNAPSHOT_DRIFT",
@@ -2510,6 +2510,14 @@ class PostgresBookAuthority:
         values.extend(str(item) for item in row[9:17])
         values.extend(str(item) for item in row[17:19] if item)
         return tuple(dict.fromkeys(values))
+
+    @staticmethod
+    def _profile_execution_stop(profile: dict[str, Any]) -> int:
+        from .creation_window import validate_execution_window
+
+        target = int(profile.get("target_chapter_count") or 0)
+        window = validate_execution_window(profile.get("execution_window"), target_chapters=target)
+        return int(window["stop_after_chapter"]) if window else target
 
     @staticmethod
     def _require_snapshot_plan_portfolio_current_in_uow(

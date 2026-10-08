@@ -242,6 +242,9 @@ class FormationGeneration:
         candidate = self.query.require(
             project_id=run["project_id"], asset_version_id=selected
         )
+        generation = self.planning.require_generation(candidate.content["execution_evidence"]["operation_id"])
+        if generation["repair_number"]:
+            key = f"{key}:candidate:{selected}"
         if selection and selection.get("candidate_content_hash") != candidate.content_hash:
             raise KernelError("STORY_FORMATION_AUTHOR_SELECTION_DRIFT", "Selected candidate hash changed")
         if auto_comparison:

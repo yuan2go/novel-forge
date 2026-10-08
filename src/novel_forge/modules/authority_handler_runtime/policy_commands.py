@@ -75,6 +75,7 @@ def owned_policy_definition(
         for value in content["execution_templates"]
     )
     author_templates = execution_templates and any(value.get("version") == "creative-execution-template.v12" for value in content["execution_templates"])
+    supervised_templates = author_templates and any(key in content for key in ("author_supervised_authorizations", "author_supervised_books"))
     routing_sources = owner == "PROVIDER_ROUTING" and any(key in content for key in ("benchmark_exports", "benchmark_source_bindings", "author_supervised_authorizations", "author_supervised_books"))
     if owner == "PROVIDER_ROUTING":
         from novel_forge.modules.production_execution.routing_policy import POLICY_SCHEMA, LEGACY_POLICY_SCHEMA, AUTHOR_SUPERVISED_POLICY_SCHEMA
@@ -153,7 +154,7 @@ def owned_policy_definition(
         command_schema["properties"]["expected_policy_hash"] = {"type": "string"}
     return {
         "name": name,
-        "definition_version": "2.1.0" if author_templates else "2.0.0" if coordinated_templates else "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
+        "definition_version": "2.2.0" if supervised_templates else "2.1.0" if author_templates else "2.0.0" if coordinated_templates else "1.11.0" if canon_templates else "1.10.0" if contract_templates else "1.9.0" if stage_templates else "1.8.0" if world_templates else "1.7.0" if execution_templates else "1.7.0" if campaign_reallocation else "1.6.0" if campaign_renewal else "1.5.0" if owner == "PROVIDER_ROUTING" and any(k in content for k in ("author_supervised_authorizations", "author_supervised_books")) else "1.3.0" if routing_sources else "1.5.0" if paired_samples_budget else "1.4.1" if campaign_monetary_amendment else "1.4.0" if provider_campaign_budget else "1.3.0" if production_book_budget else "1.2.0" if single_book_budget or owner == "PROVIDER_ROUTING" else DEFINITION_VERSION,
         "family": owner.lower(),
         "enabled": True,
         "definition_status": "implemented_validation_pending",

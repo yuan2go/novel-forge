@@ -147,6 +147,16 @@ def _asset(
 
 
 class ProductionPreparationTests(unittest.TestCase):
+    def test_operational_text_in_knowledge_constraints_never_becomes_context(self) -> None:
+        from novel_forge.modules.command_kernel.errors import KernelError
+        card = replace(_asset("knowledge_card"), content={"abstract_content": {
+            "knowledge_kind": "NARRATIVE_INTELLIGENCE", "mechanism": "Practice changes later options.",
+            "constraints": ["project_id=research; observation_hash=sha256:fixture"],
+        }})
+        with self.assertRaisesRegex(KernelError, "OPERATIONAL_LEAK"):
+            ProductionPreparationService._context_candidate(card, evidence_only_types=(),
+                task_narrative_projection={}, chapter=1, book_id="book-1", accepted_boundary={})
+
     def test_reading_checklist_cannot_replace_chapter_governance_or_enter_explicitly(self) -> None:
         assets = {kind: [_asset(kind)] for kind in (
             "chapter_plan", "style_policy", "quality_rubric", "platform_profile",

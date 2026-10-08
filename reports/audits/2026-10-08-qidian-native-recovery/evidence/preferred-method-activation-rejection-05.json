@@ -1,0 +1,12 @@
+{
+  "http_status": 409,
+  "response": {
+    "detail": {
+      "code": "MKAOS_NARRATIVE_METHOD_OPERATIONAL_LEAK",
+      "message": "Narrative method field constraints[1] contains operational binding text; retain it in research lineage instead"
+    }
+  },
+  "evidence_class": "CONTROLLED_ADMISSION_CHECK_ON_ACTUAL_CANDIDATE",
+  "model_call": false,
+  "human_feedback": false
+}

@@ -12,6 +12,27 @@ DECONSTRUCTION_STAGE = "source.deconstruction.observe"
 MKAOS_STAGE = "source.mkaos.extract"
 CLASSIFICATION_STAGE = "source.content.classify"
 
+
+def source_analysis_output_instruction(stage: str, inputs: Mapping[str, Any]) -> str:
+    if (
+        stage == DECONSTRUCTION_STAGE
+        and inputs.get("reading_context")
+        and inputs.get("source_segments")
+        and "review_target" not in inputs
+    ):
+        return (
+            "Return only one JSON object matching the frozen schema. Only the schema's "
+            "supports[].support_text evidence fields may reproduce the shortest necessary "
+            "exact source span, with matching chunk ID and UTF-8 byte offsets. These "
+            "excerpts are restricted research evidence, not reusable knowledge or draft "
+            "inputs. Statements, mechanisms and other output fields must use original "
+            "analysis and must not reconstruct source expression, characters or distinctive plots."
+        )
+    return (
+        "Return only one JSON object matching the frozen schema. Do not quote, "
+        "reproduce, or preserve source expression in analysis output."
+    )
+
 _CONTENT_TYPES = (
     "WEB_NOVEL",
     "PUBLISHED_FICTION",
