@@ -1,0 +1,15 @@
+{
+  "schema_version": "publication-snapshot.v1",
+  "baseline_sha": "fae50391c8e5e4b323aa303a922b8332e4e14666",
+  "source_repair_sha": "c609f10320c1583693f16e72ebf907fc12d83d96",
+  "publication_tests_and_hooks": "NOT_RUN_BY_USER_REQUEST",
+  "merged_head_validation": "NOT_RUN",
+  "provider_calls_this_publication": 0,
+  "new_real_chapters": 0,
+  "real_production": "BLOCKED",
+  "quality": "NOT_PROVEN",
+  "source_logs": "Nine logs copied under checks/ with the exact original hashes recorded in architecture/live-evidence/wp-longform-01/20261008/execution-evidence.json. No source log required credential redaction.",
+  "prior_audit": "analysis.md and codex-repair-prompt.md are historical findings from before c609f103; publication does not endorse the prompt as current instructions or claim every gap fixed.",
+  "historical_prose": "Two retained cache texts, not new production or a current native export. Current selected versions and continuation cursor remain unverified until the original database is restored.",
+  "source_preservation": "Original worktrees, private configuration, databases and raw runtime directories unchanged and not uploaded. Historical failures and unknown outcomes retained."
+}

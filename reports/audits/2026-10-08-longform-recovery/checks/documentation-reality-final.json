@@ -1,0 +1,24 @@
+PYTHONPATH=src /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python -m novel_forge.tools.documentation_reality --repo-root .
+{
+  "canonical_document_count": 5,
+  "capability_count": 26,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "fae50391c8e5e4b323aa303a922b8332e4e14666",
+    "base_source_comment_count": 515,
+    "base_source_docstring_count": 135,
+    "base_web_comment_count": 5,
+    "status": "PASS"
+  },
+  "errors": [],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:266cfc5975c57cc2ff3dcd13b3f738f3e36ea50a3065050f40be26d8bd0f4106",
+  "module_docstring_count": 37,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 515,
+  "source_docstring_count": 135,
+  "status": "PASS",
+  "tested_sha": "fae50391c8e5e4b323aa303a922b8332e4e14666",
+  "web_comment_count": 5
+}

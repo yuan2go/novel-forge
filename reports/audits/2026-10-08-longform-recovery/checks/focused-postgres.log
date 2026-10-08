@@ -1,0 +1,221 @@
+..F..............                                                    [100%]
+=================================== FAILURES ===================================
+_ AuthorEditorPostgresTests.test_authored_draft_flows_through_native_review_revision_canon_and_export _
+
+self = <tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests testMethod=test_authored_draft_flows_through_native_review_revision_canon_and_export>
+
+    def test_authored_draft_flows_through_native_review_revision_canon_and_export(self):
+        from novel_forge.modules.chapter_authority.handlers import DeterministicFixtureChapterProvider, build_chapter_handler_registry
+        from novel_forge.modules.chapter_authority.orchestrator import SingleChapterRequest, run_single_chapter_slice
+        from novel_forge.modules.chapter_authority.contracts import ChapterNode
+        from novel_forge.modules.command_kernel.external_effect_adapters import FakeDeterministicProvider
+        from tests.integration.test_postgresql_only_chapter_slice import PostgreSQLOnlyChapterSliceTests
+    
+        class ReviewOnlyFixture(DeterministicFixtureChapterProvider):
+            stages = []
+    
+            def invoke(self, request, *, stage, payload, **kwargs):
+                self.stages.append(stage)
+                if stage == 'draft':
+                    raise AssertionError('Human draft must not call a model')
+                return super().invoke(request, stage=stage, payload=payload, **kwargs)
+    
+        text = '剑已出鞘，林遥却在最后一步收住锋芒。她将归山的令牌压在桥头，任追兵踏碎。'
+        saved = self.app.execute(action='save', payload={**self.payload, 'text': text,
+                                 'scene_artifacts': [{'slot_id': 's1:skeleton', 'text': text, 'used_fact_ids': []}]},
+                                 idempotency_key=identifier('save'), principal=self.principal)
+        accepted = self.app.execute(action='accept', payload={**self.scope, 'expected_version': saved['version'],
+                                   'candidate_asset_version_id': saved['candidate_asset_version_id'], 'rationale': '采用原创动作描写'},
+                                   idempotency_key=identifier('accept'), principal=self.principal)
+        frozen = freeze_author_adoption(DATABASE_URL, **{key: self.scope[key] for key in ('project_id','workspace_id','book_id','chapter')},
+                                        candidate_asset_version_id=saved['candidate_asset_version_id'],
+                                        decision_asset_version_id=accepted['decision_asset_version_id'], principal=self.principal)
+        provider = ReviewOnlyFixture()
+        request = SingleChapterRequest(**{key: self.scope[key] for key in ('project_id','workspace_id','book_id','chapter')},
+                                       actor_id=self.principal.principal_id, title='关山旧约', premise='守住同伴的退路需要付出归山的代价。',
+                                       trace_id=identifier('trace'), correlation_id=identifier('correlation'),
+                                       application_build_id='author-native-fixture', commit_sha='e' * 40,
+                                       context_candidates=PostgreSQLOnlyChapterSliceTests.release_evidence(self.scope['project_id']),
+                                       preparation_report={'author_draft_adoption': frozen})
+>       result = run_single_chapter_slice(DATABASE_URL, request=request, registry=build_chapter_handler_registry(provider),
+                                          object_store_adapter=FakeDeterministicProvider('success'))
+
+tests/integration/test_author_editor_postgres.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/chapter_authority/orchestrator.py:501: in run_single_chapter_slice
+    output, delivery = _run_successful_attempt(
+src/novel_forge/modules/chapter_authority/orchestrator.py:574: in _run_successful_attempt
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1336: in execute
+    bundle = build_context_bundle(
+src/novel_forge/modules/chapter_authority/domain_handlers.py:415: in build_context_bundle
+    governed = build_authority_context_bundle(
+src/novel_forge/modules/context_builder/domain.py:1089: in build_authority_context_bundle
+    selection = select_context_candidates(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+project_id = 'author-project-e14b1c5b-415c-49dd-8959-f8d4422f08a0'
+book_id = 'author-book-4bb138ad-59b9-4aa7-b1eb-a3d007c31110'
+profile = ContextProfile(name='draft', allowed_asset_types=frozenset({'style_policy', 'reader_promise', 'platform_quality_report...equired_first', 'stage_fit', 'narrative_function', 'relevance', 'lower_risk'), compression_policy='rank_then_compress')
+candidates = (ContextCandidate(asset_version_id='authority-output:26d974a1-d212-4915-84bb-292e247e8595:chapter.plan:v1', asset_type...tus='ACTIVE', read_generation_id='', active_read_generation_id='', truncation_strategy='', truncation_version=''), ...)
+token_budget = 6000
+effective_policy = EffectiveContextPolicy(allowed_logical_kinds=('approval_decision', 'arc_actual_state', 'arc_plan', 'canon_snapshot', '...only'), source_risk_threshold=1, maximum_raw_source_ratio=0.0, compiler_version='effective-context-policy-compiler-v1')
+authority_state_boundary = {'accepted_through_chapter': 0, 'canon_snapshot_version': '', 'story_state_snapshot_version': ''}
+
+    def select_context_candidates(
+        *,
+        project_id: str,
+        book_id: str = "",
+        profile: ContextProfile,
+        candidates: Iterable[ContextCandidate],
+        token_budget: int,
+        effective_policy: EffectiveContextPolicy | None = None,
+        authority_state_boundary: dict[str, Any] | None = None,
+    ) -> ContextSelection:
+        if not project_id.strip():
+            raise ValueError("project_id is required")
+        if token_budget <= 0 or token_budget > profile.maximum_token_budget:
+            raise ValueError("token_budget exceeds context profile maximum")
+        compilation = (
+            None
+            if effective_policy is not None
+            else _compile_profile_policy(profile, token_budget=token_budget)
+        )
+        policy = effective_policy or compilation.effective_policy
+        if token_budget > policy.limits.total:
+            raise ValueError("token_budget exceeds effective Context policy")
+        accepted: list[ContextCandidate] = []
+        rejected: list[dict[str, str]] = []
+        decisions: list[dict[str, Any]] = []
+        for candidate in candidates:
+            _validate_context_class_invariants(candidate)
+            reason = _eligibility_reason(
+                project_id,
+                book_id,
+                profile,
+                policy,
+                candidate,
+                authority_state_boundary=authority_state_boundary or {},
+            )
+            if reason:
+                if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    raise ValueError(
+                        f"protected context is unavailable: {candidate.asset_version_id}:{reason}"
+                    )
+                rejected.append(
+                    {"asset_version_id": candidate.asset_version_id, "reason": reason}
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": reason,
+                    }
+                )
+            else:
+                accepted.append(candidate)
+        required_kinds = set(policy.required_logical_kinds)
+        accepted, deduplications = deduplicate_context_candidates(accepted, required_logical_kinds=policy.required_logical_kinds)
+        decisions.extend(deduplications)
+        rejected.extend({"asset_version_id": receipt["asset_version_id"], "reason": receipt["reason"]} for receipt in deduplications)
+        selected: list[ContextCandidate] = []
+        usage: dict[str, dict[str, int]] = {
+            "sections": {},
+            "buckets": {},
+            "classes": {},
+        }
+        used = 0
+        truncations: list[dict[str, Any]] = []
+        for candidate in accepted:
+            if candidate.estimated_tokens <= 0:
+                if context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    raise ValueError(
+                        "PROTECTED_CONTEXT_TOKEN_ESTIMATE_INVALID: protected context "
+                        "cannot be omitted because its token estimate is invalid"
+                    )
+                rejected.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "reason": "INVALID_TOKEN_ESTIMATE",
+                    }
+                )
+                decisions.append(
+                    {
+                        "asset_version_id": candidate.asset_version_id,
+                        "decision": "DROPPED",
+                        "reason": "INVALID_TOKEN_ESTIMATE",
+                    }
+                )
+                continue
+            required = (
+                candidate.required or candidate.logical_context_kind in required_kinds
+            )
+            available, budget_reason = _available_budget(
+                candidate,
+                policy=policy,
+                total_limit=token_budget,
+                used=used,
+                usage=usage,
+            )
+            if not required:
+                required_used = sum(
+                    item.estimated_tokens
+                    for item in selected
+                    if item.required or item.logical_context_kind in required_kinds
+                )
+                reserved_remaining = max(
+                    0, policy.limits.required_reservation - required_used
+                )
+                reservation_available = max(0, token_budget - used - reserved_remaining)
+                if reservation_available < available:
+                    available, budget_reason = (
+                        reservation_available,
+                        "REQUIRED_RESERVATION",
+                    )
+            selected_candidate = candidate
+            decision = "SELECTED"
+            if candidate.estimated_tokens > available:
+                if required or context_candidate_class(candidate) is ContextClass.PROTECTED:
+                    code = (
+                        "PROTECTED_CONTEXT_BUDGET_EXCEEDED"
+                        if context_candidate_class(candidate) is ContextClass.PROTECTED
+                        else "CONTEXT_REQUIRED_BUDGET_UNSATISFIABLE"
+                    )
+>                   raise ValueError(
+                        f"{code}: {candidate.asset_version_id} exceeds {budget_reason}; "
+                        f"requires={candidate.estimated_tokens}, available={available}, used={used}, total={token_budget}"
+                    )
+E                   ValueError: PROTECTED_CONTEXT_BUDGET_EXCEEDED: authority-output:8d0cabc0-1a00-4657-9f79-e02e28e4e03c:chapter.execution_intent:v1 exceeds TOTAL_CONTEXT_LIMIT; requires=3889, available=2456, used=3544, total=6000
+
+src/novel_forge/modules/context_builder/domain.py:794: ValueError
+=============================== warnings summary ===============================
+tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export
+  /Users/yuan/.codex/worktrees/wp-longform-01/novel-forge/src/novel_forge/api/authority_app.py:783: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export
+  /Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:4681: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_editor_postgres.py::AuthorEditorPostgresTests::test_authored_draft_flows_through_native_review_revision_canon_and_export
+1 failed, 16 passed, 2 warnings, 4 subtests passed in 144.77s (0:02:24)
