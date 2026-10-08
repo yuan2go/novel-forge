@@ -818,6 +818,25 @@ class SourceImportRuntimePostgresTests(unittest.TestCase):
         with self.assertRaisesRegex(KernelError, "SOURCE_RUNTIME_QUALIFICATION_REQUIRED"):
             source_runtime_identity(evidence)
 
+    def test_settled_effect_before_source_commit_reuses_verified_receipt(self) -> None:
+        imported = self._create_import("settled-before-source-commit", self.commit_a, mode="PREVIEW")
+        original = self.application._execute_external_effect
+
+        def lose_local_completion(**kwargs):
+            original(**kwargs)
+            raise KernelError("EFFECT_EXTERNAL_STATE_UNKNOWN", "Fixture local completion lost after verified receipt")
+
+        with patch.object(self.application, "_execute_external_effect", side_effect=lose_local_completion):
+            with self.assertRaisesRegex(KernelError, "EFFECT_EXTERNAL_STATE_UNKNOWN"):
+                self.scheduler.run_or_recover(operation_id=imported["operation_id"], project_id=self.project_id)
+        recovered = self.scheduler.run_or_recover(operation_id=imported["operation_id"], project_id=self.project_id)
+        self.assertEqual(recovered["status"], "SUCCEEDED")
+        self.assertEqual(recovered["recovery_mode"], "external_effect_receipt_reuse")
+        self.assertTrue(self.scheduler.run_or_recover(operation_id=imported["operation_id"], project_id=self.project_id)["replayed"])
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s", [imported["operation_id"]])
+            self.assertEqual(cursor.fetchone()[0], 1)
+
     def test_unknown_effect_checkpoints_and_reconciles_without_redispatch(self) -> None:
         adapter = _UnknownOnceGitAdapter(self.git_adapter)
         self.application.git_adapter = adapter

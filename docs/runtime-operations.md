@@ -2829,7 +2829,10 @@ Effect and process receipt; pre-send checks block dependent requests in the orig
 execution lineage until governed reconciliation resolves it. Independent curated research
 retains unresolved reservations in its finite project call/token ceilings; it does not
 release them, rewrite failed history or resend the original request. Legacy retryable Effects with these receipts are diagnosed
-without rewriting their terminal history. Local process termination is not proof of remote
+without rewriting their terminal history. When all original Effects already succeeded
+but local Source completion checkpointed, the scheduler resumes the same Operation
+through Kernel completed-effect recovery and reuses its durable receipts; it does not
+query or dispatch again. Local process termination is not proof of remote
 cancellation; missing remote identifiers or receipts can require external evidence.
 Paused jobs with an unresolved CLI outcome report `RECONCILE_CLI_OUTCOME` before
 `RESUME`; pausing does not clear the unresolved outcome or its budget reservation.

@@ -27,6 +27,7 @@ from novel_forge.modules.command_kernel.external_effect_runtime import (
     dispatch_external_effect,
     plan_external_effect,
     reconcile_external_effect,
+    resume_operation_from_completed_effect,
 )
 from novel_forge.modules.command_kernel.runtime import (
     OperationTransitionCommand,
@@ -649,18 +650,21 @@ class SourceImportApplication:
                 )
             uow.cursor.execute(
                 """
-                SELECT external_effect_id
+                SELECT external_effect_id,status
                 FROM authority_external_effect
                 WHERE project_id=%s AND operation_id=%s
-                  AND status IN (
-                      'DISPATCHING', 'DISPATCHED', 'UNKNOWN',
-                      'RECONCILIATION_REQUIRED'
-                  )
                 ORDER BY created_at, external_effect_id
                 """,
                 [worker.project_id, worker.causation_id],
             )
-            effect_ids = tuple(str(row[0]) for row in uow.cursor.fetchall())
+            effects = tuple((str(row[0]), str(row[1])) for row in uow.cursor.fetchall())
+            effect_ids = tuple(identity for identity, status in effects if status in {
+                "DISPATCHING", "DISPATCHED", "UNKNOWN", "RECONCILIATION_REQUIRED"
+            })
+        if not effect_ids and effects and all(status == "SUCCEEDED" for _, status in effects):
+            for identity, _ in effects:
+                resume_operation_from_completed_effect(self.database_url, self._effect_context(worker), effect_id=identity)
+            return "external_effect_receipt_reuse"
         if not effect_ids:
             raise KernelError(
                 "SOURCE_RECONCILIATION_EFFECT_MISSING",
