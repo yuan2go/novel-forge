@@ -1,0 +1,8 @@
+{
+  "remote_main": "7540c51fe587266b8083ef4168271aa5a4ff9f3e",
+  "local_head": "ceb69fa2ff1c56f07005154bb5797616e933e8c2",
+  "branch": "codex/wp02-author-approved-run",
+  "captured_utc": "2026-10-08T09:20:54.169447+00:00",
+  "snapshot": "main",
+  "scope": "read-only; reports only; no real provider"
+}

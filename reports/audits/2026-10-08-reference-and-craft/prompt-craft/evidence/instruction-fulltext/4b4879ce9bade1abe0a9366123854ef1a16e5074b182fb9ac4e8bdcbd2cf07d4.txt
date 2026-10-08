@@ -1,0 +1,20 @@
+{
+  "$id": "novel-forge://schemas/chapter-generation-pack-output/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "final_release_gate_report_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "release_package_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "release_package_asset_version_id",
+    "final_release_gate_report_asset_version_id"
+  ],
+  "type": "object"
+}

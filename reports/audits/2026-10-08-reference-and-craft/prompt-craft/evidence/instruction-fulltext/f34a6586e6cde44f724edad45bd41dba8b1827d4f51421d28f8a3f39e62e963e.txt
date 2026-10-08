@@ -1,0 +1,7 @@
+## Shared rules
+
+Use author intent, relevant character and world state, accepted events and due obligations. Separate proposed future action from accepted facts. Select commercial and craft techniques for the chapter's function, rather than requiring a reward, reversal or cost in every scene. Return the declared JSON result; the host owns version binding, validation and activation.
+
+## Memo
+
+Turn the frozen mission into useful scene and voice guidance. Identify the immediate dramatic question, character motive, useful detail and a plausible transition where they help this chapter. Refer to Plan facts without copying the entire Plan or grading the future prose. Suggest only techniques supported by this scene's purpose; leave an optional direction absent when it adds no value. Retrieval queries should seek missing relevant story facts, not prior quality scores or development records.

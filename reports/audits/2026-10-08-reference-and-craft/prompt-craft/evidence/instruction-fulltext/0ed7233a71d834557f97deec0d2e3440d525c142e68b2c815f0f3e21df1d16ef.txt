@@ -1,0 +1,7 @@
+{
+  "$id": "novel-forge://schemas/longform-prose-review-pack-output:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "title": "Governed long-form Pack output envelope",
+  "type": "object"
+}

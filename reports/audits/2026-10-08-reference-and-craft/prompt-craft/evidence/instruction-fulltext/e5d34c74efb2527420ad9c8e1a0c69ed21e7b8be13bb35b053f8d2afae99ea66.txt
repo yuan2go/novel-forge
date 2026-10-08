@@ -1,0 +1,86 @@
+{
+  "$id": "novel-forge://schemas/operation-saga-attempt-state/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "attempt_status": {
+      "enum": [
+        "CREATED",
+        "QUEUED",
+        "LEASED",
+        "RUNNING",
+        "CHECKPOINTED",
+        "RESULT_SUBMITTED",
+        "SUCCEEDED",
+        "FAILED_RETRYABLE",
+        "FAILED_FINAL",
+        "TIMED_OUT",
+        "LEASE_LOST",
+        "SUPERSEDED",
+        "LATE_RESULT_REJECTED",
+        "CANCELLED"
+      ]
+    },
+    "fencing_token": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "operation_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "operation_status": {
+      "enum": [
+        "ADMITTED",
+        "WAITING_APPROVAL",
+        "READY",
+        "EXECUTING",
+        "WAITING_CHILDREN",
+        "WAITING_EXTERNAL_RESULT",
+        "WAITING_GATE",
+        "FAILED_RETRYABLE",
+        "FAILED_FINAL",
+        "CANCELLATION_REQUESTED",
+        "RECONCILIATION_REQUIRED",
+        "COMPENSATION_REQUIRED",
+        "COMPENSATING",
+        "COMPENSATED",
+        "COMPENSATION_FAILED",
+        "SUCCEEDED",
+        "CANCELLED",
+        "DEAD_LETTER"
+      ]
+    },
+    "saga_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "saga_status": {
+      "enum": [
+        "RUNNING",
+        "FORWARD_RECOVERY",
+        "WAITING_GATE",
+        "COMPENSATING",
+        "SUCCEEDED",
+        "COMPENSATED",
+        "COMPENSATION_FAILED",
+        "MANUAL_INTERVENTION",
+        "CANCELLED"
+      ]
+    }
+  },
+  "required": [
+    "operation_id",
+    "operation_status",
+    "saga_id",
+    "saga_status",
+    "attempt_id",
+    "attempt_status",
+    "fencing_token"
+  ],
+  "type": "object"
+}

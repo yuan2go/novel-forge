@@ -1,0 +1,27 @@
+{
+  "$id": "novel-forge://schemas/chapter-plan-version/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "FROZEN",
+        "ACTIVE"
+      ]
+    }
+  },
+  "required": [
+    "asset_version_id",
+    "content_hash",
+    "status"
+  ],
+  "type": "object"
+}

@@ -1,0 +1,25 @@
+{
+  "$id": "novel-forge://schemas/execution-output/revision-chapter-revise/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "output_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "output_content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "receipt_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "output_asset_version_id",
+    "output_content_hash",
+    "receipt_id"
+  ],
+  "type": "object"
+}

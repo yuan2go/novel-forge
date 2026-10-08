@@ -1,0 +1,33 @@
+{
+  "$id": "novel-forge://schemas/context-bundle/v2",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "asset_version_refs": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "project_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_isolation": {
+      "const": "ABSTRACT_ASSETS_ONLY"
+    },
+    "token_count": {
+      "maximum": 512000,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "project_id",
+    "asset_version_refs",
+    "source_isolation",
+    "token_count"
+  ],
+  "type": "object"
+}

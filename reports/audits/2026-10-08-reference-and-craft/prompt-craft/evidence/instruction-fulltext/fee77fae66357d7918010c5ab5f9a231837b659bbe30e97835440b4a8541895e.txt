@@ -1,0 +1,24 @@
+{
+  "$id": "novel-forge://schemas/chapter-context-input/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "chapter_plan_asset_version_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "project_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_isolation_policy_ref": {
+      "const": "source:chapter-generation-pack:v1"
+    }
+  },
+  "required": [
+    "project_id",
+    "chapter_plan_asset_version_id",
+    "source_isolation_policy_ref"
+  ],
+  "type": "object"
+}

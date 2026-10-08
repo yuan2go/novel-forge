@@ -1,0 +1,33 @@
+{
+  "$id": "novel-forge://schemas/chapter-review-output/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {
+      "enum": [
+        "PASS",
+        "REVISE",
+        "BLOCK"
+      ]
+    },
+    "evidence_refs": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "issues": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "decision",
+    "issues",
+    "evidence_refs"
+  ],
+  "type": "object"
+}

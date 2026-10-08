@@ -1,0 +1,33 @@
+{
+  "$id": "novel-forge://schemas/execution-input/retrieval-embed/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidate_projection_cutoff": {
+      "type": "string"
+    },
+    "purpose": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "query_plan_fingerprint": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "texts": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "texts",
+    "purpose",
+    "query_plan_fingerprint"
+  ],
+  "type": "object"
+}

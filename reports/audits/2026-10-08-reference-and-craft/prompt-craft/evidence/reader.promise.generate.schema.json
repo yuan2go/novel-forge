@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "prohibited_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "reader_promise": {
+      "type": "string",
+      "minLength": 1
+    },
+    "setup_progress_payoff": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "promise": {
+            "type": "string",
+            "minLength": 1
+          },
+          "setup": {
+            "type": "string",
+            "minLength": 1
+          },
+          "progress": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payoff": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "promise",
+          "setup",
+          "progress",
+          "payoff"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 16
+    },
+    "disappointment_risks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "maxItems": 24
+    },
+    "applicability": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_path": {
+            "type": "string",
+            "pattern": "^(?:\\$(?:\\.[A-Za-z_][A-Za-z0-9_]*|\\[[0-9]+\\])+|/(?:[^~/]|~[01])*(?:/(?:[^~/]|~[01])*)*)$",
+            "description": "Exact JSONPath or RFC 6901 JSON Pointer of a nullable field, such as $.core_fear or $.characters[0].fear. Only nullable schema fields may be declared."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPLICABLE",
+              "NOT_APPLICABLE",
+              "PROHIBITED",
+              "UNDETERMINED"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "field_path",
+          "status",
+          "rationale"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "objective",
+    "constraints",
+    "prohibited_outcomes",
+    "reader_promise",
+    "setup_progress_payoff",
+    "disappointment_risks",
+    "applicability"
+  ],
+  "additionalProperties": false
+}
