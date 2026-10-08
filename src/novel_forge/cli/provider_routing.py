@@ -90,6 +90,7 @@ def add_provider_routing_parser(subparsers: Any) -> None:
     parser.add_argument("--workspace-id", default="")
     parser.add_argument("--idempotency-key", default="")
     parser.add_argument("--campaign-id", default="")
+    parser.add_argument("--expected-policy-hash", default=None)
 
 
 def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
@@ -120,6 +121,7 @@ def run_provider_routing_command(settings: Any, args: Any) -> dict[str, Any]:
             application_build_id=build_id,
             commit_sha=sha,
             principal=principal,
+            expected_policy_hash=getattr(args, "expected_policy_hash", None),
         )
     principal.require("content.authority.query", args.project_id)
     from novel_forge.modules.authority_handler_runtime.routing_feedback import (

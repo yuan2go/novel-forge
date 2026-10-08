@@ -25,3 +25,16 @@ def test_coordinated_template_uses_a_new_policy_definition_identity():
         application_build_id="test", commit_sha="a" * 40)
     assert definition["definition_version"] == "2.0.0"
     assert definition["command_schema_version"].endswith(".v10")
+
+
+def test_supervised_source_grant_can_coexist_with_author_book_template():
+    template = {"execution_templates": [{"version": "creative-execution-template.v12"}]}
+    ordinary = owned_policy_definition(owner="PROVIDER_ROUTING", content=template,
+        application_build_id="test", commit_sha="a" * 40)
+    combined = owned_policy_definition(owner="PROVIDER_ROUTING",
+        content={**template, "author_supervised_authorizations": []},
+        application_build_id="test", commit_sha="a" * 40)
+    assert ordinary["definition_version"] == "2.1.0"
+    assert combined["definition_version"] == "2.2.0"
+    assert "expected_policy_hash" in combined["command_schema"]["properties"]
+    assert "author_supervised_authorizations" in combined["command_schema"]["properties"]["policy"]["properties"]
