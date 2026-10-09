@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261010_0196_stopped_cli_timeout_isolation",
+  "migration_head": "20261010_0197_authorized_planning_capacity",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9780,6 +9780,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261010_0196_stopped_cli_timeout_isolation.py",
           "id": "20261010_0196_stopped_cli_timeout_isolation",
           "locator": "MIGRATION_ID = \"20261010_0196_stopped_cli_timeout_isolation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261010_0197_authorized_planning_capacity.py",
+          "id": "20261010_0197_authorized_planning_capacity",
+          "locator": "MIGRATION_ID = \"20261010_0197_authorized_planning_capacity\""
         }
       ],
       "external_effects": {
@@ -10066,7 +10071,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:b1654352b50572eda143158bf508d007b829dc07de8a9075322ccc4c5e8236cc"
+    "implementation_tree_sha": "sha256:231af6a993402a1c059bf4a067745454bff95d779546358ba2dea7809eaff70a"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

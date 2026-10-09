@@ -198,6 +198,7 @@ from . import (
     v20261009_0194_multi_model_generation_isolation,
     v20261009_0195_prose_review_generation_isolation,
     v20261010_0196_stopped_cli_timeout_isolation,
+    v20261010_0197_authorized_planning_capacity,
 )
 
 VERSION_MODULES = [
@@ -398,6 +399,7 @@ VERSION_MODULES = [
     v20261009_0194_multi_model_generation_isolation,
     v20261009_0195_prose_review_generation_isolation,
     v20261010_0196_stopped_cli_timeout_isolation,
+    v20261010_0197_authorized_planning_capacity,
 ]
 
 __all__ = ["VERSION_MODULES"]

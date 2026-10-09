@@ -3214,6 +3214,8 @@ the frozen authorized candidates; an explicitly template-unauthorized catalog mo
 is retained as rejected and cannot veto or receive that continuation. At least one
 authorized candidate must prove only capacity and its coupled token-reservation
 failure; other authorization, quality or budget-only denials remain closed.
+Forward migration 0197 binds the database continuation guard to this same authorized
+candidate rule; published migration bodies remain unchanged.
 Historical template v1 keeps
 its original rendering. Chapter transitions describe one entry-to-exit change per
 (state_kind, entity_key); Scene contracts retain intermediate changes.
