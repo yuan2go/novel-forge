@@ -73,3 +73,18 @@ def test_receipt_draft_successor_preserves_current_contract_and_bounded_retry():
     assert repair["policy"]["scene_core_projection"] == "continuous-scene.v1"
     assert repair["policy"]["scene_information_flow"] == "actor-source-scope.v1"
     assert repair["policy"]["scene_evidence_union_revalidation"] == "scene-evidence-union.v1"
+
+
+def test_runtime_codec_selects_registered_receipt_draft_version(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.chapter_authority import runtime
+    uow = MagicMock()
+    uow.__enter__.return_value.cursor.fetchone.return_value = ("3.10.1",)
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda _: uow)
+    command = SimpleNamespace(attempt_id="attempt", project_id="project")
+    registry = SimpleNamespace(model_effects_required=True)
+    assert runtime._handler_definition_version("unused", command=command, node=ChapterNode.DRAFT,
+        registry=registry, author_input=False) == "3.10.1"
+    assert runtime._handler_definition_version("unused", command=command, node=ChapterNode.CANON_EXTRACTION,
+        registry=registry, author_input=False) == "3.9.7"
