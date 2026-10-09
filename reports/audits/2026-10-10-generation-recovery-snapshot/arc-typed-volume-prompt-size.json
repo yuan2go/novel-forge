@@ -1,0 +1,16 @@
+{
+  "operation_id": "4c0d97c0-299f-4480-8f93-00ca34185362",
+  "component_bytes": {
+    "system_instruction": 9358,
+    "governed_skill": 1017,
+    "provider_knowledge": 559,
+    "provider_task_view": 48775,
+    "provider_context_view": 146201,
+    "tool_policy": 258,
+    "stage_semantic_contract": 1258,
+    "output_schema": 11667,
+    "fully_rendered_prompt": 219899
+  },
+  "input_bytes": 219899,
+  "context_task_budget": 226128
+}

@@ -1,0 +1,252 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+_ test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run _
+
+    def test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run():
+>       helper,fixture,previous,principal,scope,text,saved,adopted = unaccepted_author_fixture()
+                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:34: in unaccepted_author_fixture
+    helper._run_child(fixture, delegated['chapter_root_operation_id'])
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='bad1a4f9-e35c-41e5-9665-3ab211ad5dfd', project_id='book-authority-control-b608b03e... port=55691 options='-c default_transaction_read_only=off'", definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+>           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError
+_____ test_author_replacement_rejects_stale_book_and_unsettled_predecessor _____
+
+    def test_author_replacement_rejects_stale_book_and_unsettled_predecessor():
+>       helper,fixture,previous,principal,scope,text,saved,adopted=unaccepted_author_fixture(finish=False)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:39: in unaccepted_author_fixture
+    tick = scheduler.tick(project_id=fixture['project_id'], root_operation_id=delegated['chapter_root_operation_id'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='f89c24e5-cf2d-4d3c-9015-6bf87ca76ce8', project_id='book-authority-control-7a5d6d3c... port=55691 options='-c default_transaction_read_only=off'", definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+>           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError
+_________ test_author_replacement_cannot_resume_paused_or_aborted_book _________
+
+    def test_author_replacement_cannot_resume_paused_or_aborted_book():
+>       helper,fixture,previous,principal,scope,text,saved,adopted=unaccepted_author_fixture(finish=False)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:39: in unaccepted_author_fixture
+    tick = scheduler.tick(project_id=fixture['project_id'], root_operation_id=delegated['chapter_root_operation_id'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='e8a047cb-f6d9-4bbb-bc4d-81579d859556', project_id='book-authority-control-b637c74a... port=55691 options='-c default_transaction_read_only=off'", definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+>           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError
+_____ test_author_replacement_rebinds_native_group_before_group_acceptance _____
+
+    def test_author_replacement_rebinds_native_group_before_group_acceptance():
+>       helper,fixture,previous,principal,scope,text,saved,adopted=unaccepted_author_fixture(group=True)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:34: in unaccepted_author_fixture
+    helper._run_child(fixture, delegated['chapter_root_operation_id'])
+tests/integration/test_chapter_group_authority_postgres.py:843: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='6fc2a8a2-5f5c-4a94-b182-a7abc9989294', project_id='chapter-group-f6a0ae5d-0c72-428... port=55691 options='-c default_transaction_read_only=off'", definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+>           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError
+____ test_author_replacement_retains_candidate_while_old_budget_is_unknown _____
+
+    def test_author_replacement_retains_candidate_while_old_budget_is_unknown():
+>       helper, fixture, previous, principal, scope, text, saved, adopted = unaccepted_author_fixture()
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:34: in unaccepted_author_fixture
+    helper._run_child(fixture, delegated['chapter_root_operation_id'])
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1601: in _run_child
+    .tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:326: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1831: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:235: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:50: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:151: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:1526: in execute
+    source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+request = ChapterHandlerRequest(operation_id='5294ffc9-fa1c-4f09-a91f-c5ba30b1765f', project_id='book-authority-control-f94f3677... port=55691 options='-c default_transaction_read_only=off'", definition_version='3.10.0', source_definition_version='')
+asset_reader = None, verify_content_hash = False
+
+    def resolve_accepted_realization_sources(request, *, asset_reader=None, verify_content_hash=False) -> dict[str, Any]:
+        from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+        from novel_forge.modules.narrative_state.reducers import compact_current_state_facts
+        from novel_forge.modules.narrative_state.information import disclosed_fact_projection
+    
+        context = request.require_input("context_bundle").content
+        boundary = context.get("context_manifest", {}).get("accepted_boundary", {})
+        version = boundary.get("story_state_snapshot_version")
+        rows = context.get("production_input_manifest", {}).get("selected_asset_versions", [])
+        matches = [r for r in rows if r.get("asset_version_id") == version and r.get("asset_type") == "story_state_snapshot"]
+        permissions = [r for r in context.get("context_manifest", {}).get("selected_inputs", []) if r.get("asset_version_id") == version]
+        if not version or len(matches) != 1 or len(permissions) != 1 or permissions[0].get("allowed_use") != "generation":
+>           raise KernelError("REALIZATION_SOURCE_BINDING_REQUIRED", "Exact accepted State must be selected by frozen Context")
+E           novel_forge.modules.command_kernel.errors.KernelError: REALIZATION_SOURCE_BINDING_REQUIRED: Exact accepted State must be selected by frozen Context
+
+src/novel_forge/modules/chapter_authority/realization_composition.py:565: KernelError
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_rejects_stale_book_and_unsettled_predecessor
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_cannot_resume_paused_or_aborted_book
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_rebinds_native_group_before_group_acceptance
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_retains_candidate_while_old_budget_is_unknown
+5 failed in 4.33s

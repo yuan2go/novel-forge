@@ -1,0 +1,51 @@
+{
+  "work_package": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02",
+  "project_id": "qid-learning-prose-01",
+  "book_id": "book:qinglan-wendao-20261008",
+  "chapter": 1,
+  "source_asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+  "source_content_hash": "sha256:19ec1aaf259ad24aba278284cc619601a3d399f05bcdb7e04dfa72bfda409d8c",
+  "source_text_hash": "sha256:2b91717fc80afc360c79bc0d6d39b6af99293a0a931b65b932de101f3ce5fa75",
+  "review_kind": "ASSISTANT_EDITORIAL_REVIEW",
+  "provider_id": "codex-agent",
+  "model_id": "gpt-6",
+  "prompt_version": "wp02-prose-literary-revision.v1",
+  "skill_version": "prose-generation+quality-review",
+  "usage_status": "API_MEASUREMENT_UNAVAILABLE",
+  "findings": [
+    {
+      "code": "REPETITIVE_EXPLANATION",
+      "severity": "REVISION_REQUIRED",
+      "evidence": "多段旁白重复解释希望与已获答复的区分，压过人物当下的急切与受挫。",
+      "action": "改为动作、停顿和贴近沈砚的念头；压缩重复说明。"
+    },
+    {
+      "code": "DIALOGUE_REGISTER_MECHANICAL",
+      "severity": "REVISION_REQUIRED",
+      "evidence": "“本人能回答”“五分钟的澄清”“两处未知”等说法使对话偏向沟通训练。",
+      "action": "保持原有询问、拒绝和帮助范围，改为自然口语。"
+    },
+    {
+      "code": "LIMITED_PLOT_ADVANCEMENT",
+      "severity": "UNRESOLVED_PLAN_SCOPE",
+      "evidence": "整章只整理提问，未取得入门条件或可实行的修炼机会。",
+      "action": "保留为规划层意见，不凭文字修订虚构新事件或条件。"
+    }
+  ],
+  "revision_changes": 20,
+  "revised_han_characters": 2667,
+  "revised_text_sha256": "9744c0a7ed8f8e9f7a8802bd88ff6e43661228355e13eb42367a77ac1e0e1004",
+  "preserved": [
+    "沈砚十六岁、山村出身、到青岚宗入口",
+    "程观只帮助五分钟并拒绝代问全部",
+    "沈砚独自整理后主动求助许庭",
+    "许庭只帮助十分钟、随后去修炼",
+    "三场事件次序及约三分钟、约两分钟的已有时间事实",
+    "入门机会和基础学习两项均待亲自核实，无新增入门条件",
+    "作者选择及正式接纳未记录"
+  ],
+  "literary_quality": "REVISED_CANDIDATE_NOT_AUTHOR_ACCEPTED",
+  "formal_semantic_review": "NOT_RUN",
+  "author_decision": "NOT_RECORDED",
+  "formal_acceptance": "NOT_RECORDED"
+}

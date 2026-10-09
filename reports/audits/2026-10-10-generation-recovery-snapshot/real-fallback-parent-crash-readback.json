@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "clone_database": "nf_wp02_real_fault_generation_test",
+  "fault": "real_primary_local_process_termination_then_fallback_parent_crash",
+  "primary_failure_remote_outcome": "UNKNOWN",
+  "original_attempt": [
+    "UNKNOWN",
+    "HELD_UNKNOWN",
+    "REVOKED",
+    "REVOKED"
+  ],
+  "native_successor_operation_id": "6a44f5da-5f92-4d1f-ae8f-cc8f5b30ded4",
+  "fallback_model": "gpt-6-sol",
+  "fallback_effect_status": "SUCCEEDED",
+  "accounting_status": "SETTLED",
+  "usage_basis": null,
+  "measured_tokens": 69455,
+  "first_saved_result_recovery": true,
+  "second_recovery": false,
+  "candidate_revalidation": false,
+  "candidate_asset_version_id": null,
+  "no_redispatch_on_readback": true,
+  "original_book_delivery_claimed": false,
+  "source": "working_tree_engineering_test"
+}

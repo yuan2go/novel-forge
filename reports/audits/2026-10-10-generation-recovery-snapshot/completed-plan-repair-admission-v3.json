@@ -1,0 +1,553 @@
+{
+  "status": "PASS",
+  "source_operation_id": "f5b2aa69-0c3a-4a46-b74b-96e139fc03d8",
+  "semantic_repair_operation_id": "0fa43f35-1691-4661-a00f-5231e801333b",
+  "launch_stages": [
+    "chapter_plan.generate"
+  ],
+  "provider_calls": 0,
+  "admission": {
+    "schema_version": "novelos.provider_request_admission.v1",
+    "provider_admission": {
+      "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+      "status": "ADMITTED",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "envelope_hash": "sha256:82008430c289bffc7a1ab860d54d1c71db3dd6a36d3b54691bfcf23ece65eaf9",
+      "total_reserved": 244673,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 32000,
+        "provider_input": 212401,
+        "request_framing": 16
+      },
+      "applicable_limit": 258400,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "gpt-6.1-sol",
+        "provider": "codex-cli",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+        "output_reserve": 32000,
+        "route_identity": "chapter_plan.generate:codex-cli:gpt-6.1-sol:aaf5c84f4f49d6986b69c5ff71de8d1b1ef41166:sha256:44c48b57d23477cb81143029e3f3e620fcbc5cfe4cd3838fe168aa84fcdcac20",
+        "contract_version": "provider-token-accounting-v3",
+        "framing_overhead": 16,
+        "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        "model_context_limit": 258400,
+        "execution_token_limit": 258400,
+        "serialization_contract": "codex-cli-application-stdin-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 129655,
+      "input_component_hashes": {
+        "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+        "output_schema": "sha256:8a3c7a4b2dd2c9a2f849cc0303e2f8df781c8b78dc49b386c874f82103161b52",
+        "governed_skill": "sha256:f53b98a60e62f01e630bafd21de4dbef0b9cbc051a8bbd5b43520820bd4871af",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:5127ce0d567f4754608d1bf0bfc55c42e50e34b8c09589089e7b0165449ed9df",
+        "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+        "fully_rendered_prompt": "sha256:5971a495ba2b88b36c6ca1fd4cb4fd4cda043479c71fd799e2cf19a2ade6dbdc",
+        "provider_context_view": "sha256:8563b0b141fe8afa1b27f0032167a640503566b11d43104c676be758444b425e",
+        "stage_semantic_contract": "sha256:88931314345062ac332c7cc27232d76674c2473bf59f58b446f80aabed474a9b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "prompt_materialization": {
+      "skill": {
+        "ref": "chapter-outline",
+        "version": "chapter-outline-qualification-v2",
+        "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "provider_view": {
+        "component_hashes": {
+          "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+          "output_schema": "sha256:8a3c7a4b2dd2c9a2f849cc0303e2f8df781c8b78dc49b386c874f82103161b52",
+          "governed_skill": "sha256:f53b98a60e62f01e630bafd21de4dbef0b9cbc051a8bbd5b43520820bd4871af",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:5127ce0d567f4754608d1bf0bfc55c42e50e34b8c09589089e7b0165449ed9df",
+          "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+          "fully_rendered_prompt": "sha256:5971a495ba2b88b36c6ca1fd4cb4fd4cda043479c71fd799e2cf19a2ade6dbdc",
+          "provider_context_view": "sha256:8563b0b141fe8afa1b27f0032167a640503566b11d43104c676be758444b425e",
+          "stage_semantic_contract": "sha256:88931314345062ac332c7cc27232d76674c2473bf59f58b446f80aabed474a9b"
+        },
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "component_characters": {
+          "tool_policy": 258,
+          "output_schema": 29899,
+          "governed_skill": 874,
+          "provider_knowledge": 559,
+          "provider_task_view": 30170,
+          "system_instruction": 9358,
+          "fully_rendered_prompt": 148325,
+          "provider_context_view": 74314,
+          "stage_semantic_contract": 2072
+        },
+        "representation_policy": "authority-projection-task-provider-v1",
+        "selection_explanation": {
+          "policy": "minimum-sufficient-planning-repair-context-v1",
+          "loss_receipt": {
+            "audit_hash": "sha256:77a1d017feccf212647fcbacb59dd02eb2d38cf3d9b6197e6108963397f9a121",
+            "json_pointer": "/context_manifest/projection_audit",
+            "loss_record_count": 149,
+            "source_input_hash": "sha256:0d9559e028cbfd155233f58d8da1f36f9b28c301d54a44945ec188f1538b1fcb"
+          },
+          "field_classes": {
+            "invariants": "HARD_CONSTRAINT",
+            "constraints": "HARD_CONSTRAINT",
+            "inspiration": "OPTIONAL_GUIDANCE",
+            "required_facts": "REQUIRED_FACT",
+            "due_obligations": "DUE_OBLIGATION",
+            "forbidden_events": "PROHIBITION",
+            "hard_constraints": "HARD_CONSTRAINT",
+            "required_payoffs": "DUE_OBLIGATION",
+            "soft_suggestions": "OPTIONAL_GUIDANCE",
+            "forbidden_payoffs": "PROHIBITION",
+            "optional_guidance": "OPTIONAL_GUIDANCE",
+            "required_fact_ids": "REQUIRED_FACT",
+            "story_constraints": "HARD_CONSTRAINT",
+            "style_suggestions": "OPTIONAL_GUIDANCE",
+            "prohibited_outcomes": "PROHIBITION",
+            "knowledge_boundaries": "CHARACTER_KNOWLEDGE_SCOPE",
+            "knowledge_translations": "KNOWLEDGE_TRANSLATION",
+            "character_participation": "CHARACTER_KNOWLEDGE_SCOPE",
+            "required_obligation_ids": "DUE_OBLIGATION",
+            "unresolved_obligation_ids": "DUE_OBLIGATION"
+          },
+          "compiler_version": "scope-preserving-planning-context-v2",
+          "maximum_segments": 24,
+          "token_accounting": "utf8-byte-upper-bound.v1",
+          "omitted_fact_count": 0,
+          "omitted_item_count": 376,
+          "task_target_tokens": 226128,
+          "included_fact_count": 0,
+          "omitted_segment_count": 0,
+          "included_segment_count": 11,
+          "capacity_policy_version": "context-policy:chapter-generation-pack:v2",
+          "role_reference_contract": "planning-input-role-references.v1",
+          "maximum_serialized_bytes": 8388608,
+          "maximum_facts_per_segment": null,
+          "truncated_character_count": 0
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v4",
+        "context_projection_ratio": 0.333701,
+        "component_estimated_tokens": {
+          "tool_policy": 86,
+          "output_schema": 11501,
+          "governed_skill": 292,
+          "provider_knowledge": 187,
+          "provider_task_view": 11387,
+          "system_instruction": 3120,
+          "fully_rendered_prompt": 70801,
+          "provider_context_view": 43266,
+          "stage_semantic_contract": 691
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_utf8_byte_upper_bounds": {
+          "tool_policy": 258,
+          "output_schema": 34503,
+          "governed_skill": 874,
+          "provider_knowledge": 559,
+          "provider_task_view": 34160,
+          "system_instruction": 9358,
+          "fully_rendered_prompt": 212401,
+          "provider_context_view": 129796,
+          "stage_semantic_contract": 2072
+        },
+        "provider_context_estimated_tokens": 43266,
+        "authority_context_estimated_tokens": 129655,
+        "rendered_prompt_to_semantic_input_ratio": 1.291047,
+        "provider_admission_uses_component_estimates": false
+      },
+      "prompt_template": {
+        "ref": "prompt-template:story-planning-pack",
+        "version": "v1",
+        "content_hash": "sha256:7208b0a24b619cbb7046679f8ee58528d6d80c34e82cfde201cfc9919b224d00"
+      },
+      "method_selection": {
+        "skill_sections": [
+          "Shared rules",
+          "Chapter planning"
+        ],
+        "system_sections": [
+          "Shared rules",
+          "Foundation",
+          "Realization references",
+          "Book plan",
+          "Volume plan",
+          "Arc plan",
+          "Chapter group",
+          "Chapter plan",
+          "World proposals",
+          "World evaluation",
+          "Actor intention",
+          "Chapter serialization realization",
+          "Host source selectors and scheduled Arc scope"
+        ],
+        "contract_version": "production-stage-methods.v1"
+      },
+      "output_schema_ref": "schema:planning-provider-output:chapter:v5:work-v4:host-selectors-v2:operational-commitments-v1",
+      "output_schema_hash": "sha256:8a3c7a4b2dd2c9a2f849cc0303e2f8df781c8b78dc49b386c874f82103161b52",
+      "system_instruction": {
+        "ref": "prompt-system:story-planning-pack",
+        "version": "v11",
+        "content_hash": "sha256:833cc23f316533f7f117a64d704ce919725a2fa4de67f469089b623a629eca5d"
+      },
+      "materialization_hash": "sha256:dc0a023645e117fc08f98061ec230bd56affb90a756745b60cc4c4dccf62e65b",
+      "rendered_prompt_bytes": 212401,
+      "reusable_prefix_bytes": 10312,
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "context_asset_version_ids": [
+        "cb5f6386-4f40-46e1-bcc3-41892c151b6a"
+      ],
+      "embedding_output_contract": null,
+      "fully_rendered_prompt_hash": "sha256:5971a495ba2b88b36c6ca1fd4cb4fd4cda043479c71fd799e2cf19a2ade6dbdc",
+      "required_reader_facing_language": "zh-CN",
+      "rendered_prompt_estimated_tokens": 70801,
+      "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1"
+    },
+    "effective_context_policy": {
+      "receipt_hash": "sha256:51f78d0d0b169b33627ac0ea7fcf4bb4adab73f0a936cddbcd2b329fff485b7d",
+      "input_policies": [
+        {
+          "limits": {
+            "total": 512000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "capability-pack-context-policy-v1",
+            "policy_id": "context-policy:chapter-generation-pack:v2",
+            "content_hash": "sha256:72fd78ee57d7a72f287e5589a0add59765d1743c0d31cde7bd5d5e3fb808d0d0",
+            "snapshot_ref": "context-policy:chapter-generation-pack:v2"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [],
+          "denied_physical_types": [
+            "raw_source_chunk",
+            "raw_source_document"
+          ],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [
+            "book_design",
+            "canon_snapshot",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "chapter_plan_version",
+            "context_bundle",
+            "knowledge_pack",
+            "planning_generation_input_snapshot",
+            "story_state"
+          ],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 226128,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "caller-context-limit-v1",
+            "policy_id": "planning-caller-context-limit",
+            "content_hash": "sha256:2efada5cc3d411d936bc0b580dc8e390c000fe2889d9e5d9909d55026f62f22c",
+            "snapshot_ref": "command:planning-context-token-budget"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_realization_reference_contract",
+            "planning_repair_context",
+            "planning_segment:arc_plans",
+            "planning_segment:book_plan",
+            "planning_segment:canon_snapshot",
+            "planning_segment:chapter_function_matrix_row",
+            "planning_segment:chapter_group_plan",
+            "planning_segment:previous_chapter_outcome",
+            "planning_segment:quality_trend",
+            "planning_segment:reader_state",
+            "planning_segment:related_arc:1",
+            "planning_segment:story_state",
+            "planning_segment:volume_plan"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_realization_reference_contract",
+            "planning_repair_context",
+            "planning_segment:arc_plans",
+            "planning_segment:book_plan",
+            "planning_segment:canon_snapshot",
+            "planning_segment:chapter_function_matrix_row",
+            "planning_segment:chapter_group_plan",
+            "planning_segment:previous_chapter_outcome",
+            "planning_segment:quality_trend",
+            "planning_segment:reader_state",
+            "planning_segment:related_arc:1",
+            "planning_segment:story_state",
+            "planning_segment:volume_plan"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 226128,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "context-profile-v1",
+            "policy_id": "planning-context-profile",
+            "content_hash": "sha256:70b3b169a01e7969f313a4d51d5ddc1fab3524a99ff086dc1d3251fa28a61843",
+            "snapshot_ref": "planning-context-profile:v1"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_realization_reference_contract",
+            "planning_repair_context",
+            "planning_segment:arc_plans",
+            "planning_segment:book_plan",
+            "planning_segment:canon_snapshot",
+            "planning_segment:chapter_function_matrix_row",
+            "planning_segment:chapter_group_plan",
+            "planning_segment:previous_chapter_outcome",
+            "planning_segment:quality_trend",
+            "planning_segment:reader_state",
+            "planning_segment:related_arc:1",
+            "planning_segment:story_state",
+            "planning_segment:volume_plan"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_realization_reference_contract",
+            "planning_repair_context",
+            "planning_segment:arc_plans",
+            "planning_segment:book_plan",
+            "planning_segment:canon_snapshot",
+            "planning_segment:chapter_function_matrix_row",
+            "planning_segment:chapter_group_plan",
+            "planning_segment:previous_chapter_outcome",
+            "planning_segment:quality_trend",
+            "planning_segment:reader_state",
+            "planning_segment:related_arc:1",
+            "planning_segment:story_state",
+            "planning_segment:volume_plan"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 226128,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "planning-context-contract-v1",
+            "policy_id": "planning-typed-stage:chapter_plan.generate",
+            "content_hash": "sha256:db3eeb1efaa8e5f85944779a626be786e042eb3c5c6308530636b50b6122e3f7",
+            "snapshot_ref": "planning-context-contract:chapter_plan.generate"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "planning_context_envelope",
+            "planning_realization_reference_contract",
+            "planning_repair_context",
+            "planning_segment:arc_plans",
+            "planning_segment:book_plan",
+            "planning_segment:canon_snapshot",
+            "planning_segment:chapter_function_matrix_row",
+            "planning_segment:chapter_group_plan",
+            "planning_segment:previous_chapter_outcome",
+            "planning_segment:quality_trend",
+            "planning_segment:reader_state",
+            "planning_segment:related_arc:1",
+            "planning_segment:story_state",
+            "planning_segment:volume_plan"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [
+            "planning_context_envelope",
+            "planning_realization_reference_contract",
+            "planning_repair_context",
+            "planning_segment:arc_plans",
+            "planning_segment:book_plan",
+            "planning_segment:canon_snapshot",
+            "planning_segment:chapter_function_matrix_row",
+            "planning_segment:chapter_group_plan",
+            "planning_segment:previous_chapter_outcome",
+            "planning_segment:quality_trend",
+            "planning_segment:reader_state",
+            "planning_segment:related_arc:1",
+            "planning_segment:story_state",
+            "planning_segment:volume_plan"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 226128,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "provider-route-context-capability-v1",
+            "policy_id": "provider-route-context:chapter_plan.generate:codex-cli:gpt-6.1-sol:aaf5c84f4f49d6986b69c5ff71de8d1b1ef41166:sha256:44c48b57d23477cb81143029e3f3e620fcbc5cfe4cd3838fe168aa84fcdcac20",
+            "content_hash": "sha256:486f4161d43f37dc68fa2ad5810bc41c675daeb878c95c2477225234c5e2e32a",
+            "snapshot_ref": "provider-route:chapter_plan.generate:codex-cli:gpt-6.1-sol:aaf5c84f4f49d6986b69c5ff71de8d1b1ef41166:sha256:44c48b57d23477cb81143029e3f3e620fcbc5cfe4cd3838fe168aa84fcdcac20"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [],
+          "denied_physical_types": [],
+          "source_risk_threshold": 0,
+          "allowed_physical_types": [
+            "context_bundle"
+          ],
+          "permitted_source_modes": [
+            "generation"
+          ],
+          "required_logical_kinds": [],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        }
+      ],
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "effective_policy": {
+        "limits": {
+          "total": 226128,
+          "buckets": {},
+          "classes": {},
+          "sections": {},
+          "required_reservation": 0
+        },
+        "compiler_version": "effective-context-policy-compiler-v1",
+        "denied_logical_kinds": [],
+        "allowed_logical_kinds": [
+          "planning_context_envelope",
+          "planning_realization_reference_contract",
+          "planning_repair_context",
+          "planning_segment:arc_plans",
+          "planning_segment:book_plan",
+          "planning_segment:canon_snapshot",
+          "planning_segment:chapter_function_matrix_row",
+          "planning_segment:chapter_group_plan",
+          "planning_segment:previous_chapter_outcome",
+          "planning_segment:quality_trend",
+          "planning_segment:reader_state",
+          "planning_segment:related_arc:1",
+          "planning_segment:story_state",
+          "planning_segment:volume_plan"
+        ],
+        "denied_physical_types": [
+          "raw_source_chunk",
+          "raw_source_document"
+        ],
+        "source_risk_threshold": 0,
+        "allowed_physical_types": [
+          "context_bundle"
+        ],
+        "permitted_source_modes": [
+          "generation"
+        ],
+        "required_logical_kinds": [
+          "planning_context_envelope",
+          "planning_realization_reference_contract",
+          "planning_repair_context",
+          "planning_segment:arc_plans",
+          "planning_segment:book_plan",
+          "planning_segment:canon_snapshot",
+          "planning_segment:chapter_function_matrix_row",
+          "planning_segment:chapter_group_plan",
+          "planning_segment:previous_chapter_outcome",
+          "planning_segment:quality_trend",
+          "planning_segment:reader_state",
+          "planning_segment:related_arc:1",
+          "planning_segment:story_state",
+          "planning_segment:volume_plan"
+        ],
+        "maximum_raw_source_ratio": 0.0,
+        "permitted_truncation_strategies": [
+          "structured_elements-v1"
+        ]
+      },
+      "conflict_decision": "PASS"
+    },
+    "provider_request_identity": {
+      "model": "gpt-6.1-sol",
+      "protocol": "codex-cli-application-stdin-v1",
+      "provider": "codex-cli",
+      "input_text_hash": "sha256:5971a495ba2b88b36c6ca1fd4cb4fd4cda043479c71fd799e2cf19a2ade6dbdc",
+      "timeout_seconds": 570,
+      "max_output_tokens": 32000,
+      "pricing_policy_json": "{\"accounting_basis\": \"ACCOUNT_ENTITLEMENT\", \"currency\": \"UNKNOWN\", \"effective_from\": \"2026-10-07T00:00:00+00:00\", \"effective_until\": \"2026-10-10T00:00:00+00:00\", \"input_hit_per_million\": \"0\", \"input_miss_per_million\": \"0\", \"output_per_million\": \"0\", \"source\": \"user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request\", \"version\": \"sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021\"}",
+      "stable_idempotency_key": "0fa43f35-1691-4661-a00f-5231e801333b:planning.story_chapter.generate:planning-pep-v2"
+    },
+    "capability_materialization_content_hash": "sha256:2fc12882d4d8946a56fabe9ce4fbc767054b8809ad707f2f326dbfbb9929edef",
+    "capability_materialization_asset_version_id": "9213d7e3-b484-483f-a22c-340aea7fe2e7"
+  },
+  "original_inputs_unchanged": true,
+  "scope": "restored native ledger; controlled pre-launch trap; no real Provider"
+}

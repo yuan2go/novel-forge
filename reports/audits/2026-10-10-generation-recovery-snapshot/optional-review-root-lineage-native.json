@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "scope": "Read-only full original-ledger restore; native optional review root successor and later Chapter do not gate one another; overlap and unlinked risk stay blocked",
+  "independent_chapter_blockers": 0,
+  "independent_review_blockers": 0,
+  "overlapping_source_blockers": 1,
+  "unlinked_risk_blockers": 1,
+  "provider_calls": 0,
+  "production_mutations": 0
+}

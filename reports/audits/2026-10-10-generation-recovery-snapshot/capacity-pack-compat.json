@@ -1,0 +1,6 @@
+{
+  "contract_version": "version-only-pack-successor.v1",
+  "source_manifest_hash": "sha256:737e95bc210dcb8b6187a9bf8dd8e25d50917a573911228367fb8de51c159c2e",
+  "target_manifest_hash": "sha256:c3154a15a35bbd61c8b1f5234c9cc4e7c94e55367f105835b90cf1878aeee48b",
+  "retained_contract_hash": "sha256:f5bb5f3d4de6e32de7fc8cb9d970f8bfeb4ecfca9fc229e0465a4b77b17ac076"
+}

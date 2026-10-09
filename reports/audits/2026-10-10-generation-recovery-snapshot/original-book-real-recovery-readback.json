@@ -1,0 +1,306 @@
+{
+  "status": "PASS",
+  "read_only": true,
+  "provider_calls": 0,
+  "deployed_sha": "f39da2ade47bdd57da4b6efaa6c0ee9534113b92",
+  "query_source_sha": "e0e701b89b1333485fe2c3a353be65272a2453be",
+  "recoveries": [
+    {
+      "external_effect_id": "bce154bd-fd11-4bfc-9e2f-8c0297201221",
+      "source_operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+      "observed_failure": {
+        "phase": "RESPONSE_WAIT",
+        "scope": "ORIGINAL_LOGICAL_TASK",
+        "stage": "RESPONSE_WAIT",
+        "causes": [],
+        "identity": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+          "project_id": "qid-learning-prose-01",
+          "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+          "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+          "fencing_token": 1
+        },
+        "retryable": true,
+        "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+        "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+        "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+        "recovery_state": "REQUIRED",
+        "remote_outcome": "UNESTABLISHED",
+        "business_impact": "CURRENT_TASK_BLOCKED",
+        "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+        "contract_version": "provider-failure.v1",
+        "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+      },
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED",
+      "original_remote_outcome": "UNKNOWN",
+      "original_effect_status": "UNKNOWN",
+      "original_budget_status": "HELD_UNKNOWN",
+      "original_usage": "UNKNOWN",
+      "usage_basis": null,
+      "current_accounting": {
+        "usage": null,
+        "cost": null
+      },
+      "continuation_id": "followup-generation-successor:5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+      "successor_operation_id": null,
+      "successor_status": null,
+      "successor_failure": null,
+      "recovery_exhaustion": {
+        "scope": "ORIGINAL_LOGICAL_GENERATION",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02:chapter1-literary-review",
+        "error_code": "GENERATION_RECOVERY_EXHAUSTED",
+        "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+        "counter_source": "NATIVE_DISPATCH_LINEAGE",
+        "failure_attempts": 2,
+        "maximum_failure_attempts": 2
+      },
+      "recovery_action": "STOP_AT_CHECKPOINT",
+      "recovery_state": "EXHAUSTED"
+    },
+    {
+      "external_effect_id": "a66dae1f-5b73-4435-9de6-03cf40fb6e12",
+      "source_operation_id": "75fd9600-269c-4531-b9d3-4750233afb5e",
+      "observed_failure": {
+        "phase": "RESPONSE_WAIT",
+        "scope": "ORIGINAL_LOGICAL_TASK",
+        "stage": "RESPONSE_WAIT",
+        "causes": [],
+        "identity": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "attempt_id": "2667d302-95fe-43fa-bf76-cb27f454f2cd",
+          "project_id": "qid-learning-prose-01",
+          "execution_id": "chapter-execution:a66dae1f-5b73-4435-9de6-03cf40fb6e12",
+          "operation_id": "75fd9600-269c-4531-b9d3-4750233afb5e",
+          "fencing_token": 1
+        },
+        "retryable": true,
+        "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+        "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+        "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+        "recovery_state": "REQUIRED",
+        "remote_outcome": "UNESTABLISHED",
+        "business_impact": "CURRENT_TASK_BLOCKED",
+        "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+        "contract_version": "provider-failure.v1",
+        "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+      },
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED",
+      "original_remote_outcome": "UNKNOWN",
+      "original_effect_status": "UNKNOWN",
+      "original_budget_status": "HELD_UNKNOWN",
+      "original_usage": "UNKNOWN",
+      "usage_basis": null,
+      "current_accounting": {
+        "usage": null,
+        "cost": null
+      },
+      "continuation_id": "followup-generation-successor:75fd9600-269c-4531-b9d3-4750233afb5e",
+      "successor_operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+      "successor_status": "FAILED_FINAL",
+      "successor_failure": {
+        "failure": {
+          "phase": "RESPONSE_WAIT",
+          "scope": "ORIGINAL_LOGICAL_TASK",
+          "stage": "RESPONSE_WAIT",
+          "causes": [],
+          "identity": {
+            "book_id": "book:qinglan-wendao-20261008",
+            "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+            "project_id": "qid-learning-prose-01",
+            "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+            "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+            "fencing_token": 1
+          },
+          "retryable": true,
+          "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+          "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+          "recovery_state": "REQUIRED",
+          "remote_outcome": "UNESTABLISHED",
+          "business_impact": "CURRENT_TASK_BLOCKED",
+          "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+          "contract_version": "provider-failure.v1",
+          "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+        },
+        "error_code": "GENERATION_ATTEMPT_ISOLATED",
+        "remote_cancellation": "NOT_ESTABLISHED",
+        "local_execution_disposition": "RETIRED"
+      },
+      "recovery_exhaustion": {
+        "scope": "ORIGINAL_LOGICAL_GENERATION",
+        "actor_id": "author-first-native-operator",
+        "trace_id": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02:chapter1-literary-review",
+        "error_code": "GENERATION_RECOVERY_EXHAUSTED",
+        "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+        "counter_source": "NATIVE_DISPATCH_LINEAGE",
+        "failure_attempts": 2,
+        "maximum_failure_attempts": 2
+      },
+      "recovery_action": "STOP_AT_CHECKPOINT",
+      "recovery_state": "EXHAUSTED"
+    },
+    {
+      "external_effect_id": "a51784c2-c29f-4892-bb1a-e9e9511d7789",
+      "source_operation_id": "e091515f-8951-4847-981c-57301dc1e0ed",
+      "observed_failure": {
+        "phase": "RESPONSE_STREAM",
+        "scope": "ORIGINAL_LOGICAL_TASK",
+        "stage": "RESPONSE_STREAM",
+        "causes": [
+          {
+            "event": "error",
+            "message": "stream disconnected before completion: Transport error: network error: error decoding response body"
+          },
+          {
+            "event": "turn.failed",
+            "message": "stream disconnected before completion: Transport error: network error: error decoding response body"
+          }
+        ],
+        "identity": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "attempt_id": "2e584354-8660-4050-889d-4b6965d2b2ca",
+          "project_id": "qid-learning-prose-01",
+          "execution_id": "planning-execution:a51784c2-c29f-4892-bb1a-e9e9511d7789:2e584354-8660-4050-889d-4b6965d2b2ca",
+          "operation_id": "e091515f-8951-4847-981c-57301dc1e0ed",
+          "fencing_token": 1
+        },
+        "retryable": true,
+        "cause_code": "CODEX_RESPONSE_BODY_DECODE_FAILED",
+        "error_code": "PROVIDER_STREAM_INTERRUPTED",
+        "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+        "recovery_state": "REQUIRED",
+        "remote_outcome": "UNESTABLISHED",
+        "business_impact": "CURRENT_TASK_BLOCKED",
+        "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+        "contract_version": "provider-failure.v1",
+        "provider_error_code": "PROVIDER_STREAM_INTERRUPTED"
+      },
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED",
+      "original_remote_outcome": "UNKNOWN",
+      "original_effect_status": "UNKNOWN",
+      "original_budget_status": "HELD_UNKNOWN",
+      "original_usage": "UNKNOWN",
+      "usage_basis": null,
+      "current_accounting": {
+        "usage": null,
+        "cost": null
+      },
+      "continuation_id": "planning-runtime-continuation:e091515f-8951-4847-981c-57301dc1e0ed",
+      "successor_operation_id": "a94ca8c8-6ec0-4b7c-b7b7-3538450eb2a3",
+      "successor_status": "SUCCEEDED",
+      "successor_failure": null,
+      "recovery_exhaustion": null,
+      "recovery_action": "NATIVE_CONTINUATION",
+      "recovery_state": "SUCCESSOR_COMPLETED"
+    },
+    {
+      "external_effect_id": "9a78db0d-30d5-45e1-8181-4036b639d9d0",
+      "source_operation_id": "5f14e4ea-a8c5-4f89-8ff8-2cf4e71577f8",
+      "observed_failure": {
+        "phase": "RESPONSE_WAIT",
+        "scope": "ORIGINAL_LOGICAL_TASK",
+        "stage": "RESPONSE_WAIT",
+        "causes": [],
+        "identity": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "attempt_id": "83889d72-3b50-4e4f-8409-638ab15e24ea",
+          "project_id": "qid-learning-prose-01",
+          "execution_id": "chapter-execution:9a78db0d-30d5-45e1-8181-4036b639d9d0",
+          "operation_id": "5f14e4ea-a8c5-4f89-8ff8-2cf4e71577f8",
+          "fencing_token": 1
+        },
+        "retryable": true,
+        "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+        "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+        "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+        "recovery_state": "REQUIRED",
+        "remote_outcome": "UNESTABLISHED",
+        "business_impact": "CURRENT_TASK_BLOCKED",
+        "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+        "contract_version": "provider-failure.v1",
+        "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+      },
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED",
+      "original_remote_outcome": "UNKNOWN",
+      "original_effect_status": "UNKNOWN",
+      "original_budget_status": "HELD_UNKNOWN",
+      "original_usage": "UNKNOWN",
+      "usage_basis": null,
+      "current_accounting": {
+        "usage": null,
+        "cost": null
+      },
+      "continuation_id": "chapter-generation-successor:5f14e4ea-a8c5-4f89-8ff8-2cf4e71577f8",
+      "successor_operation_id": "bf1d1a39-b237-4a3c-8622-fa155e587290",
+      "successor_status": "SUCCEEDED",
+      "successor_failure": null,
+      "recovery_exhaustion": null,
+      "recovery_action": "NATIVE_CONTINUATION",
+      "recovery_state": "SUCCESSOR_COMPLETED"
+    },
+    {
+      "external_effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+      "source_operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+      "observed_failure": {
+        "phase": "RESPONSE_STREAM",
+        "scope": "ORIGINAL_LOGICAL_TASK",
+        "causes": [
+          {
+            "event": "error",
+            "message": "stream disconnected before completion: Transport error: network error: error decoding response body"
+          },
+          {
+            "event": "turn.failed",
+            "message": "stream disconnected before completion: Transport error: network error: error decoding response body"
+          }
+        ],
+        "identity": {
+          "book_id": "book:qinglan-wendao-20261008",
+          "attempt_id": "6192d1cd-06d9-4480-9684-95b7db23de1e",
+          "project_id": "qid-learning-prose-01",
+          "execution_id": "planning-execution:30421df5-8e89-46ab-8aff-ebb9cf3077c7:6192d1cd-06d9-4480-9684-95b7db23de1e",
+          "operation_id": "bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+          "fencing_token": 1
+        },
+        "retryable": true,
+        "error_code": "PROVIDER_STREAM_INTERRUPTED",
+        "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+        "recovery_state": "REQUIRED",
+        "remote_outcome": "UNESTABLISHED",
+        "business_impact": "CURRENT_TASK_BLOCKED",
+        "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+        "contract_version": "provider-failure.v1"
+      },
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED",
+      "original_remote_outcome": "UNKNOWN",
+      "original_effect_status": "UNKNOWN",
+      "original_budget_status": "HELD_UNKNOWN",
+      "original_usage": "UNKNOWN",
+      "usage_basis": null,
+      "current_accounting": {
+        "usage": null,
+        "cost": null
+      },
+      "continuation_id": "planning-runtime-continuation:bf6e1d58-97ec-412d-bf91-19d4687d3f24",
+      "successor_operation_id": "3e9a9589-1cf0-4374-af39-46e526a9e490",
+      "successor_status": "SUCCEEDED",
+      "successor_failure": null,
+      "recovery_exhaustion": null,
+      "recovery_action": "NATIVE_CONTINUATION",
+      "recovery_state": "SUCCESSOR_COMPLETED"
+    }
+  ],
+  "original_book_state": [
+    "CHAPTER_PLAN_REQUIRED",
+    3,
+    0,
+    40
+  ]
+}

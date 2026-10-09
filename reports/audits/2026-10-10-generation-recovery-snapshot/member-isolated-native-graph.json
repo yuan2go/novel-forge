@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "root": "8f94bfff-489d-4a0a-bc51-17494af4cb98",
+      "project": "project:author:5bb0b8ec0f6fa332d660073ca9b8d857840d465546c4cf7c1eda42861893b5b0",
+      "current": [
+        "native-creation-operator",
+        "workspace:author:5bb0b8ec0f6fa332d660073ca9b8d857840d465546c4cf7c1eda42861893b5b0",
+        false,
+        false,
+        false
+      ],
+      "old": [
+        "native-creation-operator",
+        "workspace:author:5bb0b8ec0f6fa332d660073ca9b8d857840d465546c4cf7c1eda42861893b5b0",
+        true,
+        true,
+        false
+      ]
+    }
+  ]
+}

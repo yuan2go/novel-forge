@@ -1,0 +1,70 @@
+{
+  "schema_head": "20261009_0189_unsent_context_successor",
+  "native_opening_continue": true,
+  "provider_io": "NOT_RUN_CONTROLLED_PRE_LAUNCH_FAILURE",
+  "actual_launch_boundary": 1,
+  "successor_operation_id": "7993f5cd-1992-46a5-9b8b-5287e1cae736",
+  "successor_status": "FAILED_RETRYABLE",
+  "admission": {
+    "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+    "status": "ADMITTED",
+    "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+    "envelope_hash": "sha256:343b387b4aa8f335bc8704b0ac0eb7d8632025ce9f0457cb396eddc8ca4d829c",
+    "total_reserved": 210777,
+    "component_usage": {
+      "safety_margin": 256,
+      "output_reserve": 32000,
+      "provider_input": 178505,
+      "request_framing": 16
+    },
+    "applicable_limit": 258400,
+    "contract_version": "provider-token-admission-v1",
+    "accounting_contract": {
+      "model": "gpt-6.1-sol",
+      "provider": "codex-cli",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+      "meter_version": "v1",
+      "safety_margin": 256,
+      "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+      "output_reserve": 32000,
+      "route_identity": "arc_plan.generate:codex-cli:gpt-6.1-sol:a89662a4f48c3e262779284b4731c3ea6fb8f787:sha256:eedbde2552c35ec6df04a44119b6288f5416bf900f8ce6dca72bdf8c3fa7cbe7",
+      "contract_version": "provider-token-accounting-v3",
+      "framing_overhead": 16,
+      "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+      "model_context_limit": 258400,
+      "execution_token_limit": 258400,
+      "serialization_contract": "codex-cli-application-stdin-v1"
+    },
+    "context_bundle_status": "VALID",
+    "context_bundle_tokens": 104617,
+    "input_component_hashes": {
+      "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+      "output_schema": "sha256:5501bb725a3012e88ec89b41a5e07b76445577ca65ea57515760204188ec6aa5",
+      "governed_skill": "sha256:1b508381c82004c0ca5a7cb2f43a93194ae776e77b560cf66ab7897d4a38a907",
+      "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+      "provider_task_view": "sha256:14b7e0d95ca253248bafbc52d8527f246e547160e2e2df0ba20c2ddb83731bd6",
+      "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+      "fully_rendered_prompt": "sha256:59864c13c6f456072522f9bc5794d3f4760ae01ec5cf6cfb04b285f05f48ef26",
+      "provider_context_view": "sha256:caaa95f20921ea220d24db4a41dedae8766190de5b11b1ddbef23bdc691ef6d4",
+      "stage_semantic_contract": "sha256:2d4e52a47870d4f158db7ce12a0e260f20cff1f5188a472560ef2345fa9ca55d"
+    },
+    "complete_request_coverage": [
+      "system_runtime_instructions",
+      "prompt_template",
+      "skill_instructions",
+      "tool_policy_and_schemas",
+      "structured_output_schema",
+      "context_bundle",
+      "knowledge_inputs",
+      "request_envelope_and_framing",
+      "output_reserve",
+      "safety_margin"
+    ]
+  },
+  "cross_scope_guards": {
+    "book_id": false,
+    "logical_key": false,
+    "input_snapshot_hash": false
+  }
+}

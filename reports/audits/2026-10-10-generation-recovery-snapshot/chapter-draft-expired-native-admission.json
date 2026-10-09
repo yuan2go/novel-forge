@@ -1,0 +1,710 @@
+{
+  "status": "PASS",
+  "code_sha": "6e026ea0fbb949b7e374064a7fc76984b928adeb",
+  "operation_id": "3b302044-53b7-4ee1-b50a-f5cd5b04bece",
+  "concurrent_decisions": [
+    true,
+    true
+  ],
+  "successor_decisions": 1,
+  "policy_evidence": {
+    "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+    "release_sha": "6e026ea0fbb949b7e374064a7fc76984b928adeb",
+    "input_snapshot": [
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:cfd22654d4bad8a2a15ca59eab8d109b1cdbfe5c53e6885068707be5e39e2bdc",
+        "asset_version_id": "authority-output:96210614-b3fa-4cc4-b227-102cc923e386:chapter.plan:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:67a9af188f8594a1fd6ee8c5e29e2afc30588bf17accfcde3feca390de1c020d",
+        "asset_version_id": "authority-output:27fafb6e-76ee-43d6-8dc4-59144905be3b:chapter.execution_intent:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:076765d607b9c43d91687f8ade4f1729770a9d63c7ea25354a8e25b739ecc71c",
+        "asset_version_id": "authority-output:39afde6e-c5ff-4797-b9ff-2f854c2445e3:chapter.memo:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:facfc8530426cbf88846c4eae6ad36e3459d483fdd37a731486befd0f3104344",
+        "asset_version_id": "authority-output:54800e66-68fe-4d9e-afcd-257de6215edd:chapter.context:v1"
+      }
+    ],
+    "contract_version": "chapter-unsent-context-transport.v1",
+    "completion_checks": "UNCHANGED",
+    "chapter_request_id": "chapter-request:abc842d63a404d432409df02a53ab1bfc6548ee5fb03b2fa3dfe3668075f3b2b",
+    "target_deployment_id": "deployment:quality:chapter_generation_pack.creative.a7bb62b2dbf2852b445326aa:3b394d3703790d1c541a",
+    "transport_projection": "provider-context-exact-value-reference.v1"
+  },
+  "admission": {
+    "schema_version": "novelos.provider_request_admission.v1",
+    "provider_admission": {
+      "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+      "status": "ADMITTED",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "envelope_hash": "sha256:3d8a0cfef42b4eb89c040e3cb141804efb7ebc85f5cebfeec24e62294df46ce2",
+      "total_reserved": 248020,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 32000,
+        "provider_input": 215748,
+        "request_framing": 16
+      },
+      "applicable_limit": 258400,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "gpt-6.1-sol",
+        "provider": "codex-cli",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+        "output_reserve": 32000,
+        "route_identity": "routing-decision:8e43d8b553c1411880fbcec274ff87c874f61a4f7633ddfa4c3e7f6e578da518",
+        "contract_version": "provider-token-accounting-v3",
+        "framing_overhead": 16,
+        "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        "model_context_limit": 258400,
+        "execution_token_limit": 258400,
+        "serialization_contract": "codex-cli-application-stdin-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 138695,
+      "input_component_hashes": {
+        "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_schema": "sha256:256f4a52c620bc006b36b2f9fafb6f37a0101659cf029fb112f38327784e95c0",
+        "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:4a3ada434fcb4ae65c3f6e3fdd40bdf589c3b68cdeb14e7c6a12b30385852a98",
+        "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+        "fully_rendered_prompt": "sha256:48d5c397a538329a42dfe8a07a755f1e7d60aa18cf00d6e94eec97dde071c091",
+        "provider_context_view": "sha256:cdf260cd926b9f6fa601fe68fc71b4faccdbfca3d710feadeb7691b1e96207a9",
+        "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "prompt_materialization": {
+      "skill": {
+        "ref": "prose-generation",
+        "version": "prose-generation-v4",
+        "content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "provider_view": {
+        "component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:256f4a52c620bc006b36b2f9fafb6f37a0101659cf029fb112f38327784e95c0",
+          "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:4a3ada434fcb4ae65c3f6e3fdd40bdf589c3b68cdeb14e7c6a12b30385852a98",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:48d5c397a538329a42dfe8a07a755f1e7d60aa18cf00d6e94eec97dde071c091",
+          "provider_context_view": "sha256:cdf260cd926b9f6fa601fe68fc71b4faccdbfca3d710feadeb7691b1e96207a9",
+          "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b"
+        },
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "component_characters": {
+          "tool_policy": 0,
+          "output_schema": 4239,
+          "governed_skill": 1232,
+          "provider_knowledge": 559,
+          "provider_task_view": 53012,
+          "system_instruction": 619,
+          "fully_rendered_prompt": 140918,
+          "provider_context_view": 77340,
+          "stage_semantic_contract": 843
+        },
+        "representation_policy": "authority-projection-task-provider-v2",
+        "selection_explanation": {
+          "policy": "task-scoped-context.v1",
+          "maximum_segments": null,
+          "omitted_fact_count": 13,
+          "included_fact_count": 6,
+          "omitted_segment_count": 6,
+          "included_segment_count": 7,
+          "context_profile_version": "draft-context-profile-v4",
+          "maximum_serialized_bytes": 8388608,
+          "maximum_facts_per_segment": null,
+          "frozen_context_token_budget": 226400,
+          "duplicate_state_summary_count": 0
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v6",
+        "context_projection_ratio": 0.307466,
+        "exact_context_references": {
+          "source_scope": "provider_data_envelope",
+          "decoded_equal": true,
+          "reference_count": 28,
+          "contract_version": "provider-context-exact-value-reference.v1",
+          "source_context_hash": "sha256:84959ff34df3bb2e4a53e4720c06eaec57e30fdf9f3c292b55408c1a2a7db196",
+          "encoded_context_hash": "sha256:81015b460ce6d436b28419b014ccd49c83020e35b91b75074cd87e96c5a1301c"
+        },
+        "component_estimated_tokens": {
+          "tool_policy": 0,
+          "output_schema": 1413,
+          "governed_skill": 411,
+          "provider_knowledge": 187,
+          "provider_task_view": 25751,
+          "system_instruction": 207,
+          "fully_rendered_prompt": 71916,
+          "provider_context_view": 42644,
+          "stage_semantic_contract": 281
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_utf8_byte_upper_bounds": {
+          "tool_policy": 0,
+          "output_schema": 4239,
+          "governed_skill": 1232,
+          "provider_knowledge": 559,
+          "provider_task_view": 77252,
+          "system_instruction": 619,
+          "fully_rendered_prompt": 215748,
+          "provider_context_view": 127930,
+          "stage_semantic_contract": 843
+        },
+        "provider_context_estimated_tokens": 42644,
+        "authority_context_estimated_tokens": 138695,
+        "rendered_prompt_to_semantic_input_ratio": 1.048613,
+        "provider_admission_uses_component_estimates": false
+      },
+      "prompt_template": {
+        "ref": "prompt-template:chapter-generation-pack",
+        "version": "v13",
+        "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+      },
+      "method_selection": {
+        "skill_sections": [
+          "Shared rules",
+          "Draft"
+        ],
+        "system_sections": [],
+        "contract_version": "production-stage-methods.v1"
+      },
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4",
+      "output_schema_hash": "sha256:256f4a52c620bc006b36b2f9fafb6f37a0101659cf029fb112f38327784e95c0",
+      "system_instruction": {
+        "ref": "prompt-system:chapter-generation-pack",
+        "version": "v3",
+        "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+      },
+      "materialization_hash": "sha256:2ae9e9ae14f16eae7525b5ea9570ec1704b09354518aa24da915d2bb8bc2b709",
+      "rendered_prompt_bytes": 215748,
+      "reusable_prefix_bytes": 1931,
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "context_asset_version_ids": [
+        "authority-output:54800e66-68fe-4d9e-afcd-257de6215edd:chapter.context:v1"
+      ],
+      "embedding_output_contract": null,
+      "fully_rendered_prompt_hash": "sha256:48d5c397a538329a42dfe8a07a755f1e7d60aa18cf00d6e94eec97dde071c091",
+      "required_reader_facing_language": null,
+      "rendered_prompt_estimated_tokens": 71916,
+      "provider_prompt_projection_version": "authority-projection-work-requirements.v1"
+    },
+    "effective_context_policy": {
+      "receipt_hash": "sha256:c7536759429b1b149c20c16ac930f7af85d505a773db1e872ac2c6e614818f11",
+      "input_policies": [
+        {
+          "limits": {
+            "total": 226400,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "caller-context-limit-v1",
+            "policy_id": "caller-context-limit:draft",
+            "content_hash": "sha256:2913db0f47b19ce437a3054e4826e7b00007f13b7e4927f5e58cc03546e75471",
+            "snapshot_ref": "command:context_token_budget"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [
+            "anti_ai_report",
+            "approval_decision",
+            "arc_actual_state",
+            "arc_checkpoint",
+            "arc_plan",
+            "canon_snapshot",
+            "chapter_episodic_summary",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "chapter_plan_version",
+            "character_card",
+            "character_cast",
+            "character_timeline",
+            "closure_plan",
+            "commercial_quality_report",
+            "context_profile",
+            "draft_chapter",
+            "draft_version",
+            "external_knowledge",
+            "knowledge_card",
+            "knowledge_pack",
+            "longform_quality_report",
+            "longform_recap_report",
+            "material_asset",
+            "material_card",
+            "narrative_obligation_state",
+            "narrative_retrieval_document",
+            "operator_approval",
+            "operator_checklist",
+            "originality_risk_report",
+            "outline_version",
+            "platform_profile",
+            "platform_quality_report",
+            "platform_rule_report",
+            "quality_profile",
+            "quality_report",
+            "quality_rubric",
+            "reader_promise",
+            "relationship_timeline",
+            "retrieval_result",
+            "review_issue",
+            "review_report",
+            "scene_episodic_summary",
+            "source_leakage_report",
+            "source_originality_quality_report",
+            "story_state_snapshot",
+            "structural_quality_report",
+            "style_policy",
+            "theme_arc",
+            "theme_beat",
+            "volume_arc",
+            "world_bible"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 1,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation",
+            "structure_only"
+          ],
+          "required_logical_kinds": [
+            "canon_snapshot",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "character_cast",
+            "platform_profile",
+            "quality_rubric",
+            "reader_promise",
+            "retrieval_result",
+            "story_state_snapshot"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 512000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "capability-pack-context-policy-v1",
+            "policy_id": "context-policy:chapter-generation-pack:v2",
+            "content_hash": "sha256:7a910c8ee8ad02c0104c7d4089b8554b2a85056efe57568fc0c40531a73cc071",
+            "snapshot_ref": "context-policy:chapter-generation-pack:v2"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [],
+          "denied_physical_types": [
+            "raw_source_chunk",
+            "raw_source_document"
+          ],
+          "source_risk_threshold": 1,
+          "allowed_physical_types": [
+            "book_design",
+            "canon_snapshot",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "chapter_plan_version",
+            "context_bundle",
+            "knowledge_pack",
+            "story_state"
+          ],
+          "permitted_source_modes": [
+            "generation",
+            "structure_only"
+          ],
+          "required_logical_kinds": [],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 512000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "context-profile-v1",
+            "policy_id": "context-profile:draft",
+            "content_hash": "sha256:03c335e18be926b20afc65f2d36202fbab61c0857aa35b6a6b47fb7bdb5069b1",
+            "snapshot_ref": "context-profile:draft"
+          },
+          "denied_logical_kinds": [
+            "cleaned_text",
+            "corpus_record",
+            "parallel_pair",
+            "source_chunk",
+            "source_deconstruction_observation",
+            "source_document",
+            "source_reprocessing_plan",
+            "source_work"
+          ],
+          "allowed_logical_kinds": [
+            "anti_ai_report",
+            "approval_decision",
+            "arc_actual_state",
+            "arc_checkpoint",
+            "arc_plan",
+            "canon_snapshot",
+            "chapter_episodic_summary",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "chapter_plan_version",
+            "character_card",
+            "character_cast",
+            "character_timeline",
+            "closure_plan",
+            "commercial_quality_report",
+            "context_profile",
+            "draft_chapter",
+            "draft_version",
+            "external_knowledge",
+            "knowledge_card",
+            "knowledge_pack",
+            "longform_quality_report",
+            "longform_recap_report",
+            "material_asset",
+            "material_card",
+            "narrative_obligation_state",
+            "narrative_retrieval_document",
+            "operator_approval",
+            "operator_checklist",
+            "originality_risk_report",
+            "outline_version",
+            "platform_profile",
+            "platform_quality_report",
+            "platform_rule_report",
+            "quality_profile",
+            "quality_report",
+            "quality_rubric",
+            "reader_promise",
+            "relationship_timeline",
+            "retrieval_result",
+            "review_issue",
+            "review_report",
+            "scene_episodic_summary",
+            "source_leakage_report",
+            "source_originality_quality_report",
+            "story_state_snapshot",
+            "structural_quality_report",
+            "style_policy",
+            "theme_arc",
+            "theme_beat",
+            "volume_arc",
+            "world_bible"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 1,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation",
+            "structure_only"
+          ],
+          "required_logical_kinds": [
+            "canon_snapshot",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "character_cast",
+            "platform_profile",
+            "quality_rubric",
+            "reader_promise",
+            "retrieval_result",
+            "story_state_snapshot"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 512000,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "production-stage-profile-v1",
+            "policy_id": "production-stage-profile:draft",
+            "content_hash": "sha256:63ccb3e71241796d5d0318298386af95d06ee931fea8752bc963a8fb46d0f6f4",
+            "snapshot_ref": "production-stage-profile:draft"
+          },
+          "denied_logical_kinds": [
+            "eval_only",
+            "quarantined_source",
+            "raw_source",
+            "source_chunk"
+          ],
+          "allowed_logical_kinds": [
+            "approval_decision",
+            "arc_actual_state",
+            "arc_plan",
+            "canon_snapshot",
+            "chapter_episodic_summary",
+            "chapter_execution_intent",
+            "chapter_memo",
+            "chapter_plan",
+            "character_card",
+            "character_cast",
+            "character_timeline",
+            "closure_plan",
+            "commercial_quality_report",
+            "context_bundle",
+            "context_profile",
+            "context_segment",
+            "creative_brief",
+            "empty_state_declaration",
+            "external_knowledge",
+            "genre_profile",
+            "knowledge_card",
+            "knowledge_pack",
+            "longform_quality_report",
+            "longform_recap_report",
+            "material_asset",
+            "material_card",
+            "narrative_obligation_state",
+            "narrative_retrieval_document",
+            "operator_approval",
+            "operator_checklist",
+            "outline",
+            "outline_version",
+            "platform_profile",
+            "platform_quality_report",
+            "quality_profile",
+            "quality_rubric",
+            "reader_promise",
+            "relationship_timeline",
+            "retrieval_result",
+            "scene_episodic_summary",
+            "source_originality_quality_report",
+            "story_state_snapshot",
+            "structural_quality_report",
+            "style_policy",
+            "theme_arc",
+            "theme_question",
+            "volume_arc",
+            "world_bible"
+          ],
+          "denied_physical_types": [],
+          "source_risk_threshold": 1,
+          "allowed_physical_types": [],
+          "permitted_source_modes": [
+            "generation",
+            "structure_only"
+          ],
+          "required_logical_kinds": [
+            "chapter_plan"
+          ],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        },
+        {
+          "limits": {
+            "total": 226400,
+            "buckets": {},
+            "classes": {},
+            "sections": {},
+            "required_reservation": 0
+          },
+          "identity": {
+            "version": "provider-route-context-capability-v1",
+            "policy_id": "provider-route-context:draft:codex-cli:gpt-6.1-sol:6e026ea0fbb949b7e374064a7fc76984b928adeb:sha256:05ed6ac6bff91194ab1518e9714060877f5ec67697e05591724fa5df3e5dabe5",
+            "content_hash": "sha256:86070be3ec18cf27dff0cbd0abc59b601f6433fe45b93d44ac432a4eabb91df6",
+            "snapshot_ref": "provider-route:draft:codex-cli:gpt-6.1-sol:6e026ea0fbb949b7e374064a7fc76984b928adeb:sha256:05ed6ac6bff91194ab1518e9714060877f5ec67697e05591724fa5df3e5dabe5"
+          },
+          "denied_logical_kinds": [],
+          "allowed_logical_kinds": [],
+          "denied_physical_types": [],
+          "source_risk_threshold": 1,
+          "allowed_physical_types": [
+            "context_bundle"
+          ],
+          "permitted_source_modes": [
+            "generation",
+            "structure_only"
+          ],
+          "required_logical_kinds": [],
+          "maximum_raw_source_ratio": 0.0,
+          "permitted_truncation_strategies": [
+            "structured_elements-v1"
+          ]
+        }
+      ],
+      "compiler_version": "effective-context-policy-compiler-v1",
+      "effective_policy": {
+        "limits": {
+          "total": 226400,
+          "buckets": {},
+          "classes": {},
+          "sections": {},
+          "required_reservation": 0
+        },
+        "compiler_version": "effective-context-policy-compiler-v1",
+        "denied_logical_kinds": [
+          "cleaned_text",
+          "corpus_record",
+          "eval_only",
+          "parallel_pair",
+          "quarantined_source",
+          "raw_source",
+          "source_chunk",
+          "source_deconstruction_observation",
+          "source_document",
+          "source_reprocessing_plan",
+          "source_work"
+        ],
+        "allowed_logical_kinds": [
+          "approval_decision",
+          "arc_actual_state",
+          "arc_plan",
+          "canon_snapshot",
+          "chapter_episodic_summary",
+          "chapter_execution_intent",
+          "chapter_memo",
+          "chapter_plan",
+          "character_card",
+          "character_cast",
+          "character_timeline",
+          "closure_plan",
+          "commercial_quality_report",
+          "context_profile",
+          "external_knowledge",
+          "knowledge_card",
+          "knowledge_pack",
+          "longform_quality_report",
+          "longform_recap_report",
+          "material_asset",
+          "material_card",
+          "narrative_obligation_state",
+          "narrative_retrieval_document",
+          "operator_approval",
+          "operator_checklist",
+          "outline_version",
+          "platform_profile",
+          "platform_quality_report",
+          "quality_profile",
+          "quality_rubric",
+          "reader_promise",
+          "relationship_timeline",
+          "retrieval_result",
+          "scene_episodic_summary",
+          "source_originality_quality_report",
+          "story_state_snapshot",
+          "structural_quality_report",
+          "style_policy",
+          "theme_arc",
+          "volume_arc",
+          "world_bible"
+        ],
+        "denied_physical_types": [
+          "raw_source_chunk",
+          "raw_source_document"
+        ],
+        "source_risk_threshold": 1,
+        "allowed_physical_types": [
+          "context_bundle"
+        ],
+        "permitted_source_modes": [
+          "generation",
+          "structure_only"
+        ],
+        "required_logical_kinds": [
+          "canon_snapshot",
+          "chapter_execution_intent",
+          "chapter_memo",
+          "chapter_plan",
+          "character_cast",
+          "platform_profile",
+          "quality_rubric",
+          "reader_promise",
+          "retrieval_result",
+          "story_state_snapshot"
+        ],
+        "maximum_raw_source_ratio": 0.0,
+        "permitted_truncation_strategies": [
+          "structured_elements-v1"
+        ]
+      },
+      "conflict_decision": "PASS"
+    },
+    "provider_request_identity": {
+      "model": "gpt-6.1-sol",
+      "protocol": "codex-cli-application-stdin-v1",
+      "provider": "codex-cli",
+      "input_text_hash": "sha256:48d5c397a538329a42dfe8a07a755f1e7d60aa18cf00d6e94eec97dde071c091",
+      "timeout_seconds": 270,
+      "max_output_tokens": 32000,
+      "pricing_policy_json": "{\"accounting_basis\": \"ACCOUNT_ENTITLEMENT\", \"currency\": \"UNKNOWN\", \"effective_from\": \"2026-10-07T00:00:00+00:00\", \"effective_until\": \"2026-10-10T00:00:00+00:00\", \"input_hit_per_million\": \"0\", \"input_miss_per_million\": \"0\", \"output_per_million\": \"0\", \"source\": \"user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request\", \"version\": \"sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021\"}",
+      "stable_idempotency_key": "3b302044-53b7-4ee1-b50a-f5cd5b04bece:5a0dbb75-615c-49ba-9913-748163b1af86:draft:attempt-v1"
+    },
+    "capability_materialization_content_hash": "sha256:776d5c1d8852bb8e3291c09bb58bd8ac0ec3caebf6019c4d373ad5d85f14bba1",
+    "capability_materialization_asset_version_id": "a0527fe4-051a-46d8-b800-9b1ea00c9b77"
+  },
+  "saved_chapters_preserved": 1,
+  "attempts": [
+    [
+      1,
+      "FAILED_RETRYABLE",
+      "EFFECT_RETRYABLE_FAILURE_RECORDED"
+    ]
+  ],
+  "provider_calls": 0,
+  "old_deadline": "2026-10-09 16:18:11.048112+08:00",
+  "aligned_root_saga_window": [
+    "2026-10-09 23:20:54.526426+08:00",
+    "2026-10-09 23:20:54.526426+08:00",
+    true
+  ],
+  "preserved_source_status_attempts": [
+    "DEAD_LETTER",
+    2
+  ],
+  "scope": "Restored original Book ledger; native remaining Attempt with versioned v13 Pack; controlled pre-launch stop"
+}

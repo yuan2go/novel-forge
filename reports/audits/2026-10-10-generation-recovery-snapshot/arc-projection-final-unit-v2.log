@@ -1,0 +1,36 @@
+........................................................................ [ 52%]
+...................................................F............         [100%]
+=================================== FAILURES ===================================
+__ test_arc_volume_projection_preserves_story_constraints_and_audits_metadata __
+
+    def test_arc_volume_projection_preserves_story_constraints_and_audits_metadata():
+        content = {"objective": "Find a route to the sky", "chapter_range": [1, 48],
+            "hard_constraints": ["Preserve the chosen protagonist"], "planning_scope": "VOLUME",
+            "generator_operation_name": "volume_plan.generate", "execution_evidence": {"trace_id": "retained-original"}}
+        original = deepcopy(content)
+        source = {"role": "arc_scope_volume:1", "asset_type": "planning_generation_candidate",
+            "asset_version_id": "original-volume", "content_hash": "original-hash"}
+        losses = []
+        projected, _, _ = _project_planning_content(stage="arc_plan.generate", role=source["role"],
+            content=content, chapter=0, selectors=frozenset(), source=source,
+            loss_records=losses, typed_volume_sources=True)
+        assert projected["objective"] == content["objective"]
+        assert projected["chapter_range"] == [1, 48]
+        assert projected["hard_constraints"] == content["hard_constraints"]
+        assert "execution_evidence" not in projected
+>       assert any(loss["source_path"] == "/execution_evidence" for loss in losses)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_typed_volume_provider_projection.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <list_iterator object at 0x10e4d2b90>
+
+>   assert any(loss["source_path"] == "/execution_evidence" for loss in losses)
+               ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'source_path'
+
+tests/unit/test_typed_volume_provider_projection.py:24: KeyError
+=========================== short test summary info ============================
+FAILED tests/unit/test_typed_volume_provider_projection.py::test_arc_volume_projection_preserves_story_constraints_and_audits_metadata
+1 failed, 135 passed in 2.17s

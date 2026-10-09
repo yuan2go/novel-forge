@@ -1,0 +1,20 @@
+{
+  "phase": "native_fallback_parent_crashed",
+  "injected_at": "2026-10-09T04:05:28.549792+00:00",
+  "parent_pid": 29630,
+  "model_process_pid": 29646,
+  "operation_id": "6a44f5da-5f92-4d1f-ae8f-cc8f5b30ded4",
+  "execution_id": "planning-execution:d629062f-d60d-4ece-b8ed-12a43718d0e4:b61f6ef5-f7b9-40e5-9d96-dcea6337730b",
+  "model": "gpt-6-sol",
+  "observed_event_types": [
+    "thread.started",
+    "item.completed",
+    "item.completed",
+    "item.completed",
+    "turn.started"
+  ],
+  "receipt_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-generation-recovery-prose-02/real-fault-executions/planning-execution-d629062f-d60d-4ece-b8ed-12a43-7aac8cc2a08113ae/process-receipt.json",
+  "model_child_not_terminated": true,
+  "original_service_untouched": true,
+  "source": "working-tree-engineering-test-with-e8537b97-frozen-contracts"
+}

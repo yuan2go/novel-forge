@@ -1,0 +1,173 @@
+........................................................................ [ 20%]
+........................................................................ [ 40%]
+........................................................................ [ 60%]
+........................................................................ [ 80%]
+.....................................................FFFF........F....   [100%]
+=================================== FAILURES ===================================
+____ test_prepare_generation_does_not_mutate_dispatch_when_lineage_unknown _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c2aa8d0>
+
+    def test_prepare_generation_does_not_mutate_dispatch_when_lineage_unknown(monkeypatch):
+        repository = Mock()
+        repository.get_for_update.return_value = {"project_id": "project", "effect_type": "model.invoke"}
+        uow = SimpleNamespace(cursor=Mock(), repositories=SimpleNamespace(external_effects=repository))
+        monkeypatch.setattr(external_effect_runtime, "AuthorityUnitOfWork", lambda _: nullcontext(uow))
+        monkeypatch.setattr(external_effect_runtime, "require_dispatch_enabled", Mock())
+        guard = Mock(side_effect=KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED", "Original remote outcome remains unknown"))
+        monkeypatch.setattr(budget_runtime, "require_known_cli_lineage", guard)
+        context = external_effect_runtime.EffectCommandContext("operation", "project", "actor", "trace", "correlation")
+>       with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED'
+E         Actual message: 'GENERATION_ATTEMPT_ISOLATED: Old generation has permanently lost business commit and activation rights; follow its registered native continuation'
+
+tests/unit/test_local_cli_remote_outcome_guards.py:62: AssertionError
+______ test_provider_authorization_stops_before_budget_or_router_mutation ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c2aa780>
+
+    def test_provider_authorization_stops_before_budget_or_router_mutation(monkeypatch):
+        from novel_forge.modules.command_kernel import creative_budget_runtime, routing_bootstrap
+    
+        uow = SimpleNamespace(cursor=Mock())
+        monkeypatch.setattr(budget_runtime, "AuthorityUnitOfWork", lambda _: nullcontext(uow))
+        monkeypatch.setattr(budget_runtime, "require_known_cli_lineage", Mock(side_effect=KernelError(
+            "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED", "Original remote outcome remains unknown")))
+        creative = Mock()
+        routing = Mock()
+        monkeypatch.setattr(creative_budget_runtime, "assert_creative_budget_dispatch", creative)
+        monkeypatch.setattr(routing_bootstrap, "verify_routing_bootstrap_dispatch", routing)
+>       with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED'
+E         Actual message: 'SAVED_RESULT_WINDOW_DISPATCH_FORBIDDEN: Saved-result finalization grants local consumption only'
+
+tests/unit/test_local_cli_remote_outcome_guards.py:78: AssertionError
+_ test_verified_retained_receipt_preserves_membership_unknown_cost[PRICED-1.25-1.25] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c50b050>
+basis = 'PRICED', amount = '1.25', expected = '1.25'
+
+    @pytest.mark.parametrize("basis,amount,expected", [("PRICED", "1.25", "1.25"), ("ACCOUNT_ENTITLEMENT", None, None)])
+    def test_verified_retained_receipt_preserves_membership_unknown_cost(monkeypatch, basis, amount, expected):
+        evidence = {"production_execution": {"receipt": "original"}}
+        repository = Mock()
+        repository.get_for_update.return_value = {"project_id": "project", "operation_id": "operation", "status": "SUCCEEDED"}
+        cursor = Mock()
+        cursor.fetchone.side_effect = [(1, evidence, external_effect_runtime._hash(evidence), {"evidence": evidence}, "VERIFIED"),
+            ("reservation", "SETTLED", amount, 1200, 2, basis)]
+        monkeypatch.setattr(external_effect_runtime, "_validated_frozen_provider_capability_profile", lambda _: {"frozen": True})
+        context = external_effect_runtime.EffectCommandContext("operation", "project", "actor", "trace", "correlation")
+>       proof = external_effect_runtime._read_verified_success(SimpleNamespace(cursor=cursor), repository, context, "effect")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_local_cli_remote_outcome_guards.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:198: in _read_verified_success
+    require_not_isolated(uow.cursor, context.operation_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cursor = <Mock id='4494078656'>, operation_id = 'operation'
+
+    def require_not_isolated(cursor, operation_id: str):
+        cursor.execute(
+            "SELECT external_effect_id FROM authority_generation_isolation WHERE operation_id=%s",
+            [operation_id],
+        )
+        if cursor.fetchone():
+>           raise KernelError(
+                "GENERATION_ATTEMPT_ISOLATED",
+                "Old generation has permanently lost business commit and activation rights; follow its registered native continuation",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: GENERATION_ATTEMPT_ISOLATED: Old generation has permanently lost business commit and activation rights; follow its registered native continuation
+
+src/novel_forge/modules/command_kernel/generation_isolation.py:82: KernelError
+_ test_verified_retained_receipt_preserves_membership_unknown_cost[ACCOUNT_ENTITLEMENT-None-None] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c2abf80>
+basis = 'ACCOUNT_ENTITLEMENT', amount = None, expected = None
+
+    @pytest.mark.parametrize("basis,amount,expected", [("PRICED", "1.25", "1.25"), ("ACCOUNT_ENTITLEMENT", None, None)])
+    def test_verified_retained_receipt_preserves_membership_unknown_cost(monkeypatch, basis, amount, expected):
+        evidence = {"production_execution": {"receipt": "original"}}
+        repository = Mock()
+        repository.get_for_update.return_value = {"project_id": "project", "operation_id": "operation", "status": "SUCCEEDED"}
+        cursor = Mock()
+        cursor.fetchone.side_effect = [(1, evidence, external_effect_runtime._hash(evidence), {"evidence": evidence}, "VERIFIED"),
+            ("reservation", "SETTLED", amount, 1200, 2, basis)]
+        monkeypatch.setattr(external_effect_runtime, "_validated_frozen_provider_capability_profile", lambda _: {"frozen": True})
+        context = external_effect_runtime.EffectCommandContext("operation", "project", "actor", "trace", "correlation")
+>       proof = external_effect_runtime._read_verified_success(SimpleNamespace(cursor=cursor), repository, context, "effect")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_local_cli_remote_outcome_guards.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:198: in _read_verified_success
+    require_not_isolated(uow.cursor, context.operation_id)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cursor = <Mock id='4501259328'>, operation_id = 'operation'
+
+    def require_not_isolated(cursor, operation_id: str):
+        cursor.execute(
+            "SELECT external_effect_id FROM authority_generation_isolation WHERE operation_id=%s",
+            [operation_id],
+        )
+        if cursor.fetchone():
+>           raise KernelError(
+                "GENERATION_ATTEMPT_ISOLATED",
+                "Old generation has permanently lost business commit and activation rights; follow its registered native continuation",
+            )
+E           novel_forge.modules.command_kernel.errors.KernelError: GENERATION_ATTEMPT_ISOLATED: Old generation has permanently lost business commit and activation rights; follow its registered native continuation
+
+src/novel_forge/modules/command_kernel/generation_isolation.py:82: KernelError
+______ test_old_settled_local_timeout_cannot_enable_a_pure_host_successor ______
+
+    def test_old_settled_local_timeout_cannot_enable_a_pure_host_successor():
+        cursor = Mock()
+        cursor.fetchone.side_effect = [("project",), ("root", "original-book")]
+        cursor.fetchall.return_value = [("old-effect", "old-operation", "FAILED_RETRYABLE", "old-process")]
+        with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
+>           recovery._require_reconciled_graph(cursor, root_id="root", predecessor_id="source")
+
+tests/unit/test_step_successor_v2_guards.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/command_kernel/step_successor_v2.py:563: in _require_reconciled_graph
+    require_known_cli_lineage(cursor, project_id=str(owner[0]), operation_id=root_id)
+src/novel_forge/modules/command_kernel/budget_runtime.py:4265: in require_known_cli_lineage
+    unresolved = blocking_working_cli_outcomes(cursor, project_id=project_id, book_id=str(lineage[1]),
+src/novel_forge/modules/book_authority/manuscript.py:58: in blocking_working_cli_outcomes
+    row = cursor.fetchone()
+          ^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1134: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1138: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Mock name='mock.fetchone' id='4499921120'>, args = (), kwargs = {}
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+    
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:1195: StopIteration
+=========================== short test summary info ============================
+FAILED tests/unit/test_local_cli_remote_outcome_guards.py::test_prepare_generation_does_not_mutate_dispatch_when_lineage_unknown
+FAILED tests/unit/test_local_cli_remote_outcome_guards.py::test_provider_authorization_stops_before_budget_or_router_mutation
+FAILED tests/unit/test_local_cli_remote_outcome_guards.py::test_verified_retained_receipt_preserves_membership_unknown_cost[PRICED-1.25-1.25]
+FAILED tests/unit/test_local_cli_remote_outcome_guards.py::test_verified_retained_receipt_preserves_membership_unknown_cost[ACCOUNT_ENTITLEMENT-None-None]
+FAILED tests/unit/test_step_successor_v2_guards.py::test_old_settled_local_timeout_cannot_enable_a_pure_host_successor
+5 failed, 353 passed in 1.53s

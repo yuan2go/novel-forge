@@ -1,0 +1,46 @@
+{
+  "backup": "/Volumes/DevSSD/Development/Workspace/evidence/wp-generation-recovery-prose-02/before-group_window-result-deployment.dump",
+  "sha256": "b5ec66f3e58269b288f8a5cd9a1200e8057c2ea0d7debcdebcf547e15e147841",
+  "restore_fingerprints_equal": true,
+  "fingerprints": {
+    "authority_operation": [
+      531,
+      "4530ea6183d0d08cb103fc7f6227a530"
+    ],
+    "authority_external_effect": [
+      57,
+      "803cf0dcf2ca5bcadf2d4a64cd1418c7"
+    ],
+    "authority_external_effect_dispatch": [
+      56,
+      "66994f6b0d2f060c93725cf6a5b4cdcd"
+    ],
+    "authority_external_receipt": [
+      52,
+      "28bc4797102b773f41a01b2116908d69"
+    ],
+    "authority_budget_reservation": [
+      41,
+      "051da039e725c7341c946f2fa689b737"
+    ],
+    "authority_asset_version": [
+      1130,
+      "83694cdeb43fa8eb31111d2dfbe9c7bc"
+    ],
+    "authority_book": [
+      1,
+      "42a7f410226e120258e320279b94d6ef"
+    ],
+    "authority_story_planning_generation": [
+      43,
+      "bcd41257b05077e4dfefac6c732afbf1"
+    ],
+    "authority_book_production": [
+      1,
+      "d6dc2feff9608eca66048b8a111e06df"
+    ]
+  },
+  "fresh_head": "20261009_0190_group_window_successor",
+  "upgrade_head": "20261009_0190_group_window_successor",
+  "recovery_baseline": "Actual 55489 ledger matches bounded original offline cluster evidence; no newer original ledger found; provenance remains restored snapshot, not latest-source assertion"
+}

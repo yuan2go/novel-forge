@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "code_sha": "b63b092a89f40243b6e8efa32f92090f7309d0d0",
+  "scope": "Read-only actual original Book; latest unknown planning worker failure is eligible for owning tick recovery",
+  "candidate_count": 1,
+  "provider_calls": 0
+}

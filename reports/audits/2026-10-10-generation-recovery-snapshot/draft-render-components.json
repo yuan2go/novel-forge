@@ -1,0 +1,121 @@
+{
+  "materialization_hash": "sha256:2ae9e9ae14f16eae7525b5ea9570ec1704b09354518aa24da915d2bb8bc2b709",
+  "reusable_prefix_bytes": 1931,
+  "fully_rendered_prompt_hash": "sha256:48d5c397a538329a42dfe8a07a755f1e7d60aa18cf00d6e94eec97dde071c091",
+  "required_reader_facing_language": null,
+  "provider_prompt_projection_version": "authority-projection-work-requirements.v1",
+  "method_selection": {
+    "contract_version": "production-stage-methods.v1",
+    "skill_sections": [
+      "Shared rules",
+      "Draft"
+    ],
+    "system_sections": []
+  },
+  "rendered_prompt_bytes": 215748,
+  "rendered_prompt_estimated_tokens": 71916,
+  "system_instruction": {
+    "ref": "prompt-system:chapter-generation-pack",
+    "version": "v3",
+    "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+  },
+  "prompt_template": {
+    "ref": "prompt-template:chapter-generation-pack",
+    "version": "v13",
+    "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+  },
+  "skill": {
+    "ref": "prose-generation",
+    "version": "prose-generation-v4",
+    "content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea"
+  },
+  "context_asset_version_ids": [
+    "authority-output:54800e66-68fe-4d9e-afcd-257de6215edd:chapter.context:v1"
+  ],
+  "knowledge_content_hashes": [
+    "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+  ],
+  "allowed_tools": [
+    "model.provider.invoke"
+  ],
+  "output_schema_ref": "schema:chapter-provider-output:draft:v4",
+  "output_schema_hash": "sha256:256f4a52c620bc006b36b2f9fafb6f37a0101659cf029fb112f38327784e95c0",
+  "embedding_output_contract": null,
+  "provider_view": {
+    "exact_context_references": {
+      "contract_version": "provider-context-exact-value-reference.v1",
+      "source_context_hash": "sha256:84959ff34df3bb2e4a53e4720c06eaec57e30fdf9f3c292b55408c1a2a7db196",
+      "encoded_context_hash": "sha256:81015b460ce6d436b28419b014ccd49c83020e35b91b75074cd87e96c5a1301c",
+      "reference_count": 28,
+      "decoded_equal": true,
+      "source_scope": "provider_data_envelope"
+    },
+    "task_contract_version": "provider-task-view-v1",
+    "context_contract_version": "provider-context-view-v6",
+    "selection_explanation": {
+      "context_profile_version": "draft-context-profile-v4",
+      "duplicate_state_summary_count": 0,
+      "frozen_context_token_budget": 226400,
+      "included_fact_count": 6,
+      "included_segment_count": 7,
+      "maximum_facts_per_segment": null,
+      "maximum_segments": null,
+      "maximum_serialized_bytes": 8388608,
+      "omitted_fact_count": 13,
+      "omitted_segment_count": 6,
+      "policy": "task-scoped-context.v1"
+    },
+    "component_characters": {
+      "system_instruction": 619,
+      "governed_skill": 1232,
+      "provider_knowledge": 559,
+      "provider_task_view": 53012,
+      "provider_context_view": 77340,
+      "tool_policy": 0,
+      "stage_semantic_contract": 843,
+      "output_schema": 4239,
+      "fully_rendered_prompt": 140918
+    },
+    "component_estimated_tokens": {
+      "system_instruction": 207,
+      "governed_skill": 411,
+      "provider_knowledge": 187,
+      "provider_task_view": 25751,
+      "provider_context_view": 42644,
+      "tool_policy": 0,
+      "stage_semantic_contract": 281,
+      "output_schema": 1413,
+      "fully_rendered_prompt": 71916
+    },
+    "component_utf8_byte_upper_bounds": {
+      "system_instruction": 619,
+      "governed_skill": 1232,
+      "provider_knowledge": 559,
+      "provider_task_view": 77252,
+      "provider_context_view": 127930,
+      "tool_policy": 0,
+      "stage_semantic_contract": 843,
+      "output_schema": 4239,
+      "fully_rendered_prompt": 215748
+    },
+    "component_hashes": {
+      "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+      "governed_skill": "sha256:cfef82caf4002629654988b06c4a8fc98af5c326e85c9ecd51c30a53414a25d5",
+      "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+      "provider_task_view": "sha256:4a3ada434fcb4ae65c3f6e3fdd40bdf589c3b68cdeb14e7c6a12b30385852a98",
+      "provider_context_view": "sha256:cdf260cd926b9f6fa601fe68fc71b4faccdbfca3d710feadeb7691b1e96207a9",
+      "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stage_semantic_contract": "sha256:aae7bab21c2361231912f6806e54d395d15a201b7508bb3d57c40f7aca85674b",
+      "output_schema": "sha256:256f4a52c620bc006b36b2f9fafb6f37a0101659cf029fb112f38327784e95c0",
+      "fully_rendered_prompt": "sha256:48d5c397a538329a42dfe8a07a755f1e7d60aa18cf00d6e94eec97dde071c091"
+    },
+    "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+    "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+    "provider_admission_uses_component_estimates": false,
+    "authority_context_estimated_tokens": 138695,
+    "provider_context_estimated_tokens": 42644,
+    "context_projection_ratio": 0.307466,
+    "rendered_prompt_to_semantic_input_ratio": 1.048613,
+    "representation_policy": "authority-projection-task-provider-v2"
+  }
+}

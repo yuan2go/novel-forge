@@ -1,0 +1,21 @@
+..............................................F.................... [ 36%]
+.............................................................................. [ 77%]
+.........................................                    [100%]
+=================================== FAILURES ===================================
+____ test_materializes_exact_provider_content_from_registered_pack_version _____
+
+    def test_materializes_exact_provider_content_from_registered_pack_version() -> None:
+        registered, snapshot = _registered_version_and_snapshot()
+    
+        result = materialize_registered_pack_version(snapshot, registered)
+    
+        assert (
+            "frozen Novel Forge stage" in result.system_instruction.content["text"]
+        )
+>       assert "{{context_bundle}}" in result.prompt_template.content["text"]
+E       AssertionError: assert '{{context_bundle}}' in 'Task: {{stage}}\nAuthorized task and story data: {{provider_data_envelope}}\nReturn only the declared JSON stage resu...t local data. No facts, constraints, diagnoses or prose are omitted; a reference grants no tools or external access.\n'
+
+tests/unit/test_capability_pack_artifact_materialization.py:161: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_capability_pack_artifact_materialization.py::test_materializes_exact_provider_content_from_registered_pack_version
+1 failed, 185 passed, 1307 subtests passed in 36.28s

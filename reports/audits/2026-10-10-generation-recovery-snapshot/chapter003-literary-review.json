@@ -1,0 +1,16 @@
+{
+  "review_kind": "ASSISTANT_EDITORIAL_REVIEW",
+  "source_asset_version_id": "authority-output:80f1bfab-e161-405b-a356-1119b562e0b5:chapter.draft:v1",
+  "source_text_hash": "sha256:e37b1fae5ca43006bfffe8080c311eb14e66cc82a477800a1adcc732168c221b",
+  "findings": [
+    "首次辨认气机、追索后中断构成本章有效推进，未达到稳定流转",
+    "时间核算、感受来源及因果确定性反复说明，使师徒对话趋近审计措辞",
+    "修订14处对话与句子，补充已有经验的心理反应，保留所有行动与时间事实"
+  ],
+  "original_han_characters": 2755,
+  "revision_han_characters": 2786,
+  "semantic_validation": "NOT_RUN",
+  "author_choice": "NOT_RECORDED",
+  "formal_acceptance": "NOT_RECORDED",
+  "fact_constraints": "保留许庭十分钟、沈砚十五分钟、全部先后、首次短暂气机与中断、原因未明、导师离开、非稳定流转；不增修为或新情节"
+}

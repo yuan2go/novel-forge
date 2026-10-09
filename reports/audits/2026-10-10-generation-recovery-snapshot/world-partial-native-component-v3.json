@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "scope": "RESTORED_NATIVE_WORLD_COMPONENT_WITH_CONTROLLED_MISSING_EVALUATION",
+  "reused_generation": "697af36e-bb6a-47d0-8ed9-6c833bb20e14",
+  "reused_source": "af43dd54-39f4-42c5-9db7-62a8830d2f14",
+  "only_missing_stage_requested": [
+    "world_candidates.evaluate"
+  ],
+  "real_provider_calls": 0,
+  "proof_ceiling": "EXECUTABLE"
+}

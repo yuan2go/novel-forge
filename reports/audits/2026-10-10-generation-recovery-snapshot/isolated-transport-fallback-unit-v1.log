@@ -1,0 +1,182 @@
+......................................................FFF.......FFF..... [ 82%]
+...............                                                          [100%]
+=================================== FAILURES ===================================
+_ test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.17.0] _
+
+version = '1.17.0'
+
+    @pytest.mark.parametrize("version", ["1.17.0", "1.18.0", "1.19.0"])
+    def test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact(version):
+        definition = story_planning_generation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40, definition_version=version)
+        profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64, execution_contract_version=version)
+>       assert {"definition": digest(definition), "manifest": digest(profile.manifest), "catalog": digest(profile.artifact_catalog)} == FROZEN["contracts"][version]
+E       AssertionError: assert {'definition'...ebea7921b485'} == {'definition'...27eeaaecc897'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'manifest': 'f1b4b2a7afb90a9c3bfcc687e4954a135da7f8e02a51c2aaf385b74b3f5042c0'} != {'manifest': '2c321daee423b79b34e702606646848fe89f7c19b1558d546573d8b16cf0927e'}
+E         {'catalog': '24cf2b3d83a6ef087c4218da4ffbd714264c81409c32dfd50c67ebea7921b485'} != {'catalog': '2bcc60c7eae712014b5421e505d09962afd07bbbcd3d71af9e0c27eeaaecc897'}
+E         Use -v to get more diff
+
+tests/unit/test_planning_coordinated_contracts.py:31: AssertionError
+_ test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.18.0] _
+
+version = '1.18.0'
+
+    @pytest.mark.parametrize("version", ["1.17.0", "1.18.0", "1.19.0"])
+    def test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact(version):
+        definition = story_planning_generation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40, definition_version=version)
+        profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64, execution_contract_version=version)
+>       assert {"definition": digest(definition), "manifest": digest(profile.manifest), "catalog": digest(profile.artifact_catalog)} == FROZEN["contracts"][version]
+E       AssertionError: assert {'definition'...66979edb3a1d'} == {'definition'...96804d2f7624'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'manifest': 'a634006db3aa7daaade38a112628db3bdadf2aec818418c6eeffdcc19dfcc79f'} != {'manifest': 'c60192655029f2ebc210641d4953d250dc1ccd98fd6c2fb16da8f644ab28f17e'}
+E         {'catalog': 'd940f8453c83db1cd4680c82680e7c77446a241272f6692a1be466979edb3a1d'} != {'catalog': 'a59e26a12721c6af8c88742e978b64fb33d6a10dea3c3c3d1bd796804d2f7624'}
+E         Use -v to get more diff
+
+tests/unit/test_planning_coordinated_contracts.py:31: AssertionError
+_ test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.19.0] _
+
+version = '1.19.0'
+
+    @pytest.mark.parametrize("version", ["1.17.0", "1.18.0", "1.19.0"])
+    def test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact(version):
+        definition = story_planning_generation_definition(application_build_id="historical-hash-probe", commit_sha="1" * 40, definition_version=version)
+        profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64, execution_contract_version=version)
+>       assert {"definition": digest(definition), "manifest": digest(profile.manifest), "catalog": digest(profile.artifact_catalog)} == FROZEN["contracts"][version]
+E       AssertionError: assert {'definition'...6ff427fc249c'} == {'definition'...dfe101881d3f'}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'manifest': '34c143daf35bc8054bf9fcb5f616d9475cd0080a8235da730a489b909fa1f06c'} != {'manifest': '3302faee3985ad6b681a32feacdf8e748f3b530ab0938730626a1e4dc4d019fd'}
+E         {'catalog': 'aeb2427944bfb996fc1635bb440bc4e09de36881eb740f6cb6316ff427fc249c'} != {'catalog': '2ba44ac971f1899d5d49e644b2c0420f0b7e675aa8f7c1dbeb9adfe101881d3f'}
+E         Use -v to get more diff
+
+tests/unit/test_planning_coordinated_contracts.py:31: AssertionError
+_ test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt[FAILED_RETRYABLE-FAILED_RETRYABLE] _
+
+source_status = 'FAILED_RETRYABLE', attempt_status = 'FAILED_RETRYABLE'
+
+    @pytest.mark.parametrize("source_status,attempt_status", [("FAILED_RETRYABLE", "FAILED_RETRYABLE"), ("FAILED_FINAL", "FAILED_RETRYABLE"), ("FAILED_FINAL", "UNKNOWN")])
+    def test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt(source_status, attempt_status):
+        responses = [(source_status, 1, "workspace", {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "execution_contract_version": "1.19.0"}, "book", None), (attempt_status, {"error_code": "WORLD_PREPARATION_RESULT_INVALID"}, {})]
+    
+        class Cursor:
+            def execute(self, *_):
+                self.response = responses.pop(0)
+    
+            def fetchone(self):
+                return self.response
+    
+        with pytest.raises(KernelError, match="SOURCE_INVALID"):
+>           require_source(SimpleNamespace(cursor=Cursor()), source_operation_id="source", project_id="project")
+
+tests/unit/test_planning_coordinated_contracts.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/runtime_continuation.py:133: in require_source
+    retry_usage = require_generation_retry_budget(uow.cursor,operation_id=source_operation_id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/generation_isolation.py:37: in require_generation_retry_budget
+    evidence=generation_retry_usage(cursor,operation_id=operation_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/generation_isolation.py:15: in generation_retry_usage
+    cursor.execute("""WITH RECURSIVE edges(source,target) AS (
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.unit.test_planning_coordinated_contracts.test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt.<locals>.Cursor object at 0x10a037ec0>
+_ = ("WITH RECURSIVE edges(source,target) AS (\n        SELECT source_operation_id,successor_operation_id FROM authority_s...x_attempts}')::int,3))\n           FROM authority_operation operation JOIN ancestors USING(operation_id))", ['source'])
+
+    def execute(self, *_):
+>       self.response = responses.pop(0)
+                        ^^^^^^^^^^^^^^^^
+E       IndexError: pop from empty list
+
+tests/unit/test_planning_coordinated_contracts.py:93: IndexError
+_ test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt[FAILED_FINAL-FAILED_RETRYABLE] _
+
+source_status = 'FAILED_FINAL', attempt_status = 'FAILED_RETRYABLE'
+
+    @pytest.mark.parametrize("source_status,attempt_status", [("FAILED_RETRYABLE", "FAILED_RETRYABLE"), ("FAILED_FINAL", "FAILED_RETRYABLE"), ("FAILED_FINAL", "UNKNOWN")])
+    def test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt(source_status, attempt_status):
+        responses = [(source_status, 1, "workspace", {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "execution_contract_version": "1.19.0"}, "book", None), (attempt_status, {"error_code": "WORLD_PREPARATION_RESULT_INVALID"}, {})]
+    
+        class Cursor:
+            def execute(self, *_):
+                self.response = responses.pop(0)
+    
+            def fetchone(self):
+                return self.response
+    
+        with pytest.raises(KernelError, match="SOURCE_INVALID"):
+>           require_source(SimpleNamespace(cursor=Cursor()), source_operation_id="source", project_id="project")
+
+tests/unit/test_planning_coordinated_contracts.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/runtime_continuation.py:133: in require_source
+    retry_usage = require_generation_retry_budget(uow.cursor,operation_id=source_operation_id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/generation_isolation.py:37: in require_generation_retry_budget
+    evidence=generation_retry_usage(cursor,operation_id=operation_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/generation_isolation.py:15: in generation_retry_usage
+    cursor.execute("""WITH RECURSIVE edges(source,target) AS (
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.unit.test_planning_coordinated_contracts.test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt.<locals>.Cursor object at 0x109e665a0>
+_ = ("WITH RECURSIVE edges(source,target) AS (\n        SELECT source_operation_id,successor_operation_id FROM authority_s...x_attempts}')::int,3))\n           FROM authority_operation operation JOIN ancestors USING(operation_id))", ['source'])
+
+    def execute(self, *_):
+>       self.response = responses.pop(0)
+                        ^^^^^^^^^^^^^^^^
+E       IndexError: pop from empty list
+
+tests/unit/test_planning_coordinated_contracts.py:93: IndexError
+_ test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt[FAILED_FINAL-UNKNOWN] _
+
+source_status = 'FAILED_FINAL', attempt_status = 'UNKNOWN'
+
+    @pytest.mark.parametrize("source_status,attempt_status", [("FAILED_RETRYABLE", "FAILED_RETRYABLE"), ("FAILED_FINAL", "FAILED_RETRYABLE"), ("FAILED_FINAL", "UNKNOWN")])
+    def test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt(source_status, attempt_status):
+        responses = [(source_status, 1, "workspace", {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "execution_contract_version": "1.19.0"}, "book", None), (attempt_status, {"error_code": "WORLD_PREPARATION_RESULT_INVALID"}, {})]
+    
+        class Cursor:
+            def execute(self, *_):
+                self.response = responses.pop(0)
+    
+            def fetchone(self):
+                return self.response
+    
+        with pytest.raises(KernelError, match="SOURCE_INVALID"):
+>           require_source(SimpleNamespace(cursor=Cursor()), source_operation_id="source", project_id="project")
+
+tests/unit/test_planning_coordinated_contracts.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/runtime_continuation.py:133: in require_source
+    retry_usage = require_generation_retry_budget(uow.cursor,operation_id=source_operation_id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/generation_isolation.py:37: in require_generation_retry_budget
+    evidence=generation_retry_usage(cursor,operation_id=operation_id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/generation_isolation.py:15: in generation_retry_usage
+    cursor.execute("""WITH RECURSIVE edges(source,target) AS (
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tests.unit.test_planning_coordinated_contracts.test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt.<locals>.Cursor object at 0x109e92cc0>
+_ = ("WITH RECURSIVE edges(source,target) AS (\n        SELECT source_operation_id,successor_operation_id FROM authority_s...x_attempts}')::int,3))\n           FROM authority_operation operation JOIN ancestors USING(operation_id))", ['source'])
+
+    def execute(self, *_):
+>       self.response = responses.pop(0)
+                        ^^^^^^^^^^^^^^^^
+E       IndexError: pop from empty list
+
+tests/unit/test_planning_coordinated_contracts.py:93: IndexError
+=========================== short test summary info ============================
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.17.0]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.18.0]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_main_frozen_planning_definition_manifest_catalog_and_foundation_schema_are_exact[1.19.0]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt[FAILED_RETRYABLE-FAILED_RETRYABLE]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt[FAILED_FINAL-FAILED_RETRYABLE]
+FAILED tests/unit/test_planning_coordinated_contracts.py::test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt[FAILED_FINAL-UNKNOWN]
+6 failed, 81 passed in 1.20s

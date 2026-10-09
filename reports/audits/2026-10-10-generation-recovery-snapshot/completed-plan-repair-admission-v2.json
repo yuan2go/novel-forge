@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "source_operation_id": "f5b2aa69-0c3a-4a46-b74b-96e139fc03d8",
+  "semantic_repair_operation_id": "17f4e189-a079-4298-8284-a99733a58f8d",
+  "capacity_continuation": [
+    "851bb0bd-81b5-47c9-83d6-16f576664c96",
+    "17f4e189-a079-4298-8284-a99733a58f8d"
+  ],
+  "launch_stages": [
+    "chapter_plan.generate"
+  ],
+  "provider_calls": 0,
+  "admission": {
+    "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+    "status": "ADMITTED",
+    "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+    "envelope_hash": "sha256:85bfecb2548f6756f6b3a14490ef2942d2373f2dc78a86a6de118821fd29c005",
+    "total_reserved": 244673,
+    "component_usage": {
+      "safety_margin": 256,
+      "output_reserve": 32000,
+      "provider_input": 212401,
+      "request_framing": 16
+    },
+    "applicable_limit": 258400,
+    "contract_version": "provider-token-admission-v1",
+    "accounting_contract": {
+      "model": "gpt-6.1-sol",
+      "provider": "codex-cli",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+      "meter_version": "v1",
+      "safety_margin": 256,
+      "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+      "output_reserve": 32000,
+      "route_identity": "chapter_plan.generate:codex-cli:gpt-6.1-sol:aaf5c84f4f49d6986b69c5ff71de8d1b1ef41166:sha256:44c48b57d23477cb81143029e3f3e620fcbc5cfe4cd3838fe168aa84fcdcac20",
+      "contract_version": "provider-token-accounting-v3",
+      "framing_overhead": 16,
+      "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+      "model_context_limit": 258400,
+      "execution_token_limit": 258400,
+      "serialization_contract": "codex-cli-application-stdin-v1"
+    },
+    "context_bundle_status": "VALID",
+    "context_bundle_tokens": 129655,
+    "input_component_hashes": {
+      "tool_policy": "sha256:39d3ce3ae5eff7806b236f4219508b589b81acaebe188b262074b47409c94610",
+      "output_schema": "sha256:8a3c7a4b2dd2c9a2f849cc0303e2f8df781c8b78dc49b386c874f82103161b52",
+      "governed_skill": "sha256:f53b98a60e62f01e630bafd21de4dbef0b9cbc051a8bbd5b43520820bd4871af",
+      "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+      "provider_task_view": "sha256:52241af32f1e8576064025dcd673ce831cf18e5452dd86e14384a1fec92be11c",
+      "system_instruction": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+      "fully_rendered_prompt": "sha256:19b5f9dda5304283ff2c56416e99485f7d9fba69942fde9e82f8979bf6b53ae3",
+      "provider_context_view": "sha256:77056233d51c5d53ab4f08b5986d377ace4ac23460467b734d9ba54f7e99841c",
+      "stage_semantic_contract": "sha256:88931314345062ac332c7cc27232d76674c2473bf59f58b446f80aabed474a9b"
+    },
+    "complete_request_coverage": [
+      "system_runtime_instructions",
+      "prompt_template",
+      "skill_instructions",
+      "tool_policy_and_schemas",
+      "structured_output_schema",
+      "context_bundle",
+      "knowledge_inputs",
+      "request_envelope_and_framing",
+      "output_reserve",
+      "safety_margin"
+    ]
+  },
+  "original_inputs_unchanged": true,
+  "scope": "restored native ledger; controlled pre-launch trap; no real Provider"
+}
