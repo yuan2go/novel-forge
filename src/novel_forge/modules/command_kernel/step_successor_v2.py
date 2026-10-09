@@ -117,14 +117,16 @@ def replace_failed_step(
             [predecessor_id, saga["saga_id"]],
         )
         row = cursor.fetchone()
+        from .context_transport_recovery import require_unsent_context_transport
+        unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence)
         if (
             not row
             or source["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in {"RUNNING", "MANUAL_INTERVENTION"}
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
-            or (source["definition_version"] == target_version and not known_isolated_effects)
+            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport)
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",

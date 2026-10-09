@@ -2358,7 +2358,7 @@ Changing repository Pack, Prompt or Skill files does not activate them in an exi
 database or change an old request. Inspect the actual deployment, activation and frozen
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
 identities; current Chapter Pack 3.0.0 binds Chapter 3.10.0, Plan materialization 3.9.16 and
-Template v12. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
+Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
 Current Planning Pack 2.12.0 binds Operation 1.20.0, System v10,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
 retaining qualification-v2 identities. Planning 1.20.0 requires Mission/Scene v4,
@@ -3798,4 +3798,4 @@ Author Editor `save` accepts `input_origin=ASSISTANT_REVISION_PROPOSAL` only wit
 
 New current-contract Chapter Planning requests bind the existing operational commitment invariant at the initial output Schema as well as during repairs: only `HARD_CONSTRAINT` and `SOFT_INTENT` can drive Chapter execution. The frozen historical Schema remains readable; an earlier `OPEN_DESIGN_SPACE` candidate still fails the same semantic admission and receives a linked directed repair.
 
-The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 template per Attempt. Its Context transport replaces only identical repeated values with local RFC6901 references after an exact full round-trip check, and admission measures the encoded prompt with the complete output reservation. Original Context assets and prior Attempt manifests remain unchanged. A proven unsent capacity failure may use its remaining native Attempt allowance with this new Pack; changing the Pack never resets the persisted failure allowance or authorizes another business commit.
+The current Chapter Pack freezes `chapter-prompt-compiler:v13` and its v13 template per Attempt. Its joint task-and-Context data envelope replaces only identical repeated values with local RFC6901 references in canonical key order after an exact full round-trip check, and admission measures the encoded prompt with the complete output reservation. Original Context assets and prior Attempt manifests remain unchanged. A proven unsent capacity failure may use its remaining native Attempt allowance with this new Pack. If its v12 attempts already exhausted, the native StepSuccessor records at most one v13 transport correction with identical inputs, completion checks, actor, Book and original retry lineage; all routes must prove only Context capacity rejection and no Effect or budget reservation may exist. A later v13 failure cannot repeat that correction. Changing the Pack never resets the persisted failure allowance or authorizes another business commit.

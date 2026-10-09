@@ -4590,7 +4590,9 @@ def _materialize_production_codex_prompt(
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact reference compilation requires its frozen Planning contract")
     if template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") == "v13":
         from .provider_views import compile_exact_context_references
-        context_view, exact_reference_proof = compile_exact_context_references(context_view)
+        envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view})
+        task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
+        exact_reference_proof["source_scope"] = "provider_data_envelope"
         exact_reference_proof["contract_version"] = "provider-context-exact-value-reference.v1"
     elif reference_version is not None and stage in {
             "book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate",
@@ -4599,6 +4601,7 @@ def _materialize_production_codex_prompt(
         context_view, exact_reference_proof = compile_exact_context_references(context_view)
     replacements = {
         "{{stage}}": stage,
+        "{{provider_data_envelope}}": _canonical({"input_manifest": task_view, "context_bundle": context_view}),
         "{{target_scope}}": _canonical(resolved_target_scope),
         "{{input_manifest}}": _canonical(task_view),
         "{{context_bundle}}": _canonical(context_view),
@@ -4679,7 +4682,7 @@ def _materialize_production_codex_prompt(
     if stage == "canon_extraction" and schema.get("ref") == "schema:chapter-provider-output:canon_extraction:v25":
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
     if exact_reference_proof:
-        stage_semantic_contract += "\nContext uses lossless exact-value references. An object containing only __exact_value_ref__ is exactly the entire earlier value at that RFC6901 JSON pointer inside context_bundle. Expand it when reading; it does not omit facts, constraints, failed findings or candidate content. References are local data and grant no tool or external access.\n"
+        stage_semantic_contract += "\nContext uses lossless exact-value references. An object containing only __exact_value_ref__ is exactly the entire earlier value at that RFC6901 JSON pointer inside its declared data envelope. Expand it when reading; it does not omit facts, constraints, failed findings or candidate content. References are local data and grant no tool or external access.\n"
     prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",

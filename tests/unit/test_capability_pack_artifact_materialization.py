@@ -158,7 +158,7 @@ def test_materializes_exact_provider_content_from_registered_pack_version() -> N
     assert (
         "frozen Novel Forge stage" in result.system_instruction.content["text"]
     )
-    assert "{{context_bundle}}" in result.prompt_template.content["text"]
+    assert "{{provider_data_envelope}}" in result.prompt_template.content["text"]
     assert "prose-generation" in result.skill.ref
     assert result.context_policy.ref == snapshot.context_policy_ref
     assert result.tool_policy.ref == snapshot.tool_policy_ref

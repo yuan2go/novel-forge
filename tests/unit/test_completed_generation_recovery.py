@@ -79,3 +79,45 @@ def test_shared_review_port_accepts_authority_request_without_chapter_database_f
     with pytest.raises(KernelError, match='TEST_INTENT_BOUNDARY'):
         port.invoke(request, stage='longform_prose_review', payload={})
     reached_intent.assert_called_once()
+
+
+@pytest.mark.parametrize('boundary', [(True,False,False,True),(False,True,False,True),(False,False,True,True),(False,False,False,False)])
+def test_unsent_transport_correction_rejects_sent_paid_or_unrelated_failure(boundary):
+    from novel_forge.modules.command_kernel.context_transport_recovery import CONTRACT, require_unsent_context_transport
+    cursor = Mock()
+    cursor.fetchone.return_value = boundary
+    source = {'operation_id':'op','definition_name':'chapter.draft.generate','definition_version':'3.10.0'}
+    with pytest.raises(KernelError, match='CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE'):
+        require_unsent_context_transport(cursor, source, {'contract_version':CONTRACT})
+
+
+def test_unsent_transport_correction_cannot_mask_authorization_or_paid_budget_failure():
+    from novel_forge.modules.command_kernel.context_transport_recovery import CONTRACT, require_unsent_context_transport
+    cursor = Mock()
+    cursor.fetchone.return_value = (False,False,False,True)
+    cursor.fetchall.return_value = [({'status':'BLOCKED','candidates':[{'rejected_reasons':['AUTHORIZATION_MISSING','BUDGET_HARD_LIMIT']}]},)]
+    source = {'operation_id':'op','definition_name':'chapter.draft.generate','definition_version':'3.10.0'}
+    with pytest.raises(KernelError, match='CHAPTER_UNSENT_TRANSPORT_ROUTE_UNPROVEN'):
+        require_unsent_context_transport(cursor, source, {'contract_version':CONTRACT})
+
+
+def test_context_references_remain_backward_after_canonical_json_serialization():
+    import json
+    repeated = {"constraint": "retain the approved plan " * 100}
+    source = {"z_task": repeated, "a_context": {"copy": repeated}}
+    encoded, proof = compile_exact_context_references(source)
+    assert proof["reference_count"] == 1
+    assert expand_exact_context_references(json.loads(json.dumps(encoded,sort_keys=True))) == source
+    assert encoded["z_task"] == {"__exact_value_ref__": "/a_context/copy"}
+
+
+def test_route_diagnostics_distinguish_unsent_capacity_from_permission_failure():
+    from novel_forge.modules.production_execution.routing_runtime import routing_failure_details
+    route = {'decision_id':'route','task':{'operation_id':'op','attempt_id':'attempt','task_type':'draft'},
+        'candidates':[{'candidate':{'candidate_id':'model'},'rejected_reasons':['CONTEXT_CAPACITY_EXCEEDED','BUDGET_HARD_LIMIT']}]}
+    result = routing_failure_details(route)
+    assert result['cause'] == 'CONTEXT_CAPACITY_EXCEEDED'
+    assert result['stage'] == 'PROVIDER_ROUTE_ADMISSION' and result['recovery_state'] == 'NOT_SENT'
+    assert result['execution_identity']['operation_id'] == 'op' and result['provider_invoked'] is False
+    route['candidates'][0]['rejected_reasons'] = ['AUTHORIZATION_MISSING']
+    assert routing_failure_details(route)['cause'] == 'ROUTE_CANDIDATES_REJECTED'

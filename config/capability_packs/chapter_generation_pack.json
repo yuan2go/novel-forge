@@ -178,7 +178,7 @@
     "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
     "template_ref": "prompt-template:chapter-generation-pack",
     "template_version": "v13",
-    "template_hash": "sha256:0c11cc88ef30f8c3cc551c54e8e0b32308f1b256b5596d779090d8694ee9f818",
+    "template_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a",
     "compiler_version": "chapter-prompt-compiler:v13",
     "input_schema_ref": "schema:chapter-generation-pack-input:v1",
     "output_schema_ref": "schema:chapter-generation-pack-output:v1"

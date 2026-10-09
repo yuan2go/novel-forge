@@ -290,7 +290,7 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
-Current Chapter 3.10.0 and Pack 3.0.0/template v12 bind versioned scene-core,
+Current Chapter 3.10.0 and Pack 3.0.0/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
 corrections. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
 projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native

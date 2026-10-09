@@ -1925,6 +1925,7 @@ class ChapterAuthorityScheduler:
                         if isinstance(exc, KernelError)
                         else "UNKNOWN",
                         "error_message": str(exc),
+                        "failure": getattr(exc, "details", {}),
                     },
                 )
             elif classification not in {
@@ -1939,6 +1940,7 @@ class ChapterAuthorityScheduler:
                     if isinstance(exc, KernelError)
                     else "PROGRAMMING_BUG",
                     error_message=str(exc),
+                    failure_details=getattr(exc, "details", {}),
                     failure_class=classification.value,
                 )
             raise

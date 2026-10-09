@@ -3159,7 +3159,7 @@ def compile_exact_context_references(view):
             count += 1
             return {marker: seen[identity]}
         if isinstance(value, Mapping):
-            result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
+            result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in sorted(value.items())}
         elif isinstance(value, list):
             result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
         else:

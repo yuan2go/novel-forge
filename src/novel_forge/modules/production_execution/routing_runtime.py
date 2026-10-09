@@ -1305,7 +1305,8 @@ class ProductionProviderRouter:
             "bootstrap_authorization"
         ):
             raise KernelError(
-                "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
+                "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id")),
+                details=routing_failure_details(snapshot),
             )
         if snapshot.get("resource_control_version"):
             from .execution_template import verify_template_provenance
@@ -1615,3 +1616,17 @@ def routed_reservation(
     if price.accounting_basis == "ACCOUNT_ENTITLEMENT":
         return None
     return str(price.amount(input_tokens, output_tokens))
+
+
+def routing_failure_details(snapshot):
+    task = snapshot.get('task') or {}
+    reasons = [{ 'candidate_id':item.get('candidate',{}).get('candidate_id'),
+        'rejected_reasons':item.get('rejected_reasons',[]), 'estimated_total_tokens':item.get('estimated_total_tokens')}
+        for item in snapshot.get('candidates',[])]
+    capacity = bool(reasons) and all(set(item['rejected_reasons']) == {'CONTEXT_CAPACITY_EXCEEDED','BUDGET_HARD_LIMIT'} for item in reasons)
+    return {'error_code':'PROVIDER_ROUTING_BLOCKED','stage':'PROVIDER_ROUTE_ADMISSION',
+        'task_stage':task.get('task_type'),'cause':'CONTEXT_CAPACITY_EXCEEDED' if capacity else 'ROUTE_CANDIDATES_REJECTED',
+        'execution_identity':{key:task.get(key) for key in ('project_id','work_id','operation_id','attempt_id','chain_id')},
+        'decision_id':snapshot.get('decision_id'),'candidate_rejections':reasons,
+        'retryability':'CHANGED_ADMISSION_REQUIRED','recovery_action':'REVALIDATE_CONTEXT_ADMISSION' if capacity else 'INSPECT_ROUTE_ADMISSION',
+        'recovery_state':'NOT_SENT','business_impact':'NO_GENERATED_CANDIDATE','provider_invoked':False}
