@@ -2078,9 +2078,13 @@ workspace, book and Narrative Search branch when identifying pending work. Its f
 predecessor remains in history. Unregistered competing generations remain ambiguous;
 an unisolated UNKNOWN successor requires native reconciliation or authorized pure-generation
 isolation before another linked successor; isolated history cannot reacquire activation rights.
-Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated generation history retains its shared retry count without blocking unrelated Book work. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
-unchanged Book/dependency evidence. Owner recovery uses the original creation `recover` command
-after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
+Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated generation history retains its shared retry count without blocking Book work or
+reintroducing an effect/usage gate in author replacement. Retained unknown cost exposure
+still counts against the original paid budget. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
+unchanged Book/dependency evidence. The latest stopped, owned, pure Planning invocation is
+eligible for its owning tick to recover or isolate and register a bounded native successor;
+held writers, cancellation and irreversible effects still close that route. Other owner
+recovery uses the original creation `recover` command after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
 
 For `EXECUTION_CONTRACT_FROZEN_CONFLICT` before the first Provider dispatch, inspect the
 retained Effect and release its reservation only after the native ledger proves the
@@ -2258,8 +2262,10 @@ PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_review export \
 ```
 
 Run six-task EXPLORATION only after exact pilot reading decisions and the native positive
-stage grant. A system contract failure stops expansion. UNKNOWN effects must reconcile;
-the runner never silently changes account, model or billing. Resume writes a new evidence
+stage grant. A system contract failure stops expansion. Unknown generation outcomes use
+their native recovery owner: reuse trusted content, or isolate an authorized stopped pure
+generation and bind its successor. Irreversible outcomes require reconciliation. The runner
+retains its frozen authorization, accounting and exact lineage. Resume writes a new evidence
 directory while retaining the same native manifest, database identities and ledger; changing
 the output location grants no allowance. Offline reviewer responses
 are recorded with `PYTHONPATH=src .venv/bin/python -m scripts.narrative_closure_review record --packs <blind-pack-directory>
