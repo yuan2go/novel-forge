@@ -12,7 +12,7 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
     principal.require('book.authority.execute', project_id)
     principal.require('external_effect.resolve', project_id)
     followup = coordinator.followup
-    binder = getattr(getattr(followup,'prose_model_port',None), 'execution_binder', None)
+    binder = getattr(getattr(followup,'prose_model_port',None), 'capability_binder', None)
     if binder is None:
         return []
     if binder is not None:
@@ -20,7 +20,7 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
         with AuthorityUnitOfWork(coordinator.database_url) as uow:
             uow.cursor.execute('SELECT book_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s',[book_run_id,project_id])
             book_id = uow.cursor.fetchone()[0]
-        recover_saved_local_results(binder.resolver.execution_preparer.execution_transport,
+        recover_saved_local_results(followup.prose_model_port.adapter,
             database_url=coordinator.database_url,project_id=project_id,book_id=book_id,principal=principal)
     with AuthorityUnitOfWork(coordinator.database_url) as uow:
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)

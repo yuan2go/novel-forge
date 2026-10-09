@@ -9770,6 +9770,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261009_0194_multi_model_generation_isolation.py",
           "id": "20261009_0194_multi_model_generation_isolation",
           "locator": "MIGRATION_ID = \"20261009_0194_multi_model_generation_isolation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261009_0195_prose_review_generation_isolation.py",
+          "id": "20261009_0195_prose_review_generation_isolation",
+          "locator": "MIGRATION_ID = '20261009_0195_prose_review_generation_isolation'"
         }
       ],
       "external_effects": {
@@ -10056,7 +10061,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:fa1e771a9acb74fee8bf2cbf982d3f4d075850c961d57a4ab9be8ccdda2b2e2a"
+    "implementation_tree_sha": "sha256:5a13005eda938d1e09b99189cdfc712c3d24757ba628413f46b38dbea336e987"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
