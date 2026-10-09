@@ -2374,3 +2374,9 @@ only overlapping Arc and Volume segments, with source hashes and omission receip
 the same zero-intent, cancellation, lease and identity guards as Arc capacity succession.
 Isolated transport failures prefer an eligible authorized route with fewer recorded failures;
 Provider switching never changes the logical fault allowance or paid budget.
+
+The Book Chapter elaboration reader derives coordinated realization eligibility from the
+exact native 1.21 ChapterGroup generation. It reuses the existing deterministic composite
+chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
+Membership retry compatibility excludes durably isolated historical execution rows while
+retaining current leases, cancellation, identity checks and paid accounting exposure.
