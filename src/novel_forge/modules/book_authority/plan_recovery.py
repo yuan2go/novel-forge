@@ -90,7 +90,7 @@ def retire_reference_failed_chapter(authority, *, book_run_id, proposal_id, plan
     authority.chapter_port.cancel(project_id=book["project_id"],root_operation_id=request["chapter_root_operation_id"],actor_id=principal.principal_id,
         reason="Unproduced reference-invalid Chapter replaced by its active PlanChange",idempotency_key=cancel_key,trace_id=stable,correlation_id=book["root_operation_id"])
     stopped = authority.chapter_port.require_run(project_id=book["project_id"],root_operation_id=request["chapter_root_operation_id"])
-    if stopped["status"] != "CANCELLED":
+    if stopped["status"] not in {"CANCELLED","FAILED_FINAL"}:
         return {"status":"CANCELLATION_PENDING","book_run_id":book_run_id,"chapter_request_id":request["chapter_request_id"],"proposal_id":proposal_id}
     authority.reconcile_chapter(request["chapter_request_id"])
     book = authority.require(book_run_id)
@@ -111,10 +111,11 @@ def retire_reference_failed_chapter(authority, *, book_run_id, proposal_id, plan
         if current_proof != proof:
             raise KernelError("BOOK_PLAN_RECOVERY_CONFLICT", "Original failure history must remain exact")
         uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [request["chapter_root_operation_id"]])
-        if uow.cursor.fetchone()[0] != "CANCELLED":
+        terminal_status = uow.cursor.fetchone()[0]
+        if terminal_status not in {"CANCELLED","FAILED_FINAL"}:
             raise KernelError("BOOK_PLAN_RECOVERY_CANCELLATION_PENDING", "Finish native predecessor cancellation before replacement")
         uow.cursor.execute("SELECT count(*),count(*) FILTER (WHERE idempotency_key=%s AND actor_id=%s) FROM authority_cancellation_command WHERE operation_id=%s", [cancel_key,principal.principal_id,request["chapter_root_operation_id"]])
-        if uow.cursor.fetchone() != (1,1):
+        if uow.cursor.fetchone() != ((0,0) if terminal_status == "FAILED_FINAL" else (1,1)):
             raise KernelError("BOOK_PLAN_RECOVERY_CONFLICT", "User cancellation cannot authorize a plan successor")
         content = {"contract_version":CONTRACT,"book_run_id":book_run_id,"project_id":book["project_id"],"workspace_id":book["workspace_id"],"book_id":book["book_id"],
             "chapter":request["chapter_number"],"proposal_id":proposal_id,"predecessor_request_id":request["chapter_request_id"],

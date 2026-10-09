@@ -39,6 +39,13 @@ def test_author_first_recovery_uses_delivered_frontier_without_faking_acceptance
     assert (book,request,root,failures) == original
 
 
+def test_failed_terminal_root_is_retained_without_rewriting_it_as_cancelled():
+    book,request,root,failures = source()
+    root["status"] = "FAILED_FINAL"
+    require_reference_failure(Cursor([(root,),failures,(False,)*4]),book=book,request=request,actor_id="actor")
+    assert root["status"] == "FAILED_FINAL"
+
+
 @pytest.mark.parametrize("field,value", [("project_id","other"),("workspace_id","other"),("actor_id","other"),("status","SUCCEEDED")])
 def test_foreign_or_completed_roots_cannot_be_retired(field,value):
     book,request,root,failures = source()
