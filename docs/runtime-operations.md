@@ -795,6 +795,7 @@ and authorizing its actual native Project. Use the same work identity for these 
 ```bash
 novel-forge authority-manuscript read --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
 novel-forge authority-manuscript continue --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript continue --book-run-id "$BOOK_RUN" --stop-after-chapter "$ROUND_END"
 novel-forge authority-manuscript pause --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
 novel-forge authority-manuscript resume --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
 novel-forge authority-manuscript edit --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
@@ -805,6 +806,13 @@ novel-forge authority-manuscript adopt --project-id "$PROJECT" --book-run-id "$B
 novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
   --output "$NEW_MANUSCRIPT_JSON"
 ```
+
+For an author-first BookRun that is not Formation-derived, `continue` uses the existing
+native Book coordinator and Chapter scheduler with that exact Run identity. Its optional
+round boundary cannot exceed the frozen delivery window and does not change the full-book
+target, author selection or acceptance. Saved prose remains readable at recovery stops.
+An already-delivered round is a read-only replay; actual continuation retains the current
+deployment's dispatch, reconciliation, Provider authorization and budget policies.
 
 The `edit` and `adopt` example above is for expression edits inside the existing Scene
 contract. It does not repair deficient events or authorize an assistant to record an

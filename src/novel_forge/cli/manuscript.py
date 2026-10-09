@@ -86,7 +86,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
                 uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND formation_run_id || ':production'=%s", [args.project_id, book["book_id"], book["stable_idempotency_key"]])
                 original = uow.cursor.fetchone()
             if original is None:
-                raise ValueError("This historical work requires its native Book worker or a traceable Formation successor")
+                return _continue_native_work(settings, args, book=book, principal=principal)
             from novel_forge.cli.authority import _authority_parser
             from novel_forge.cli.creation import run_creation_command
             request = _authority_parser().parse_args(["authority-creation", "continue", "--project-id", args.project_id,
@@ -149,3 +149,53 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
     if prior:
         body = {name: value for name, value in prior[0].items() if name != "action"}
     return application.execute(action=action, payload=body, idempotency_key=key, principal=principal)
+
+
+def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], principal: Any) -> dict[str, Any]:
+    from time import monotonic
+    from novel_forge.api.authority_dependencies import (
+        build_book_production_composition, build_chapter_authority_application,
+        build_production_execution_composition, build_trusted_principal_resolver,
+    )
+    from novel_forge.modules.book_authority.creation_runtime import drive_book
+    from novel_forge.modules.book_authority.manuscript import author_first, require_manuscript, writing_frontier
+    principal.require("book.authority.execute", book["project_id"])
+    if not author_first(book):
+        raise ValueError("This historical work requires its native Book worker or a traceable Formation successor")
+    target = args.stop_after_chapter if args.stop_after_chapter is not None else book["target_chapter_count"]
+    if type(target) is not int or target < 1 or target > book["target_chapter_count"]:
+        raise ValueError("Round boundary must stay within the frozen delivery window")
+    run = book["book_run_id"]
+
+    def report(status: str, current: dict[str, Any]) -> dict[str, Any]:
+        return {"status": status, "book_run_id": run, "round_end": target,
+            "delivery_window": current["target_chapter_count"], "next_chapter": writing_frontier(current) + 1,
+            "manuscript": require_manuscript(settings.database_url, project_id=current["project_id"],
+                book_run_id=run, principal=principal)}
+
+    if writing_frontier(book) >= target:
+        return report("MANUSCRIPT_READY", book)
+    if book["state"] in {"ABORTED", "CANCELLED", "COMPLETED"}:
+        return report(book["state"], book)
+    execution = build_production_execution_composition(settings)
+    try:
+        chapter = build_chapter_authority_application(settings, execution=execution)
+        composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter)
+        worker = build_trusted_principal_resolver().resolve_worker_principal("manuscript-continuation-worker")
+        if book["state"] == "PAUSED":
+            composition.authority.resume(run, reason="Requested native manuscript continuation", principal=principal)
+        for _ in range((target - writing_frontier(book) + 1) * 20):
+            current = composition.authority.require(run)
+            if writing_frontier(current) >= target:
+                if current["state"] != "PAUSED":
+                    composition.authority.pause(run, reason=f"Requested manuscript round reached chapter {target}; frozen delivery window retained", principal=principal)
+                return report("MANUSCRIPT_READY", composition.authority.require(run))
+            if current["state"] in {"PAUSED", "ABORTED", "CANCELLED", "COMPLETED"}:
+                return report(current["state"], current)
+            outcome = drive_book(composition=composition, chapter=chapter, book_run_id=run, worker=worker,
+                maximum_ticks=1, deadline=monotonic() + 1800)
+            if outcome not in {"YIELDED_CHECKPOINT", "WAITING_CHAPTER_DEPENDENCY", "MANUSCRIPT_READY"}:
+                return report(outcome, composition.authority.require(run))
+        return report("YIELDED_CHECKPOINT", composition.authority.require(run))
+    finally:
+        execution.close()
