@@ -90,6 +90,19 @@ def retire_reference_failed_chapter(authority, *, book_run_id, proposal_id, plan
     authority.chapter_port.cancel(project_id=book["project_id"],root_operation_id=request["chapter_root_operation_id"],actor_id=principal.principal_id,
         reason="Unproduced reference-invalid Chapter replaced by its active PlanChange",idempotency_key=cancel_key,trace_id=stable,correlation_id=book["root_operation_id"])
     stopped = authority.chapter_port.require_run(project_id=book["project_id"],root_operation_id=request["chapter_root_operation_id"])
+    if stopped["status"] == "CANCELLATION_REQUESTED":
+        from novel_forge.modules.command_kernel.cancellation import resolve_cancellation
+        with AuthorityUnitOfWork(authority.database_url) as u:
+            u.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [request["chapter_root_operation_id"]])
+            version = u.cursor.fetchone()[0]
+        try:
+            resolve_cancellation(authority.database_url,operation_id=request["chapter_root_operation_id"],project_id=book["project_id"],expected_version=version,
+                resolution="no_external_effect",actor_id=principal.principal_id,reason="Active PlanChange retires an unproduced reference-invalid graph with terminal children",
+                trace_id=stable,correlation_id=book["root_operation_id"],require_no_active_attempt=True,require_terminal_children_without_effects=True)
+        except KernelError as error:
+            if error.code not in {"CANCELLATION_CHILDREN_UNSETTLED","CANCELLATION_ACTIVE_ATTEMPT","OPERATION_VERSION_CONFLICT","OPERATION_STATUS_CONFLICT"}:
+                raise
+        stopped = authority.chapter_port.require_run(project_id=book["project_id"],root_operation_id=request["chapter_root_operation_id"])
     if stopped["status"] not in {"CANCELLED","FAILED_FINAL"}:
         return {"status":"CANCELLATION_PENDING","book_run_id":book_run_id,"chapter_request_id":request["chapter_request_id"],"proposal_id":proposal_id}
     authority.reconcile_chapter(request["chapter_request_id"])

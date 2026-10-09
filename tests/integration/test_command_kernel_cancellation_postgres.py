@@ -826,6 +826,39 @@ class CommandKernelCancellationPostgresTests(unittest.TestCase):
             )
         return project_id, operation_id
 
+    def test_cancelled_root_closes_terminal_reference_failure_without_rewriting_child(self):
+        project, root = self._operation("CANCELLATION_REQUESTED")
+        child = identifier("failed-intent")
+        with transaction() as connection, connection.cursor() as cursor:
+            definition = identifier("intent-definition")
+            insert_definition(cursor, definition)
+            insert_operation(cursor,operation_id=child,definition_name=definition,project_id=project,
+                status="FAILED_FINAL",root_operation_id=root,parent_operation_id=root)
+        result = resolve_cancellation(DATABASE_URL,operation_id=root,project_id=project,expected_version=0,
+            resolution="no_external_effect",actor_id="operator-cancel",reason="Active PlanChange retires unproduced graph",
+            trace_id=identifier("trace"),correlation_id=identifier("correlation"),
+            require_no_active_attempt=True,require_terminal_children_without_effects=True)
+        self.assertEqual(result["status"],"CANCELLED")
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT status,version FROM authority_operation WHERE operation_id=%s",[child])
+            self.assertEqual(cursor.fetchone(),("FAILED_FINAL",0))
+
+    def test_cancelled_root_cannot_close_live_descendant(self):
+        for status in ("READY","EXECUTING","RECONCILIATION_REQUIRED"):
+            with self.subTest(status=status):
+                project, root = self._operation("CANCELLATION_REQUESTED")
+                with transaction() as connection, connection.cursor() as cursor:
+                    definition = identifier("live-definition")
+                    insert_definition(cursor,definition)
+                    insert_operation(cursor,operation_id=identifier("child"),definition_name=definition,project_id=project,
+                        status=status,root_operation_id=root,parent_operation_id=root)
+                with self.assertRaises(KernelError) as raised:
+                    resolve_cancellation(DATABASE_URL,operation_id=root,project_id=project,expected_version=0,
+                        resolution="no_external_effect",actor_id="operator-cancel",reason="Do not bypass live work",
+                        trace_id=identifier("trace"),correlation_id=identifier("correlation"),
+                        require_terminal_children_without_effects=True)
+                self.assertEqual(raised.exception.code,"CANCELLATION_CHILDREN_UNSETTLED")
+
     def _compensation_definition(
         self,
         *,
