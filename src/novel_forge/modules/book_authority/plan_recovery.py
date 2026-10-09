@@ -81,6 +81,8 @@ def retire_reference_failed_chapter(authority, *, book_run_id, proposal_id, plan
     if request["chapter_plan_version"] != proposal["target_asset_version_id"]:
         raise KernelError("BOOK_PLAN_RECOVERY_INVALID", "PlanChange must replace the failed request's exact Plan")
     with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("SELECT generation FROM authority_book_chapter_request WHERE chapter_request_id=%s AND book_run_id=%s", [request["chapter_request_id"],book_run_id])
+        request["generation"] = u.cursor.fetchone()[0]
         proof = require_reference_failure(u.cursor,book=book,request=request,actor_id=principal.principal_id)
         candidate = u.repositories.asset_documents.require(project_id=book["project_id"],asset_version_id=proposal["proposed_asset_version_id"])
         refs = frozen_character_references(SimpleNamespace(database_url=authority.database_url,project_id=book["project_id"],workspace_id=book["workspace_id"],command={"book_id":book["book_id"],"context_version_refs":{"book_production_input_snapshot_id":book["input_snapshot_id"]}}),scenes=candidate.content["scene_plan"])
