@@ -4404,6 +4404,11 @@ class PostgresPlanningExecutionPreparer:
             output_schema = add_author_decision_contract(output_schema, context_document.content.get("author_design_projection") or {})
             if (context_document.content.get("author_design_projection") or {}).get("fragments"):
                 output_schema_ref += ":author-input-v1"
+            if command.execution_contract_version == "1.21.0" and command.planning_scope.value == PlanContractType.CHAPTER.value:
+                from novel_forge.modules.hierarchical_planning.epistemic_validation import bind_planned_knowledge_schema
+
+                output_schema = bind_planned_knowledge_schema(output_schema, by_role["story_state"].content)
+                output_schema_ref += ":accepted-knowledge-v1"
         context_selection = [
             {
                 "artifact_ref": f"asset-version:{context_document.asset_version_id}",

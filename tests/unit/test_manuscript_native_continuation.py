@@ -4,6 +4,7 @@ import pytest
 
 from novel_forge.cli.manuscript import _continue_native_work
 from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
+from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def setup_runtime(
@@ -116,6 +117,31 @@ def test_already_delivered_round_is_read_only_replay(monkeypatch):
     )
     assert result["status"] == "MANUSCRIPT_READY" and result["next_chapter"] == 6
     assert all(c[0] == "permission" for c in calls) and book["state"] == "PAUSED"
+
+
+def test_native_admission_exception_retains_prose_and_does_not_retry(monkeypatch):
+    from novel_forge.modules.book_authority import creation_runtime
+
+    book, principal, calls = setup_runtime(monkeypatch)
+
+    def blocked(**kwargs):
+        calls.append(("blocked", kwargs["book_run_id"]))
+        raise KernelError(
+            "PROVIDER_ROUTING_BLOCKED", "frozen context exceeds authorized capacity"
+        )
+
+    monkeypatch.setattr(creation_runtime, "drive_book", blocked)
+    result = _continue_native_work(
+        SimpleNamespace(database_url="db"),
+        SimpleNamespace(stop_after_chapter=5),
+        book=book,
+        principal=principal,
+    )
+    assert result["status"] == "NATIVE_CONTINUATION_BLOCKED"
+    assert result["failure"]["code"] == "PROVIDER_ROUTING_BLOCKED"
+    assert len(result["manuscript"]["units"]) == 4
+    assert calls.count(("blocked", "same-run")) == 1 and ("close",) in calls
+    assert book["accepted_through_chapter"] == 0 and book["state"] == "READY"
 
 
 @pytest.mark.parametrize("end", [0, 41, True])

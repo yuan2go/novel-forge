@@ -814,6 +814,11 @@ target, author selection or acceptance. Saved prose remains readable at recovery
 An already-delivered round is a read-only replay; actual continuation retains the current
 deployment's dispatch, reconciliation, Provider authorization and budget policies.
 
+Chapter planning binds `known_fact_ids` to the frozen accepted StoryState. Working
+prose memories and agreements may inform scenes but cannot create accepted knowledge
+IDs. A native continuation admission error returns `NATIVE_CONTINUATION_BLOCKED`
+with the retained manuscript and error; inspect its original evidence before repair.
+
 The `edit` and `adopt` example above is for expression edits inside the existing Scene
 contract. It does not repair deficient events or authorize an assistant to record an
 author choice. A structural diagnosis must first enter the owning Planning/Plan Change

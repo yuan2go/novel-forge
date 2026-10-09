@@ -192,8 +192,14 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
                 return report("MANUSCRIPT_READY", composition.authority.require(run))
             if current["state"] in {"PAUSED", "ABORTED", "CANCELLED", "COMPLETED"}:
                 return report(current["state"], current)
-            outcome = drive_book(composition=composition, chapter=chapter, book_run_id=run, worker=worker,
-                maximum_ticks=1, deadline=monotonic() + 1800)
+            from novel_forge.modules.command_kernel.errors import KernelError
+            try:
+                outcome = drive_book(composition=composition, chapter=chapter, book_run_id=run, worker=worker,
+                    maximum_ticks=1, deadline=monotonic() + 1800)
+            except KernelError as exc:
+                result = report("NATIVE_CONTINUATION_BLOCKED", composition.authority.require(run))
+                result["failure"] = {"code": exc.code, "message": str(exc)}
+                return result
             if outcome not in {"YIELDED_CHECKPOINT", "WAITING_CHAPTER_DEPENDENCY", "MANUSCRIPT_READY"}:
                 return report(outcome, composition.authority.require(run))
         return report("YIELDED_CHECKPOINT", composition.authority.require(run))
