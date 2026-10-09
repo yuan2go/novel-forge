@@ -149,8 +149,8 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The published chain through 0168 is immutable. The current forward segment is
-0169–0184, ending at original CLI Effect reconciliation. Resolve each full
+The published chain through 0184 is immutable. The current forward segment is
+0185–0194, ending at native multi-model generation isolation. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
@@ -174,7 +174,9 @@ timeout, cancellation, orphan or unclassified process exit without a usage recei
 UNKNOWN even when
 the local Operation is terminal or its reservation is SETTLED. Only exact original evidence can establish that generation's remote outcome; a later unsent generation cannot. Remote outcome and permission to commit local business assets are separate dimensions.
 New ambiguous exits produce UNKNOWN and hold consumption. Historical PROCESS_EXIT_FAILURE
-retryable receipts without usage fail closed without rewriting their old classification or ledger.
+retryable receipts without usage retain their old classification and ledger. Their original
+attempt cannot commit without its required proof; authorized pure-generation isolation can
+revoke that right and admit a linked successor independently of the missing usage.
 Reconcile the original execution ID and receipt; a stream disconnect with no complete result
 or usage is not proof of remote completion, cancellation or zero consumption.
 Verify immutable raw Planning results separately from host binding, current Draft
@@ -707,8 +709,10 @@ from a credential or model name. Inspect the selected account and currency befor
 
 For policy succession, preserve old frozen commands, Pack snapshots, Provider identities,
 usage and accepted chapters. Apply a successor only to unstarted work through its owning
-Authority. Reconcile RESERVED/HELD_UNKNOWN effects before replacement; cancellation
-without proof of no remote execution cannot release a paid reservation. Resuming the
+Authority. Active RESERVED/HELD_UNKNOWN effects require reconciliation or authorized
+pure-generation isolation before replacement. Isolated history retains its accounting
+exposure without blocking the linked successor; cancellation without proof of no remote
+execution cannot release a paid reservation. Resuming the
 same Operation reuses its durable receipts and accepted cursor. A new task, release or
 run key cannot create a fresh spending allowance for the same work.
 
