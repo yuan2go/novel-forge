@@ -91,8 +91,16 @@ def observed_provider_failure(stdout: str, *, status: str, request=None) -> dict
         )
         if request is not None and hasattr(request, key)
     }
+    cause_code = (
+        "CODEX_RESPONSE_BODY_DECODE_FAILED"
+        if "error decoding response body" in message
+        else code
+    )
     return {
         "contract_version": "provider-failure.v1",
+        "cause_code": cause_code,
+        "provider_error_code": code,
+        "stage": phase,
         "error_code": code,
         "phase": phase,
         "causes": causes,
@@ -109,6 +117,70 @@ def observed_provider_failure(stdout: str, *, status: str, request=None) -> dict
         "business_impact": "CURRENT_TASK_BLOCKED",
         "remote_outcome": "UNESTABLISHED",
     }
+
+
+def provider_invocation_failure(evidence, *, request):
+    detail = observed_provider_failure("", status="PROVIDER_RESPONSE", request=request)
+    observed = str(evidence.get("failure_class") or "PROVIDER_RESPONSE_INVALID")
+    code, phase, retryable = {
+        "AUTHENTICATION_FAILED": ("PROVIDER_AUTH_FAILED", "AUTHENTICATION", False),
+        "PROVIDER_BUDGET_EXHAUSTED": (
+            "PROVIDER_BUDGET_INSUFFICIENT",
+            "PROVIDER_ADMISSION",
+            False,
+        ),
+        "RATE_LIMIT": ("PROVIDER_RATE_LIMITED", "PROVIDER_ADMISSION", True),
+        "PROVIDER_UNAVAILABLE": ("PROVIDER_UNAVAILABLE", "PROVIDER_RESPONSE", True),
+        "TRANSIENT_NETWORK": (
+            "PROVIDER_CONNECTION_FAILED",
+            "CONNECTION_OR_RESPONSE_READ",
+            True,
+        ),
+        "TIMEOUT": ("PROVIDER_RESPONSE_TIMEOUT", "RESPONSE_WAIT", True),
+        "OUTPUT_CAPACITY_EXCEEDED": ("RESULT_TRUNCATED", "RESULT_COMPLETENESS", True),
+        "RESPONSE_CAPACITY_EXCEEDED": ("RESULT_TRUNCATED", "RESPONSE_READ", True),
+        "MALFORMED_PROVIDER_RECEIPT": (
+            "PROVIDER_RECEIPT_INVALID",
+            "RESPONSE_PARSE",
+            False,
+        ),
+        "MALFORMED_STRUCTURED_OUTPUT": ("RESULT_JSON_INVALID", "RESULT_PARSE", True),
+        "SCHEMA_REJECTION": ("RESULT_SCHEMA_INVALID", "RESULT_VALIDATION", True),
+        "CONTRACT_REJECTION": (
+            "PROVIDER_CONTRACT_REJECTED",
+            "PROVIDER_ADMISSION",
+            False,
+        ),
+        "POLICY_REJECTION": ("PROVIDER_POLICY_REJECTED", "PROVIDER_ADMISSION", False),
+    }.get(observed, (observed, "PROVIDER_RESPONSE", False))
+    from .security import redact_secret_text
+
+    detail.update(
+        error_code=code,
+        phase=phase,
+        retryable=retryable,
+        causes=[
+            {
+                "event": "provider.response",
+                "code": observed,
+                "message": redact_secret_text(
+                    str(evidence.get("failure_cause") or observed)
+                ),
+                **(
+                    {"http_status": evidence["http_status"]}
+                    if "http_status" in evidence
+                    else {}
+                ),
+            }
+        ],
+        recovery_action="REUSE_RESULT_OR_ISOLATE_PURE_GENERATION"
+        if retryable
+        else "CORRECT_AUTH_OR_CONTRACT",
+        remote_outcome="REJECTED_BEFORE_EXECUTION"
+        if evidence.get("submission_state") == "REJECTED_BEFORE_EXECUTION"
+        else "UNESTABLISHED",
+    )
+    return detail
 
 
 def codex_stream_summary(stdout: str) -> dict:

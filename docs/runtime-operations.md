@@ -221,7 +221,10 @@ resolve an earlier request's remote outcome.
 
 ### Original Codex result recovery
 
-Historical audit reports and deployment manifests are immutable execution evidence, not current operating instructions. Recheck the configured release, process, storage identity and original frozen contract. A local reread capability is not authenticated remote result retrieval. Missing usage, missing content and an uncertain remote outcome must be assessed separately. The baseline implementation has no pure-generation isolation exit; treat that gap as `UNRESOLVED_DESIGN_CONSTRAINT`, not a permanent whole-book invariant.
+Historical audit reports and deployment manifests are immutable execution evidence, not current operating instructions. Recheck the configured release, process, storage identity and original frozen contract. A local reread capability is not authenticated remote result retrieval. Missing usage, missing content and an uncertain remote outcome must be assessed separately. The native `ISOLATE_PURE_GENERATION` disposition revokes old commit rights and records a
+stable successor intent without claiming a remote terminal outcome. Its pending intent is
+replayed through existing Planning continuation or Chapter step succession after restart.
+Original receipt recovery and usage correction remain available for isolated history.
 
 Codex reconciliation reads the original execution directory, request, Attempt/fence,
 command and input digests. A changed complete process receipt can supersede cached
@@ -672,17 +675,19 @@ query-plan and Compose runtime gates. The eight-domain controlled prose corpus i
 fixture data; its scripted expectations are not calibrated semantic evaluation. Only a
 separately authorized real-Provider/editorial campaign can establish creative quality.
 
-### Unrecoverable pure Planning generation
+### Unrecoverable pure generation
 
 The existing manual Effect resolution command admits `ISOLATE_PURE_GENERATION` only
-for an owned terminal native Planning task with a stopped, identity-bound process,
+for an owned native Planning or Chapter task with a stopped, identity-bound process,
 no complete recoverable result and frozen default-deny Tools allowing only Provider
 invocation. The immutable isolation journal preserves remote UNKNOWN, terminal Operation
 history and unknown usage. It revokes old commit and activation rights and binds one
-native Planning runtime continuation to the exact original Book, inputs and logical task.
+native Planning runtime continuation or Chapter Saga step successor to the exact original
+Book, inputs and logical task.
 The successor retains previously admitted per-task Context capacity. A typed pre-send
 capacity-inheritance continuation may restore that exact allocation without increasing it.
-Opening recovery and budget lineage consume this same disposition; paid reservations
+Opening, Chapter, Book coordination, delivery windows and budget lineage consume this same
+disposition; paid reservations
 remain conservative exposure. Two continuations bound one logical task. Exhaustion
 returns `GENERATION_RECOVERY_EXHAUSTED`; it does not impose a Book-wide membership quota.
 Schema/semantic-invalid or complete locally available results require native result

@@ -38,6 +38,10 @@ def test_observed_failures_keep_cause_and_recovery_boundary(message, code, phase
     )
     assert failure["error_code"] == code
     assert failure["phase"] == phase
+    assert failure["stage"] == phase
+    if "error decoding response body" in message:
+        assert failure["cause_code"] == "CODEX_RESPONSE_BODY_DECODE_FAILED"
+        assert failure["provider_error_code"] == "PROVIDER_STREAM_INTERRUPTED"
     assert failure["causes"][0]["message"] == message
     assert failure["recovery_action"] and failure["scope"] and failure["exit_condition"]
     assert failure["remote_outcome"] == "UNESTABLISHED"

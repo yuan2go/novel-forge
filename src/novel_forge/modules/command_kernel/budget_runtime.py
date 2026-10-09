@@ -3579,6 +3579,46 @@ def _bind_budget_effect_in_uow(
         reservation_id=reservation_id,
     )
     uow.cursor.execute(
+        """SELECT binding.operation_id,binding.opening_run_id,binding.budget_scope_id,
+        binding.budget_scope_revision,binding.reservation_version,effect.status
+        FROM authority_book_opening_budget_effect_binding binding
+        JOIN authority_external_effect effect USING(external_effect_id)
+        JOIN authority_book_opening_budget_operation_binding original
+          ON original.operation_budget_binding_id=binding.operation_budget_binding_id
+        WHERE binding.external_effect_id=%s AND binding.reservation_id=%s
+          AND effect.operation_id=%s AND effect.project_id=%s
+          AND original.operation_id=effect.operation_id AND original.opening_run_id=binding.opening_run_id
+          AND EXISTS(SELECT 1 FROM authority_external_effect_dispatch dispatch
+            WHERE dispatch.external_effect_id=effect.external_effect_id AND dispatch.payload_hash=effect.request_hash)""",
+        [
+            request.external_effect_id,
+            reservation_id,
+            request.operation_id,
+            request.project_id,
+        ],
+    )
+    retained = uow.cursor.fetchone()
+    if (
+        retained
+        and tuple(retained[:5])
+        == (
+            request.operation_id,
+            opening_run_id,
+            str(opening_binding["budget_scope_id"]),
+            int(opening_binding["revision"]),
+            reservation_version,
+        )
+        and retained[5]
+        in {
+            "DISPATCHING",
+            "DISPATCHED",
+            "UNKNOWN",
+            "RECONCILIATION_REQUIRED",
+            "SUCCEEDED",
+        }
+    ):
+        return
+    uow.cursor.execute(
         """
         INSERT INTO authority_book_opening_budget_effect_binding(
             budget_effect_binding_id,external_effect_id,

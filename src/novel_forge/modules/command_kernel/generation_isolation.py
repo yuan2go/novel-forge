@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from uuid import uuid4
+from time import sleep
 
 from psycopg.types.json import Jsonb
 
@@ -45,7 +46,7 @@ def recover_book_generations(application, *, project_id, book_id, principal):
         uow.cursor.execute(
             """SELECT to_jsonb(e),to_jsonb(o) FROM authority_generation_isolation i
             JOIN authority_external_effect e USING(external_effect_id) JOIN authority_operation o ON o.operation_id=i.operation_id
-            WHERE i.project_id=%s AND i.book_id=%s AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation r
+            WHERE i.project_id=%s AND i.book_id=%s AND o.definition_name='story_planning.generate' AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation r
             WHERE r.source_operation_id=i.operation_id)""",
             [project_id, book_id],
         )
@@ -60,6 +61,8 @@ def recover_book_generations(application, *, project_id, book_id, principal):
                 [effect["operation_id"]],
             )
             operation = uow.cursor.fetchone()[0]
+        if operation["definition_name"] != "story_planning.generate":
+            continue
         authorization = (
             effect["request_payload"]
             .get("_production_execution", {})
@@ -90,7 +93,15 @@ def recover_book_generations(application, *, project_id, book_id, principal):
                 operation["correlation_id"],
             ),
         )
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s",
+                [operation["operation_id"]],
+            )
+            operation = uow.cursor.fetchone()[0]
         pending.append((effect, operation))
+    if pending:
+        sleep(30)
     for effect, operation in pending:
         with AuthorityUnitOfWork(application.database_url) as uow:
             proof = isolation(uow.cursor, effect["external_effect_id"])
@@ -106,7 +117,7 @@ def recover_book_generations(application, *, project_id, book_id, principal):
             trace_id=operation["trace_id"],
             correlation_id=operation["correlation_id"],
         )
-    return bool(rows or pending)
+    return bool(pending)
 
 
 def append_isolation(uow, effect, command):
@@ -119,20 +130,38 @@ def append_isolation(uow, effect, command):
         [effect["operation_id"]],
     )
     operation = cursor.fetchone()[0]
+    chapter_generation = operation["definition_name"] in {
+        "chapter.memo.generate",
+        "chapter.draft.generate",
+        "chapter.review.evaluate",
+        "chapter.revision.apply",
+        "chapter.canon.extract",
+    }
     if (
-        operation["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}
+        operation["status"]
+        not in {
+            "FAILED_FINAL",
+            "DEAD_LETTER",
+            "WAITING_EXTERNAL_RESULT",
+            "RECONCILIATION_REQUIRED",
+        }
         or operation["actor_id"] != command.actor_id
-        or operation["definition_name"] != "story_planning.generate"
+        or not (
+            operation["definition_name"] == "story_planning.generate"
+            or chapter_generation
+        )
         or effect["effect_type"] != "model.invoke"
         or effect["status"] not in {"UNKNOWN", "RECONCILIATION_REQUIRED"}
     ):
         raise KernelError(
             "GENERATION_ISOLATION_SCOPE_UNSAFE",
-            "Only an owned terminal pure Planning generation can be isolated",
+            "Only an owned stopped native model generation can be isolated",
         )
     cursor.execute(
-        "SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id) WHERE a.operation_id=%s AND l.status='HELD'",
-        [effect["operation_id"]],
+        """SELECT 1 WHERE EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+          WHERE a.operation_id=%s AND l.status='HELD') OR EXISTS(SELECT 1 FROM authority_effect_dispatch_lease l
+          JOIN authority_external_effect_dispatch d USING(dispatch_id) WHERE d.external_effect_id=%s AND l.status='HELD')""",
+        [effect["operation_id"], effect["external_effect_id"]],
     )
     if cursor.fetchone():
         raise KernelError(
@@ -148,19 +177,62 @@ def append_isolation(uow, effect, command):
             "GENERATION_ISOLATION_RESULT_RECOVERABLE",
             "Read and reuse the original primary output",
         )
-    cursor.execute(
-        "SELECT book_id, workspace_id FROM authority_story_planning_generation WHERE operation_id=%s",
-        [operation["operation_id"]],
-    )
+    if chapter_generation:
+        from .step_successor import require_live_chapter_frontier
+        from .step_successor_v2 import has_domain_outputs
+
+        require_live_chapter_frontier(
+            cursor,
+            root_id=operation["root_operation_id"],
+            project_id=command.project_id,
+        )
+        if has_domain_outputs(cursor, operation["operation_id"]):
+            raise KernelError(
+                "GENERATION_ISOLATION_RESULT_RECOVERABLE",
+                "Reuse the immutable domain output",
+            )
+        cursor.execute(
+            """SELECT book.book_id,book.workspace_id FROM authority_book_chapter_request request
+            JOIN authority_book_production book USING(book_run_id)
+            JOIN authority_saga_step step ON step.operation_id=%s AND step.saga_id=%s
+            JOIN authority_operation root ON root.operation_id=request.chapter_root_operation_id
+            WHERE request.chapter_root_operation_id=%s AND book.project_id=%s
+            AND root.definition_name='chapter.slice.run' AND root.actor_id=%s
+            AND root.status='WAITING_CHILDREN'""",
+            [
+                operation["operation_id"],
+                operation["saga_id"],
+                operation["root_operation_id"],
+                command.project_id,
+                command.actor_id,
+            ],
+        )
+    else:
+        cursor.execute(
+            "SELECT book_id, workspace_id FROM authority_story_planning_generation WHERE operation_id=%s",
+            [operation["operation_id"]],
+        )
     generation = cursor.fetchone()
-    frozen = operation["command_payload"].get("payload", {})
+    frozen = (
+        operation["command_payload"]
+        if chapter_generation
+        else operation["command_payload"].get("payload", {})
+    )
     runtime = effect["request_payload"].get("_production_execution") or {}
     if (
         not generation
         or (generation[0], generation[1])
         != (runtime.get("book_id"), operation["workspace_id"])
-        or (frozen.get("project_id"), frozen.get("workspace_id"), frozen.get("book_id"))
-        != (command.project_id, operation["workspace_id"], generation[0])
+        or (
+            not chapter_generation
+            and (
+                frozen.get("project_id"),
+                frozen.get("workspace_id"),
+                frozen.get("book_id"),
+            )
+            != (command.project_id, operation["workspace_id"], generation[0])
+        )
+        or (chapter_generation and frozen.get("book_id") != generation[0])
     ):
         raise KernelError(
             "GENERATION_ISOLATION_SCOPE_UNSAFE",
@@ -296,7 +368,12 @@ def append_isolation(uow, effect, command):
         "original_history": "PRESERVED",
         "business_commit_right": "REVOKED",
         "activation_right": "REVOKED",
-        "continuation_id": "planning-runtime-continuation:" + effect["operation_id"],
+        "continuation_id": (
+            "chapter-generation-successor:"
+            if chapter_generation
+            else "planning-runtime-continuation:"
+        )
+        + effect["operation_id"],
         "recovery_state": "ISOLATED_AWAITING_NATIVE_SUCCESSOR",
         "reason": command.reason,
         "authorization_ref": command.evidence.get("authorization_ref"),
@@ -308,6 +385,48 @@ def append_isolation(uow, effect, command):
             "Bind actual generation recovery authorization and original Book",
         )
     proof["evidence_asset_version_id"] = receipt.asset_version_id
+    if operation["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}:
+        from .attempt_runtime import _cas_operation, _transition_attempt
+
+        attempt = uow.repositories.attempt_runtime.get_for_update(
+            process["attempt_id"], command.project_id
+        )
+        if (
+            attempt["operation_id"] != operation["operation_id"]
+            or attempt["status"] != "CHECKPOINTED"
+        ):
+            raise KernelError(
+                "GENERATION_ISOLATION_WRITER_ACTIVE",
+                "Only a released stopped reconciliation checkpoint may be retired",
+            )
+        _transition_attempt(
+            uow,
+            attempt,
+            "CANCELLED",
+            worker_id=command.actor_id,
+            fencing_token=None,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            result={
+                "error_code": "GENERATION_ATTEMPT_ISOLATED",
+                "failure": observed,
+                "local_execution_disposition": "RETIRED",
+                "remote_cancellation": "NOT_ESTABLISHED",
+            },
+        )
+        _cas_operation(
+            uow,
+            operation_id=operation["operation_id"],
+            project_id=command.project_id,
+            expected_status=operation["status"],
+            expected_version=operation["version"],
+            target_status="FAILED_FINAL",
+            actor_id=command.actor_id,
+            reason="Isolate stopped pure generation; remote outcome and usage remain UNKNOWN",
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            causation_id=effect["external_effect_id"],
+        )
     cursor.execute(
         """INSERT INTO authority_generation_isolation(isolation_id,external_effect_id,operation_id,
         project_id,workspace_id,book_id,request_hash,materialization_asset_version_id,proof)
@@ -325,3 +444,142 @@ def append_isolation(uow, effect, command):
         ],
     )
     return proof
+
+
+def recover_chapter_generations(authority, *, book_run_id, principal):
+    from .manual_effect_resolution import (
+        ExternalEffectManualResolutionCommand,
+        resolve_external_effect_manually,
+    )
+    from .service import AdmissionContext
+    from .step_successor_v2 import replace_failed_step
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    book = authority.require(book_run_id)
+    if not book.get("active_chapter_request_id"):
+        return False
+    for permission in (
+        "external_effect.resolve",
+        "book.authority.execute",
+        "chapter.authority.execute",
+    ):
+        principal.require(permission, book["project_id"])
+    request = authority.require_chapter_request(book["active_chapter_request_id"])
+    root_id = request["chapter_root_operation_id"]
+    with AuthorityUnitOfWork(authority.database_url) as uow:
+        uow.cursor.execute(
+            """SELECT to_jsonb(o) FROM authority_operation o
+            JOIN authority_saga_step step USING(operation_id) WHERE o.root_operation_id=%s
+            AND o.status IN ('WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED','FAILED_FINAL','DEAD_LETTER')
+            AND EXISTS(SELECT 1 FROM authority_external_effect effect WHERE effect.operation_id=o.operation_id
+              AND effect.effect_type='model.invoke' AND effect.status IN ('UNKNOWN','RECONCILIATION_REQUIRED'))
+            ORDER BY o.created_at""",
+            [root_id],
+        )
+        sources = [row[0] for row in uow.cursor.fetchall()]
+    changed = False
+    for source in sources:
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            uow.cursor.execute(
+                "SELECT to_jsonb(e) FROM authority_external_effect e WHERE operation_id=%s ORDER BY external_effect_id",
+                [source["operation_id"]],
+            )
+            effects = [row[0] for row in uow.cursor.fetchall()]
+        if len(effects) != 1:
+            raise KernelError(
+                "GENERATION_ISOLATION_MIXED_EFFECTS_RECONCILIATION_REQUIRED",
+                "A multi-effect node requires original per-effect result recovery before native succession",
+            )
+        for effect in effects:
+            with AuthorityUnitOfWork(authority.database_url) as uow:
+                retained = isolation(uow.cursor, effect["external_effect_id"])
+            if retained:
+                continue
+            authorization = (
+                effect["request_payload"]
+                .get("_production_execution", {})
+                .get("capability_runtime", {})
+                .get("routing_decision", {})
+                .get("selected", {})
+                .get("candidate", {})
+                .get("authorization_ref")
+            )
+            resolve_external_effect_manually(
+                authority.database_url,
+                ExternalEffectManualResolutionCommand(
+                    effect["external_effect_id"],
+                    source["operation_id"],
+                    book["project_id"],
+                    principal.principal_id,
+                    "ISOLATE_PURE_GENERATION",
+                    "Retire stopped pure generation and retain original unknown remote outcome and usage",
+                    {"authorization_ref": authorization},
+                    "generation-isolation:" + effect["external_effect_id"],
+                    source["version"],
+                    source["trace_id"],
+                    source["correlation_id"],
+                ),
+            )
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            proofs = [
+                isolation(uow.cursor, effect["external_effect_id"])
+                for effect in effects
+            ]
+            uow.cursor.execute(
+                """WITH RECURSIVE ancestors AS (
+                SELECT %s::text operation_id UNION ALL
+                SELECT journal.predecessor_operation_id FROM authority_saga_step_successor journal
+                  JOIN ancestors ON journal.successor_operation_id=ancestors.operation_id)
+                SELECT count(*) FROM authority_saga_step_successor journal JOIN ancestors
+                  ON ancestors.operation_id=journal.successor_operation_id
+                WHERE journal.policy_evidence->>'contract_version'='chapter-pure-generation-successor.v1'""",
+                [source["operation_id"]],
+            )
+            recovery_count = int(uow.cursor.fetchone()[0])
+            uow.cursor.execute(
+                "SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                [source["operation_id"]],
+            )
+            failure_code = uow.cursor.fetchone()[0]
+        if recovery_count >= 2:
+            raise KernelError(
+                "GENERATION_RECOVERY_EXHAUSTED",
+                "Two safe native successors exhausted this Chapter node; saved manuscript remains readable; inspect failed routes or configure an authorized backup",
+                details={
+                    "original_failures": proofs,
+                    "recovery_attempts": recovery_count,
+                    "scope": "CURRENT_CHAPTER_NODE",
+                    "recovery_action": "REPAIR_ROUTE_THEN_NATIVE_SUCCESSOR",
+                },
+            )
+        successor = replace_failed_step(
+            authority.database_url,
+            predecessor_id=source["operation_id"],
+            target_version=source["definition_version"],
+            context=AdmissionContext(
+                principal.principal_id,
+                principal.permissions,
+                authority.chapter_port.application.registry.available_handler_keys,
+                authority.application_build_id,
+                authority.commit_sha,
+            ),
+            policy_evidence={
+                "contract_version": "chapter-pure-generation-successor.v1",
+                "generation_isolations": proofs,
+                "book_run_id": book_run_id,
+                "chapter_request_id": request["chapter_request_id"],
+                "recovery_attempt_number": recovery_count + 1,
+                "remote_outcome": "UNKNOWN",
+                "usage": "UNKNOWN",
+                "completion_checks": "UNCHANGED",
+            },
+            expected_failure_code=failure_code,
+            known_isolated_effects=tuple(
+                (effect["external_effect_id"], effect["request_hash"])
+                for effect in effects
+            ),
+        )
+        if not successor["replayed"]:
+            sleep(30)
+        changed = True
+    return changed

@@ -294,6 +294,7 @@ class ContentAuthorityScheduler:
                         if isinstance(exc, KernelError)
                         else "UNKNOWN",
                         "error_message": str(exc),
+                        "failure": getattr(exc, "details", {}),
                     },
                 )
             elif classification not in {

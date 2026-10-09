@@ -27,7 +27,9 @@ architecture. Never rationalize an unresolved constant from its mere presence in
 - Repositories are persistence mechanics inside an owning UoW, not business Authorities.
 - External I/O occurs outside business transactions and is reconciled from durable
   intent/receipt evidence.
-- Unknown external or commit outcomes fail closed and require reconciliation.
+- Unknown irreversible effects and uncertain database commits fail closed and require reconciliation.
+- Authorized pure generation may revoke old commit rights and register a linked successor;
+  preserve remote uncertainty and usage without making isolated history an active Book gate.
 - Retry and recovery append versioned evidence; they do not rewrite terminal history.
 - Story generators create candidates. Story Design owns semantic decisions;
   Hierarchical Planning and Plan Change own active typed plan mutation.

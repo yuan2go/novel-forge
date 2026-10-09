@@ -37,6 +37,7 @@ def replace_failed_step(
     transaction_guard=None,
     known_receipt_effects=(),
     known_rejected_effects=(),
+    known_isolated_effects=(),
     window_successor=None,
     _uow=None,
     _group_ids=(),
@@ -52,6 +53,7 @@ def replace_failed_step(
                 "failure_code": expected_failure_code,
                 **({"known_rejected_effects": known_rejected_effects} if known_rejected_effects else {}),
                 **({"window_successor": window_successor} if window_successor else {}),
+                **({"known_isolated_effects": known_isolated_effects} if known_isolated_effects else {}),
                 **(
                     {"known_receipt_effects": known_receipt_effects}
                     if known_receipt_effects
@@ -122,7 +124,7 @@ def replace_failed_step(
             or saga["status"] not in {"RUNNING", "MANUAL_INTERVENTION"}
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
-            or source["definition_version"] == target_version
+            or (source["definition_version"] == target_version and not known_isolated_effects)
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",
@@ -206,6 +208,18 @@ def replace_failed_step(
                 cursor.execute("SELECT v.content_hash FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE v.asset_version_id=%s AND a.project_id=%s", [receipt, project])
                 if cursor.fetchone() != (receipt_hash,):
                     raise KernelError("STEP_SUCCESSOR_REJECTION_UNRECONCILED", "Immutable process receipt identity changed")
+            external = False
+            output = has_domain_outputs(cursor, predecessor_id)
+        if known_isolated_effects:
+            from .generation_isolation import isolation
+            cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [predecessor_id])
+            original_effects = cursor.fetchall()
+            proofs = [isolation(cursor, effect) for effect, request_hash in original_effects]
+            if (tuple(original_effects) != tuple(sorted(known_isolated_effects))
+                or not all(proofs) or policy_evidence.get("generation_isolations") != proofs
+                or policy_evidence.get("contract_version") != "chapter-pure-generation-successor.v1"
+                or any(proof["operation_id"] != predecessor_id or proof["actor_id"] != context.actor_id for proof in proofs)):
+                raise KernelError("STEP_SUCCESSOR_ISOLATION_UNPROVEN", "Bind every original effect to its immutable pure generation disposition")
             external = False
             output = has_domain_outputs(cursor, predecessor_id)
         if external or output or dependent or live_lease:
@@ -553,7 +567,7 @@ def _require_reconciled_graph(cursor, *, root_id, predecessor_id):
         LEFT JOIN authority_budget_reservation b USING(external_effect_id)
         WHERE o.root_operation_id=%s AND (e.status IN
         ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED','PENDING')
-        OR b.status IS DISTINCT FROM 'SETTLED')),
+        OR b.status IS DISTINCT FROM 'SETTLED') AND NOT authority_generation_isolated(e.external_effect_id)),
         EXISTS(SELECT 1 FROM authority_lease_acquisition l
         JOIN authority_attempt a USING(attempt_id)
         JOIN authority_operation o USING(operation_id)

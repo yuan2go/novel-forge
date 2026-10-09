@@ -127,6 +127,21 @@ def adapter(transport, *, clock=lambda: OFF_PEAK):
     )
 
 
+@pytest.mark.parametrize("finish, outcome", [("stop", "success"), ("length", "final_failure")])
+def test_missing_usage_preserves_only_complete_content_without_fabricated_cost(finish, outcome):
+    payload = response(finish=finish)
+    del payload["usage"]
+    result = adapter(lambda *args, **kwargs: BytesIO(json.dumps(payload).encode())).invoke(invocation())
+    assert result.outcome == outcome
+    assert result.evidence["result"] == {"classification": "fiction"}
+    assert result.evidence["usage"]["availability"] == "UNAVAILABLE"
+    assert result.evidence["usage"]["total_tokens"] is None
+    assert result.evidence["cost"]["measurement"] == "UNKNOWN"
+    assert "amount" not in result.evidence["cost"]
+    if finish == "length":
+        assert result.evidence["failure_class"] == "OUTPUT_CAPACITY_EXCEEDED"
+
+
 def test_catalog_uses_current_models_capabilities_and_peak_reservation_prices():
     candidates = deepseek_candidates(available=True)
     assert [

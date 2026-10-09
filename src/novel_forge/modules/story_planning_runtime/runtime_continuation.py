@@ -127,13 +127,21 @@ def require_source(
         uow.cursor.execute("SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s", [source_operation_id])
         prior = uow.cursor.fetchone()
         depth = (int(prior[0]) if prior else 0) + 1
-        if depth > 2:
+        uow.cursor.execute("""WITH RECURSIVE ancestors AS (
+            SELECT %s::text operation_id UNION ALL
+            SELECT link.source_operation_id FROM authority_story_planning_runtime_continuation link
+              JOIN ancestors ON link.successor_operation_id=ancestors.operation_id)
+            SELECT count(DISTINCT i.operation_id) FROM authority_generation_isolation i
+              JOIN ancestors USING(operation_id)""", [source_operation_id])
+        recovery_number = int(uow.cursor.fetchone()[0])
+        if recovery_number > 2:
             raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "Two native continuations exhausted this logical generation; retain saved manuscript and inspect original path evidence", details=proof)
         return {"mode": "ISOLATED_PURE_GENERATION", "source_operation_id": source_operation_id,
             "command": frozen, "version": int(row[1]), "evidence_asset_version_id": proof["evidence_asset_version_id"],
             "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,
                 asset_version_id=proof["evidence_asset_version_id"]).content_hash,
-            "snapshot": proof["pack_snapshot"], "depth": depth, "generation_isolation": proof}
+            "snapshot": proof["pack_snapshot"], "depth": depth, "generation_isolation": proof,
+            "generation_recovery_number": recovery_number}
     uow.cursor.execute(
         "SELECT status, error, result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
         [source_operation_id],
@@ -1320,7 +1328,8 @@ def register(
                     planning_task_token_budget=allocated, preflight_only=True)
                 target["planning_capacity"] = {**prior_capacity, "projection_hash": canonical_hash(context["context_manifest"]["provider_context_view"])}
         route_evidence = {"recovery_kind": "ISOLATED_PURE_GENERATION", "remote_outcome": "UNKNOWN",
-            "usage": "UNKNOWN", "preserved_repair_number": original.repair_number}
+            "usage": "UNKNOWN", "preserved_repair_number": original.repair_number,
+            "recovery_attempt_number": source["generation_recovery_number"]}
     elif host_revalidation:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(

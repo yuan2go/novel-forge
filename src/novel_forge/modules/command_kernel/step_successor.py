@@ -37,6 +37,7 @@ def has_candidate_domain_outputs(cursor, operation_id):
 
 
 def require_live_chapter_frontier(cursor, *, root_id, project_id, book_run_id=None):
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
     cursor.execute(
         """SELECT b.book_run_id,b.state,r.status_reference,
         EXISTS(SELECT 1 FROM authority_story_creation_cancellation c
@@ -44,8 +45,16 @@ def require_live_chapter_frontier(cursor, *, root_id, project_id, book_run_id=No
         FROM authority_book_production b JOIN authority_book_chapter_request r
           ON r.chapter_request_id=b.active_chapter_request_id
         WHERE b.project_id=%s AND r.chapter_root_operation_id=%s
-          AND r.chapter_number=b.accepted_through_chapter+1 FOR UPDATE OF b,r""",
-        [project_id, root_id],
+          AND r.chapter_number=1+CASE WHEN COALESCE(
+            (SELECT v.content->'author_workflow' FROM authority_asset_locator locator
+              JOIN authority_asset_version v ON v.asset_version_id=locator.current_asset_version_id
+              JOIN authority_asset asset ON asset.asset_id=v.asset_id
+              WHERE locator.project_id=b.project_id AND locator.logical_ref='book-author-workflow/'||b.book_run_id
+                AND asset.asset_type='book_author_workflow_policy' AND v.governance='CLEAR' AND v.eligibility='ELIGIBLE'),
+            (SELECT v.content->'author_workflow' FROM authority_asset_version v WHERE v.asset_version_id=b.production_profile_version))=%s
+            THEN b.current_chapter ELSE b.accepted_through_chapter END
+          FOR UPDATE OF b,r""",
+        [project_id, root_id, Jsonb(AUTHOR_WORKFLOW)],
     )
     frontier = cursor.fetchone()
     if (not frontier or (book_run_id is not None and frontier[0] != book_run_id)

@@ -91,6 +91,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+        recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
         if not author_first(book):
@@ -162,7 +164,11 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                 try:
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
-                    events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
+                    events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code, "failure": error.details})
+                    if error.code in {"MODEL_EFFECT_OUTCOME_UNKNOWN", "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED"}:
+                        from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+                        if recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                            continue
                     if author_first(book):
                         return error.code
                     if recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
@@ -285,6 +291,35 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] == "ABORTED":
             return {"formation_run_id": formation_run_id, "opening_run_id": opening[0], "stop_reason": "CANCELLED"}
+        if opened["lifecycle"] in {"ADMITTED", "RUNNING"}:
+            loss_key = (
+                opening[0]
+                + ":execution-loss:"
+                + str(opened["current_execution_generation"])
+            )
+            try:
+                loss = composition.opening.recovery.assess_execution_loss(
+                    opening[0],
+                    idempotency_key=loss_key,
+                    principal=composition.principal,
+                )
+            except KernelError as error:
+                if error.code != "BOOK_OPENING_EXECUTION_STILL_VALID":
+                    raise
+            else:
+                composition.opening.recovery.converge_execution_loss(
+                    loss.recovery_assessment_id,
+                    idempotency_key=loss_key + ":converge",
+                    principal=composition.principal,
+                    expected_opening_run_id=opening[0],
+                )
+                opened = composition.opening.require(opening[0])
+        if opened["lifecycle"] == "ABORTED":
+            return {
+                "formation_run_id": formation_run_id,
+                "opening_run_id": opening[0],
+                "stop_reason": "CANCELLED",
+            }
         if opened["lifecycle"] == "FAILED":
             from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
             try:
@@ -334,7 +369,19 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             try:
                 execute_book_opening_claim(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
             except KernelError as error:
+                from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
+                try:
+                    if recover_book_generations(composition.planning, project_id=project, book_id=book,
+                            principal=composition.principal):
+                        return {"opening_run_id": opening[0], "stop_reason": "YIELDED_CHECKPOINT",
+                            "recovery_action": "CONTINUE_REGISTERED_NATIVE_SUCCESSOR", "failure": error.details,
+                            "checkpoint": composition.opening.require(opening[0])}
+                except KernelError as recovery_error:
+                    return {"opening_run_id": opening[0], "stop_reason": recovery_error.code,
+                        "reason": recovery_error.message, "failure": recovery_error.details,
+                        "checkpoint": composition.opening.require(opening[0])}
                 return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message,
+                        "failure": error.details,
                         "checkpoint": composition.opening.require(opening[0])}
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] != "COMPLETE":

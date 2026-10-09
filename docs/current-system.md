@@ -33,7 +33,8 @@ extends that same run within its frozen full-book target. Book Authority atomica
 versioned policy and mutation receipts and advances only the delivery target and Book
 version. Original Formation requests, profiles, saved prose and accepted cursor retain
 their identities. Exact checkpoint/key replay recovers a lost response; pending effects,
-unknown usage and held execution leases block extension.
+active unresolved effects and held execution leases block extension. Formally isolated pure
+generation remains historical evidence and does not block the delivery window.
 The default is authorized automatic direction comparison; an approved fixed direction
 and explicit author selection remain available. Formation and Opening create the existing
 Book, plans, source snapshots and Pack bindings. The native Chapter Saga uses
@@ -89,7 +90,10 @@ Book checkpoint. The native routing owner selects the successor template, inheri
 existing paid authorization without raising its cap; Book Authority rechecks the checkpoint
 and freezes the policy adoption. An intervening version change fails closed. Existing
 profiles, requests, accepted facts, terminal failures and consumption history remain immutable.
-The baseline runtime rejects unsettled original effects and held UNKNOWN consumption at this switch; that is a `CURRENT_RUNTIME_FACT`. The absence of a formal pure-generation isolation exit is an `UNRESOLVED_DESIGN_CONSTRAINT`. Reading, local editing and exact export remain available. Older incompatible plans require their native
+Formally isolated pure generations do not block this switch. Active writers, uncertain
+business commits, cancellation, identity conflicts and insufficient paid authorization retain
+their native gates. Unknown membership usage stays observable without imposing a cumulative
+Book quota. Reading, local editing and exact export remain available. Older incompatible plans require their native
 projection/migration or a linked successor rather than rewritten history.
 
 The following distinctions govern implementation:

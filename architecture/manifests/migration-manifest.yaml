@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261009_0186_generation_capacity_inheritance",
+  "head": "20261009_0187_chapter_generation_isolation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -189,6 +189,7 @@
     "20261008_0183_source_observation_span_identity",
     "20261009_0184_cli_original_reconciliation",
     "20261009_0185_pure_generation_isolation",
-    "20261009_0186_generation_capacity_inheritance"
+    "20261009_0186_generation_capacity_inheritance",
+    "20261009_0187_chapter_generation_isolation"
   ]
 }

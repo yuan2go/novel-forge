@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261009_0186_generation_capacity_inheritance",
+  "migration_head": "20261009_0187_chapter_generation_isolation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9730,6 +9730,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261009_0186_generation_capacity_inheritance.py",
           "id": "20261009_0186_generation_capacity_inheritance",
           "locator": "MIGRATION_ID = \"20261009_0186_generation_capacity_inheritance\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261009_0187_chapter_generation_isolation.py",
+          "id": "20261009_0187_chapter_generation_isolation",
+          "locator": "MIGRATION_ID = '20261009_0187_chapter_generation_isolation'"
         }
       ],
       "external_effects": {
@@ -10016,7 +10021,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:a430587e5c75c1fc1c3438f0e2a8a33568168576ef25c91643b1c302977f0ad4"
+    "implementation_tree_sha": "sha256:e5eea7e9ee7fd98d4578874b4a35bf22e97bbc2d6aeb398c8c6d01e7cb5f528c"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

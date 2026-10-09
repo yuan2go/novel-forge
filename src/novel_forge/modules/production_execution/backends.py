@@ -1046,6 +1046,9 @@ class RemoteProviderExecutionBackend:
             evidence.update(failure_class="SCHEMA_REJECTION", output_validation_error=rejection)
             result = replace(result, outcome="final_failure")
         record.raw_evidence = {**evidence, **host}
+        if result.outcome not in {"success", "running", "pending"}:
+            from .provider_protocol_failure import provider_invocation_failure
+            record.raw_evidence["failure"] = provider_invocation_failure(evidence, request=record.request)
         record.provider_result = replace(result, evidence=record.raw_evidence)
         self.record_store.save_record(record)
 

@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,27 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
     }, monkeypatch, transport)
     env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+    executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+    executable.write_text(executable.read_text().replace(
+        ' target.write_bytes(',
+        ''' if target.with_name("interrupt-stream").exists():
+  print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+  print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+  sys.exit(1)
+ target.write_bytes('''))
+    env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+    from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+    resolve = PostgresProductionExecutionPayloadResolver.resolve
+    stream_failures = []
+    def interrupt_first_memo(resolver, request, admission):
+        payload = resolve(resolver, request, admission)
+        if request.stage == "memo" and not stream_failures:
+            layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+            layout.result_path("interrupt-stream").write_text("controlled fault")
+            stream_failures.append(request.operation_id)
+        return payload
+    monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
     env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
     env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
     for key, value in env.items():
@@ -74,6 +96,17 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s", [project])
         formation = uow.cursor.fetchone()[0]
     retained = current_manuscript(DATABASE_URL, book=stopped, principal=principal)
+    assert len(stream_failures) == 1
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("""SELECT original.status,effect.status,budget.status,child.status,
+            isolation.proof#>>'{observed_failure,error_code}' FROM authority_generation_isolation isolation
+            JOIN authority_operation original ON original.operation_id=isolation.operation_id
+            JOIN authority_external_effect effect USING(external_effect_id)
+            JOIN authority_budget_reservation budget USING(external_effect_id)
+            JOIN authority_saga_step_successor successor ON successor.predecessor_operation_id=original.operation_id
+            JOIN authority_operation child ON child.operation_id=successor.successor_operation_id
+            WHERE original.operation_id=%s""", [stream_failures[0]])
+        assert uow.cursor.fetchone() == ("FAILED_FINAL", "UNKNOWN", "HELD_UNKNOWN", "SUCCEEDED", "PROVIDER_STREAM_INTERRUPTED")
     assert len(retained["units"]) == 1
     assert stopped["current_chapter"] == 0
     import time

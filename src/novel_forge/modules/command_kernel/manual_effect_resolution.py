@@ -76,7 +76,7 @@ def resolve_external_effect_manually(
         if command.decision == "ISOLATE_PURE_GENERATION":
             from .generation_isolation import append_isolation
             append_isolation(uow, effect, command)
-            target_operation = str(operation["status"])
+            target_operation = str(uow.repositories.attempt_runtime.operation_state(command.operation_id, command.project_id)["status"])
         elif original_reconciled:
             append_resolution(uow, effect, original, command)
             target_operation = str(operation["status"])
