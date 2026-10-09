@@ -41,7 +41,10 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
         control = uow.cursor.fetchone()
         if control and control[0]=='PAUSED':
             raise KernelError('LONGFORM_PROSE_PAUSED','Review cancellation remains authoritative')
-        current = load_review_sources(uow,book_run_id,project_id)
+        from .prose_review import freeze_manifest
+        current = freeze_manifest(project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id,
+            sources=load_review_sources(uow,book_run_id,project_id),policy=locked['manifest']['policy'],
+            work_intent=locked['manifest']['schema_version'] in {'longform-prose-manifest.v2','longform-prose-manifest.v3'})['sources']
         if locked['manifest']['sources'] != current[:len(locked['manifest']['sources'])] or source['workspace_id'] != workspace_id:
             raise KernelError('LONGFORM_PROSE_SOURCE_STALE','The frozen manuscript or workspace changed')
         bindings = source['input_asset_snapshot']
