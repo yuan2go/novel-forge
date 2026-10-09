@@ -52,6 +52,8 @@ def resolve_external_effect_manually(
         effect = uow.repositories.external_effects.get_for_update(command.external_effect_id)
         if effect["project_id"] != command.project_id or effect["operation_id"] != command.operation_id:
             raise KernelError("CROSS_PROJECT_REFERENCE", "manual effect resolution scope differs")
+        api_receipt = command.decision != "ISOLATE_PURE_GENERATION" and _isolated_api(uow.cursor, effect)
+        receipt_rights = {"evidence_only": True, "business_commit_right": "REVOKED", "activation_right": "REVOKED"} if api_receipt else {}
         uow.cursor.execute(
             """
             SELECT manual_resolution_id, request_digest, decision
@@ -64,7 +66,7 @@ def resolve_external_effect_manually(
         if replay is not None:
             if replay[1] != digest and not _same_isolation_replay(uow.cursor, command):
                 raise KernelError("MANUAL_RESOLUTION_IDEMPOTENCY_CONFLICT", "manual resolution replay differs")
-            return {"manual_resolution_id": str(replay[0]), "decision": str(replay[2]), "replayed": True}
+            return {"manual_resolution_id": str(replay[0]), "decision": str(replay[2]), "replayed": True, **receipt_rights}
         operation = uow.repositories.attempt_runtime.operation_state(
             command.operation_id, command.project_id
         )
@@ -77,6 +79,10 @@ def resolve_external_effect_manually(
             from .generation_isolation import append_isolation
             append_isolation(uow, effect, command)
             target_operation = str(uow.repositories.attempt_runtime.operation_state(command.operation_id, command.project_id)["status"])
+        elif api_receipt:
+            from .generation_receipt_reconciliation import append_operator_resolution
+            append_operator_resolution(uow, effect, command)
+            target_operation = str(operation["status"])
         elif original_reconciled:
             append_resolution(uow, effect, original, command)
             target_operation = str(operation["status"])
@@ -152,6 +158,7 @@ def resolve_external_effect_manually(
         _record(uow, command, resolution_id, target_operation)
         uow.commit()
     return {
+        **receipt_rights,
         "manual_resolution_id": resolution_id,
         "decision": command.decision,
         "operation_status": target_operation,
@@ -217,3 +224,15 @@ def _same_isolation_replay(cursor, command):
         [command.project_id, command.external_effect_id, command.idempotency_key])
     return cursor.fetchone() == (command.operation_id, command.actor_id, command.decision, command.reason,
         command.evidence, command.trace_id, command.correlation_id)
+
+
+def _isolated_api(cursor, effect):
+    from .generation_isolation import isolation
+    proof = isolation(cursor, effect["external_effect_id"])
+    if not proof:
+        return False
+    cursor.execute("""SELECT evidence #>> '{production_execution,execution_handle,transport}'
+        FROM authority_external_effect_dispatch WHERE external_effect_id=%s ORDER BY generation DESC LIMIT 1""",
+        [effect["external_effect_id"]])
+    row = cursor.fetchone()
+    return row is not None and row[0] == "REMOTE_PROVIDER_API"

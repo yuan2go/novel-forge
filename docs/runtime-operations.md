@@ -149,13 +149,30 @@ Do not edit an applied migration to repair live data. Respect its declared prefl
 forward-only, backup and downgrade properties. Run clean-install and upgrade tests before
 using a new migration outside an isolated test database.
 
-The published chain through 0184 is immutable. The current forward segment is
+The published chain through 0195 is immutable. The generation-recovery segment is
 0185–0195, ending at native prose-review sidecar isolation. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
 ledger; never delete, rewrite or fabricate applied IDs to make it match. Conversion
 of such a database is a separate governed operation.
+
+Before deploying a compatible recovery release, stop all old API, worker, outbox and
+maintenance writers, including host processes outside Compose. Keep dispatch stopped while
+one migration executor applies the registered chain; restart only matching release processes.
+Bind the release SHA/build, actual database/server and migration head, compiled/approved Pack
+hashes, object store identity and original CLI execution root in the deployment record.
+0193 upgrade/restore evidence covers its frozen code and database only. The published 0194
+multi-generation and 0195 sidecar snapshots cover their own incremental heads; neither proves
+this release or a newer original ledger. Check only changed boundaries on disposable restores.
+
+Recovery restores the database, referenced artifacts and original CLI execution directories
+from a mutually consistent snapshot under compatible code and Packs, with every writer stopped.
+Verify request/receipt digests, successor journals and accepted cursor before resuming. Preserve
+unknown paid exposure and original restored-snapshot provenance. Reverting code alone is
+unsupported: immutable isolation and forward schema facts survive a code rollback. Repair
+applied database behavior with a new forward migration. These are deployment/restore procedures,
+not a new backup qualification gate.
 
 For a stopped native `longform.prose_review` sidecar, replay its original advance command.
 Recovery checks the immutable window, current matching manuscript prefix, actor, permissions,
@@ -236,6 +253,27 @@ Historical audit reports and deployment manifests are immutable execution eviden
 stable successor intent without claiming a remote terminal outcome. Its pending intent is
 replayed through existing Planning continuation or Chapter step succession after restart.
 Original receipt recovery and usage correction remain available for isolated history.
+
+For isolated remote API generation, the same existing resolve endpoint accepts a
+same-project `execution_evidence` AssetVersion with schema and payload contract
+`api-original-receipt.v1`. Its authorized-operator attestation references an immutable
+`api-provider-record.v1` evidence AssetVersion and binds the original Project/Book,
+Operation/Effect, dispatch/generation, request hash, execution/Attempt/fence, execution
+request and input-manifest hashes, Provider/model and remote request ID. Both records
+must agree. Use `MARK_SUCCEEDED`, `MARK_FAILED_FINAL`, `MARK_CANCELLED` or proven
+`MARK_NOT_FOUND`; retry decisions cannot reopen isolated work. A verified native
+Provider callback enters the same Kernel journal after its original request binding.
+
+The `isolated-api-receipt.v1` journal only appends evidence and settles the original
+reservation in the owning UoW. Historical Effect/dispatch UNKNOWN, failed Operation and
+REVOKED commit/activation decisions remain unchanged. Missing measured usage or unresolved paid cost stays held;
+a later matching measured version can settle once. Duplicate records replay, conflicting
+results or measurements reject replacement, and actual overruns retain the existing
+budget-breach hold. This does not create a primary output, candidate, author choice or
+acceptance. An API Effect with multiple original dispatch generations fails closed for
+explicit accounting reconciliation; one receipt cannot settle other unknown generations.
+Ordinary reconciliation of isolated work reads confirmed evidence or requests this
+original-receipt path; it cannot acquire a replacement recovery Attempt or mutate history.
 
 Codex reconciliation reads the original execution directory, request, Attempt/fence,
 command and input digests. A changed complete process receipt can supersede cached
