@@ -1819,7 +1819,7 @@ class StoryPlanningGenerationApplication:
                 return continued
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
-                    "SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                    "SELECT result->>'error_code',result#>>'{failure_details,cause_code}' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
                     [row[0]],
                 )
                 failure = uow.cursor.fetchone()
@@ -1828,7 +1828,7 @@ class StoryPlanningGenerationApplication:
                     [row[0]],
                 )
                 source_version = int(uow.cursor.fetchone()[0])
-            if failure and (failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
+            if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
                     and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate"})):
                 self._probe(execution_probe)
@@ -1836,7 +1836,7 @@ class StoryPlanningGenerationApplication:
                     register(self, str(row[0]), project_id=command.project_id, principal=principal,
                         expected_source_version=source_version,
                         decision_evidence={"authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                            "reason": "Pre-send capacity allocation after exact frozen failure; no external intent exists"},
+                            "reason": "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity allocation after exact frozen failure; no external intent exists"},
                         trace_id=command.trace_id, correlation_id=command.correlation_id)
                 except KernelError as error:
                     if error.code != "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED":

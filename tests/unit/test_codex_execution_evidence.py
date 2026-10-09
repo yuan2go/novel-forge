@@ -758,6 +758,8 @@ def test_codex_wire_correction_requires_exact_retained_hashes():
     ({"type":["number","null"],"minimum":2}, [None,2,3.5], [1,"2",False]),
     ({"type":["boolean","null"]}, [None,True,False], [1,"true",[]]),
     ({"type":["string","null"],"enum":[None],"minLength":1}, [None], ["x","",1,False]),
+    ({"type":["string","null"],"enum":[None,"x"]}, [None,"x"], ["y",1,False]),
+    ({"type":["string","null"],"const":None}, [None], ["x",1]),
     ({"type":["string","null"],"enum":["x"]}, ["x"], [None,"y",1]),
     ({"type":["string","null"],"const":"x"}, ["x"], [None,"y",1]),
 ])
@@ -793,3 +795,41 @@ def test_canonical_transport_does_not_replace_the_host_schema():
     assert proof['contract_version']=='codex-canonical-json.v1'
     with pytest.raises(KernelError):
         validate_chapter_provider_output_against_schema('draft',schema,decoded)
+
+
+def test_nullable_enum_projection_satisfies_provider_type_admission_and_retains_original_proof():
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.production_execution.codex_configuration import (
+        _codex_output_schema, codex_output_schema, codex_wire_correction_evidence,
+    )
+    import hashlib
+
+    canonical = {'type': 'object', 'properties': {'change': {
+        'type': ['string', 'null'], 'enum': [None, 'enters school', 'chooses a teacher'],
+    }}, 'required': ['change'], 'additionalProperties': False}
+    old = _codex_output_schema(canonical, all_nullable=True, partition_nullable_enums=False)
+    new = codex_output_schema(canonical)
+    def validate_value(schema, value):
+        validate_chapter_provider_output_against_schema('canon_extraction', {'$schema':'https://json-schema.org/draft/2020-12/schema', 'type':'object', 'properties':{'value':schema}, 'required':['value'], 'additionalProperties':False}, {'value':value})
+    with pytest.raises(KernelError):
+        validate_value({'type': 'string'}, old['properties']['change']['anyOf'][0]['enum'][0])
+    for branch in new['properties']['change']['anyOf']:
+        for value in branch['enum']:
+            validate_value({'type': branch['type']}, value)
+    def digest(value):
+        return 'sha256:' + hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    evidence = {'output_schema': canonical, 'provider_schema_contract': {
+        'version': 'codex-structured-schema.v5', 'equivalent_projection': 'codex-nullable-shared-types.v2',
+        'canonical_hash': digest(canonical), 'provider_hash': digest(old),
+    }}
+    original = json.loads(json.dumps(evidence))
+    proof = codex_wire_correction_evidence(evidence)
+    assert proof['corrected_wire_hash'] == digest(new)
+    assert proof['previous_wire_hash'] == digest(old)
+    assert evidence == original
+    evidence['provider_schema_contract']['provider_hash'] = digest(new)
+    assert codex_wire_correction_evidence(evidence) is None
+    evidence['provider_schema_contract']['provider_hash'] = digest(old)
+    evidence['provider_schema_contract']['equivalent_projection'] = 'codex-nullable-shared-types.v3'
+    assert codex_wire_correction_evidence(evidence) is None

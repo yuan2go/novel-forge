@@ -255,6 +255,10 @@ class PlanningWorldPreparation:
         execute_stage: Callable[[PlanningProviderStage], Any],
         knowledge_selection: Mapping[str, Any] | None = None,
     ) -> Any:
+        from .schema_recovery import continuation_action as schema_continuation_action
+        schema_action = schema_continuation_action(self.preparer.database_url, command)
+        if schema_action is not None:
+            return schema_action
         from .world_optional import continuation_action, optional_policy, deferred_action
         retained_action = continuation_action(self.preparer.database_url, command)
         if retained_action is not None:
@@ -937,8 +941,8 @@ class PlanningWorldPreparation:
         )
 
     @staticmethod
-    def retained_action(query: Any, command: Any) -> Any:
-        source_id = command.repair_of_operation_id
+    def retained_action(query: Any, command: Any, *, source_operation_id: str = "") -> Any:
+        source_id = source_operation_id or command.repair_of_operation_id
         seen = set()
         while source_id and source_id not in seen and len(seen) < 3:
             seen.add(source_id)

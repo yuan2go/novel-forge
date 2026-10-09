@@ -162,6 +162,9 @@ def require_source(
         if attempt
         else ""
     )
+    if row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL" and dict(attempt[2] or {}).get("failure_details", {}).get("cause_code") == "PROVIDER_SCHEMA_REJECTED":
+        from .schema_recovery import require_source as require_schema_source
+        return require_schema_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
     if row[0] == "SUCCEEDED":
         if not attempt or attempt[0] != "SUCCEEDED" or frozen.get("execution_contract_version") != "1.19.0":
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID", "Only exact settled historical reference source is admitted")
@@ -1337,7 +1340,9 @@ def register(
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
     isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
     contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
+    schema_correction = source.get("mode") == "PROVIDER_SCHEMA_CORRECTION"
     host_revalidation = source.get("mode") in {
+        "PROVIDER_SCHEMA_CORRECTION",
         "WORLD_HOST_REVALIDATION",
         "WORLD_HOST_PROJECTION",
     }
@@ -1359,7 +1364,7 @@ def register(
                 else "PLANNING_REFERENCE_CONTRACT_SUCCESSOR" if reference_contract else "WORLD_AGENCY_CONTRACT_SUCCESSOR",
                 "parent_agent_session_operation_id": "",
             }
-            if contract_change or host_revalidation
+            if contract_change or (host_revalidation and not schema_correction)
             else {}
         ),
         runtime_continuation_id=continuation_id,
@@ -1369,7 +1374,13 @@ def register(
     if contract_change:
         _ensure_world_agency_pack(application, source, original, successor, principal)
     target = resolve_target(application, successor)
-    if host_revalidation:
+    if schema_correction:
+        target = {**target, "provider_schema_correction": source["provider_schema_correction"]}
+        if original.runtime_continuation_id:
+            prior_capacity = require_binding(application.database_url, original.runtime_continuation_id)["target_runtime"].get("planning_capacity")
+            if prior_capacity:
+                target["planning_capacity"] = prior_capacity
+    elif host_revalidation:
         target = {
             **target,
             "world_host_revalidation": source["world_host_revalidation"],
@@ -1444,7 +1455,7 @@ def register(
         route_evidence = {
             **route_evidence,
             "capacity_only": False,
-            "host_revalidation": "world-host-revalidation.v1",
+            "host_revalidation": "provider-schema-correction.v1" if schema_correction else "world-host-revalidation.v1",
             "preserved_repair_number": original.repair_number,
             **(
                 {"projection_revalidation": "world-direction-projection.v1"}
@@ -1760,7 +1771,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation", "planning_reference_contract", "generation_isolation"}
+        if key not in {"planning_capacity", "world_host_revalidation", "planning_reference_contract", "generation_isolation", "provider_schema_correction"}
     }
     if (
         validate_runtime
