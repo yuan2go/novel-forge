@@ -121,7 +121,7 @@ def replace_failed_step(
         unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence)
         if (
             not row
-            or source["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}
+            or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
             or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
@@ -261,6 +261,14 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
+        if unsent_transport and source["status"] == "FAILED_RETRYABLE":
+            from .attempt_runtime import _cas_operation
+            _cas_operation(uow, operation_id=source["operation_id"], project_id=project,
+                expected_status=source["status"], expected_version=source["version"], target_status="DEAD_LETTER",
+                actor_id=context.actor_id, reason="Exhausted unsent v12 attempts retained before one native v13 transport successor",
+                trace_id=source["trace_id"], correlation_id=source["correlation_id"])
+            cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [predecessor_id])
+            source = cursor.fetchone()[0]
         window = None
         if window_successor:
             window = _corrected_contract_window(cursor, root, source, target, deadline, window_successor)

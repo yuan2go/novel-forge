@@ -16,7 +16,8 @@ def recover_unsent_context_transport(authority, *, book_run_id, principal):
     request = authority.require_chapter_request(book['active_chapter_request_id'])
     with AuthorityUnitOfWork(authority.database_url) as u:
         u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step step USING(operation_id)
-            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.status IN ('FAILED_FINAL','DEAD_LETTER')
+            WHERE o.root_operation_id=%s AND o.project_id=%s AND o.status IN ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER')
+            AND (o.status<>'FAILED_RETRYABLE' OR (SELECT count(*) FROM authority_attempt attempt WHERE attempt.operation_id=o.operation_id)>=(o.definition_snapshot #>> '{retry_policy,max_attempts}')::int)
             AND o.definition_version='3.10.0' AND o.definition_name IN ('chapter.draft.generate','chapter.revision.apply')
             AND EXISTS(SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=o.operation_id
               AND attempt.result->>'error_code'='PROVIDER_ROUTING_BLOCKED')

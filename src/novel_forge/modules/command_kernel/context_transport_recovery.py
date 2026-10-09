@@ -20,6 +20,13 @@ def require_unsent_context_transport(cursor, source, policy):
     external, budget, other_failure, old_transport = cursor.fetchone()
     if external or budget or other_failure or not old_transport or source['definition_name'] not in {'chapter.draft.generate', 'chapter.revision.apply'} or source['definition_version'] != '3.10.0':
         raise KernelError('CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE', 'Require a proven unsent current Chapter capacity failure with its original v12 transport')
+    if source.get('status') == 'FAILED_RETRYABLE':
+        from .execution_window import continued_attempt_limit
+        limit = continued_attempt_limit(cursor, operation_id=source['operation_id'], project_id=source['project_id'],
+            original_limit=int(source['definition_snapshot']['retry_policy']['max_attempts']))
+        cursor.execute('SELECT count(*) FROM authority_attempt WHERE operation_id=%s', [source['operation_id']])
+        if cursor.fetchone()[0] < limit:
+            raise KernelError('CHAPTER_UNSENT_TRANSPORT_RETRY_REMAINS', 'Use the original remaining Attempt allowance before a formal transport successor')
     cursor.execute("""SELECT v.content FROM authority_operation_output_asset output JOIN authority_asset a USING(asset_id)
         JOIN authority_asset_version v USING(asset_version_id) WHERE output.operation_id=%s AND a.asset_type='routing_decision'""", [source['operation_id']])
     routes = [row[0] for row in cursor.fetchall()]
