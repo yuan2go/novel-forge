@@ -109,6 +109,10 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
         [run["run_id"]],
     )
     events = _rows(uow.cursor)
+    from novel_forge.modules.command_kernel.generation_isolation import book_recovery_projection
+    uow.cursor.execute('SELECT book_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s',[run['book_run_id'],run['project_id']])
+    book_id = uow.cursor.fetchone()[0]
+    recovery = book_recovery_projection(uow.cursor,project_id=run['project_id'],book_id=book_id)
     reports, operations, dispositions = [], [], {}
     paused = False
     for event in events:
@@ -127,6 +131,8 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
                 [operation_id],
             )
             operations[-1]["external_effects"] = _rows(uow.cursor)
+            operations[-1]["generation_recovery"] = [item for item in recovery
+                if item["source_operation_id"] in {operation_id,content["operation_id"]}]
             uow.cursor.execute(
                 "SELECT reservation_id,external_effect_id,status,estimated_tokens,actual_tokens,reserved_amount,settled_amount,currency,evidence FROM authority_budget_reservation WHERE operation_id=%s ORDER BY created_at",
                 [operation_id],

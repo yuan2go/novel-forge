@@ -119,7 +119,7 @@ export function ProductionChainPage() {
       {(workspace.generation_recovery || []).map(item => <details key={item.external_effect_id}>
         <summary>{item.observed_failure.error_code} ／ 已隔离 ／ {item.recovery_state}</summary>
         <p>故障阶段：{item.observed_failure.stage} · 原因：{item.observed_failure.cause_code || item.observed_failure.error_code}</p>
-        <p>后继：{item.successor_operation_id || "已登记，等待原生调度"} · {item.successor_status || "待执行"}</p>
+        <p>后继：{item.successor_operation_id || (item.recovery_state === "EXHAUSTED" ? "恢复耗尽，断点已保留" : "已登记，等待原生调度")} · {item.successor_status || (item.recovery_state === "EXHAUSTED" ? "已停止" : "待执行")}</p>
         <p>原远端结果：{item.original_remote_outcome} · 原用量：{item.original_usage} · 旧尝试提交权：{item.business_commit_right}</p>
         <pre>{JSON.stringify(item, null, 2)}</pre>
       </details>)}

@@ -99,17 +99,20 @@ def book_recovery_projection(cursor, *, project_id, book_id):
           latest.current,operation.status,CASE WHEN operation.status IN
             ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER','WAITING_RETRY','RECONCILIATION_REQUIRED')
             THEN COALESCE(NULLIF(attempt.error,'{}'::jsonb),NULLIF(attempt.result,'{}'::jsonb)) END,latest.depth,
-          effect.status,budget.status,budget.evidence->>'usage_basis',budget.evidence->'usage',budget.evidence->'cost'
+          effect.status,budget.status,budget.evidence->>'usage_basis',budget.evidence->'usage',budget.evidence->'cost',exhaustion.payload
         FROM authority_generation_isolation isolation JOIN latest ON latest.source=isolation.operation_id
         JOIN authority_operation operation ON operation.operation_id=latest.current
         LEFT JOIN LATERAL (SELECT error,result FROM authority_attempt WHERE operation_id=latest.current
           ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
         JOIN authority_external_effect effect USING(external_effect_id)
         LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
+        LEFT JOIN LATERAL (SELECT payload FROM state_event WHERE aggregate_type='authority_operation'
+          AND aggregate_id=latest.current AND event_type='authority.generation.recovery_exhausted'
+          ORDER BY sequence_number DESC LIMIT 1) exhaustion ON TRUE
         WHERE isolation.project_id=%s AND isolation.book_id=%s
         ORDER BY isolation.created_at DESC LIMIT 100""", [project_id,project_id,project_id,book_id,project_id,book_id])
     rows=[]
-    for effect_id,source,proof,current,status,result,depth,effect_status,budget_status,usage_basis,usage,cost in cursor.fetchall():
+    for effect_id,source,proof,current,status,result,depth,effect_status,budget_status,usage_basis,usage,cost,exhaustion in cursor.fetchall():
         rows.append({"external_effect_id":effect_id,"source_operation_id":source,
             "observed_failure":proof["observed_failure"],"business_commit_right":proof["business_commit_right"],
             "activation_right":proof["activation_right"],"original_remote_outcome":proof["remote_outcome"],
@@ -117,7 +120,8 @@ def book_recovery_projection(cursor, *, project_id, book_id):
             "original_usage":proof["usage"],"usage_basis":usage_basis,"current_accounting":{"usage":usage,"cost":cost},
             "continuation_id":proof["continuation_id"],"successor_operation_id":current if depth else None,
             "successor_status":status if depth else None,"successor_failure":result if depth else None,
-            "recovery_state":"SUCCESSOR_COMPLETED" if depth and status=="SUCCEEDED" else
+            "recovery_exhaustion":exhaustion,"recovery_action":"STOP_AT_CHECKPOINT" if exhaustion else "NATIVE_CONTINUATION",
+            "recovery_state":"EXHAUSTED" if exhaustion else "SUCCESSOR_COMPLETED" if depth and status=="SUCCEEDED" else
                 "SUCCESSOR_FAILED" if depth and status in {"FAILED_FINAL","DEAD_LETTER"} else
                 "SUCCESSOR_RUNNING" if depth else "ISOLATED_AWAITING_NATIVE_SUCCESSOR"})
     return rows
