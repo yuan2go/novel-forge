@@ -1931,8 +1931,6 @@ def build_book_authority_application(
 def _coordinated_reader_contract_enabled(
     settings: IndustrialSettings, values: Mapping[str, str]
 ) -> bool:
-    # INVARIANT: Explicit contract selection changes owner wiring, not the Book's
-    # qualification; each current owner still requires its frozen Book template.
     return settings.environment in {"production", "validation"} and values.get(
         "NOVEL_FORGE_COORDINATED_READER_CONTRACT"
     ) == "reader-accepted-context.v3"
