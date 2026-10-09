@@ -14,6 +14,73 @@ from .receipt_recovery import _receipt, _cancelled
 VERSION = "3.10.1"
 
 
+def require_intent_reference_repair(cursor, source, policy, database_url):
+    cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [source["operation_id"]])
+    failures = cursor.fetchall()
+    cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)", [source["operation_id"]])
+    if not failures or any(r[0] != "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID" for r in failures) or cursor.fetchone()[0] or has_domain_outputs(cursor, source["operation_id"]):
+        raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Require an unmaterialized identity-contract failure without external effects")
+    with AuthorityUnitOfWork(database_url) as u:
+        plans = []
+        for binding in source["input_asset_snapshot"]:
+            asset = u.repositories.asset_documents.require(project_id=source["project_id"], asset_version_id=binding["asset_version_id"])
+            if asset.content_hash != binding["content_hash"]:
+                raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Frozen input hashes must match")
+            if asset.asset_type == "chapter_plan":
+                plans.append(asset)
+        if len(plans) != 1:
+            raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Require one exact frozen Plan")
+        plan = plans[0]
+    scope = SimpleNamespace(database_url=database_url, command=source["command_payload"], project_id=source["project_id"], workspace_id=source["workspace_id"])
+    refs = frozen_character_references(scope, scenes=plan.content["scene_plan"])
+    expected = {"contract_version": "chapter-intent-reference-revalidation.v1", "source_operation_id": source["operation_id"],
+        "plan_asset_version_id": plan.asset_version_id, "plan_content_hash": plan.content_hash,
+        "character_reference_contract": refs, "reference_contract_hash": snapshot_hash(refs), "provider_invoked": False}
+    if refs is None or policy != expected:
+        raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Require the exact program-bound frozen reference proof")
+    return expected
+
+
+def recover_intent_references(authority, *, book_run_id, principal):
+    book = authority.require(book_run_id)
+    principal.require("book.authority.execute", book["project_id"])
+    principal.require("chapter.authority.execute", book["project_id"])
+    if not book.get("active_chapter_request_id") or book["state"] not in {"PAUSED", "CHAPTER_RUNNING", "CHAPTER_WAITING_RETRY", "CHAPTER_SUBMITTED"}:
+        return False
+    request = authority.require_chapter_request(book["active_chapter_request_id"])
+    with AuthorityUnitOfWork(authority.database_url) as u:
+        u.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id) WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.execution_intent.prepare' AND o.definition_version='3.10.0' AND o.status IN ('FAILED_FINAL','DEAD_LETTER') AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor j WHERE j.predecessor_operation_id=o.operation_id)", [request["chapter_root_operation_id"], book["project_id"]])
+        rows = u.cursor.fetchall()
+        if not rows:
+            return False
+        if len(rows) != 1 or _cancelled(u.cursor, book) or rows[0][0]["actor_id"] != principal.principal_id:
+            raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Require one exact owned live intent failure")
+        source = rows[0][0]
+        plans = [u.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=a["asset_version_id"]) for a in source["input_asset_snapshot"]]
+        plans = [a for a in plans if a.asset_type == "chapter_plan"]
+        if len(plans) != 1:
+            raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Require one frozen Plan")
+        plan = plans[0]
+        refs = frozen_character_references(SimpleNamespace(database_url=authority.database_url, command=source["command_payload"], project_id=book["project_id"], workspace_id=book["workspace_id"]), scenes=plan.content["scene_plan"])
+        policy = {"contract_version": "chapter-intent-reference-revalidation.v1", "source_operation_id": source["operation_id"],
+            "plan_asset_version_id": plan.asset_version_id, "plan_content_hash": plan.content_hash,
+            "character_reference_contract": refs, "reference_contract_hash": snapshot_hash(refs), "provider_invoked": False}
+        require_intent_reference_repair(u.cursor, source, policy, authority.database_url)
+        from .definitions import chapter_operation_definitions
+        target = next(d for d in chapter_operation_definitions(application_build_id=authority.application_build_id, commit_sha=authority.commit_sha, model_effects_required=True, coordinated_contract=True) if d["name"] == "chapter.execution_intent.prepare" and d["definition_version"] == VERSION)
+        u.repositories.definitions.register(target)
+        u.commit()
+    def guard(u):
+        u.cursor.execute("SELECT version,active_chapter_request_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE", [book_run_id])
+        if u.cursor.fetchone() != (book["version"], book["active_chapter_request_id"]) or _cancelled(u.cursor, book):
+            raise KernelError("INTENT_REFERENCE_RECOVERY_INVALID", "Reload the exact uncancelled Book frontier")
+    replace_failed_step(authority.database_url, predecessor_id=source["operation_id"], target_version=VERSION,
+        context=AdmissionContext(principal.principal_id, principal.permissions, authority.chapter_port.application.registry.available_handler_keys, authority.application_build_id, authority.commit_sha),
+        policy_evidence=policy, expected_failure_code="CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID", transaction_guard=guard,
+        window_successor={"contract_version": "kernel-corrected-contract-window.v1", "policy_key": "character_reference_contract_revalidation", "policy_value": "planning-character-locator.v1"})
+    return True
+
+
 def recover_memo_references(authority, *, book_run_id, principal):
     book = authority.require(book_run_id)
     principal.require("book.authority.execute", book["project_id"])
@@ -24,7 +91,7 @@ def recover_memo_references(authority, *, book_run_id, principal):
     with AuthorityUnitOfWork(authority.database_url) as u:
         u.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o JOIN authority_saga_step s USING(operation_id)
             WHERE o.root_operation_id=%s AND o.project_id=%s AND o.definition_name='chapter.memo.generate'
-            AND o.status IN ('FAILED_FINAL','DEAD_LETTER') AND o.definition_version='3.10.0'""",
+            AND o.status IN ('FAILED_FINAL','DEAD_LETTER') AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor j WHERE j.predecessor_operation_id=o.operation_id) AND o.definition_version='3.10.0'""",
             [request["chapter_root_operation_id"], book["project_id"]])
         rows = u.cursor.fetchall()
         if not rows:
@@ -121,7 +188,7 @@ def recover_memo_completion(authority, *, book_run_id, principal):
         return False
     request = authority.require_chapter_request(book["active_chapter_request_id"])
     with AuthorityUnitOfWork(authority.database_url) as u:
-        u.cursor.execute("SELECT to_jsonb(o),j.policy_evidence FROM authority_operation o JOIN authority_saga_step s USING(operation_id) JOIN authority_saga_step_successor j ON j.successor_operation_id=o.operation_id WHERE o.root_operation_id=%s AND o.definition_name='chapter.memo.generate' AND o.definition_version='3.10.1' AND o.status='FAILED_FINAL'", [request["chapter_root_operation_id"]])
+        u.cursor.execute("SELECT to_jsonb(o),j.policy_evidence FROM authority_operation o JOIN authority_saga_step s USING(operation_id) JOIN authority_saga_step_successor j ON j.successor_operation_id=o.operation_id WHERE o.root_operation_id=%s AND o.definition_name='chapter.memo.generate' AND o.definition_version='3.10.1' AND o.status='FAILED_FINAL' AND NOT EXISTS(SELECT 1 FROM authority_saga_step_successor next WHERE next.predecessor_operation_id=o.operation_id)", [request["chapter_root_operation_id"]])
         rows = u.cursor.fetchall()
         if not rows:
             return False

@@ -74,6 +74,8 @@ def _handler_definition_version(
         )
         if node is ChapterNode.MEMO:
             recoverable = recoverable | {"3.10.1", "3.10.2"}
+        if node is ChapterNode.EXECUTION_INTENT:
+            recoverable = recoverable | {"3.10.1"}
         if row is not None and str(row[0]) in recoverable:
             return str(row[0])
     return expected

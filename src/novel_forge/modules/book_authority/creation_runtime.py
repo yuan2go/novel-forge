@@ -107,7 +107,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
-        from novel_forge.modules.chapter_authority.memo_recovery import recover_memo_references, recover_memo_completion
+        from novel_forge.modules.chapter_authority.memo_recovery import recover_memo_references, recover_memo_completion, recover_intent_references
+        recover(lambda: recover_intent_references(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         recover(lambda: recover_memo_references(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         recover(lambda: recover_memo_completion(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         if not author_first(book):
@@ -295,8 +296,9 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             versions = prepared["versions"]
             portfolio = AuthorityAssetQuery(content.database_url).require(project_id=project,
                 asset_version_id=versions["character_arc_portfolio"])
+            from novel_forge.modules.hierarchical_planning.domain import character_planning_locator
             arc_keys = tuple(dict.fromkeys(("book:" + book,
-                *("character:" + row["character_id"] for row in portfolio.content["trajectories"]))))
+                *(character_planning_locator(row["character_id"]) for row in portfolio.content["trajectories"]))))
             admitted = composition.open_book(OpenBookProductionRequest(project_id=project,
                 workspace_id=run["workspace_id"], book_id=book, actor_id=composition.principal.principal_id,
                 expected_book_version=prepared["book_version"], production_profile=versions["production_profile"],

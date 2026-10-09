@@ -126,11 +126,18 @@ def replace_failed_step(
             and policy_evidence.get("character_reference_contract", {}).get("contract_version") == "frozen-character-references.v1"
         )
         memo_completion_repair = (source["definition_name"] == "chapter.memo.generate" and source["definition_version"] == "3.10.1" and target_version == "3.10.2" and policy_evidence.get("completion_revalidation") == "settled-memo-completion.v1")
+        intent_contract_repair = (source["definition_name"] == "chapter.execution_intent.prepare"
+            and source["definition_version"] == "3.10.0" and target_version == "3.10.1"
+            and expected_failure_code == "CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID"
+            and policy_evidence.get("contract_version") == "chapter-intent-reference-revalidation.v1")
+        if intent_contract_repair:
+            from novel_forge.modules.chapter_authority.memo_recovery import require_intent_reference_repair
+            require_intent_reference_repair(cursor, source, policy_evidence, database_url)
         if (
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memo_contract_repair or memo_completion_repair else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memo_contract_repair or memo_completion_repair or intent_contract_repair else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport)

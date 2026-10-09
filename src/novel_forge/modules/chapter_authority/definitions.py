@@ -252,7 +252,10 @@ def chapter_operation_definitions(
         memo_completion = deepcopy(memo_repair)
         memo_completion["definition_version"] = "3.10.2"
         memo_completion["policy"]["memo_completion_revalidation"] = "settled-memo-completion.v1"
-        definitions = (*definitions, memo_repair, memo_completion)
+        intent_repair = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.EXECUTION_INTENT.definition_name))
+        intent_repair["definition_version"] = "3.10.1"
+        intent_repair["policy"]["character_reference_contract_revalidation"] = "planning-character-locator.v1"
+        definitions = (*definitions, memo_repair, memo_completion, intent_repair)
     if not author_input:
         return definitions
     from copy import deepcopy

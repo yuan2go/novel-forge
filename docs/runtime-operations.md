@@ -821,6 +821,15 @@ normalize them. Do not infer IDs from transliteration. Retain exhausted Attempts
 the owning versioned contract-recovery successor for a proven repair; repeated unchanged
 input, a new Book or a reset counter is not recovery.
 
+Planning locators use the owning `character_planning_locator` serializer around a
+stable cast ID. They are distinct from that ID and its display name. Frozen Scene
+locators may resolve only through the exact Book cast, with collisions rejected.
+Existing name-based contracts retain their original tokens. A failed, unmaterialized
+Intent with this proven reference-contract error and no external effects may use the
+bounded `planning-character-locator.v1` successor; its Plan, authorization and failed
+Attempt remain unchanged. The native Book creation driver runs this recovery before
+Memo execution, including after process restart.
+
 Editing compares the full submitted chapter with the selected base and freezes only actual
 changed Unicode ranges. Preserve unsubmitted input on conflict, reload the selected base and
 rebase explicitly. Diff returns the original-protecting candidates, before/after edits and

@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.hierarchical_planning.domain import character_planning_locator
 
 CONTRACT = "frozen-character-references.v1"
 
@@ -24,6 +25,11 @@ def compile_character_references(*, project_id: str, workspace_id: str, book_id:
         for token in (identity, name, *aliases):
             tokens.setdefault(token, set()).add(identity)
     participants: dict[str, str] = {}
+    requested = {token for scene in scenes for token in scene.get("participants", [])}
+    for identity in bindings:
+        locator = character_planning_locator(identity)
+        if locator in requested:
+            tokens.setdefault(locator, set()).add(identity)
     for scene in scenes:
         for token in scene.get("participants", []):
             matches = tokens.get(token, set())
@@ -53,6 +59,9 @@ def normalize_character_choices(intent, result, references=None):
     for row in contract["bindings"]:
         for token in (row["character_id"], row["display_name"], *row["aliases"]):
             tokens.setdefault(token, set()).add(row["character_id"])
+        locator = character_planning_locator(row["character_id"])
+        if locator in participants:
+            tokens.setdefault(locator, set()).add(row["character_id"])
     if set(r["character_id"] for r in contract["bindings"]) != targets:
         raise KernelError("CHAPTER_MEMO_REFERENCE_CONTRACT_INVALID", "Legal references must equal the frozen participant set")
     for choice in normalized["creative_guidance"]["character_choices"]:
