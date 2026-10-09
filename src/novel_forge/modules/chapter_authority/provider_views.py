@@ -2145,6 +2145,7 @@ def _build_planning_context_view(
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
     task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
     typed_arc_sources = context_bundle.get("planning_contract_version") == "1.21.0"
+    typed_volume_sources = context_bundle.get("typed_volume_projection_version") == "typed-volume-context-projection.v1"
     frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
     if isinstance(frozen, Mapping) and "compiled_view" in frozen:
         view = frozen["compiled_view"]
@@ -2210,6 +2211,7 @@ def _build_planning_context_view(
             source=raw,
             task_capacity=task_capacity,
             typed_arc_sources=typed_arc_sources,
+            typed_volume_sources=typed_volume_sources,
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -2229,6 +2231,7 @@ def _build_planning_context_view(
         "contract_version": "provider-context-view-v4" if task_capacity else "provider-context-view-v2",
         "stage": stage,
         **({"typed_arc_projection_version": "typed-arc-context-projection.v2"} if typed_arc_sources else {}),
+        **({"typed_volume_projection_version": "typed-volume-context-projection.v1"} if typed_volume_sources else {}),
         "narrative_position": {
             "book_id": str(context_bundle.get("book_id") or ""),
             "logical_key": str(context_bundle.get("logical_key") or ""),
@@ -2691,6 +2694,7 @@ def _project_planning_content(
     source: Mapping[str, Any] | None = None,
     task_capacity: bool = False,
     typed_arc_sources: bool = False,
+    typed_volume_sources: bool = False,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2782,6 +2786,14 @@ def _project_planning_content(
             loss_records.append(_loss_record(source or {"role": role}, path="/" + field, value=value, reason=reason))
 
     typed_role = "arc_plans" if typed_arc_sources and role.startswith(("related_arc:", "dependent_arc:")) else role
+    if typed_volume_sources and role.startswith("arc_scope_volume:"):
+        if not isinstance(source, Mapping) or not (
+            source.get("asset_type") == "volume_plan" or (
+                source.get("asset_type") == "planning_generation_candidate"
+                and content.get("planning_scope") == "VOLUME"
+                and content.get("generator_operation_name") == "volume_plan.generate")):
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "Arc volume source must retain its typed VolumePlan identity")
+        typed_role = "volume_plan"
     allowed_fields = _PLANNING_ROLE_FIELDS.get(typed_role)
     if allowed_fields is not None:
         admitted_fields = {*allowed_fields, *_REQUIRED_PLANNING_FIELDS, *_OPTIONAL_PLANNING_FIELDS}

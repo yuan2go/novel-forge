@@ -3754,3 +3754,12 @@ A Pack successor may change its deployment version only after both persisted man
 are verified and the manifests compare equal with only `identity.version` excluded. Prompt,
 route, Context, Skill and tool policy hashes remain bound. Changed executable contracts
 require their existing explicit contract continuation; old snapshots are never rewritten.
+
+A retained Arc request rejected solely by Context capacity may use a native typed-volume
+Context successor when it has no Effect, reservation, held lease or live Attempt. The
+registration transaction finalizes the failed frozen request and records one successor
+intent. It preserves the failed Attempt, all input version bindings and the complete
+original Context. The successor applies the existing VolumePlan field projection to
+`arc_scope_volume:*` sources, keeps an explicit projection version and persists audited
+omissions. The current migration head in the migration manifest enforces scope and lineage;
+paid budget, authentication and availability failures cannot borrow this path.

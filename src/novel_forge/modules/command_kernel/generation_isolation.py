@@ -145,8 +145,13 @@ def recover_book_generations(application, *, project_id, book_id, principal):
             JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
               ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
             WHERE generation.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
-              AND operation.status IN ('FAILED_FINAL','DEAD_LETTER') AND COALESCE(generation.candidate_asset_version_id,'')=''
-              AND attempt.result->>'error_code'='PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'
+              AND operation.status IN ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER') AND COALESCE(generation.candidate_asset_version_id,'')=''
+              AND (attempt.result->>'error_code'='PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED' OR (
+                attempt.result->>'error_code'='PROVIDER_ROUTING_BLOCKED' AND generation.generator_operation_name='arc_plan.generate'
+                AND EXISTS(SELECT 1 FROM authority_operation_output_asset output JOIN authority_asset_version version USING(asset_version_id)
+                  JOIN authority_asset asset ON asset.asset_id=version.asset_id WHERE output.operation_id=operation.operation_id
+                  AND asset.asset_type='routing_decision' AND version.content->>'status'='BLOCKED'
+                  AND jsonb_path_exists(version.content,'$.candidates[*].rejected_reasons[*] ? (@ == "CONTEXT_CAPACITY_EXCEEDED")'))))
               AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=generation.operation_id)
               AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=generation.operation_id)""",
             [project_id,book_id,principal.principal_id])

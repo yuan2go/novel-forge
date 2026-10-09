@@ -5698,10 +5698,15 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if runtime.get("planning_reference_contract") and proof:
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") == "typed-volume-context-projection.v1"):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
+                    if proof.get("contract_version") == "typed-volume-context-projection.v1":
+                        original_order = {item["role"]:index for index,item in enumerate(original.content["input_versions"])}
+                        if len(original_order) != len(original.content["input_versions"]) or any(item["role"] not in original_order for item in selected):
+                            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor role identities changed")
+                        selected = sorted(selected,key=lambda item:original_order[item["role"]])
                     self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected, context_policy_ref=context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
                     content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id)
@@ -5849,6 +5854,8 @@ class PostgresPlanningExecutionPreparer:
             "planning_scope": command.planning_scope.value,
             "logical_key": command.logical_key,
             "input_versions": selected,
+            **({"typed_volume_projection_version": "typed-volume-context-projection.v1"}
+                if command.generator_operation_name == "arc_plan.generate" else {}),
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
             **(
@@ -5974,6 +5981,8 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if command.generator_operation_name == "arc_plan.generate":
+            content["typed_volume_projection_version"] = "typed-volume-context-projection.v1"
         if command.execution_contract_version == "1.21.0":
             content["planning_contract_version"] = "1.21.0"
         if operation_id and "realization_reference_contract" in content:

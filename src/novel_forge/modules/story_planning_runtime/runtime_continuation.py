@@ -104,7 +104,7 @@ def require_source(
     row = uow.cursor.fetchone()
     if (
         row is None
-        or not ((row[0] in {"CANCELLED", "FAILED_FINAL", "DEAD_LETTER"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
+        or not ((row[0] in {"CANCELLED", "FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
@@ -179,8 +179,9 @@ def require_source(
             _require_world_lineage_settled(uow, source_operation_id=source_operation_id, project_id=project_id, book_id=str(row[4]), active_successor_operation_id=active_successor_operation_id)
             return mode(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
     if (
-        row[0] in {"FAILED_FINAL", "DEAD_LETTER"}
-        and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+        (row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED")
+        or (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED"
+            and frozen.get("generator_operation_name") == "arc_plan.generate")
     ):
         return _pre_send_capacity_source(
             uow,
@@ -188,6 +189,7 @@ def require_source(
             row=row,
             frozen=frozen,
             attempt=attempt,
+            route_preflight=failure_code == "PROVIDER_ROUTING_BLOCKED",
         )
     if attempt and attempt[0] in {"FAILED_RETRYABLE", "FAILED_FINAL"} and (
         row[0] == "CANCELLED" and failure_code in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_ROUTING_BLOCKED"}
@@ -693,14 +695,47 @@ def _pre_send_capacity_source(
     row: Any,
     frozen: dict[str, Any],
     attempt: Any,
+    route_preflight: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
+    projection_revalidation = None
+    if route_preflight:
+        uow.cursor.execute("""SELECT version.content FROM authority_operation_output_asset output
+            JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
+            WHERE output.operation_id=%s AND asset.asset_type='routing_decision' ORDER BY version.created_at DESC LIMIT 1""", [source_operation_id])
+        decision = uow.cursor.fetchone()
+        candidates = decision[0].get("candidates", []) if decision else []
+        if not decision or decision[0].get("status") != "BLOCKED" or not candidates or (
+            decision[0].get("task", {}).get("project_id") != frozen["project_id"]
+            or decision[0].get("task", {}).get("work_id") != frozen["book_id"]
+            or decision[0].get("task", {}).get("operation_id") != source_operation_id) or any(
+            "CONTEXT_CAPACITY_EXCEEDED" not in candidate.get("rejected_reasons", [])
+            or set(candidate["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
+            for candidate in candidates):
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure")
+        projection_revalidation = {"contract_version": "typed-volume-context-projection.v1",
+            "blocked_decision_id": decision[0]["decision_id"], "source_operation_status": str(row[0]),
+            "reason": "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
+        uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
+            WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""", [source_operation_id])
+        context = uow.cursor.fetchone()
+        if not context:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_EVIDENCE_MISSING", "Routing capacity failure must retain its frozen Context")
+        projection_revalidation.update(context_asset_version_id=context[0],context_content_hash=context[1])
     uow.cursor.execute(
         "SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s) OR EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND output_key='planning.context_bundle')",
         [source_operation_id] * 3,
     )
-    if uow.cursor.fetchone()[0]:
+    unsafe = uow.cursor.fetchone()[0]
+    if route_preflight:
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
+            OR EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status IN ('LEASED','RUNNING','CHECKPOINTED','RESULT_SUBMITTED'))
+            OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+              WHERE attempt.operation_id=%s AND lease.status='HELD')""", [source_operation_id]*4)
+        unsafe = uow.cursor.fetchone()[0]
+    if unsafe:
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_DISPATCH_UNSAFE",
             "Capacity continuation requires no external intent, reservation or frozen Context",
@@ -765,6 +800,7 @@ def _pre_send_capacity_source(
         **({"capacity_inheritance": inherited} if inherited else {}),
         "failure": dict(attempt[2] or attempt[1] or {}),
         "depth": depth + 1,
+        **({"context_revalidation": projection_revalidation} if projection_revalidation else {}),
     }
 
 
@@ -780,7 +816,6 @@ def _require_version_only_pack_successor(uow, *, project_id, original, target):
         manifest = deepcopy(version["manifest"])
         if canonical_hash(manifest) != snapshot["manifest_hash"] or version["manifest_hash"] != snapshot["manifest_hash"]:
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT", "Pack successor manifest differs from its persisted snapshot")
-        # COMPATIBILITY: Deployment versions change identity while every executable contract remains frozen.
         manifest["identity"].pop("version")
         retained.append(manifest)
     if retained[0] != retained[1]:
@@ -924,14 +959,24 @@ def _capacity_target(
         allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
         if allocated > ceiling:
             raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "Inherited allocation exceeds the current authorized model capacity")
-    if allocated <= baseline:
+    if allocated <= baseline and not source.get("context_revalidation"):
         raise KernelError(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
         )
     while True:
         try:
-            context, _ = preparer._context_bundle(
+            if source.get("context_revalidation"):
+                proof = source["context_revalidation"]
+                original_context = preparer.query.require(project_id=successor.project_id,asset_version_id=proof["context_asset_version_id"])
+                original_inputs = {item["role"]:item for item in original_context.content["input_versions"]}
+                if original_context.content_hash != proof["context_content_hash"] or any(
+                    any(original_inputs.get(item["role"], {}).get(key) != item[key] for key in ("asset_version_id","content_hash","asset_type"))
+                    for item in source["inputs"]):
+                    raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor must retain every original input version")
+                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated)
+            else:
+                context, _ = preparer._context_bundle(
                 operation_id=source["source_operation_id"],
                 attempt_id=source["attempt_id"],
                 command=successor,
@@ -958,6 +1003,7 @@ def _capacity_target(
         ),
         "source_failure": source["failure"],
         "external_intents_at_source": 0,
+        **({"context_revalidation": source["context_revalidation"]} if source.get("context_revalidation") else {}),
     }
     if source.get("capacity_inheritance"):
         target = {**target, "generation_isolation": source["capacity_inheritance"]["generation_isolation"]}
@@ -1262,6 +1308,18 @@ def register(
             "operator registration must cite the actual authorization and failure reason",
         )
     with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.cursor.execute("""SELECT link.continuation_id,operation.operation_id,operation.status,link.target_release_sha,
+            output.asset_version_id,output.content_hash FROM authority_story_planning_runtime_continuation link
+            JOIN authority_operation operation ON operation.operation_id=link.registered_by_operation_id
+            JOIN authority_operation_output_asset output ON output.operation_id=operation.operation_id AND output.output_key=%s
+            WHERE link.source_operation_id=%s AND link.project_id=%s AND operation.actor_id=%s""",
+            [OUTPUT_KEY,source_operation_id,project_id,principal.principal_id])
+        registered=uow.cursor.fetchone()
+        if registered:
+            return {"operation_id":registered[1],"status":registered[2],"continuation_id":registered[0],
+                "target_release_sha":registered[3],"asset_version_id":registered[4],"content_hash":registered[5],
+                "source_operation_id":source_operation_id,"replayed":True}
+    with AuthorityUnitOfWork(application.database_url) as uow:
         source = require_source(
             uow, source_operation_id=source_operation_id, project_id=project_id
         )
@@ -1538,6 +1596,14 @@ def register(
                 "PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT",
                 "source changed before continuation registration",
             )
+        if (source.get("context_revalidation") or {}).get("source_operation_status") == "FAILED_RETRYABLE":
+            from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
+
+            transition_operation_in_uow(uow, OperationTransitionCommand(
+                operation_id=source_operation_id, project_id=project_id, expected_version=source["version"],
+                expected_status="FAILED_RETRYABLE", target_status="FAILED_FINAL", actor_id=principal.principal_id,
+                reason="Retain failed unsent request and atomically register its audited Context contract successor",
+                trace_id=trace_id, correlation_id=correlation_id, causation_id=registration_operation_id))
         document = uow.repositories.asset_documents.materialize_output(
             AuthorityAssetWriteCommand(
                 operation_id=registration_operation_id,
