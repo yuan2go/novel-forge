@@ -16,7 +16,8 @@ from tests.integration.creative_validation_production_support import controlled_
 from tests.integration.synthesis_production_support import SynthesisTransport
 
 
-def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch):
+@pytest.mark.parametrize("completed_sibling", [False, True], ids=["single-interruption", "completed-sibling-interruption"])
+def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -43,14 +44,49 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
     resolve = PostgresProductionExecutionPayloadResolver.resolve
     stream_failures = []
+    compression_calls = []
     def interrupt_first_memo(resolver, request, admission):
         payload = resolve(resolver, request, admission)
-        if request.stage == "memo" and not stream_failures:
+        if request.stage in {"context_compress", "context_fidelity"}:
+            compression_calls.append((request.operation_id, request.stage))
+        failure_stage = "context_fidelity" if completed_sibling else "memo"
+        if request.stage == failure_stage and not stream_failures:
             layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
             layout.result_path("interrupt-stream").write_text("controlled fault")
             stream_failures.append(request.operation_id)
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+    if completed_sibling:
+        from novel_forge.modules.chapter_authority import handlers
+        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+        chapter_transport = transport.chapter
+        class ContextFixtureTransport:
+            def __setattr__(self, name, value):
+                setattr(chapter_transport, name, value)
+            def __getattr__(self, name):
+                return getattr(chapter_transport, name)
+            def __call__(self, stage, inputs):
+                if stage in {"context_compress", "context_fidelity"}:
+                    return default_chapter_fixture_response(stage, inputs)
+                return chapter_transport(stage, inputs)
+        transport.chapter = ContextFixtureTransport()
+        build_context = handlers.build_context_bundle
+        def prepare_two_model_stages(**kwargs):
+            if kwargs["plan"]["chapter"] == 1:
+                memo = kwargs["chapter_memo"]
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    source = uow.repositories.asset_documents.require(project_id=kwargs["project_id"],
+                        asset_version_id=kwargs["plan_asset_version_id"])
+                task = {"contract_version": "task-context-compression.v1", "policy_version": "task-scoped-context.v1",
+                    "accepted_boundary": memo["accepted_boundary"], "memo_fingerprint": memo["memo_fingerprint"],
+                    "task": {"stage": "draft", "chapter": 1, "goal": kwargs["plan"]["chapter_objective"]},
+                    "target_tokens": 1024, "required_unit_ids": ["controlled-plan-goal"],
+                    "units": [{"unit_id": "controlled-plan-goal", "text": kwargs["plan"]["chapter_objective"], "required": True}],
+                    "source_binding": {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}}
+                selected = kwargs["context_model_call"]("context_compress", task)
+                kwargs["context_model_call"]("context_fidelity", {**task, "selected_unit_ids": selected["selected_unit_ids"]})
+            return build_context(**kwargs)
+        monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
     env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
     env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
     for key, value in env.items():
@@ -107,6 +143,17 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             JOIN authority_operation child ON child.operation_id=successor.successor_operation_id
             WHERE original.operation_id=%s""", [stream_failures[0]])
         assert uow.cursor.fetchone() == ("FAILED_FINAL", "UNKNOWN", "HELD_UNKNOWN", "SUCCEEDED", "PROVIDER_STREAM_INTERRUPTED")
+    if completed_sibling:
+        assert [stage for operation, stage in compression_calls] == ["context_compress", "context_fidelity", "context_fidelity"]
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT status,count(*) FROM authority_external_effect WHERE operation_id=%s GROUP BY status", [stream_failures[0]])
+            assert dict(uow.cursor.fetchall()) == {"SUCCEEDED": 1, "UNKNOWN": 1}
+            uow.cursor.execute("""SELECT effect.request_payload->>'stage',effect.status FROM authority_external_effect effect
+                JOIN authority_saga_step_successor journal ON journal.successor_operation_id=effect.operation_id
+                WHERE journal.predecessor_operation_id=%s""", [stream_failures[0]])
+            assert uow.cursor.fetchall() == [("context_fidelity", "SUCCEEDED")]
+            uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [stream_failures[0]])
+            assert uow.cursor.fetchone()[0] == 1
     assert len(retained["units"]) == 1
     assert stopped["current_chapter"] == 0
     import time

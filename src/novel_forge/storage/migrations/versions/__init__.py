@@ -195,6 +195,7 @@ from . import (
     v20261009_0191_provider_schema_successor,
     v20261009_0192_generation_retry_lineage,
     v20261009_0193_completed_planning_admission,
+    v20261009_0194_multi_model_generation_isolation,
 )
 
 VERSION_MODULES = [
@@ -392,6 +393,7 @@ VERSION_MODULES = [
     v20261009_0191_provider_schema_successor,
     v20261009_0192_generation_retry_lineage,
     v20261009_0193_completed_planning_admission,
+    v20261009_0194_multi_model_generation_isolation,
 ]
 
 __all__ = ["VERSION_MODULES"]

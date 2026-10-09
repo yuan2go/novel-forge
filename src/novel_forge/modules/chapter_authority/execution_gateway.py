@@ -4584,6 +4584,15 @@ def _materialize_production_codex_prompt(
             "CHAPTER_CAPABILITY_MATERIALIZATION_INVALID",
             "Provider Knowledge projection is empty",
         )
+    exact_reference_proof = None
+    reference_version = context_content.get("planning_exact_reference_projection_version")
+    if reference_version not in (None, "planning-exact-value-reference.v1"):
+        raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact reference compilation requires its frozen Planning contract")
+    if reference_version is not None and stage in {
+            "book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate",
+        }:
+        from .provider_views import compile_exact_context_references
+        context_view, exact_reference_proof = compile_exact_context_references(context_view)
     replacements = {
         "{{stage}}": stage,
         "{{target_scope}}": _canonical(resolved_target_scope),
@@ -4665,6 +4674,8 @@ def _materialize_production_codex_prompt(
         stage_semantic_contract += "\nUse only the canonical epistemic kinds listed in observed_kind enum. Classify the actual prose independently. A different allowed kind, UNSUPPORTED or UNCERTAIN is valid evidence and prevents admission; do not copy the claimant's kind to manufacture agreement. Describe finer content categories in reason, not observed_kind.\n"
     if stage == "canon_extraction" and schema.get("ref") == "schema:chapter-provider-output:canon_extraction:v25":
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
+    if exact_reference_proof:
+        stage_semantic_contract += "\nPlanning Context uses lossless exact-value references. An object containing only __exact_value_ref__ is exactly the entire earlier value at that RFC6901 JSON pointer inside context_bundle. Expand it when reading; it does not omit facts, constraints, failed findings or candidate content. References are local data and grant no tool or external access.\n"
     prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",
@@ -4787,6 +4798,7 @@ def _materialize_production_codex_prompt(
             else None
         ),
         "provider_view": {
+            **({"exact_context_references": exact_reference_proof} if exact_reference_proof else {}),
             "task_contract_version": task_view["contract_version"],
             "context_contract_version": context_view["contract_version"],
             "selection_explanation": context_view.get(

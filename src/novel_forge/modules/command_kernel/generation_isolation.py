@@ -261,6 +261,7 @@ def append_isolation(uow, effect, command):
     )
     operation = cursor.fetchone()[0]
     chapter_generation = operation["definition_name"] in {
+        "chapter.context.build",
         "chapter.memo.generate",
         "chapter.draft.generate",
         "chapter.review.evaluate",
@@ -639,12 +640,8 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
                 [source["operation_id"]],
             )
             effects = [row[0] for row in uow.cursor.fetchall()]
-        if len(effects) != 1:
-            raise KernelError(
-                "GENERATION_ISOLATION_MIXED_EFFECTS_RECONCILIATION_REQUIRED",
-                "A multi-effect node requires original per-effect result recovery before native succession",
-            )
-        for effect in effects:
+        uncertain, completed = partition_generation_effects(effects)
+        for effect in uncertain:
             with AuthorityUnitOfWork(authority.database_url) as uow:
                 retained = isolation(uow.cursor, effect["external_effect_id"])
             if retained:
@@ -658,26 +655,35 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
                 .get("candidate", {})
                 .get("authorization_ref")
             )
-            resolve_external_effect_manually(
-                authority.database_url,
-                ExternalEffectManualResolutionCommand(
-                    effect["external_effect_id"],
-                    source["operation_id"],
-                    book["project_id"],
-                    principal.principal_id,
-                    "ISOLATE_PURE_GENERATION",
-                    "Retire stopped pure generation and retain original unknown remote outcome and usage",
-                    {"authorization_ref": authorization},
-                    "generation-isolation:" + effect["external_effect_id"],
-                    source["version"],
-                    source["trace_id"],
-                    source["correlation_id"],
-                ),
-            )
+            for cas_attempt in range(3):
+                try:
+                    with AuthorityUnitOfWork(authority.database_url) as uow:
+                        uow.cursor.execute("SELECT version FROM authority_operation WHERE operation_id=%s", [source["operation_id"]])
+                        source_version = uow.cursor.fetchone()[0]
+                    resolve_external_effect_manually(
+                        authority.database_url,
+                        ExternalEffectManualResolutionCommand(
+                            effect["external_effect_id"],
+                            source["operation_id"],
+                            book["project_id"],
+                            principal.principal_id,
+                            "ISOLATE_PURE_GENERATION",
+                            "Retire stopped pure generation and retain original unknown remote outcome and usage",
+                            {"authorization_ref": authorization},
+                            "generation-isolation:" + effect["external_effect_id"],
+                            source_version,
+                            source["trace_id"],
+                            source["correlation_id"],
+                        ),
+                    )
+                    break
+                except KernelError as error:
+                    if error.code != "OPERATION_VERSION_CONFLICT" or cas_attempt == 2:
+                        raise
         with AuthorityUnitOfWork(authority.database_url) as uow:
             proofs = [
                 isolation(uow.cursor, effect["external_effect_id"])
-                for effect in effects
+                for effect in uncertain
             ]
             uow.cursor.execute(
                 """WITH RECURSIVE ancestors AS (
@@ -722,6 +728,7 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
             policy_evidence={
                 "contract_version": "chapter-pure-generation-successor.v1",
                 "generation_isolations": proofs,
+                "completed_model_effects": [{"external_effect_id": e["external_effect_id"], "request_hash": e["request_hash"], "stage": e["request_payload"]["stage"]} for e in completed],
                 "book_run_id": book_run_id,
                 "chapter_request_id": request["chapter_request_id"],
                 "recovery_attempt_number": recovery_count + 1,
@@ -733,10 +740,27 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
             expected_failure_code=failure_code,
             known_isolated_effects=tuple(
                 (effect["external_effect_id"], effect["request_hash"])
-                for effect in effects
+                for effect in uncertain
             ),
+            known_receipt_effects=tuple((effect["external_effect_id"], effect["request_hash"]) for effect in completed),
         )
         if not successor["replayed"]:
             sleep(30)
         changed = True
     return changed
+
+
+def partition_generation_effects(effects):
+    uncertain, completed = [], []
+    for effect in effects:
+        if effect["effect_type"] != "model.invoke":
+            raise KernelError("GENERATION_ISOLATION_EFFECT_BOUNDARY_UNSAFE", "A non-model effect requires its owning reconciliation; no blind successor")
+        if effect["status"] in {"UNKNOWN", "RECONCILIATION_REQUIRED"}:
+            uncertain.append(effect)
+        elif effect["status"] == "SUCCEEDED":
+            completed.append(effect)
+        else:
+            raise KernelError("GENERATION_RECOVERY_EFFECT_STATE_UNSUPPORTED", "Retain the concrete failure and resolve its current state before bounded node continuation", details={"external_effect_id": effect["external_effect_id"], "status": effect["status"], "cause": effect.get("last_error"), "recovery_action": "CLASSIFY_RETAINED_EFFECT_FAILURE", "business_impact": "CURRENT_NODE_STOPPED"})
+    if not uncertain:
+        raise KernelError("GENERATION_ISOLATION_RESULT_RECOVERABLE", "No uncertain result exists; reuse completed output")
+    return uncertain, completed

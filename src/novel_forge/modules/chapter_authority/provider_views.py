@@ -3144,3 +3144,55 @@ def _realization_source_review(draft):
         "information_flow": deepcopy(contract["information_flow"]),
         "candidate_uses": [{key: deepcopy(row[key]) for key in ("slot_id", "used_fact_ids", "character_source_uses")} for row in draft["scene_artifacts"]],
         "review_requirement": "Read the actual prose to check actor ownership, observation/communication before dependent use, future leakage and testimony versus objective fact. These declared references are evidence, not proof of occurrence or successful realization. Accepted source versions are read-only; planned sources are not accepted history."}}
+
+
+def compile_exact_context_references(view):
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    marker = "__exact_value_ref__"
+    seen, count = {}, 0
+    def encode(value, path):
+        nonlocal count
+        if isinstance(value, Mapping) and marker in value:
+            raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
+        identity = _canonical_exact_reference_value(value)
+        if len(identity.encode("utf-8")) >= 256 and identity in seen:
+            count += 1
+            return {marker: seen[identity]}
+        if isinstance(value, Mapping):
+            result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
+        elif isinstance(value, list):
+            result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
+        else:
+            result = value
+        if len(identity.encode("utf-8")) >= 256:
+            seen.setdefault(identity, path)
+        return result
+    encoded = encode(view, "")
+    if expand_exact_context_references(encoded) != view:
+        raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact context references did not reconstruct the complete source")
+    proof = {"contract_version": "planning-exact-value-reference.v1", "source_context_hash": canonical_hash(view),
+        "encoded_context_hash": canonical_hash(encoded), "reference_count": count, "decoded_equal": True}
+    return encoded, proof
+
+
+def _canonical_exact_reference_value(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def expand_exact_context_references(encoded):
+    decoded = {}
+    def expand(value, path):
+        if isinstance(value, Mapping) and "__exact_value_ref__" in value:
+            target = value["__exact_value_ref__"]
+            if set(value) != {"__exact_value_ref__"} or not isinstance(target, str) or target not in decoded:
+                raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "References must identify an earlier complete value within the same Context; external, forward and cyclic references are forbidden")
+            result = deepcopy(decoded[target])
+        elif isinstance(value, Mapping):
+            result = {key: expand(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
+        elif isinstance(value, list):
+            result = [expand(item, path + "/" + str(index)) for index, item in enumerate(value)]
+        else:
+            result = value
+        decoded[path] = result
+        return result
+    return expand(encoded, "")

@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261009_0193_completed_planning_admission",
+  "head": "20261009_0194_multi_model_generation_isolation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -196,6 +196,7 @@
     "20261009_0190_group_window_successor",
     "20261009_0191_provider_schema_successor",
     "20261009_0192_generation_retry_lineage",
-    "20261009_0193_completed_planning_admission"
+    "20261009_0193_completed_planning_admission",
+    "20261009_0194_multi_model_generation_isolation"
   ]
 }

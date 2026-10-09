@@ -197,12 +197,17 @@ def _read_verified_success(uow: Any, repository: Any, context: EffectCommandCont
         require_not_isolated(uow.cursor, context.operation_id)
     effect = repository.get_for_update(effect_id)
     if retained_generation_stage:
-        from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES
-        uow.cursor.execute("SELECT authority_generation_isolated(%s)", [effect_id])
-        if (uow.cursor.fetchone()[0] or effect["status"] != "SUCCEEDED"
-                or effect["effect_type"] != "model.invoke"
-                or effect["request_payload"].get("stage") not in {"world_candidates.generate", "world_candidates.evaluate", *ACTOR_STAGES}):
-            raise KernelError("EFFECT_RETAINED_STAGE_INVALID", "Only a completed non-isolated World sibling can be read; no old commit right is restored")
+        metadata = effect.get("request_payload", {}).get("_production_execution", {})
+        capability = metadata.get("capability_runtime", {})
+        uow.cursor.execute("""SELECT authority_generation_isolated(%s),EXISTS(
+            SELECT 1 FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+            WHERE version.asset_version_id=%s AND version.content_hash=%s AND asset.project_id=%s
+              AND version.content #>> '{contract,tool_permissions,default}'='DENY'
+              AND version.content #> '{contract,tool_permissions,allowed}'='["model.provider.invoke"]'::jsonb)""",
+            [effect_id,capability.get("materialization_asset_version_id"),capability.get("materialization_content_hash"),context.project_id])
+        isolated, pure = uow.cursor.fetchone()
+        if isolated or not pure or effect["status"] != "SUCCEEDED" or effect["effect_type"] != "model.invoke":
+            raise KernelError("EFFECT_RETAINED_STAGE_INVALID", "Read only a completed non-isolated model sibling with its original deny-all-tools materialization; no old commit right is restored")
     _require_project(effect, context.project_id)
     if effect["operation_id"] != context.operation_id:
         raise KernelError(

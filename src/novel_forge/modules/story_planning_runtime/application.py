@@ -1830,7 +1830,7 @@ class StoryPlanningGenerationApplication:
                 source_version = int(uow.cursor.fetchone()[0])
             if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
-                    and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate"})):
+                    and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
                 self._probe(execution_probe)
                 try:
                     register(self, str(row[0]), project_id=command.project_id, principal=principal,

@@ -167,7 +167,7 @@ def test_retained_world_sibling_is_readable_without_restoring_old_commit_rights(
     repository.get_for_update.return_value = {'project_id': 'project', 'operation_id': 'operation',
         'status': 'SUCCEEDED', 'effect_type': 'model.invoke', 'request_payload': {'stage': 'world_candidates.generate'}}
     cursor = Mock()
-    cursor.fetchone.side_effect = [(False,),
+    cursor.fetchone.side_effect = [(False, True),
         (1, evidence, external_effect_runtime._hash(evidence), {'evidence': evidence}, 'VERIFIED'),
         ('reservation', 'SETTLED', None, 1200, 2, 'ACCOUNT_ENTITLEMENT')]
     revoked = Mock(side_effect=KernelError('GENERATION_ATTEMPT_ISOLATED', 'Old submission right revoked'))
@@ -186,11 +186,11 @@ def test_retained_world_sibling_is_readable_without_restoring_old_commit_rights(
     (True, 'SUCCEEDED', 'model.invoke', 'world_candidates.generate'),
     (False, 'UNKNOWN', 'model.invoke', 'world_candidates.generate'),
     (False, 'SUCCEEDED', 'blob.write', 'world_candidates.generate'),
-    (False, 'SUCCEEDED', 'model.invoke', 'draft'),
+    (False, 'SUCCEEDED', 'model.invoke', 'unsafe-tools'),
 ])
 def test_retained_stage_reader_rejects_late_isolated_results_and_non_world_effects(isolated, status, kind, stage):
     cursor = Mock()
-    cursor.fetchone.return_value = (isolated,)
+    cursor.fetchone.return_value = (isolated, stage != "unsafe-tools")
     repository = Mock()
     repository.get_for_update.return_value = {'status': status, 'effect_type': kind, 'request_payload': {'stage': stage}}
     context = external_effect_runtime.EffectCommandContext('operation', 'project', 'actor', 'trace', 'correlation')

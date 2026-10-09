@@ -173,12 +173,12 @@ def replace_failed_step(
         if output:
             output = has_domain_outputs(cursor, predecessor_id)
         if known_receipt_effects:
-            _require_verified_receipts(cursor, source=source, expected=known_receipt_effects)
+            _require_verified_receipts(cursor, source=source, expected=known_receipt_effects, isolated_siblings=bool(known_isolated_effects))
             cursor.execute(
                 "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",
                 [predecessor_id],
             )
-            if [row for row in cursor.fetchall() if row[0] not in {e[0] for e in known_rejected_effects}] != [
+            if [row for row in cursor.fetchall() if row[0] not in {e[0] for e in (*known_rejected_effects, *known_isolated_effects)}] != [
                 (effect, digest, "SUCCEEDED", "SETTLED", "model.invoke")
                 for effect, digest in sorted(known_receipt_effects)
             ]:
@@ -214,8 +214,9 @@ def replace_failed_step(
             from .generation_isolation import isolation
             cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [predecessor_id])
             original_effects = cursor.fetchall()
-            proofs = [isolation(cursor, effect) for effect, request_hash in original_effects]
-            if (tuple(original_effects) != tuple(sorted(known_isolated_effects))
+            isolated = [row for row in original_effects if row[0] not in {e[0] for e in known_receipt_effects}]
+            proofs = [isolation(cursor, effect) for effect, request_hash in isolated]
+            if (tuple(isolated) != tuple(sorted(known_isolated_effects))
                 or not all(proofs) or policy_evidence.get("generation_isolations") != proofs
                 or policy_evidence.get("contract_version") != "chapter-pure-generation-successor.v1"
                 or any(proof["operation_id"] != predecessor_id or proof["actor_id"] != context.actor_id for proof in proofs)):
@@ -581,7 +582,7 @@ def _require_reconciled_graph(cursor, *, root_id, predecessor_id):
                           "Reconcile every outcome, settle accounting and release leases before succession")
 
 
-def _require_verified_receipts(cursor, *, source, expected):
+def _require_verified_receipts(cursor, *, source, expected, isolated_siblings=False):
     context = EffectCommandContext(operation_id=source["operation_id"],
         project_id=source["project_id"], actor_id=source["actor_id"],
         trace_id=source["trace_id"], correlation_id=source["correlation_id"])
@@ -590,6 +591,6 @@ def _require_verified_receipts(cursor, *, source, expected):
         effect = repository.get_for_update(effect_id)
         if effect["operation_id"] != source["operation_id"] or effect["request_hash"] != request_hash:
             raise KernelError("STEP_SUCCESSOR_RECEIPT_DRIFT", "Bind the exact original effect and request")
-        verified = _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id)
+        verified = (_read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id, retained_generation_stage=True) if isolated_siblings else _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id))
         if verified is None or verified["budget_reservation_status"] != "SETTLED":
             raise KernelError("STEP_SUCCESSOR_RECEIPT_UNSETTLED", "Require Kernel-verified success and settled accounting")
