@@ -81,7 +81,7 @@ def replace_stopped_generation_root(database_url, *, source_id, project_id, cont
         request_digest = cursor.fetchone()[0]
         cursor.execute("""INSERT INTO authority_saga_step_successor(successor_id,project_id,saga_id,predecessor_operation_id,
             successor_operation_id,actor_id,contract_version,request_digest,source_saga_snapshot,source_step_snapshot,
-            source_failure_snapshot,policy_evidence) VALUES (%s,%s,%s,%s,%s,%s,'kernel-failed-step-successor.v1',%s,%s,%s,%s,%s)""",
+            source_failure_snapshot,policy_evidence) VALUES (%s,%s,%s,%s,%s,%s,'kernel-failed-step-successor.v2',%s,%s,%s,%s,%s)""",
             [str(uuid4()),project_id,saga_id,source_id,successor,context.actor_id,
                 request_digest,
                 Jsonb(saga),Jsonb({'operation_id':source_id,'role':'SAGA_ROOT'}),Jsonb({'operation':source}),
