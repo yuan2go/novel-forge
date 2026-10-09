@@ -193,6 +193,8 @@ from . import (
     v20261009_0189_unsent_context_successor,
     v20261009_0190_group_window_successor,
     v20261009_0191_provider_schema_successor,
+    v20261009_0192_generation_retry_lineage,
+    v20261009_0193_completed_planning_admission,
 )
 
 VERSION_MODULES = [
@@ -388,6 +390,8 @@ VERSION_MODULES = [
     v20261009_0189_unsent_context_successor,
     v20261009_0190_group_window_successor,
     v20261009_0191_provider_schema_successor,
+    v20261009_0192_generation_retry_lineage,
+    v20261009_0193_completed_planning_admission,
 ]
 
 __all__ = ["VERSION_MODULES"]

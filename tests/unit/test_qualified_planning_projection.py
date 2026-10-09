@@ -104,3 +104,47 @@ def test_denied_retrieval_fails_closed_on_payload_or_lineage_drift(tamper):
 def test_non_denied_retrieval_is_not_compacted():
     source = {"selected": [{"knowledge": "required evidence"}], "need": {"query": "keep"}}
     assert _project_denied_planning_selection(source) == source
+
+
+def test_versioned_empty_project_query_retains_policy_and_source_identity():
+    source = _selection()
+    source['knowledge_access_policy'] = resolve_book_knowledge_access_policy(
+        production_profile={}, project_id='project-1', book_id='book-1',
+    )
+    source['selection_digest'] = _projection_hash({k: v for k, v in source.items() if k != 'selection_digest'})
+    original = deepcopy(source)
+    assert _project_denied_planning_selection(source) == source
+    result = _project_denied_planning_selection(source, empty_query=True)
+    assert result['need_receipt']['selection_digest'] == source['selection_digest']
+    assert result['need_receipt']['need_digest'] == source['need']['need_digest']
+    assert result['knowledge_access_policy'] == source['knowledge_access_policy']
+    assert result['need_receipt']['reason'] == 'NO_ELIGIBLE_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT'
+    assert 'need' not in result and source == original
+    source['need']['query'] = 'unbound replacement'
+    with pytest.raises(KernelError, match='PLANNING_EMPTY_SELECTION_DRIFT'):
+        _project_denied_planning_selection(source, empty_query=True)
+
+
+def test_empty_query_projection_never_omits_selected_card_inputs():
+    source = _selection()
+    source['selected'] = [{'knowledge': 'required creative input'}]
+    source['knowledge_access_policy'] = resolve_book_knowledge_access_policy(
+        production_profile={}, project_id='project-1', book_id='book-1',
+    )
+    assert _project_denied_planning_selection(source, empty_query=True) == source
+
+
+def test_chapter_repair_schema_enforces_existing_operational_commitment_rule():
+    from novel_forge.modules.hierarchical_planning import PlanContractType
+    from novel_forge.modules.story_planning_runtime.execution import planning_provider_output_schema
+
+    from tests.unit.test_story_planning_runtime import _realization_slice, _chapter_schedule_row
+    arguments = {'logical_key': 'chapter:1', 'parent_version_id': 'group:v1', 'narrative_realization': _realization_slice(parent_version_id='group:v1'), 'chapter_schedule_row': _chapter_schedule_row()}
+    historical = planning_provider_output_schema(PlanContractType.CHAPTER, **arguments)
+    repair = planning_provider_output_schema(PlanContractType.CHAPTER, **arguments, operational_commitments=True)
+    def levels(schema):
+        return schema['properties']['commitment_contract']['items']['properties']['level']['enum']
+    assert 'OPEN_DESIGN_SPACE' in levels(historical)
+    assert levels(repair) == ['HARD_CONSTRAINT', 'SOFT_INTENT']
+    with pytest.raises(KernelError, match='PLANNING_OPERATIONAL_SCOPE_INVALID'):
+        planning_provider_output_schema(PlanContractType.BOOK, operational_commitments=True)

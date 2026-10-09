@@ -1456,6 +1456,7 @@ def register(
             **route_evidence,
             "capacity_only": False,
             "host_revalidation": "provider-schema-correction.v1" if schema_correction else "world-host-revalidation.v1",
+            **({"failure_retry_counter": source["provider_schema_correction"]["failure_retry_counter"]} if schema_correction else {}),
             "preserved_repair_number": original.repair_number,
             **(
                 {"projection_revalidation": "world-direction-projection.v1"}
@@ -1587,6 +1588,7 @@ def register(
                         "host_revalidation",
                         "preserved_repair_number",
                         "projection_revalidation",
+                        "failure_retry_counter",
                     }
                 }
                 | {"capacity_only": True}

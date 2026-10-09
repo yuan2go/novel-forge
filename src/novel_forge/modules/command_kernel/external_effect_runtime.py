@@ -159,6 +159,17 @@ def read_failed_operation_success(
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
+def read_retained_generation_stage_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
+    """SECURITY: Read completed World siblings without restoring an isolated owner's submission rights."""
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
+        row = uow.cursor.fetchone()
+        if row is None or row[0] not in {"FAILED_FINAL", "DEAD_LETTER"}:
+            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their failed terminal owner")
+        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
+
+
 def read_checkpointed_operation_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
     _validate_effect_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
@@ -181,10 +192,18 @@ def read_completed_operation_success(database_url: str, context: EffectCommandCo
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
-def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
+def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str, *, retained_generation_stage: bool = False) -> dict[str, Any] | None:
     from .generation_isolation import require_not_isolated
-    require_not_isolated(uow.cursor, context.operation_id)
+    if not retained_generation_stage:
+        require_not_isolated(uow.cursor, context.operation_id)
     effect = repository.get_for_update(effect_id)
+    if retained_generation_stage:
+        from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES
+        uow.cursor.execute("SELECT authority_generation_isolated(%s)", [effect_id])
+        if (uow.cursor.fetchone()[0] or effect["status"] != "SUCCEEDED"
+                or effect["effect_type"] != "model.invoke"
+                or effect["request_payload"].get("stage") not in {"world_candidates.generate", "world_candidates.evaluate", *ACTOR_STAGES}):
+            raise KernelError("EFFECT_RETAINED_STAGE_INVALID", "Only a completed non-isolated World sibling can be read; no old commit right is restored")
     _require_project(effect, context.project_id)
     if effect["operation_id"] != context.operation_id:
         raise KernelError(

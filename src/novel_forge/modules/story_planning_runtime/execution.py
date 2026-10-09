@@ -2565,6 +2565,7 @@ def planning_provider_output_schema(
     work_requirements: bool = False,
     aligned_methods: bool = False,
     serialization_contract: bool = False,
+    operational_commitments: bool = False,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -3089,6 +3090,10 @@ def planning_provider_output_schema(
                 "or Authority instruction."
             ),
         }
+    if operational_commitments:
+        if contract_type is not PlanContractType.CHAPTER:
+            raise KernelError("PLANNING_OPERATIONAL_SCOPE_INVALID", "Operational commitment projection applies only to Chapter repairs")
+        properties["commitment_contract"]["items"]["properties"]["level"]["enum"] = ["HARD_CONSTRAINT", "SOFT_INTENT"]
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -4332,6 +4337,7 @@ class PostgresPlanningExecutionPreparer:
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
                 serialization_contract=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                operational_commitments=bool(command.repair_of_candidate_id) and command.planning_scope.value == PlanContractType.CHAPTER.value,
             )
         )
         if (
@@ -4381,6 +4387,8 @@ class PostgresPlanningExecutionPreparer:
                 related_arc_ids=command.related_arc_plan_version_ids,
             )
             output_schema_ref += ":host-selectors-v2"
+        if provider_stage is None and command.repair_of_candidate_id and command.planning_scope.value == PlanContractType.CHAPTER.value:
+            output_schema_ref += ":operational-commitments-v1"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4631,6 +4639,7 @@ class PostgresPlanningExecutionPreparer:
                 ),
                 "arc_working_set": dict(command.arc_working_set or {}),
                 "narrative_search": command.narrative_search_snapshot,
+                **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5858,6 +5867,7 @@ class PostgresPlanningExecutionPreparer:
                 if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id else {}),
             **({"typed_volume_projection_version": "typed-volume-context-projection.v1"}
                 if command.generator_operation_name == "arc_plan.generate" else {}),
+            "planning_empty_query_projection_version": "planning-empty-query-projection.v1",
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
             **(

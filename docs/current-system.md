@@ -297,7 +297,7 @@ projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
 ExecutionIntent; frozen earlier projections, including 3.9.16, keep their original
 contracts. The Book-owned explicit-null Memo timeout reader remains compatibility
 code: the native backend records a start before submission, so its started timeout
-requires remote reconciliation. Failed steps and affected derived Canon/Quality outputs use Command
+retains an uncertain remote outcome. A task whose actual permissions and I/O boundary prove pure generation may revoke the old submission right and register a bounded native successor without waiting for the missing receipt or measured usage. Irreversible effects continue to require reconciliation. Failed steps and affected derived Canon/Quality outputs use Command
 Kernel successor journals. The exact live unaccepted Chapter frontier, original actor,
 settled effects, no held lease and no committed downstream state gate each correction.
 Retained-graph v2 references completed siblings. Known-receipt v2 binds the exact

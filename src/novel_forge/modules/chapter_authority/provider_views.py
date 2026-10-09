@@ -184,6 +184,7 @@ _OPERATIONAL_KEYS = {
     "source_chapter_plan_asset_version_id",
     "source_chapter_plan_content_hash",
     "source_extensions",
+    "result_admission_recovery",
     "stage_context_view",
     "trace_id",
 }
@@ -324,12 +325,14 @@ def _project_selected_world_selection(selection: Any) -> Any:
     return result
 
 
-def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[str, Any]:
+def _project_denied_planning_selection(selection: Mapping[str, Any], *, empty_query: bool = False) -> Mapping[str, Any]:
     from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
 
     policy = selection.get("knowledge_access_policy")
     need = selection.get("need")
-    if not isinstance(policy, Mapping) or policy.get("mode") != "DENY_ALL":
+    if not isinstance(policy, Mapping) or (policy.get("mode") != "DENY_ALL" and not empty_query):
+        return selection
+    if empty_query and selection.get("selected"):
         return selection
     validate_book_knowledge_access_policy(policy, project_id=str(selection.get("project_id") or ""), book_id=str(policy.get("book_id") or ""))
     if (
@@ -347,7 +350,7 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
             "need_digest": need["need_digest"],
             "selection_digest": selection["selection_digest"],
             "frozen_context_pointer": "/narrative_intelligence/need",
-            "reason": "DENY_ALL_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT",
+            "reason": ("NO_ELIGIBLE_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT" if empty_query else "DENY_ALL_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT"),
         },
     }
 
@@ -585,7 +588,12 @@ def build_provider_task_view(
         projection_version = inputs.get("craft_history_projection_version")
         if projection_version not in (None, "planning-craft-history-projection.v1"):
             raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Planning history projection requires an explicitly supported frozen version")
-        projected_selection = _compact(_project_denied_planning_selection(narrative_intelligence))
+        empty_query_version = inputs.get("planning_empty_query_projection_version")
+        if empty_query_version not in (None, "planning-empty-query-projection.v1"):
+            raise KernelError("PLANNING_EMPTY_SELECTION_DRIFT", "Empty Planning query projection requires its frozen version")
+        projected_selection = _compact(_project_denied_planning_selection(
+            narrative_intelligence, empty_query=empty_query_version is not None,
+        ))
         if projection_version:
             projected_selection = project_planning_craft_histories(projected_selection)
         task = _task(

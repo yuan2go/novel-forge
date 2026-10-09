@@ -17,7 +17,7 @@ def test_unknown_accounting_lease_or_cancellation_prevents_successor_mutation(fa
 
 def test_old_settled_local_timeout_cannot_enable_a_pure_host_successor():
     cursor = Mock()
-    cursor.fetchone.side_effect = [("project",), ("root", "original-book")]
+    cursor.fetchone.side_effect = [("project",), ("root", "original-book"), None, None]
     cursor.fetchall.return_value = [("old-effect", "old-operation", "FAILED_RETRYABLE", "old-process")]
     with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
         recovery._require_reconciled_graph(cursor, root_id="root", predecessor_id="source")

@@ -12,7 +12,7 @@ def retained_world_action(database_url: str, *, command: Any, source_operation_i
     if not command.world_preparation_request:
         return None, None
     from .world_preparation import PlanningWorldPreparation
-    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_failed_operation_success
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_retained_generation_stage_success
 
     query = AuthorityAssetQuery(database_url)
     action = PlanningWorldPreparation.retained_action(query, command, source_operation_id=source_operation_id)
@@ -21,8 +21,9 @@ def retained_world_action(database_url: str, *, command: Any, source_operation_i
         reference = refs[key]
         document = query.require(project_id=command.project_id, asset_version_id=reference['asset_version_id'])
         content = document.content['contract']
-        receipt = read_failed_operation_success(database_url, EffectCommandContext(
-            operation_id=source_operation_id, project_id=command.project_id, actor_id=command.actor_id,
+        owner = PlanningWorldPreparation._source_operation(database_url, command.project_id, document.asset_version_id)
+        receipt = read_retained_generation_stage_success(database_url, EffectCommandContext(
+            operation_id=owner, project_id=command.project_id, actor_id=command.actor_id,
             trace_id=command.trace_id, correlation_id=command.correlation_id), effect_id=content['evidence']['external_receipt_ref'])
         if (document.content_hash != reference['content_hash'] or content['source'] != refs['source']
             or receipt is None or receipt['provider_evidence'].get('result') != content['output']):

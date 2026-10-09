@@ -54,6 +54,8 @@ def test_prepare_generation_does_not_mutate_dispatch_when_lineage_unknown(monkey
     repository = Mock()
     repository.get_for_update.return_value = {"project_id": "project", "effect_type": "model.invoke"}
     uow = SimpleNamespace(cursor=Mock(), repositories=SimpleNamespace(external_effects=repository))
+    uow.cursor.fetchone.return_value = None
+    repository.cursor = uow.cursor
     monkeypatch.setattr(external_effect_runtime, "AuthorityUnitOfWork", lambda _: nullcontext(uow))
     monkeypatch.setattr(external_effect_runtime, "require_dispatch_enabled", Mock())
     guard = Mock(side_effect=KernelError("EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED", "Original remote outcome remains unknown"))
@@ -68,6 +70,7 @@ def test_provider_authorization_stops_before_budget_or_router_mutation(monkeypat
     from novel_forge.modules.command_kernel import creative_budget_runtime, routing_bootstrap
 
     uow = SimpleNamespace(cursor=Mock())
+    uow.cursor.fetchone.return_value = None
     monkeypatch.setattr(budget_runtime, "AuthorityUnitOfWork", lambda _: nullcontext(uow))
     monkeypatch.setattr(budget_runtime, "require_known_cli_lineage", Mock(side_effect=KernelError(
         "EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED", "Original remote outcome remains unknown")))
@@ -88,7 +91,7 @@ def test_verified_retained_receipt_preserves_membership_unknown_cost(monkeypatch
     repository = Mock()
     repository.get_for_update.return_value = {"project_id": "project", "operation_id": "operation", "status": "SUCCEEDED"}
     cursor = Mock()
-    cursor.fetchone.side_effect = [(1, evidence, external_effect_runtime._hash(evidence), {"evidence": evidence}, "VERIFIED"),
+    cursor.fetchone.side_effect = [None, (1, evidence, external_effect_runtime._hash(evidence), {"evidence": evidence}, "VERIFIED"),
         ("reservation", "SETTLED", amount, 1200, 2, basis)]
     monkeypatch.setattr(external_effect_runtime, "_validated_frozen_provider_capability_profile", lambda _: {"frozen": True})
     context = external_effect_runtime.EffectCommandContext("operation", "project", "actor", "trace", "correlation")
@@ -154,3 +157,43 @@ def test_curated_source_gate_checks_own_lineage_before_reading_or_dispatch(monke
         require_known_cli_outcomes(cursor, "project", operation_id="research-operation")
     guard.assert_called_once_with(cursor, project_id="project", operation_id="research-operation")
     project_wide.assert_not_called()
+
+
+def test_retained_world_sibling_is_readable_without_restoring_old_commit_rights(monkeypatch):
+    from novel_forge.modules.command_kernel import generation_isolation
+
+    evidence = {'result': {'world': 'complete'}}
+    repository = Mock()
+    repository.get_for_update.return_value = {'project_id': 'project', 'operation_id': 'operation',
+        'status': 'SUCCEEDED', 'effect_type': 'model.invoke', 'request_payload': {'stage': 'world_candidates.generate'}}
+    cursor = Mock()
+    cursor.fetchone.side_effect = [(False,),
+        (1, evidence, external_effect_runtime._hash(evidence), {'evidence': evidence}, 'VERIFIED'),
+        ('reservation', 'SETTLED', None, 1200, 2, 'ACCOUNT_ENTITLEMENT')]
+    revoked = Mock(side_effect=KernelError('GENERATION_ATTEMPT_ISOLATED', 'Old submission right revoked'))
+    monkeypatch.setattr(generation_isolation, 'require_not_isolated', revoked)
+    monkeypatch.setattr(external_effect_runtime, '_validated_frozen_provider_capability_profile', lambda _: {'frozen': True})
+    context = external_effect_runtime.EffectCommandContext('operation', 'project', 'actor', 'trace', 'correlation')
+    proof = external_effect_runtime._read_verified_success(SimpleNamespace(cursor=cursor), repository, context,
+        'effect', retained_generation_stage=True)
+    assert proof['provider_evidence'] == evidence and proof['budget_reserved_amount'] is None
+    revoked.assert_not_called()
+    with pytest.raises(KernelError, match='GENERATION_ATTEMPT_ISOLATED'):
+        external_effect_runtime._read_verified_success(SimpleNamespace(cursor=cursor), repository, context, 'effect')
+
+
+@pytest.mark.parametrize('isolated,status,kind,stage', [
+    (True, 'SUCCEEDED', 'model.invoke', 'world_candidates.generate'),
+    (False, 'UNKNOWN', 'model.invoke', 'world_candidates.generate'),
+    (False, 'SUCCEEDED', 'blob.write', 'world_candidates.generate'),
+    (False, 'SUCCEEDED', 'model.invoke', 'draft'),
+])
+def test_retained_stage_reader_rejects_late_isolated_results_and_non_world_effects(isolated, status, kind, stage):
+    cursor = Mock()
+    cursor.fetchone.return_value = (isolated,)
+    repository = Mock()
+    repository.get_for_update.return_value = {'status': status, 'effect_type': kind, 'request_payload': {'stage': stage}}
+    context = external_effect_runtime.EffectCommandContext('operation', 'project', 'actor', 'trace', 'correlation')
+    with pytest.raises(KernelError, match='EFFECT_RETAINED_STAGE_INVALID'):
+        external_effect_runtime._read_verified_success(SimpleNamespace(cursor=cursor), repository, context,
+            'effect', retained_generation_stage=True)

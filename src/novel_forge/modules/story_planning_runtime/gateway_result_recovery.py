@@ -218,8 +218,6 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         effect_id=effect_id,
     )
     provider = retained["provider_evidence"]
-    if completed_local and provider.get("recovery_action") != "LOCAL_SAVED_RESULT_REUSE":
-        return None
     production = provider["production_execution"]
     request = production["execution_request"]
     if (
@@ -360,6 +358,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         "source_context_hash": context.content_hash,
         "original_failure": original_failure,
         "original_gateway_outcome": "SUCCEEDED" if completed_local else "FINAL_FAILURE",
+        **({"completed_result_source": "VERIFIED_PROVIDER_COMPLETION"} if completed_local else {}),
         "current_result_validation": "VALID",
         "legacy_literal_null_paths": null_paths,
         "raw_output_receipt": {
@@ -653,7 +652,12 @@ def recover_completed_planning_outputs(application, *, project_id, book_id, prin
                 WHERE effect.operation_id=operation.operation_id AND effect.status='SUCCEEDED'
                   AND effect.request_payload->>'stage'=generation.generator_operation_name
                   AND dispatch.status='SUCCEEDED' AND receipt.status='VERIFIED'
-                  AND receipt.payload #>> '{evidence,recovery_action}'='LOCAL_SAVED_RESULT_REUSE')""",[project_id,book_id])
+                  AND NOT EXISTS(SELECT 1 FROM authority_generation_isolation isolation WHERE isolation.operation_id=operation.operation_id))
+              AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation link WHERE link.source_operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_story_planning_generation child WHERE child.repair_of_operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+                JOIN authority_story_formation_run formation USING(formation_run_id)
+                WHERE formation.project_id=generation.project_id AND formation.book_id=generation.book_id)""",[project_id,book_id])
         rows=uow.cursor.fetchall()
     for operation_id,payload in rows:
         recover(application, command=_command_from_payload(payload),operation_id=operation_id,principal=principal)
