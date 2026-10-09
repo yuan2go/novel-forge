@@ -260,6 +260,12 @@ def append_isolation(uow, effect, command):
         [effect["operation_id"]],
     )
     operation = cursor.fetchone()[0]
+    followup_generation = operation['definition_name'] == 'longform.prose_review'
+    if followup_generation and (operation['root_operation_id'] != operation['operation_id']
+        or operation['parent_operation_id'] or operation['definition_snapshot']['family'] != 'book_followup_authority'
+        or any(operation['definition_snapshot']['policy'].get(key) is not False for key in ('body_mutation_allowed','plan_mutation_allowed'))
+        or operation['definition_snapshot']['irreversible_effect_policy'].get('allowed') is not False):
+        raise KernelError('GENERATION_ISOLATION_SCOPE_UNSAFE', 'Review recovery requires the original read-only sidecar boundary')
     chapter_generation = operation["definition_name"] in {
         "chapter.context.build",
         "chapter.memo.generate",
@@ -280,6 +286,7 @@ def append_isolation(uow, effect, command):
         or not (
             operation["definition_name"] == "story_planning.generate"
             or chapter_generation
+            or followup_generation
         )
         or effect["effect_type"] != "model.invoke"
         or effect["status"] not in {"UNKNOWN", "RECONCILIATION_REQUIRED"}
@@ -338,6 +345,15 @@ def append_isolation(uow, effect, command):
                 command.actor_id,
             ],
         )
+    elif followup_generation:
+        cursor.execute("""SELECT book.book_id,book.workspace_id FROM authority_book_prose_review_event event
+            JOIN authority_book_prose_review_run run USING(run_id)
+            JOIN authority_book_production book USING(book_run_id)
+            WHERE event.kind='WINDOW_ADMITTED' AND authority_generation_current_operation(event.content->>'operation_id')=%s
+            AND run.project_id=%s AND book.project_id=%s AND book.workspace_id=%s
+            AND book.book_id=%s""",
+            [operation['operation_id'],command.project_id,command.project_id,operation['workspace_id'],
+                operation['command_payload'].get('payload',{}).get('book_id')])
     else:
         cursor.execute(
             "SELECT book_id, workspace_id FROM authority_story_planning_generation WHERE operation_id=%s",
@@ -355,7 +371,7 @@ def append_isolation(uow, effect, command):
         or (generation[0], generation[1])
         != (runtime.get("book_id"), operation["workspace_id"])
         or (
-            not chapter_generation
+            not chapter_generation and not followup_generation
             and (
                 frozen.get("project_id"),
                 frozen.get("workspace_id"),
@@ -525,7 +541,7 @@ def append_isolation(uow, effect, command):
         "continuation_id": (
             "chapter-generation-successor:"
             if chapter_generation
-            else "planning-runtime-continuation:"
+            else "followup-generation-successor:" if followup_generation else "planning-runtime-continuation:"
         )
         + effect["operation_id"],
         "recovery_state": "ISOLATED_AWAITING_NATIVE_SUCCESSOR",

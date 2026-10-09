@@ -114,13 +114,14 @@ def review_progress(uow: AuthorityUnitOfWork, run: dict[str, Any]) -> dict[str, 
     for event in events:
         content = event["content"]
         if event["kind"] in {"WINDOW_ADMITTED", "WINDOW_REUSED"}:
-            operation_id = content["operation_id"]
+            uow.cursor.execute("SELECT authority_generation_current_operation(%s)",[content["operation_id"]])
+            operation_id = uow.cursor.fetchone()[0]
             uow.cursor.execute(
                 "SELECT status FROM authority_operation WHERE operation_id=%s",
                 [operation_id],
             )
             status = uow.cursor.fetchone()[0]
-            operations.append({**content, "status": status})
+            operations.append({**content, "operation_id":operation_id, "source_operation_id":content["operation_id"], "status": status})
             uow.cursor.execute(
                 "SELECT external_effect_id,status,request_hash FROM authority_external_effect WHERE operation_id=%s ORDER BY created_at",
                 [operation_id],
@@ -392,19 +393,20 @@ class BookProseReviewCoordinator:
                          WHERE event.run_id=run.run_id AND event.kind IN ('PAUSED','RESUMED')
                          ORDER BY event.event_version DESC LIMIT 1),'RESUMED')<>'PAUSED'
                      AND NOT EXISTS (SELECT 1 FROM authority_book_prose_review_event event
-                         JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
+                         JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
                          WHERE event.run_id=run.run_id AND event.kind IN ('WINDOW_ADMITTED','WINDOW_REUSED')
-                           AND (operation.status IN ('FAILED_FINAL','DEAD_LETTER','CANCELLED','WAITING_APPROVAL','RECONCILIATION_REQUIRED','WAITING_EXTERNAL_RESULT')
+                           AND (operation.status IN ('FAILED_FINAL','DEAD_LETTER','CANCELLED','WAITING_APPROVAL')
                              OR EXISTS (SELECT 1 FROM authority_external_effect effect WHERE effect.operation_id=operation.operation_id
-                                 AND effect.status IN ('UNKNOWN','RECONCILIATION_REQUIRED','CANCEL_REQUESTED'))
+                                 AND effect.status='CANCEL_REQUESTED')
                              OR EXISTS (SELECT 1 FROM authority_budget_reservation reservation WHERE reservation.operation_id=operation.operation_id
-                                 AND reservation.status='HELD_UNKNOWN')
+                                 AND reservation.status='HELD_UNKNOWN' AND NOT EXISTS(SELECT 1 FROM authority_external_effect recoverable
+                                   WHERE recoverable.external_effect_id=reservation.external_effect_id AND recoverable.status IN ('UNKNOWN','RECONCILIATION_REQUIRED')))
                              OR EXISTS (SELECT 1 FROM authority_attempt attempt JOIN authority_lease_acquisition lease USING(attempt_id)
                                  WHERE attempt.operation_id=operation.operation_id AND lease.status='HELD' AND lease.expires_at>NOW())))
                      AND ((SELECT COUNT(*) FROM authority_book_prose_review_event event
                              WHERE event.run_id=run.run_id AND event.kind='WINDOW_ADMITTED') < (run.manifest #>> '{policy,maximum_windows}')::integer
                          OR EXISTS (SELECT 1 FROM authority_book_prose_review_event event
-                             JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
+                             JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
                              WHERE event.run_id=run.run_id AND event.kind='WINDOW_ADMITTED' AND operation.status<>'SUCCEEDED')
                          OR (run.manifest #>> '{policy,follow_acceptance}'='true' AND EXISTS (
                              SELECT 1 FROM authority_book_chapter_acceptance acceptance WHERE acceptance.book_run_id=authority_book_source_run(run.book_run_id,acceptance.chapter_number)
@@ -412,7 +414,7 @@ class BookProseReviewCoordinator:
                                  SELECT 1 FROM jsonb_array_elements(run.manifest->'sources') source WHERE source->>'acceptance_id'=acceptance.acceptance_id))))
                      AND (EXISTS (SELECT 1 FROM jsonb_array_elements(run.manifest->'windows') candidate_window
                          WHERE NOT EXISTS (SELECT 1 FROM authority_book_prose_review_event event
-                             JOIN authority_operation operation ON operation.operation_id=event.content->>'operation_id'
+                             JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
                              WHERE event.run_id=run.run_id AND event.kind IN ('WINDOW_ADMITTED','WINDOW_REUSED')
                              AND event.content->>'window_id'=candidate_window->>'window_id' AND operation.status='SUCCEEDED'))
                          OR (run.manifest #>> '{policy,follow_acceptance}'='true'
@@ -447,6 +449,11 @@ class BookProseReviewCoordinator:
 
     def automatic_tick(self, *, principal: Principal, **scope: Any) -> dict[str, Any]:
         principal.require("book.authority.execute", scope["project_id"])
+        from .prose_recovery import recover_prose_review, run_review_with_recovery
+        decisions = recover_prose_review(self,principal=principal,**scope)
+        for decision in decisions:
+            if decision.get("recovery_state") != "EXHAUSTED":
+                run_review_with_recovery(self,decision["operation_id"],principal=principal,scope=scope)
         progress = self.report(**scope, principal=principal)
         policy = progress["manifest"]["policy"]
         if progress["paused"] or policy.get("execution_mode") != "AUTOMATIC":
@@ -552,20 +559,29 @@ class BookProseReviewCoordinator:
             book_run_id=book_run_id,
         )
         principal.require("book.authority.execute", project_id)
+        from .prose_recovery import recover_prose_review, run_review_with_recovery
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 "SELECT command_payload,status FROM authority_operation WHERE project_id=%s AND idempotency_scope='project:book.prose_review.advance' AND idempotency_key=%s",
                 [project_id, metadata["idempotency_key"]],
             )
             previous = uow.cursor.fetchone()
-            if previous:
-                if previous[0] != {**scope, "expected_version": expected_version}:
-                    raise KernelError(
-                        "LONGFORM_PROSE_IDEMPOTENCY_CONFLICT",
-                        "an advancement key cannot identify changed inputs",
-                    )
-                if previous[1] == "SUCCEEDED":
-                    return self.report(**scope, principal=principal)
+        if previous:
+            if previous[0] != {**scope, "expected_version": expected_version}:
+                raise KernelError(
+                    "LONGFORM_PROSE_IDEMPOTENCY_CONFLICT",
+                    "an advancement key cannot identify changed inputs",
+                )
+        decisions = recover_prose_review(self,principal=principal,**scope)
+        for decision in decisions:
+            if decision.get("recovery_state") != "EXHAUSTED":
+                run_review_with_recovery(self,decision["operation_id"],principal=principal,scope=scope)
+        if previous and previous[1] == "SUCCEEDED":
+            progress = self.report(**scope, principal=principal)
+            for item in progress['operations']:
+                if item['status'] in {'READY','FAILED_RETRYABLE','EXECUTING','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED'}:
+                    run_review_with_recovery(self,item['operation_id'],principal=principal,scope=scope)
+            return self.report(**scope, principal=principal)
         progress = self.report(**scope, principal=principal)
         if progress["expected_version"] != expected_version:
             raise KernelError(
@@ -669,11 +685,8 @@ class BookProseReviewCoordinator:
             handler,
             **metadata,
         )
-        self.followup.run_or_recover(
-            BookFollowupAdmission(
-                linked["operation_id"], project_id, linked["replayed"]
-            )
-        )
+        from .prose_recovery import run_review_with_recovery
+        run_review_with_recovery(self,linked["operation_id"],principal=principal,scope=scope)
         return self.report(**scope, principal=principal)
 
     def _book_id(self, book_run_id: str, project_id: str) -> str:

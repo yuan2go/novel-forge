@@ -150,12 +150,21 @@ forward-only, backup and downgrade properties. Run clean-install and upgrade tes
 using a new migration outside an isolated test database.
 
 The published chain through 0184 is immutable. The current forward segment is
-0185–0194, ending at native multi-model generation isolation. Resolve each full
+0185–0195, ending at native prose-review sidecar isolation. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
 ledger; never delete, rewrite or fabricate applied IDs to make it match. Conversion
 of such a database is a separate governed operation.
+
+For a stopped native `longform.prose_review` sidecar, replay its original advance command.
+Recovery checks the immutable window, current matching manuscript prefix, actor, permissions,
+Tool denial, cancellation, all original receipts and released writers. Isolation, one native
+root successor and its scheduling intent commit atomically. The original window event resolves
+through the durable successor journal; its source Operation and remote/usage facts remain
+unchanged. Persistent retry exhaustion stops this review without blocking baseline prose.
+Current author manuscript windows reserve one bounded process window inside the frozen Effect
+deadline, retaining settlement time; CLI stream/request retries remain disabled.
 
 For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning

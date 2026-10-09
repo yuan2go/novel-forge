@@ -1262,6 +1262,13 @@ cover structural repetition, character/relationship movement, setup/progression/
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
 
+Stopped read-only prose review uses the Kernel isolation journal and existing native
+root/Saga admission. A linked root successor preserves its frozen window and source
+versions, while the old attempt loses commit rights and retains remote uncertainty and
+unknown usage. The durable successor journal shares the original failure count across
+routes and restart. Exhaustion records a concrete exit; review remains separate from
+manuscript delivery, human author choice and formal acceptance.
+
 Review policy can explicitly select `AUTOMATIC` execution and follow newly accepted
 chapters. The existing Book Follow-up worker advances eligible runs, pauses without new
 dispatch, stops on exhausted allowance, and resumes unresolved old Effects before freezing

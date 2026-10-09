@@ -87,7 +87,7 @@ class LongformProseReviewHandler:
                         "frozen accepted manuscript changed before Provider dispatch",
                     )
                 uow.cursor.execute(
-                    "SELECT 1 FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED' AND content->>'operation_id'=%s AND content->>'window_id'=%s",
+                    "SELECT 1 FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED' AND authority_generation_current_operation(content->>'operation_id')=%s AND content->>'window_id'=%s",
                     [run_id, request.operation_id, content["window"]["window_id"]],
                 )
                 if not uow.cursor.fetchone():
