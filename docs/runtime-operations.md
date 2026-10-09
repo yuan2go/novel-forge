@@ -836,6 +836,11 @@ rebase explicitly. Diff returns the original-protecting candidates, before/after
 adoption decisions. Export creates a new JSON artifact containing exact source versions,
 statuses, prose and hashes; it refuses to overwrite an existing output file. `--chapters`
 selects an ordered available range, and `--versions` binds an expected version list.
+An editor session selection applies only to the exact native source of that working
+run, or an edit whose originating draft is that source. A same-Book session from an
+older run remains readable but cannot replace a newer run's delivered text or its
+continuation dependencies. Saving against a changed native base retains the old session
+versions and begins from the supplied current base without recording adoption.
 The UI also downloads a readable text manuscript with the same version/status provenance.
 An Editor link containing the Project and Book run opens the current manuscript directly.
 Provider-dependent API services assemble only for related execution operations; API restart

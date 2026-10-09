@@ -201,6 +201,11 @@ def validate_complete_prose(content: dict[str, Any]) -> None:
         raise KernelError("MANUSCRIPT_BODY_INCOMPLETE", "Truncated or cancelled output cannot be a complete manuscript")
 
 
+def edit_selection_matches_source(candidate: Any, source: Any) -> bool:
+    return candidate.asset_version_id == source.asset_version_id or (
+        candidate.asset_type == "author_edit_candidate" and candidate.content.get("originating_draft_asset_version_id", candidate.content.get("base_asset_version_id")) == source.asset_version_id)
+
+
 def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
     uow.cursor.execute("""SELECT source_asset_version_id FROM authority_book_manuscript_delivery
         WHERE book_run_id=%s AND chapter_number=%s""", [book["book_run_id"], chapter])
@@ -232,7 +237,9 @@ def selected_source(uow: Any, book: dict[str, Any], chapter: int) -> Any:
             raise
         session = None
     if session and session.content.get("selected_asset_version_id"):
-        source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=session.content["selected_asset_version_id"])
+        selected = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=session.content["selected_asset_version_id"])
+        if edit_selection_matches_source(selected, source):
+            source = selected
     if source.governance != "CLEAR" or source.eligibility != "ELIGIBLE":
         raise KernelError("MANUSCRIPT_SOURCE_BLOCKED", "Selected manuscript is not governed for use")
     validate_complete_prose(source_draft_content(source))
@@ -250,18 +257,7 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
               AND output.output_key='chapter.draft' AND output.role='primary'
             ORDER BY r.chapter_number,r.generation DESC""", [book["book_run_id"]])
     deliveries = uow.cursor.fetchall()
-    selected = {number: version for number, version, _ in deliveries}
-    uow.cursor.execute("""SELECT l.logical_ref,v.content->>'chapter',v.content->>'selected_asset_version_id'
-        FROM authority_asset_locator l JOIN authority_asset_version v ON v.asset_version_id=l.current_asset_version_id
-        JOIN authority_asset a ON a.asset_id=v.asset_id
-        WHERE l.project_id=%s AND a.asset_type='author_edit_session' AND v.governance='CLEAR' AND v.eligibility='ELIGIBLE'
-          AND v.content->>'workspace_id'=%s AND v.content->>'book_id'=%s""",
-        [book["project_id"], book["workspace_id"], book["book_id"]])
-    for logical_ref, number, version in uow.cursor.fetchall():
-        scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
-        scope["chapter"] = int(number)
-        if version and logical_ref == _session_ref(scope):
-            selected[int(number)] = version
+    selected = {number: selected_source(uow, book, number).asset_version_id for number, _, _ in deliveries}
     changes = {}
     for number, _, dependencies in deliveries:
         affected = {}
