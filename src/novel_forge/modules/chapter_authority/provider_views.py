@@ -2344,7 +2344,9 @@ def _build_planning_context_view(
     if task_capacity:
         measured = _serialized_byte_count(view)
         if measured > _TASK_PROVIDER_SERIALIZATION_BYTES or measured > token_budget:
-            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "required Planning Provider Context exceeds its conservative task token budget or serialized byte guard")
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
+                details={"required_serialized_bytes":measured,"task_token_upper_bound":token_budget,
+                    "serialization_byte_limit":_TASK_PROVIDER_SERIALIZATION_BYTES})
     elif _serialized_character_count(view) > character_budget:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",

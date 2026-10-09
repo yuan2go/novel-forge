@@ -3,15 +3,28 @@ from __future__ import annotations
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
-    EffectCommandContext, accept_external_effect_receipt, _hash, _resolve_reconciled_budget,
+    EffectCommandContext, accept_external_effect_receipt, _hash, _resolve_reconciled_budget, _read_verified_success,
 )
-from .backends import CodexCliExecutionBackend
+from .backends import CodexCliExecutionBackend, RemoteProviderExecutionBackend
 from .contracts import ExecutionOutcome
 
 
 def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal):
     principal.require("external_effect.resolve", project_id)
     with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT effect.external_effect_id,operation.operation_id,operation.trace_id,operation.correlation_id
+            FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id)
+            JOIN authority_budget_reservation budget USING(external_effect_id)
+            WHERE effect.project_id=%s AND operation.actor_id=%s AND effect.effect_type='model.invoke'
+              AND effect.request_payload #>> '{_production_execution,book_id}'=%s
+              AND effect.status='SUCCEEDED' AND budget.status IN ('RESERVED','HELD_UNKNOWN')
+              AND NOT authority_generation_isolated(effect.external_effect_id)""", [project_id,principal.principal_id,book_id])
+        unsettled=uow.cursor.fetchall()
+        accounting=[]
+        for effect_id,operation_id,trace_id,correlation_id in unsettled:
+            context=EffectCommandContext(operation_id,project_id,principal.principal_id,trace_id,correlation_id)
+            verified=_read_verified_success(uow,uow.repositories.external_effects,context,effect_id)
+            accounting.append((effect_id,verified["provider_evidence"]))
         uow.cursor.execute("""SELECT DISTINCT v.content->>'execution_id'
             FROM authority_asset_version v JOIN authority_asset asset USING(asset_id)
             JOIN authority_external_effect effect
@@ -25,8 +38,10 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
               AND NOT authority_generation_isolated(effect.external_effect_id)""",
             [project_id, principal.principal_id, book_id])
         identities = [row[0] for row in uow.cursor.fetchall()]
+    for effect_id,evidence in accounting:
+        _resolve_reconciled_budget(database_url,project_id=project_id,effect_id=effect_id,outcome="success",evidence=evidence)
     if not identities:
-        return False
+        return bool(accounting)
     session = transport.session_for_project(project_id)
     recovered = False
     for identity in identities:
@@ -34,10 +49,12 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
         request, handle = record.request, record.handle
         route = session.gateway.admission.resolve_route(request)
         backend = session.gateway.backends.resolve(route.backend_id)
-        if type(backend) is not CodexCliExecutionBackend:
+        if type(backend) not in {CodexCliExecutionBackend, RemoteProviderExecutionBackend}:
+            continue
+        if type(backend) is RemoteProviderExecutionBackend and not (record.result and record.result.outcome == ExecutionOutcome.SUCCEEDED or record.provider_result and record.provider_result.outcome == "success"):
             continue
         session.gateway.admission._admit_frozen_contracts(request, backend.capability_profile)
-        result = backend.reconcile(handle)
+        result = (backend.reconcile(handle, _consume_callback=False) if type(backend) is RemoteProviderExecutionBackend else backend.reconcile(handle))
         session.gateway._validate_result(handle, result)
         if result.outcome != ExecutionOutcome.SUCCEEDED:
             continue
@@ -73,7 +90,7 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
         receipt_id = "local-result:" + identity
         accept_external_effect_receipt(database_url, context, dispatch_id=dispatch[0],
             provider=transport.provider, receipt_id=receipt_id, message_id=receipt_id,
-            payload_hash=_hash(evidence), provider_correlation_id=handle.backend_execution_id,
+            payload_hash=_hash(evidence), provider_correlation_id=handle.provider_request_id or handle.backend_execution_id,
             generation=dispatch[1], outcome="success", evidence=evidence)
         _resolve_reconciled_budget(database_url, project_id=project_id,
             effect_id=request.external_effect_id, outcome="success", evidence=evidence)

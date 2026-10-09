@@ -555,11 +555,12 @@ class PostgresRoutingRegistry:
                    FROM authority_external_effect effect
                    JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
                    WHERE effect.project_id=%s AND effect.model_id=ANY(%s)
-                     AND COALESCE(dispatch.evidence #>> '{production_execution,process_evidence,failure_class}',
+                     AND COALESCE(dispatch.evidence #>> '{production_execution,process_evidence,failure,error_code}',
+                         dispatch.evidence #>> '{production_execution,process_evidence,failure_class}',
                          dispatch.evidence #>> '{production_execution,process_evidence,failure_code}')
                          IN ('RATE_LIMIT','PROVIDER_UNAVAILABLE','AUTHENTICATION_FAILED','PROVIDER_BUDGET_EXHAUSTED',
                              'PROVIDER_STREAM_INTERRUPTED','PROVIDER_RESPONSE_TIMEOUT','PROVIDER_CONNECTION_FAILED',
-                             'PROVIDER_AUTH_FAILED','PROVIDER_RATE_LIMITED')
+                             'PROVIDER_AUTH_FAILED','PROVIDER_RATE_LIMITED','PROVIDER_MODEL_CAPACITY_UNAVAILABLE')
                      AND EXTRACT(EPOCH FROM (%s - COALESCE(dispatch.finished_at,dispatch.updated_at,dispatch.created_at)))
                          < CASE WHEN jsonb_typeof(dispatch.evidence #> '{production_execution,process_evidence,retry_after_seconds}')='number'
                            THEN (dispatch.evidence #>> '{production_execution,process_evidence,retry_after_seconds}')::numeric
@@ -573,7 +574,7 @@ class PostgresRoutingRegistry:
             for provider, model, occurred_at, evidence, effect_id in failures:
                 if provider != candidate.provider or model != candidate.model:
                     continue
-                failure = evidence.get("failure_class") or evidence["failure_code"]
+                failure = (evidence.get("failure") or {}).get("error_code") or evidence.get("failure_class") or evidence["failure_code"]
                 delay = evidence.get("retry_after_seconds")
                 if (
                     not isinstance(delay, (int, float))
@@ -583,7 +584,7 @@ class PostgresRoutingRegistry:
                     delay = (
                         300
                         if failure
-                        in {"AUTHENTICATION_FAILED", "PROVIDER_BUDGET_EXHAUSTED"}
+                        in {"AUTHENTICATION_FAILED", "PROVIDER_BUDGET_EXHAUSTED", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}
                         else 30
                     )
                 try:

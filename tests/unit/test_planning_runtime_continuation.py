@@ -574,3 +574,39 @@ def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch
     with pytest.raises(KernelError, match="BOOK_CREATION_CANCELLED"):
         app._terminal_generation_replay(_command("chapter_group_plan.generate"), principal=object(), execution_probe=cancelled)
     uow.assert_not_called()
+
+
+@pytest.mark.parametrize("required_bytes,expected_error", [(180_000, None), (300_000, "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED")])
+def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, required_bytes, expected_error):
+    from contextlib import nullcontext
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    allocations = []
+    def context_bundle(**kwargs):
+        allocated = kwargs["planning_task_token_budget"]
+        allocations.append(allocated)
+        assert kwargs["preflight_only"] is True
+        if allocated < required_bytes:
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "retained input exceeds allocation",
+                details={"required_serialized_bytes": required_bytes})
+        return {"context_manifest": {"provider_context_view": {"retained_input": "same"}}}, None
+    pack = SimpleNamespace(
+        require_attempt_snapshot=lambda **kwargs: "original-snapshot",
+        materialize_attempt_artifacts=lambda snapshot: SimpleNamespace(context_policy=SimpleNamespace(content={"planning_task_token_budget": 64_000})),
+    )
+    preparer = SimpleNamespace(pack_runtime=pack, _context_bundle=context_bundle,
+        planning_route=SimpleNamespace(model_context_limit=258_400, model_output_limit=32_000,
+            token_safety_margin=1_536, token_framing_overhead=256))
+    app = SimpleNamespace(database_url="unused", execution_binder=SimpleNamespace(resolver=SimpleNamespace(execution_preparer=preparer)))
+    source = {"attempt_id": "attempt", "snapshot_id": "snapshot", "snapshot_hash": "hash", "source_operation_id": "source",
+        "snapshot": {"context_policy_ref": "policy"}, "inputs": [], "command": {}, "failure": {"error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"}}
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda database: nullcontext(SimpleNamespace()))
+    monkeypatch.setattr(runtime, "_capacity_authorization", lambda *args, **kwargs: {"capacity_only": True})
+    if expected_error:
+        with pytest.raises(KernelError, match=expected_error) as caught:
+            runtime._capacity_target(app, source, SimpleNamespace(), SimpleNamespace(), {})
+        assert caught.value.details["required_serialized_bytes"] == required_bytes
+    else:
+        target, evidence = runtime._capacity_target(app, source, SimpleNamespace(), SimpleNamespace(), {})
+        assert target["planning_capacity"]["allocated_task_tokens"] == 224_608
+        assert target["planning_capacity"]["external_intents_at_source"] == 0
+    assert allocations == [128_000, 224_608]

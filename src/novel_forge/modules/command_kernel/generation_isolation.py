@@ -11,6 +11,59 @@ from .errors import KernelError
 CONTRACT = "pure-generation-isolation.v1"
 
 
+def generation_retry_usage(cursor, *, operation_id):
+    cursor.execute("""WITH RECURSIVE edges(source,target) AS (
+        SELECT source_operation_id,successor_operation_id FROM authority_story_planning_runtime_continuation
+          WHERE successor_operation_id IS NOT NULL
+        UNION SELECT predecessor_operation_id,successor_operation_id FROM authority_saga_step_successor),
+        ancestors(operation_id) AS (SELECT %s::text UNION SELECT edges.source FROM edges
+          JOIN ancestors ON ancestors.operation_id=edges.target), failures AS (
+        SELECT DISTINCT COALESCE(NULLIF(dispatch.evidence #>> '{production_execution,execution_request,execution_id}',''),
+          dispatch.dispatch_id) identity FROM authority_external_effect_dispatch dispatch
+        JOIN authority_external_effect effect USING(external_effect_id) JOIN ancestors USING(operation_id)
+        LEFT JOIN authority_generation_isolation isolation USING(external_effect_id)
+        WHERE effect.effect_type='model.invoke' AND (isolation.external_effect_id IS NOT NULL OR (
+          dispatch.status IN ('UNKNOWN','FAILED_RETRYABLE','FAILED_FINAL','RECONCILIATION_REQUIRED')
+          AND COALESCE(dispatch.evidence #>> '{production_execution,execution_result,outcome}','')<>'SUCCEEDED')))
+        SELECT (SELECT count(*) FROM failures),
+          (SELECT min(COALESCE((operation.definition_snapshot #>> '{retry_policy,max_attempts}')::int,3))
+           FROM authority_operation operation JOIN ancestors USING(operation_id))""", [operation_id])
+    used,maximum=cursor.fetchone()
+    return {"failure_attempts":int(used),"maximum_failure_attempts":int(maximum),
+        "counter_source":"NATIVE_DISPATCH_LINEAGE","scope":"ORIGINAL_LOGICAL_GENERATION"}
+
+
+def require_generation_retry_budget(cursor, *, operation_id):
+    evidence=generation_retry_usage(cursor,operation_id=operation_id)
+    if evidence["failure_attempts"] >= evidence["maximum_failure_attempts"]:
+        raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "The original logical generation exhausted its persisted retry allowance across Providers and successors", details=evidence)
+    return evidence
+
+
+def require_native_api_isolation_record(content, *, project_id, book_id, operation_id, effect_id, capability):
+    from novel_forge.modules.production_execution.contracts import ExecutionRequest
+    from novel_forge.modules.production_execution.backends import _sha256
+
+    record = content.get("record") or {}
+    original = ExecutionRequest.from_dict(record.get("request") or {})
+    frozen = record.get("frozen_output_contract") or {}
+    if (original.project_id != project_id or original.book_id != book_id
+            or original.operation_id != operation_id or original.external_effect_id != effect_id
+            or original.contract_hash != content.get("request_contract_hash")
+            or frozen.get("execution_request_hash") != original.contract_hash
+            or frozen.get("request_hash") != capability.get("provider_request_envelope_hash")
+            or frozen.get("contract_hash") != _sha256({key:value for key,value in frozen.items() if key != "contract_hash"})
+            or (record.get("handle") or {}).get("transport") != "REMOTE_PROVIDER_API"):
+        raise KernelError("GENERATION_ISOLATION_IDENTITY_CONFLICT", "Require the original admitted native API invocation, inputs and output contract")
+    if ((record.get("result") or {}).get("normalized_output_ref")
+            or (record.get("provider_result") or {}).get("outcome") == "success"):
+        raise KernelError("GENERATION_ISOLATION_RESULT_RECOVERABLE", "Reuse the retained complete API result before isolation")
+    if (record.get("raw_evidence") or {}).get("submission_phase") not in {
+            "PROVIDER_INVOKING","PROVIDER_OUTCOME_UNKNOWN","PROVIDER_RESULT_RECORDED","PROVIDER_RESULT_OBSERVED"}:
+        raise KernelError("GENERATION_ISOLATION_EXECUTION_EVIDENCE_MISSING", "Require a durable local invocation boundary")
+    return original, record
+
+
 def isolation(cursor, effect_id: str):
     cursor.execute(
         "SELECT proof FROM authority_generation_isolation WHERE external_effect_id=%s",
@@ -32,6 +85,42 @@ def require_not_isolated(cursor, operation_id: str):
         )
 
 
+def book_recovery_projection(cursor, *, project_id, book_id):
+    cursor.execute("""WITH RECURSIVE edges(source,target) AS (
+        SELECT source_operation_id,successor_operation_id FROM authority_story_planning_runtime_continuation
+          WHERE project_id=%s AND successor_operation_id IS NOT NULL
+        UNION SELECT predecessor_operation_id,successor_operation_id FROM authority_saga_step_successor
+          WHERE project_id=%s), lineage(source,current,depth) AS (
+        SELECT operation_id,operation_id,0 FROM authority_generation_isolation WHERE project_id=%s AND book_id=%s
+        UNION ALL SELECT lineage.source,edges.target,lineage.depth+1 FROM lineage JOIN edges ON edges.source=lineage.current
+          WHERE lineage.depth<32), latest AS (
+        SELECT DISTINCT ON(source) source,current,depth FROM lineage ORDER BY source,depth DESC)
+        SELECT isolation.external_effect_id,isolation.operation_id,isolation.proof,
+          latest.current,operation.status,attempt.error,latest.depth,
+          effect.status,budget.status,budget.evidence->>'usage_basis',budget.evidence->'usage',budget.evidence->'cost'
+        FROM authority_generation_isolation isolation JOIN latest ON latest.source=isolation.operation_id
+        JOIN authority_operation operation ON operation.operation_id=latest.current
+        LEFT JOIN LATERAL (SELECT error FROM authority_attempt WHERE operation_id=latest.current
+          ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+        JOIN authority_external_effect effect USING(external_effect_id)
+        LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
+        WHERE isolation.project_id=%s AND isolation.book_id=%s
+        ORDER BY isolation.created_at DESC LIMIT 100""", [project_id,project_id,project_id,book_id,project_id,book_id])
+    rows=[]
+    for effect_id,source,proof,current,status,result,depth,effect_status,budget_status,usage_basis,usage,cost in cursor.fetchall():
+        rows.append({"external_effect_id":effect_id,"source_operation_id":source,
+            "observed_failure":proof["observed_failure"],"business_commit_right":proof["business_commit_right"],
+            "activation_right":proof["activation_right"],"original_remote_outcome":proof["remote_outcome"],
+            "original_effect_status":effect_status,"original_budget_status":budget_status,
+            "original_usage":proof["usage"],"usage_basis":usage_basis,"current_accounting":{"usage":usage,"cost":cost},
+            "continuation_id":proof["continuation_id"],"successor_operation_id":current if depth else None,
+            "successor_status":status if depth else None,"successor_failure":result if depth else None,
+            "recovery_state":"SUCCESSOR_COMPLETED" if depth and status=="SUCCEEDED" else
+                "SUCCESSOR_FAILED" if depth and status in {"FAILED_FINAL","DEAD_LETTER"} else
+                "SUCCESSOR_RUNNING" if depth else "ISOLATED_AWAITING_NATIVE_SUCCESSOR"})
+    return rows
+
+
 def recover_book_generations(application, *, project_id, book_id, principal):
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
     from .manual_effect_resolution import (
@@ -51,7 +140,27 @@ def recover_book_generations(application, *, project_id, book_id, principal):
         book_id=book_id, principal=principal)
     principal.require("external_effect.resolve", project_id)
     with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.cursor.execute("""SELECT generation.operation_id,operation.version FROM authority_story_planning_generation generation
+            JOIN authority_operation operation USING(operation_id)
+            JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
+              ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+            WHERE generation.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
+              AND operation.status IN ('FAILED_FINAL','DEAD_LETTER') AND COALESCE(generation.candidate_asset_version_id,'')=''
+              AND attempt.result->>'error_code'='PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED'
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=generation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=generation.operation_id)""",
+            [project_id,book_id,principal.principal_id])
+        capacities=uow.cursor.fetchall()
         rows = unresolved_cli_outcomes(uow.cursor, project_id, book_id=book_id)
+        uow.cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.status
+            FROM authority_external_effect effect JOIN authority_story_planning_generation generation USING(operation_id)
+            JOIN authority_operation operation ON operation.operation_id=effect.operation_id
+            WHERE effect.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
+              AND effect.effect_type='model.invoke' AND effect.status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
+              AND operation.status IN ('WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED','FAILED_FINAL','DEAD_LETTER')
+              AND NOT authority_generation_isolated(effect.external_effect_id)""",[project_id,book_id,principal.principal_id])
+        seen={row["external_effect_id"] for row in rows}
+        rows.extend({"external_effect_id":row[0],"operation_id":row[1],"effect_status":row[2]} for row in uow.cursor.fetchall() if row[0] not in seen)
         uow.cursor.execute(
             """SELECT to_jsonb(e),to_jsonb(o) FROM authority_generation_isolation i
             JOIN authority_external_effect e USING(external_effect_id) JOIN authority_operation o ON o.operation_id=i.operation_id
@@ -60,6 +169,11 @@ def recover_book_generations(application, *, project_id, book_id, principal):
             [project_id, book_id],
         )
         pending = uow.cursor.fetchall()
+    for operation_id,version in capacities:
+        application.register_runtime_continuation(operation_id,project_id=project_id,principal=principal,
+            expected_source_version=version,decision_evidence={"authorization_ref":"NATIVE_CONTINUOUS_CREATION_TEMPLATE",
+                "reason":"Allocate bounded native task capacity after a proven unsent failure while retaining original inputs and authorization"},
+            trace_id="trace:generation-capacity:"+operation_id,correlation_id=book_id)
     for item in rows:
         with AuthorityUnitOfWork(application.database_url) as uow:
             effect = uow.repositories.external_effects.get_for_update(
@@ -126,7 +240,7 @@ def recover_book_generations(application, *, project_id, book_id, principal):
             trace_id=operation["trace_id"],
             correlation_id=operation["correlation_id"],
         )
-    return bool(pending)
+    return bool(pending or capacities)
 
 
 def append_isolation(uow, effect, command):
@@ -287,67 +401,90 @@ def append_isolation(uow, effect, command):
     last = dispatches[-1]
     execution = last["evidence"].get("production_execution") or {}
     result = execution.get("execution_result") or {}
-    ref = result.get("process_receipt_ref")
-    if not ref or not ref.startswith("authority-asset-version:"):
-        raise KernelError(
-            "GENERATION_ISOLATION_RECEIPT_MISSING",
-            "The original local process receipt is required",
+    from types import SimpleNamespace
+    transport = (execution.get("execution_handle") or {}).get("transport")
+    if transport == "REMOTE_PROVIDER_API":
+        cursor.execute("""SELECT version.asset_version_id,version.content FROM authority_asset_version version
+            JOIN authority_asset asset USING(asset_id)
+            WHERE asset.project_id=%s AND asset.asset_type='execution_recovery_session'
+              AND version.content #>> '{record,request,external_effect_id}'=%s
+            ORDER BY version.created_at DESC LIMIT 1""",[command.project_id,effect["external_effect_id"]])
+        session = cursor.fetchone()
+        if not session:
+            raise KernelError("GENERATION_ISOLATION_EXECUTION_EVIDENCE_MISSING", "Retain the original durable API invocation and frozen tool boundary")
+        original, record = require_native_api_isolation_record(session[1], project_id=command.project_id,
+            book_id=generation[0], operation_id=operation["operation_id"], effect_id=effect["external_effect_id"], capability=capability)
+        process = {"execution_id":original.execution_id,"attempt_id":original.attempt_id,"fencing_token":original.fencing_token}
+        observed = (record.get("raw_evidence") or {}).get("failure")
+        if not observed:
+            observed = {"error_code":"ORIGINAL_RESULT_UNRECOVERABLE","stage":"PROVIDER_RESPONSE",
+                "cause":"The durable invocation has no recoverable completion and the original writer is stopped",
+                "identity":process,"retryable":True,"recovery_action":"ISOLATE_AND_CONTINUE",
+                "recovery_state":"REQUIRED","business_impact":"CURRENT_TASK_BLOCKED"}
+        ref = None
+        evidence_asset_version_id = session[0]
+    else:
+        ref = result.get("process_receipt_ref")
+        if not ref or not ref.startswith("authority-asset-version:"):
+            raise KernelError(
+                "GENERATION_ISOLATION_RECEIPT_MISSING",
+                "The original local process receipt is required",
+            )
+        receipt = uow.repositories.asset_documents.require(
+            project_id=command.project_id, asset_version_id=ref.split(":", 1)[1]
         )
-    receipt = uow.repositories.asset_documents.require(
-        project_id=command.project_id, asset_version_id=ref.split(":", 1)[1]
-    )
-    process = receipt.content.get("payload", receipt.content)
-    if (
-        process.get("operation_id") != effect["operation_id"]
-        or process.get("status") not in {"FAILED", "TIMED_OUT", "ORPHANED", "CANCELLED"}
-        or process.get("result_integrity") == "VALID"
-    ):
-        raise KernelError(
-            "GENERATION_ISOLATION_RESULT_RECOVERABLE",
-            "Require stopped original execution without a complete local result",
-        )
-    from pathlib import Path
-    import json
-
-    result_path = process.get("result_path")
-    if result_path and Path(result_path).is_file() and Path(result_path).stat().st_size:
-        raise KernelError(
-            "GENERATION_ISOLATION_RESULT_RECOVERABLE",
-            "Reconcile the local result before isolating generation",
-        )
-    stdout_path = process.get("stdout_path")
-    if not stdout_path or not Path(stdout_path).is_file():
-        raise KernelError(
-            "GENERATION_ISOLATION_EXECUTION_EVIDENCE_MISSING",
-            "Original CLI event stream must remain readable",
-        )
-    for line in Path(stdout_path).read_text().splitlines():
-        try:
-            event = json.loads(line)
-        except ValueError:
-            continue
+        process = receipt.content.get("payload", receipt.content)
         if (
-            isinstance(event, dict)
-            and isinstance(event.get("item"), dict)
-            and event["item"].get("type")
-            in {"command_execution", "mcp_tool_call", "file_change", "web_search"}
+            process.get("operation_id") != effect["operation_id"]
+            or process.get("status") not in {"FAILED", "TIMED_OUT", "ORPHANED", "CANCELLED"}
+            or process.get("result_integrity") == "VALID"
         ):
             raise KernelError(
-                "GENERATION_ISOLATION_TOOL_BOUNDARY_UNSAFE",
-                "Observed Tool work requires its owning external-effect reconciliation",
+                "GENERATION_ISOLATION_RESULT_RECOVERABLE",
+                "Require stopped original execution without a complete local result",
             )
-    from novel_forge.modules.production_execution.provider_protocol_failure import (
-        observed_provider_failure,
-    )
-    from types import SimpleNamespace
+        from pathlib import Path
+        import json
 
-    observed = observed_provider_failure(
-        Path(stdout_path).read_text(),
-        status=process["status"],
-        request=SimpleNamespace(
-            **{**process, "project_id": command.project_id, "book_id": generation[0]}
-        ),
-    )
+        result_path = process.get("result_path")
+        if result_path and Path(result_path).is_file() and Path(result_path).stat().st_size and process.get("result_integrity") != "CORRUPT":
+            raise KernelError(
+                "GENERATION_ISOLATION_RESULT_RECOVERABLE",
+                "Reconcile the local result before isolating generation",
+            )
+        stdout_path = process.get("stdout_path")
+        if not stdout_path or not Path(stdout_path).is_file():
+            raise KernelError(
+                "GENERATION_ISOLATION_EXECUTION_EVIDENCE_MISSING",
+                "Original CLI event stream must remain readable",
+            )
+        for line in Path(stdout_path).read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if (
+                isinstance(event, dict)
+                and isinstance(event.get("item"), dict)
+                and event["item"].get("type")
+                in {"command_execution", "mcp_tool_call", "file_change", "web_search"}
+            ):
+                raise KernelError(
+                    "GENERATION_ISOLATION_TOOL_BOUNDARY_UNSAFE",
+                    "Observed Tool work requires its owning external-effect reconciliation",
+                )
+        from novel_forge.modules.production_execution.provider_protocol_failure import (
+            observed_provider_failure,
+        )
+
+        observed = observed_provider_failure(
+            Path(stdout_path).read_text(),
+            status=process["status"],
+            request=SimpleNamespace(
+                **{**process, "project_id": command.project_id, "book_id": generation[0]}
+            ),
+        )
+        evidence_asset_version_id = receipt.asset_version_id
     proof = {
         "observed_failure": observed,
         "contract_version": CONTRACT,
@@ -393,7 +530,8 @@ def append_isolation(uow, effect, command):
             "GENERATION_ISOLATION_AUTHORIZATION_REQUIRED",
             "Bind actual generation recovery authorization and original Book",
         )
-    proof["evidence_asset_version_id"] = receipt.asset_version_id
+    proof["execution_transport"] = transport
+    proof["evidence_asset_version_id"] = evidence_asset_version_id
     if operation["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}:
         from .attempt_runtime import _cas_operation, _transition_attempt
 
@@ -561,6 +699,8 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
                     "recovery_action": "REPAIR_ROUTE_THEN_NATIVE_SUCCESSOR",
                 },
             )
+        with AuthorityUnitOfWork(authority.database_url) as uow:
+            retry_usage=require_generation_retry_budget(uow.cursor,operation_id=source["operation_id"])
         successor = replace_failed_step(
             authority.database_url,
             predecessor_id=source["operation_id"],
@@ -578,6 +718,7 @@ def recover_chapter_generations(authority, *, book_run_id, principal):
                 "book_run_id": book_run_id,
                 "chapter_request_id": request["chapter_request_id"],
                 "recovery_attempt_number": recovery_count + 1,
+                "failure_retry_counter": retry_usage,
                 "remote_outcome": "UNKNOWN",
                 "usage": "UNKNOWN",
                 "completion_checks": "UNCHANGED",

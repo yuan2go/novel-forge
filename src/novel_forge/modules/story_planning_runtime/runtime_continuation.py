@@ -124,6 +124,8 @@ def require_source(
     isolation_row = uow.cursor.fetchone()
     if isolation_row:
         proof = isolation_row[0]
+        from novel_forge.modules.command_kernel.generation_isolation import require_generation_retry_budget
+        retry_usage = require_generation_retry_budget(uow.cursor,operation_id=source_operation_id)
         uow.cursor.execute("SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s", [source_operation_id])
         prior = uow.cursor.fetchone()
         depth = (int(prior[0]) if prior else 0) + 1
@@ -141,7 +143,7 @@ def require_source(
             "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,
                 asset_version_id=proof["evidence_asset_version_id"]).content_hash,
             "snapshot": proof["pack_snapshot"], "depth": depth, "generation_isolation": proof,
-            "generation_recovery_number": recovery_number}
+            "generation_recovery_number": recovery_number,"failure_retry_counter":retry_usage}
     uow.cursor.execute(
         "SELECT status, error, result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
         [source_operation_id],
@@ -900,15 +902,25 @@ def _capacity_target(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
         )
-    context, _ = preparer._context_bundle(
-        operation_id=source["source_operation_id"],
-        attempt_id=source["attempt_id"],
-        command=successor,
-        inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
-        context_policy_ref=source["snapshot"]["context_policy_ref"],
-        planning_task_token_budget=allocated,
-        preflight_only=True,
-    )
+    while True:
+        try:
+            context, _ = preparer._context_bundle(
+                operation_id=source["source_operation_id"],
+                attempt_id=source["attempt_id"],
+                command=successor,
+                inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
+                context_policy_ref=source["snapshot"]["context_policy_ref"],
+                planning_task_token_budget=allocated,
+                preflight_only=True,
+            )
+            break
+        except KernelError as error:
+            if error.code != "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+                raise
+            if allocated == ceiling or source.get("capacity_inheritance"):
+                raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
+                    "The retained task cannot fit its authorized single-request capacity",details=error.details) from error
+            allocated=min(allocated*2,ceiling)
     allocation = {
         "version": "planning-capacity-allocation.v1",
         "prior_task_tokens": baseline,
@@ -1329,7 +1341,8 @@ def register(
                 target["planning_capacity"] = {**prior_capacity, "projection_hash": canonical_hash(context["context_manifest"]["provider_context_view"])}
         route_evidence = {"recovery_kind": "ISOLATED_PURE_GENERATION", "remote_outcome": "UNKNOWN",
             "usage": "UNKNOWN", "preserved_repair_number": original.repair_number,
-            "recovery_attempt_number": source["generation_recovery_number"]}
+            "recovery_attempt_number": source["generation_recovery_number"],
+            "failure_retry_counter":source["failure_retry_counter"]}
     elif host_revalidation:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(

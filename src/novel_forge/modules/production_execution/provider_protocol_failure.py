@@ -50,6 +50,12 @@ def observed_provider_failure(stdout: str, *, status: str, request=None) -> dict
             True,
         ),
         (
+            ("model is at capacity", "selected model is at capacity"),
+            "PROVIDER_MODEL_CAPACITY_UNAVAILABLE",
+            "PROVIDER_ADMISSION",
+            True,
+        ),
+        (
             ("connection refused", "connection reset", "failed to connect", "dns"),
             "PROVIDER_CONNECTION_FAILED",
             "CONNECTION",

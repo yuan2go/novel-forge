@@ -219,7 +219,9 @@ class PostgresBookProductionQuery:
             bindings = {row[0]: {"subject_id": row[0], "policy": row[1], "content_hash": row[2]} for row in cur.fetchall()}
             for run in runs:
                 run["frozen_editorial_control"] = bindings.get(f"{run['book_run_id']}:chapter:{int(run['accepted_through_chapter']) + 1}")
-        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control, "formation_run_id": formation_run_id}
+            from novel_forge.modules.command_kernel.generation_isolation import book_recovery_projection
+            generation_recovery = book_recovery_projection(cur, project_id=project_id, book_id=book_id)
+        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control, "formation_run_id": formation_run_id, "generation_recovery": generation_recovery}
 
     def narrative_reality(self, *, book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:

@@ -347,6 +347,7 @@ def admitted_reference_calibration(
 ) -> dict[str, Any] | None:
     from novel_forge.modules.chapter_authority.definitions import (
         CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+        CHAPTER_QUALITY_DEFINITION_VERSION,
         CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
     )
     from novel_forge.storage.authority_uow import AuthorityUnitOfWork
@@ -392,6 +393,7 @@ def admitted_reference_calibration(
                 "chapter.quality." + stage.removeprefix("quality_") + ".evaluate",
                 [
                     CHAPTER_MODEL_EFFECT_DEFINITION_VERSION,
+                    CHAPTER_QUALITY_DEFINITION_VERSION,
                     *sorted(CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS),
                 ],
                 stage,

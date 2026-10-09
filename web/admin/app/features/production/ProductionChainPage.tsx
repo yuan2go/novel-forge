@@ -116,13 +116,20 @@ export function ProductionChainPage() {
     {book && <ReferenceReviewPanel key={`reference:${project}:${bookId}`} project={project} book={book} />}
     <section className="panel">
       <h2>进度与恢复</h2>
+      {(workspace.generation_recovery || []).map(item => <details key={item.external_effect_id}>
+        <summary>{item.observed_failure.error_code} ／ 已隔离 ／ {item.recovery_state}</summary>
+        <p>故障阶段：{item.observed_failure.stage} · 原因：{item.observed_failure.cause_code || item.observed_failure.error_code}</p>
+        <p>后继：{item.successor_operation_id || "已登记，等待原生调度"} · {item.successor_status || "待执行"}</p>
+        <p>原远端结果：{item.original_remote_outcome} · 原用量：{item.original_usage} · 旧尝试提交权：{item.business_commit_right}</p>
+        <pre>{JSON.stringify(item, null, 2)}</pre>
+      </details>)}
       <label>生产记录<select aria-label="生产记录" value={runId} onChange={e => setRunId(e.target.value)}><option value="">选择生产记录</option>{workspace.runs.map(r => <option key={r.book_run_id} value={r.book_run_id}>{r.state} · 已接纳 {r.accepted_through_chapter}/{r.target_chapter_count} · {r.book_run_id.slice(-8)}</option>)}</select></label>
       {progress && <dl><dt>当前状态</dt><dd>{progress.state}</dd><dt>停点</dt><dd>{progress.blocking_reason || progress.blocking_class || "无已报告停点"}</dd><dt>恢复条件</dt><dd>{progress.wake_condition || progress.next_expected_transition}</dd><dt>当前任务</dt><dd>{progress.active_operation_status || "未派发"}</dd></dl>}
       <label>操作原因<input aria-label="操作原因" value={reason} onChange={e => setReason(e.target.value)} placeholder="记录暂停、恢复或取消的原因" /></label>
       <div className="studioActions">
         <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => pauseBookProduction(runId, reason), "暂停请求已保存。")}>暂停</button>
         <button disabled={busy || !run || !reason.trim()} onClick={() => act(() => resumeBookProduction(runId, reason), "恢复请求已保存；系统自动核对授权、版本与可用资源。")}>恢复</button>
-        <button disabled={busy || !run?.active_chapter_request_id} onClick={() => act(() => recoverBookChapter(run!.active_chapter_request_id), "已核对并恢复原章节提交；未知外部结果仍需对账。")}>恢复章节提交</button>
+        <button disabled={busy || !run?.active_chapter_request_id} onClick={() => act(() => recoverBookChapter(run!.active_chapter_request_id), "已核对原章节提交与安全接续状态。")}>恢复章节提交</button>
         <button className="dangerButton" disabled={busy || !run || !reason.trim()} onClick={() => act(() => cancelBookProduction(runId, reason), "取消请求已保存。")}>取消</button>
         <Link className="secondaryButton" href={`/editor?${new URLSearchParams({project_id: project, book_id: bookId, book_run_id: runId})}`}>阅读正文、审稿与整稿版本</Link>
       </div>

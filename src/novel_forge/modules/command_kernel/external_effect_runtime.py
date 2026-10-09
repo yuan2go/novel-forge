@@ -559,7 +559,8 @@ def require_effect_retry_ready(cursor: Any, effect_id: str) -> None:
     if row is None or row[0] != "FAILED_RETRYABLE":
         return
     process = (row[1] or {}).get("production_execution", {}).get("process_evidence", {})
-    if process.get("failure_class") not in {"RATE_LIMIT", "PROVIDER_UNAVAILABLE"}:
+    failure = (process.get("failure") or {}).get("error_code") or process.get("failure_class") or process.get("failure_code")
+    if failure not in {"RATE_LIMIT", "PROVIDER_UNAVAILABLE", "PROVIDER_RATE_LIMITED", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}:
         return
     delay = process.get("retry_after_seconds")
     if not isinstance(delay, (int, float)) or not math.isfinite(delay) or delay < 0:
@@ -593,6 +594,12 @@ def prepare_effect_dispatch(
         if resolution(uow.cursor, effect_id) is not None:
             raise KernelError("EFFECT_ALREADY_RECONCILED", "Original generation has a confirmed outcome; consume it through its owner")
         require_effect_retry_ready(uow.cursor, effect_id)
+        if effect["effect_type"] == "model.invoke" and effect["status"] in {"READY", "FAILED_RETRYABLE"}:
+            uow.cursor.execute("SELECT definition_name FROM authority_operation WHERE operation_id=%s",[context.operation_id])
+            if uow.cursor.fetchone()[0] in {"story_planning.generate","chapter.memo.generate","chapter.draft.generate",
+                    "chapter.review.evaluate","chapter.revision.apply","chapter.canon.extract"}:
+                from .generation_isolation import require_generation_retry_budget
+                require_generation_retry_budget(uow.cursor,operation_id=context.operation_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
         reconciliation_required = bool(result.get("reconciliation_required"))
         if reconciliation_required:

@@ -463,6 +463,7 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
             return "FORMATION_NO_PROGRESS_LIMIT"
         uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect
             WHERE project_id=%s AND request_payload #>> '{_production_execution,book_id}'=%s
+              AND NOT authority_generation_isolated(external_effect_id)
               AND status IN ('DISPATCHING','UNKNOWN','RECONCILIATION_REQUIRED','FAILED_FINAL'))
             OR EXISTS(SELECT 1 FROM authority_runtime_job_lease lease
                 JOIN authority_runtime_job job USING(runtime_job_id)
@@ -494,6 +495,9 @@ _CREATION_PROGRESS_COLUMNS = """run.current_stage,run.lifecycle,run.version,
                 FROM authority_book_production production WHERE production.project_id=run.project_id
                   AND production.stable_idempotency_key=run.formation_run_id || ':production'),
             jsonb_build_object('cancel_requested',EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation WHERE cancellation.formation_run_id=run.formation_run_id),
+                'generation_recovery',jsonb_build_array(
+                    (SELECT count(*) FROM authority_generation_isolation WHERE project_id=run.project_id AND book_id=run.book_id),
+                    (SELECT count(*) FROM authority_story_planning_runtime_continuation WHERE project_id=run.project_id AND book_id=run.book_id)),
                 'opening',(SELECT jsonb_build_array(opening.lifecycle,opening.version) FROM authority_book_opening_run opening
                     WHERE opening.project_id=run.project_id AND opening.stable_idempotency_key=run.formation_run_id || ':opening'),
                 'chapter',(SELECT jsonb_build_array(operation.status,operation.version) FROM authority_book_production production

@@ -24,6 +24,11 @@ from tests.unit.test_codex_execution_evidence import _entitlement
         ("401 unauthorized", "PROVIDER_AUTH_FAILED", "AUTHENTICATION"),
         ("429 too many requests", "PROVIDER_RATE_LIMITED", "PROVIDER_ADMISSION"),
         (
+            "Selected model is at capacity. Please try a different model.",
+            "PROVIDER_MODEL_CAPACITY_UNAVAILABLE",
+            "PROVIDER_ADMISSION",
+        ),
+        (
             "failed to connect: connection refused",
             "PROVIDER_CONNECTION_FAILED",
             "CONNECTION",
