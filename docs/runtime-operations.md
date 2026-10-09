@@ -2249,6 +2249,12 @@ and a rationale. It creates a proposal, retaining the existing approval and futu
 invalidation boundary. A new source or policy requires a new frozen review run; identical
 valid windows can be reused without pretending unreviewed text was read.
 
+Select `NOVEL_FORGE_COORDINATED_READER_CONTRACT=reader-accepted-context.v3` for the
+current Reader, Plan Change and Book Replan owners in production or validation. This
+selection retains the runtime environment and each owner's exact frozen Book template
+checks. An unset or older contract retains legacy wiring; it cannot consume current
+structural candidates by treating them as already qualified literary evidence.
+
 For a finding disposition, obtain `finding_digest` and `expected_version` from the current
 report. `KEEP_HISTORY`, `CURRENT_CANDIDATE_REVISION` and `FUTURE_PLAN_PROPOSAL` retain an
 unresolved issue until the appropriate review/approval consumer completes. A candidate
