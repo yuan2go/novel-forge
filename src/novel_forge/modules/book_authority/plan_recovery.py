@@ -151,7 +151,7 @@ def retire_reference_failed_chapter(authority, *, book_run_id, proposal_id, plan
 
 def replacement_binding(uow, *, book, chapter, plan_version, plan_hash):
     uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_asset_locator l JOIN authority_asset_version v ON v.asset_version_id=l.current_asset_version_id
-        JOIN authority_asset a USING(asset_id) WHERE l.project_id=%s AND l.logical_ref=%s AND a.asset_type='book_chapter_plan_recovery'""", [book["project_id"],_ref(book["book_run_id"],chapter)])
+        JOIN authority_asset a ON a.asset_id=v.asset_id WHERE l.project_id=%s AND l.logical_ref=%s AND a.asset_type='book_chapter_plan_recovery'""", [book["project_id"],_ref(book["book_run_id"],chapter)])
     row = uow.cursor.fetchone()
     if not row:
         return None
