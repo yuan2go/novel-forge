@@ -2146,6 +2146,15 @@ def _build_planning_context_view(
     task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
     typed_arc_sources = context_bundle.get("planning_contract_version") == "1.21.0"
     typed_volume_sources = context_bundle.get("typed_volume_projection_version") == "typed-volume-context-projection.v1"
+    planning_window = None
+    if context_bundle.get("typed_window_projection_version") == "typed-planning-window-projection.v1":
+        horizon = (context_bundle.get("narrative_search") or {}).get("planning_horizon") or {}
+        planning_window = horizon.get("chapter_range")
+        if (stage != "chapter_group_plan.generate" or horizon.get("level") != "CHAPTER_GROUP"
+                or not isinstance(planning_window, list) or len(planning_window) != 2
+                or any(type(value) is not int for value in planning_window)
+                or not 0 < planning_window[0] <= planning_window[1]):
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "Group projection requires its exact frozen positive planning horizon")
     frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
     if isinstance(frozen, Mapping) and "compiled_view" in frozen:
         view = frozen["compiled_view"]
@@ -2212,6 +2221,7 @@ def _build_planning_context_view(
             task_capacity=task_capacity,
             typed_arc_sources=typed_arc_sources,
             typed_volume_sources=typed_volume_sources,
+            planning_window=planning_window,
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -2232,6 +2242,7 @@ def _build_planning_context_view(
         "stage": stage,
         **({"typed_arc_projection_version": "typed-arc-context-projection.v2"} if typed_arc_sources else {}),
         **({"typed_volume_projection_version": "typed-volume-context-projection.v1"} if typed_volume_sources else {}),
+        **({"typed_window_projection_version": "typed-planning-window-projection.v1"} if planning_window else {}),
         "narrative_position": {
             "book_id": str(context_bundle.get("book_id") or ""),
             "logical_key": str(context_bundle.get("logical_key") or ""),
@@ -2695,6 +2706,7 @@ def _project_planning_content(
     task_capacity: bool = False,
     typed_arc_sources: bool = False,
     typed_volume_sources: bool = False,
+    planning_window: list[int] | None = None,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2816,12 +2828,13 @@ def _project_planning_content(
         record_loss("chapter_function_matrix", [item for item in matrix if item not in compacted["chapter_function_matrix"]], "OUTSIDE_NARRATIVE_SCOPE")
     for field in ("narrative_segments", "arc_segments"):
         values = compacted.get(field)
-        if chapter and isinstance(values, list):
+        if (chapter or planning_window) and isinstance(values, list):
             local = [
                 item
                 for item in values
                 if isinstance(item, Mapping)
-                and _chapter_in_range(chapter, item.get("chapter_range"))
+                and (_ranges_overlap(planning_window, item.get("chapter_range")) if planning_window
+                     else _chapter_in_range(chapter, item.get("chapter_range")))
             ]
             record_loss(field, [item for item in values if item not in local], "OUTSIDE_NARRATIVE_SCOPE")
             compacted[field] = local
@@ -2834,6 +2847,12 @@ def _chapter_in_range(chapter: int, value: Any) -> bool:
         and len(value) == 2
         and int(value[0]) <= chapter <= int(value[1])
     )
+
+
+def _ranges_overlap(window: list[int], value: Any) -> bool:
+    return (isinstance(value, (list, tuple)) and len(value) == 2
+        and all(type(item) is int for item in value)
+        and value[0] <= value[1] and value[0] <= window[1] and window[0] <= value[1])
 
 
 def build_provider_knowledge_view(

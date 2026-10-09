@@ -186,7 +186,7 @@ def require_source(
     if (
         (row[0] in {"FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED")
         or (row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and failure_code == "PROVIDER_ROUTING_BLOCKED"
-            and frozen.get("generator_operation_name") == "arc_plan.generate")
+            and frozen.get("generator_operation_name") in {"arc_plan.generate", "chapter_group_plan.generate"})
     ):
         return _pre_send_capacity_source(
             uow,
@@ -719,9 +719,10 @@ def _pre_send_capacity_source(
             or set(candidate["rejected_reasons"]) - {"CONTEXT_CAPACITY_EXCEEDED", "BUDGET_HARD_LIMIT"}
             for candidate in candidates):
             raise KernelError("PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED", "Retained routing failure is not solely a proven request capacity failure")
-        projection_revalidation = {"contract_version": "typed-volume-context-projection.v1",
+        group = frozen.get("generator_operation_name") == "chapter_group_plan.generate"
+        projection_revalidation = {"contract_version": "typed-planning-window-projection.v1" if group else "typed-volume-context-projection.v1",
             "blocked_decision_id": decision[0]["decision_id"], "source_operation_status": str(row[0]),
-            "reason": "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
+            "reason": "Retain typed planning fields and audit material outside the exact frozen narrative horizon" if group else "Arc scope VolumePlans use the existing typed VolumePlan field contract with audited omissions"}
         uow.cursor.execute("""SELECT output.asset_version_id,output.content_hash FROM authority_operation_output_asset output
             WHERE output.operation_id=%s AND output.output_key='planning.context_bundle'""", [source_operation_id])
         context = uow.cursor.fetchone()

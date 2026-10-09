@@ -2367,3 +2367,10 @@ qualified membership, and records the unfinished comparison and absent author de
 A later replay verifies that immutable decision; active branch writers block selection.
 Completed local output can be admitted through the existing local result revalidation
 command after a failed terminal owner, using its original snapshot and inputs.
+
+A ChapterGroup Context capacity successor preserves its frozen search horizon and all input
+versions. The versioned `typed-planning-window-projection.v1` retains global constraints and
+only overlapping Arc and Volume segments, with source hashes and omission receipts. It uses
+the same zero-intent, cancellation, lease and identity guards as Arc capacity succession.
+Isolated transport failures prefer an eligible authorized route with fewer recorded failures;
+Provider switching never changes the logical fault allowance or paid budget.

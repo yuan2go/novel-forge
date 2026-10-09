@@ -245,6 +245,15 @@ def template_decision(decision: RoutingDecision) -> RoutingDecision:
     if template is None:
         return decision
     selected = None
+    transport_failures = {}
+    for item in snapshot["task"].get("history", []):
+        if item.get("generation_isolated") and item.get("failure_class") in {
+            "PROVIDER_STREAM_INTERRUPTED", "PROVIDER_RESPONSE_TIMEOUT", "PROVIDER_CONNECTION_FAILED",
+            "PROVIDER_AUTH_FAILED", "PROVIDER_RATE_LIMITED", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE",
+            "PROVIDER_UNAVAILABLE", "RATE_LIMIT", "AUTHENTICATION_FAILED", "PROVIDER_BUDGET_EXHAUSTED",
+        }:
+            identity = item.get("candidate_id")
+            transport_failures.setdefault(identity, set()).add(item["external_effect_id"])
     plan = snapshot["task"].get("budget_snapshot", {}).get("work_resource_plan")
     pressure = False
     if plan is not None and template["deepseek"]:
@@ -273,7 +282,10 @@ def template_decision(decision: RoutingDecision) -> RoutingDecision:
                 and candidate["provider"] == "deepseek"):
             row["rejected_reasons"].append("OPTIONAL_ENHANCEMENT_DEFERRED_FOR_COMPLETION")
         if not row["rejected_reasons"]:
-            if selected is None or (candidate["provider"] == "codex-cli" and selected["candidate"]["provider"] != "codex-cli"):
+            rank = (len(transport_failures.get(candidate["candidate_id"], ())), candidate["provider"] != "codex-cli")
+            selected_rank = (len(transport_failures.get(selected["candidate"]["candidate_id"], ())),
+                selected["candidate"]["provider"] != "codex-cli") if selected else None
+            if selected_rank is None or rank < selected_rank:
                 selected = row
     snapshot.update(status="SELECTED" if selected else "BLOCKED", selected=selected,
                     mode=template["mode"], resource_control_version=RESOURCE_VERSION,
@@ -289,6 +301,16 @@ def template_decision(decision: RoutingDecision) -> RoutingDecision:
                         "work_scope_changed": False, "quality_floor_changed": False},
                     execution_template_hash=snapshot_hash(template))
     snapshot.pop("decision_id", None)
+    if transport_failures:
+        snapshot["resource_actions"]["transport_recovery"] = {
+            "contract_version": "native-isolated-transport-fallback.v1",
+            "failed_route_effects": {key: sorted(value) for key, value in transport_failures.items()},
+            "selected_candidate_id": selected["candidate"]["candidate_id"] if selected else None,
+            "action": "ALTERNATE_AUTHORIZED_ROUTE" if selected and selected["candidate"]["candidate_id"] not in transport_failures
+                else "BOUNDED_SAME_ROUTE_RETRY" if selected else "NO_AUTHORIZED_ROUTE",
+            "authorization_source": "CURRENT_NATIVE_TEMPLATE_AND_ISOLATED_SUCCESSOR",
+            "retry_allowance_changed": False,
+        }
     snapshot["decision_id"] = "routing-decision:" + snapshot_hash(snapshot)[7:]
     return RoutingDecision(json.dumps(snapshot, sort_keys=True, ensure_ascii=False, allow_nan=False))
 

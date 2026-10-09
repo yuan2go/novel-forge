@@ -191,6 +191,7 @@ from . import (
     v20261009_0187_chapter_generation_isolation,
     v20261009_0188_saved_result_admission,
     v20261009_0189_unsent_context_successor,
+    v20261009_0190_group_window_successor,
 )
 
 VERSION_MODULES = [
@@ -384,6 +385,7 @@ VERSION_MODULES = [
     v20261009_0187_chapter_generation_isolation,
     v20261009_0188_saved_result_admission,
     v20261009_0189_unsent_context_successor,
+    v20261009_0190_group_window_successor,
 ]
 
 __all__ = ["VERSION_MODULES"]

@@ -5854,6 +5854,8 @@ class PostgresPlanningExecutionPreparer:
             "planning_scope": command.planning_scope.value,
             "logical_key": command.logical_key,
             "input_versions": selected,
+            **({"typed_window_projection_version": "typed-planning-window-projection.v1"}
+                if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id else {}),
             **({"typed_volume_projection_version": "typed-volume-context-projection.v1"}
                 if command.generator_operation_name == "arc_plan.generate" else {}),
             "arc_working_set": dict(command.arc_working_set or {}),
@@ -5983,6 +5985,8 @@ class PostgresPlanningExecutionPreparer:
         content["token_budget"] = task_tokens
         if command.generator_operation_name == "arc_plan.generate":
             content["typed_volume_projection_version"] = "typed-volume-context-projection.v1"
+        if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id:
+            content["typed_window_projection_version"] = "typed-planning-window-projection.v1"
         if command.execution_contract_version == "1.21.0":
             content["planning_contract_version"] = "1.21.0"
         if operation_id and "realization_reference_contract" in content:

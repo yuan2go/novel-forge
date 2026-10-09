@@ -3778,3 +3778,10 @@ the native Book pause with `GENERATION_RECOVERY_EXHAUSTED` and returns the saved
 Repeated continuation preserves that stop and cannot issue another model call. Historical
 pre-prose timeout recovery ignores isolated execution/accounting rows while retaining live
 lease, scope and cancellation checks.
+
+A ChapterGroup Context capacity successor preserves its frozen search horizon and all input
+versions. The versioned `typed-planning-window-projection.v1` retains global constraints and
+only overlapping Arc and Volume segments, with source hashes and omission receipts. It uses
+the same zero-intent, cancellation, lease and identity guards as Arc capacity succession.
+Isolated transport failures prefer an eligible authorized route with fewer recorded failures;
+Provider switching never changes the logical fault allowance or paid budget.

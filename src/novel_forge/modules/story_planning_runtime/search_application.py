@@ -477,6 +477,18 @@ class PostgresNarrativeSearchApplication:
             replayed=replayed or decision_replayed,
         )
 
+    def retained_planning_horizon(self, command: StoryPlanningGenerationCommand) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT planning_horizon,generator_operation_name,logical_key,workspace_id
+                FROM authority_story_narrative_search WHERE project_id=%s AND book_id=%s AND stable_idempotency_key=%s""",
+                [command.project_id, command.book_id, command.idempotency_key + ":narrative-search"])
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        if tuple(row[1:]) != (command.generator_operation_name, command.logical_key, command.workspace_id):
+            raise KernelError("NARRATIVE_SEARCH_IDEMPOTENCY_CONFLICT", "Retained search belongs to a different logical task")
+        return dict(row[0])
+
     def _available_selection_policy(self, project_id):
         from novel_forge.storage.versioned_policy_repository import policy_hash
         with AuthorityUnitOfWork(self.database_url) as uow:
