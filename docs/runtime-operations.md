@@ -818,6 +818,8 @@ Chapter planning binds `known_fact_ids` to the frozen accepted StoryState. Worki
 prose memories and agreements may inform scenes but cannot create accepted knowledge
 IDs. A native continuation admission error returns `NATIVE_CONTINUATION_BLOCKED`
 with the retained manuscript and error; inspect its original evidence before repair.
+Chapter Arc scheduling selects only from the frozen row's required Arc contributions.
+Other frozen Arc inputs provide context and do not require scheduling or movement.
 
 The `edit` and `adopt` example above is for expression edits inside the existing Scene
 contract. It does not repair deficient events or authorize an assistant to record an

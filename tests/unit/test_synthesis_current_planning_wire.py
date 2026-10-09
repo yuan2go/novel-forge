@@ -150,6 +150,23 @@ def test_current_fixture_reads_original_operation_context_without_changing_it(mo
     assert view == frozen
 
 
+@pytest.mark.parametrize("scheduled", [["arc:v1"], ["arc:v1", "arc:related"], ["arc:foreign"]])
+def test_chapter_arc_schema_uses_required_row_not_all_frozen_context(scheduled):
+    from novel_forge.modules.hierarchical_planning.domain import PlanContractType
+    from novel_forge.modules.story_planning_runtime.execution import planning_provider_output_schema
+    from tests.unit.test_story_planning_runtime import _realization_slice, _chapter_schedule_row
+
+    row = _chapter_schedule_row()
+    row["required_arc_contributions"] = [{"arc_plan_version_id": "arc:v1", "contribution": "frozen required movement"}]
+    schema = planning_provider_output_schema(PlanContractType.CHAPTER, logical_key="chapter:1", parent_version_id="parent:v1", arc_plan_version_id="arc:v1", related_arc_plan_version_ids=("arc:related",), narrative_realization=_realization_slice(parent_version_id="parent:v1"), chapter_schedule_row=row)
+    values = [{"arc_plan_version_id": identity, "role": "PRIMARY" if n == 0 else "TOUCH", "segment_id": "segment", "expected_movement": "planned movement"} for n, identity in enumerate(scheduled)]
+    if scheduled == ["arc:v1"]:
+        _validate(schema["properties"]["arc_schedule"], values, path="$.arc_schedule")
+    else:
+        with pytest.raises(ValueError):
+            _validate(schema["properties"]["arc_schedule"], values, path="$.arc_schedule")
+
+
 def test_current_fixture_refuses_missing_actual_frozen_context():
     from tests.integration.current_planning_wire_support import current_planning_fixture_inputs
     with pytest.raises(ValueError, match="actual frozen Context"):

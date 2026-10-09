@@ -3034,6 +3034,23 @@ def planning_provider_output_schema(
             properties[field] = _frozen_provider_value_schema(
                 [schedule_row[field]], work_requirements=work_requirements
             )
+        scheduled_arc_ids = sorted({item["arc_plan_version_id"] for item in schedule_row["required_arc_contributions"]})
+        scheduled_arc_reference = {"type": "string", **({"const": scheduled_arc_ids[0]} if len(scheduled_arc_ids) == 1 else {"enum": scheduled_arc_ids} if scheduled_arc_ids else {})}
+        schedule_schema = properties["arc_schedule"]
+        schedule_schema["minItems"] = 1 if scheduled_arc_ids else 0
+        schedule_schema["maxItems"] = len(scheduled_arc_ids)
+        schedule_schema["items"]["properties"]["arc_plan_version_id"] = {
+            **scheduled_arc_reference,
+            "description": "Use only frozen required Arc contributions from this Chapter row. Related Arc context does not require scheduling or movement.",
+        }
+        schedule_schema["items"]["properties"]["role"]["description"] = "Choose one dominant role per scheduled required Arc; never repeat one Arc. Related context alone is not a scheduled contribution."
+        contributions = properties["required_arc_contributions"]
+        contributions["minItems"] = 1 if scheduled_arc_ids else 0
+        contributions["maxItems"] = len(scheduled_arc_ids)
+        contributions["items"]["properties"]["arc_plan_version_id"] = dict(scheduled_arc_reference)
+        progress = properties["scene_plan"]["items"]["properties"]["arc_progress"]
+        progress["items"] = dict(scheduled_arc_reference)
+        progress["maxItems"] = len(scheduled_arc_ids)
         scheduled_reader = dict(schedule_row["reader_experience"])
         reader_schema = dict(properties["reader_experience"])
         reader_properties = dict(reader_schema["properties"])
