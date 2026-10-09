@@ -5,7 +5,7 @@
     "name": "Chapter Generation Pack",
     "domain": "chapter_production",
     "capability_type": "production_workflow",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "owner": "novel-os-core",
     "status": "CANDIDATE",
     "lifecycle": "VALIDATION",
@@ -128,7 +128,7 @@
       },
       {
         "skill_ref": "quality-review",
-        "version": "quality-review-v3",
+        "version": "quality-review-v4",
         "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759",
         "required": true,
         "input_contract_ref": "schema:chapter-review-input:v1",

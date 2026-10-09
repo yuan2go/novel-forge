@@ -107,6 +107,9 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
         recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
+        from novel_forge.modules.chapter_authority.memo_recovery import recover_memo_references, recover_memo_completion
+        recover(lambda: recover_memo_references(composition.authority, book_run_id=book_run_id, principal=composition.principal))
+        recover(lambda: recover_memo_completion(composition.authority, book_run_id=book_run_id, principal=composition.principal))
         if not author_first(book):
             from novel_forge.modules.chapter_authority.canon_contract_recovery import recover_canon_contract, recover_completed_canon_window
             recover(lambda: recover_canon_contract(composition.authority, book_run_id=book_run_id, principal=composition.principal))

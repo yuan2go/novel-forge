@@ -1265,6 +1265,7 @@ class PostgresChapterExecutionContractBinder:
         )
         schema = chapter_provider_output_schema(
             stage,
+            character_references=(inputs.get("execution_intent") or {}).get("character_reference_contract") if stage == "memo" else None,
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,
@@ -1273,6 +1274,7 @@ class PostgresChapterExecutionContractBinder:
         )
         schema_ref = chapter_provider_output_schema_ref(
             stage,
+            character_references=(inputs.get("execution_intent") or {}).get("character_reference_contract") if stage == "memo" else None,
             causal_batch=causal_batch,
             legacy_contract=legacy_contract,
             targeted_revision=targeted_revision,

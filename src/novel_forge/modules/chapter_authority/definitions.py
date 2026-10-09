@@ -245,6 +245,14 @@ def chapter_operation_definitions(
                     "selector": "revision_execution_decision", "output_key": node.output_key + ".execution_decision",
                     "role": "completion_evidence", "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR",
                 })
+    if model_effects_required and coordinated_contract:
+        memo_repair = deepcopy(next(item for item in definitions if item["name"] == ChapterNode.MEMO.definition_name))
+        memo_repair["definition_version"] = "3.10.1"
+        memo_repair["policy"].update(known_receipt_recovery="chapter-known-receipt.v2", memo_reference_contract="frozen-character-references.v1")
+        memo_completion = deepcopy(memo_repair)
+        memo_completion["definition_version"] = "3.10.2"
+        memo_completion["policy"]["memo_completion_revalidation"] = "settled-memo-completion.v1"
+        definitions = (*definitions, memo_repair, memo_completion)
     if not author_input:
         return definitions
     from copy import deepcopy

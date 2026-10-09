@@ -40,7 +40,7 @@ def build_screenplay_pack_profile(repository_root: str | Path, *, stage: str,
         "blocking": True, "threshold": 1, "required_evidence": [output]}]
     manifest["evaluation"]["metrics"] = []
     skill = "quality-review" if stage == "screenplay_review" else "prose-generation"
-    artifacts = _bind_domain_artifacts(root, manifest, artifacts, skill_ref=skill, skill_version="quality-review-v3" if stage == "screenplay_review" else "prose-generation-v4",
+    artifacts = _bind_domain_artifacts(root, manifest, artifacts, skill_ref=skill, skill_version="quality-review-v4" if stage == "screenplay_review" else "prose-generation-v4",
         skill_path="skills/" + skill + "/SKILL.md", system_ref="prompt-system:scene-screenplay-pack",
         system_path="config/capability_packs/artifacts/scene_screenplay_system_instruction.md",
         template_ref="prompt-template:scene-screenplay-pack", template_path="config/capability_packs/artifacts/scene_screenplay_template.md",

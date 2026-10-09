@@ -119,11 +119,18 @@ def replace_failed_step(
         row = cursor.fetchone()
         from .context_transport_recovery import require_unsent_context_transport
         unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence)
+        memo_contract_repair = bool(
+            known_receipt_effects and policy_evidence.get("contract_version") == "chapter-known-receipt.v2"
+            and source["definition_name"] == "chapter.memo.generate" and source["definition_version"] == "3.10.0"
+            and target_version == "3.10.1" and expected_failure_code == "CHAPTER_MEMO_CHARACTER_DRIFT"
+            and policy_evidence.get("character_reference_contract", {}).get("contract_version") == "frozen-character-references.v1"
+        )
+        memo_completion_repair = (source["definition_name"] == "chapter.memo.generate" and source["definition_version"] == "3.10.1" and target_version == "3.10.2" and policy_evidence.get("completion_revalidation") == "settled-memo-completion.v1")
         if (
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memo_contract_repair or memo_completion_repair else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport)
@@ -174,6 +181,17 @@ def replace_failed_step(
         external, output, dependent, live_lease = cursor.fetchone()
         if output:
             output = has_domain_outputs(cursor, predecessor_id)
+        if memo_completion_repair:
+            from novel_forge.modules.chapter_authority.memo_recovery import original_memo_source
+            original_memo_source(cursor, source, policy_evidence)
+            cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number", [predecessor_id])
+            if any(r[0] not in {"AUTHORITY_HANDLER_CONTRACT_STALE", "RETAINED_COMPLETION_EVIDENCE_INVALID"} for r in cursor.fetchall()):
+                raise KernelError("MEMO_COMPLETION_LINEAGE_INVALID", "Only exact implementation completion failures may be revalidated")
+            cursor.execute("SELECT v.content FROM authority_operation_output_asset o JOIN authority_asset_version v USING(asset_version_id) WHERE o.operation_id=%s AND o.role='primary'", [predecessor_id])
+            results = cursor.fetchall()
+            if len(results) != 1 or results[0][0].get("known_receipt_revalidation", {}).get("source_operation_id") != policy_evidence.get("source_operation_id"):
+                raise KernelError("MEMO_COMPLETION_LINEAGE_INVALID", "Require the already qualified exact retained Memo")
+            output = False
         if known_receipt_effects:
             _require_verified_receipts(cursor, source=source, expected=known_receipt_effects, isolated_siblings=bool(known_isolated_effects))
             cursor.execute(

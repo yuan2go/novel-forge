@@ -3323,7 +3323,7 @@ class _PlanningGatewayEffectAdapter:
         outcome = {
             ExecutionOutcome.SUCCEEDED: "success",
             ExecutionOutcome.RETRYABLE_FAILURE: "retryable_failure",
-            ExecutionOutcome.TIMED_OUT: "retryable_failure",
+            ExecutionOutcome.TIMED_OUT: "unknown",
             ExecutionOutcome.CORRUPT_RESULT: "retryable_failure",
             ExecutionOutcome.FINAL_FAILURE: "final_failure",
             ExecutionOutcome.CANCELLED: "cancelled",

@@ -673,6 +673,7 @@ def build_provider_task_view(
                 "previous_ending",
                 "scene_plans",
                 "chapter_mission",
+                "character_reference_contract",
                 "required_beats",
                 "craft_strategy",
                 *(["creative_requirements"] if work_requirements else []),

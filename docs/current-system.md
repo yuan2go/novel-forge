@@ -1233,6 +1233,12 @@ Selection edits use Unicode code-point ranges, and scene artifacts must reconstr
 candidate exactly. The backend permits explicit mappings across existing Scene slots,
 including whitespace separators or an empty separator for paragraph joins. Slot identity,
 order and knowledge scope remain frozen; structural edits require native Plan Change.
+Expression candidates cannot resolve an event, motivation or pacing diagnosis that
+requires changed Scene commitments. The existing planning and edition owners must retain
+that diagnosis and revised plan lineage before rewriting the affected work. Operational
+receipt, permission and timing evidence belongs to the execution record; it is not a
+requirement to make characters explain those boundaries in dialogue. Characters may
+misunderstand or speculate within their accessible knowledge.
 Automatic edits cannot delete a slot. Repeated author candidates retain the originating
 draft and realization contract, and Revision/Craft use the same exact Unicode mapping.
 Saving, adopting, submitting native review, chapter acceptance and Book completion are

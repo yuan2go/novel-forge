@@ -417,20 +417,22 @@ class _ExecutionIntentHandler:
         if working:
             from novel_forge.modules.book_authority.manuscript import verify_working_handler
             verify_working_handler(request, working)
-        return _output(
-            ChapterNode.EXECUTION_INTENT,
-            build_chapter_execution_intent(
-                project_id=request.project_id,
-                operation_id=request.operation_id,
-                chapter_plan_asset_version_id=plan.asset_version_id,
-                chapter_plan_content_hash=plan.content_hash,
-                chapter_plan=plan.content,
-                accepted_inputs=accepted_inputs,
-                work_requirements=request.work_requirements_enabled,
-                style_view=style_view,
-                accepted_through_chapter=working["accepted_through_chapter"] if working else None,
-            ),
+        content = build_chapter_execution_intent(
+            project_id=request.project_id, operation_id=request.operation_id,
+            chapter_plan_asset_version_id=plan.asset_version_id,
+            chapter_plan_content_hash=plan.content_hash, chapter_plan=plan.content,
+            accepted_inputs=accepted_inputs, work_requirements=request.work_requirements_enabled,
+            style_view=style_view,
+            accepted_through_chapter=working["accepted_through_chapter"] if working else None,
         )
+        from .character_references import frozen_character_references
+        references = frozen_character_references(request, scenes=content["scene_plans"])
+        if references is not None:
+            from .execution_artifacts import _hash
+            content.pop("intent_fingerprint")
+            content["character_reference_contract"] = references
+            content["intent_fingerprint"] = _hash(content)
+        return _output(ChapterNode.EXECUTION_INTENT, content)
 
 
 @dataclass(frozen=True, slots=True)
@@ -439,11 +441,14 @@ class _MemoHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         intent = request.require_input("chapter_execution_intent")
-        generated = self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content})
+        from .memo_recovery import consume_memo_receipt
+        retained = consume_memo_receipt(request)
+        generated, references = retained if retained else (self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content}), None)
         from .creative_memo import qualify_creative_memo
         content = qualify_creative_memo(
             intent=intent.content, intent_asset_version_id=intent.asset_version_id,
             result=generated.output, execution_evidence=_provider_evidence(generated),
+            character_references=references,
         )
         return _model_output(ChapterNode.MEMO, content, request=request, generated=generated)
 
@@ -3130,7 +3135,7 @@ def _model_output(
 ) -> ChapterHandlerOutput:
     from dataclasses import replace
     known = None
-    if request.effective_definition_version == "3.10.0" and request.database_url and node in {ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CANON_EXTRACTION}:
+    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2"} and request.database_url and node in {ChapterNode.MEMO, ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CANON_EXTRACTION}:
         from .receipt_recovery import known_receipt_proof
         known = known_receipt_proof(request)
     if known is not None:

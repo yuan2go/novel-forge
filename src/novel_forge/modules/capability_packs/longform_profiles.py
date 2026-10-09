@@ -428,7 +428,7 @@ def build_longform_prose_review_pack_profile(
         manifest,
         artifacts,
         skill_ref="quality-review",
-        skill_version="quality-review-v3",
+        skill_version="quality-review-v4",
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:longform-prose-review-pack",
         system_path=(
@@ -580,7 +580,7 @@ def build_narrative_evaluation_pack_profile(
         manifest,
         artifacts,
         skill_ref="quality-review",
-        skill_version="quality-review-v3",
+        skill_version="quality-review-v4",
         skill_path="skills/quality-review/SKILL.md",
         system_ref="prompt-system:narrative-semantic-evaluation-pack",
         system_path=(

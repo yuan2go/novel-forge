@@ -14,8 +14,9 @@ def original_cli_dispatch(cursor: Any, effect: dict[str, Any]) -> dict[str, Any]
         """SELECT dispatch_id,generation,evidence,payload_hash FROM authority_external_effect_dispatch
         WHERE external_effect_id=%s
           AND (%s<>'FAILED_RETRYABLE' OR (status='FAILED_RETRYABLE'
-            AND evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
-            AND evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))
+            AND (evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
+              OR (evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
+                AND evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))))
           AND evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
           AND (evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
             OR (status='FAILED_RETRYABLE'

@@ -197,7 +197,7 @@ def _require_current_receipt_family(source):
 
 
 def _consume_known_draft_receipt(request):
-    if request.definition_version != "3.10.0" or not request.database_url:
+    if request.definition_version not in {"3.10.0", "3.10.1", "3.10.2"} or not request.database_url:
         return None
     with AuthorityUnitOfWork(request.database_url) as u:
         u.cursor.execute(
@@ -209,6 +209,9 @@ def _consume_known_draft_receipt(request):
             return None
         policy, failure = row
         source = failure["operation"]
+        if request.definition_version == "3.10.2":
+            from .memo_recovery import original_memo_source
+            source = original_memo_source(u.cursor, source, policy)
         _require_current_receipt_family(source)
         u.cursor.execute(
             "SELECT command_payload,input_asset_snapshot,actor_id FROM authority_operation WHERE operation_id=%s AND project_id=%s",

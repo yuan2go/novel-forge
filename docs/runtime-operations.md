@@ -697,6 +697,11 @@ invocation. The immutable isolation journal preserves remote UNKNOWN, terminal O
 history and unknown usage. It revokes old commit and activation rights and binds one
 native Planning runtime continuation or Chapter Saga step successor to the exact original
 Book, inputs and logical task.
+Planning CLI timeouts are uncertain external outcomes, not permission to resubmit.
+Historical `FAILED_RETRYABLE` CLI timeout records use this same isolation path only
+with the original dispatch, stopped process receipt, unmeasured usage and frozen pure
+Tool boundary. Their failed Attempt and Effect status remain in history; the native
+isolation journal revokes their commit rights before a bounded successor is registered.
 The successor retains previously admitted per-task Context capacity. A typed pre-send
 capacity-inheritance continuation may restore that exact allocation without increasing it.
 Opening, Chapter, Book coordination, delivery windows and budget lineage consume this same
@@ -800,6 +805,21 @@ novel-forge authority-manuscript adopt --project-id "$PROJECT" --book-run-id "$B
 novel-forge authority-manuscript export --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
   --output "$NEW_MANUSCRIPT_JSON"
 ```
+
+The `edit` and `adopt` example above is for expression edits inside the existing Scene
+contract. It does not repair deficient events or authorize an assistant to record an
+author choice. A structural diagnosis must first enter the owning Planning/Plan Change
+path with the exact manuscript and plan versions. Save replacement prose as a working
+candidate, retain its source and diagnosis, and review the rewritten events. Working
+version use, author selection and formal acceptance are separate records. A finding marked
+`UNRESOLVED_PLAN_SCOPE` remains unresolved after expression polishing.
+
+For Memo reference failures, inspect the exact frozen Intent, sent Schema and successful
+Provider receipt before retrying. A display name and a stable character ID are distinct
+references; only an explicit unique binding in this Book's frozen input versions can
+normalize them. Do not infer IDs from transliteration. Retain exhausted Attempts and use
+the owning versioned contract-recovery successor for a proven repair; repeated unchanged
+input, a new Book or a reset counter is not recovery.
 
 Editing compares the full submitted chapter with the selected base and freezes only actual
 changed Unicode ranges. Preserve unsubmitted input on conflict, reload the selected base and
