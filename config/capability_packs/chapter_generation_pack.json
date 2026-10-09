@@ -177,9 +177,9 @@
     "system_instruction_version": "v3",
     "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
     "template_ref": "prompt-template:chapter-generation-pack",
-    "template_version": "v12",
+    "template_version": "v13",
     "template_hash": "sha256:52c9ddbe038b2d7be3ea65bfb0fb6482fcfa6f915aa866adc4c4210a6ed66303",
-    "compiler_version": "chapter-prompt-compiler:v12",
+    "compiler_version": "chapter-prompt-compiler:v13",
     "input_schema_ref": "schema:chapter-generation-pack-input:v1",
     "output_schema_ref": "schema:chapter-generation-pack-output:v1"
   },

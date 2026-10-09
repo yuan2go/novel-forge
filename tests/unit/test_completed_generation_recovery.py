@@ -63,3 +63,19 @@ def test_assistant_revision_candidate_does_not_claim_human_choice_or_acceptance(
     assert saved['base_content_hash'] == base.content_hash
     with pytest.raises(KernelError, match='AUTHOR_INPUT_PROVENANCE_INVALID'):
         author_input_provenance({**payload, 'rights_basis': 'ORIGINAL_AUTHOR_INPUT'}, operation_id='save-op', base=base)
+
+
+def test_shared_review_port_accepts_authority_request_without_chapter_database_field(monkeypatch):
+    from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRequest
+    from novel_forge.modules.chapter_authority import model_effects
+
+    request = AuthorityHandlerRequest('operation', 'project', 'workspace', 'actor',
+        'trace', 'correlation', 'longform.prose_review', '1.0.0', {'payload': {}}, ())
+    adapter = SimpleNamespace(cost_accounting_basis='PRICED')
+    port = model_effects.ExternalEffectChapterModelPort('postgresql://not-connected',
+        adapter=adapter, worker_id='worker')
+    reached_intent = Mock(side_effect=KernelError('TEST_INTENT_BOUNDARY', 'normal review intent'))
+    monkeypatch.setattr(model_effects, 'read_external_effect_intent', reached_intent)
+    with pytest.raises(KernelError, match='TEST_INTENT_BOUNDARY'):
+        port.invoke(request, stage='longform_prose_review', payload={})
+    reached_intent.assert_called_once()

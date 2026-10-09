@@ -391,7 +391,7 @@ class ExternalEffectChapterModelPort:
             bound = next((item for item in request.inputs if item.asset_version_id == source.get("asset_version_id")), None)
             if bound is None or not source.get("content_hash") or bound.content_hash != source["content_hash"]:
                 raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "compression source must retain its exact frozen input version and hash on replay")
-        if request.database_url:
+        if getattr(request, "database_url", ""):
             from .receipt_recovery import consume_completed_generation_sibling
             retained = consume_completed_generation_sibling(request, stage=stage, payload=payload)
             if retained is not None:

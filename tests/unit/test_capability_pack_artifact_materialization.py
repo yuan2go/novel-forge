@@ -200,7 +200,9 @@ def test_current_draft_request_renders_single_body_contract_without_operator_pol
     assert "second whole-chapter body" in prompt
     assert "operator handoff" not in prompt.lower()
     assert '"required":["scene_artifacts"]' in prompt
-    assert evidence["prompt_template"]["version"] == "v12"
+    assert evidence["prompt_template"]["version"] == "v13"
+    assert evidence["provider_view"]["exact_context_references"]["decoded_equal"]
+    assert evidence["provider_view"]["exact_context_references"]["contract_version"] == "provider-context-exact-value-reference.v1"
 
 
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)
