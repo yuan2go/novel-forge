@@ -610,3 +610,33 @@ def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, requi
         assert target["planning_capacity"]["allocated_task_tokens"] == 224_608
         assert target["planning_capacity"]["external_intents_at_source"] == 0
     assert allocations == [128_000, 224_608]
+
+
+@pytest.mark.parametrize("change", ["version", "prompt", "foreign_pack", "corrupt_snapshot"])
+def test_capacity_pack_successor_preserves_contracts_and_native_hashes(monkeypatch, change):
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    from novel_forge.storage import capability_pack_authority_repositories as repositories
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    original = {"identity": {"pack_id": "pack", "version": "1.0.0"}, "prompt": {"contract": "original"}}
+    current = deepcopy(original)
+    current["identity"]["version"] = "1.0.1"
+    if change == "prompt":
+        current["prompt"]["contract"] = "changed"
+    versions = {"1.0.0": original, "1.0.1": current}
+    class Repository:
+        def __init__(self, cursor):pass
+        def require_version(self, pack, version, *, project_id):
+            assert project_id == "project"
+            return {"manifest": versions[version], "manifest_hash": canonical_hash(versions[version])}
+    monkeypatch.setattr(repositories, "CapabilityPackAuthorityRepository", Repository)
+    a = {"pack_id": "pack", "pack_version": "1.0.0", "manifest_hash": canonical_hash(original)}
+    b = {"pack_id": "foreign" if change == "foreign_pack" else "pack", "pack_version": "1.0.1",
+         "manifest_hash": "corrupt" if change == "corrupt_snapshot" else canonical_hash(current)}
+    if change != "version":
+        with pytest.raises(KernelError, match="MODEL_ROUTE_DRIFT"):
+            runtime._require_version_only_pack_successor(SimpleNamespace(cursor=None), project_id="project", original=a, target=b)
+    else:
+        evidence = runtime._require_version_only_pack_successor(SimpleNamespace(cursor=None), project_id="project", original=a, target=b)
+        assert evidence["contract_version"] == "version-only-pack-successor.v1"
+        assert original["identity"]["version"] == "1.0.0"
+        assert current["identity"]["version"] == "1.0.1"

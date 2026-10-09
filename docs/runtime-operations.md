@@ -3748,3 +3748,9 @@ failures remain counted if their original result arrives later. A successor inhe
 lowest admitted retry allowance in that logical lineage, rather than obtaining a fresh
 allowance from another Provider, Attempt or process. This is a per-task fault bound,
 separate from membership accounting and the full-book chapter target.
+
+Capacity continuation preflights retained inputs within the actual model context ceiling.
+A Pack successor may change its deployment version only after both persisted manifest hashes
+are verified and the manifests compare equal with only `identity.version` excluded. Prompt,
+route, Context, Skill and tool policy hashes remain bound. Changed executable contracts
+require their existing explicit contract continuation; old snapshots are never rewritten.

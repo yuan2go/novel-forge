@@ -768,6 +768,27 @@ def _pre_send_capacity_source(
     }
 
 
+def _require_version_only_pack_successor(uow, *, project_id, original, target):
+    from novel_forge.storage.capability_pack_authority_repositories import CapabilityPackAuthorityRepository
+
+    if not original.get("pack_id") or original.get("pack_id") != target.get("pack_id"):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT", "Capacity continuation must retain the owning Pack")
+    repository = CapabilityPackAuthorityRepository(uow.cursor)
+    retained = []
+    for snapshot in (original, target):
+        version = repository.require_version(snapshot["pack_id"], snapshot["pack_version"], project_id=project_id)
+        manifest = deepcopy(version["manifest"])
+        if canonical_hash(manifest) != snapshot["manifest_hash"] or version["manifest_hash"] != snapshot["manifest_hash"]:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT", "Pack successor manifest differs from its persisted snapshot")
+        # COMPATIBILITY: Deployment versions change identity while every executable contract remains frozen.
+        manifest["identity"].pop("version")
+        retained.append(manifest)
+    if retained[0] != retained[1]:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_MODEL_ROUTE_DRIFT", "Capacity continuation cannot change Pack contracts")
+    return {"contract_version": "version-only-pack-successor.v1", "source_manifest_hash": original["manifest_hash"],
+        "target_manifest_hash": target["manifest_hash"], "retained_contract_hash": canonical_hash(retained[0])}
+
+
 def _capacity_authorization(
     uow: Any,
     *,
@@ -826,10 +847,15 @@ def _capacity_authorization(
         )
     if source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}:
         _require_world_agency_pack(uow, source=source, successor=successor, target=target)
+    version_successor = None
+    strict_pack = source.get("mode") not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"} and not source.get("capacity_inheritance")
+    if strict_pack and source["snapshot"].get("manifest_hash") != target["pack_snapshot"].get("manifest_hash"):
+        version_successor = _require_version_only_pack_successor(uow, project_id=successor.project_id,
+            original=source["snapshot"], target=target["pack_snapshot"])
     if any(
         source["snapshot"].get(key) != target["pack_snapshot"].get(key)
         for key in (
-            *(("manifest_hash", "prompt_bundle_hash") if source.get("mode") not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"} and not source.get("capacity_inheritance") else ()),
+            *(("prompt_bundle_hash",) if strict_pack else ()),
             "route_policy_hash",
             "context_policy_hash",
             "skill_bundle_hash",
@@ -847,6 +873,7 @@ def _capacity_authorization(
         "template_policy_hash": template_binding["policy_snapshot"]["policy_hash"],
         "independent_human_review": "NOT_REVIEWED",
         "capacity_only": True,
+        **({"pack_version_successor": version_successor} if version_successor else {}),
         **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
     }
 
