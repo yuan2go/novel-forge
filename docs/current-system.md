@@ -89,15 +89,14 @@ Book checkpoint. The native routing owner selects the successor template, inheri
 existing paid authorization without raising its cap; Book Authority rechecks the checkpoint
 and freezes the policy adoption. An intervening version change fails closed. Existing
 profiles, requests, accepted facts, terminal failures and consumption history remain immutable.
-Unsettled original effects or held UNKNOWN consumption prevent this switch; reading, local
-editing and exact export remain available. Older incompatible plans require their native
+The baseline runtime rejects unsettled original effects and held UNKNOWN consumption at this switch; that is a `CURRENT_RUNTIME_FACT`. The absence of a formal pure-generation isolation exit is an `UNRESOLVED_DESIGN_CONSTRAINT`. Reading, local editing and exact export remain available. Older incompatible plans require their native
 projection/migration or a linked successor rather than rewritten history.
 
 The following distinctions govern implementation:
 
 | Class | Boundary |
 | --- | --- |
-| `CURRENT_PROVEN_INVARIANT` | Exact ownership, source isolation, immutable receipts, fenced commits, author CAS, original UNKNOWN reconciliation and cumulative paid cap |
+| `CURRENT_PROVEN_INVARIANT` | Exact ownership, source isolation, immutable receipts, fenced commits, author CAS, preservation of original UNKNOWN facts and cumulative paid cap |
 | `CONFIGURABLE_POLICY` | Review sequence, optional enhancements, voice advice, manuscript export versus strict finalization, direction selection |
 | `HISTORICAL_COMPATIBILITY` | Frozen v11 validation-only Pack/Router admission and finite campaign entitlements |
 | `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources and the intact-body guard limits one manuscript to 200000 code points; neither constant is a final architectural invariant or literary certification |

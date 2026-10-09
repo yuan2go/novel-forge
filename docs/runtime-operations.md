@@ -157,8 +157,7 @@ before pending migration DDL. Preserve a foreign branch database and its migrati
 ledger; never delete, rewrite or fabricate applied IDs to make it match. Conversion
 of such a database is a separate governed operation.
 
-For coordinated recovery, verify all twelve new heads against the published 0168
-upgrade boundary and a fresh database. Targeted regressions cover migration identity
+For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database. Targeted regressions cover migration identity
 and append-only journals, World known-receipt versus zero-effect paths, Planning
 capacity/DEAD_LETTER/OPTIONAL admission, governed route drift, actor/scope/input drift,
 UNKNOWN outcomes, held leases, unsettled budgets and cancellation. Chapter checks
@@ -173,8 +172,7 @@ the actual merge SHA with a new run identity and disposable resources.
 Include every dispatch generation when checking local-CLI remote outcomes. A started
 timeout, cancellation, orphan or unclassified process exit without a usage receipt remains
 UNKNOWN even when
-the local Operation is terminal or its reservation is SETTLED. Only an exact later
-manual reconciliation can resolve that generation; a later unsent generation cannot.
+the local Operation is terminal or its reservation is SETTLED. Only exact original evidence can establish that generation's remote outcome; a later unsent generation cannot. Remote outcome and permission to commit local business assets are separate dimensions.
 New ambiguous exits produce UNKNOWN and hold consumption. Historical PROCESS_EXIT_FAILURE
 retryable receipts without usage fail closed without rewriting their old classification or ledger.
 Reconcile the original execution ID and receipt; a stream disconnect with no complete result
@@ -217,13 +215,13 @@ Raw subprocess stdout/stderr remain in the original private execution directory.
 The optional text does not enter request contracts or change frozen Provider policies.
 
 `codex.recovery` with `cached_result=true` means local stored-result reuse, not a remote
-Provider query. A disconnect with no terminal result or measured usage remains UNKNOWN;
-diagnostics do not establish remote nonexecution, release a held reservation or authorize
-resending the original Effect. Keep original receipts unchanged. Test injected failures
+Provider query. A disconnect without a trusted terminal result retains an unknown remote outcome. The observed stream error must be reported independently of recovery progress. Diagnostics do not establish remote nonexecution or authorize resending the original Effect. Keep original receipts unchanged. Test injected failures
 with isolated identities and resources; a later successful diagnostic request cannot
 resolve an earlier request's remote outcome.
 
 ### Original Codex result recovery
+
+Historical audit reports and deployment manifests are immutable execution evidence, not current operating instructions. Recheck the configured release, process, storage identity and original frozen contract. A local reread capability is not authenticated remote result retrieval. Missing usage, missing content and an uncertain remote outcome must be assessed separately. The baseline implementation has no pure-generation isolation exit; treat that gap as `UNRESOLVED_DESIGN_CONSTRAINT`, not a permanent whole-book invariant.
 
 Codex reconciliation reads the original execution directory, request, Attempt/fence,
 command and input digests. A changed complete process receipt can supersede cached
