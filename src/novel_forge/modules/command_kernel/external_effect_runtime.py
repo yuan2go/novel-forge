@@ -619,8 +619,8 @@ def prepare_effect_dispatch(
         require_effect_retry_ready(uow.cursor, effect_id)
         if effect["effect_type"] == "model.invoke" and effect["status"] in {"READY", "FAILED_RETRYABLE"}:
             uow.cursor.execute("SELECT definition_name FROM authority_operation WHERE operation_id=%s",[context.operation_id])
-            if uow.cursor.fetchone()[0] in {"story_planning.generate","chapter.memo.generate","chapter.draft.generate",
-                    "chapter.review.evaluate","chapter.revision.apply","chapter.canon.extract"}:
+            if uow.cursor.fetchone()[0] in {"story_planning.generate","chapter.context.build","chapter.memo.generate","chapter.draft.generate",
+                    "chapter.review.evaluate","chapter.revision.apply","chapter.canon.extract","longform.prose_review"}:
                 from .generation_isolation import require_generation_retry_budget
                 require_generation_retry_budget(uow.cursor,operation_id=context.operation_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
