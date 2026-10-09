@@ -96,11 +96,13 @@ def book_recovery_projection(cursor, *, project_id, book_id):
           WHERE lineage.depth<32), latest AS (
         SELECT DISTINCT ON(source) source,current,depth FROM lineage ORDER BY source,depth DESC)
         SELECT isolation.external_effect_id,isolation.operation_id,isolation.proof,
-          latest.current,operation.status,attempt.error,latest.depth,
+          latest.current,operation.status,CASE WHEN operation.status IN
+            ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER','WAITING_RETRY','RECONCILIATION_REQUIRED')
+            THEN COALESCE(NULLIF(attempt.error,'{}'::jsonb),NULLIF(attempt.result,'{}'::jsonb)) END,latest.depth,
           effect.status,budget.status,budget.evidence->>'usage_basis',budget.evidence->'usage',budget.evidence->'cost'
         FROM authority_generation_isolation isolation JOIN latest ON latest.source=isolation.operation_id
         JOIN authority_operation operation ON operation.operation_id=latest.current
-        LEFT JOIN LATERAL (SELECT error FROM authority_attempt WHERE operation_id=latest.current
+        LEFT JOIN LATERAL (SELECT error,result FROM authority_attempt WHERE operation_id=latest.current
           ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
         JOIN authority_external_effect effect USING(external_effect_id)
         LEFT JOIN authority_budget_reservation budget USING(external_effect_id)

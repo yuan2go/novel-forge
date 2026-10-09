@@ -28,6 +28,11 @@ HANDLER_KEY = "novel_forge.story_planning.runtime_continuation.register"
 OUTPUT_KEY = "story_planning.runtime_continuation"
 
 
+def _context_projection_hash(context):
+    content = context if isinstance(context, Mapping) else context.content
+    return canonical_hash(content["context_manifest"]["provider_context_view"])
+
+
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
@@ -998,9 +1003,7 @@ def _capacity_target(
         "prior_task_tokens": baseline,
         "allocated_task_tokens": allocated,
         "single_request_ceiling": ceiling,
-        "projection_hash": canonical_hash(
-            context["context_manifest"]["provider_context_view"]
-        ),
+        "projection_hash": _context_projection_hash(context),
         "source_failure": source["failure"],
         "external_intents_at_source": 0,
         **({"context_revalidation": source["context_revalidation"]} if source.get("context_revalidation") else {}),
@@ -1423,7 +1426,7 @@ def register(
                     attempt_id=source["generation_isolation"]["local_execution"]["attempt_id"], command=successor,
                     inputs=application._resolve_inputs(successor), context_policy_ref=target["pack_snapshot"]["context_policy_ref"],
                     planning_task_token_budget=allocated, preflight_only=True)
-                target["planning_capacity"] = {**prior_capacity, "projection_hash": canonical_hash(context["context_manifest"]["provider_context_view"])}
+                target["planning_capacity"] = {**prior_capacity, "projection_hash": _context_projection_hash(context)}
         route_evidence = {"recovery_kind": "ISOLATED_PURE_GENERATION", "remote_outcome": "UNKNOWN",
             "usage": "UNKNOWN", "preserved_repair_number": original.repair_number,
             "recovery_attempt_number": source["generation_recovery_number"],

@@ -45,6 +45,16 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             continuation_live=continuation_live, execution_probe=execution_probe, events=events)
     except _RecoveryCheckpoint as checkpoint:
         return checkpoint.reason
+    except KernelError as error:
+        if error.code != "GENERATION_RECOVERY_EXHAUSTED":
+            raise
+        book = composition.authority.require(book_run_id)
+        if book["state"] != "PAUSED" or book.get("paused_reason") != error.code:
+            composition.authority.pause(book_run_id, reason=error.code, principal=composition.principal)
+        events({"kind": "GENERATION_RECOVERY_STOPPED", "book_run_id": book_run_id,
+            "reason_code": error.code, "failure": error.details, "recovery_state": "EXHAUSTED",
+            "business_impact": "SAVED_MANUSCRIPT_RETAINED_NO_FURTHER_DISPATCH"})
+        return error.code
 
 
 def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,

@@ -220,14 +220,15 @@ their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`,
 requirements for the membership execution contract. The native creation CLI freezes
 `formation-generation.v5` inputs and uses the existing Formation, Opening, Chapter Saga,
 optional Quality, strict export and Book acceptance owners under their selected policy. The review
-sequence is a policy choice; atomic acceptance, source isolation and unknown-outcome
-reconciliation remain safety invariants. Book Authority's existing worker owns the
+sequence is a policy choice. Atomic acceptance and source isolation remain safety invariants;
+unknown remote facts remain recorded independently of native business recovery. Book Authority's existing worker owns the
 reference-only `BOOK_CREATION_ADVANCE` RuntimeJob across stage handoffs. Its atomic
 completion/continuation, native leases, bounded backoff and progress snapshots survive
 worker restart. Technical waits use the original frozen work; author and owner decisions
-stop polling until relevant persisted state changes. UNKNOWN requires native reconciliation;
-a capacity configuration checkpoint can resume only when its exact historical error and
-absence of every external Effect prove that no send occurred. Cancellation is an immutable
+stop polling until relevant persisted state changes. An active uncertain Effect requires native
+reconciliation or authorized pure-generation isolation. Isolation revokes its commit rights and
+permits one linked native successor without requiring a remote result or measured usage.
+A pre-send capacity checkpoint separately requires proof that no external intent exists. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
 same project Pack scope and original admitted author identity when taking over continuous creation;
@@ -235,11 +236,12 @@ the worker identity owns only its execution lease. Coordination coalesces live t
 failures and retains a dead-letter stop for unchanged Book and dependency snapshots. A native
 dependency change or explicit owner recovery can wake the same work. A deterministic Planning
 capacity failure terminates its frozen attempt rather than consuming identical retries. Only
-continuous v5 membership creation with no external intent, reservation or frozen Context may
-append a capacity successor through the existing Planning runtime-continuation Authority.
+continuous membership creation with no external intent or reservation may
+append a capacity successor; a retained Arc Context additionally requires its native typed-volume
+projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
 reserves the configured model output and framing margin, and permits at most two successors.
-The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
+The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains counted for fault limits but does not lock the Book. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
 no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression

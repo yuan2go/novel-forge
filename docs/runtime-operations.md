@@ -453,7 +453,9 @@ source version/hash, accepted boundary, necessary refs, selected/excluded histor
 estimated token method, fast path and compression/recovery trace. Prompt/Skill/Schema
 and protocol overhead are checked again in the materialized Provider admission
 receipt. A local compressor parse/coverage problem reuses a durable successful Effect;
-UNKNOWN outcomes require reconciliation. Source changes require a new versioned
+UNKNOWN outcomes require native reconciliation or authorized pure-generation isolation.
+Isolation permits a linked successor, preserves original uncertainty and revokes old commit rights.
+Source changes require a new versioned
 request, not mutation of the dispatched identity. Keep exact Review/Revision text
 and citations; faithful required overflow is an explicit block.
 
@@ -803,8 +805,9 @@ Strict Edition export and external publication are separate operations.
 An existing idle work can request `authority-manuscript adopt-author-workflow` with the same
 Project and Book run. This automatically selects the current authorized native template and
 appends Book policy evidence. Original profiles and receipts stay frozen; no paid cap is
-increased. UNKNOWN blocks this switch until its original request is reconciled, while current
-manuscript reads/edits/exports remain independent. API clients bind the original adoption
+increased. Active writers and unisolated uncertain Effects block this switch. Native isolated
+generation history, including unknown usage, does not block it. Current manuscript
+reads/edits/exports remain independent. API clients bind the original adoption
 key and expected Book version; response recovery replays the native transaction receipt.
 
 Extend an existing author-first delivery window at a settled `READY` or `PAUSED`
@@ -823,8 +826,9 @@ accepted cursor. Repeat the same version, target and key after response loss. A 
 extension uses a new current checkpoint/key and links the previous policy version.
 `POST /product/editor/manuscripts/extend-delivery-window` accepts the same fields and
 returns the committed policy AssetVersion. Read/export includes that exact policy.
-UNKNOWN, held unknown usage, active work and held execution leases require their native
-recovery before extension. The command does not dispatch a model; ordinary `continue`
+Unisolated UNKNOWN, active work and held execution leases require their native
+recovery before extension. Isolated historical UNKNOWN and held unknown accounting
+do not freeze the delivery window. The command does not dispatch a model; ordinary `continue`
 uses the saved frontier and selected prior prose after successful extension. Before a
 BookRun exists, finish the original Opening recovery and original start first.
 
@@ -2059,8 +2063,9 @@ allowed. An external intent of any status, including UNKNOWN, excludes this capa
 Opening recovery follows a registered Planning runtime successor in the same project,
 workspace, book and Narrative Search branch when identifying pending work. Its failed
 predecessor remains in history. Unregistered competing generations remain ambiguous;
-an UNKNOWN successor still requires reconciliation of its original external effect.
-Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
+an unisolated UNKNOWN successor requires native reconciliation or authorized pure-generation
+isolation before another linked successor; isolated history cannot reacquire activation rights.
+Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures from that lineage cease to exclude the same authorized model for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated generation history retains its shared retry count without blocking unrelated Book work. The send path revalidates the receipt against Planning facts. Generic Book ticks back off failed attempts for 30 seconds and do not rearm a dead letter against
 unchanged Book/dependency evidence. Owner recovery uses the original creation `recover` command
 after resolving the retained cause; author status shows `OWNER_RECOVERY_REQUIRED` with its error.
 
@@ -2321,8 +2326,10 @@ Remote Provider and Codex CLI receipts preserve the returned raw response before
 Schema validation and normalization. A local crash after receipt persistence reuses
 that response under its frozen output Schema identity; it does not authorize a second
 generation call. Protocol or semantic rejection retains the raw result and failure
-evidence for explicit, bounded repair. A remote `UNKNOWN` outcome still requires
-reconciliation under its original idempotency identity.
+evidence for explicit, bounded repair. A remote `UNKNOWN` outcome retains its original
+identity and uncertainty. Native pure-generation isolation can revoke the old attempt
+and register a successor without a remote receipt; irreversible effects still require
+original reconciliation before any retry.
 
 Remote submit, query and callback use the host's persisted output contract: Schema,
 Schema reference, request hash and execution identity. Provider evidence cannot replace
@@ -3763,3 +3770,11 @@ original Context. The successor applies the existing VolumePlan field projection
 `arc_scope_volume:*` sources, keeps an explicit projection version and persists audited
 omissions. The current migration head in the migration manifest enforces scope and lineage;
 paid budget, authentication and availability failures cannot borrow this path.
+
+An isolated successor whose Context preflight reuses a persisted document retains its exact
+provider projection hash, just as a newly assembled preflight does. Recovery does not rebuild
+or reinterpret the old request. A Chapter fault allowance exhausted across successors records
+the native Book pause with `GENERATION_RECOVERY_EXHAUSTED` and returns the saved checkpoint.
+Repeated continuation preserves that stop and cannot issue another model call. Historical
+pre-prose timeout recovery ignores isolated execution/accounting rows while retaining live
+lease, scope and cancellation checks.

@@ -577,7 +577,8 @@ def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch
 
 
 @pytest.mark.parametrize("required_bytes,expected_error", [(180_000, None), (300_000, "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED")])
-def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, required_bytes, expected_error):
+@pytest.mark.parametrize("retained_document", [False, True])
+def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, required_bytes, expected_error, retained_document):
     from contextlib import nullcontext
     from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
     allocations = []
@@ -588,7 +589,8 @@ def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, requi
         if allocated < required_bytes:
             raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "retained input exceeds allocation",
                 details={"required_serialized_bytes": required_bytes})
-        return {"context_manifest": {"provider_context_view": {"retained_input": "same"}}}, None
+        content = {"context_manifest": {"provider_context_view": {"retained_input": "same"}}}
+        return (SimpleNamespace(content=content) if retained_document else content), None
     pack = SimpleNamespace(
         require_attempt_snapshot=lambda **kwargs: "original-snapshot",
         materialize_attempt_artifacts=lambda snapshot: SimpleNamespace(context_policy=SimpleNamespace(content={"planning_task_token_budget": 64_000})),

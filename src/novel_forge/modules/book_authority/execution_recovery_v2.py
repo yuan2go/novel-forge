@@ -49,14 +49,17 @@ def _timeout_effects(cursor, *, root, target_template):
         """SELECT EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
             LEFT JOIN authority_budget_reservation r USING(external_effect_id)
             WHERE o.root_operation_id=%s AND (e.status IN ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED','INTENT_RECORDED')
-                OR r.status IS DISTINCT FROM 'SETTLED'))
+                OR r.status IS DISTINCT FROM 'SETTLED') AND NOT authority_generation_isolated(e.external_effect_id))
             OR EXISTS(SELECT 1 FROM authority_operation o WHERE o.root_operation_id=%s
-                AND (o.status IN ('UNKNOWN','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED','RUNNING','WAITING_EXTERNAL_RESULT')
-                    OR o.project_id<>%s OR o.workspace_id<>%s OR o.actor_id<>%s))
+                AND ((o.status IN ('UNKNOWN','RECONCILIATION_REQUIRED','RUNNING','WAITING_EXTERNAL_RESULT')
+                    AND NOT EXISTS(SELECT 1 FROM authority_generation_isolation WHERE operation_id=o.operation_id))
+                    OR o.status='CANCELLATION_REQUESTED' OR o.project_id<>%s OR o.workspace_id<>%s OR o.actor_id<>%s))
             OR EXISTS(SELECT 1 FROM authority_attempt a JOIN authority_operation o USING(operation_id)
-                WHERE o.root_operation_id=%s AND a.status IN ('UNKNOWN','RUNNING','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')),
+                WHERE o.root_operation_id=%s AND a.status IN ('UNKNOWN','RUNNING','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
+                AND NOT EXISTS(SELECT 1 FROM authority_generation_isolation WHERE operation_id=o.operation_id)),
             EXISTS(SELECT 1 FROM authority_budget_reservation r JOIN authority_operation o USING(operation_id)
-                WHERE o.root_operation_id=%s AND r.status IS DISTINCT FROM 'SETTLED'),
+                WHERE o.root_operation_id=%s AND r.status IS DISTINCT FROM 'SETTLED'
+                AND NOT authority_generation_isolated(r.external_effect_id)),
             EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
                 JOIN authority_operation o USING(operation_id) WHERE o.root_operation_id=%s
                 AND l.released_at IS NULL AND l.expires_at>NOW())""",
@@ -75,7 +78,8 @@ def _timeout_effects(cursor, *, root, target_template):
         LEFT JOIN authority_budget_reservation r USING(external_effect_id)
         LEFT JOIN authority_attempt a ON a.attempt_id=e.request_payload #>> '{_production_execution,attempt_id}'
             AND a.operation_id=o.operation_id
-        WHERE o.root_operation_id=%s ORDER BY a.attempt_number,e.external_effect_id""",
+        WHERE o.root_operation_id=%s AND NOT authority_generation_isolated(e.external_effect_id)
+        ORDER BY a.attempt_number,e.external_effect_id""",
         [root["operation_id"]],
     )
     effects = cursor.fetchall()
