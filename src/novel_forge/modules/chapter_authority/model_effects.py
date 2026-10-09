@@ -452,7 +452,7 @@ class ExternalEffectChapterModelPort:
             or business_payload.get("draft_profile_version") or ""
         )
         task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
-        task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0")
+        task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0") or task_scoped_prose_review(request, stage)
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
         if task_scoped and existing_intent is not None:
@@ -2212,3 +2212,8 @@ __all__ = [
     "model_call_log_ref",
     "normalize_model_output",
 ]
+
+
+def task_scoped_prose_review(request, stage):
+    windows = [item for item in request.inputs if item.asset_type == 'longform_prose_review_window']
+    return stage == 'longform_prose_review' and len(windows) == 1 and windows[0].content.get('schema_version') == 'longform-prose-window.v3'

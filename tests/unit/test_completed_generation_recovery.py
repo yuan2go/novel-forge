@@ -121,3 +121,13 @@ def test_route_diagnostics_distinguish_unsent_capacity_from_permission_failure()
     assert result['execution_identity']['operation_id'] == 'op' and result['provider_invoked'] is False
     route['candidates'][0]['rejected_reasons'] = ['AUTHORIZATION_MISSING']
     assert routing_failure_details(route)['cause'] == 'ROUTE_CANDIDATES_REJECTED'
+
+
+def test_current_prose_review_context_budget_is_not_an_output_budget():
+    from novel_forge.modules.chapter_authority.model_effects import task_scoped_prose_review
+    window = SimpleNamespace(asset_type='longform_prose_review_window',content={'schema_version':'longform-prose-window.v3'})
+    request = SimpleNamespace(inputs=(window,))
+    assert task_scoped_prose_review(request,'longform_prose_review')
+    assert not task_scoped_prose_review(request,'draft')
+    window.content['schema_version']='longform-prose-window.v1'
+    assert not task_scoped_prose_review(request,'longform_prose_review')
