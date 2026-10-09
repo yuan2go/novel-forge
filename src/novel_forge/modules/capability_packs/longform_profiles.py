@@ -200,7 +200,8 @@ def build_story_planning_pack_profile(
             "config/capability_packs/artifacts/story_planning_system_instruction_v11.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_system_instruction_v9.md" if version == "1.19.0" else "config/capability_packs/artifacts/story_planning_system_instruction.md"
         ),
         template_ref="prompt-template:story-planning-pack",
-        template_path=("config/capability_packs/artifacts/story_planning_template.md"),
+        template_path=("config/capability_packs/artifacts/story_planning_template_v2.md" if version == "1.21.0" else "config/capability_packs/artifacts/story_planning_template.md"),
+        template_version="v2" if version == "1.21.0" else "v1",
         input_schema_ref="schema:story-planning-pack-input:v1",
         output_schema_ref="schema:story-planning-pack-output:v1",
         system_version=STORY_PLANNING_PROMPT_VERSION if version == "1.21.0" else "v9" if version == "1.19.0" else "v8",

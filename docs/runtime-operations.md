@@ -3206,6 +3206,12 @@ add accepted support or relax a causal predicate. The owning Planning result bec
 terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
 older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
 the original receipt before this classification, without another Provider request.
+Current Planning template v2 compiles input manifest and context together into one
+lossless exact-reference envelope, with reconstruction equality and source/encoded
+hashes retained. Repeated task/context content is serialized once; no constraint or
+repair evidence is omitted and no budget is enlarged. Historical template v1 keeps
+its original rendering. Chapter transitions describe one entry-to-exit change per
+(state_kind, entity_key); Scene contracts retain intermediate changes.
 A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract
 failure, not a transport retry. Its bounded native result repair reproduces the
 classification against the exact generation and settled Director receipt even when
