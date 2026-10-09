@@ -3209,7 +3209,12 @@ the original receipt before this classification, without another Provider reques
 Current Planning template v2 compiles input manifest and context together into one
 lossless exact-reference envelope, with reconstruction equality and source/encoded
 hashes retained. Repeated task/context content is serialized once; no constraint or
-repair evidence is omitted and no budget is enlarged. Historical template v1 keeps
+repair evidence is omitted and no budget is enlarged. Capacity continuation examines
+the frozen authorized candidates; an explicitly template-unauthorized catalog model
+is retained as rejected and cannot veto or receive that continuation. At least one
+authorized candidate must prove only capacity and its coupled token-reservation
+failure; other authorization, quality or budget-only denials remain closed.
+Historical template v1 keeps
 its original rendering. Chapter transitions describe one entry-to-exit change per
 (state_kind, entity_key); Scene contracts retain intermediate changes.
 A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract

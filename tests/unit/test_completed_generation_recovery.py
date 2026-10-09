@@ -151,3 +151,22 @@ def test_current_planning_template_binds_whole_envelope_and_retains_historical_t
     assert current.manifest['prompt_binding']['template_version'] == 'v2'
     assert '{{provider_data_envelope}}' in (root / 'config/capability_packs/artifacts/story_planning_template_v2.md').read_text()
     assert '{{input_manifest}}' in (root / 'config/capability_packs/artifacts/story_planning_template.md').read_text()
+
+
+@pytest.mark.parametrize('reasons,allowed', [
+    ([['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED'], ['CONTEXT_CAPACITY_EXCEEDED', 'BUDGET_HARD_LIMIT']], True),
+    ([['TEMPLATE_MODEL_UNAUTHORIZED', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+    ([['AUTHORIZATION_MISSING', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+    ([['BUDGET_HARD_LIMIT']], False),
+    ([['QUALITY_FLOOR_NOT_MET', 'CONTEXT_CAPACITY_EXCEEDED']], False),
+])
+def test_planning_capacity_recovery_uses_authorized_candidate_failures(reasons, allowed):
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import require_capacity_route_candidates
+    frozen = {'project_id': 'project', 'book_id': 'book'}
+    decision = {'status': 'BLOCKED', 'task': {'project_id': 'project', 'work_id': 'book', 'operation_id': 'operation'},
+        'candidates': [{'rejected_reasons': value} for value in reasons]}
+    if allowed:
+        require_capacity_route_candidates(decision, frozen=frozen, source_operation_id='operation')
+    else:
+        with pytest.raises(KernelError, match='PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED'):
+            require_capacity_route_candidates(decision, frozen=frozen, source_operation_id='operation')
