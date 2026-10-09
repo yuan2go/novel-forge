@@ -83,6 +83,7 @@ def source_uow(
     }
     responses = [
         (status, 8, "workspace", frozen, "book", candidate),
+        None,
         ("FAILED_RETRYABLE", {"error_code": error}, {}),
         effects
         if effects is not None
@@ -486,6 +487,7 @@ def test_terminal_capacity_continuation_rejects_any_external_intent_or_frozen_co
     frozen = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
     uow.cursor.fetchone.side_effect = [
         (status, 8, "workspace", frozen, "book", None),
+        None,
         (
             "FAILED_FINAL",
             {},
@@ -495,7 +497,7 @@ def test_terminal_capacity_continuation_rejects_any_external_intent_or_frozen_co
     ]
     with pytest.raises(KernelError, match="DISPATCH_UNSAFE"):
         require_source(uow, source_operation_id="source", project_id="project")
-    assert uow.cursor.execute.call_count == 3
+    assert uow.cursor.execute.call_count == 4
 
 
 def test_terminal_noncapacity_failure_cannot_borrow_cancelled_runtime_continuation():

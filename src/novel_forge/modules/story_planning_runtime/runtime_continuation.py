@@ -837,6 +837,7 @@ def _capacity_authorization(
         "template_policy_hash": template_binding["policy_snapshot"]["policy_hash"],
         "independent_human_review": "NOT_REVIEWED",
         "capacity_only": True,
+        **({"capacity_inheritance": "generation-capacity-inheritance.v1"} if source.get("capacity_inheritance") else {}),
     }
 
 

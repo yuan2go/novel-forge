@@ -680,6 +680,8 @@ no complete recoverable result and frozen default-deny Tools allowing only Provi
 invocation. The immutable isolation journal preserves remote UNKNOWN, terminal Operation
 history and unknown usage. It revokes old commit and activation rights and binds one
 native Planning runtime continuation to the exact original Book, inputs and logical task.
+The successor retains previously admitted per-task Context capacity. A typed pre-send
+capacity-inheritance continuation may restore that exact allocation without increasing it.
 Opening recovery and budget lineage consume this same disposition; paid reservations
 remain conservative exposure. Two continuations bound one logical task. Exhaustion
 returns `GENERATION_RECOVERY_EXHAUSTED`; it does not impose a Book-wide membership quota.
