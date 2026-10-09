@@ -187,6 +187,7 @@ from . import (
     v20261008_0183_source_observation_span_identity,
     v20261009_0184_cli_original_reconciliation,
     v20261009_0185_pure_generation_isolation,
+    v20261009_0186_generation_capacity_inheritance,
 )
 
 VERSION_MODULES = [
@@ -376,6 +377,7 @@ VERSION_MODULES = [
     v20261008_0183_source_observation_span_identity,
     v20261009_0184_cli_original_reconciliation,
     v20261009_0185_pure_generation_isolation,
+    v20261009_0186_generation_capacity_inheritance,
 ]
 
 __all__ = ["VERSION_MODULES"]

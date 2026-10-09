@@ -727,11 +727,19 @@ def _pre_send_capacity_source(
                 "Capacity source lost its prior continuation",
             )
         depth = int(prior[0])
-    if depth >= 2:
-        raise KernelError(
-            "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED",
-            "Capacity continuation exhausted two successors",
-        )
+    inherited = None
+    if frozen.get("runtime_continuation_id"):
+        uow.cursor.execute("""SELECT isolation.proof, capacity.target_runtime->'planning_capacity'
+            FROM authority_story_planning_runtime_continuation link
+            JOIN authority_generation_isolation isolation ON isolation.operation_id=link.source_operation_id
+            JOIN authority_operation original ON original.operation_id=isolation.operation_id
+            JOIN authority_story_planning_runtime_continuation capacity ON capacity.continuation_id=original.command_payload#>>'{payload,runtime_continuation_id}'
+            WHERE link.successor_operation_id=%s AND link.target_runtime#>>'{generation_isolation,external_effect_id}'=isolation.external_effect_id""", [source_operation_id])
+        retained = uow.cursor.fetchone()
+        if retained and retained[1]:
+            inherited = {"contract_version": "generation-capacity-inheritance.v1", "generation_isolation": retained[0], "allocation": retained[1]}
+    if depth >= (3 if inherited else 2):
+        raise KernelError("GENERATION_RECOVERY_EXHAUSTED" if inherited else "PLANNING_RUNTIME_CONTINUATION_BOUND_EXCEEDED", "Bounded native capacity recovery exhausted its successors")
     return {
         "mode": "PRE_SEND_CAPACITY",
         "source_operation_id": source_operation_id,
@@ -744,6 +752,7 @@ def _pre_send_capacity_source(
         "snapshot_id": snapshot[2],
         "snapshot_hash": snapshot[3],
         "inputs": inputs,
+        **({"capacity_inheritance": inherited} if inherited else {}),
         "failure": dict(attempt[2] or attempt[1] or {}),
         "depth": depth + 1,
     }
@@ -810,7 +819,7 @@ def _capacity_authorization(
     if any(
         source["snapshot"].get(key) != target["pack_snapshot"].get(key)
         for key in (
-            *(("manifest_hash", "prompt_bundle_hash") if source.get("mode") not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"} else ()),
+            *(("manifest_hash", "prompt_bundle_hash") if source.get("mode") not in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"} and not source.get("capacity_inheritance") else ()),
             "route_policy_hash",
             "context_policy_hash",
             "skill_bundle_hash",
@@ -873,6 +882,10 @@ def _capacity_target(
         - route.token_framing_overhead,
     )
     allocated = min(baseline * 2, ceiling)
+    if source.get("capacity_inheritance"):
+        allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
+        if allocated > ceiling:
+            raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "Inherited allocation exceeds the current authorized model capacity")
     if allocated <= baseline:
         raise KernelError(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
@@ -898,6 +911,9 @@ def _capacity_target(
         "source_failure": source["failure"],
         "external_intents_at_source": 0,
     }
+    if source.get("capacity_inheritance"):
+        target = {**target, "generation_isolation": source["capacity_inheritance"]["generation_isolation"]}
+        authorization = {**authorization, "capacity_inheritance": "generation-capacity-inheritance.v1"}
     return {**target, "planning_capacity": allocation}, authorization
 
 
@@ -1287,6 +1303,21 @@ def register(
         capacity_decision = require_capacity_target(source, target)
     if isolated_generation:
         target = {**target, "generation_isolation": source["generation_isolation"]}
+        if original.runtime_continuation_id:
+            prior_runtime = require_binding(application.database_url, original.runtime_continuation_id)["target_runtime"]
+            prior_capacity = prior_runtime.get("planning_capacity")
+            if prior_capacity:
+                preparer = application.execution_binder.resolver.execution_preparer
+                route = preparer.planning_route
+                allocated = int(prior_capacity["allocated_task_tokens"])
+                ceiling = min(512000, route.model_context_limit-route.model_output_limit-route.token_safety_margin-route.token_framing_overhead)
+                if allocated > ceiling:
+                    raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "The authorized successor model cannot retain original task capacity")
+                context, _ = preparer._context_bundle(operation_id=source_operation_id,
+                    attempt_id=source["generation_isolation"]["local_execution"]["attempt_id"], command=successor,
+                    inputs=application._resolve_inputs(successor), context_policy_ref=target["pack_snapshot"]["context_policy_ref"],
+                    planning_task_token_budget=allocated, preflight_only=True)
+                target["planning_capacity"] = {**prior_capacity, "projection_hash": canonical_hash(context["context_manifest"]["provider_context_view"])}
         route_evidence = {"recovery_kind": "ISOLATED_PURE_GENERATION", "remote_outcome": "UNKNOWN",
             "usage": "UNKNOWN", "preserved_repair_number": original.repair_number}
     elif host_revalidation:
