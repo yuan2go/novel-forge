@@ -19,6 +19,8 @@ def lock_and_assert_book_opening_plan_mutation(
     current Runtime fence.  Recovery may retain that immutable predecessor
     binding, so its alternative path is the existing RecoveryAssessment-backed
     narrative replacement gate plus the exact current recovery RuntimeJob.
+    Retained selected branches require immutable checkpoints and an unbroken
+    RecoveryAdmission lineage, while the current Runtime lease remains mandatory.
     """
     cursor.execute(
         """
@@ -249,7 +251,6 @@ def _checkpoint_generation_authorized(
     cursor, *, project_id, book_id, generation_operation_id,
     candidate_asset_version_id, original_binding, current_binding,
 ):
-    """INVARIANT: A recovered Opening may activate its exact checkpointed selected branch."""
     if (not original_binding
             or original_binding.get("opening_run_id") != current_binding["opening_run_id"]
             or original_binding.get("opening_execution_generation", 0)
