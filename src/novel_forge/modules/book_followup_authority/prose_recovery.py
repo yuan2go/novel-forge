@@ -16,13 +16,22 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
     binder = getattr(getattr(followup,'prose_model_port',None), 'capability_binder', None)
     if binder is None:
         return []
-    if binder is not None:
-        from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
-        with AuthorityUnitOfWork(coordinator.database_url) as uow:
-            uow.cursor.execute('SELECT book_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s',[book_run_id,project_id])
-            book_id = uow.cursor.fetchone()[0]
-        recover_saved_local_results(followup.prose_model_port.adapter,
-            database_url=coordinator.database_url,project_id=project_id,book_id=book_id,principal=principal)
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+    with AuthorityUnitOfWork(coordinator.database_url) as uow:
+        load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
+        uow.cursor.execute('SELECT book_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s',[book_run_id,project_id])
+        book_id = uow.cursor.fetchone()[0]
+        uow.cursor.execute("SELECT authority_generation_current_operation(content->>'operation_id') FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED'",[run_id])
+        frozen_operations = tuple(row[0] for row in uow.cursor.fetchall())
+    if frozen_operations:
+        for reconciliation_attempt in range(2):
+            try:
+                recover_saved_local_results(followup.prose_model_port.adapter,database_url=coordinator.database_url,
+                    project_id=project_id,book_id=book_id,principal=principal,operation_ids=frozen_operations)
+                break
+            except KernelError as exc:
+                if exc.code!='AUTHORITY_ASSET_VERSION_CONFLICT' or reconciliation_attempt:
+                    raise
     with AuthorityUnitOfWork(coordinator.database_url) as uow:
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
         uow.cursor.execute("""SELECT authority_generation_current_operation(content->>'operation_id')

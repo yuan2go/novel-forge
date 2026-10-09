@@ -9,7 +9,7 @@ from .backends import CodexCliExecutionBackend, RemoteProviderExecutionBackend
 from .contracts import ExecutionOutcome
 
 
-def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal):
+def recover_saved_local_results(transport, *, database_url, project_id, book_id, principal, operation_ids=()):
     principal.require("external_effect.resolve", project_id)
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("""SELECT effect.external_effect_id,operation.operation_id,operation.trace_id,operation.correlation_id
@@ -18,7 +18,8 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
             WHERE effect.project_id=%s AND operation.actor_id=%s AND effect.effect_type='model.invoke'
               AND effect.request_payload #>> '{_production_execution,book_id}'=%s
               AND effect.status='SUCCEEDED' AND budget.status IN ('RESERVED','HELD_UNKNOWN')
-              AND NOT authority_generation_isolated(effect.external_effect_id)""", [project_id,principal.principal_id,book_id])
+              AND NOT authority_generation_isolated(effect.external_effect_id)
+              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""", [project_id,principal.principal_id,book_id,list(operation_ids),list(operation_ids)])
         unsettled=uow.cursor.fetchall()
         accounting=[]
         for effect_id,operation_id,trace_id,correlation_id in unsettled:
@@ -35,8 +36,9 @@ def recover_saved_local_results(transport, *, database_url, project_id, book_id,
               AND v.content #>> '{record,request,book_id}'=%s
               AND effect.status IN ('DISPATCHING','DISPATCHED','UNKNOWN','RECONCILIATION_REQUIRED')
               AND operation.status IN ('EXECUTING','FAILED_RETRYABLE','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
-              AND NOT authority_generation_isolated(effect.external_effect_id)""",
-            [project_id, principal.principal_id, book_id])
+              AND NOT authority_generation_isolated(effect.external_effect_id)
+              AND (%s::text[]='{}'::text[] OR operation.operation_id=ANY(%s))""",
+            [project_id, principal.principal_id, book_id,list(operation_ids),list(operation_ids)])
         identities = [row[0] for row in uow.cursor.fetchall()]
     for effect_id,evidence in accounting:
         _resolve_reconciled_budget(database_url,project_id=project_id,effect_id=effect_id,outcome="success",evidence=evidence)
