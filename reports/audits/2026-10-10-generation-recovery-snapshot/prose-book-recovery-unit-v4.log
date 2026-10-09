@@ -1,0 +1,172 @@
+F....................................................................... [ 52%]
+..................................................................       [100%]
+=================================== FAILURES ===================================
+_ BookProductionCompositionTests.test_authority_api_is_the_only_replan_approval_entrypoint _
+
+self = <tests.unit.test_book_production_composition.BookProductionCompositionTests testMethod=test_authority_api_is_the_only_replan_approval_entrypoint>
+
+    def test_authority_api_is_the_only_replan_approval_entrypoint(self) -> None:
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+    
+        from novel_forge.api.models import product_model_map
+        from novel_forge.api.routers.book_authority import create_router
+        from novel_forge.api.routers.context import ProductRouterContext
+    
+        approvals: list[dict[str, object]] = []
+        composition = SimpleNamespace(
+            authority=SimpleNamespace(
+                require=lambda _book_run_id: {"project_id": "project:1"}
+            ),
+            approve_replan=lambda **values: (
+                approvals.append(values)
+                or {"replan_id": values["replan_id"], "status": "ACTIVE"}
+            ),
+        )
+        principal = Principal(
+            principal_id="trusted-operator",
+            principal_type=PrincipalType.LOCAL_OPERATOR,
+            permissions=frozenset(
+                {
+                    "book.authority.execute",
+                    "book.authority.approve_replan",
+                }
+            ),
+            project_scope=frozenset({"project:1"}),
+            authentication_source="test",
+        )
+        resolver = SimpleNamespace(resolve_api_principal=lambda **_values: principal)
+        app = FastAPI()
+        app.include_router(
+            create_router(
+                ProductRouterContext(
+                    app_settings=SimpleNamespace(),
+                    models=product_model_map(),
+                    services=SimpleNamespace(book_production=composition),
+                )
+            )
+        )
+    
+        with (
+            patch(
+                "novel_forge.api.routers.book_authority.build_trusted_principal_resolver",
+                return_value=resolver,
+            ),
+            TestClient(app) as client,
+        ):
+>           response = client.post(
+                "/product/production/book-authority/runs/book-run:1/"
+                "replans/replan:1/approve",
+                json={
+                    "authority_type": "PLAN_CHANGE_AUTHORITY",
+                    "authority_version": "operator-approval-v1",
+                    "evidence": {"operator_approved": True},
+                    "actor_id": "untrusted-caller",
+                },
+            )
+
+tests/unit/test_book_production_composition.py:500: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/testclient.py:555: in post
+    return super().post(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/httpx2/_client.py:1209: in post
+    return self.request(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/testclient.py:454: in request
+    return super().request(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/httpx2/_client.py:803: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/httpx2/_client.py:985: in send
+    response = self._send_handling_auth(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/httpx2/_client.py:1013: in _send_handling_auth
+    response = self._send_handling_redirects(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/httpx2/_client.py:1048: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/httpx2/_client.py:1081: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/testclient.py:356: in handle_request
+    raise exc
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/testclient.py:353: in handle_request
+    portal.call(self.app, scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/applications.py:90: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/routing.py:660: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:2734: in app
+    await route.handle(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:1780: in handle
+    await self.original_router.handle(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:2789: in handle
+    await included_router._handle_selected(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:1800: in _handle_selected
+    await original_route.handle(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:1279: in handle
+    await app(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:158: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:144: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:706: in app
+    raw_response = await run_endpoint_function(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/fastapi/routing.py:354: in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/starlette/concurrency.py:34: in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/anyio/to_thread.py:65: in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2641: in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:1033: in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/api/routers/book_authority.py:1621: in approve_replan
+    book = _application(ctx).require(book_run_id)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ctx = ProductRouterContext(app_settings=namespace(), models={'PipelineRunRequest': <class 'novel_forge.api.models.PipelineRu...oductionCompositionTests.test_authority_api_is_the_only_replan_approval_entrypoint.<locals>.<lambda> at 0x10b627600>)))
+
+    def _application(ctx: ProductRouterContext):
+>       return ctx.services.book_authority_application
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'book_authority_application'
+
+src/novel_forge/api/routers/book_authority.py:1718: AttributeError
+=========================== short test summary info ============================
+FAILED tests/unit/test_book_production_composition.py::BookProductionCompositionTests::test_authority_api_is_the_only_replan_approval_entrypoint
+1 failed, 137 passed in 4.81s

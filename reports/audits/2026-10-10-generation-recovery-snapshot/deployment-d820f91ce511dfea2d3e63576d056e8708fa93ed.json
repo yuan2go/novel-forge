@@ -1,0 +1,16 @@
+{
+  "baseline_sha": "f30abd74ffa5d321fe2e2b92ce510a045a523cd5",
+  "deployed_sha": "d820f91ce511dfea2d3e63576d056e8708fa93ed",
+  "release_root": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/releases/d820f91ce511dfea2d3e63576d056e8708fa93ed",
+  "application_build_id": "generation-recovery-prose-02-d820f91ce511",
+  "api_pid": 71335,
+  "health": {
+    "provider_dispatch_suspended": false,
+    "status": "alive",
+    "storage_authority": "postgresql"
+  },
+  "database_port": 55489,
+  "migration_head": "20261009_0193_completed_planning_admission",
+  "dispatch_process_suspended": false,
+  "backup": "/Volumes/DevSSD/Development/Workspace/evidence/wp-generation-recovery-prose-02/before-completed_planning_final-result-deployment.dump"
+}

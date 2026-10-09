@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "source": "real-task-isolated-generation-plus-native-cached-result-business-reuse",
+  "native_successor_operation_id": "6a44f5da-5f92-4d1f-ae8f-cc8f5b30ded4",
+  "operation_status": "SUCCEEDED",
+  "candidate_asset_version_id": "authority-output:6a44f5da-5f92-4d1f-ae8f-cc8f5b30ded4:story_planning.candidate:v1",
+  "content_hash": "sha256:a2349f1fd541319332fb33864e926a980d6a1c3d2c2ac725c4f83a73748fcb3c",
+  "recomputed_completed_fallback": false,
+  "new_real_provider_calls": 0,
+  "controlled_later_launches_stopped": 0,
+  "original_book_delivery_claimed": false
+}

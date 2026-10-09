@@ -140,6 +140,8 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
             raw_evidence={"provider_state": "unknown"},
         )
         store.put_record(record)
+        with transaction() as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE authority_operation SET status='FAILED_FINAL',version=version+1 WHERE operation_id=%s", [operation_id])
         record.result = ExecutionResult(
             execution_id=request.execution_id,
             operation_id=operation_id,
@@ -181,7 +183,19 @@ class ProductionExecutionRecoveryPostgresTests(unittest.TestCase):
                 """,
                 [operation_id, project_id],
             )
-            self.assertEqual(cursor.fetchone(), (2, 1, "EXECUTING"))
+            self.assertEqual(cursor.fetchone(), (2, 1, "FAILED_FINAL"))
+
+        from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+        from novel_forge.storage.authority_asset_store import AuthorityAssetWriter
+        from novel_forge.modules.command_kernel.errors import KernelError
+        receipt = store.put_evidence("process-receipt", request.execution_id, {"outcome": "unknown"})
+        assert store.read_evidence(receipt)["outcome"] == "unknown"
+        with pytest.raises(KernelError, match="OPERATION_STATUS_CONFLICT"):
+            AuthorityAssetWriter(DATABASE_URL).materialize_output(AuthorityAssetWriteCommand(
+                operation_id, project_id, identifier("asset"), "execution_evidence",
+                "authority-execution-evidence.v1", "forbidden/primary", "production_execution_evidence",
+                "primary", "primary", {"execution_id": request.execution_id}, "fixture",
+                request.trace_id, request.correlation_id))
 
     def test_saved_provider_response_reuses_frozen_contract_after_local_failure_and_restart(self):
         for interruption in ("validation", "submit_checkpoint", "query_checkpoint"):

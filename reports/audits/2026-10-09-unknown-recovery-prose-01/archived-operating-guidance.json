@@ -1,0 +1,36 @@
+{
+  "baseline_sha": "f30abd74ffa5d321fe2e2b92ce510a045a523cd5",
+  "status": "HISTORICAL_NOT_RUNTIME_AUTHORITY",
+  "entries": [
+    {
+      "source": "docs/runtime-operations.md",
+      "historical_text": "Only an exact later\nmanual reconciliation can resolve that generation; a later unsent generation cannot.",
+      "replacement": "Only exact original evidence can establish that generation's remote outcome; a later unsent generation cannot. Remote outcome and permission to commit local business assets are separate dimensions."
+    },
+    {
+      "source": "docs/runtime-operations.md",
+      "historical_text": "A disconnect with no terminal result or measured usage remains UNKNOWN;\ndiagnostics do not establish remote nonexecution, release a held reservation or authorize\nresending the original Effect.",
+      "replacement": "A disconnect without a trusted terminal result retains an unknown remote outcome. The observed stream error must be reported independently of recovery progress. Diagnostics do not establish remote nonexecution or authorize resending the original Effect."
+    },
+    {
+      "source": "docs/runtime-operations.md",
+      "historical_text": "For coordinated recovery, verify all twelve new heads against the published 0168\nupgrade boundary and a fresh database.",
+      "replacement": "For coordinated recovery, resolve the actual full migration identities from the registry and verify the affected forward segment against the published upgrade boundary and a fresh database."
+    },
+    {
+      "source": "docs/runtime-operations.md",
+      "historical_text": "### Original Codex result recovery\n",
+      "replacement": "### Original Codex result recovery\n\nHistorical audit reports and deployment manifests are immutable execution evidence, not current operating instructions. Recheck the configured release, process, storage identity and original frozen contract. A local reread capability is not authenticated remote result retrieval. Missing usage, missing content and an uncertain remote outcome must be assessed separately. The baseline implementation has no pure-generation isolation exit; treat that gap as `UNRESOLVED_DESIGN_CONSTRAINT`, not a permanent whole-book invariant.\n"
+    },
+    {
+      "source": "docs/current-system.md",
+      "historical_text": "original UNKNOWN reconciliation and cumulative paid cap",
+      "replacement": "preservation of original UNKNOWN facts and cumulative paid cap"
+    },
+    {
+      "source": "docs/current-system.md",
+      "historical_text": "Unsettled original effects or held UNKNOWN consumption prevent this switch; reading, local\nediting and exact export remain available.",
+      "replacement": "The baseline runtime rejects unsettled original effects and held UNKNOWN consumption at this switch; that is a `CURRENT_RUNTIME_FACT`. The absence of a formal pure-generation isolation exit is an `UNRESOLVED_DESIGN_CONSTRAINT`. Reading, local editing and exact export remain available."
+    }
+  ]
+}

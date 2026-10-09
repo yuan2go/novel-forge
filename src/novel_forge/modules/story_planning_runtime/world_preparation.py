@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass
 import json
 from typing import Any, Callable, Mapping
+from psycopg.types.json import Jsonb
 
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.context_builder.reality_projection import ROLE_STATE_KINDS, project_role_context
@@ -224,6 +225,18 @@ def require_world_action(query: Any, *, command: Any, operation_id: str) -> Any:
     action = continuation_action(query.database_url, command)
     if action is not None:
         return action
+    from .schema_recovery import continuation_action as schema_continuation_action
+    action = schema_continuation_action(query.database_url, command)
+    if action is not None:
+        return action
+    from types import SimpleNamespace
+    preparation = PlanningWorldPreparation(SimpleNamespace(database_url=query.database_url, query=query))
+    for prefix in preparation._isolated_world_prefixes(command):
+        if preparation._read(command.project_id, f"{prefix}/action") is not None:
+            from .schema_recovery import retained_world_action
+            action, _ = retained_world_action(query.database_url, command=command,
+                source_operation_id=prefix.removeprefix("world_preparation/"))
+            return action
     try:
         return query.require(project_id=command.project_id, logical_ref=f"world_preparation/{operation_id}/optional_action")
     except KernelError as error:
@@ -255,6 +268,10 @@ class PlanningWorldPreparation:
         execute_stage: Callable[[PlanningProviderStage], Any],
         knowledge_selection: Mapping[str, Any] | None = None,
     ) -> Any:
+        from .schema_recovery import continuation_action as schema_continuation_action
+        schema_action = schema_continuation_action(self.preparer.database_url, command)
+        if schema_action is not None:
+            return schema_action
         from .world_optional import continuation_action, optional_policy, deferred_action
         retained_action = continuation_action(self.preparer.database_url, command)
         if retained_action is not None:
@@ -289,6 +306,14 @@ class PlanningWorldPreparation:
                 actor_id=command.actor_id,
             )
             uow.commit()
+        reuse_prefixes = self._isolated_world_prefixes(command)
+        if reuse_prefixes:
+            from .schema_recovery import retained_world_action
+            for retained_prefix in reuse_prefixes:
+                if self._read(command.project_id, f"{retained_prefix}/action") is not None:
+                    action, _ = retained_world_action(self.preparer.database_url, command=command,
+                        source_operation_id=retained_prefix.removeprefix("world_preparation/"))
+                    return action
         prefix = f"world_preparation/{operation_id}"
         repair_source = None
         source_prefix = prefix
@@ -332,6 +357,11 @@ class PlanningWorldPreparation:
             source_prefix = f"world_preparation/{self._source_operation(self.preparer.database_url, command.project_id, source_document.asset_version_id)}"
         else:
             source_document = self._read(command.project_id, f"{source_prefix}/source")
+            if source_document is None:
+                for retained_prefix in reuse_prefixes:
+                    source_document = self._read(command.project_id, f"{retained_prefix}/source")
+                    if source_document is not None:
+                        break
         if source_document is None:
             with AuthorityUnitOfWork(self.preparer.database_url) as uow:
                 source = WorldPreparationRepository(uow.cursor).require_source(
@@ -385,9 +415,12 @@ class PlanningWorldPreparation:
                 logical_ref = f"{source_prefix}/actor/{index}"
                 document = self._read(command.project_id, logical_ref)
                 if document is None:
+                    document = self._read_known_isolated_stage(command, reuse_prefixes, f"actor/{index}", source_ref,
+                        normalize_output=lambda value: validate_actor_output(value, task))
+                if document is None:
                     generated = execute_stage(PlanningProviderStage(ACTOR_STAGES[index], task, actor_output_schema(task)))
                     output = validate_actor_output(generated.raw_output, task)
-                    document = self._store(command, operation_id, logical_ref, "world_actor_proposal", {
+                    document = self._store(command, operation_id, f"{prefix}/actor/{index}", "world_actor_proposal", {
                         "source": source_ref, "output": output, "evidence": asdict(generated.evidence),
                         "authority": "ACTION_PROPOSAL_ONLY", "fact_mutation_allowed": False,
                     })
@@ -413,6 +446,8 @@ class PlanningWorldPreparation:
             for item in source.get("preparation_sources", [])
         ]
         generation_document = self._read(command.project_id, f"{source_prefix if revalidation else prefix}/generation")
+        if generation_document is None:
+            generation_document = self._read_known_isolated_stage(command, reuse_prefixes, "generation", source_ref)
         knowledge_selection = dict(knowledge_selection or {})
         from .knowledge_translation import validate_knowledge_translations
 
@@ -465,7 +500,7 @@ class PlanningWorldPreparation:
                 },
             )
         generation = generation_document.content["contract"]
-        if revalidation and generation.get("knowledge_selection_digest", "") != knowledge_selection.get("selection_digest", ""):
+        if (revalidation or reuse_prefixes) and generation.get("knowledge_selection_digest", "") != knowledge_selection.get("selection_digest", ""):
             raise KernelError("WORLD_REPAIR_KNOWLEDGE_DRIFT", "Known-result revalidation must retain frozen knowledge selection")
         if generation["source"] != source_ref:
             raise KernelError(
@@ -487,6 +522,8 @@ class PlanningWorldPreparation:
         candidates = validate_generated_candidates(decoded, policy)
         self._validate_references(source, candidates, command)
         evaluation_document = self._read(command.project_id, f"{source_prefix if revalidation else prefix}/evaluation")
+        if evaluation_document is None:
+            evaluation_document = self._read_known_isolated_stage(command, reuse_prefixes, "evaluation", source_ref)
         generation_ref = {
             "asset_version_id": generation_document.asset_version_id,
             "content_hash": generation_document.content_hash,
@@ -936,9 +973,59 @@ class PlanningWorldPreparation:
             json.dumps(diagnostic, ensure_ascii=False, sort_keys=True),
         )
 
+    def _isolated_world_prefixes(self, command: Any) -> list[str]:
+        if not command.runtime_continuation_id:
+            return []
+        from .runtime_continuation import require_binding
+        binding = require_binding(self.preparer.database_url, command.runtime_continuation_id)
+        proof = binding["target_runtime"].get("generation_isolation")
+        if not proof:
+            return []
+        with AuthorityUnitOfWork(self.preparer.database_url) as uow:
+            uow.cursor.execute("""WITH RECURSIVE ancestors(operation_id) AS (
+                SELECT %s::text UNION SELECT link.source_operation_id
+                FROM authority_story_planning_runtime_continuation link JOIN ancestors
+                  ON link.successor_operation_id=ancestors.operation_id)
+                SELECT operation.operation_id FROM ancestors
+                JOIN authority_operation operation USING(operation_id)
+                JOIN authority_story_planning_generation generation USING(operation_id)
+                JOIN authority_story_planning_generation source ON source.operation_id=%s
+                WHERE generation.project_id=%s AND generation.workspace_id=%s AND generation.book_id=%s
+                  AND generation.input_snapshot_hash=source.input_snapshot_hash
+                  AND generation.logical_key=source.logical_key AND generation.generator_operation_name=source.generator_operation_name
+                  AND operation.actor_id=%s AND operation.status IN ('FAILED_FINAL','DEAD_LETTER')
+                  AND operation.command_payload #> '{payload,world_preparation_request}'=%s
+                  AND authority_generation_isolated(%s)
+                ORDER BY operation.created_at DESC""", [proof["operation_id"], proof["operation_id"],
+                    command.project_id, command.workspace_id, command.book_id, command.actor_id,
+                    Jsonb(dict(command.world_preparation_request)), proof["external_effect_id"]])
+            rows = uow.cursor.fetchall()
+        if not rows or rows[0][0] != proof["operation_id"]:
+            raise KernelError("WORLD_ISOLATED_SOURCE_DRIFT", "Reuse requires the exact revoked native task, Book, input versions and World frontier")
+        return [f"world_preparation/{row[0]}" for row in rows]
+
+    def _read_known_isolated_stage(self, command: Any, prefixes: list[str], stage: str, source_ref: dict, *, normalize_output=None):
+        from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, read_retained_generation_stage_success
+        for prefix in prefixes:
+            document = self._read(command.project_id, f"{prefix}/{stage}")
+            if document is None:
+                continue
+            stored = document.content["contract"]
+            owner = self._source_operation(self.preparer.database_url, command.project_id, document.asset_version_id)
+            receipt = read_retained_generation_stage_success(self.preparer.database_url, EffectCommandContext(
+                operation_id=owner, project_id=command.project_id, actor_id=command.actor_id,
+                trace_id=command.trace_id, correlation_id=command.correlation_id),
+                effect_id=stored["evidence"]["external_receipt_ref"])
+            raw = receipt["provider_evidence"].get("result") if receipt else None
+            output = normalize_output(raw) if raw is not None and normalize_output else raw
+            if (stored["source"] != source_ref or receipt is None or output != stored["output"]):
+                raise KernelError("WORLD_ISOLATED_RECEIPT_INVALID", "Retain a completed sibling only with its exact trusted Provider result and source")
+            return document
+        return None
+
     @staticmethod
-    def retained_action(query: Any, command: Any) -> Any:
-        source_id = command.repair_of_operation_id
+    def retained_action(query: Any, command: Any, *, source_operation_id: str = "") -> Any:
+        source_id = source_operation_id or command.repair_of_operation_id
         seen = set()
         while source_id and source_id not in seen and len(seen) < 3:
             seen.add(source_id)

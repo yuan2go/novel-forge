@@ -238,6 +238,17 @@ class PostgresNarrativeRealizationApplication:
         chapter_number: int,
     ) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_story_planning_generation generation
+                JOIN authority_operation native USING(operation_id)
+                JOIN authority_asset_version candidate ON candidate.asset_version_id=generation.candidate_asset_version_id
+                WHERE generation.project_id=%s AND generation.book_id=%s AND generation.candidate_asset_version_id=%s
+                  AND generation.generator_operation_name='chapter_group_plan.generate'
+                  AND native.project_id=generation.project_id AND native.workspace_id=generation.workspace_id
+                  AND native.definition_name='story_planning.generate' AND native.definition_version='1.21.0'
+                  AND native.command_payload #>> '{payload,execution_contract_version}'='1.21.0'
+                  AND native.operation_id=candidate.content #>> '{constraint_envelope,generation_operation_id}')""",
+                [project_id, book_id, chapter_group_plan_version_id])
+            coordinated_contract = bool(uow.cursor.fetchone()[0])
             return NarrativeRealizationRepository(
                 uow.cursor
             ).require_current_for_chapter(
@@ -245,6 +256,7 @@ class PostgresNarrativeRealizationApplication:
                 book_id=book_id,
                 chapter_group_plan_version_id=chapter_group_plan_version_id,
                 chapter_number=chapter_number,
+                coordinated_contract=coordinated_contract,
             )
 
     def qualify_and_freeze_for_group(

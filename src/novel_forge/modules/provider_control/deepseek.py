@@ -194,17 +194,18 @@ class DeepSeekProviderAdapter:
                 failure,
                 started,
                 http_status=status,
+                failure_cause=_safe_cause(exc),
                 retry_after_seconds=retry_after,
                 submission_state=(
                     "UNKNOWN" if outcome == "unknown" else "REJECTED_BEFORE_EXECUTION"
                 ),
             )
-        except (TimeoutError, socket.timeout):
-            return self._failure("unknown", "TIMEOUT", started)
-        except URLError:
-            return self._failure("unknown", "TRANSIENT_NETWORK", started)
-        except (ValueError, OSError):
-            return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started)
+        except (TimeoutError, socket.timeout) as exc:
+            return self._failure("unknown", "TIMEOUT", started, failure_cause=_safe_cause(exc))
+        except URLError as exc:
+            return self._failure("unknown", "TRANSIENT_NETWORK", started, failure_cause=_safe_cause(exc))
+        except (ValueError, OSError) as exc:
+            return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started, failure_cause=_safe_cause(exc))
         try:
             return self._completed(
                 content,
@@ -214,8 +215,8 @@ class DeepSeekProviderAdapter:
                 submitted_at,
                 started,
             )
-        except (ValueError, TypeError, KeyError, IndexError):
-            return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started)
+        except (ValueError, TypeError, KeyError, IndexError) as exc:
+            return self._failure("unknown", "MALFORMED_PROVIDER_RECEIPT", started, failure_cause=_safe_cause(exc))
 
     def _completed(
         self,
@@ -226,37 +227,39 @@ class DeepSeekProviderAdapter:
         submitted_at: datetime,
         started: float,
     ) -> ProviderInvocationResult:
-        usage = content["usage"]
-        input_tokens = usage["prompt_tokens"]
-        output_tokens = usage["completion_tokens"]
-        total_tokens = usage["total_tokens"]
-        cached = usage["prompt_cache_hit_tokens"]
-        missed = usage["prompt_cache_miss_tokens"]
-        if any(
-            type(value) is not int or value < 0
-            for value in (
-                input_tokens,
-                output_tokens,
-                total_tokens,
-                cached,
-                missed,
+        usage = content.get("usage")
+        input_tokens = output_tokens = total_tokens = cached = missed = reasoning_tokens = None
+        if usage is not None:
+            input_tokens = usage["prompt_tokens"]
+            output_tokens = usage["completion_tokens"]
+            total_tokens = usage["total_tokens"]
+            cached = usage["prompt_cache_hit_tokens"]
+            missed = usage["prompt_cache_miss_tokens"]
+            if any(
+                type(value) is not int or value < 0
+                for value in (
+                    input_tokens,
+                    output_tokens,
+                    total_tokens,
+                    cached,
+                    missed,
+                )
+            ):
+                raise ValueError("DEEPSEEK_USAGE_INVALID")
+            if (
+                cached + missed != input_tokens
+                or input_tokens + output_tokens != total_tokens
+            ):
+                raise ValueError("DEEPSEEK_CACHE_USAGE_INVALID")
+            reasoning_tokens = dict(usage.get("completion_tokens_details") or {}).get(
+                "reasoning_tokens"
             )
-        ):
-            raise ValueError("DEEPSEEK_USAGE_INVALID")
-        if (
-            cached + missed != input_tokens
-            or input_tokens + output_tokens != total_tokens
-        ):
-            raise ValueError("DEEPSEEK_CACHE_USAGE_INVALID")
-        reasoning_tokens = dict(usage.get("completion_tokens_details") or {}).get(
-            "reasoning_tokens"
-        )
-        if reasoning_tokens is not None and (
-            type(reasoning_tokens) is not int
-            or reasoning_tokens < 0
-            or reasoning_tokens > output_tokens
-        ):
-            raise ValueError("DEEPSEEK_REASONING_USAGE_INVALID")
+            if reasoning_tokens is not None and (
+                type(reasoning_tokens) is not int
+                or reasoning_tokens < 0
+                or reasoning_tokens > output_tokens
+            ):
+                raise ValueError("DEEPSEEK_REASONING_USAGE_INVALID")
         request_id = content["id"]
         served_model = content["model"]
         system_fingerprint = content["system_fingerprint"]
@@ -345,25 +348,29 @@ class DeepSeekProviderAdapter:
             }
             if not failure:
                 failure = "MALFORMED_STRUCTURED_OUTPUT"
-        reservation_ceiling = price.amount(input_tokens, output_tokens, cached)
-        price_periods = {
-            deepseek_pricing_period(value)
-            for value in (submitted_at, provider_created_at, completed_at)
-        }
-        if len(price_periods) > 1:
-            amount = reservation_ceiling
-            pricing_period = "BOUNDARY_CROSSING"
-            pricing_time_basis = "PEAK_CEILING"
-            measurement = "ESTIMATED_UPPER_BOUND"
-            pricing_multiplier = Decimal("1")
-        else:
-            pricing_period = price_periods.pop()
-            pricing_time_basis = "PROVIDER_CREATED_ASSUMPTION"
-            measurement = "PRICED_FROM_PROVIDER_USAGE"
-            pricing_multiplier = Decimal(
-                deepseek_expected_price_multiplier(provider_created_at)
-            )
-            amount = reservation_ceiling * pricing_multiplier
+        amount = reservation_ceiling = None
+        pricing_period = pricing_time_basis = measurement = "UNKNOWN"
+        pricing_multiplier = None
+        if usage is not None:
+            reservation_ceiling = price.amount(input_tokens, output_tokens, cached)
+            price_periods = {
+                deepseek_pricing_period(value)
+                for value in (submitted_at, provider_created_at, completed_at)
+            }
+            if len(price_periods) > 1:
+                amount = reservation_ceiling
+                pricing_period = "BOUNDARY_CROSSING"
+                pricing_time_basis = "PEAK_CEILING"
+                measurement = "ESTIMATED_UPPER_BOUND"
+                pricing_multiplier = Decimal("1")
+            else:
+                pricing_period = price_periods.pop()
+                pricing_time_basis = "PROVIDER_CREATED_ASSUMPTION"
+                measurement = "PRICED_FROM_PROVIDER_USAGE"
+                pricing_multiplier = Decimal(
+                    deepseek_expected_price_multiplier(provider_created_at)
+                )
+                amount = reservation_ceiling * pricing_multiplier
         pricing_snapshot = asdict(price)
         served_model_identity_hash = snapshot_hash(
             {
@@ -415,14 +422,14 @@ class DeepSeekProviderAdapter:
             "production_verified": False,
             "latency_seconds": time.monotonic() - started,
             "usage": {
-                "availability": "AVAILABLE",
-                "measurement": "PROVIDER_REPORTED",
+                "availability": "AVAILABLE" if usage is not None else "UNAVAILABLE",
+                "measurement": "PROVIDER_REPORTED" if usage is not None else "UNKNOWN",
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "total_tokens": total_tokens,
                 "prompt_cache_hit_tokens": cached,
                 "prompt_cache_miss_tokens": missed,
-                "cache_usage_status": "OBSERVED",
+                "cache_usage_status": "OBSERVED" if usage is not None else "UNKNOWN",
                 "reasoning_tokens": reasoning_tokens,
             },
             "cost": {
@@ -445,6 +452,10 @@ class DeepSeekProviderAdapter:
                 "provider_billed_amount": None,
                 "pricing_snapshot_hash": snapshot_hash(pricing_snapshot),
                 "pricing_snapshot": pricing_snapshot,
+            } if usage is not None else {
+                "availability": "UNAVAILABLE", "measurement": "UNKNOWN",
+                "reason": "provider_completed_content_without_usage",
+                "accounting_basis": price.accounting_basis,
             },
             "finish_reason": finish_reason,
             "failure_class": failure,
@@ -539,6 +550,21 @@ def _retry_after(value: str) -> float | None:
             )
         except (TypeError, ValueError):
             return None
+
+
+def _safe_cause(error):
+    chain = []
+    seen = set()
+    while isinstance(error, BaseException) and id(error) not in seen:
+        seen.add(id(error))
+        item = {"exception_type": type(error).__name__}
+        for key in ("errno", "code"):
+            value = getattr(error, key, None)
+            if type(value) is int:
+                item[key] = value
+        chain.append(item)
+        error = error.__cause__ or error.__context__ or getattr(error, "reason", None)
+    return json.dumps(chain, sort_keys=True)
 
 
 def _contract_failure(response: HTTPError) -> str:

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "code_sha": "b63b092a89f40243b6e8efa32f92090f7309d0d0",
+  "operation_id": "dba2eb1b-c07f-4b07-b588-0f37b899b362",
+  "provider_calls": 0,
+  "error_code": "GENERATION_RECOVERY_EXHAUSTED",
+  "scope": "Restarted composition; original timeout plus successor startup failure retain one shared allowance"
+}

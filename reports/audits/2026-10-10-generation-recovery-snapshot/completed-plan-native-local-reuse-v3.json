@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "source_operation_id": "f5b2aa69-0c3a-4a46-b74b-96e139fc03d8",
+  "provider_calls": 0,
+  "candidate_asset_version_id": "272fcf42-3489-4f9c-b8e1-8e0d73f65438",
+  "admission_operation_id": "ed06578d-8802-4ad5-8678-c1b9134ad0af",
+  "original_history": "FAILED_FINAL retained",
+  "content_validation": "native structured result validation passed; semantic admission remains separate"
+}

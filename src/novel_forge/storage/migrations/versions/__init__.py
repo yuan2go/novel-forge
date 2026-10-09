@@ -186,6 +186,17 @@ from . import (
     v20261008_0182_source_market_observations,
     v20261008_0183_source_observation_span_identity,
     v20261009_0184_cli_original_reconciliation,
+    v20261009_0185_pure_generation_isolation,
+    v20261009_0186_generation_capacity_inheritance,
+    v20261009_0187_chapter_generation_isolation,
+    v20261009_0188_saved_result_admission,
+    v20261009_0189_unsent_context_successor,
+    v20261009_0190_group_window_successor,
+    v20261009_0191_provider_schema_successor,
+    v20261009_0192_generation_retry_lineage,
+    v20261009_0193_completed_planning_admission,
+    v20261009_0194_multi_model_generation_isolation,
+    v20261009_0195_prose_review_generation_isolation,
 )
 
 VERSION_MODULES = [
@@ -374,6 +385,17 @@ VERSION_MODULES = [
     v20261008_0182_source_market_observations,
     v20261008_0183_source_observation_span_identity,
     v20261009_0184_cli_original_reconciliation,
+    v20261009_0185_pure_generation_isolation,
+    v20261009_0186_generation_capacity_inheritance,
+    v20261009_0187_chapter_generation_isolation,
+    v20261009_0188_saved_result_admission,
+    v20261009_0189_unsent_context_successor,
+    v20261009_0190_group_window_successor,
+    v20261009_0191_provider_schema_successor,
+    v20261009_0192_generation_retry_lineage,
+    v20261009_0193_completed_planning_admission,
+    v20261009_0194_multi_model_generation_isolation,
+    v20261009_0195_prose_review_generation_isolation,
 ]
 
 __all__ = ["VERSION_MODULES"]

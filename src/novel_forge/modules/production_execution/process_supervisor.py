@@ -792,6 +792,8 @@ class CodexProcessSupervisor:
                         termination_signal = self._terminate_process_group(process, process_group, request.timeout)
                         break
                 if time.monotonic() - last_heartbeat_monotonic >= 5.0:
+                    for output in (stdout_handle, stderr_handle):
+                        os.fsync(output.fileno())
                     receipt = replace(receipt, last_supervisor_heartbeat_at=_utc_now())
                     self.execution_directory.write_receipt(receipt)
                     last_heartbeat_monotonic = time.monotonic()

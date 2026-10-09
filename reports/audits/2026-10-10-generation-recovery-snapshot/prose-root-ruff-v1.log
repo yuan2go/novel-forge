@@ -1,0 +1,2 @@
+ruff-ratchet: FAIL
+- new Ruff diagnostic is not baselined: src/novel_forge/modules/chapter_authority/execution_gateway.py F821=1

@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "source_operation_id": "6981b0a9-d992-4788-b8e1-5d1c2bdc887d",
+  "original_frozen_request_hash": "sha256:63137793b88091391ee6463b369d381818c025ec6636cc3cc71df53a2d3fc3ea",
+  "original_selected": "codex-cli:gpt-6.1-sol:high",
+  "new_policy_selected": "codex-cli:gpt-6-sol:high",
+  "recovery_action": {
+    "action": "ALTERNATE_AUTHORIZED_ROUTE",
+    "authorization_source": "CURRENT_NATIVE_TEMPLATE_AND_ISOLATED_SUCCESSOR",
+    "contract_version": "native-isolated-transport-fallback.v1",
+    "failed_route_effects": {
+      "codex-cli:gpt-6.1-sol:high": [
+        "a0aeb626-eb25-41cc-bf97-adc155b51d76"
+      ]
+    },
+    "retry_allowance_changed": false,
+    "selected_candidate_id": "codex-cli:gpt-6-sol:high"
+  },
+  "database_read_only": true,
+  "model_calls": 0,
+  "current_frozen_request_changed": false
+}

@@ -158,7 +158,7 @@ def test_materializes_exact_provider_content_from_registered_pack_version() -> N
     assert (
         "frozen Novel Forge stage" in result.system_instruction.content["text"]
     )
-    assert "{{context_bundle}}" in result.prompt_template.content["text"]
+    assert "{{provider_data_envelope}}" in result.prompt_template.content["text"]
     assert "prose-generation" in result.skill.ref
     assert result.context_policy.ref == snapshot.context_policy_ref
     assert result.tool_policy.ref == snapshot.tool_policy_ref
@@ -200,7 +200,9 @@ def test_current_draft_request_renders_single_body_contract_without_operator_pol
     assert "second whole-chapter body" in prompt
     assert "operator handoff" not in prompt.lower()
     assert '"required":["scene_artifacts"]' in prompt
-    assert evidence["prompt_template"]["version"] == "v12"
+    assert evidence["prompt_template"]["version"] == "v13"
+    assert evidence["provider_view"]["exact_context_references"]["decoded_equal"]
+    assert evidence["provider_view"]["exact_context_references"]["contract_version"] == "provider-context-exact-value-reference.v1"
 
 
 @pytest.mark.parametrize("policy_key", CHAPTER_MODEL_POLICY_KEYS)

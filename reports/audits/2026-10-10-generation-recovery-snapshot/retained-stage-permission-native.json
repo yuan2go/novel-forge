@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "source_operation_id": "29b45e74-90ca-4be4-9220-6dfbbfc4cf69",
+  "completed_world_stages": [
+    {
+      "effect_id": "494bfac4-0568-4a1c-8e3e-0f10e9f66786",
+      "stage": "world_candidates.evaluate",
+      "verified": true,
+      "provider_calls": 0
+    },
+    {
+      "effect_id": "6418fdf1-8d70-43a2-bdad-07c2b9f591cf",
+      "stage": "world_candidates.generate",
+      "verified": true,
+      "provider_calls": 0
+    }
+  ],
+  "scope": "Restored actual original receipts with native permission materialization validation"
+}

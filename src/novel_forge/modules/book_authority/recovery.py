@@ -2805,6 +2805,12 @@ class PostgresBookOpeningRecoveryApplication:
             }
             for item in classification_evidence
         ).value
+        from novel_forge.modules.command_kernel.generation_isolation import isolation
+        isolated = {effect_id: isolation(uow.cursor, effect_id) for effect_id in effect_ids}
+        if all(isolated.values()):
+            classification = "ISOLATED_PURE_GENERATION"
+            for item in evidence:
+                item["generation_isolation"] = isolated[item["effect_id"]]
         return {
             "classification": classification,
             "evidence": evidence,

@@ -219,7 +219,9 @@ class PostgresBookProductionQuery:
             bindings = {row[0]: {"subject_id": row[0], "policy": row[1], "content_hash": row[2]} for row in cur.fetchall()}
             for run in runs:
                 run["frozen_editorial_control"] = bindings.get(f"{run['book_run_id']}:chapter:{int(run['accepted_through_chapter']) + 1}")
-        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control, "formation_run_id": formation_run_id}
+            from novel_forge.modules.command_kernel.generation_isolation import book_recovery_projection
+            generation_recovery = book_recovery_projection(cur, project_id=project_id, book_id=book_id)
+        return {"books": books, "runs": runs, "profiles": profiles, "snapshots": snapshots, "budget_scopes": budgets, "approved_characters": characters, "editorial_control": editorial_control, "formation_run_id": formation_run_id, "generation_recovery": generation_recovery}
 
     def narrative_reality(self, *, book_run_id: str, chapter_number: int | None = None) -> dict[str, Any]:
         with AuthorityUnitOfWork(self.database_url) as uow:
@@ -374,6 +376,30 @@ class PostgresBookProductionQuery:
                         AND job.status='DEAD_LETTER' AND job.input_snapshot->>'observed_version'=book.version::text
                         AND job.input_snapshot->>'observed_state'=book.state
                         AND (NOT job.input_snapshot ? 'coordination_dependencies' OR job.input_snapshot->'coordination_dependencies'=dependencies.snapshot)
+                        AND NOT (job.last_error->>'code' LIKE 'MODEL_EFFECT_OUTCOME_UNKNOWN%%'
+                          AND NOT EXISTS(SELECT 1 FROM authority_runtime_job newer_job
+                            WHERE newer_job.subject_id=job.subject_id AND newer_job.job_kind=job.job_kind
+                              AND newer_job.project_id=job.project_id AND newer_job.created_at>job.created_at)
+                          AND EXISTS(SELECT 1 FROM authority_story_planning_generation stopped
+                            JOIN authority_operation operation USING(operation_id)
+                            JOIN authority_external_effect effect USING(operation_id)
+                            JOIN authority_asset_version materialization ON materialization.asset_version_id=
+                              effect.request_payload#>>'{_production_execution,capability_runtime,materialization_asset_version_id}'
+                            JOIN authority_asset asset ON asset.asset_id=materialization.asset_id
+                            WHERE stopped.project_id=book.project_id AND stopped.book_id=book.book_id
+                              AND operation.workspace_id=book.workspace_id AND asset.project_id=book.project_id
+                              AND operation.status IN ('WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
+                              AND operation.definition_name='story_planning.generate'
+                              AND operation.definition_snapshot#>>'{irreversible_effect_policy,allowed}'='false'
+                              AND effect.effect_type='model.invoke' AND effect.status IN ('UNKNOWN','RECONCILIATION_REQUIRED')
+                              AND NOT authority_generation_isolated(effect.external_effect_id)
+                              AND effect.request_payload#>>'{_production_execution,book_id}'=book.book_id
+                              AND effect.request_payload#>>'{_production_execution,capability_runtime,materialization_content_hash}'=materialization.content_hash
+                              AND materialization.content#>>'{contract,tool_permissions,default}'='DENY'
+                              AND materialization.content#>'{contract,tool_permissions,allowed}'='["model.provider.invoke"]'::jsonb
+                              AND NOT EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+                                WHERE attempt.operation_id=operation.operation_id AND lease.status='HELD')
+                              AND NOT EXISTS(SELECT 1 FROM authority_cancellation_command cancellation WHERE cancellation.operation_id=operation.operation_id)))
                   ))
                   AND NOT EXISTS (
                       SELECT 1

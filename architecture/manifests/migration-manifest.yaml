@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261009_0184_cli_original_reconciliation",
+  "head": "20261009_0195_prose_review_generation_isolation",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -187,6 +187,17 @@
     "20261008_0181_author_manuscript_delivery",
     "20261008_0182_source_market_observations",
     "20261008_0183_source_observation_span_identity",
-    "20261009_0184_cli_original_reconciliation"
+    "20261009_0184_cli_original_reconciliation",
+    "20261009_0185_pure_generation_isolation",
+    "20261009_0186_generation_capacity_inheritance",
+    "20261009_0187_chapter_generation_isolation",
+    "20261009_0188_saved_result_admission",
+    "20261009_0189_unsent_context_successor",
+    "20261009_0190_group_window_successor",
+    "20261009_0191_provider_schema_successor",
+    "20261009_0192_generation_retry_lineage",
+    "20261009_0193_completed_planning_admission",
+    "20261009_0194_multi_model_generation_isolation",
+    "20261009_0195_prose_review_generation_isolation"
   ]
 }

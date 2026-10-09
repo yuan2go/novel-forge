@@ -283,3 +283,35 @@ def test_optional_world_unresolved_or_retryable_source_has_no_permission(monkeyp
     monkeypatch.setattr(world_optional, "optional_policy", lambda *args, **kwargs: {"explicit": "optional"})
     assert world_optional.follow_optional_failure(application, command=command, operation_id="source", principal=principal) is None
     assert len(queries) == 1 and queries[0].lstrip().startswith("SELECT")
+
+
+@pytest.mark.parametrize('failure', ['PROVIDER_STREAM_INTERRUPTED', 'PROVIDER_MODEL_CAPACITY_UNAVAILABLE', 'PROVIDER_RESPONSE_TIMEOUT'])
+@pytest.mark.parametrize('backup_allowed', [True, False])
+def test_isolated_transport_failure_prefers_authorized_healthy_route_without_relaxing_admission(failure, backup_allowed):
+    primary = membership()
+    backup = replace(primary, candidate_id='backup', model='backup-model', entitlement_role='REFERENCE')
+    value = template(allowed_candidates=['member', 'backup'] if backup_allowed else ['member'])
+    request = task(policy_snapshot={'policy': {'execution_templates': [value]}}, history=({
+        'operation_id':'original','external_effect_id':'original-effect','candidate_id':'member',
+        'status':'UNKNOWN','failure_class':failure,'generation_isolated':True},),
+        budget_snapshot={'candidates': {key: {'resource_control_version':'billing-channel-resources.v1',
+            'remaining_tokens':100000,'remaining_money':None} for key in ['member','backup']}})
+    decision = template_decision(CostAwareRouter().explain(request, [primary, backup], {}, now=NOW)).to_dict()
+    assert decision['selected']['candidate']['candidate_id'] == ('backup' if backup_allowed else 'member')
+    recovery = decision['resource_actions']['transport_recovery']
+    assert recovery['failed_route_effects'] == {'member':['original-effect']}
+    assert recovery['retry_allowance_changed'] is False
+    assert recovery['action'] == ('ALTERNATE_AUTHORIZED_ROUTE' if backup_allowed else 'BOUNDED_SAME_ROUTE_RETRY')
+    if not backup_allowed:
+        assert 'TEMPLATE_MODEL_UNAUTHORIZED' in decision['candidates'][1]['rejected_reasons']
+
+
+def test_unisolated_unknown_cannot_authorize_healthy_model_switch():
+    primary = membership()
+    backup = replace(primary, candidate_id='backup', model='backup-model', entitlement_role='REFERENCE')
+    request = task(policy_snapshot={'policy': {'execution_templates':[template(allowed_candidates=['member','backup'])]}},
+        history=({'operation_id':'original','external_effect_id':'original-effect','candidate_id':'member',
+            'status':'UNKNOWN','failure_class':'UNKNOWN_EXTERNAL_OUTCOME','generation_isolated':False},))
+    decision = template_decision(CostAwareRouter().explain(request, [primary, backup], {}, now=NOW)).to_dict()
+    assert decision['status'] == 'BLOCKED'
+    assert 'transport_recovery' not in decision['resource_actions']

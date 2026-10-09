@@ -33,7 +33,8 @@ extends that same run within its frozen full-book target. Book Authority atomica
 versioned policy and mutation receipts and advances only the delivery target and Book
 version. Original Formation requests, profiles, saved prose and accepted cursor retain
 their identities. Exact checkpoint/key replay recovers a lost response; pending effects,
-unknown usage and held execution leases block extension.
+active unresolved effects and held execution leases block extension. Formally isolated pure
+generation remains historical evidence and does not block the delivery window.
 The default is authorized automatic direction comparison; an approved fixed direction
 and explicit author selection remain available. Formation and Opening create the existing
 Book, plans, source snapshots and Pack bindings. The native Chapter Saga uses
@@ -89,15 +90,17 @@ Book checkpoint. The native routing owner selects the successor template, inheri
 existing paid authorization without raising its cap; Book Authority rechecks the checkpoint
 and freezes the policy adoption. An intervening version change fails closed. Existing
 profiles, requests, accepted facts, terminal failures and consumption history remain immutable.
-Unsettled original effects or held UNKNOWN consumption prevent this switch; reading, local
-editing and exact export remain available. Older incompatible plans require their native
+Formally isolated pure generations do not block this switch. Active writers, uncertain
+business commits, cancellation, identity conflicts and insufficient paid authorization retain
+their native gates. Unknown membership usage stays observable without imposing a cumulative
+Book quota. Reading, local editing and exact export remain available. Older incompatible plans require their native
 projection/migration or a linked successor rather than rewritten history.
 
 The following distinctions govern implementation:
 
 | Class | Boundary |
 | --- | --- |
-| `CURRENT_PROVEN_INVARIANT` | Exact ownership, source isolation, immutable receipts, fenced commits, author CAS, original UNKNOWN reconciliation and cumulative paid cap |
+| `CURRENT_PROVEN_INVARIANT` | Exact ownership, source isolation, immutable receipts, fenced commits, author CAS, preservation of original UNKNOWN facts and cumulative paid cap |
 | `CONFIGURABLE_POLICY` | Review sequence, optional enhancements, voice advice, manuscript export versus strict finalization, direction selection |
 | `HISTORICAL_COMPATIBILITY` | Frozen v11 validation-only Pack/Router admission and finite campaign entitlements |
 | `CURRENT_RUNTIME_FACT` | v12 author policy permits scoped automatic Pack admission in the actual runtime environment; the current working projection uses four recent sources and the intact-body guard limits one manuscript to 200000 code points; neither constant is a final architectural invariant or literary certification |
@@ -217,14 +220,15 @@ their finite entitlement quotas and phase grants are `HISTORICAL_COMPATIBILITY`,
 requirements for the membership execution contract. The native creation CLI freezes
 `formation-generation.v5` inputs and uses the existing Formation, Opening, Chapter Saga,
 optional Quality, strict export and Book acceptance owners under their selected policy. The review
-sequence is a policy choice; atomic acceptance, source isolation and unknown-outcome
-reconciliation remain safety invariants. Book Authority's existing worker owns the
+sequence is a policy choice. Atomic acceptance and source isolation remain safety invariants;
+unknown remote facts remain recorded independently of native business recovery. Book Authority's existing worker owns the
 reference-only `BOOK_CREATION_ADVANCE` RuntimeJob across stage handoffs. Its atomic
 completion/continuation, native leases, bounded backoff and progress snapshots survive
 worker restart. Technical waits use the original frozen work; author and owner decisions
-stop polling until relevant persisted state changes. UNKNOWN requires native reconciliation;
-a capacity configuration checkpoint can resume only when its exact historical error and
-absence of every external Effect prove that no send occurred. Cancellation is an immutable
+stop polling until relevant persisted state changes. An active uncertain Effect requires native
+reconciliation or authorized pure-generation isolation. Isolation revokes its commit rights and
+permits one linked native successor without requiring a remote result or measured usage.
+A pre-send capacity checkpoint separately requires proof that no external intent exists. Cancellation is an immutable
 Formation-owned intent forwarded to the active native phase; it prevents later stage starts.
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
 same project Pack scope and original admitted author identity when taking over continuous creation;
@@ -232,11 +236,12 @@ the worker identity owns only its execution lease. Coordination coalesces live t
 failures and retains a dead-letter stop for unchanged Book and dependency snapshots. A native
 dependency change or explicit owner recovery can wake the same work. A deterministic Planning
 capacity failure terminates its frozen attempt rather than consuming identical retries. Only
-continuous v5 membership creation with no external intent, reservation or frozen Context may
-append a capacity successor through the existing Planning runtime-continuation Authority.
+continuous membership creation with no external intent or reservation may
+append a capacity successor; a retained Arc Context additionally requires its native typed-volume
+projection evidence. Both use the existing Planning runtime-continuation Authority.
 It preserves exact story inputs, Pack and permitted route, preflights the larger allocation,
 reserves the configured model output and framing margin, and permits at most two successors.
-The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical requests, UNKNOWN, service failures, capacity limits and retry waits remain blocked. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
+The final rendered-request admission remains authoritative. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains counted for fault limits but does not lock the Book. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact hard gate and verifying the Director receipt and settled usage; it consumes the same Planning allowance and cannot add accepted support or relax the gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
 no-progress windows become an explicit owner recovery state. The controlled process/PostgreSQL regression
@@ -285,14 +290,14 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
-Current Chapter 3.10.0 and Pack 3.0.0/template v12 bind versioned scene-core,
+Current Chapter 3.10.0 and Pack 3.0.0/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
 corrections. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
 projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
 ExecutionIntent; frozen earlier projections, including 3.9.16, keep their original
 contracts. The Book-owned explicit-null Memo timeout reader remains compatibility
 code: the native backend records a start before submission, so its started timeout
-requires remote reconciliation. Failed steps and affected derived Canon/Quality outputs use Command
+retains an uncertain remote outcome. A task whose actual permissions and I/O boundary prove pure generation may revoke the old submission right and register a bounded native successor without waiting for the missing receipt or measured usage. Irreversible effects continue to require reconciliation. Failed steps and affected derived Canon/Quality outputs use Command
 Kernel successor journals. The exact live unaccepted Chapter frontier, original actor,
 settled effects, no held lease and no committed downstream state gate each correction.
 Retained-graph v2 references completed siblings. Known-receipt v2 binds the exact
@@ -1257,6 +1262,13 @@ cover structural repetition, character/relationship movement, setup/progression/
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
 
+Stopped read-only prose review uses the Kernel isolation journal and existing native
+root/Saga admission. A linked root successor preserves its frozen window and source
+versions, while the old attempt loses commit rights and retains remote uncertainty and
+unknown usage. The durable successor journal shares the original failure count across
+routes and restart. Exhaustion records a concrete exit; review remains separate from
+manuscript delivery, human author choice and formal acceptance.
+
 Review policy can explicitly select `AUTOMATIC` execution and follow newly accepted
 chapters. The existing Book Follow-up worker advances eligible runs, pauses without new
 dispatch, stops on exhausted allowance, and resumes unresolved old Effects before freezing
@@ -1659,8 +1671,8 @@ approval remains pending; only its first admission resolves the approved active 
 New future tasks separately require the current Pack. Frontier alias normalization
 compares exact Canon/State identities and rejects missing or conflicting versions. Cached quality evidence requires matching policy and creative-baseline
 hashes before reuse. Semantic repair/replan appends explicit future-only lineage;
-accepted prose is never rewritten automatically. UNKNOWN external outcomes require
-reconciliation. Source methodology 1.1.0 prioritizes the current analysis purpose;
+accepted prose is never rewritten automatically. Unknown remote outcomes remain historical facts. Irreversible effects require
+reconciliation; an owned pure generation may revoke the old attempt and admit an authorized successor. Source methodology 1.1.0 prioritizes the current analysis purpose;
 version 1.0.0 retains its exact historical text and hash. These are code/runtime
 contracts; deployment, real Provider qualification and literary improvement require
 separate evidence.
@@ -2042,7 +2054,7 @@ the current head; canonical prose intentionally does not duplicate its identity.
 
 Provider and MinIO-compatible object-store calls use durable ExternalEffect intent,
 dispatch generation and receipt records. A request that may have started is reconciled
-before retry and is never blindly resent. Idempotency keys bind the request digest;
+before resending the same Effect. Pure generation can instead isolate its old attempt and continue through a linked native successor. Idempotency keys bind the request digest;
 Attempt leases and fencing reject stale workers. Safe database retries are restricted to
 classified SQL states, while an unknown commit result requires evidence-based
 reconciliation. Recovery appends attempt, receipt, checkpoint or replacement lineage and
@@ -2354,3 +2366,24 @@ Authority worker and Kernel ExternalEffect lifecycle. Its immutable `public_cata
 is evidence only and ineligible for generation; research selection binds a work to its exact
 snapshot hash without granting prose rights. Official HTTP collection and authorized offline
 DOM excerpts retain distinct modes. Product filters read a chosen project snapshot.
+
+
+Book Control may select `AVAILABLE_QUALIFIED` as a versioned Planning selection policy.
+Search retains its frozen strategies and every qualification receipt, journals the actual
+qualified membership, and records the unfinished comparison and absent author decision.
+A later replay verifies that immutable decision; active branch writers block selection.
+Completed local output can be admitted through the existing local result revalidation
+command after a failed terminal owner, using its original snapshot and inputs.
+
+A ChapterGroup Context capacity successor preserves its frozen search horizon and all input
+versions. The versioned `typed-planning-window-projection.v1` retains global constraints and
+only overlapping Arc and Volume segments, with source hashes and omission receipts. It uses
+the same zero-intent, cancellation, lease and identity guards as Arc capacity succession.
+Isolated transport failures prefer an eligible authorized route with fewer recorded failures;
+Provider switching never changes the logical fault allowance or paid budget.
+
+The Book Chapter elaboration reader derives coordinated realization eligibility from the
+exact native 1.21 ChapterGroup generation. It reuses the existing deterministic composite
+chapter slice and retains every frozen event; historical single-slice contracts keep their guard.
+Membership retry compatibility excludes durably isolated historical execution rows while
+retaining current leases, cancellation, identity checks and paid accounting exposure.

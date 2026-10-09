@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "scope": "Actual original Book Chapter2; native saved assistant revision candidate only",
+  "candidate_asset_version_id": "960c2c24-4dd3-4e44-aab3-66ca9050ef09",
+  "content_hash": "sha256:67dd74d77c28e72576abef4848983f48d3a94091b35eb718586ff4f481ee031a",
+  "text_hash": "sha256:46e8c2798d1525cd7c71aa4620630f6710f639185327604f6cb99e00b346360b",
+  "source_provenance": {
+    "kind": "ASSISTANT_REVISION_PROPOSAL",
+    "execution": {
+      "model_id": "GPT-6 family; exact runtime model unavailable",
+      "trace_id": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02:chapter2-literary-revision",
+      "provider_id": "codex-agent",
+      "usage_status": "API_MEASUREMENT_UNAVAILABLE",
+      "skill_version": "prose-generation+quality-review",
+      "prompt_version": "wp02-prose-literary-revision.v1",
+      "authorization_ref": "user:WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02"
+    },
+    "operation_id": "4199167c-342b-422c-9c83-b6521af84060",
+    "author_decision": "NOT_RECORDED",
+    "base_content_hash": "sha256:4554376ed0485ccf54f6188e096d2fb263d12109813257419a1a39ac9d3aaa17",
+    "formal_acceptance": "NOT_RECORDED",
+    "base_asset_version_id": "authority-output:bf1d1a39-b237-4a3c-8622-fa155e587290:chapter.draft:v1"
+  },
+  "original_draft_unchanged": true,
+  "save_replay_same_candidate": true,
+  "author_decision": "NOT_RECORDED",
+  "formal_acceptance": "NOT_RECORDED",
+  "semantic_review": "NOT_RUN",
+  "deployed_sha": "6e026ea0fbb949b7e374064a7fc76984b928adeb"
+}

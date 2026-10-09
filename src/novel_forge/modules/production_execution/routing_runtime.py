@@ -555,8 +555,12 @@ class PostgresRoutingRegistry:
                    FROM authority_external_effect effect
                    JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
                    WHERE effect.project_id=%s AND effect.model_id=ANY(%s)
-                     AND dispatch.evidence #>> '{production_execution,process_evidence,failure_class}'
-                         IN ('RATE_LIMIT','PROVIDER_UNAVAILABLE','AUTHENTICATION_FAILED','PROVIDER_BUDGET_EXHAUSTED')
+                     AND COALESCE(dispatch.evidence #>> '{production_execution,process_evidence,failure,error_code}',
+                         dispatch.evidence #>> '{production_execution,process_evidence,failure_class}',
+                         dispatch.evidence #>> '{production_execution,process_evidence,failure_code}')
+                         IN ('RATE_LIMIT','PROVIDER_UNAVAILABLE','AUTHENTICATION_FAILED','PROVIDER_BUDGET_EXHAUSTED',
+                             'PROVIDER_STREAM_INTERRUPTED','PROVIDER_RESPONSE_TIMEOUT','PROVIDER_CONNECTION_FAILED',
+                             'PROVIDER_AUTH_FAILED','PROVIDER_RATE_LIMITED','PROVIDER_MODEL_CAPACITY_UNAVAILABLE')
                      AND EXTRACT(EPOCH FROM (%s - COALESCE(dispatch.finished_at,dispatch.updated_at,dispatch.created_at)))
                          < CASE WHEN jsonb_typeof(dispatch.evidence #> '{production_execution,process_evidence,retry_after_seconds}')='number'
                            THEN (dispatch.evidence #>> '{production_execution,process_evidence,retry_after_seconds}')::numeric
@@ -570,7 +574,7 @@ class PostgresRoutingRegistry:
             for provider, model, occurred_at, evidence, effect_id in failures:
                 if provider != candidate.provider or model != candidate.model:
                     continue
-                failure = evidence["failure_class"]
+                failure = (evidence.get("failure") or {}).get("error_code") or evidence.get("failure_class") or evidence["failure_code"]
                 delay = evidence.get("retry_after_seconds")
                 if (
                     not isinstance(delay, (int, float))
@@ -580,7 +584,7 @@ class PostgresRoutingRegistry:
                     delay = (
                         300
                         if failure
-                        in {"AUTHENTICATION_FAILED", "PROVIDER_BUDGET_EXHAUSTED"}
+                        in {"AUTHENTICATION_FAILED", "PROVIDER_BUDGET_EXHAUSTED", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}
                         else 30
                     )
                 try:
@@ -619,7 +623,7 @@ class PostgresRoutingRegistry:
                 """SELECT effect.external_effect_id, effect.status, dispatch.created_at,
                           effect.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
                           dispatch.evidence,
-                          quality.content,effect.operation_id
+                          quality.content,effect.operation_id,authority_generation_isolated(effect.external_effect_id)
                    FROM authority_external_effect effect
                    LEFT JOIN LATERAL (
                        SELECT evidence,COALESCE(finished_at,updated_at,created_at) AS created_at FROM authority_external_effect_dispatch
@@ -659,6 +663,7 @@ class PostgresRoutingRegistry:
             evidence,
             quality,
             source_operation_id,
+            isolated_generation,
         ) in rows:
             if not decision:
                 continue
@@ -670,14 +675,14 @@ class PostgresRoutingRegistry:
             )
             failure = (
                 "UNKNOWN_EXTERNAL_OUTCOME"
-                if status
+                if not isolated_generation and status
                 in {
                     "UNKNOWN",
                     "UNKNOWN_AMBIGUOUS",
                     "SENT_UNKNOWN",
                     "RECONCILIATION_REQUIRED",
                 }
-                else process.get("failure_class", "")
+                else process.get("failure_class", "") or process.get("failure_code", "")
             )
             if not failure and (quality or {}).get("gate") == "FAILED":
                 failure = (
@@ -711,6 +716,7 @@ class PostgresRoutingRegistry:
                     "candidate_id": selected.get("candidate_id"),
                     "failure_class": failure,
                     "status": status,
+                    "generation_isolated": isolated_generation,
                     "escalation": selected.get("escalation_only", False),
                     "outcome_refs": gate.get("evidence_refs", []),
                 }
@@ -1299,7 +1305,8 @@ class ProductionProviderRouter:
             "bootstrap_authorization"
         ):
             raise KernelError(
-                "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id"))
+                "PROVIDER_ROUTING_BLOCKED", str(snapshot.get("decision_id")),
+                details=routing_failure_details(snapshot),
             )
         if snapshot.get("resource_control_version"):
             from .execution_template import verify_template_provenance
@@ -1609,3 +1616,17 @@ def routed_reservation(
     if price.accounting_basis == "ACCOUNT_ENTITLEMENT":
         return None
     return str(price.amount(input_tokens, output_tokens))
+
+
+def routing_failure_details(snapshot):
+    task = snapshot.get('task') or {}
+    reasons = [{ 'candidate_id':item.get('candidate',{}).get('candidate_id'),
+        'rejected_reasons':item.get('rejected_reasons',[]), 'estimated_total_tokens':item.get('estimated_total_tokens')}
+        for item in snapshot.get('candidates',[])]
+    capacity = bool(reasons) and all(set(item['rejected_reasons']) == {'CONTEXT_CAPACITY_EXCEEDED','BUDGET_HARD_LIMIT'} for item in reasons)
+    return {'error_code':'PROVIDER_ROUTING_BLOCKED','stage':'PROVIDER_ROUTE_ADMISSION',
+        'task_stage':task.get('task_type'),'cause':'CONTEXT_CAPACITY_EXCEEDED' if capacity else 'ROUTE_CANDIDATES_REJECTED',
+        'execution_identity':{key:task.get(key) for key in ('project_id','work_id','operation_id','attempt_id','chain_id')},
+        'decision_id':snapshot.get('decision_id'),'candidate_rejections':reasons,
+        'retryability':'CHANGED_ADMISSION_REQUIRED','recovery_action':'REVALIDATE_CONTEXT_ADMISSION' if capacity else 'INSPECT_ROUTE_ADMISSION',
+        'recovery_state':'NOT_SENT','business_impact':'NO_GENERATED_CANDIDATE','provider_invoked':False}

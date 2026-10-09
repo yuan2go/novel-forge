@@ -55,7 +55,7 @@ class AuthorityAssetDocumentRepository:
 
     def materialize_output(self, command: AuthorityAssetWriteCommand) -> AuthorityAssetDocument:
         self._lock_identity(command.project_id, command.logical_ref)
-        self._require_executing_operation(command.operation_id, command.project_id)
+        self._require_executing_operation(command.operation_id, command.project_id, recovery_fact=command)
         self._require_project_references(command.project_id, command.reference_asset_ids)
         locator = self._locator_for_update(command.project_id, command.logical_ref)
         if locator is not None and locator["asset_id"] != command.asset_id:
@@ -279,7 +279,7 @@ class AuthorityAssetDocumentRepository:
             [f"authority_asset_locator:{project_id}:{logical_ref}"],
         )
 
-    def _require_executing_operation(self, operation_id: str, project_id: str) -> None:
+    def _require_executing_operation(self, operation_id: str, project_id: str, *, recovery_fact=None) -> None:
         self.cursor.execute(
             """
             SELECT status,
@@ -299,7 +299,24 @@ class AuthorityAssetDocumentRepository:
             and row[1] == "transactional"
             and row[2] == "transaction_command"
         )
-        if row[0] != "EXECUTING" and not transaction_admitted:
+        retained_execution_fact = False
+        if recovery_fact is not None and recovery_fact.role != "primary" and (
+            recovery_fact.asset_type, recovery_fact.schema_version, recovery_fact.category
+        ) in {
+            ("execution_evidence", "authority-execution-evidence.v1", "production_execution_evidence"),
+            ("execution_recovery_session", "authority-execution-recovery.v1", "production_execution_recovery"),
+        }:
+            self.cursor.execute("""SELECT 1 FROM authority_asset_version version
+                JOIN authority_asset asset USING(asset_id)
+                WHERE asset.project_id=%s AND asset.asset_type='execution_recovery_session'
+                  AND version.content->>'execution_id'=%s
+                  AND version.content #>> '{record,request,operation_id}'=%s
+                  AND version.content #>> '{record,request,project_id}'=%s
+                  AND (%s='execution_evidence' OR version.content->>'request_contract_hash'=%s)
+                LIMIT 1""", [project_id, recovery_fact.content.get("execution_id"), operation_id,
+                    project_id, recovery_fact.asset_type, recovery_fact.content.get("request_contract_hash")])
+            retained_execution_fact = self.cursor.fetchone() is not None
+        if row[0] != "EXECUTING" and not transaction_admitted and not retained_execution_fact:
             raise KernelError(
                 "OPERATION_STATUS_CONFLICT",
                 "asset output requires EXECUTING durable work or an ADMITTED "

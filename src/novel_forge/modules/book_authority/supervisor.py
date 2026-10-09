@@ -969,6 +969,15 @@ class PostgresBookProductionSupervisor:
                 preferred_size=execution_policy["policy"]["preferred_chapters"],
                 maximum_chapters=execution_policy["policy"]["maximum_chapters"],
             )
+            retained_horizon = self.narrative_search.retained_planning_horizon(generation)
+            if retained_horizon is not None:
+                frozen_range = retained_horizon.get("chapter_range")
+                if (retained_horizon.get("level") != "CHAPTER_GROUP" or not isinstance(frozen_range, list)
+                        or len(frozen_range) != 2 or any(type(value) is not int for value in frozen_range)
+                        or frozen_range[0] != chapter_number
+                        or not chapter_number <= frozen_range[1] <= min(int(book["target_chapter_count"]), volume_range[1])):
+                    raise KernelError("BOOK_SUPERVISOR_CHAPTER_GROUP_HORIZON_INVALID", "Retain the admitted group range within the current delivery and Volume boundaries")
+                group_start, group_end = frozen_range
             parent_state = str(book.get("active_story_state_version_id") or "")
             if accepted_through == 0:
                 parent_state = str(

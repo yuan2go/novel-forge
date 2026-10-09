@@ -1,0 +1,26 @@
+{
+  "canonical_document_count": 5,
+  "capability_count": 26,
+  "comment_ratchet": {
+    "base_script_comment_count": 13,
+    "base_sha": "f30abd74ffa5d321fe2e2b92ce510a045a523cd5",
+    "base_source_comment_count": 515,
+    "base_source_docstring_count": 135,
+    "base_web_comment_count": 5,
+    "status": "FAIL"
+  },
+  "errors": [
+    "canonical document duplicates a migration identity: docs/runtime-operations.md",
+    "comment ratchet increased source comments: 516 > 515"
+  ],
+  "evidence_class": "reality_inventory",
+  "inventory_sha256": "sha256:36811d0354e6961069ea73a3d1a762a90d3351db726d862213b6c9b5b9a0f116",
+  "module_docstring_count": 37,
+  "schema_version": "novel-forge.documentation-reality-check.v1",
+  "script_comment_count": 13,
+  "source_comment_count": 516,
+  "source_docstring_count": 135,
+  "status": "FAIL",
+  "tested_sha": "a89662a4f48c3e262779284b4731c3ea6fb8f787",
+  "web_comment_count": 5
+}

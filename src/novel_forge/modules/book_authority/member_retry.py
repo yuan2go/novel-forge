@@ -24,14 +24,16 @@ def wait_settled_member_retry(authority, *, book_run_id, root_id, principal, dea
             EXISTS(SELECT 1 FROM authority_external_effect e JOIN authority_operation sibling USING(operation_id)
                 LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
                 WHERE sibling.root_operation_id=o.operation_id AND (e.status IN ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED','INTENT_RECORDED')
-                    OR budget.status IS DISTINCT FROM 'SETTLED'))
+                    OR budget.status IS DISTINCT FROM 'SETTLED') AND NOT authority_generation_isolated(e.external_effect_id))
             OR EXISTS(SELECT 1 FROM authority_operation sibling WHERE sibling.root_operation_id=o.operation_id
-                AND (sibling.status IN ('UNKNOWN','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED','RUNNING','WAITING_EXTERNAL_RESULT')
-                    OR sibling.project_id<>o.project_id OR sibling.workspace_id<>o.workspace_id OR sibling.actor_id<>o.actor_id))
+                AND ((sibling.status IN ('UNKNOWN','RECONCILIATION_REQUIRED','RUNNING','WAITING_EXTERNAL_RESULT')
+                    AND NOT EXISTS(SELECT 1 FROM authority_generation_isolation WHERE operation_id=sibling.operation_id))
+                    OR sibling.status='CANCELLATION_REQUESTED' OR sibling.project_id<>o.project_id OR sibling.workspace_id<>o.workspace_id OR sibling.actor_id<>o.actor_id))
             OR EXISTS(SELECT 1 FROM authority_attempt attempt JOIN authority_operation sibling USING(operation_id)
-                WHERE sibling.root_operation_id=o.operation_id AND attempt.status IN ('UNKNOWN','RUNNING','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')),
+                WHERE sibling.root_operation_id=o.operation_id AND attempt.status IN ('UNKNOWN','RUNNING','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
+                AND NOT EXISTS(SELECT 1 FROM authority_generation_isolation WHERE operation_id=sibling.operation_id)),
             EXISTS(SELECT 1 FROM authority_budget_reservation budget JOIN authority_operation sibling USING(operation_id)
-                WHERE sibling.root_operation_id=o.operation_id AND budget.status IS DISTINCT FROM 'SETTLED'),
+                WHERE sibling.root_operation_id=o.operation_id AND budget.status IS DISTINCT FROM 'SETTLED' AND NOT authority_generation_isolated(budget.external_effect_id)),
             EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
                 JOIN authority_operation sibling USING(operation_id) WHERE sibling.root_operation_id=o.operation_id
                     AND lease.released_at IS NULL AND lease.expires_at>NOW())
@@ -52,7 +54,7 @@ def wait_settled_member_retry(authority, *, book_run_id, root_id, principal, dea
         if (
             not template
             or template["version"]
-            not in {"creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11"}
+            not in {"creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11", "creative-execution-template.v12"}
             or template["mode"] != "CREATIVE_VALIDATION"
         ):
             return False
@@ -63,7 +65,7 @@ def wait_settled_member_retry(authority, *, book_run_id, root_id, principal, dea
         return False
     if (
         rows[0][3] != "MODEL_EFFECT_RETRYABLE_PROCESS_EXIT_FAILURE"
-        and template["version"] not in {"creative-execution-template.v10", "creative-execution-template.v11"}
+        and template["version"] not in {"creative-execution-template.v10", "creative-execution-template.v11", "creative-execution-template.v12"}
     ):
         return False
     sleep(max(0, min(30, deadline - monotonic())))
@@ -105,7 +107,8 @@ def settled_retry_rows(cursor, *, project_id, root_id):
     AND r.status='SETTLED' AND r.accounting_basis='ACCOUNT_ENTITLEMENT'
     AND a.attempt_number=(SELECT max(attempt_number) FROM authority_attempt WHERE operation_id=o.operation_id)
     AND NOT EXISTS(SELECT 1 FROM authority_external_effect pending JOIN authority_operation sibling USING(operation_id)
-    WHERE sibling.root_operation_id=%s AND pending.status IN ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED'))
+    WHERE sibling.root_operation_id=%s AND pending.status IN ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED')
+    AND NOT authority_generation_isolated(pending.external_effect_id))
     AND EXISTS(SELECT 1 FROM authority_operation root WHERE root.operation_id=%s AND root.status='WAITING_CHILDREN')""",
         [project_id, root_id, root_id, root_id],
     )

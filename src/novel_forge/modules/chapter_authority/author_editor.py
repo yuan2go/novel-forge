@@ -290,7 +290,7 @@ class ChapterAuthorEditingApplication:
                        "originating_draft_asset_version_id": source.content.get("originating_draft_asset_version_id", source.asset_version_id) if source.asset_type == "author_edit_candidate" else source.asset_version_id,
                        "text": text, "title": source.content.get("title", ""), "edits": edits, "allowed_ranges": ranges,
                        **mapping, "scene_artifacts": scenes, "author_id": actor, "rights_basis": payload["rights_basis"],
-                       "source_provenance": {"kind": "HUMAN_AUTHOR_INPUT", "operation_id": operation_id},
+                       "source_provenance": author_input_provenance(payload, operation_id=operation_id, base=source),
                        "draft_content": {**draft_source, **mapping, "text": text, "scene_artifacts": scenes},
                        "status": "SAVED_CANDIDATE", "semantic_review": "NOT_RUN"}
             if payload.get("source_review_run_id") or payload.get("source_lineage_id"):
@@ -386,3 +386,18 @@ def author_edit_definitions(build_id: str, commit_sha: str) -> tuple[dict[str, A
                        "lifecycle": "ACTIVE", "eligibility": "ELIGIBLE", "governance": "CLEAR"}],
                       "required_qualifications": [{"decision": "ELIGIBLE"}], "required_evidence": ["trace", "audit"],
                       "required_outbox_events": ["authority.chapter.author_edit.committed"]}} for action in EDITOR_ACTIONS)
+
+
+def author_input_provenance(payload, *, operation_id, base):
+    origin = payload.get("input_origin", "HUMAN_AUTHOR_INPUT")
+    if origin == "HUMAN_AUTHOR_INPUT":
+        return {"kind": origin, "operation_id": operation_id}
+    provenance = payload.get("revision_provenance") or {}
+    required = {"authorization_ref", "provider_id", "model_id", "prompt_version", "skill_version", "usage_status", "trace_id"}
+    if (origin != "ASSISTANT_REVISION_PROPOSAL" or payload.get("rights_basis") != "AUTHORIZED_INPUT"
+            or not isinstance(provenance, dict) or not required.issubset(provenance)
+            or any(not isinstance(provenance[key], str) or not provenance[key].strip() for key in required)):
+        raise KernelError("AUTHOR_INPUT_PROVENANCE_INVALID", "Assistant input requires explicit authorized proposal identity; it is not a human author decision")
+    return {"kind": origin, "operation_id": operation_id, "execution": dict(provenance),
+        "base_asset_version_id": base.asset_version_id, "base_content_hash": base.content_hash,
+        "author_decision": "NOT_RECORDED", "formal_acceptance": "NOT_RECORDED"}

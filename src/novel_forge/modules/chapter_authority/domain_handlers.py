@@ -746,17 +746,7 @@ def normalize_rereview_result(
     return reviewed
 
 
-def build_canon_patch(
-    *,
-    revision: dict[str, Any],
-    revision_asset_version_id: str,
-    project_id: str = "local-system",
-    context_bundle_version_id: str = "legacy-context-bundle",
-    extraction: dict[str, Any] | None = None,
-    context_bundle: dict[str, Any] | None = None,
-    validation_contract: str = "LEGACY_V1",
-    reader_observation_lineage: bool = False,
-) -> dict[str, Any]:
+def canon_history(context_bundle):
     historical_state: dict[str, list[dict[str, Any]]] = {}
     identity_profiles: list[dict[str, Any]] = []
     state_aliases = {
@@ -851,6 +841,21 @@ def build_canon_patch(
                 {**entry, **entry["state"], **_entity_key_components(entry["entity_key"]), "asset_version_id": world_binding["action"]["source"]["asset_version_id"]}
                 for entry in entries
             ]
+    return historical_state, identity_profiles
+
+
+def build_canon_patch(
+    *,
+    revision: dict[str, Any],
+    revision_asset_version_id: str,
+    project_id: str = "local-system",
+    context_bundle_version_id: str = "legacy-context-bundle",
+    extraction: dict[str, Any] | None = None,
+    context_bundle: dict[str, Any] | None = None,
+    validation_contract: str = "LEGACY_V1",
+    reader_observation_lineage: bool = False,
+) -> dict[str, Any]:
+    historical_state, identity_profiles = canon_history(context_bundle)
     work_extraction = (extraction or {}).get("canon_extraction_contract_version") in {
         "canon-semantic-extraction-v6", "canon-grounded-extraction-v2"
     }

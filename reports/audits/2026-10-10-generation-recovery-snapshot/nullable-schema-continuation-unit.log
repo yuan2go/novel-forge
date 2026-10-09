@@ -1,0 +1,14 @@
+.........................................F.............................. [ 41%]
+........................................................................ [ 83%]
+............................                                             [100%]
+=================================== FAILURES ===================================
+_ test_nullable_enum_projection_satisfies_provider_type_admission_and_retains_original_proof _
+
+    def test_nullable_enum_projection_satisfies_provider_type_admission_and_retains_original_proof():
+>       from jsonschema import Draft202012Validator
+E       ModuleNotFoundError: No module named 'jsonschema'
+
+tests/unit/test_codex_execution_evidence.py:801: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/unit/test_codex_execution_evidence.py::test_nullable_enum_projection_satisfies_provider_type_admission_and_retains_original_proof
+1 failed, 171 passed in 5.32s

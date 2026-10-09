@@ -27,9 +27,11 @@ CONTROL_BOUNDARIES = frozenset(
 class ControlPolicy:
     policy_version: str = "book-control-v1:auto"
     mode: str = ControlMode.AUTO.value
+    planning_selection_mode: str = ""
 
     def __post_init__(self) -> None:
-        if not self.policy_version or self.mode not in set(ControlMode):
+        if (not self.policy_version or self.mode not in set(ControlMode)
+                or self.planning_selection_mode not in {"", "AVAILABLE_QUALIFIED"}):
             raise KernelError(
                 "BOOK_CONTROL_POLICY_INVALID",
                 "ControlPolicy requires one versioned declared mode",
@@ -59,4 +61,7 @@ class ControlPolicy:
         return boundary in boundaries[ControlMode(self.mode)]
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        value = asdict(self)
+        if not self.planning_selection_mode:
+            value.pop("planning_selection_mode")
+        return value

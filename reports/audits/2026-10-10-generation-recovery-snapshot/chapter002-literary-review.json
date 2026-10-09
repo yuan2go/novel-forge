@@ -1,0 +1,17 @@
+{
+  "review_kind": "ASSISTANT_EDITORIAL_REVIEW",
+  "source_asset_version_id": "authority-output:bf1d1a39-b237-4a3c-8622-fa155e587290:chapter.draft:v1",
+  "source_text_hash": "sha256:ae4eda88e8ce086dd9212010d04a1d630b2d64f839999c6bf71b32c22d89adde",
+  "findings": [
+    "原稿2447汉字，低于2500字下限",
+    "对话反复使用核实、用途、反馈等程序措辞，人物声音趋同",
+    "逐分钟核算反复阻断叙述节奏；本轮保留冻结事实与时间，仅改善句子",
+    "已完成入门登记、基础尝试无可辨认气机，与第一章未确认状态形成实际推进"
+  ],
+  "revision_han_characters": 2529,
+  "revision_provenance": "Codex assistant API; exact runtime model and measured usage unavailable",
+  "semantic_validation": "NOT_RUN",
+  "author_choice": "NOT_RECORDED",
+  "formal_acceptance": "NOT_RECORDED",
+  "fact_constraints": "保留姓名来处、入门三条件、课程未核实、程观五分钟、许庭十五分钟、全部时间、首次尝试及无气机结论"
+}

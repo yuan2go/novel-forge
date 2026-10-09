@@ -71,11 +71,12 @@ def replace_author_chapter(authority, *, chapter_request_id: str, expected_book_
         if original is None or original[0] not in {'SUCCEEDED','FAILED_FINAL','CANCELLED','DEAD_LETTER'}:
             raise KernelError('BOOK_AUTHOR_PREDECESSOR_NOT_SETTLED', 'Finish or explicitly cancel and reconcile the old Chapter before replacement')
         uow.cursor.execute('''SELECT 1 FROM authority_external_effect e JOIN authority_operation o USING(operation_id)
-            WHERE o.root_operation_id=%s AND e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') LIMIT 1''', [expected_root_operation_id])
+            WHERE o.root_operation_id=%s AND NOT authority_generation_isolated(e.external_effect_id) AND e.status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED') LIMIT 1''', [expected_root_operation_id])
         if uow.cursor.fetchone() is not None:
             raise KernelError('BOOK_AUTHOR_EFFECT_RECONCILIATION_REQUIRED', 'Old external effects must be reconciled before replacement')
         uow.cursor.execute('''SELECT 1 FROM authority_budget_reservation reservation
             JOIN authority_operation op USING(operation_id) WHERE op.root_operation_id=%s
+            AND NOT authority_generation_isolated(reservation.external_effect_id)
             AND reservation.status NOT IN ('SETTLED','RELEASED','REJECTED') LIMIT 1''', [expected_root_operation_id])
         if uow.cursor.fetchone() is not None:
             raise KernelError('BOOK_AUTHOR_BUDGET_RECONCILIATION_REQUIRED', 'Old budget reservations must be settled or released before replacement')

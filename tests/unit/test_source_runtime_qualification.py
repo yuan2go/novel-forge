@@ -3,6 +3,8 @@ from copy import deepcopy
 
 import pytest
 
+from novel_forge.modules.command_kernel.errors import KernelError
+
 
 def test_settled_source_qualification_preserves_original_release(monkeypatch):
     from scripts.source_qualification import qualification_release
@@ -19,7 +21,6 @@ def test_settled_source_qualification_preserves_original_release(monkeypatch):
     assert qualification_release(identity, scope={"status": "READY"}, root="unused",
                                  commit_sha="a" * 40, implementation_identity="same-tree") == ("a" * 40, "same-tree")
 
-from novel_forge.modules.command_kernel.errors import KernelError
 
 
 def provider_receipt(capability="mkaos.knowledge.extract"):

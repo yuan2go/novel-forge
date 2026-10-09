@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "scope": "Restored original isolated Effect; concurrent replay of its exact durable semantic decision with different CAS observation versions",
+  "effect_id": "30421df5-8e89-46ab-8aff-ebb9cf3077c7",
+  "decisions": [
+    {
+      "manual_resolution_id": "6337e4d6-73b7-4c69-9ece-f431e8892b8d",
+      "decision": "ISOLATE_PURE_GENERATION",
+      "replayed": true
+    },
+    {
+      "manual_resolution_id": "6337e4d6-73b7-4c69-9ece-f431e8892b8d",
+      "decision": "ISOLATE_PURE_GENERATION",
+      "replayed": true
+    }
+  ],
+  "history_status": "UNKNOWN",
+  "submission_right": "REVOKED",
+  "new_manual_decisions": 0,
+  "provider_calls": 0
+}

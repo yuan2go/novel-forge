@@ -1,0 +1,48 @@
+{
+  "status": "BLOCKED",
+  "operation_id": "288ba1d6-289a-4635-8b2f-3b4ac8b978ef",
+  "candidates": [
+    {
+      "candidate_id": null,
+      "model_id": null,
+      "rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "BUDGET_HARD_LIMIT"
+      ],
+      "native_repair_admission": null
+    },
+    {
+      "candidate_id": null,
+      "model_id": null,
+      "rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "BUDGET_HARD_LIMIT"
+      ],
+      "native_repair_admission": null
+    }
+  ],
+  "declared_requirements": {
+    "risk": "",
+    "chapter": 0,
+    "quality_floor": 0,
+    "governed_repair": {
+      "input_hash": "sha256:c3582e31041e4244aa4be3aff1adc62f4f7f62e743475181435162fafff40b44",
+      "command_hash": "sha256:5bf240b12b21bc68b07f4aec7637edb99e73c908310ef5b76051282a92c31110",
+      "operation_id": "288ba1d6-289a-4635-8b2f-3b4ac8b978ef",
+      "repair_number": 1,
+      "diagnosis_hash": "sha256:6c0d8b53294ea5700948ef2befc446e7680b5809e76dd82df11293d3acf99112",
+      "maximum_repairs": 2,
+      "contract_version": "planning-route-repair.v1",
+      "source_input_hash": "sha256:4cdb92f7048d7d8438fa79580d164c9cb66afbba4b58753fa2ae09b4af5b1e56",
+      "source_operation_id": "f5b2aa69-0c3a-4a46-b74b-96e139fc03d8",
+      "source_asset_version_id": "50d359d9-f058-4b41-bae3-584e980b71ca",
+      "authorized_history_operation_ids": [
+        "f91c7e6f-c5a6-4fcb-b289-e2d790fbd10d",
+        "29b45e74-90ca-4be4-9220-6dfbbfc4cf69",
+        "f5b2aa69-0c3a-4a46-b74b-96e139fc03d8",
+        "55e99b7e-d8a0-44d5-b02b-d2d043247094"
+      ],
+      "accepted_history_mutation_allowed": false
+    }
+  }
+}

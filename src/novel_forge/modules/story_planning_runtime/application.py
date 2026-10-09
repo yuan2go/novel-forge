@@ -1819,7 +1819,7 @@ class StoryPlanningGenerationApplication:
                 return continued
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute(
-                    "SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
+                    "SELECT result->>'error_code',result#>>'{failure_details,cause_code}' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
                     [row[0]],
                 )
                 failure = uow.cursor.fetchone()
@@ -1828,23 +1828,22 @@ class StoryPlanningGenerationApplication:
                     [row[0]],
                 )
                 source_version = int(uow.cursor.fetchone()[0])
-            if failure and failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
+            if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED" or (
+                    failure[0] == "PROVIDER_ROUTING_BLOCKED"
+                    and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
                 self._probe(execution_probe)
-                register(
-                    self,
-                    str(row[0]),
-                    project_id=command.project_id,
-                    principal=principal,
-                    expected_source_version=source_version,
-                    decision_evidence={
-                        "authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                        "reason": "Pre-send capacity allocation after exact frozen failure; no external intent exists",
-                    },
-                    trace_id=command.trace_id,
-                    correlation_id=command.correlation_id,
-                )
-                return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
-            if row[2] == "FAILED_FINAL":
+                try:
+                    register(self, str(row[0]), project_id=command.project_id, principal=principal,
+                        expected_source_version=source_version,
+                        decision_evidence={"authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
+                            "reason": "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity allocation after exact frozen failure; no external intent exists"},
+                        trace_id=command.trace_id, correlation_id=command.correlation_id)
+                except KernelError as error:
+                    if error.code != "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED":
+                        raise
+                else:
+                    return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
+            if row[2] in {"FAILED_FINAL", "DEAD_LETTER"}:
                 from .gateway_result_recovery import recover
                 revalidated = recover(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)
                 if revalidated is not None:
@@ -1858,7 +1857,7 @@ class StoryPlanningGenerationApplication:
             stage_successor = follow_rejected(self, command=command, operation_id=str(row[0]), candidate_asset_version_id=str(row[4]), principal=principal, execution_probe=execution_probe)
             if stage_successor is not None:
                 return stage_successor
-        if row[2] == "FAILED_FINAL" and row[4]:
+        if row[2] in {"FAILED_FINAL", "DEAD_LETTER"} and row[4]:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_planning_result_admission r JOIN authority_operation o ON o.operation_id=r.recovery_operation_id WHERE r.source_operation_id=%s AND r.candidate_asset_version_id=%s AND o.status='SUCCEEDED')", [row[0], row[4]])
                 recovered = uow.cursor.fetchone()[0]

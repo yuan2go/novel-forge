@@ -247,7 +247,11 @@ def _authority_main(argv: list[str] | None, settings: IndustrialSettings) -> int
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
     except Exception as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        details = getattr(exc, "details", None)
+        if details:
+            print(json.dumps({"code": getattr(exc, "code", "EXECUTION_FAILED"), "message": str(exc), "failure": details}, ensure_ascii=False), file=sys.stderr)
+        else:
+            print(f"error: {exc}", file=sys.stderr)
         return 1
 
 

@@ -159,6 +159,16 @@ def read_failed_operation_success(
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
+def read_retained_generation_stage_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
+    _validate_effect_context(context)
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
+        row = uow.cursor.fetchone()
+        if row is None or row[0] not in {"FAILED_FINAL", "DEAD_LETTER"}:
+            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their failed terminal owner")
+        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
+
+
 def read_checkpointed_operation_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
     _validate_effect_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
@@ -181,8 +191,23 @@ def read_completed_operation_success(database_url: str, context: EffectCommandCo
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
 
 
-def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
+def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str, *, retained_generation_stage: bool = False) -> dict[str, Any] | None:
+    from .generation_isolation import require_not_isolated
+    if not retained_generation_stage:
+        require_not_isolated(uow.cursor, context.operation_id)
     effect = repository.get_for_update(effect_id)
+    if retained_generation_stage:
+        metadata = effect.get("request_payload", {}).get("_production_execution", {})
+        capability = metadata.get("capability_runtime", {})
+        uow.cursor.execute("""SELECT authority_generation_isolated(%s),EXISTS(
+            SELECT 1 FROM authority_asset_version version JOIN authority_asset asset USING(asset_id)
+            WHERE version.asset_version_id=%s AND version.content_hash=%s AND asset.project_id=%s
+              AND version.content #>> '{contract,tool_permissions,default}'='DENY'
+              AND version.content #> '{contract,tool_permissions,allowed}'='["model.provider.invoke"]'::jsonb)""",
+            [effect_id,capability.get("materialization_asset_version_id"),capability.get("materialization_content_hash"),context.project_id])
+        isolated, pure = uow.cursor.fetchone()
+        if isolated or not pure or effect["status"] != "SUCCEEDED" or effect["effect_type"] != "model.invoke":
+            raise KernelError("EFFECT_RETAINED_STAGE_INVALID", "Read only a completed non-isolated model sibling with its original deny-all-tools materialization; no old commit right is restored")
     _require_project(effect, context.project_id)
     if effect["operation_id"] != context.operation_id:
         raise KernelError(
@@ -557,7 +582,8 @@ def require_effect_retry_ready(cursor: Any, effect_id: str) -> None:
     if row is None or row[0] != "FAILED_RETRYABLE":
         return
     process = (row[1] or {}).get("production_execution", {}).get("process_evidence", {})
-    if process.get("failure_class") not in {"RATE_LIMIT", "PROVIDER_UNAVAILABLE"}:
+    failure = (process.get("failure") or {}).get("error_code") or process.get("failure_class") or process.get("failure_code")
+    if failure not in {"RATE_LIMIT", "PROVIDER_UNAVAILABLE", "PROVIDER_RATE_LIMITED", "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}:
         return
     delay = process.get("retry_after_seconds")
     if not isinstance(delay, (int, float)) or not math.isfinite(delay) or delay < 0:
@@ -591,6 +617,12 @@ def prepare_effect_dispatch(
         if resolution(uow.cursor, effect_id) is not None:
             raise KernelError("EFFECT_ALREADY_RECONCILED", "Original generation has a confirmed outcome; consume it through its owner")
         require_effect_retry_ready(uow.cursor, effect_id)
+        if effect["effect_type"] == "model.invoke" and effect["status"] in {"READY", "FAILED_RETRYABLE"}:
+            uow.cursor.execute("SELECT definition_name FROM authority_operation WHERE operation_id=%s",[context.operation_id])
+            if uow.cursor.fetchone()[0] in {"story_planning.generate","chapter.context.build","chapter.memo.generate","chapter.draft.generate",
+                    "chapter.review.evaluate","chapter.revision.apply","chapter.canon.extract","longform.prose_review"}:
+                from .generation_isolation import require_generation_retry_budget
+                require_generation_retry_budget(uow.cursor,operation_id=context.operation_id)
         result = repository.prepare_dispatch(effect, str(uuid4()))
         reconciliation_required = bool(result.get("reconciliation_required"))
         if reconciliation_required:
@@ -2032,6 +2064,8 @@ def _read_effect(database_url: str, effect_id: str, project_id: str) -> dict[str
 def _require_context(repository: Any, context: EffectCommandContext) -> None:
     _validate_effect_context(context)
     repository.require_operation(context.operation_id, context.project_id)
+    from .generation_isolation import require_not_isolated
+    require_not_isolated(repository.cursor, context.operation_id)
 
 
 def _validate_effect_context(context: EffectCommandContext) -> None:

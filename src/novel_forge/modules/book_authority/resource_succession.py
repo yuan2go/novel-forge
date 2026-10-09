@@ -59,9 +59,9 @@ def adopt_resource_policy(application: Any, *, opening_run_id: str, principal: A
                             command_payload #>> '{opening_execution_binding,opening_run_id}')=%s)
             UNION SELECT child.operation_id FROM authority_operation child JOIN owned parent ON child.causation_operation_id=parent.operation_id
             WHERE child.project_id=%s)
-            SELECT EXISTS(SELECT 1 FROM authority_budget_reservation WHERE budget_scope_id=%s AND status IN ('RESERVED','HELD_UNKNOWN'))
+            SELECT EXISTS(SELECT 1 FROM authority_budget_reservation WHERE budget_scope_id=%s AND status IN ('RESERVED','HELD_UNKNOWN') AND NOT authority_generation_isolated(external_effect_id))
             OR EXISTS(SELECT 1 FROM authority_external_effect effect WHERE effect.operation_id IN (SELECT operation_id FROM owned)
-                AND effect.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED'))
+                AND NOT authority_generation_isolated(effect.external_effect_id) AND effect.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED'))
             OR EXISTS(SELECT 1 FROM authority_runtime_job job JOIN authority_runtime_job_lease lease USING(runtime_job_id)
                 WHERE job.subject_kind='BOOK_OPENING_RUN' AND job.subject_id=%s AND lease.status='HELD' AND lease.lease_expires_at>clock_timestamp())""",
             [project, run["root_operation_id"], opening_run_id, project, current[2], opening_run_id])

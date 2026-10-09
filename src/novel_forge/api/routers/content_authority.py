@@ -77,7 +77,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:
-            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message}) from exc
+            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message, "failure": exc.details}) from exc
 
     @router.post("/reference-evaluations")
     def record_reference_evaluation(request: ReferenceEvaluationRequest):
@@ -91,7 +91,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:
-            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message}) from exc
+            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message, "failure": exc.details}) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -153,7 +153,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except PermissionError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except KernelError as exc:
-            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message}) from exc
+            raise HTTPException(status_code=409, detail={"code": exc.code, "message": exc.message, "failure": exc.details}) from exc
         except (RuntimeError, ValueError) as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
@@ -227,7 +227,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except KernelError as exc:
             raise HTTPException(
                 status_code=409,
-                detail={"code": exc.code, "message": exc.message},
+                detail={"code": exc.code, "message": exc.message, "failure": exc.details},
             ) from exc
 
     @router.post("/external-effects/{external_effect_id}/resolve", status_code=202)
@@ -261,7 +261,7 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         except KernelError as exc:
             raise HTTPException(
                 status_code=409,
-                detail={"code": exc.code, "message": exc.message},
+                detail={"code": exc.code, "message": exc.message, "failure": exc.details},
             ) from exc
 
     return router

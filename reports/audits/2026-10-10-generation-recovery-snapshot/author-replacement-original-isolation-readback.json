@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "scope": "Original Book Chapter2 author replacement risk query; read only, no author choice",
+  "old_effect_gate": 1,
+  "current_effect_gate": 0,
+  "held_unknown_history_preserved": 1,
+  "current_reservation_gate": 0,
+  "provider_calls": 0,
+  "author_decision": "NOT_RECORDED"
+}

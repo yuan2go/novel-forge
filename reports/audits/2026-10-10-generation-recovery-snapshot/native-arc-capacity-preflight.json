@@ -1,0 +1,19 @@
+{
+  "source_operation_id": "513be505-2459-442f-8ad5-b6c38f5332dd",
+  "capacity": {
+    "version": "planning-capacity-allocation.v1",
+    "source_failure": {
+      "error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
+      "error_message": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED: required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
+      "failure_class": "final_failure",
+      "failure_details": {}
+    },
+    "projection_hash": "sha256:b0ac9a046eaeef404e3c2c413c85b4191fd6be35b41fbb4445b21d63fd4936f4",
+    "prior_task_tokens": 64000,
+    "allocated_task_tokens": 226128,
+    "single_request_ceiling": 226128,
+    "external_intents_at_source": 0
+  },
+  "target_release_sha": null,
+  "provider_calls": 0
+}

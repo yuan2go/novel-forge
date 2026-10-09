@@ -138,6 +138,9 @@ else:
                     location["quote"] = quote
                     location["claim"] = "Controlled fixture observation: " + dimension["dimension"]
         if stage == "canon_extraction":
+            typed_envelope = "payload_json" in result
+            if typed_envelope:
+                result = json.loads(result["payload_json"])
             for fact in result["canon_facts"]:
                 fact.update(effective_from_chapter=inputs["revision"]["chapter"],
                     supersedes_event_id=None, impact_type="canon_fact")
@@ -160,13 +163,16 @@ else:
                     return [project_schema(item, schema.get("items", {})) for item in value]
                 return value
             from novel_forge.modules.chapter_authority.provider_output_contracts import inline_shared_canon_schema
-            result = project_schema(result, inline_shared_canon_schema(payload.output_schema))
+            result = project_schema(result, inline_shared_canon_schema(payload.output_schema.get("x-host-payload-schema", payload.output_schema)))
+            if typed_envelope:
+                result = {"payload_json": json.dumps(result, ensure_ascii=False)}
         if stage in {"review", "rereview"}:
             for collection in ("issues", "resolution_checks", "knowledge_checks"):
                 for issue in result.get(collection, []):
                     if isinstance(issue.get("evidence"), dict) and "quote" in issue["evidence"]:
                         issue["evidence"] = {"quote": issue["evidence"]["quote"]}
-        if payload.output_schema and payload.output_schema.get("additionalProperties") is False:
+        if (payload.output_schema and payload.output_schema.get("additionalProperties") is False
+                and payload.output_schema_version != "schema:chapter-provider-output:canon_extraction:v25"):
             result = {key: value for key, value in result.items() if key in payload.output_schema["properties"]}
         if payload.output_schema_version == "schema:chapter-provider-output:canon_extraction:v25":
             result = {"output_json": json.dumps(result, ensure_ascii=False, allow_nan=False)}

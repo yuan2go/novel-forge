@@ -790,7 +790,7 @@ def main() -> int:
                             ),
                             execute=lambda item: execute_book_phase_with_creation_scope(settings, item, composition,
                                 lambda scoped: execute_claimed_book_opening_execution(runtime_jobs, scoped.opening,
-                                    principal, item, lease_seconds=lease_seconds)),
+                                    scoped.principal, item, lease_seconds=lease_seconds)),
                             on_task_start=supervisor.operation_started,
                             on_task_finish=lambda operation_id, succeeded: (
                                 supervisor.operation_finished(

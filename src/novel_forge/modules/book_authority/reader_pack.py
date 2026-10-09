@@ -80,31 +80,19 @@ def ensure_creation_reader_pack(
             ],
         )
         active = uow.cursor.fetchone()
-        if active:
-            if active[2:] != (
-                "1.6.0",
-                "ACTIVE",
-                sha,
-                canonical_hash(profile.manifest),
-                canonical_hash(_normalized_artifact_catalog(profile.artifact_catalog)),
-            ):
-                raise KernelError(
-                    "READER_CURRENT_DEPLOYMENT_DRIFT",
-                    "Existing Reader deployment must match exact current frozen manifest/catalog/release",
-                )
-            return {
-                "pack_id": pack_id,
-                "pack_version": "1.6.0",
-                "deployment_id": active[1],
-                "activation_version": active[0],
-                "replayed": True,
-            }
+        if active and active[3] == "ACTIVE" and active[4] == sha:
+            profile.manifest["identity"]["version"] = active[2]
+            if (active[5], active[6]) != (canonical_hash(profile.manifest), canonical_hash(_normalized_artifact_catalog(profile.artifact_catalog))):
+                raise KernelError("READER_CURRENT_DEPLOYMENT_DRIFT", "Current release Reader deployment differs from its frozen manifest/catalog")
+            return {"pack_id": pack_id, "pack_version": active[2], "deployment_id": active[1],
+                "activation_version": active[0], "replayed": True}
+    version = "1.6." + str(100000 + int(sha[:8], 16))
     return install_longform_validation_pack(
         settings.database_url,
         profile=profile,
-        pack_version="1.6.0",
+        pack_version=version,
         agent_generation=1,
-        expected_activation_version=0,
+        expected_activation_version=int(active[0]) if active else 0,
         project_id=args.project_id,
         workspace_id=args.workspace_id,
         book_id=args.book_id,

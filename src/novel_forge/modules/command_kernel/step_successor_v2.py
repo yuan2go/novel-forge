@@ -37,6 +37,7 @@ def replace_failed_step(
     transaction_guard=None,
     known_receipt_effects=(),
     known_rejected_effects=(),
+    known_isolated_effects=(),
     window_successor=None,
     _uow=None,
     _group_ids=(),
@@ -52,6 +53,7 @@ def replace_failed_step(
                 "failure_code": expected_failure_code,
                 **({"known_rejected_effects": known_rejected_effects} if known_rejected_effects else {}),
                 **({"window_successor": window_successor} if window_successor else {}),
+                **({"known_isolated_effects": known_isolated_effects} if known_isolated_effects else {}),
                 **(
                     {"known_receipt_effects": known_receipt_effects}
                     if known_receipt_effects
@@ -115,14 +117,16 @@ def replace_failed_step(
             [predecessor_id, saga["saga_id"]],
         )
         row = cursor.fetchone()
+        from .context_transport_recovery import require_unsent_context_transport
+        unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence)
         if (
             not row
-            or source["status"] not in {"FAILED_FINAL", "DEAD_LETTER"}
+            or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in {"RUNNING", "MANUAL_INTERVENTION"}
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
-            or source["definition_version"] == target_version
+            or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport)
         ):
             raise KernelError(
                 "STEP_SUCCESSOR_SOURCE_INVALID",
@@ -171,12 +175,12 @@ def replace_failed_step(
         if output:
             output = has_domain_outputs(cursor, predecessor_id)
         if known_receipt_effects:
-            _require_verified_receipts(cursor, source=source, expected=known_receipt_effects)
+            _require_verified_receipts(cursor, source=source, expected=known_receipt_effects, isolated_siblings=bool(known_isolated_effects))
             cursor.execute(
                 "SELECT e.external_effect_id,e.request_hash,e.status,b.status,e.effect_type FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id",
                 [predecessor_id],
             )
-            if [row for row in cursor.fetchall() if row[0] not in {e[0] for e in known_rejected_effects}] != [
+            if [row for row in cursor.fetchall() if row[0] not in {e[0] for e in (*known_rejected_effects, *known_isolated_effects)}] != [
                 (effect, digest, "SUCCEEDED", "SETTLED", "model.invoke")
                 for effect, digest in sorted(known_receipt_effects)
             ]:
@@ -206,6 +210,19 @@ def replace_failed_step(
                 cursor.execute("SELECT v.content_hash FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE v.asset_version_id=%s AND a.project_id=%s", [receipt, project])
                 if cursor.fetchone() != (receipt_hash,):
                     raise KernelError("STEP_SUCCESSOR_REJECTION_UNRECONCILED", "Immutable process receipt identity changed")
+            external = False
+            output = has_domain_outputs(cursor, predecessor_id)
+        if known_isolated_effects:
+            from .generation_isolation import isolation
+            cursor.execute("SELECT external_effect_id,request_hash FROM authority_external_effect WHERE operation_id=%s ORDER BY external_effect_id", [predecessor_id])
+            original_effects = cursor.fetchall()
+            isolated = [row for row in original_effects if row[0] not in {e[0] for e in known_receipt_effects}]
+            proofs = [isolation(cursor, effect) for effect, request_hash in isolated]
+            if (tuple(isolated) != tuple(sorted(known_isolated_effects))
+                or not all(proofs) or policy_evidence.get("generation_isolations") != proofs
+                or policy_evidence.get("contract_version") != "chapter-pure-generation-successor.v1"
+                or any(proof["operation_id"] != predecessor_id or proof["actor_id"] != context.actor_id for proof in proofs)):
+                raise KernelError("STEP_SUCCESSOR_ISOLATION_UNPROVEN", "Bind every original effect to its immutable pure generation disposition")
             external = False
             output = has_domain_outputs(cursor, predecessor_id)
         if external or output or dependent or live_lease:
@@ -244,12 +261,22 @@ def replace_failed_step(
                 "STEP_SUCCESSOR_CONTRACT_CHANGED",
                 "Successor cannot relax completion, permissions or external execution requirements",
             )
+        if unsent_transport and source["status"] == "FAILED_RETRYABLE":
+            from .attempt_runtime import _cas_operation
+            _cas_operation(uow, operation_id=source["operation_id"], project_id=project,
+                expected_status=source["status"], expected_version=source["version"], target_status="DEAD_LETTER",
+                actor_id=context.actor_id, reason="Exhausted unsent v12 attempts retained before one native v13 transport successor",
+                trace_id=source["trace_id"], correlation_id=source["correlation_id"])
+            cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [predecessor_id])
+            source = cursor.fetchone()[0]
         window = None
         if window_successor:
-            window = _corrected_contract_window(cursor, root, source, target, deadline, window_successor)
+            window = _corrected_contract_window(cursor, root, source, target, deadline, window_successor, transport_policy=policy_evidence if unsent_transport else None)
             cursor.execute("UPDATE authority_operation SET business_deadline_at=%s WHERE operation_id=%s AND version=%s AND status='WAITING_CHILDREN'", [window["new_deadline"], root["operation_id"], root["version"]])
             if cursor.rowcount != 1:
                 raise KernelError("STEP_SUCCESSOR_ROOT_CHANGED", "The execution window fence changed")
+            if unsent_transport:
+                cursor.execute("UPDATE authority_saga SET root_deadline_at=%s WHERE saga_id=%s AND version=%s", [window["new_deadline"],saga["saga_id"],saga["version"]])
         graph_context = GraphCommandContext(
             project,
             context.actor_id,
@@ -358,12 +385,16 @@ def replace_failed_step(
     return {"operation_id": successor, "replayed": False}
 
 
-def _corrected_contract_window(cursor, root, source, target, deadline, policy):
+def _corrected_contract_window(cursor, root, source, target, deadline, policy, *, transport_policy=None):
     key, value = policy.get("policy_key"), policy.get("policy_value")
     duration = int(root["definition_snapshot"]["timeout_policy"]["operation_timeout_seconds"])
-    if (policy.get("contract_version") != "kernel-corrected-contract-window.v1"
-        or not key or not value or target["policy"].get(key) != value
-        or source["definition_snapshot"]["policy"].get(key) == value
+    transport = (transport_policy is not None and transport_policy.get("contract_version") == "chapter-unsent-context-transport.v1"
+        and policy == {"contract_version":"kernel-unsent-transport-window.v1",
+            "target_deployment_id":transport_policy.get("target_deployment_id"),"release_sha":transport_policy.get("release_sha")})
+    corrected = (policy.get("contract_version") == "kernel-corrected-contract-window.v1"
+        and key and value and target["policy"].get(key) == value
+        and source["definition_snapshot"]["policy"].get(key) != value)
+    if (not (transport or corrected)
         or not deadline or not 0 < duration <= 3600
         or any(k in root["command_payload"] for k in ("business_deadline_at", "author_deadline_at"))):
         raise KernelError("STEP_SUCCESSOR_WINDOW_INVALID", "Only a changed execution contract may continue a derived bounded window")
@@ -553,7 +584,7 @@ def _require_reconciled_graph(cursor, *, root_id, predecessor_id):
         LEFT JOIN authority_budget_reservation b USING(external_effect_id)
         WHERE o.root_operation_id=%s AND (e.status IN
         ('UNKNOWN','DISPATCHING','RECONCILIATION_REQUIRED','PENDING')
-        OR b.status IS DISTINCT FROM 'SETTLED')),
+        OR b.status IS DISTINCT FROM 'SETTLED') AND NOT authority_generation_isolated(e.external_effect_id)),
         EXISTS(SELECT 1 FROM authority_lease_acquisition l
         JOIN authority_attempt a USING(attempt_id)
         JOIN authority_operation o USING(operation_id)
@@ -567,7 +598,7 @@ def _require_reconciled_graph(cursor, *, root_id, predecessor_id):
                           "Reconcile every outcome, settle accounting and release leases before succession")
 
 
-def _require_verified_receipts(cursor, *, source, expected):
+def _require_verified_receipts(cursor, *, source, expected, isolated_siblings=False):
     context = EffectCommandContext(operation_id=source["operation_id"],
         project_id=source["project_id"], actor_id=source["actor_id"],
         trace_id=source["trace_id"], correlation_id=source["correlation_id"])
@@ -576,6 +607,6 @@ def _require_verified_receipts(cursor, *, source, expected):
         effect = repository.get_for_update(effect_id)
         if effect["operation_id"] != source["operation_id"] or effect["request_hash"] != request_hash:
             raise KernelError("STEP_SUCCESSOR_RECEIPT_DRIFT", "Bind the exact original effect and request")
-        verified = _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id)
+        verified = (_read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id, retained_generation_stage=True) if isolated_siblings else _read_verified_success(SimpleNamespace(cursor=cursor), repository, context, effect_id))
         if verified is None or verified["budget_reservation_status"] != "SETTLED":
             raise KernelError("STEP_SUCCESSOR_RECEIPT_UNSETTLED", "Require Kernel-verified success and settled accounting")

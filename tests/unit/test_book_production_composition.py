@@ -526,3 +526,41 @@ class BookProductionCompositionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NativeBookPlanningRecoveryTests(unittest.TestCase):
+    def composition(self, failure):
+        from unittest.mock import Mock
+        from dataclasses import fields
+        from novel_forge.modules.book_authority.composition import BookProductionComposition
+        values = {field.name: None for field in fields(BookProductionComposition)}
+        values.update(authority=Mock(),planning=SimpleNamespace(execution_binder=object()),principal=object(),supervisor=Mock())
+        values['authority'].require.return_value={'project_id':'project','book_id':'original-book'}
+        values['supervisor'].tick.side_effect=[failure,'saved-next-chapter']
+        return BookProductionComposition(**values)
+
+    def test_planning_stream_failure_continues_inside_same_native_tick(self):
+        from novel_forge.modules.command_kernel.errors import KernelError
+        composition = self.composition(KernelError('MODEL_EFFECT_OUTCOME_UNKNOWN_CODEX_RESPONSE_BODY_DECODE_FAILED','stream interrupted'))
+        with patch('novel_forge.modules.command_kernel.generation_isolation.recover_book_generations',side_effect=[False,True]) as recovery:
+            self.assertEqual(composition.tick('book-run'),'saved-next-chapter')
+        self.assertEqual(composition.supervisor.tick.call_count,2)
+        self.assertEqual(recovery.call_count,2)
+        self.assertEqual(recovery.call_args.kwargs['book_id'],'original-book')
+
+    def test_planning_exhaustion_preserves_exit_without_another_dispatch(self):
+        from novel_forge.modules.command_kernel.errors import KernelError
+        composition = self.composition(KernelError('MODEL_EFFECT_OUTCOME_UNKNOWN_PROVIDER_STREAM_INTERRUPTED','stream interrupted'))
+        with patch('novel_forge.modules.command_kernel.generation_isolation.recover_book_generations',side_effect=[False,KernelError('GENERATION_RECOVERY_EXHAUSTED','shared allowance exhausted')]):
+            with self.assertRaisesRegex(KernelError,'GENERATION_RECOVERY_EXHAUSTED'):
+                composition.tick('book-run')
+        self.assertEqual(composition.supervisor.tick.call_count,1)
+
+    def test_irreversible_unknown_does_not_enter_generation_recovery(self):
+        from novel_forge.modules.command_kernel.errors import KernelError
+        composition = self.composition(KernelError('PAYMENT_OUTCOME_UNKNOWN','payment requires reconciliation'))
+        with patch('novel_forge.modules.command_kernel.generation_isolation.recover_book_generations',return_value=False) as recovery:
+            with self.assertRaisesRegex(KernelError,'PAYMENT_OUTCOME_UNKNOWN'):
+                composition.tick('book-run')
+        self.assertEqual(composition.supervisor.tick.call_count,1)
+        self.assertEqual(recovery.call_count,1)

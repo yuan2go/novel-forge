@@ -1,0 +1,247 @@
+EEEEEEEEE                                                                [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_lost_remote_receipt_does_not_require_fabricating_a_process_receipt _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[book] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[operation] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[envelope] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[schema] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[transport] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[phase] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_complete_content_must_be_reused_even_when_usage_is_missing[normalized] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+_ ERROR at setup of test_complete_content_must_be_reused_even_when_usage_is_missing[raw_complete] _
+
+    @pytest.fixture
+    def retained():
+        request = contracts(backend_id="remote-provider", runtime=ExecutionRuntimeClass.REMOTE_PROVIDER_API)[5]
+>       payload = ResolvedExecutionPayload(request_payload={"input": "frozen"}, input_text="original", working_directory="", timeout_seconds=30,
+            output_schema_version="schema:v1", output_schema={"type": "object"})
+
+tests/unit/test_native_api_generation_isolation.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ResolvedExecutionPayload(request_payload={'input': 'frozen'}, input_text='original', working_directory='', timeout_sec...ironment_overrides=None, output_schema={'type': 'object'}, capability_evidence=None, allowed_tools=(), denied_tools=())
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.request_payload, Mapping):
+            raise ValueError("resolved execution request payload must be an object")
+        if not self.working_directory or self.timeout_seconds <= 0:
+>           raise ValueError(
+                "resolved execution payload requires workspace and timeout"
+            )
+E           ValueError: resolved execution payload requires workspace and timeout
+
+src/novel_forge/modules/production_execution/backends.py:139: ValueError
+=========================== short test summary info ============================
+ERROR tests/unit/test_native_api_generation_isolation.py::test_lost_remote_receipt_does_not_require_fabricating_a_process_receipt
+ERROR tests/unit/test_native_api_generation_isolation.py::test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[book]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[operation]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[envelope]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[schema]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[transport]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_durable_invocation_cannot_authorize_another_identity_or_unadmitted_boundary[phase]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_complete_content_must_be_reused_even_when_usage_is_missing[normalized]
+ERROR tests/unit/test_native_api_generation_isolation.py::test_complete_content_must_be_reused_even_when_usage_is_missing[raw_complete]
+9 errors in 0.45s

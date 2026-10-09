@@ -357,3 +357,52 @@ def known_canon_extraction(result, text, *, source_span_contract):
 def known_receipt_source_span_contract(request):
     result = _consume_known_draft_receipt(request)
     return result[1].get("source_span_contract") if result else None
+
+
+def consume_completed_generation_sibling(request, *, stage, payload):
+    from dataclasses import replace
+    with AuthorityUnitOfWork(request.database_url) as u:
+        u.cursor.execute("""SELECT journal.policy_evidence,journal.source_failure_snapshot,
+            current.command_payload,current.input_asset_snapshot,current.actor_id,current.definition_version
+            FROM authority_saga_step_successor journal JOIN authority_operation current
+              ON current.operation_id=journal.successor_operation_id
+            WHERE journal.successor_operation_id=%s AND journal.project_id=%s
+              AND journal.policy_evidence->>'contract_version'='chapter-pure-generation-successor.v1'""",
+            [request.operation_id, request.project_id])
+        row = u.cursor.fetchone()
+        if not row:
+            return None
+        policy, failure, command, inputs, actor, version = row
+        source = failure["operation"]
+        if (command != source["command_payload"] or inputs != source["input_asset_snapshot"]
+                or actor != source["actor_id"] or version != source["definition_version"]
+                or version != request.effective_definition_version):
+            raise KernelError("KNOWN_RECEIPT_INPUT_DRIFT", "Completed siblings retain the same Chapter actor, frozen inputs and execution contract")
+        matches = []
+        for proof in policy.get("completed_model_effects", []):
+            if proof.get("stage") != stage:
+                continue
+            u.cursor.execute("""SELECT operation_id,request_hash,status,request_payload FROM authority_external_effect
+                WHERE external_effect_id=%s AND project_id=%s""", [proof["external_effect_id"], request.project_id])
+            effect = u.cursor.fetchone()
+            if not effect or effect[:3] != (source["operation_id"], proof["request_hash"], "SUCCEEDED"):
+                raise KernelError("KNOWN_RECEIPT_INPUT_DRIFT", "The retained sibling identity changed")
+            if effect[3].get("input") == payload:
+                matches.append(proof)
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise KernelError("KNOWN_RECEIPT_SOURCE_AMBIGUOUS", "Exactly one completed sibling may satisfy the current stage and input")
+        proof = matches[0]
+        context = EffectCommandContext(source["operation_id"], request.project_id, source["actor_id"],
+            source["trace_id"], source["correlation_id"])
+        verified = _read_verified_success(u, u.repositories.external_effects, context,
+            proof["external_effect_id"], retained_generation_stage=True)
+        if verified is None or verified["budget_reservation_status"] != "SETTLED":
+            raise KernelError("KNOWN_RECEIPT_SOURCE_INVALID", "A verified retained model result is required")
+        result = ModelProviderResult.from_evidence(verified["provider_evidence"])
+        return replace(result, execution_evidence={**(result.execution_evidence or {}),
+            "completed_sibling_reuse": {"contract_version": "chapter-completed-sibling-reuse.v1",
+                "source_operation_id": source["operation_id"], "source_effect_id": proof["external_effect_id"],
+                "source_request_hash": proof["request_hash"], "successor_operation_id": request.operation_id,
+                "stage": stage, "provider_invoked": False, "original_submission_right": "REVOKED"}})

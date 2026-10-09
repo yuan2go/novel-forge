@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -17,7 +18,7 @@ def test_unknown_accounting_lease_or_cancellation_prevents_successor_mutation(fa
 
 def test_old_settled_local_timeout_cannot_enable_a_pure_host_successor():
     cursor = Mock()
-    cursor.fetchone.side_effect = [("project",), ("root", "original-book")]
+    cursor.fetchone.side_effect = [("project",), ("root", "original-book"), None, None]
     cursor.fetchall.return_value = [("old-effect", "old-operation", "FAILED_RETRYABLE", "old-process")]
     with pytest.raises(KernelError, match="EFFECT_CLI_OUTCOME_RECONCILIATION_REQUIRED"):
         recovery._require_reconciled_graph(cursor, root_id="root", predecessor_id="source")
@@ -44,3 +45,32 @@ def test_foreign_success_cannot_authorize_this_successor(monkeypatch):
     with pytest.raises(KernelError, match="STEP_SUCCESSOR_RECEIPT_DRIFT"):
         recovery._require_verified_receipts(Mock(), source=source, expected=[("effect", "request")])
     reader.assert_not_called()
+
+
+@pytest.mark.parametrize("explicit_deadline", [None, "business_deadline_at", "author_deadline_at"])
+def test_unsent_transport_window_preserves_explicit_deadlines(explicit_deadline):
+    cursor = Mock()
+    cursor.fetchone.return_value = (False, False)
+    deadline = datetime.now(timezone.utc) - timedelta(hours=2)
+    root = {"operation_id": "root", "definition_snapshot": {"timeout_policy": {"operation_timeout_seconds": 3600}},
+            "command_payload": {} if explicit_deadline is None else {explicit_deadline: deadline.isoformat()}}
+    transport = {"contract_version": "chapter-unsent-context-transport.v1", "target_deployment_id": "pack", "release_sha": "sha"}
+    policy = {**transport, "contract_version": "kernel-unsent-transport-window.v1"}
+    if explicit_deadline:
+        with pytest.raises(KernelError, match="STEP_SUCCESSOR_WINDOW_INVALID"):
+            recovery._corrected_contract_window(cursor, root, {}, {}, deadline, policy, transport_policy=transport)
+        cursor.execute.assert_not_called()
+    else:
+        result = recovery._corrected_contract_window(cursor, root, {}, {}, deadline, policy, transport_policy=transport)
+        assert result["original_deadline"] == deadline.isoformat()
+        assert datetime.fromisoformat(result["new_deadline"]) > datetime.now(timezone.utc)
+        assert result["duration_seconds"] == 3600
+        assert result["resource_authorization"] == "UNCHANGED"
+
+
+def test_unsent_transport_window_rejects_release_drift():
+    root = {"definition_snapshot": {"timeout_policy": {"operation_timeout_seconds": 3600}}, "command_payload": {}}
+    transport = {"contract_version": "chapter-unsent-context-transport.v1", "target_deployment_id": "pack", "release_sha": "sha"}
+    with pytest.raises(KernelError, match="STEP_SUCCESSOR_WINDOW_INVALID"):
+        recovery._corrected_contract_window(Mock(), root, {}, {}, datetime.now(timezone.utc),
+            {**transport, "contract_version": "kernel-unsent-transport-window.v1", "release_sha": "foreign"}, transport_policy=transport)

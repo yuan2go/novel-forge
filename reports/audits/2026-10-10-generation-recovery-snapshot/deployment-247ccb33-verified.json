@@ -1,0 +1,18 @@
+{
+  "baseline_sha": "f30abd74ffa5d321fe2e2b92ce510a045a523cd5",
+  "deployed_sha": "247ccb33a13709d4e7b061cc596d4a1f3fde621e",
+  "release_root": "/Volumes/DevSSD/Development/Data/novel-runtime/wp-work-adaptation-reader-promise-to-prose-01-20261008/service-recovery/releases/247ccb33a13709d4e7b061cc596d4a1f3fde621e",
+  "application_build_id": "generation-recovery-prose-02-247ccb33a137",
+  "api_pid": 59228,
+  "health": {
+    "provider_dispatch_suspended": false,
+    "status": "alive",
+    "storage_authority": "postgresql"
+  },
+  "database_port": 55489,
+  "migration_head": "20261009_0194_multi_model_generation_isolation",
+  "dispatch_process_suspended": false,
+  "backup": "/Volumes/DevSSD/Development/Workspace/evidence/wp-generation-recovery-prose-02/before-review_shared_port-result-deployment.dump",
+  "metadata_correction": "Original deployment manifest named an incorrect backup path; actual pre-deployment verified backup is recorded here; original manifest retained.",
+  "backup_restore_proof": "/Volumes/DevSSD/Development/Workspace/evidence/wp-generation-recovery-prose-02/backup-restore-review_shared_port.json"
+}

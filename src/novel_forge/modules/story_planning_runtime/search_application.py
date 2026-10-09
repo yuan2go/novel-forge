@@ -26,7 +26,7 @@ from .narrative_search import (
     NarrativeSearchComparison,
     NarrativeSearchProjection,
     NarrativeSearchStatus,
-    compare_narrative_futures,
+    compare_narrative_futures, select_available_qualified_future,
     validate_search_selection_policy,
 )
 
@@ -272,6 +272,7 @@ class PostgresNarrativeSearchApplication:
             parent_hash=parent_hash,
             stable_key=search_key,
         )
+        selection_policy = self._available_selection_policy(command.project_id)
         generations: dict[str, PlanningGenerationResult] = {}
         reconciled_branch_seen = False
         for ordinal, directive in enumerate(request.strategy_directives, start=1):
@@ -381,6 +382,8 @@ class PostgresNarrativeSearchApplication:
                 == "NARRATIVE_SEARCH_BRANCH_RECONCILIATION"
             )
             generations[result.candidate_asset_version_id] = result
+            if selection_policy:
+                break
         if reconciled_branch_seen:
             opening_binding = dict(command.opening_execution_binding or {})
             opening_run_id = str(opening_binding.get("opening_run_id") or "")
@@ -397,7 +400,7 @@ class PostgresNarrativeSearchApplication:
             search_id,
             allow_reconciled_branches=reconciled_branch_seen,
         )
-        if len(candidates) != len(request.strategy_directives):
+        if len(candidates) != len(request.strategy_directives) and not selection_policy:
             raise KernelError(
                 "NARRATIVE_SEARCH_CANDIDATE_SET_INCOMPLETE",
                 "not every frozen strategy produced a qualified future",
@@ -407,6 +410,9 @@ class PostgresNarrativeSearchApplication:
             search_id,
             candidates,
             allow_reconciled_branches=reconciled_branch_seen,
+            available_selection_evidence=({**selection_policy,"comparison_status":"INCOMPLETE",
+                "author_decision":"NOT_RECORDED", "expected_branch_keys":[f"future-{index}" for index in range(1,len(request.strategy_directives)+1)]}
+                if selection_policy and len(candidates) < len(request.strategy_directives) else None),
         )
         selected = generations.get(comparison.selected_candidate_asset_version_id)
         if selected is None:
@@ -470,6 +476,41 @@ class PostgresNarrativeSearchApplication:
             ),
             replayed=replayed or decision_replayed,
         )
+
+    def retained_planning_horizon(self, command: StoryPlanningGenerationCommand) -> dict[str, Any] | None:
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT planning_horizon,generator_operation_name,logical_key,workspace_id
+                FROM authority_story_narrative_search WHERE project_id=%s AND book_id=%s AND stable_idempotency_key=%s""",
+                [command.project_id, command.book_id, command.idempotency_key + ":narrative-search"])
+            row = uow.cursor.fetchone()
+        if row is None:
+            return None
+        if tuple(row[1:]) != (command.generator_operation_name, command.logical_key, command.workspace_id):
+            raise KernelError("NARRATIVE_SEARCH_IDEMPOTENCY_CONFLICT", "Retained search belongs to a different logical task")
+        return dict(row[0])
+
+    def _available_selection_policy(self, project_id):
+        from novel_forge.storage.versioned_policy_repository import policy_hash
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT version.content FROM authority_runtime_policy_selection selection
+                JOIN authority_runtime_policy_version version USING(owner,project_id,policy_version)
+                WHERE selection.owner='BOOK_CONTROL' AND selection.project_id=%s""",[project_id])
+            row = uow.cursor.fetchone()
+        if not row or row[0].get("planning_selection_mode") != "AVAILABLE_QUALIFIED":
+            return None
+        from novel_forge.modules.book_authority.control_policy import ControlPolicy
+        ControlPolicy(**row[0])
+        return {"control_policy_version":row[0]["policy_version"],"control_policy_hash":policy_hash(row[0])}
+
+    def selected_branch_keys(self, search_id, *, expected_branch_keys):
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT comparison FROM authority_story_narrative_search_decision WHERE search_id=%s",[search_id])
+            row = uow.cursor.fetchone()
+        if row and row[0].get("policy_version") == "available-qualified-selection.v1":
+            if tuple(row[0]["selection_evidence"]["expected_branch_keys"]) != tuple(expected_branch_keys):
+                raise KernelError("NARRATIVE_SEARCH_DURABLE_SELECTION_DRIFT", "Frozen strategy identity changed")
+            return tuple(sorted(item["branch_key"] for item in row[0]["ranked_candidates"]))
+        return tuple(expected_branch_keys)
 
     def require_selected(
         self,
@@ -539,10 +580,10 @@ class PostgresNarrativeSearchApplication:
             search_id,
             allow_reconciled_branches=allow_reconciled_branches,
         )
-        comparison = compare_narrative_futures(
-            candidates,
-            selection_policy=request.desired_transformation.get("selection_policy"),
-        )
+        stored_comparison = dict(row[10])
+        comparison = (select_available_qualified_future(candidates, evidence=stored_comparison["selection_evidence"])
+            if stored_comparison.get("policy_version") == "available-qualified-selection.v1"
+            else compare_narrative_futures(candidates, selection_policy=request.desired_transformation.get("selection_policy")))
         comparison_payload = comparison.to_dict()
         candidate_set_hash = canonical_hash(
             [
@@ -1736,6 +1777,7 @@ class PostgresNarrativeSearchApplication:
         candidates: Sequence[NarrativeSearchCandidate],
         *,
         allow_reconciled_branches: bool = False,
+        available_selection_evidence: Mapping[str, Any] | None = None,
     ) -> tuple[NarrativeSearchComparison, bool]:
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -1748,9 +1790,13 @@ class PostgresNarrativeSearchApplication:
                 "NARRATIVE_SEARCH_SELECTION_SOURCE_MISSING",
                 "Selection requires the persisted work and stage goals",
             )
-        comparison = compare_narrative_futures(
-            candidates, selection_policy=dict(frozen[0]).get("selection_policy")
-        )
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("SELECT comparison FROM authority_story_narrative_search_decision WHERE search_id=%s",[search_id])
+            previous = uow.cursor.fetchone()
+        if previous and previous[0].get("policy_version") == "available-qualified-selection.v1":
+            available_selection_evidence = previous[0]["selection_evidence"]
+        comparison = (select_available_qualified_future(candidates, evidence=available_selection_evidence)
+            if available_selection_evidence else compare_narrative_futures(candidates, selection_policy=dict(frozen[0]).get("selection_policy")))
         evidence = comparison.to_dict()
         candidate_set_hash = canonical_hash(
             [
@@ -1769,6 +1815,24 @@ class PostgresNarrativeSearchApplication:
                 candidates=candidates,
                 allow_reconciled_branches=allow_reconciled_branches,
             )
+            if available_selection_evidence:
+                if not previous:
+                    uow.cursor.execute("""SELECT 1 FROM authority_runtime_policy_selection selection
+                        JOIN authority_runtime_policy_version version USING(owner,project_id,policy_version)
+                        JOIN authority_story_narrative_search search ON search.project_id=selection.project_id
+                        WHERE selection.owner='BOOK_CONTROL' AND search.search_id=%s
+                          AND version.policy_version=%s AND version.content_hash=%s
+                          AND version.content->>'planning_selection_mode'='AVAILABLE_QUALIFIED'
+                        FOR SHARE OF selection""",[search_id,available_selection_evidence["control_policy_version"],available_selection_evidence["control_policy_hash"]])
+                    if not uow.cursor.fetchone():
+                        raise KernelError("NARRATIVE_SEARCH_SELECTION_POLICY_STALE", "Select through the current native ControlPolicy")
+                uow.cursor.execute("""SELECT 1 FROM authority_story_planning_generation generation
+                    JOIN authority_operation operation USING(operation_id)
+                    WHERE generation.narrative_search_id=%s
+                      AND operation.status IN ('ADMITTED','EXECUTING','WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED')
+                      AND NOT EXISTS(SELECT 1 FROM authority_generation_isolation isolated WHERE isolated.operation_id=operation.operation_id) LIMIT 1""",[search_id])
+                if uow.cursor.fetchone():
+                    raise KernelError("NARRATIVE_SEARCH_ACTIVE_WRITER", "Stop or isolate the active branch before available-candidate selection")
             uow.cursor.execute(
                 """
                 INSERT INTO authority_story_narrative_search_decision(

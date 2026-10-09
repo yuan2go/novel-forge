@@ -1,0 +1,389 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+_ test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run _
+
+    def test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run():
+>       helper,fixture,previous,principal,scope,text,saved,adopted = unaccepted_author_fixture()
+                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:31: in unaccepted_author_fixture
+    fixture = helper._new_book_fixture(target_chapter_count=1)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1547: in _new_book_fixture
+    chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
+tests/integration/test_postgresql_only_chapter_slice.py:246: in release_evidence
+    with transaction() as connection, connection.cursor() as cursor:
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/integration/authority_postgres_support.py:26: in transaction
+    connection = connect()
+                 ^^^^^^^^^
+tests/integration/authority_postgres_support.py:21: in connect
+    return psycopg.connect(DATABASE_URL, connect_timeout=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'psycopg.Connection'>
+conninfo = 'user=novel_forge password=[REDACTED] dbname=novel_forge_authority_test host=127.0.0.1 port=55432 connect_timeout=3 hostaddr=127.0.0.1'
+autocommit = False, prepare_threshold = 5, context = None, row_factory = None
+cursor_factory = None, kwargs = {'connect_timeout': 3}
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+        **kwargs: ConnParam,
+    ) -> Self:
+        """
+        Connect to a database server and return a new `Connection` instance.
+        """
+    
+        params = cls._get_connection_params(conninfo, **kwargs)
+        timeout = timeout_from_conninfo(params)
+        rv = None
+        attempts = conninfo_attempts(params)
+        conn_errors: list[tuple[e.Error, str]] = []
+        for attempt in attempts:
+            tdescr = (attempt.get("host"), attempt.get("port"), attempt.get("hostaddr"))
+            descr = "host: %r, port: %r, hostaddr: %r" % tdescr
+            logger.debug("connection attempt: %s", descr)
+            try:
+                conninfo = make_conninfo("", **attempt)
+                gen = cls._connect_gen(conninfo, timeout=timeout)
+                rv = waiting.wait_conn(gen, interval=_WAIT_INTERVAL)
+            except e.Error as ex:
+                logger.debug("connection failed: %s: %s", descr, str(ex))
+                conn_errors.append((ex, descr))
+            except e._NO_TRACEBACK as ex:
+                raise ex.with_traceback(None)
+            else:
+                logger.debug("connection succeeded: %s", descr)
+                break
+    
+        if not rv:
+            last_ex = conn_errors[-1][0]
+            if len(conn_errors) == 1:
+>               raise last_ex.with_traceback(None)
+E               psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: OperationalError
+_____ test_author_replacement_rejects_stale_book_and_unsettled_predecessor _____
+
+    def test_author_replacement_rejects_stale_book_and_unsettled_predecessor():
+>       helper,fixture,previous,principal,scope,text,saved,adopted=unaccepted_author_fixture(finish=False)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:31: in unaccepted_author_fixture
+    fixture = helper._new_book_fixture(target_chapter_count=1)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1547: in _new_book_fixture
+    chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
+tests/integration/test_postgresql_only_chapter_slice.py:246: in release_evidence
+    with transaction() as connection, connection.cursor() as cursor:
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/integration/authority_postgres_support.py:26: in transaction
+    connection = connect()
+                 ^^^^^^^^^
+tests/integration/authority_postgres_support.py:21: in connect
+    return psycopg.connect(DATABASE_URL, connect_timeout=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'psycopg.Connection'>
+conninfo = 'user=novel_forge password=[REDACTED] dbname=novel_forge_authority_test host=127.0.0.1 port=55432 connect_timeout=3 hostaddr=127.0.0.1'
+autocommit = False, prepare_threshold = 5, context = None, row_factory = None
+cursor_factory = None, kwargs = {'connect_timeout': 3}
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+        **kwargs: ConnParam,
+    ) -> Self:
+        """
+        Connect to a database server and return a new `Connection` instance.
+        """
+    
+        params = cls._get_connection_params(conninfo, **kwargs)
+        timeout = timeout_from_conninfo(params)
+        rv = None
+        attempts = conninfo_attempts(params)
+        conn_errors: list[tuple[e.Error, str]] = []
+        for attempt in attempts:
+            tdescr = (attempt.get("host"), attempt.get("port"), attempt.get("hostaddr"))
+            descr = "host: %r, port: %r, hostaddr: %r" % tdescr
+            logger.debug("connection attempt: %s", descr)
+            try:
+                conninfo = make_conninfo("", **attempt)
+                gen = cls._connect_gen(conninfo, timeout=timeout)
+                rv = waiting.wait_conn(gen, interval=_WAIT_INTERVAL)
+            except e.Error as ex:
+                logger.debug("connection failed: %s: %s", descr, str(ex))
+                conn_errors.append((ex, descr))
+            except e._NO_TRACEBACK as ex:
+                raise ex.with_traceback(None)
+            else:
+                logger.debug("connection succeeded: %s", descr)
+                break
+    
+        if not rv:
+            last_ex = conn_errors[-1][0]
+            if len(conn_errors) == 1:
+>               raise last_ex.with_traceback(None)
+E               psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: OperationalError
+_________ test_author_replacement_cannot_resume_paused_or_aborted_book _________
+
+    def test_author_replacement_cannot_resume_paused_or_aborted_book():
+>       helper,fixture,previous,principal,scope,text,saved,adopted=unaccepted_author_fixture(finish=False)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:31: in unaccepted_author_fixture
+    fixture = helper._new_book_fixture(target_chapter_count=1)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1547: in _new_book_fixture
+    chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
+tests/integration/test_postgresql_only_chapter_slice.py:246: in release_evidence
+    with transaction() as connection, connection.cursor() as cursor:
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/integration/authority_postgres_support.py:26: in transaction
+    connection = connect()
+                 ^^^^^^^^^
+tests/integration/authority_postgres_support.py:21: in connect
+    return psycopg.connect(DATABASE_URL, connect_timeout=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'psycopg.Connection'>
+conninfo = 'user=novel_forge password=[REDACTED] dbname=novel_forge_authority_test host=127.0.0.1 port=55432 connect_timeout=3 hostaddr=127.0.0.1'
+autocommit = False, prepare_threshold = 5, context = None, row_factory = None
+cursor_factory = None, kwargs = {'connect_timeout': 3}
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+        **kwargs: ConnParam,
+    ) -> Self:
+        """
+        Connect to a database server and return a new `Connection` instance.
+        """
+    
+        params = cls._get_connection_params(conninfo, **kwargs)
+        timeout = timeout_from_conninfo(params)
+        rv = None
+        attempts = conninfo_attempts(params)
+        conn_errors: list[tuple[e.Error, str]] = []
+        for attempt in attempts:
+            tdescr = (attempt.get("host"), attempt.get("port"), attempt.get("hostaddr"))
+            descr = "host: %r, port: %r, hostaddr: %r" % tdescr
+            logger.debug("connection attempt: %s", descr)
+            try:
+                conninfo = make_conninfo("", **attempt)
+                gen = cls._connect_gen(conninfo, timeout=timeout)
+                rv = waiting.wait_conn(gen, interval=_WAIT_INTERVAL)
+            except e.Error as ex:
+                logger.debug("connection failed: %s: %s", descr, str(ex))
+                conn_errors.append((ex, descr))
+            except e._NO_TRACEBACK as ex:
+                raise ex.with_traceback(None)
+            else:
+                logger.debug("connection succeeded: %s", descr)
+                break
+    
+        if not rv:
+            last_ex = conn_errors[-1][0]
+            if len(conn_errors) == 1:
+>               raise last_ex.with_traceback(None)
+E               psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: OperationalError
+_____ test_author_replacement_rebinds_native_group_before_group_acceptance _____
+
+    def test_author_replacement_rebinds_native_group_before_group_acceptance():
+>       helper,fixture,previous,principal,scope,text,saved,adopted=unaccepted_author_fixture(group=True)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:144: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:19: in unaccepted_author_fixture
+    fixture=helper._fixture(group_chapters=1)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_chapter_group_authority_postgres.py:763: in _fixture
+    chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
+tests/integration/test_postgresql_only_chapter_slice.py:246: in release_evidence
+    with transaction() as connection, connection.cursor() as cursor:
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/integration/authority_postgres_support.py:26: in transaction
+    connection = connect()
+                 ^^^^^^^^^
+tests/integration/authority_postgres_support.py:21: in connect
+    return psycopg.connect(DATABASE_URL, connect_timeout=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'psycopg.Connection'>
+conninfo = 'user=novel_forge password=[REDACTED] dbname=novel_forge_authority_test host=127.0.0.1 port=55432 connect_timeout=3 hostaddr=127.0.0.1'
+autocommit = False, prepare_threshold = 5, context = None, row_factory = None
+cursor_factory = None, kwargs = {'connect_timeout': 3}
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+        **kwargs: ConnParam,
+    ) -> Self:
+        """
+        Connect to a database server and return a new `Connection` instance.
+        """
+    
+        params = cls._get_connection_params(conninfo, **kwargs)
+        timeout = timeout_from_conninfo(params)
+        rv = None
+        attempts = conninfo_attempts(params)
+        conn_errors: list[tuple[e.Error, str]] = []
+        for attempt in attempts:
+            tdescr = (attempt.get("host"), attempt.get("port"), attempt.get("hostaddr"))
+            descr = "host: %r, port: %r, hostaddr: %r" % tdescr
+            logger.debug("connection attempt: %s", descr)
+            try:
+                conninfo = make_conninfo("", **attempt)
+                gen = cls._connect_gen(conninfo, timeout=timeout)
+                rv = waiting.wait_conn(gen, interval=_WAIT_INTERVAL)
+            except e.Error as ex:
+                logger.debug("connection failed: %s: %s", descr, str(ex))
+                conn_errors.append((ex, descr))
+            except e._NO_TRACEBACK as ex:
+                raise ex.with_traceback(None)
+            else:
+                logger.debug("connection succeeded: %s", descr)
+                break
+    
+        if not rv:
+            last_ex = conn_errors[-1][0]
+            if len(conn_errors) == 1:
+>               raise last_ex.with_traceback(None)
+E               psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: OperationalError
+____ test_author_replacement_retains_candidate_while_old_budget_is_unknown _____
+
+    def test_author_replacement_retains_candidate_while_old_budget_is_unknown():
+>       helper, fixture, previous, principal, scope, text, saved, adopted = unaccepted_author_fixture()
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_author_book_replacement_postgres.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/integration/test_author_book_replacement_postgres.py:31: in unaccepted_author_fixture
+    fixture = helper._new_book_fixture(target_chapter_count=1)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/integration/test_book_to_chapter_authority_vertical_postgres.py:1547: in _new_book_fixture
+    chapter_fixture.PostgreSQLOnlyChapterSliceTests.release_evidence(project_id, current_state_contract=True)
+tests/integration/test_postgresql_only_chapter_slice.py:246: in release_evidence
+    with transaction() as connection, connection.cursor() as cursor:
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+tests/integration/authority_postgres_support.py:26: in transaction
+    connection = connect()
+                 ^^^^^^^^^
+tests/integration/authority_postgres_support.py:21: in connect
+    return psycopg.connect(DATABASE_URL, connect_timeout=3)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'psycopg.Connection'>
+conninfo = 'user=novel_forge password=[REDACTED] dbname=novel_forge_authority_test host=127.0.0.1 port=55432 connect_timeout=3 hostaddr=127.0.0.1'
+autocommit = False, prepare_threshold = 5, context = None, row_factory = None
+cursor_factory = None, kwargs = {'connect_timeout': 3}
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+        **kwargs: ConnParam,
+    ) -> Self:
+        """
+        Connect to a database server and return a new `Connection` instance.
+        """
+    
+        params = cls._get_connection_params(conninfo, **kwargs)
+        timeout = timeout_from_conninfo(params)
+        rv = None
+        attempts = conninfo_attempts(params)
+        conn_errors: list[tuple[e.Error, str]] = []
+        for attempt in attempts:
+            tdescr = (attempt.get("host"), attempt.get("port"), attempt.get("hostaddr"))
+            descr = "host: %r, port: %r, hostaddr: %r" % tdescr
+            logger.debug("connection attempt: %s", descr)
+            try:
+                conninfo = make_conninfo("", **attempt)
+                gen = cls._connect_gen(conninfo, timeout=timeout)
+                rv = waiting.wait_conn(gen, interval=_WAIT_INTERVAL)
+            except e.Error as ex:
+                logger.debug("connection failed: %s: %s", descr, str(ex))
+                conn_errors.append((ex, descr))
+            except e._NO_TRACEBACK as ex:
+                raise ex.with_traceback(None)
+            else:
+                logger.debug("connection succeeded: %s", descr)
+                break
+    
+        if not rv:
+            last_ex = conn_errors[-1][0]
+            if len(conn_errors) == 1:
+>               raise last_ex.with_traceback(None)
+E               psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 55432 failed: could not receive data from server: Connection refused
+
+../../projects/novel-forge/.venv/lib/python3.12/site-packages/psycopg/connection.py:122: OperationalError
+=========================== short test summary info ============================
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_rejects_stale_book_and_unsettled_predecessor
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_cannot_resume_paused_or_aborted_book
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_rebinds_native_group_before_group_acceptance
+FAILED tests/integration/test_author_book_replacement_postgres.py::test_author_replacement_retains_candidate_while_old_budget_is_unknown
+5 failed in 0.79s

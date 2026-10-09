@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "code_sha": "9c8b2b091cb1dcc30ffffebe8d3946bccaf1fa38",
+  "scope": "Disposable full original-ledger restore; author reservation query excludes isolated history but retains a current unisolated unknown reservation",
+  "before_gate": 0,
+  "after_unisolated_unknown_gate": 1,
+  "unknown_reservations_preserved": 2,
+  "provider_calls": 0,
+  "production_mutations": 0,
+  "author_decision": "NOT_RECORDED"
+}

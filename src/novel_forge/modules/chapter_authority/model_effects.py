@@ -391,6 +391,13 @@ class ExternalEffectChapterModelPort:
             bound = next((item for item in request.inputs if item.asset_version_id == source.get("asset_version_id")), None)
             if bound is None or not source.get("content_hash") or bound.content_hash != source["content_hash"]:
                 raise KernelError("CONTEXT_COMPRESSION_SOURCE_DRIFT", "compression source must retain its exact frozen input version and hash on replay")
+        if getattr(request, "database_url", ""):
+            from .receipt_recovery import consume_completed_generation_sibling
+            retained = consume_completed_generation_sibling(request, stage=stage, payload=payload)
+            if retained is not None:
+                if pre_send_assertion is not None:
+                    pre_send_assertion()
+                return retained
         context = EffectCommandContext(
             operation_id=request.operation_id,
             project_id=request.project_id,
@@ -445,7 +452,7 @@ class ExternalEffectChapterModelPort:
             or business_payload.get("draft_profile_version") or ""
         )
         task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
-        task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0")
+        task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0") or task_scoped_prose_review(request, stage)
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
         if task_scoped and existing_intent is not None:
@@ -1773,7 +1780,8 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
         else None
     )
     failure = process_evidence if isinstance(process_evidence, dict) else evidence
-    failure_code = str(failure.get("failure_code") or "PROVIDER_FAILURE").upper()
+    detail = failure.get("failure") or (production_execution or {}).get("execution_result", {}).get("error") or {}
+    failure_code = str(detail.get("error_code") or failure.get("failure_code") or "PROVIDER_FAILURE").upper()
     failure_message = str(
         failure.get("failure_message")
         or failure.get("message")
@@ -1781,8 +1789,8 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
     )
     if outcome in {"unknown", "ambiguous"}:
         raise KernelError(
-            "MODEL_EFFECT_OUTCOME_UNKNOWN",
-            f"{failure_code}: {failure_message}",
+            "MODEL_EFFECT_OUTCOME_UNKNOWN_" + str(detail.get("cause_code") or failure_code) if detail else "MODEL_EFFECT_OUTCOME_UNKNOWN",
+            f"{failure_code}: {failure_message}", details=detail,
         )
     if outcome in {"retryable_failure", "not_found"}:
         code = (
@@ -1790,11 +1798,11 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
             if failure_code == "PROCESS_TIMEOUT"
             else f"MODEL_EFFECT_RETRYABLE_{failure_code}"
         )
-        raise KernelError(code, failure_message)
+        raise KernelError(code, failure_message, details=detail)
     if outcome in {"final_failure", "failed_final", "cancelled"}:
         raise KernelError(
             f"MODEL_EFFECT_FINAL_{failure_code}",
-            failure_message,
+            failure_message, details=detail,
         )
     raise KernelError(
         "MODEL_EFFECT_OUTCOME_INVALID",
@@ -2204,3 +2212,8 @@ __all__ = [
     "model_call_log_ref",
     "normalize_model_output",
 ]
+
+
+def task_scoped_prose_review(request, stage):
+    windows = [item for item in request.inputs if item.asset_type == 'longform_prose_review_window']
+    return stage == 'longform_prose_review' and len(windows) == 1 and windows[0].content.get('schema_version') == 'longform-prose-window.v3'

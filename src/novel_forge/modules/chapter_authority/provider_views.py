@@ -184,6 +184,7 @@ _OPERATIONAL_KEYS = {
     "source_chapter_plan_asset_version_id",
     "source_chapter_plan_content_hash",
     "source_extensions",
+    "result_admission_recovery",
     "stage_context_view",
     "trace_id",
 }
@@ -324,12 +325,14 @@ def _project_selected_world_selection(selection: Any) -> Any:
     return result
 
 
-def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[str, Any]:
+def _project_denied_planning_selection(selection: Mapping[str, Any], *, empty_query: bool = False) -> Mapping[str, Any]:
     from novel_forge.modules.mkaos_authority.domain import validate_book_knowledge_access_policy
 
     policy = selection.get("knowledge_access_policy")
     need = selection.get("need")
-    if not isinstance(policy, Mapping) or policy.get("mode") != "DENY_ALL":
+    if not isinstance(policy, Mapping) or (policy.get("mode") != "DENY_ALL" and not empty_query):
+        return selection
+    if empty_query and selection.get("selected"):
         return selection
     validate_book_knowledge_access_policy(policy, project_id=str(selection.get("project_id") or ""), book_id=str(policy.get("book_id") or ""))
     if (
@@ -347,7 +350,7 @@ def _project_denied_planning_selection(selection: Mapping[str, Any]) -> Mapping[
             "need_digest": need["need_digest"],
             "selection_digest": selection["selection_digest"],
             "frozen_context_pointer": "/narrative_intelligence/need",
-            "reason": "DENY_ALL_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT",
+            "reason": ("NO_ELIGIBLE_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT" if empty_query else "DENY_ALL_EMPTY_RETRIEVAL_QUERY_IS_NOT_STORY_INPUT"),
         },
     }
 
@@ -585,7 +588,12 @@ def build_provider_task_view(
         projection_version = inputs.get("craft_history_projection_version")
         if projection_version not in (None, "planning-craft-history-projection.v1"):
             raise KernelError("CRAFT_CONTEXT_PROJECTION_DRIFT", "Planning history projection requires an explicitly supported frozen version")
-        projected_selection = _compact(_project_denied_planning_selection(narrative_intelligence))
+        empty_query_version = inputs.get("planning_empty_query_projection_version")
+        if empty_query_version not in (None, "planning-empty-query-projection.v1"):
+            raise KernelError("PLANNING_EMPTY_SELECTION_DRIFT", "Empty Planning query projection requires its frozen version")
+        projected_selection = _compact(_project_denied_planning_selection(
+            narrative_intelligence, empty_query=empty_query_version is not None,
+        ))
         if projection_version:
             projected_selection = project_planning_craft_histories(projected_selection)
         task = _task(
@@ -2145,6 +2153,16 @@ def _build_planning_context_view(
         raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_INVALID", "Planning capacity requires a supported frozen policy version")
     task_capacity = capacity_policy == _PLANNING_TASK_CAPACITY_POLICY
     typed_arc_sources = context_bundle.get("planning_contract_version") == "1.21.0"
+    typed_volume_sources = context_bundle.get("typed_volume_projection_version") == "typed-volume-context-projection.v1"
+    planning_window = None
+    if context_bundle.get("typed_window_projection_version") == "typed-planning-window-projection.v1":
+        horizon = (context_bundle.get("narrative_search") or {}).get("planning_horizon") or {}
+        planning_window = horizon.get("chapter_range")
+        if (stage != "chapter_group_plan.generate" or horizon.get("level") != "CHAPTER_GROUP"
+                or not isinstance(planning_window, list) or len(planning_window) != 2
+                or any(type(value) is not int for value in planning_window)
+                or not 0 < planning_window[0] <= planning_window[1]):
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "Group projection requires its exact frozen positive planning horizon")
     frozen = (context_bundle.get("context_manifest") or {}).get("provider_context_view")
     if isinstance(frozen, Mapping) and "compiled_view" in frozen:
         view = frozen["compiled_view"]
@@ -2210,6 +2228,8 @@ def _build_planning_context_view(
             source=raw,
             task_capacity=task_capacity,
             typed_arc_sources=typed_arc_sources,
+            typed_volume_sources=typed_volume_sources,
+            planning_window=planning_window,
         )
         omitted_items += omitted
         truncated_characters += truncated
@@ -2229,6 +2249,8 @@ def _build_planning_context_view(
         "contract_version": "provider-context-view-v4" if task_capacity else "provider-context-view-v2",
         "stage": stage,
         **({"typed_arc_projection_version": "typed-arc-context-projection.v2"} if typed_arc_sources else {}),
+        **({"typed_volume_projection_version": "typed-volume-context-projection.v1"} if typed_volume_sources else {}),
+        **({"typed_window_projection_version": "typed-planning-window-projection.v1"} if planning_window else {}),
         "narrative_position": {
             "book_id": str(context_bundle.get("book_id") or ""),
             "logical_key": str(context_bundle.get("logical_key") or ""),
@@ -2344,7 +2366,9 @@ def _build_planning_context_view(
     if task_capacity:
         measured = _serialized_byte_count(view)
         if measured > _TASK_PROVIDER_SERIALIZATION_BYTES or measured > token_budget:
-            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "required Planning Provider Context exceeds its conservative task token budget or serialized byte guard")
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "required Planning Provider Context exceeds its conservative task token budget or serialized byte guard",
+                details={"required_serialized_bytes":measured,"task_token_upper_bound":token_budget,
+                    "serialization_byte_limit":_TASK_PROVIDER_SERIALIZATION_BYTES})
     elif _serialized_character_count(view) > character_budget:
         raise KernelError(
             "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED",
@@ -2689,6 +2713,8 @@ def _project_planning_content(
     source: Mapping[str, Any] | None = None,
     task_capacity: bool = False,
     typed_arc_sources: bool = False,
+    typed_volume_sources: bool = False,
+    planning_window: list[int] | None = None,
 ) -> tuple[dict[str, Any], int, int]:
     from novel_forge.modules.story_design_authority.author_input import without_author_private
     content = without_author_private(content)
@@ -2780,6 +2806,14 @@ def _project_planning_content(
             loss_records.append(_loss_record(source or {"role": role}, path="/" + field, value=value, reason=reason))
 
     typed_role = "arc_plans" if typed_arc_sources and role.startswith(("related_arc:", "dependent_arc:")) else role
+    if typed_volume_sources and role.startswith("arc_scope_volume:"):
+        if not isinstance(source, Mapping) or not (
+            source.get("asset_type") == "volume_plan" or (
+                source.get("asset_type") == "planning_generation_candidate"
+                and content.get("planning_scope") == "VOLUME"
+                and content.get("generator_operation_name") == "volume_plan.generate")):
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_VIEW_INVALID", "Arc volume source must retain its typed VolumePlan identity")
+        typed_role = "volume_plan"
     allowed_fields = _PLANNING_ROLE_FIELDS.get(typed_role)
     if allowed_fields is not None:
         admitted_fields = {*allowed_fields, *_REQUIRED_PLANNING_FIELDS, *_OPTIONAL_PLANNING_FIELDS}
@@ -2802,12 +2836,13 @@ def _project_planning_content(
         record_loss("chapter_function_matrix", [item for item in matrix if item not in compacted["chapter_function_matrix"]], "OUTSIDE_NARRATIVE_SCOPE")
     for field in ("narrative_segments", "arc_segments"):
         values = compacted.get(field)
-        if chapter and isinstance(values, list):
+        if (chapter or planning_window) and isinstance(values, list):
             local = [
                 item
                 for item in values
                 if isinstance(item, Mapping)
-                and _chapter_in_range(chapter, item.get("chapter_range"))
+                and (_ranges_overlap(planning_window, item.get("chapter_range")) if planning_window
+                     else _chapter_in_range(chapter, item.get("chapter_range")))
             ]
             record_loss(field, [item for item in values if item not in local], "OUTSIDE_NARRATIVE_SCOPE")
             compacted[field] = local
@@ -2820,6 +2855,12 @@ def _chapter_in_range(chapter: int, value: Any) -> bool:
         and len(value) == 2
         and int(value[0]) <= chapter <= int(value[1])
     )
+
+
+def _ranges_overlap(window: list[int], value: Any) -> bool:
+    return (isinstance(value, (list, tuple)) and len(value) == 2
+        and all(type(item) is int for item in value)
+        and value[0] <= value[1] and value[0] <= window[1] and window[0] <= value[1])
 
 
 def build_provider_knowledge_view(
@@ -3103,3 +3144,55 @@ def _realization_source_review(draft):
         "information_flow": deepcopy(contract["information_flow"]),
         "candidate_uses": [{key: deepcopy(row[key]) for key in ("slot_id", "used_fact_ids", "character_source_uses")} for row in draft["scene_artifacts"]],
         "review_requirement": "Read the actual prose to check actor ownership, observation/communication before dependent use, future leakage and testimony versus objective fact. These declared references are evidence, not proof of occurrence or successful realization. Accepted source versions are read-only; planned sources are not accepted history."}}
+
+
+def compile_exact_context_references(view):
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    marker = "__exact_value_ref__"
+    seen, count = {}, 0
+    def encode(value, path):
+        nonlocal count
+        if isinstance(value, Mapping) and marker in value:
+            raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
+        identity = _canonical_exact_reference_value(value)
+        if len(identity.encode("utf-8")) >= 256 and identity in seen:
+            count += 1
+            return {marker: seen[identity]}
+        if isinstance(value, Mapping):
+            result = {key: encode(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in sorted(value.items())}
+        elif isinstance(value, list):
+            result = [encode(item, path + "/" + str(index)) for index, item in enumerate(value)]
+        else:
+            result = value
+        if len(identity.encode("utf-8")) >= 256:
+            seen.setdefault(identity, path)
+        return result
+    encoded = encode(view, "")
+    if expand_exact_context_references(encoded) != view:
+        raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact context references did not reconstruct the complete source")
+    proof = {"contract_version": "planning-exact-value-reference.v1", "source_context_hash": canonical_hash(view),
+        "encoded_context_hash": canonical_hash(encoded), "reference_count": count, "decoded_equal": True}
+    return encoded, proof
+
+
+def _canonical_exact_reference_value(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def expand_exact_context_references(encoded):
+    decoded = {}
+    def expand(value, path):
+        if isinstance(value, Mapping) and "__exact_value_ref__" in value:
+            target = value["__exact_value_ref__"]
+            if set(value) != {"__exact_value_ref__"} or not isinstance(target, str) or target not in decoded:
+                raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "References must identify an earlier complete value within the same Context; external, forward and cyclic references are forbidden")
+            result = deepcopy(decoded[target])
+        elif isinstance(value, Mapping):
+            result = {key: expand(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
+        elif isinstance(value, list):
+            result = [expand(item, path + "/" + str(index)) for index, item in enumerate(value)]
+        else:
+            result = value
+        decoded[path] = result
+        return result
+    return expand(encoded, "")

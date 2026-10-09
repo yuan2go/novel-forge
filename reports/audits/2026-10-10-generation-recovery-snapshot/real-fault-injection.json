@@ -1,0 +1,22 @@
+{
+  "phase": "real_stream_interrupted",
+  "injected_at": "2026-10-09T04:00:51.030661+00:00",
+  "operation_id": "06f6db4f-c1ec-485b-9e26-49132be1cc5e",
+  "execution_id": "planning-execution:6c6ce924-852b-489a-bd78-df25def59df5:7865ab43-c009-496f-9668-39f4cf6e2124",
+  "parent_pid": 28633,
+  "model_process_pid": 28645,
+  "observed_event_types": [
+    "thread.started",
+    "item.completed",
+    "item.completed",
+    "item.completed",
+    "turn.started"
+  ],
+  "running_seconds_before_injection": 30,
+  "original_service_untouched": true,
+  "clone_database": "nf_wp02_real_fault_generation_test",
+  "fallback_policy_version": "wp02-real-fault-fallback.v2",
+  "fallback_model": "gpt-6-sol",
+  "fallback_policy_hash": "5ebb4f3e7e7c6f37d27359079374cf16f83f3eedcd536a70734cd9ee2bfe2b55",
+  "nature": "controlled local termination of real task-isolated CLI generation; remote outcome unconfirmed"
+}

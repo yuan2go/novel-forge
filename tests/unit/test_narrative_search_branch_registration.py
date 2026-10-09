@@ -790,6 +790,9 @@ class _SearchHarness(PostgresNarrativeSearchApplication):
         )
         self.committed: list[str] = []
 
+    def _available_selection_policy(self, project_id):
+        return None
+
     def _open_search(self, **_: Any) -> bool:
         return False
 
@@ -825,6 +828,7 @@ class _SearchHarness(PostgresNarrativeSearchApplication):
         candidates: Any,
         *,
         allow_reconciled_branches: bool = False,
+        available_selection_evidence=None,
     ) -> tuple[Any, bool]:
         del search_id, allow_reconciled_branches
         return compare_narrative_futures(candidates), False

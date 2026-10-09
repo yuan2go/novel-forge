@@ -1,0 +1,16 @@
+{
+  "review_kind": "ASSISTANT_EDITORIAL_REVIEW",
+  "source_asset_version_id": "authority-output:7e5c1c93-4b94-4a04-b0ec-193924f412bc:chapter.draft:v1",
+  "source_text_hash": "sha256:bf6b761ae66fd75708c5d8d8f9d2a6b1adf786a104a7085604233dd5fbcf647e",
+  "findings": [
+    "情节完成外部观察与反馈时段的具体约定，但整章大量安排分钟与逐项记账，叙事进展偏慢",
+    "多人反复使用报告、核对、依据等程序措辞，人物声音趋同",
+    "修订以自然对话和面对缺口的焦虑替换程序句，保留全部时段、角色边界及尚未执行的动作"
+  ],
+  "original_han_characters": 2639,
+  "revision_han_characters": 2562,
+  "semantic_validation": "NOT_RUN",
+  "author_choice": "NOT_RECORDED",
+  "formal_acceptance": "NOT_RECORDED",
+  "fact_constraints": "全部时长与相对起止保留；未执行的练习/观察/反馈仍未执行；气机未稳定、原因未明；不增新修为或事件"
+}

@@ -86,6 +86,8 @@ def test_chapter_recovery_rejects_closed_foreign_or_cancelled_frontier(frontier)
 
 def test_chapter_recovery_allows_exact_live_unaccepted_frontier():
     from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
     cursor = FrontierEvidence(('book', 'CHAPTER_RUNNING', 'RUNNING', False))
     require_live_chapter_frontier(cursor, root_id='root', project_id='project', book_run_id='book')
-    assert cursor.parameters == ['project', 'root']
+    assert cursor.parameters[:2] == ['project', 'root']
+    assert cursor.parameters[2].obj == AUTHOR_WORKFLOW

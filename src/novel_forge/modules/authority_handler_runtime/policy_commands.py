@@ -46,7 +46,7 @@ def owned_policy_definition(
         "properties": {
             key: (
                 {"type": "string", "minLength": 1}
-                if key == "policy_version" or (owner == "BOOK_CONTROL" and key == "mode")
+                if key == "policy_version" or (owner == "BOOK_CONTROL" and key in {"mode", "planning_selection_mode"})
                 else {"type": "integer", "minimum": 1}
                 if key.endswith("_count")
                 or key in {"maximum_chapters", "preferred_chapters"}

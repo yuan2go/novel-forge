@@ -1,0 +1,1844 @@
+{
+  "manifest_digest": "sha256:58849e22a3d7b12a5f47cf6261ee9fbcb98c3fb88356ad8365e8b6d66089fb51",
+  "completed_window_ids": [],
+  "total_windows": 1,
+  "uncovered_ranges": [
+    {
+      "asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+      "start": 0,
+      "end": 3464
+    }
+  ],
+  "coverage_complete": false,
+  "review_complete": false,
+  "findings": [],
+  "relation_verification": {
+    "retrieval": {
+      "status": "NOT_REQUESTED"
+    },
+    "completed_hypothesis_ids": [],
+    "paired_evidence_hypothesis_ids": [],
+    "global_relationships_verified": false
+  },
+  "quality_absence_proven": false,
+  "independent_human_review": "NOT_RUN",
+  "run_id": "d35753d2-c55b-43c6-9c5f-2099074c88fb",
+  "source_current": false,
+  "paused": false,
+  "operations": [
+    {
+      "window_id": "sha256:5a839a4b3b375963e850c489fa0187faa2464d12607f8615aac7bc34c73f1588",
+      "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+      "source_operation_id": "75fd9600-269c-4531-b9d3-4750233afb5e",
+      "status": "FAILED_FINAL",
+      "external_effects": [
+        {
+          "external_effect_id": "bce154bd-fd11-4bfc-9e2f-8c0297201221",
+          "status": "UNKNOWN",
+          "request_hash": "sha256:99725a1575e91d3dafb9da1fa1fd550a6284771febfab378048f8868fc9f809c"
+        }
+      ],
+      "budget_receipts": [
+        {
+          "reservation_id": "46e555e8-fa68-4582-b573-17fb4983571e",
+          "external_effect_id": "bce154bd-fd11-4bfc-9e2f-8c0297201221",
+          "status": "HELD_UNKNOWN",
+          "estimated_tokens": 66838,
+          "actual_tokens": 0,
+          "reserved_amount": null,
+          "settled_amount": null,
+          "currency": "UNKNOWN",
+          "evidence": {
+            "phase": "pre_dispatch",
+            "fixture": false,
+            "work_id": "book:qinglan-wendao-20261008",
+            "model_id": "gpt-6.1-sol",
+            "call_caps": {},
+            "token_caps": {},
+            "effect_status": "UNKNOWN",
+            "budget_scope_id": "",
+            "accounting_basis": "ACCOUNT_ENTITLEMENT",
+            "budget_scope_revision": null,
+            "estimated_cost_status": "UNKNOWN",
+            "cost_authorization_ref": "user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request",
+            "external_state_unknown": true,
+            "resource_control_version": "billing-channel-resources.v1",
+            "started_cli_usage_unmeasured": true
+          }
+        }
+      ],
+      "execution_evidence": [
+        {
+          "asset_version_id": "4e4ea2a1-88dc-43fc-a86d-1cb837a1e644",
+          "asset_type": "model_call_log",
+          "content": {
+            "type": "model_call_log",
+            "stage": "longform_prose_review",
+            "trace_id": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02:chapter1-literary-review",
+            "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+            "project_id": "qid-learning-prose-01",
+            "call_status": "UNKNOWN",
+            "failure_code": "PROVIDER_RESPONSE_TIMEOUT",
+            "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+            "real_model_call": false,
+            "provider_evidence": {
+              "cost": {
+                "reason": "execution_result_has_no_cost_receipt",
+                "availability": "UNAVAILABLE"
+              },
+              "usage": {
+                "reason": "execution_result_has_no_usage_receipt",
+                "availability": "UNAVAILABLE"
+              },
+              "model_id": "gpt-6.1-sol",
+              "provider_id": "codex-cli",
+              "skill_version": "quality-review-v3",
+              "prompt_version": "prompt-system:longform-prose-review-pack@v1",
+              "real_model_call": false,
+              "capability_runtime": {
+                "skill": {
+                  "ref": "quality-review",
+                  "version": "quality-review-v3",
+                  "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759"
+                },
+                "allowed_tools": [
+                  "model.provider.invoke"
+                ],
+                "provider_view": {
+                  "component_hashes": {
+                    "tool_policy": "sha256:72af8a45d9592e1169fabfaab23b2749045b622134dbd77ce9010d76e2477999",
+                    "output_schema": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                    "governed_skill": "sha256:7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+                    "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                    "provider_task_view": "sha256:1cbda9688b45e9bd6b0f70fb0839267d9c8465559ca06a1eddbb95755cb9983b",
+                    "system_instruction": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+                    "fully_rendered_prompt": "sha256:8846ffdd391357e872cc72ffb19210d186e6c2da73744c2bab5eece2b27d5546",
+                    "provider_context_view": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+                    "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+                  },
+                  "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+                  "component_characters": {
+                    "tool_policy": 258,
+                    "output_schema": 2713,
+                    "governed_skill": 921,
+                    "provider_knowledge": 559,
+                    "provider_task_view": 254,
+                    "system_instruction": 766,
+                    "fully_rendered_prompt": 21018,
+                    "provider_context_view": 14783,
+                    "stage_semantic_contract": 65
+                  },
+                  "representation_policy": "authority-projection-task-provider-v1",
+                  "selection_explanation": {
+                    "policy": "accepted-boundary-only",
+                    "omitted_count": 0,
+                    "selected_count": 1
+                  },
+                  "task_contract_version": "provider-task-view-v1",
+                  "context_contract_version": "provider-context-view-v3",
+                  "context_projection_ratio": 9444.0,
+                  "component_estimated_tokens": {
+                    "tool_policy": 86,
+                    "output_schema": 905,
+                    "governed_skill": 307,
+                    "provider_knowledge": 187,
+                    "provider_task_view": 85,
+                    "system_instruction": 256,
+                    "fully_rendered_prompt": 11522,
+                    "provider_context_view": 9444,
+                    "stage_semantic_contract": 22
+                  },
+                  "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+                  "component_utf8_byte_upper_bounds": {
+                    "tool_policy": 258,
+                    "output_schema": 2713,
+                    "governed_skill": 921,
+                    "provider_knowledge": 559,
+                    "provider_task_view": 254,
+                    "system_instruction": 766,
+                    "fully_rendered_prompt": 34566,
+                    "provider_context_view": 28331,
+                    "stage_semantic_contract": 65
+                  },
+                  "provider_context_estimated_tokens": 9444,
+                  "authority_context_estimated_tokens": 0,
+                  "rendered_prompt_to_semantic_input_ratio": 1.185879,
+                  "provider_admission_uses_component_estimates": false
+                },
+                "prompt_template": {
+                  "ref": "prompt-template:longform-prose-review-pack",
+                  "version": "v2",
+                  "content_hash": "sha256:45bc39f5d99ab454c3d494e395192e78fee09b968e8b7359a8a553ff2f4842a1"
+                },
+                "method_selection": {
+                  "skill_sections": [
+                    "Shared rules",
+                    "Longform review"
+                  ],
+                  "system_sections": [],
+                  "contract_version": "production-stage-methods.v1"
+                },
+                "output_schema_ref": "schema:chapter-provider-output:longform_prose_review:v1",
+                "output_schema_hash": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                "provider_admission": {
+                  "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+                  "status": "ADMITTED",
+                  "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                  "envelope_hash": "sha256:e95161e16e5671e9511d148074c24130782845e1c2be360980204df01865f927",
+                  "total_reserved": 66838,
+                  "component_usage": {
+                    "safety_margin": 256,
+                    "output_reserve": 32000,
+                    "provider_input": 34566,
+                    "request_framing": 16
+                  },
+                  "applicable_limit": 258400,
+                  "contract_version": "provider-token-admission-v1",
+                  "accounting_contract": {
+                    "model": "gpt-6.1-sol",
+                    "provider": "codex-cli",
+                    "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                    "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                    "meter_version": "v1",
+                    "safety_margin": 256,
+                    "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                    "output_reserve": 32000,
+                    "route_identity": "routing-decision:d4cfcf2a5c0d7d98bce04d9bd7ea09bc0689230435a98e6748a8db15800876bf",
+                    "contract_version": "provider-token-accounting-v3",
+                    "framing_overhead": 16,
+                    "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                    "model_context_limit": 258400,
+                    "execution_token_limit": 258400,
+                    "serialization_contract": "codex-cli-application-stdin-v1"
+                  },
+                  "context_bundle_status": "VALID",
+                  "context_bundle_tokens": 0,
+                  "input_component_hashes": {
+                    "tool_policy": "sha256:72af8a45d9592e1169fabfaab23b2749045b622134dbd77ce9010d76e2477999",
+                    "output_schema": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                    "governed_skill": "sha256:7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+                    "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                    "provider_task_view": "sha256:1cbda9688b45e9bd6b0f70fb0839267d9c8465559ca06a1eddbb95755cb9983b",
+                    "system_instruction": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+                    "fully_rendered_prompt": "sha256:8846ffdd391357e872cc72ffb19210d186e6c2da73744c2bab5eece2b27d5546",
+                    "provider_context_view": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+                    "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+                  },
+                  "complete_request_coverage": [
+                    "system_runtime_instructions",
+                    "prompt_template",
+                    "skill_instructions",
+                    "tool_policy_and_schemas",
+                    "structured_output_schema",
+                    "context_bundle",
+                    "knowledge_inputs",
+                    "request_envelope_and_framing",
+                    "output_reserve",
+                    "safety_margin"
+                  ]
+                },
+                "system_instruction": {
+                  "ref": "prompt-system:longform-prose-review-pack",
+                  "version": "v1",
+                  "content_hash": "sha256:c13f9ceb52df711fbfafed0337cac4c27f13ffc7d01752676f5905e91c36e215"
+                },
+                "materialization_hash": "sha256:556510f013738e008e3c44cffbe1e2f456da3a7039d5e4c81fbc77e161735ef6",
+                "rendered_prompt_bytes": 34566,
+                "reusable_prefix_bytes": 1767,
+                "knowledge_content_hashes": [
+                  "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+                ],
+                "context_asset_version_ids": [
+                  "5fb7dc27-73b6-4921-99aa-07f8dab2cf78"
+                ],
+                "embedding_output_contract": null,
+                "fully_rendered_prompt_hash": "sha256:8846ffdd391357e872cc72ffb19210d186e6c2da73744c2bab5eece2b27d5546",
+                "provider_request_envelope_hash": "sha256:e95161e16e5671e9511d148074c24130782845e1c2be360980204df01865f927",
+                "required_reader_facing_language": null,
+                "rendered_prompt_estimated_tokens": 11522,
+                "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+                "provider_admission_asset_version_id": "c3153b1c-e58a-492f-a1de-1f9bea167b1b"
+              },
+              "production_verified": false,
+              "production_execution": {
+                "input_manifest": {
+                  "book_id": "book:qinglan-wendao-20261008",
+                  "read_set": [
+                    "asset-version:a5feff11-e5bd-4ee0-bff0-dba740fe03e4",
+                    "asset-version:5fb7dc27-73b6-4921-99aa-07f8dab2cf78",
+                    "asset-version:1fc72e7e-2c1e-4570-bbfc-78014b16420f",
+                    "asset-version:c3153b1c-e58a-492f-a1de-1f9bea167b1b"
+                  ],
+                  "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                  "project_id": "qid-learning-prose-01",
+                  "manifest_id": "production_execution/inputs/c09d0d678ff0577f90ad",
+                  "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "target_scope": {
+                    "book_id": "book:qinglan-wendao-20261008",
+                    "scope_id": "a5feff11-e5bd-4ee0-bff0-dba740fe03e4",
+                    "project_id": "qid-learning-prose-01",
+                    "scope_kind": "asset_version",
+                    "asset_version_id": "a5feff11-e5bd-4ee0-bff0-dba740fe03e4"
+                  },
+                  "fencing_token": 1,
+                  "input_artifacts": [
+                    {
+                      "artifact_ref": "asset-version:a5feff11-e5bd-4ee0-bff0-dba740fe03e4",
+                      "content_hash": "sha256:665e748d95fe840c685be493f10bb71520ac46b514ecc509821447875335cf6d",
+                      "artifact_type": "longform_prose_review_window",
+                      "schema_version": "longform-prose-window.v3",
+                      "asset_version_id": "a5feff11-e5bd-4ee0-bff0-dba740fe03e4",
+                      "source_eligibility": "PRODUCTION_ELIGIBLE"
+                    },
+                    {
+                      "artifact_ref": "asset-version:5fb7dc27-73b6-4921-99aa-07f8dab2cf78",
+                      "content_hash": "sha256:ec8d8fc1ed95bfcd4efec085308ac3d88fbf85757c5e7264330eada8d7009761",
+                      "artifact_type": "context_bundle",
+                      "schema_version": "novelos.longform_prose_review_context_bundle.v2",
+                      "asset_version_id": "5fb7dc27-73b6-4921-99aa-07f8dab2cf78",
+                      "source_eligibility": "PRODUCTION_ELIGIBLE"
+                    },
+                    {
+                      "artifact_ref": "asset-version:1fc72e7e-2c1e-4570-bbfc-78014b16420f",
+                      "content_hash": "sha256:d9140b2fb38892686d58ab990c0bb15b936c9d34169ba00443120be644e69c70",
+                      "artifact_type": "capability_materialization_manifest",
+                      "schema_version": "novelos.chapter_capability_materialization.v1",
+                      "asset_version_id": "1fc72e7e-2c1e-4570-bbfc-78014b16420f",
+                      "source_eligibility": "NOT_SOURCE_DERIVED"
+                    },
+                    {
+                      "artifact_ref": "asset-version:c3153b1c-e58a-492f-a1de-1f9bea167b1b",
+                      "content_hash": "sha256:77b67005a96c1d0b69b6d211aeafc643bad7f6e7b1d91c37e1812dff118f32de",
+                      "artifact_type": "provider_request_admission_manifest",
+                      "schema_version": "novelos.provider_request_admission.v1",
+                      "asset_version_id": "c3153b1c-e58a-492f-a1de-1f9bea167b1b",
+                      "source_eligibility": "NOT_SOURCE_DERIVED"
+                    }
+                  ],
+                  "arc_version_refs": [],
+                  "planning_version": "planning:none:5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "skill_bundle_ref": "production_execution/skill_bundles/c09d0d678ff0577f90ad",
+                  "prompt_bundle_ref": "production_execution/prompt_bundles/c09d0d678ff0577f90ad",
+                  "source_policy_ref": "source:review-chapter-evaluate:v1",
+                  "canon_version_refs": [],
+                  "context_bundle_ref": "asset-version:5fb7dc27-73b6-4921-99aa-07f8dab2cf78",
+                  "source_eligibility": "PRODUCTION_ELIGIBLE",
+                  "story_state_version": "story-state:none:5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "skill_bundle_version": "quality-review-v3",
+                  "prompt_bundle_version": "prompt-system:longform-prose-review-pack@v1",
+                  "canon_snapshot_version": "canon:none:5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "context_bundle_version": "5fb7dc27-73b6-4921-99aa-07f8dab2cf78",
+                  "quality_profile_version": "quality-profile:none:5df58eb6-dd9f-49cf-bf63-2ccdbb78446d"
+                },
+                "route_snapshot": {
+                  "model_id": "gpt-6.1-sol",
+                  "policy_id": "chapter.longform_prose_review.route.f447652da57a5bd80fdc",
+                  "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                  "backend_id": "codex-cli",
+                  "release_sha": "b63b092a89f40243b6e8efa32f92090f7309d0d0",
+                  "approval_ref": "",
+                  "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "model_provider": "codex-cli",
+                  "policy_version": 1,
+                  "backend_version": "1.0.0",
+                  "runtime_host_id": "host:author-first-live-isolated",
+                  "auth_profile_ref": "auth:current-chatgpt-member:codex:ac313a67364269b8e4a28d1192c2b375a8df36901ca1c20528bb6279a3a9a7cc",
+                  "credential_scope": "",
+                  "fallback_trigger": "",
+                  "model_profile_id": "chapter.longform_prose_review.default.f447652da57a5bd80fdc",
+                  "reasoning_effort": "high",
+                  "route_generation": 1,
+                  "skill_bundle_ref": "production_execution/skill_bundles/c09d0d678ff0577f90ad",
+                  "output_schema_ref": "schema:chapter-provider-output:longform_prose_review:v1",
+                  "prompt_bundle_ref": "production_execution/prompt_bundles/c09d0d678ff0577f90ad",
+                  "route_decision_id": "routing-decision:d4cfcf2a5c0d7d98bce04d9bd7ea09bc0689230435a98e6748a8db15800876bf",
+                  "route_policy_hash": "daa161d3eabf261916fbe99598be0d1aa1f9528d962e3f6ced70f6e8812e59e5",
+                  "route_snapshot_id": "production_execution/routes/c09d0d678ff0577f90ad",
+                  "context_bundle_ref": "asset-version:5fb7dc27-73b6-4921-99aa-07f8dab2cf78",
+                  "model_profile_hash": "0722ac047a501d2541b3ad00be5636eb130751d14de529786b2d2650fce6067e",
+                  "route_change_index": 0,
+                  "secret_version_ref": "",
+                  "fallback_policy_ref": "chapter.longform_prose_review.fail-closed",
+                  "model_profile_version": 1,
+                  "fallback_policy_version": 1,
+                  "parent_route_snapshot_id": "",
+                  "quality_revalidation_ref": "",
+                  "requested_reasoning_effort": "high"
+                },
+                "execution_handle": {
+                  "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                  "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                  "backend_id": "codex-cli",
+                  "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+                  "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "fencing_token": 1,
+                  "completion_mode": "PROCESS_EXIT",
+                  "local_process_id": 31529,
+                  "query_capability": "SUPPORTED",
+                  "cancel_capability": "SUPPORTED",
+                  "callback_capability": "UNSUPPORTED",
+                  "external_request_id": null,
+                  "provider_request_id": null,
+                  "backend_execution_id": "process-receipt:d090f03379aa444874c12d38",
+                  "local_process_group_id": 31529,
+                  "local_process_start_time": "Fri Oct  9 23:22:44 2026",
+                  "local_execution_receipt_id": "process-receipt:d090f03379aa444874c12d38"
+                },
+                "execution_result": {
+                  "error": {
+                    "phase": "RESPONSE_WAIT",
+                    "scope": "ORIGINAL_LOGICAL_TASK",
+                    "stage": "RESPONSE_WAIT",
+                    "causes": [],
+                    "identity": {
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                      "project_id": "qid-learning-prose-01",
+                      "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+                      "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                      "fencing_token": 1
+                    },
+                    "retryable": true,
+                    "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+                    "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+                    "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+                    "recovery_state": "REQUIRED",
+                    "remote_outcome": "UNESTABLISHED",
+                    "business_impact": "CURRENT_TASK_BLOCKED",
+                    "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+                    "contract_version": "provider-failure.v1",
+                    "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+                  },
+                  "outcome": "TIMED_OUT",
+                  "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                  "started_at": "2026-10-09T15:22:44.225286Z",
+                  "completed_at": "2026-10-09T15:24:06.395806Z",
+                  "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+                  "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "fencing_token": 1,
+                  "raw_output_ref": null,
+                  "cost_receipt_ref": null,
+                  "usage_receipt_ref": null,
+                  "output_manifest_ref": null,
+                  "process_receipt_ref": "authority-asset-version:7feb673d-174f-4311-b5c0-f96b13abb5fb",
+                  "external_receipt_ref": null,
+                  "provider_receipt_ref": null,
+                  "normalized_output_ref": null,
+                  "validation_report_ref": null
+                },
+                "process_evidence": {
+                  "stage": "longform_prose_review",
+                  "failure": {
+                    "phase": "RESPONSE_WAIT",
+                    "scope": "ORIGINAL_LOGICAL_TASK",
+                    "stage": "RESPONSE_WAIT",
+                    "causes": [],
+                    "identity": {
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                      "project_id": "qid-learning-prose-01",
+                      "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+                      "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                      "fencing_token": 1
+                    },
+                    "retryable": true,
+                    "cause_code": "PROVIDER_RESPONSE_TIMEOUT",
+                    "error_code": "PROVIDER_RESPONSE_TIMEOUT",
+                    "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+                    "recovery_state": "REQUIRED",
+                    "remote_outcome": "UNESTABLISHED",
+                    "business_impact": "CURRENT_TASK_BLOCKED",
+                    "recovery_action": "REUSE_RESULT_OR_ISOLATE_PURE_GENERATION",
+                    "contract_version": "provider-failure.v1",
+                    "provider_error_code": "PROVIDER_RESPONSE_TIMEOUT"
+                  },
+                  "transport": "LOCAL_CLI_REMOTE_INFERENCE",
+                  "denied_tools": [],
+                  "failure_code": "PROVIDER_RESPONSE_TIMEOUT",
+                  "allowed_tools": [
+                    "model.provider.invoke"
+                  ],
+                  "output_schema": {
+                    "type": "object",
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "required": [
+                      "schema_version",
+                      "manifest_digest",
+                      "window_id",
+                      "reviewed_dimensions",
+                      "findings"
+                    ],
+                    "properties": {
+                      "findings": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "lineage_id",
+                                "dimension",
+                                "judgment",
+                                "severity",
+                                "confidence",
+                                "claim",
+                                "rationale",
+                                "evidence"
+                              ],
+                              "properties": {
+                                "claim": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "asset_version_id",
+                                      "text_hash",
+                                      "start",
+                                      "end",
+                                      "quote"
+                                    ],
+                                    "properties": {
+                                      "end": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "quote": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "start": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "text_hash": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "asset_version_id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "minItems": 1
+                                },
+                                "judgment": {
+                                  "enum": [
+                                    "ISSUE"
+                                  ],
+                                  "type": "string"
+                                },
+                                "severity": {
+                                  "enum": [
+                                    "BLOCKING",
+                                    "MAJOR",
+                                    "MINOR"
+                                  ],
+                                  "type": "string"
+                                },
+                                "dimension": {
+                                  "enum": [
+                                    "structure_conflict_repetition",
+                                    "goals_relationships",
+                                    "setup_progress_payoff",
+                                    "voice_expression",
+                                    "arc_pacing",
+                                    "motivation_cost"
+                                  ],
+                                  "type": "string"
+                                },
+                                "rationale": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "confidence": {
+                                  "type": "number",
+                                  "maximum": 1,
+                                  "minimum": 0
+                                },
+                                "lineage_id": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "lineage_id",
+                                "dimension",
+                                "judgment",
+                                "severity",
+                                "confidence",
+                                "claim",
+                                "rationale",
+                                "evidence"
+                              ],
+                              "properties": {
+                                "claim": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "evidence": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "asset_version_id",
+                                      "text_hash",
+                                      "start",
+                                      "end",
+                                      "quote"
+                                    ],
+                                    "properties": {
+                                      "end": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                      },
+                                      "quote": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "start": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                      },
+                                      "text_hash": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "asset_version_id": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "minItems": 1
+                                },
+                                "judgment": {
+                                  "enum": [
+                                    "INTENTIONAL",
+                                    "INSUFFICIENT_EVIDENCE"
+                                  ],
+                                  "type": "string"
+                                },
+                                "severity": {
+                                  "enum": [
+                                    "NONE"
+                                  ],
+                                  "type": "string"
+                                },
+                                "dimension": {
+                                  "enum": [
+                                    "structure_conflict_repetition",
+                                    "goals_relationships",
+                                    "setup_progress_payoff",
+                                    "voice_expression",
+                                    "arc_pacing",
+                                    "motivation_cost"
+                                  ],
+                                  "type": "string"
+                                },
+                                "rationale": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "confidence": {
+                                  "type": "number",
+                                  "maximum": 1,
+                                  "minimum": 0
+                                },
+                                "lineage_id": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "window_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "schema_version": {
+                        "enum": [
+                          "longform-prose-review.v1"
+                        ],
+                        "type": "string"
+                      },
+                      "manifest_digest": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "reviewed_dimensions": {
+                        "type": "array",
+                        "items": {
+                          "enum": [
+                            "structure_conflict_repetition",
+                            "goals_relationships",
+                            "setup_progress_payoff",
+                            "voice_expression",
+                            "arc_pacing",
+                            "motivation_cost"
+                          ],
+                          "type": "string"
+                        },
+                        "maxItems": 6,
+                        "minItems": 6,
+                        "uniqueItems": true
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "failure_message": "PROVIDER_RESPONSE_TIMEOUT",
+                  "model_authority": {
+                    "schema_version": "novelos.model_authority_evidence.v1",
+                    "route_policy_id": "chapter.longform_prose_review.route.f447652da57a5bd80fdc",
+                    "invocation_model": "gpt-6.1-sol",
+                    "model_profile_id": "chapter.longform_prose_review.default.f447652da57a5bd80fdc",
+                    "route_policy_hash": "daa161d3eabf261916fbe99598be0d1aa1f9528d962e3f6ced70f6e8812e59e5",
+                    "route_snapshot_id": "production_execution/routes/c09d0d678ff0577f90ad",
+                    "frozen_route_model": "gpt-6.1-sol",
+                    "model_profile_hash": "0722ac047a501d2541b3ad00be5636eb130751d14de529786b2d2650fce6067e",
+                    "route_snapshot_hash": "f5ebff115bca34b8de41f5a544d2c4459b7d6b813fc0bca73db058fe9461616e",
+                    "route_policy_version": 1,
+                    "model_profile_version": 1,
+                    "policy_requested_model": "gpt-6.1-sol",
+                    "invocation_command_hash": "sha256:911cf60657d370f6c9fc3fb54dc5aebb832296c9a074de099d85846a1c26a318",
+                    "provider_observed_model": "unavailable",
+                    "session_recovery_policy": "codex-local-session-evidence.v1",
+                    "local_session_persistence": "DURABLE",
+                    "local_user_config_ignored": true,
+                    "invocation_reasoning_effort": "high",
+                    "frozen_route_reasoning_effort": "high",
+                    "policy_requested_reasoning_effort": "high",
+                    "provider_observed_reasoning_effort": "unavailable",
+                    "local_user_config_is_model_authority": false
+                  },
+                  "submission_phase": "PROCESS_RESULT_RECORDED",
+                  "stream_diagnostics": {
+                    "version": "codex-stream-diagnostics.v1",
+                    "event_counts": {
+                      "turn.started": 1,
+                      "item.completed": 3,
+                      "thread.started": 1
+                    },
+                    "stdout_bytes": 863,
+                    "stdout_sha256": "ec0f4324f6385020e211e7a710eb726f5e4281f0a8235bc2a6b0641a48070d2f",
+                    "usage_present": false,
+                    "remote_outcome": "UNESTABLISHED",
+                    "scan_truncated": false,
+                    "turn_completed": false,
+                    "local_thread_id": "01a12142-6f7a-7980-a617-3bf69985e82d",
+                    "stream_disconnected": false,
+                    "response_body_decode_failed": false
+                  },
+                  "capability_evidence": {
+                    "skill": {
+                      "ref": "quality-review",
+                      "version": "quality-review-v3",
+                      "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759"
+                    },
+                    "allowed_tools": [
+                      "model.provider.invoke"
+                    ],
+                    "provider_view": {
+                      "component_hashes": {
+                        "tool_policy": "sha256:72af8a45d9592e1169fabfaab23b2749045b622134dbd77ce9010d76e2477999",
+                        "output_schema": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                        "governed_skill": "sha256:7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+                        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                        "provider_task_view": "sha256:1cbda9688b45e9bd6b0f70fb0839267d9c8465559ca06a1eddbb95755cb9983b",
+                        "system_instruction": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+                        "fully_rendered_prompt": "sha256:8846ffdd391357e872cc72ffb19210d186e6c2da73744c2bab5eece2b27d5546",
+                        "provider_context_view": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+                        "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+                      },
+                      "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+                      "component_characters": {
+                        "tool_policy": 258,
+                        "output_schema": 2713,
+                        "governed_skill": 921,
+                        "provider_knowledge": 559,
+                        "provider_task_view": 254,
+                        "system_instruction": 766,
+                        "fully_rendered_prompt": 21018,
+                        "provider_context_view": 14783,
+                        "stage_semantic_contract": 65
+                      },
+                      "representation_policy": "authority-projection-task-provider-v1",
+                      "selection_explanation": {
+                        "policy": "accepted-boundary-only",
+                        "omitted_count": 0,
+                        "selected_count": 1
+                      },
+                      "task_contract_version": "provider-task-view-v1",
+                      "context_contract_version": "provider-context-view-v3",
+                      "context_projection_ratio": 9444.0,
+                      "component_estimated_tokens": {
+                        "tool_policy": 86,
+                        "output_schema": 905,
+                        "governed_skill": 307,
+                        "provider_knowledge": 187,
+                        "provider_task_view": 85,
+                        "system_instruction": 256,
+                        "fully_rendered_prompt": 11522,
+                        "provider_context_view": 9444,
+                        "stage_semantic_contract": 22
+                      },
+                      "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+                      "component_utf8_byte_upper_bounds": {
+                        "tool_policy": 258,
+                        "output_schema": 2713,
+                        "governed_skill": 921,
+                        "provider_knowledge": 559,
+                        "provider_task_view": 254,
+                        "system_instruction": 766,
+                        "fully_rendered_prompt": 34566,
+                        "provider_context_view": 28331,
+                        "stage_semantic_contract": 65
+                      },
+                      "provider_context_estimated_tokens": 9444,
+                      "authority_context_estimated_tokens": 0,
+                      "rendered_prompt_to_semantic_input_ratio": 1.185879,
+                      "provider_admission_uses_component_estimates": false
+                    },
+                    "prompt_template": {
+                      "ref": "prompt-template:longform-prose-review-pack",
+                      "version": "v2",
+                      "content_hash": "sha256:45bc39f5d99ab454c3d494e395192e78fee09b968e8b7359a8a553ff2f4842a1"
+                    },
+                    "method_selection": {
+                      "skill_sections": [
+                        "Shared rules",
+                        "Longform review"
+                      ],
+                      "system_sections": [],
+                      "contract_version": "production-stage-methods.v1"
+                    },
+                    "output_schema_ref": "schema:chapter-provider-output:longform_prose_review:v1",
+                    "output_schema_hash": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                    "provider_admission": {
+                      "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+                      "status": "ADMITTED",
+                      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                      "envelope_hash": "sha256:e95161e16e5671e9511d148074c24130782845e1c2be360980204df01865f927",
+                      "total_reserved": 66838,
+                      "component_usage": {
+                        "safety_margin": 256,
+                        "output_reserve": 32000,
+                        "provider_input": 34566,
+                        "request_framing": 16
+                      },
+                      "applicable_limit": 258400,
+                      "contract_version": "provider-token-admission-v1",
+                      "accounting_contract": {
+                        "model": "gpt-6.1-sol",
+                        "provider": "codex-cli",
+                        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+                        "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+                        "meter_version": "v1",
+                        "safety_margin": 256,
+                        "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+                        "output_reserve": 32000,
+                        "route_identity": "routing-decision:d4cfcf2a5c0d7d98bce04d9bd7ea09bc0689230435a98e6748a8db15800876bf",
+                        "contract_version": "provider-token-accounting-v3",
+                        "framing_overhead": 16,
+                        "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+                        "model_context_limit": 258400,
+                        "execution_token_limit": 258400,
+                        "serialization_contract": "codex-cli-application-stdin-v1"
+                      },
+                      "context_bundle_status": "VALID",
+                      "context_bundle_tokens": 0,
+                      "input_component_hashes": {
+                        "tool_policy": "sha256:72af8a45d9592e1169fabfaab23b2749045b622134dbd77ce9010d76e2477999",
+                        "output_schema": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                        "governed_skill": "sha256:7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+                        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+                        "provider_task_view": "sha256:1cbda9688b45e9bd6b0f70fb0839267d9c8465559ca06a1eddbb95755cb9983b",
+                        "system_instruction": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+                        "fully_rendered_prompt": "sha256:8846ffdd391357e872cc72ffb19210d186e6c2da73744c2bab5eece2b27d5546",
+                        "provider_context_view": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+                        "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+                      },
+                      "complete_request_coverage": [
+                        "system_runtime_instructions",
+                        "prompt_template",
+                        "skill_instructions",
+                        "tool_policy_and_schemas",
+                        "structured_output_schema",
+                        "context_bundle",
+                        "knowledge_inputs",
+                        "request_envelope_and_framing",
+                        "output_reserve",
+                        "safety_margin"
+                      ]
+                    },
+                    "system_instruction": {
+                      "ref": "prompt-system:longform-prose-review-pack",
+                      "version": "v1",
+                      "content_hash": "sha256:c13f9ceb52df711fbfafed0337cac4c27f13ffc7d01752676f5905e91c36e215"
+                    },
+                    "materialization_hash": "sha256:556510f013738e008e3c44cffbe1e2f456da3a7039d5e4c81fbc77e161735ef6",
+                    "rendered_prompt_bytes": 34566,
+                    "reusable_prefix_bytes": 1767,
+                    "knowledge_content_hashes": [
+                      "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+                    ],
+                    "context_asset_version_ids": [
+                      "5fb7dc27-73b6-4921-99aa-07f8dab2cf78"
+                    ],
+                    "embedding_output_contract": null,
+                    "fully_rendered_prompt_hash": "sha256:8846ffdd391357e872cc72ffb19210d186e6c2da73744c2bab5eece2b27d5546",
+                    "provider_request_envelope_hash": "sha256:e95161e16e5671e9511d148074c24130782845e1c2be360980204df01865f927",
+                    "required_reader_facing_language": null,
+                    "rendered_prompt_estimated_tokens": 11522,
+                    "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1",
+                    "provider_admission_asset_version_id": "c3153b1c-e58a-492f-a1de-1f9bea167b1b"
+                  },
+                  "failure_disposition": "RETRYABLE",
+                  "provider_request_id": null,
+                  "output_schema_version": "schema:chapter-provider-output:longform_prose_review:v1",
+                  "transport_retry_policy": {
+                    "version": "codex-no-transport-retry.v1",
+                    "stream_max_retries": 0,
+                    "request_max_retries": 0,
+                    "invocation_overrides": [
+                      "model_provider=\"novel_forge_openai_no_retry\"",
+                      "model_providers.novel_forge_openai_no_retry.name=\"OpenAI\"",
+                      "model_providers.novel_forge_openai_no_retry.wire_api=\"responses\"",
+                      "model_providers.novel_forge_openai_no_retry.requires_openai_auth=true",
+                      "model_providers.novel_forge_openai_no_retry.request_max_retries=0",
+                      "model_providers.novel_forge_openai_no_retry.stream_max_retries=0"
+                    ]
+                  },
+                  "provider_schema_contract": {
+                    "version": "codex-structured-schema.v5",
+                    "provider_hash": "sha256:e6b8b5383f78b9401ad69208c301f8b067879d2515078e732c354d66711a609b",
+                    "canonical_hash": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+                    "equivalent_projection": "codex-nullable-shared-types.v3",
+                    "local_constraints_retained": [
+                      "uniqueItems"
+                    ]
+                  },
+                  "local_execution_receipt_id": "process-receipt:d090f03379aa444874c12d38",
+                  "reconciliation_fingerprint": "sha256:5c818618bfa0c760afbb5f1fa318c834a36ade757278c599bce3b7e728ea37ab"
+                },
+                "execution_request": {
+                  "stage": "longform_prose_review",
+                  "domain": "review",
+                  "book_id": "book:qinglan-wendao-20261008",
+                  "saga_id": "deab2e08-42ab-4b13-b0ea-052366979fc1",
+                  "trace_id": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02:chapter1-literary-review",
+                  "task_kind": "longform.prose_review",
+                  "attempt_id": "672e55bc-8a90-47e9-829a-30c47e1dee83",
+                  "capability": "review.chapter.evaluate",
+                  "project_id": "qid-learning-prose-01",
+                  "risk_class": "high",
+                  "execution_id": "chapter-execution:bce154bd-fd11-4bfc-9e2f-8c0297201221",
+                  "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "origin_chain": [
+                    "chapter.slice.run",
+                    "longform.prose_review"
+                  ],
+                  "target_scope": {
+                    "book_id": "book:qinglan-wendao-20261008",
+                    "scope_id": "a5feff11-e5bd-4ee0-bff0-dba740fe03e4",
+                    "project_id": "qid-learning-prose-01",
+                    "scope_kind": "asset_version",
+                    "asset_version_id": "a5feff11-e5bd-4ee0-bff0-dba740fe03e4"
+                  },
+                  "workspace_id": "workspace:qid-learning-prose-01",
+                  "fencing_token": 1,
+                  "correlation_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+                  "agent_hop_count": 0,
+                  "resource_claims": [
+                    "chapter:0",
+                    "stage:longform_prose_review"
+                  ],
+                  "importance_class": "HIGH",
+                  "budget_policy_ref": "budget:review-chapter-evaluate:v1",
+                  "commit_policy_ref": "commit:review-chapter-evaluate:v1",
+                  "root_operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+                  "route_snapshot_id": "production_execution/routes/c09d0d678ff0577f90ad",
+                  "external_effect_id": "bce154bd-fd11-4bfc-9e2f-8c0297201221",
+                  "input_manifest_ref": "production_execution/inputs/c09d0d678ff0577f90ad",
+                  "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+                  "budget_reservation_id": "46e555e8-fa68-4582-b573-17fb4983571e",
+                  "permission_policy_ref": "permission:review-chapter-evaluate:v1",
+                  "validation_policy_ref": "validation:review-chapter-evaluate:v1",
+                  "stable_idempotency_key": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d:672e55bc-8a90-47e9-829a-30c47e1dee83:longform_prose_review:attempt-v1",
+                  "workspace_snapshot_ref": "workspace:qid-learning-prose-01"
+                },
+                "validation_manifest_ref": "",
+                "commit_manifest_required": true
+              },
+              "recovery_instruction": "Reconcile the original receipt; local termination does not confirm remote cancellation",
+              "fixture_protocol_only": false,
+              "external_state_unknown": true
+            },
+            "accepted_candidate": false,
+            "external_effect_id": "bce154bd-fd11-4bfc-9e2f-8c0297201221",
+            "fixture_protocol_only": false
+          }
+        }
+      ]
+    }
+  ],
+  "expected_version": 1,
+  "manifest": {
+    "policy": {
+      "execution_mode": "MANUAL",
+      "policy_version": "wp02-original-chapter1-literary-review.v3",
+      "maximum_windows": 1,
+      "window_codepoints": 6000,
+      "overlap_codepoints": 200,
+      "context_token_budget": 258400
+    },
+    "sources": [
+      {
+        "text_hash": "sha256:2b91717fc80afc360c79bc0d6d39b6af99293a0a931b65b932de101f3ce5fa75",
+        "asset_hash": "sha256:19ec1aaf259ad24aba278284cc619601a3d399f05bcdb7e04dfa72bfda409d8c",
+        "codepoints": 3464,
+        "acceptance_id": "",
+        "chapter_number": 1,
+        "asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+        "creative_baseline": {
+          "style": {
+            "policies": [
+              {
+                "constraints": null,
+                "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                "structured_facts": [
+                  {
+                    "kind": "voice_contract",
+                    "layer": "NARRATOR",
+                    "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "GENRE",
+                    "guidance": [
+                      "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                      "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                      "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                      "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                      "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "问询一项尚未接受的劳作安排时。",
+                        "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                        "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                      },
+                      {
+                        "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                        "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                        "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                      },
+                      {
+                        "situation": "协商首次结伴采药的路线时。",
+                        "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                        "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                    "character_id": "character:shen-yan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "收到尚未说明回程安排的采药邀请时。",
+                        "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                        "motivation": "在答应同行前保留自己的时间边界。"
+                      },
+                      {
+                        "situation": "检查拟用于同行的携行工具时。",
+                        "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                        "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                      },
+                      {
+                        "situation": "同行者提出在任务途中多看一处观察点时。",
+                        "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                        "motivation": "让额外学习进入协商，而非一概拒绝。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                    "character_id": "character:lu-heng",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "准备采药时，有人询问她是否认识目标药材。",
+                        "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                        "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                      },
+                      {
+                        "situation": "商定材料保管办法时。",
+                        "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                        "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                      },
+                      {
+                        "situation": "任务途中发现值得核实的细小差别时。",
+                        "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                        "motivation": "争取观察机会，同时承认同行者的安排。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                    "character_id": "character:tang-sui",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "有人只说引气练习没有进展时。",
+                        "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                        "motivation": "让求助者提供可用于指导的观察。"
+                      },
+                      {
+                        "situation": "未来观察到弟子一次短暂成功后。",
+                        "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                        "motivation": "区分一次感觉与可重复的操作能力。"
+                      },
+                      {
+                        "situation": "沈砚询问自己是否能够参加正式课程时。",
+                        "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                        "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                    "character_id": "character:xu-ting",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "kind": "voice_contract",
+                    "layer": "CHARACTER",
+                    "guidance": [
+                      {
+                        "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                        "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                        "motivation": "让调整请求能够被具体处理。"
+                      },
+                      {
+                        "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                        "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                        "motivation": "区分任务报酬与兑换对象的实际供给。"
+                      },
+                      {
+                        "situation": "有人要求他直接确认正式课程资格时。",
+                        "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                        "motivation": "在部门职责边界内给出下一步回应。"
+                      }
+                    ],
+                    "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                    "character_id": "character:cheng-guan",
+                    "required_markers": [],
+                    "forbidden_markers": []
+                  },
+                  {
+                    "key": "work_applicability",
+                    "value": {
+                      "scope": "BOOK",
+                      "book_id": "book:qinglan-wendao-20261008",
+                      "declarations": [
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                          "field_path": "$.subgenre"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                          "field_path": "$.core_desire"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                          "field_path": "$.core_fear"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                          "field_path": "$.core_conflict"
+                        },
+                        {
+                          "status": "APPLICABLE",
+                          "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                          "field_path": "$.serialization_potential"
+                        }
+                      ],
+                      "source_bindings": [
+                        {
+                          "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                          "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                        },
+                        {
+                          "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        },
+                        {
+                          "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                          "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                        }
+                      ],
+                      "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                      "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                    }
+                  },
+                  {
+                    "key": "creative_style",
+                    "value": {
+                      "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                      "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                      "constraints": [
+                        "正文主要使用简体中文，单章2500—3500中文字。",
+                        "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                        "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                        "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                        "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                        "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                        "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                        "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                      ],
+                      "genre_conventions": [
+                        "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                        "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                        "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                        "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                        "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                      ],
+                      "original_examples": [
+                        {
+                          "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                          "purpose": "呈现扎实练习中的可见变化。",
+                          "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                        },
+                        {
+                          "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                          "purpose": "让同门利益参与任务选择。",
+                          "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                        },
+                        {
+                          "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                          "purpose": "通过具体取舍表现主角主动性。",
+                          "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                        },
+                        {
+                          "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                          "purpose": "建立章际承接与节奏变化。",
+                          "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "key": "creative_direction",
+                    "value": {
+                      "genre": "传统修仙",
+                      "subgenre": "宗门成长与任务历练",
+                      "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                      "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                    }
+                  },
+                  {
+                    "key": "realization_policy",
+                    "value": {
+                      "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                      "contract_version": "scene-craft-tasks.v2"
+                    }
+                  }
+                ]
+              }
+            ],
+            "contract_version": "draft-style-view-v2",
+            "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+          },
+          "chapter": 1,
+          "source_plan": {
+            "content_hash": "sha256:e45eee88950bf93b1e9d5f0ecce78f83dd62acc214654ac28dca7df35b9a0cb8",
+            "asset_version_id": "af16b192-9c62-4649-874b-38c5bd268c4d"
+          },
+          "point_of_view": null,
+          "author_guidance": {},
+          "baseline_digest": "sha256:450e6c9cf013164c2c04d23607db46d725c42d0e498ad03be002c212e1c54352",
+          "contract_version": "creative-baseline.v1",
+          "style_constraints": [],
+          "target_word_count": null,
+          "method_requirements": {
+            "reward": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "reward_action",
+                "reward_setup",
+                "reward_payoff"
+              ],
+              "selected_values": {
+                "reward_setup": [],
+                "reward_action": "兑现一次小范围的行动成果：沈砚能够分清眼下要争取什么、还不知道什么。",
+                "reward_payoff": []
+              }
+            },
+            "chapter_hook": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "ending_hook",
+                "chapter_hook"
+              ],
+              "selected_values": {
+                "ending_hook": "沈砚把重新整理的问题留在手边，准备亲自核实：怎样取得入门机会，哪些基础学习可以另行询问。",
+                "chapter_hook": "沈砚把重新整理的问题留在手边，准备亲自核实：怎样取得入门机会，哪些基础学习可以另行询问。"
+              }
+            },
+            "golden_opening": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "primary_function"
+              ],
+              "selected_values": {
+                "primary_function": "以主动询问建立入门行动，并通过两次有限回应把笼统愿望变成可核实的问题。"
+              }
+            },
+            "reader_promise": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "promise_action",
+                "reader_promise_actions"
+              ],
+              "selected_values": {
+                "promise_action": "让读者看见普通少年亲自争取机会，并承担问清问题与另行核实的工作。",
+                "reader_promise_actions": [
+                  "沈砚亲口完成从笼统入门愿望到具体核实问题的改写，不能由旁白替他宣布已经想清。",
+                  "程观的拒绝实际使沈砚承担信息整理，许庭的有限反馈实际帮助他区分经历、期待与未知条件。",
+                  "五分钟澄清与十分钟交流均在确认可用后真实执行，并在结束时停止追加。",
+                  "本章末明确保留待亲自核实的问题，使其成为第2章核实行动的入口；本章不提前执行该核实。"
+                ]
+              }
+            },
+            "emotional_curve": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "emotional_curve"
+              ],
+              "selected_values": {
+                "emotional_curve": []
+              }
+            },
+            "protagonist_charm": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "protagonist_charm_mechanism"
+              ],
+              "selected_values": {
+                "protagonist_charm_mechanism": null
+              }
+            },
+            "antagonist_pressure": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "antagonist_pressure"
+              ],
+              "selected_values": {
+                "antagonist_pressure": null
+              }
+            },
+            "suspense_progression": {
+              "status": "NOT_APPLICABLE",
+              "source_fields": [
+                "suspense_curve"
+              ],
+              "selected_values": {
+                "suspense_curve": []
+              }
+            },
+            "serialization_function": {
+              "status": "APPLICABLE",
+              "source_fields": [
+                "serialization_function"
+              ],
+              "selected_values": {
+                "serialization_function": "以主动询问、有限回应和问题改写完成本章的小范围行动成果，结尾将亲自核实入门机会与基础学习条件转为下一章的明确行动期待，支持普通少年持续主动成长的阅读承诺。"
+              },
+              "work_requirement": {
+                "scope": "BOOK",
+                "status": "APPLICABLE",
+                "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                "field_path": "$.serialization_potential",
+                "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+              }
+            }
+          },
+          "prohibited_outcomes": [
+            "仅凭程观或许庭的认可完成入门。",
+            "把初次相遇写成已有师徒关系或既往合作。",
+            "提前赋予沈砚引气、药材辨认或御剑能力。",
+            "把他人的私下动机、职位或机构资料写成沈砚已知。"
+          ]
+        },
+        "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+      }
+    ],
+    "windows": [
+      {
+        "spans": [
+          {
+            "end": 3464,
+            "text": "沈砚到了青岚宗入口，却没有立刻往前走。\n\n脚下的石面平整，他仍低头看了一眼，才把脚落稳。入口旁留着一块不挡路的空地，他站在那里，望向前面的路。十六年来，他走惯了山村的坡道；这里的路该怎么走，他不知道。来时只想着先到青岚宗，如今到了，下一步却不能靠两条腿一直往前。\n\n他想争取外门的入门机会。可要满足什么条件，怎样才能争取，他一句也说不清。\n\n在入口边站了两三分钟，他看见一个人从近处走来。那人没有隔着门墙，走过来的路也经过这块空地。沈砚往旁边让了半步，既没有迎面拦住，也没有退到声音传不过去的地方。\n\n等那人走近，他张了张口，又把已经到了舌尖的称呼咽回去。他不知道对方是谁，叫错了，后面的话还得重说。\n\n“打扰一下。”\n\n声音比他预备的轻。眼前人朝他看过来，他便抬起头，把后半句话接上。\n\n“我叫沈砚，想争取青岚宗外门的入门机会。我还不知道实际要什么条件，也不知道眼下该怎样问清。您本人能回答这方面的问题吗？”\n\n说到最后，他没有把声音压下去。既然已经开口，总得让人听清自己要问什么。\n\n那人的脚步停住了，身体也转向他。沈砚看见对方原本朝前的目光落在自己脸上，便收住话，等着回应。他的手还贴着裤缝，指头却不再攥得那么紧。来意总算说出去了；至于眼前人能说什么，他还得听。\n\n“我叫程观。”那人说，“我已经歇过，稍后还有自己的事要办，赶过去的工夫也留好了。现在能用五分钟听你说，到时我就走。”\n\n沈砚这才知道眼前人的姓名。他点了点头，往空地里侧挪了一步。程观跟着侧过身，两人让开了路。\n\n“就从现在算。”程观说，“你眼下最想问清哪件事？”\n\n“怎样才能进去。”沈砚答得很快，“我想进外门学修炼，能从最基础的学起。要是还缺什么，我可以先准备。我就是不知道……”\n\n他说到这里停住了。原本以为已经说清，真要往下说，才发现不知道的东西连在一起，哪一件都像得先问。\n\n程观没有替他接完。\n\n“先说入门。你是想问需要哪些条件，还是想让我现在就告诉你能不能进去？”\n\n沈砚低头看了看两人之间的石面。\n\n“我想知道能不能。”他顿了顿，“可我连条件都没问过。这样问，您也没有依据回答。”\n\n“入门条件和你能否满足，我这次都不能确认。能先帮你说清的，是你到底要问哪些事。”\n\n程观说完，等着他重新开口。\n\n风从入口吹过来，沈砚把脸转开少许，想了一会儿。他来时盼着遇见一个肯答话的人，最好说出一件他立刻能去做的事。如今对方肯听，他却不能把自己的急切也一并交过去，等人替他变成办法。\n\n“那我得先问清入门的条件。”他说，“还有基础的东西该怎样学。我原来想着，只要能进外门，这些就都能接上。”\n\n“这两件事，你现在都没有问到答案？”\n\n“没有。”\n\n“那就先各自留下。哪一项能接上，要等你核实，不能拿一项的愿望替另一项作答。”\n\n沈砚听了，还是忍不住问：“您能不能替我把这些都问清？怎样入门，进去以后从哪里学起，都帮我问一遍。”\n\n程观摇头。\n\n“不能。我只答应这五分钟的澄清，不替你办完全部询问，也不接下后面的核实。”\n\n沈砚原本微微前倾，听到这句话，站直了一些。接下来那句“我可以等”没有说出口。程观拒绝的是替他去问，等在这里并不能让那件事变成已经答应的事。\n\n他把两手松开，重新看向程观。\n\n“那我自己整理。没问清的，我再亲自核实。”\n\n“你先整理哪部分？”\n\n“先把我想得到的，和我还不知道的分开。入门办法没问清，基础学习也没问清。我不能只问一句能不能进去，就当后面都有了着落。”\n\n余下的时间里，沈砚把刚才挤在一起的问法拆开，试着说了两遍。第一遍仍带着“进去以后就能学”的话，第二遍停在“基础学习还要另问”。程观只追问他哪部分已有回应，哪部分仍空着，没有补进入门的条件。\n\n沈砚每次改口都要想一想。五分钟在这些问答和停顿里过去，程观最后收住了话。\n\n“时间到了。我们这次就到这里。”\n\n沈砚点头让开。程观转回原来的方向，沿路走了，没有再留下听下一句。\n\n沈砚留在空地边，独自回想了约三分钟。刚才的五分钟已经结束，这会儿把话重新排好，还得另花工夫。他慢慢发现，自己虽答应了整理，却仍不大能把两件事各说成一句清楚的问话。\n\n入口另一侧，有个女子在路边停下。沈砚看过去时，她也朝这边望了一眼。两人之间只隔着几步空地，他便走到能听清说话的距离，停住。\n\n“打扰一下，您愿意听我说一个还没理清的问题吗？”\n\n她转过身：“你先说说。”\n\n“我叫沈砚，想争取外门入门的机会，也想从基础学起。刚才我问过一回。那人叫程观，只用了五分钟帮我澄清，不替我把后面的事都问完。我答应自己整理，可现在还是容易说成一句：怎样进去，进去以后怎样学。”\n\n他看着她，把尚未解决的部分说完。\n\n“实际条件我还不知道。我想先把问题理清，再亲自去核实。”\n\n从走过去、等她转身，到这番叙述说完，又用了约两分钟。她听完才说：“我叫许庭。我刚歇过，后面留了修炼的时间，走过去也有余量；现在没有别的约定。可以给你十分钟，帮你整理刚才说的这些。”\n\n沈砚点头。许庭抬手示意两人往路边再让一点，待站定，才继续说：“从这里开始算。先说你亲自做过什么、听到了什么，别急着把后面的愿望也接上。”\n\n沈砚想了想。\n\n“我来到入口，向程观问入门的办法。他介绍了自己，说能用五分钟帮我澄清。我问他能不能把后面的事也替我问清，他说不能。五分钟结束，他走了。我又自己想了一阵，才过来问您。”\n\n“你听到了入门的实际条件吗？”\n\n“没有。”\n\n“基础学习的条件呢？”\n\n“也没有。”\n\n许庭没有往这两处空缺里添话，而是问：“那你刚才为什么说，进去以后怎样学？”\n\n“我想着先进去，学习就能往下接。”沈砚说到这里，自己停了一下，“这是我盼着的，还没有人这样答复我。”\n\n他第一次听清了这句话里省掉的部分。他把希望说得顺口，像已经知道了两件事的先后。可程观没有告诉他，许庭也没有。\n\n“现在单说你希望得到什么。”许庭说。\n\n“我希望有争取外门入门的机会，也希望能学基础。”\n\n这句话短了许多。沈砚说完，忍住了立刻添上“是不是可以”的冲动。他想得到什么，眼下已经能说；能不能得到，还得另问。\n\n许庭接着问：“还有哪些不知道的？”\n\n“怎样取得那个机会，要满足什么，我不知道。基础学习可以问哪些内容，有什么条件，我也不知道。”\n\n“把这两处未知各说成一个问题。”\n\n沈砚抿了抿嘴：“我能不能进外门，进去以后能不能……”\n\n后半句又接回了原处。他皱起眉，目光落向路边一块较平的石头。石面上浮着薄灰，一道浅痕横过中间。他望了一会儿，在心里把刚才的句子重新排开。\n\n许庭没有催他，也没有替他给出另一句。他便从自己确实想问的地方重说。\n\n“第一件，怎样取得青岚宗外门的入门机会？”\n\n说完这句，他停下来，另起一句。\n\n“第二件，哪些基础学习可以另行询问？”\n\n“这两句里，哪一项已经有了答案？”许庭问。\n\n“都没有。我还得亲自核实。”\n\n沈砚蹲下，用指尖拂出石面上两小块浮灰，在旁边分别写下“入门机会”和“基础学习”。字写得慢，第二行最后一笔碰到了浅痕，他挪开手，重新补清。\n\n“我原来问怎样进去，是急着想听一句行不行。”他抬头说，“现在得问怎样争取，具体要核实什么。基础学习也另外留着问，不能先算作进去以后自然就有。”\n\n许庭看了一眼他指下的两行字。\n\n“你说得清楚了。以后听到回应，仍可以这样分：已经听到什么，自己盼着什么，还缺什么。”\n\n沈砚把手放在石头边，想起开口前站在入口的那几分钟。当时他只怕没人听，真有人停下来，便盼着一次把所有事问完。如今两处空缺还在，却不必挤在同一句话里，让人猜他究竟急着问哪一件。\n\n许庭让他按自己的两行字再说一次。他没有照搬先前那句“进去以后”，而是分别复述了入门机会与基础学习的问法，说完又明确两项都待核实。许庭只依据这次复述问了一个短问题，确认他没有把问题当成已经得到的条件。\n\n十分钟到时，她收住话。\n\n“时间到了，今天这次交流结束。我现在去做自己的修炼。”\n\n沈砚站起身，向旁边让开。许庭沿路离去。他没有再把新的问题喊过去。\n\n待她走开，他又蹲回石旁，花了一小会儿把模糊的字补清。两次交谈之外，迟疑、走动和独自整理也都用了时间。石面上留下的仍是两项问题；他尚未知道自己能否入门，也没有得到基础学习的条件。\n\n但这回，轮到自己继续往下问时，他能把话说清了。\n\n沈砚将手停在两行字旁，低声复述：“怎样取得入门机会，哪些基础学习可以另行询问。”\n\n问题留在手边。他准备带着这两句，亲自核实。",
+            "start": 0,
+            "text_hash": "sha256:2b91717fc80afc360c79bc0d6d39b6af99293a0a931b65b932de101f3ce5fa75",
+            "asset_hash": "sha256:19ec1aaf259ad24aba278284cc619601a3d399f05bcdb7e04dfa72bfda409d8c",
+            "codepoints": 3464,
+            "acceptance_id": "",
+            "chapter_number": 1,
+            "asset_version_id": "authority-output:df816504-1cdb-4b69-ba6a-c3e46bb6f006:chapter.draft:v1",
+            "creative_baseline": {
+              "style": {
+                "policies": [
+                  {
+                    "constraints": null,
+                    "content_hash": "sha256:e2f8f569056cd7adc8fe0fb8b0a6f9371abcb79b60a5a5551de6014f615244d7",
+                    "safe_summary": "Apply the exact approved Foundation voice and original craft examples.",
+                    "asset_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1",
+                    "structured_facts": [
+                      {
+                        "kind": "voice_contract",
+                        "layer": "NARRATOR",
+                        "guidance": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:NARRATOR",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "GENRE",
+                        "guidance": [
+                          "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                          "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                          "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                          "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                          "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:GENRE",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "问询一项尚未接受的劳作安排时。",
+                            "utterance": "这份活要做到什么时候？我想先算算，做完还能不能留一段练习的工夫。",
+                            "motivation": "把差事与修行需要联系起来，保留主动选择的余地。"
+                          },
+                          {
+                            "situation": "未来一次基础引气尝试后，向教习说明自己观察到的不足。",
+                            "utterance": "刚才呼吸慢下来时，我还能留住一点。再往后就散了。我想再试一遍，看是不是急在这里。",
+                            "motivation": "通过具体差别寻求指导，而非只求肯定。"
+                          },
+                          {
+                            "situation": "协商首次结伴采药的路线时。",
+                            "utterance": "我想多认一段路，可你要按时回来。先把回程留够；剩下的工夫，我们再商量去哪一处。",
+                            "motivation": "同时表达个人目标与对同行承诺的尊重。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:shen-yan",
+                        "character_id": "character:shen-yan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "收到尚未说明回程安排的采药邀请时。",
+                            "utterance": "能去。先说什么时候回来，别到了谷里才一处接一处地加。",
+                            "motivation": "在答应同行前保留自己的时间边界。"
+                          },
+                          {
+                            "situation": "检查拟用于同行的携行工具时。",
+                            "utterance": "背带我来调。你把采收说明问清，咱们各做一件，别两个人都等着。",
+                            "motivation": "凭自己的长处承担一项实际工作，同时要求互惠。"
+                          },
+                          {
+                            "situation": "同行者提出在任务途中多看一处观察点时。",
+                            "utterance": "值得看就说说为什么。能留出回程工夫，我也想认一认；留不出来，就另约一次。",
+                            "motivation": "让额外学习进入协商，而非一概拒绝。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:lu-heng",
+                        "character_id": "character:lu-heng",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "准备采药时，有人询问她是否认识目标药材。",
+                            "utterance": "我会分拣普通草药，折露草还得照说明认。先给我看清楚，别凭这个就算我会。",
+                            "motivation": "守住信息边界，避免生活经验被误当作任务知识。"
+                          },
+                          {
+                            "situation": "商定材料保管办法时。",
+                            "utterance": "湿的和干的先分开。我来复查，你帮我留一块干净地方，免得一路压坏。",
+                            "motivation": "保护交付质量，并把自己的要求落实为分工。"
+                          },
+                          {
+                            "situation": "任务途中发现值得核实的细小差别时。",
+                            "utterance": "这里有个差别，我想再看一眼。要是耽误回程，我先记下来，下次带着问题来。",
+                            "motivation": "争取观察机会，同时承认同行者的安排。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:tang-sui",
+                        "character_id": "character:tang-sui",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "有人只说引气练习没有进展时。",
+                            "utterance": "先别说全都不对。哪一步还能维持，哪一步开始散？从那里说。",
+                            "motivation": "让求助者提供可用于指导的观察。"
+                          },
+                          {
+                            "situation": "未来观察到弟子一次短暂成功后。",
+                            "utterance": "刚才这一回有差别。歇一歇，再照原来的做法试，看看能不能重复。",
+                            "motivation": "区分一次感觉与可重复的操作能力。"
+                          },
+                          {
+                            "situation": "沈砚询问自己是否能够参加正式课程时。",
+                            "utterance": "你的练习，我能说亲眼看到的部分。课位和入课条件，要核实当期安排，不能把这两件事混在一起。",
+                            "motivation": "提供能力反馈，同时保持正式课程的权限和条件边界。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:xu-ting",
+                        "character_id": "character:xu-ting",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "kind": "voice_contract",
+                        "layer": "CHARACTER",
+                        "guidance": [
+                          {
+                            "situation": "沈砚提出更换尚需核实的劳动安排时。",
+                            "utterance": "先说要改哪一段，再说原来的事怎么接上。两边都说明白，才知道能不能办。",
+                            "motivation": "让调整请求能够被具体处理。"
+                          },
+                          {
+                            "situation": "有人把任务牌上的报酬当作所需物资必然可得时。",
+                            "utterance": "牌上写的是这项任务的条件。你要换什么，还得查那边的实际供给，不能只看报酬。",
+                            "motivation": "区分任务报酬与兑换对象的实际供给。"
+                          },
+                          {
+                            "situation": "有人要求他直接确认正式课程资格时。",
+                            "utterance": "劳动安排我能核对。入课条件要问教习组；等那边说清，再看两边时间有没有冲突。",
+                            "motivation": "在部门职责边界内给出下一步回应。"
+                          }
+                        ],
+                        "voice_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31:character:cheng-guan",
+                        "character_id": "character:cheng-guan",
+                        "required_markers": [],
+                        "forbidden_markers": []
+                      },
+                      {
+                        "key": "work_applicability",
+                        "value": {
+                          "scope": "BOOK",
+                          "book_id": "book:qinglan-wendao-20261008",
+                          "declarations": [
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者明确以少年修炼成长、宗门生活和任务历练为主线，可细化为宗门成长型传统修仙。",
+                              "field_path": "$.subgenre"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结作者简报明确沈砚想成为能独自御剑远行的修士，并提出进入正式外门修炼课的近期愿望。",
+                              "field_path": "$.core_desire"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "本候选从沈砚争取自主修行道路的愿望推演一种日常性的担忧，用于支持选择；它不是作者已指定的创伤或已发生的经历。",
+                              "field_path": "$.core_fear"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "作者要求资源争取、主动选择与可见进步，适合设置修行需求、有限资源和同门利益之间的具体阻力。",
+                              "field_path": "$.core_conflict"
+                            },
+                            {
+                              "status": "APPLICABLE",
+                              "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                              "field_path": "$.serialization_potential"
+                            }
+                          ],
+                          "source_bindings": [
+                            {
+                              "content_hash": "sha256:3c0b2c4a8ed2e449d890d7beca61e8d5cc8f7ab3c62360a8aa91cffd89cbb99c",
+                              "asset_version_id": "db9855a3-5d98-44ba-9f09-3ce437a9cb31"
+                            },
+                            {
+                              "content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                              "asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                            },
+                            {
+                              "content_hash": "sha256:e1b7b15c60f6235db99f33658a55c89c6915bc3ac7f1a9e4aa4bd74dcc20eda4",
+                              "asset_version_id": "authority-output:c59b05b5-a51c-4d41-a97c-b5d47e841472:story_planning.candidate:v1"
+                            }
+                          ],
+                          "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                          "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                        }
+                      },
+                      {
+                        "key": "creative_style",
+                        "value": {
+                          "pov": "以沈砚为主的第三人称限知视角。读者跟随他的观察、尝试和理解认识宗门；同门未说明的动机只通过可见行为留下判断空间。",
+                          "narrator": "朴素、清楚且有分寸的第三人称叙述者。重视人物正在做什么、为何这样做及做完后改变了什么；情绪通过观察、动作和简短内心呈现。",
+                          "constraints": [
+                            "正文主要使用简体中文，单章2500—3500中文字。",
+                            "用动作、感官差别和实际结果呈现修炼进步，避免只有境界名称或旁人赞叹。",
+                            "规则在人物准备使用、面临限制或作出选择时解释，控制一次新增术语的数量。",
+                            "对话体现当下目的和不同利益，同门可以拒绝、讨价还价或改变安排。",
+                            "写清场景内的行动过程与结果，章际承接前章动作、资源变化和人物承诺。",
+                            "不把练习一律写成痛苦硬撑，也不把每次选择都包装成重大牺牲。",
+                            "比喻尽量来自沈砚能够接触的山村生活与宗门经验。",
+                            "以下例句均为原创表达示范，不代表已发生场景或已确认世界规则。"
+                          ],
+                          "genre_conventions": [
+                            "以引气、功法练习和实际运用建立修炼成长的可信过程。",
+                            "通过外门课程、劳作与任务展现宗门生活的日常秩序。",
+                            "让资源数量与用途清楚，资源争取服务具体修炼需求。",
+                            "历练包含准备、执行和结果承接，伙伴的能力与判断影响任务。",
+                            "飞剑与远行作为长期向往逐步进入实际学习和使用，而非开篇即具备。"
+                          ],
+                          "original_examples": [
+                            {
+                              "example": "第三次吐纳结束，沈砚没有急着睁眼。先前那点凉意一碰到胸口便散，这回却顺着呼吸停了片刻。他又照着刚才的快慢试了一遍，直到掌心微热，才伸手在纸上添下一笔。",
+                              "purpose": "呈现扎实练习中的可见变化。",
+                              "explanation": "用两次尝试之间可感知的差别表达进步，记录动作连接后续练习，不直接宣布天赋出众。"
+                            },
+                            {
+                              "example": "“我得赶在午前回来。”同门把绳结重新勒紧，“下午那份差事，我已经答应人了。”沈砚看了看谷口的雾，收起原先画好的长路：“那就先走近坡。远处那片药，我明日再来。”",
+                              "purpose": "让同门利益参与任务选择。",
+                              "explanation": "同行者有自己的承诺，沈砚需要据此调整计划；合作通过协商推进。"
+                            },
+                            {
+                              "example": "两张任务牌挂在一起。一张给的报酬多，得连做五日；另一张只占半天，却要自己认路。沈砚摸了摸袖中的课时单，没有立刻伸手。他先去问清第二张牌上那条山路，回来时，第一张已经被人取走了。",
+                              "purpose": "通过具体取舍表现主角主动性。",
+                              "explanation": "将时间、报酬与练习需要放进一个可观察的选择过程，机会变化产生局部后果，不预设严重损失。"
+                            },
+                            {
+                              "example": "药篓还搁在门边，沈砚先抽出压在篓底的那张纸。出发前答应补上的两处路标，他只画了一处。灯油不多，他把纸挪近灯芯，照着鞋底带回来的泥，重新想了一遍那段岔路。",
+                              "purpose": "建立章际承接与节奏变化。",
+                              "explanation": "任务结束后继续承接出发前的承诺，借小动作组织安静场景，并为后续合作保留连接。"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "key": "creative_direction",
+                        "value": {
+                          "genre": "传统修仙",
+                          "subgenre": "宗门成长与任务历练",
+                          "target_reader": "喜欢直观世界规则、主动少年成长、宗门日常与任务历练的成年中文网文读者。",
+                          "emotional_contract": "让读者体验普通少年把陌生本领一点点练成自己的踏实喜悦，同时感受争取机会时的紧张、结伴做事时的摩擦与获得信任后的温暖。阶段回报包括一次动作终于做稳、一次选择得到验证、一个同门愿意托付职责。失败可以带来返工、资源损失或关系变化，其分量由具体行为决定；故事持续给予努力有用、选择能改变处境的期待。"
+                        }
+                      },
+                      {
+                        "key": "realization_policy",
+                        "value": {
+                          "mode": "WHOLE_CHAPTER_WITH_TARGETED_SPECIALISMS",
+                          "contract_version": "scene-craft-tasks.v2"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "contract_version": "draft-style-view-v2",
+                "style_policy_version_id": "authority-output:afebcb98-fec9-43f4-bcc2-20c1d6cc4191:chapter.style_policy:v1"
+              },
+              "chapter": 1,
+              "source_plan": {
+                "content_hash": "sha256:e45eee88950bf93b1e9d5f0ecce78f83dd62acc214654ac28dca7df35b9a0cb8",
+                "asset_version_id": "af16b192-9c62-4649-874b-38c5bd268c4d"
+              },
+              "point_of_view": null,
+              "author_guidance": {},
+              "baseline_digest": "sha256:450e6c9cf013164c2c04d23607db46d725c42d0e498ad03be002c212e1c54352",
+              "contract_version": "creative-baseline.v1",
+              "style_constraints": [],
+              "target_word_count": null,
+              "method_requirements": {
+                "reward": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "reward_action",
+                    "reward_setup",
+                    "reward_payoff"
+                  ],
+                  "selected_values": {
+                    "reward_setup": [],
+                    "reward_action": "兑现一次小范围的行动成果：沈砚能够分清眼下要争取什么、还不知道什么。",
+                    "reward_payoff": []
+                  }
+                },
+                "chapter_hook": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "ending_hook",
+                    "chapter_hook"
+                  ],
+                  "selected_values": {
+                    "ending_hook": "沈砚把重新整理的问题留在手边，准备亲自核实：怎样取得入门机会，哪些基础学习可以另行询问。",
+                    "chapter_hook": "沈砚把重新整理的问题留在手边，准备亲自核实：怎样取得入门机会，哪些基础学习可以另行询问。"
+                  }
+                },
+                "golden_opening": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "primary_function"
+                  ],
+                  "selected_values": {
+                    "primary_function": "以主动询问建立入门行动，并通过两次有限回应把笼统愿望变成可核实的问题。"
+                  }
+                },
+                "reader_promise": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "promise_action",
+                    "reader_promise_actions"
+                  ],
+                  "selected_values": {
+                    "promise_action": "让读者看见普通少年亲自争取机会，并承担问清问题与另行核实的工作。",
+                    "reader_promise_actions": [
+                      "沈砚亲口完成从笼统入门愿望到具体核实问题的改写，不能由旁白替他宣布已经想清。",
+                      "程观的拒绝实际使沈砚承担信息整理，许庭的有限反馈实际帮助他区分经历、期待与未知条件。",
+                      "五分钟澄清与十分钟交流均在确认可用后真实执行，并在结束时停止追加。",
+                      "本章末明确保留待亲自核实的问题，使其成为第2章核实行动的入口；本章不提前执行该核实。"
+                    ]
+                  }
+                },
+                "emotional_curve": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "emotional_curve"
+                  ],
+                  "selected_values": {
+                    "emotional_curve": []
+                  }
+                },
+                "protagonist_charm": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "protagonist_charm_mechanism"
+                  ],
+                  "selected_values": {
+                    "protagonist_charm_mechanism": null
+                  }
+                },
+                "antagonist_pressure": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "antagonist_pressure"
+                  ],
+                  "selected_values": {
+                    "antagonist_pressure": null
+                  }
+                },
+                "suspense_progression": {
+                  "status": "NOT_APPLICABLE",
+                  "source_fields": [
+                    "suspense_curve"
+                  ],
+                  "selected_values": {
+                    "suspense_curve": []
+                  }
+                },
+                "serialization_function": {
+                  "status": "APPLICABLE",
+                  "source_fields": [
+                    "serialization_function"
+                  ],
+                  "selected_values": {
+                    "serialization_function": "以主动询问、有限回应和问题改写完成本章的小范围行动成果，结尾将亲自核实入门机会与基础学习条件转为下一章的明确行动期待，支持普通少年持续主动成长的阅读承诺。"
+                  },
+                  "work_requirement": {
+                    "scope": "BOOK",
+                    "status": "APPLICABLE",
+                    "rationale": "冻结搜索视野为240章，作者要求每章2500—3500中文字且章际承接，可采用连续成长单元支撑有终点的长篇连载。",
+                    "field_path": "$.serialization_potential",
+                    "source_content_hash": "sha256:c681ea48ea08566eabd99049b11b6086fdba299fb625eefc4713e853bf3b1aba",
+                    "source_asset_version_id": "authority-output:528eabd8-ae1b-4629-8137-b1b86a11bf8c:story_planning.candidate:v1"
+                  }
+                }
+              },
+              "prohibited_outcomes": [
+                "仅凭程观或许庭的认可完成入门。",
+                "把初次相遇写成已有师徒关系或既往合作。",
+                "提前赋予沈砚引气、药材辨认或御剑能力。",
+                "把他人的私下动机、职位或机构资料写成沈砚已知。"
+              ]
+            },
+            "work_intent_status": "FROZEN_CANDIDATE_BASELINE"
+          }
+        ],
+        "window_id": "sha256:5a839a4b3b375963e850c489fa0187faa2464d12607f8615aac7bc34c73f1588",
+        "input_asset": {
+          "content_hash": "sha256:665e748d95fe840c685be493f10bb71520ac46b514ecc509821447875335cf6d",
+          "asset_version_id": "a5feff11-e5bd-4ee0-bff0-dba740fe03e4"
+        }
+      }
+    ],
+    "project_id": "qid-learning-prose-01",
+    "book_run_id": "book-run:2bf458df-d6ab-441a-abc5-419eb00bb5bc",
+    "workspace_id": "workspace:qid-learning-prose-01",
+    "schema_version": "longform-prose-manifest.v3",
+    "manifest_digest": "sha256:58849e22a3d7b12a5f47cf6261ee9fbcb98c3fb88356ad8365e8b6d66089fb51",
+    "source_isolation": "AUTHOR_SELECTED_UNREVIEWED_PROSE"
+  },
+  "exact_release_sha": "6e026ea0fbb949b7e374064a7fc76984b928adeb",
+  "review_digest": "sha256:6130226e2a22c338fbe39d024f4699603a3b13fd372074ba17d843b058dba7ec",
+  "implementation_current": false
+}

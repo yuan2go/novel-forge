@@ -1016,3 +1016,29 @@ def test_legacy_rejection_and_typed_transition_cannot_conflict_in_diagnostic():
     assert blocked_candidate_diagnostic({"transition_id": "proposal", "rejection": rejection}) == {"transition_id": "proposal", "rejection": rejection}
     with pytest.raises(KernelError, match="WORLD_REPAIR_CAUSAL_DIAGNOSTIC_DRIFT"):
         blocked_candidate_diagnostic({"transition_id": "proposal", "transition": {"transition_id": "different"}})
+
+
+@pytest.mark.parametrize('fault', ['none', 'missing_document', 'missing_receipt', 'different_output', 'different_source'])
+def test_isolated_world_sibling_requires_original_success_and_source(monkeypatch, fault):
+    from types import SimpleNamespace
+    from novel_forge.modules.story_planning_runtime.world_preparation import PlanningWorldPreparation
+    from novel_forge.modules.command_kernel import external_effect_runtime
+
+    source = {'asset_version_id':'source:1', 'content_hash':'sha256:source'}
+    document = SimpleNamespace(asset_version_id='generation:1', content={'contract':{
+        'source':source if fault != 'different_source' else {'asset_version_id':'other-book'},
+        'output':{'disposition':'NO_OP'}, 'evidence':{'external_receipt_ref':'effect:original'},
+    }})
+    receipt = None if fault == 'missing_receipt' else {'provider_evidence':{
+        'result':{'disposition':'NO_OP'} if fault != 'different_output' else {'disposition':'DEFER'},
+    }, 'budget_reservation_status':'HELD_UNKNOWN'}
+    monkeypatch.setattr(external_effect_runtime, 'read_retained_generation_stage_success', lambda *args, **kwargs: receipt)
+    preparer = PlanningWorldPreparation(SimpleNamespace(database_url='controlled-test'))
+    monkeypatch.setattr(preparer, '_read', lambda *args: None if fault == 'missing_document' else document)
+    monkeypatch.setattr(preparer, '_source_operation', lambda *args: 'original-operation')
+    command = SimpleNamespace(project_id='project:1', actor_id='author:1', trace_id='trace', correlation_id='book:1')
+    if fault in {'missing_receipt', 'different_output', 'different_source'}:
+        with pytest.raises(KernelError, match='WORLD_ISOLATED_RECEIPT_INVALID'):
+            preparer._read_known_isolated_stage(command, ['world_preparation/original-operation'], 'generation', source)
+    else:
+        assert preparer._read_known_isolated_stage(command, ['world_preparation/original-operation'], 'generation', source) is (None if fault == 'missing_document' else document)

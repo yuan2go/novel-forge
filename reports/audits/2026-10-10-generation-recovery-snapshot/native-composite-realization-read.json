@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "source_group": "authority-output:dbdaaf28-a4d9-445e-8ab6-da6b34f1f769:story_planning.candidate:v1",
+  "scope": {
+    "project_id": "qid-learning-prose-01",
+    "book_id": "book:qinglan-wendao-20261008",
+    "chapter_group_plan_version_id": "authority-output:dbdaaf28-a4d9-445e-8ab6-da6b34f1f769:story_planning.candidate:v1",
+    "chapter_number": 1
+  },
+  "stable_composite_slice_id": "realization-chapter-slice:4e68285f5461116aa2ecabf28cd7ac9838780ab78c6d0faed3e03acbf2149b40",
+  "event_ids": [
+    "local:cg1:e1",
+    "local:cg1:e2",
+    "local:cg1:e3"
+  ],
+  "all_frozen_events_retained": true,
+  "provider_calls": 0,
+  "business_mutations": 0
+}

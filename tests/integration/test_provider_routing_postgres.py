@@ -262,8 +262,9 @@ def test_cold_start_persists_block_and_never_dispatches(scope):
         assert cursor.fetchone()[0] == 0
 
 
+@pytest.mark.parametrize("failure", [{"failure_class": "RATE_LIMIT"}, {"failure_class": "PROCESS_EXIT_FAILURE", "failure": {"error_code": "PROVIDER_MODEL_CAPACITY_UNAVAILABLE"}}])
 def test_rate_limit_on_another_chain_blocks_only_the_affected_model_until_retry_after(
-    scope,
+    scope, failure,
 ):
     registry = PostgresRoutingRegistry(DATABASE_URL)
     candidates = deepseek_candidates(available=True)
@@ -290,7 +291,7 @@ def test_rate_limit_on_another_chain_blocks_only_the_affected_model_until_retry_
                     {
                         "production_execution": {
                             "process_evidence": {
-                                "failure_class": "RATE_LIMIT",
+                                **failure,
                                 "retry_after_seconds": 60,
                             }
                         },
@@ -1289,7 +1290,7 @@ def test_formal_quality_reference_calibration_binds_native_receipt_decision_and_
     # WHY: Synthetic rows exercise receipt projection only, never real Provider qualification.
     from novel_forge.modules.capability_packs.validation_deployment import register_validation_runtime_definitions
     from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
-    from novel_forge.modules.chapter_authority.definitions import CHAPTER_MODEL_EFFECT_DEFINITION_VERSION, chapter_operation_definitions
+    from novel_forge.modules.chapter_authority.definitions import CHAPTER_QUALITY_DEFINITION_VERSION, chapter_operation_definitions
     from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
     from novel_forge.modules.chapter_quality_authority.reference_sampling import admitted_reference_calibration
     from novel_forge.modules.production_execution.cost_routing import snapshot_hash
@@ -1307,7 +1308,7 @@ def test_formal_quality_reference_calibration_binds_native_receipt_decision_and_
             '{}'::jsonb,'{}'::jsonb FROM authority_operation_definition definition
             WHERE name='chapter.quality.structural.evaluate' AND definition_version=%s""",
             [operation, project, operation, "project:" + project, operation, "digest:" + operation,
-             CHAPTER_MODEL_EFFECT_DEFINITION_VERSION])
+             CHAPTER_QUALITY_DEFINITION_VERSION])
         assert cursor.rowcount == 1
         cursor.execute("INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status) VALUES(%s,%s,1,'SUCCEEDED')",
             [attempt, operation])
@@ -1730,9 +1731,11 @@ def test_routing_history_uses_independent_planning_qualification_failure(scope):
     assert history == (
         {
             "external_effect_id": effect,
+            "operation_id": generation_operation,
             "candidate_id": "deepseek:deepseek-flash:low",
             "failure_class": "QUALITY_FAILURE",
             "status": "SUCCEEDED",
+            "generation_isolated": False,
             "escalation": False,
             "outcome_refs": qualification_refs,
         },

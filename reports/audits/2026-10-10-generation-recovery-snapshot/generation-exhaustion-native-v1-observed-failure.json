@@ -1,0 +1,9 @@
+{
+  "state": "FAIL",
+  "test": "test_native_generation_fault_allowance_survives_successors_and_stops_dispatch",
+  "elapsed_seconds": 66.99,
+  "observed_error": "GENERATION_RECOVERY_EXHAUSTED",
+  "failure_location": "require_generation_retry_budget raised through run_creation_command before structured Book checkpoint",
+  "correction": "native drive records PAUSED with exact exhaustion reason, returns saved checkpoint and prevents automatic dispatch",
+  "record_source": "observed test output in current execution; raw log was inadvertently replaced by follow-up test and this record is not a raw-log substitute"
+}

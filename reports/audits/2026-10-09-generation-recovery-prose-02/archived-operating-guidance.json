@@ -1,0 +1,9 @@
+{
+  "classification": "HISTORICAL_COMPATIBILITY",
+  "superseded_by": "WP-GENERATION-RECOVERY-AND-PROSE-DELIVERY-02",
+  "original_statements": [
+    "UNKNOWN external outcomes require reconciliation.",
+    "A request that may have started is reconciled before retry and is never blindly resent."
+  ],
+  "current_scope": "Reconcile before resending the same uncertain request or retrying an irreversible effect. Authorized pure generation may instead isolate and admit its native successor; historical result and usage stay unchanged."
+}

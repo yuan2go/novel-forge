@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "code_sha": "f39da2ade47bdd57da4b6efaa6c0ee9534113b92",
+  "concurrent_decisions": [
+    [
+      {
+        "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+        "replayed": false,
+        "recovery_state": "EXHAUSTED",
+        "retry": {
+          "failure_attempts": 2,
+          "maximum_failure_attempts": 2,
+          "counter_source": "NATIVE_DISPATCH_LINEAGE",
+          "scope": "ORIGINAL_LOGICAL_GENERATION"
+        }
+      }
+    ],
+    [
+      {
+        "operation_id": "5df58eb6-dd9f-49cf-bf63-2ccdbb78446d",
+        "replayed": true,
+        "recovery_state": "EXHAUSTED",
+        "retry": {
+          "failure_attempts": 2,
+          "maximum_failure_attempts": 2,
+          "counter_source": "NATIVE_DISPATCH_LINEAGE",
+          "scope": "ORIGINAL_LOGICAL_GENERATION"
+        }
+      }
+    ]
+  ],
+  "provider_calls": 0,
+  "exhaustion_events": 1,
+  "rights": "REVOKED",
+  "saved_chapters_preserved": 3,
+  "scope": "Actual original two-timeout review ledger in disposable full restore; native isolation and terminal exhaustion are atomic and replayed"
+}

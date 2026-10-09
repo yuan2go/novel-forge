@@ -20,6 +20,7 @@ DECISIONS = frozenset(
         "MARK_FAILED_FINAL",
         "MARK_CANCELLED",
         "RETRY_WITH_NEW_GENERATION",
+        "ISOLATE_PURE_GENERATION",
     }
 )
 
@@ -61,7 +62,7 @@ def resolve_external_effect_manually(
         )
         replay = uow.cursor.fetchone()
         if replay is not None:
-            if replay[1] != digest:
+            if replay[1] != digest and not _same_isolation_replay(uow.cursor, command):
                 raise KernelError("MANUAL_RESOLUTION_IDEMPOTENCY_CONFLICT", "manual resolution replay differs")
             return {"manual_resolution_id": str(replay[0]), "decision": str(replay[2]), "replayed": True}
         operation = uow.repositories.attempt_runtime.operation_state(
@@ -72,7 +73,11 @@ def resolve_external_effect_manually(
         from .cli_effect_reconciliation import historical_cli_dispatch, append_resolution
         original = historical_cli_dispatch(uow.cursor, effect)
         original_reconciled = original is not None
-        if original_reconciled:
+        if command.decision == "ISOLATE_PURE_GENERATION":
+            from .generation_isolation import append_isolation
+            append_isolation(uow, effect, command)
+            target_operation = str(uow.repositories.attempt_runtime.operation_state(command.operation_id, command.project_id)["status"])
+        elif original_reconciled:
             append_resolution(uow, effect, original, command)
             target_operation = str(operation["status"])
         else:
@@ -202,3 +207,13 @@ def _validate(command: ExternalEffectManualResolutionCommand) -> None:
 
 
 __all__ = ["ExternalEffectManualResolutionCommand", "resolve_external_effect_manually"]
+
+
+def _same_isolation_replay(cursor, command):
+    if command.decision != "ISOLATE_PURE_GENERATION":
+        return False
+    cursor.execute("""SELECT operation_id,actor_id,decision,reason,evidence,trace_id,correlation_id
+        FROM authority_effect_manual_resolution WHERE project_id=%s AND external_effect_id=%s AND idempotency_key=%s""",
+        [command.project_id, command.external_effect_id, command.idempotency_key])
+    return cursor.fetchone() == (command.operation_id, command.actor_id, command.decision, command.reason,
+        command.evidence, command.trace_id, command.correlation_id)

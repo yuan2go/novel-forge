@@ -1,0 +1,503 @@
+..............F......................................................... [ 26%]
+........................................................................ [ 52%]
+........................................................................ [ 78%]
+............................................................             [100%]
+=================================== FAILURES ===================================
+___ test_chapter_repair_schema_enforces_existing_operational_commitment_rule ___
+
+    def test_chapter_repair_schema_enforces_existing_operational_commitment_rule():
+        from novel_forge.modules.hierarchical_planning import PlanContractType
+        from novel_forge.modules.story_planning_runtime.execution import planning_provider_output_schema
+    
+        arguments = {'logical_key': 'chapter:1', 'parent_version_id': 'group:v1'}
+>       historical = planning_provider_output_schema(PlanContractType.CHAPTER, **arguments)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_qualified_planning_projection.py:142: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+contract_type = <PlanContractType.CHAPTER: 'CHAPTER'>, logical_key = 'chapter:1'
+parent_version_id = 'group:v1', arc_plan_version_id = ''
+related_arc_plan_version_ids = (), dependent_arc_plan_version_ids = ()
+dependency_version_ids = (), narrative_search = False
+narrative_search_horizon = None, narrative_realization = None
+chapter_schedule_row = None, work_requirements = False, aligned_methods = False
+serialization_contract = False, operational_commitments = False
+
+    def planning_provider_output_schema(
+        contract_type: PlanContractType,
+        *,
+        logical_key: str = "",
+        parent_version_id: str = "",
+        arc_plan_version_id: str = "",
+        related_arc_plan_version_ids: tuple[str, ...] = (),
+        dependent_arc_plan_version_ids: tuple[str, ...] = (),
+        dependency_version_ids: tuple[str, ...] = (),
+        narrative_search: bool = False,
+        narrative_search_horizon: Mapping[str, Any] | None = None,
+        narrative_realization: Mapping[str, Any] | None = None,
+        chapter_schedule_row: Mapping[str, Any] | None = None,
+        work_requirements: bool = False,
+        aligned_methods: bool = False,
+        serialization_contract: bool = False,
+        operational_commitments: bool = False,
+    ) -> dict[str, Any]:
+        """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
+        string = {"type": "string", "minLength": 1}
+        string_array = {"type": "array", "items": {"type": "string"}}
+        delta = _strict_object({"subject": string, "change": string})
+        object_array = {"type": "array", "items": delta}
+        dependency_items = (
+            {"type": "string", "enum": list(dependency_version_ids)}
+            if dependency_version_ids
+            else string
+        )
+        arc_plan_version_ids = tuple(
+            dict.fromkeys(
+                item
+                for item in (arc_plan_version_id, *related_arc_plan_version_ids)
+                if item
+            )
+        )
+        exact_group_range: tuple[int, int] | None = None
+        exact_group_chapters: list[int] = []
+        if contract_type is PlanContractType.CHAPTER_GROUP and narrative_search:
+            horizon = dict(narrative_search_horizon or {})
+            raw_range = horizon.get("chapter_range")
+            if (
+                horizon.get("level") != "CHAPTER_GROUP"
+                or not isinstance(raw_range, list)
+                or len(raw_range) != 2
+                or any(
+                    not isinstance(item, int) or isinstance(item, bool)
+                    for item in raw_range
+                )
+            ):
+                raise ValueError(
+                    "ChapterGroup Search provider schema requires an exact frozen horizon"
+                )
+            exact_group_range = (raw_range[0], raw_range[1])
+            if exact_group_range[0] <= 0 or exact_group_range[1] < exact_group_range[0]:
+                raise ValueError(
+                    "ChapterGroup Search provider schema requires a positive ordered range"
+                )
+            exact_group_chapters = list(
+                range(exact_group_range[0], exact_group_range[1] + 1)
+            )
+        canon_dependencies: dict[str, Any] = {
+            "type": "array",
+            "items": dependency_items,
+        }
+        if not dependency_version_ids:
+            canon_dependencies["maxItems"] = 0
+        properties: dict[str, Any] = {
+            "contract_id": string,
+            "logical_key": (
+                {"type": "string", "const": logical_key} if logical_key else string
+            ),
+            "objective": string,
+            "entry_state_ref": string,
+            "exit_state_spec": _strict_object({"summary": string}),
+            "hard_constraints": string_array,
+            "soft_constraints": string_array,
+            "required_events": string_array,
+            "forbidden_events": string_array,
+            "required_payoffs": string_array,
+            "forbidden_payoffs": string_array,
+            "character_deltas": object_array,
+            "world_deltas": object_array,
+            "relationship_deltas": object_array,
+            "arc_contributions": object_array,
+            "canon_dependencies": canon_dependencies,
+            "quality_targets": _strict_object(
+                {"minimum": {"type": "integer", "minimum": 0, "maximum": 100}}
+            ),
+            "budget_policy_ref": string,
+            "context_profile_ref": string,
+        }
+        strings = {
+            "reader_promise",
+            "central_conflict_engine",
+            "protagonist_transformation",
+            "volume_function",
+            "stage_conflict",
+            "stage_antagonist",
+            "irreversible_change",
+            "midpoint",
+            "climax",
+            "settlement",
+            "next_volume_bridge",
+            "arc_type",
+            "resistance",
+            "escalation",
+            "turn",
+            "choice",
+            "cost",
+            "result",
+            "consequence",
+            "local_objective",
+            "trigger",
+            "local_climax",
+            "primary_function",
+            "promise_action",
+            "foreshadow_action",
+            "reward_action",
+            "ending_hook",
+            "title",
+            "premise",
+        }
+        arrays = {
+            "antagonist_escalation",
+            "world_evolution",
+            "relationship_evolution",
+            "theme_evolution",
+            "major_turns",
+            "long_promise_payoff",
+            "risk_register",
+            "dependencies",
+            "closure_conditions",
+            "cross_volume_scope",
+            "resistance_escalation",
+            "information_release",
+            "emotion_curve",
+            "antagonist_actions",
+            "cost_range",
+            "secondary_functions",
+            "prohibited_outcomes",
+            "primary_arc_ids",
+            "secondary_arc_ids",
+        }
+        integer_arrays = {"climax_distribution", "chapter_range"}
+        for field in TYPE_FIELDS[contract_type]:
+            if field in strings:
+                properties[field] = string
+            elif field in {"primary_arc_ids", "secondary_arc_ids"}:
+                properties[field] = {
+                    "type": "array",
+                    "items": _frozen_arc_ref_schema(arc_plan_version_ids, string),
+                }
+                if field == "primary_arc_ids":
+                    properties[field]["minItems"] = 1
+                if arc_plan_version_ids:
+                    properties[field]["maxItems"] = len(arc_plan_version_ids)
+            elif field in arrays:
+                properties[field] = string_array
+            elif field == "ending_contract":
+                properties[field] = _strict_object({"outcome": string})
+            elif field == "length_strategy":
+                properties[field] = _strict_object(
+                    {"target_chapters": {"type": "integer", "minimum": 1}}
+                )
+            elif field == "required_state_delta":
+                properties[field] = _strict_object({"summary": string})
+            elif field == "volume_skeleton":
+                properties[field] = {
+                    "type": "array",
+                    "items": _strict_object(
+                        {
+                            "volume": {"type": "integer", "minimum": 1},
+                            "function": string,
+                        }
+                    ),
+                }
+            elif field == "required_arc_contributions":
+                arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
+                properties[field] = (
+                    {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": arc_ref,
+                    }
+                    if contract_type is PlanContractType.CHAPTER_GROUP
+                    else {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": _strict_object(
+                            {"arc_plan_version_id": arc_ref, "contribution": string}
+                        ),
+                    }
+                )
+                if arc_plan_version_ids:
+                    properties[field]["maxItems"] = min(3, len(arc_plan_version_ids))
+            elif field == "arc_checkpoint_expectations":
+                properties[field] = {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": _strict_object(
+                        {
+                            "arc_plan_version_id": _frozen_arc_ref_schema(
+                                arc_plan_version_ids, string
+                            ),
+                            "expectation": string,
+                        }
+                    ),
+                }
+                if arc_plan_version_ids:
+                    properties[field]["maxItems"] = len(arc_plan_version_ids)
+            elif field == "narrative_event_chain":
+                arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
+                properties[field] = {
+                    "type": "array",
+                    "minItems": len(exact_group_chapters) or 1,
+                    "items": _strict_object(
+                        {
+                            "event_id": string,
+                            "slice_id": string,
+                            "chapter_number": (
+                                {"type": "integer", "enum": exact_group_chapters}
+                                if exact_group_chapters
+                                else {"type": "integer", "minimum": 1}
+                            ),
+                            "causes": {"type": "array", "items": string, "description": "Only earlier event_id values in this exact narrative_event_chain. Every edge A -> B must appear both as A.next_event_ids containing B and B.causes containing A. No external, later or self event references."},
+                            "actor_ref": string,
+                            "motivation": string,
+                            "preconditions": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": string,
+                            },
+                            "knowledge_boundary": _strict_object(
+                                {
+                                    "actor_knows": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "items": string,
+                                    },
+                                    "reader_may_learn": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "items": string,
+                                    },
+                                    "forbidden_disclosures": {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "items": string,
+                                    },
+                                }
+                            ),
+                            "action": string,
+                            "decision": string,
+                            "resistance": string,
+                            "consequence": string,
+                            "state_deltas": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": _strict_object(
+                                    {
+                                        "state_kind": string,
+                                        "entity_id": string,
+                                        "from_state": string,
+                                        "to_state": string,
+                                    }
+                                ),
+                            },
+                            "disclosures": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": string,
+                            },
+                            "obligation_actions": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": string,
+                            },
+                            "arc_contributions": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": arc_ref,
+                            },
+                            "irreversible_change": string,
+                            "next_event_ids": {"type": "array", "items": string, "description": "Only later event_id values in this exact narrative_event_chain. Include every event that names this event in causes; each outgoing edge must be reciprocated in the target's causes. The final event has no later edge."},
+                            "required": {"type": "boolean"},
+                        }
+                    ),
+                }
+            elif field in integer_arrays:
+                properties[field] = {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                }
+                if field == "chapter_range":
+                    properties[field].update({"minItems": 2, "maxItems": 2})
+                    if exact_group_range is not None:
+                        # COMPATIBILITY: OpenAI Structured Outputs rejects non-scalar ``const``
+                        # values. Bound each member to the frozen endpoints here;
+                        # Planning Authority still validates the exact ordered pair
+                        # before the candidate can be persisted or activated.
+                        properties[field]["items"]["enum"] = list(exact_group_range)
+            elif field == "chapter_number":
+                properties[field] = {"type": "integer", "minimum": 1}
+            elif field == "chapter_function_matrix":
+                arc_ref = _frozen_arc_ref_schema(arc_plan_version_ids, string)
+                properties[field] = {
+                    "type": "array",
+                    "minItems": len(exact_group_chapters) or 1,
+                    **(
+                        {"maxItems": len(exact_group_chapters)}
+                        if exact_group_chapters
+                        else {}
+                    ),
+                    "items": _strict_object(
+                        {
+                            "chapter_number": (
+                                {"type": "integer", "enum": exact_group_chapters}
+                                if exact_group_chapters
+                                else {"type": "integer", "minimum": 1}
+                            ),
+                            "primary_function": string,
+                            "secondary_functions": string_array,
+                            "required_state_delta": _strict_object({"summary": string}),
+                            "required_arc_contributions": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": _strict_object(
+                                    {
+                                        "arc_plan_version_id": arc_ref,
+                                        "contribution": string,
+                                    }
+                                ),
+                            },
+                            "promise_action": string,
+                            "foreshadow_action": string,
+                            "reward_action": string,
+                            "ending_hook": string,
+                            "prohibited_outcomes": string_array,
+                            "narrative_density": {
+                                "type": "string",
+                                "enum": ["LOW", "MEDIUM", "HIGH"],
+                            },
+                            "reader_experience": _strict_object(
+                                {
+                                    "target_emotion": string,
+                                    "reward_mode": string,
+                                }
+                            ),
+                            "arc_cadence": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 3,
+                                "items": _strict_object(
+                                    {
+                                        "arc_plan_version_id": arc_ref,
+                                        "action": {
+                                            "type": "string",
+                                            "enum": [
+                                                "ADVANCE",
+                                                "TOUCH",
+                                                "DORMANT",
+                                                "REACTIVATE",
+                                                "SETUP",
+                                                "PAYOFF",
+                                            ],
+                                        },
+                                    }
+                                ),
+                            },
+                            "obligation_actions": {
+                                "type": "array",
+                                "items": _strict_object(
+                                    {
+                                        "obligation_id": string,
+                                        "action": {
+                                            "type": "string",
+                                            "enum": ["SETUP", "ADVANCE", "PAYOFF"],
+                                        },
+                                        "due_chapter": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                        },
+                                    }
+                                ),
+                            },
+                        }
+                    ),
+                }
+            elif field == "narrative_density":
+                properties[field] = {
+                    "type": "string",
+                    "enum": ["LOW", "MEDIUM", "HIGH"],
+                }
+            elif field == "arc_cadence":
+                properties[field] = {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": min(3, len(arc_plan_version_ids))
+                    if arc_plan_version_ids
+                    else 3,
+                    "items": _strict_object(
+                        {
+                            "arc_plan_version_id": _frozen_arc_ref_schema(
+                                arc_plan_version_ids, string
+                            ),
+                            "action": {
+                                "type": "string",
+                                "enum": [
+                                    "ADVANCE",
+                                    "TOUCH",
+                                    "DORMANT",
+                                    "REACTIVATE",
+                                    "SETUP",
+                                    "PAYOFF",
+                                ],
+                            },
+                        }
+                    ),
+                }
+            elif field == "obligation_actions":
+                properties[field] = {
+                    "type": "array",
+                    "items": _strict_object(
+                        {
+                            "obligation_id": string,
+                            "action": {
+                                "type": "string",
+                                "enum": ["SETUP", "ADVANCE", "PAYOFF"],
+                            },
+                            "due_chapter": {"type": "integer", "minimum": 1},
+                        }
+                    ),
+                }
+            else:
+                raise ValueError(f"Planning Provider schema missing field: {field}")
+        properties.update(
+            _canonical_narrative_provider_properties(
+                contract_type,
+                arc_plan_version_ids=arc_plan_version_ids,
+                arc_relation_refs=(
+                    tuple(
+                        dict.fromkeys(
+                            item
+                            for item in (
+                                logical_key,
+                                *related_arc_plan_version_ids,
+                                *dependent_arc_plan_version_ids,
+                            )
+                            if item
+                        )
+                    )
+                    if contract_type is PlanContractType.ARC
+                    else ()
+                ),
+            )
+        )
+        if work_requirements:
+            _apply_work_planning_schema(properties, isolated=aligned_methods)
+        if serialization_contract and contract_type is PlanContractType.CHAPTER:
+            properties["serialization_function"] = {
+                "type": ["string", "null"], "minLength": 1,
+                "description": "Explicit selected serialization realization for this Chapter under the frozen Book work requirement; null only when that requirement is not applicable.",
+            }
+            properties["chapter_contract_schema_version"]["const"] = "chapter-mission-scene.v4"
+        if contract_type is PlanContractType.CHAPTER:
+            realization = dict(narrative_realization or {})
+            if not realization:
+>               raise KernelError(
+                    "NARRATIVE_REALIZATION_REQUIRED",
+                    "Chapter provider schema requires a Frozen Narrative Realization slice",
+                )
+E               novel_forge.modules.command_kernel.errors.KernelError: NARRATIVE_REALIZATION_REQUIRED: Chapter provider schema requires a Frozen Narrative Realization slice
+
+src/novel_forge/modules/story_planning_runtime/execution.py:3019: KernelError
+=========================== short test summary info ============================
+FAILED tests/unit/test_qualified_planning_projection.py::test_chapter_repair_schema_enforces_existing_operational_commitment_rule
+1 failed, 275 passed in 1.52s

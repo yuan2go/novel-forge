@@ -1726,7 +1726,7 @@ def _http_error(exc: Exception) -> HTTPException:
     if isinstance(exc, KernelError):
         return HTTPException(
             status_code=409,
-            detail={"code": exc.code, "message": exc.message},
+            detail={"code": exc.code, "message": exc.message, "failure": exc.details},
         )
     return HTTPException(status_code=503, detail=str(exc))
 

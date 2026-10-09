@@ -1372,6 +1372,9 @@ def assert_provider_execution_authorized(
         from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_dispatch
         from novel_forge.modules.command_kernel.creative_budget_runtime import assert_creative_budget_dispatch
 
+        uow.cursor.execute("SELECT 1 FROM audit_log WHERE operation_id=%s AND action='authority.operation.execution_window_continued' AND payload->>'contract_version'='local-result-finalization-window.v1'", [operation_id])
+        if uow.cursor.fetchone():
+            raise KernelError("SAVED_RESULT_WINDOW_DISPATCH_FORBIDDEN", "Saved-result finalization grants local consumption only")
         require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=operation_id)
         assert_creative_budget_dispatch(uow.cursor, project_id=project_id,
                                        external_effect_id=external_effect_id,
@@ -3477,8 +3480,8 @@ def _enforce_routing_chain_budget(
     cursor.execute(
         f"""SELECT count(*), count(*) FILTER (
                     WHERE b.usage_accounted AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}}'='true'),
-                  bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
-                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED')
+                  bool_or(b.status IN ('RESERVED','HELD_UNKNOWN') AND NOT authority_generation_isolated(e.external_effect_id)),
+                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED') AND NOT authority_generation_isolated(e.external_effect_id)
                     AND NOT EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
                       WHERE r.external_effect_id=e.external_effect_id
                         AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
@@ -3578,6 +3581,46 @@ def _bind_budget_effect_in_uow(
         external_effect_id=request.external_effect_id,
         reservation_id=reservation_id,
     )
+    uow.cursor.execute(
+        """SELECT binding.operation_id,binding.opening_run_id,binding.budget_scope_id,
+        binding.budget_scope_revision,binding.reservation_version,effect.status
+        FROM authority_book_opening_budget_effect_binding binding
+        JOIN authority_external_effect effect USING(external_effect_id)
+        JOIN authority_book_opening_budget_operation_binding original
+          ON original.operation_budget_binding_id=binding.operation_budget_binding_id
+        WHERE binding.external_effect_id=%s AND binding.reservation_id=%s
+          AND effect.operation_id=%s AND effect.project_id=%s
+          AND original.operation_id=effect.operation_id AND original.opening_run_id=binding.opening_run_id
+          AND EXISTS(SELECT 1 FROM authority_external_effect_dispatch dispatch
+            WHERE dispatch.external_effect_id=effect.external_effect_id AND dispatch.payload_hash=effect.request_hash)""",
+        [
+            request.external_effect_id,
+            reservation_id,
+            request.operation_id,
+            request.project_id,
+        ],
+    )
+    retained = uow.cursor.fetchone()
+    if (
+        retained
+        and tuple(retained[:5])
+        == (
+            request.operation_id,
+            opening_run_id,
+            str(opening_binding["budget_scope_id"]),
+            int(opening_binding["revision"]),
+            reservation_version,
+        )
+        and retained[5]
+        in {
+            "DISPATCHING",
+            "DISPATCHED",
+            "UNKNOWN",
+            "RECONCILIATION_REQUIRED",
+            "SUCCEEDED",
+        }
+    ):
+        return
     uow.cursor.execute(
         """
         INSERT INTO authority_book_opening_budget_effect_binding(
@@ -4248,6 +4291,7 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: 
             NULLIF(root.command_payload->>'book_id',''),NULLIF(root.command_payload#>>'{payload,book_id}',''),
             NULLIF(b.evidence->>'work_id',''))=%s)
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
+          AND NOT authority_generation_isolated(e.external_effect_id)
           AND (d.evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
             OR (d.evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
               AND d.evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))

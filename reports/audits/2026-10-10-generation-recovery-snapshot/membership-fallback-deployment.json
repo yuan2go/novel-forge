@@ -1,0 +1,30 @@
+{
+  "status": "SUCCEEDED",
+  "policy_version": "qid-learning-generation-recovery-membership.v7",
+  "policy_hash": "0b0f30b89164fec9ab4c295b5320ab4ee7ee6c30eea0f8d98071dda81c630e47",
+  "models": [
+    {
+      "model": "gpt-6.1-sol",
+      "role": "PRIMARY",
+      "context_limit": 258400,
+      "output_limit": 32000
+    },
+    {
+      "model": "gpt-6-sol",
+      "role": "REFERENCE",
+      "context_limit": 258400,
+      "output_limit": 32000
+    }
+  ],
+  "paid_template_unchanged": true,
+  "active_original_call_uninterrupted": true,
+  "api_pid": 26515,
+  "worker_pid": 26512,
+  "deployed_sha": "e8537b97758f5a8c66d9eff05f651c217c4b24c8",
+  "health": {
+    "provider_dispatch_suspended": false,
+    "status": "alive",
+    "storage_authority": "postgresql"
+  },
+  "foreground_refresh": "at_native_window_boundary"
+}

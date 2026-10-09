@@ -31,7 +31,7 @@ CODEX_INPUT_ONLY_OVERRIDES = (
 
 
 CODEX_SCHEMA_PROJECTION_VERSION = "codex-structured-schema.v5"
-CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v2"
+CODEX_NULLABLE_SHARED_TYPES_VERSION = "codex-nullable-shared-types.v3"
 CODEX_NO_RETRY_POLICY = "codex-no-transport-retry.v1"
 
 
@@ -116,7 +116,7 @@ def decode_codex_output(value, *, schema_ref: str):
     return decoded, {'contract_version':CODEX_CANONICAL_JSON_CODEC,'envelope_hash':digest(value),'decoded_hash':digest(decoded)}
 
 
-def _codex_output_schema(schema: dict, *, all_nullable: bool) -> dict:
+def _codex_output_schema(schema: dict, *, all_nullable: bool, partition_nullable_enums: bool = True) -> dict:
     result = {k: v for k, v in schema.items() if k not in {"uniqueItems", "x-host-payload-schema"}}
     if set(result.get("properties", {})) == {"finding_code", "statement", "evidence_span_ids", "input_observation_asset_version_ids"}:
         properties = result["properties"]
@@ -149,17 +149,26 @@ def _codex_output_schema(schema: dict, *, all_nullable: bool) -> dict:
         result["type"] = inferred[0] if len(inferred) == 1 else inferred
     for key in ("properties", "$defs", "definitions", "patternProperties"):
         if isinstance(result.get(key), dict):
-            result[key] = {k: _codex_output_schema(v, all_nullable=all_nullable) for k, v in result[key].items()}
+            result[key] = {k: _codex_output_schema(v, all_nullable=all_nullable, partition_nullable_enums=partition_nullable_enums) for k, v in result[key].items()}
     for key in ("items", "additionalProperties", "not", "if", "then", "else"):
         if isinstance(result.get(key), dict):
-            result[key] = _codex_output_schema(result[key], all_nullable=all_nullable)
+            result[key] = _codex_output_schema(result[key], all_nullable=all_nullable, partition_nullable_enums=partition_nullable_enums)
     for key in ("allOf", "anyOf", "oneOf", "prefixItems"):
         if isinstance(result.get(key), list):
-            result[key] = [_codex_output_schema(v, all_nullable=all_nullable) for v in result[key]]
+            result[key] = [_codex_output_schema(v, all_nullable=all_nullable, partition_nullable_enums=partition_nullable_enums) for v in result[key]]
     if isinstance(result.get("type"), list) and "null" in result["type"] and len(result["type"])==2 and (all_nullable or "object" in result["type"]):
         concrete=next(t for t in result["type"] if t!="null")
         null_branch = {"type": "null", **{k: v for k, v in result.items() if all_nullable and k in {"enum", "const", "allOf", "anyOf", "oneOf", "not", "if", "then", "else"}}}
-        result = {"anyOf": [{**result, "type": concrete}, null_branch]}
+        concrete_branch = {**result, "type": concrete}
+        branches = [concrete_branch, null_branch]
+        if all_nullable and partition_nullable_enums:
+            if "enum" in result:
+                concrete_branch["enum"] = [value for value in result["enum"] if value is not None]
+                null_branch["enum"] = [None] if None in result["enum"] else []
+                branches = [branch for branch in branches if branch["enum"]]
+            if "const" in result:
+                branches = [branch for branch in branches if (branch["type"] == "null") == (result["const"] is None)]
+        result = {"anyOf": branches} if len(branches) > 1 else branches[0]
     return result
 
 
@@ -255,6 +264,19 @@ def inspect_local_codex(values: Mapping[str, str] | None = None) -> dict:
 def codex_wire_correction_evidence(process_evidence: Mapping) -> dict | None:
     contract = process_evidence.get('provider_schema_contract') or {}
     canonical = process_evidence.get('output_schema')
+    if (isinstance(canonical, dict) and contract.get('version') == 'codex-structured-schema.v5'
+        and contract.get('equivalent_projection') == 'codex-nullable-shared-types.v2'):
+        def schema_digest(value):
+            return 'sha256:'+hashlib.sha256(json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+        previous = _codex_output_schema(canonical, all_nullable=True, partition_nullable_enums=False)
+        corrected = _codex_output_schema(canonical, all_nullable=True)
+        if (schema_digest(canonical) == contract.get('canonical_hash')
+            and schema_digest(previous) == contract.get('provider_hash')
+            and previous != corrected):
+            return {'contract_version':CODEX_NULLABLE_SHARED_TYPES_VERSION,
+                'canonical_hash':schema_digest(canonical), 'previous_wire_hash':schema_digest(previous),
+                'corrected_wire_hash':schema_digest(corrected), 'reversible_equivalence':'EXACT'}
+        return None
     if (not isinstance(canonical, dict) or process_evidence.get('output_schema_version') != 'schema:chapter-provider-output:canon_extraction:v24'
         or contract.get('version') != 'codex-structured-schema.v3'):
         return None

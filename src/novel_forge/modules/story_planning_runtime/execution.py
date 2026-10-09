@@ -2565,6 +2565,7 @@ def planning_provider_output_schema(
     work_requirements: bool = False,
     aligned_methods: bool = False,
     serialization_contract: bool = False,
+    operational_commitments: bool = False,
 ) -> dict[str, Any]:
     """CONSTRAINT: OpenAI-strict provider schema; Planning validation stays authoritative."""
     string = {"type": "string", "minLength": 1}
@@ -3089,6 +3090,10 @@ def planning_provider_output_schema(
                 "or Authority instruction."
             ),
         }
+    if operational_commitments:
+        if contract_type is not PlanContractType.CHAPTER:
+            raise KernelError("PLANNING_OPERATIONAL_SCOPE_INVALID", "Operational commitment projection applies only to Chapter execution")
+        properties["commitment_contract"]["items"]["properties"]["level"]["enum"] = ["HARD_CONSTRAINT", "SOFT_INTENT"]
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -3445,7 +3450,8 @@ def _planning_budget_settlement(
             "cost_status": "UNKNOWN",
             "usage": {
                 **dict(usage),
-                "total_tokens": total_tokens,
+                "total_tokens": measured_total if usage_authoritative else None,
+                "conservative_reserved_tokens": total_tokens,
                 "budget_settlement_basis": usage_basis,
             },
             "cost": {
@@ -3828,7 +3834,11 @@ class _PlanningPepPort:
                 if outcome in {"retryable_failure", "not_found"}
                 else "MODEL_EFFECT_FINAL_PLANNING"
             )
-            raise KernelError(code, f"Planning provider outcome was {outcome}")
+            production_failure = (dispatched.get("provider_evidence") or {}).get("production_execution") or {}
+            failure = (production_failure.get("execution_result") or {}).get("error") or (production_failure.get("process_evidence") or {}).get("failure") or {}
+            if outcome in {"unknown", "ambiguous"}:
+                code = "MODEL_EFFECT_OUTCOME_UNKNOWN_" + str(failure.get("cause_code") or failure.get("error_code") or "ORIGINAL_RESULT_UNRECOVERABLE")
+            raise KernelError(code, f"Planning provider outcome was {outcome}; cause={failure.get('error_code', 'UNCLASSIFIED_PROVIDER_FAILURE')}", details=failure)
         evidence = dispatched.get("provider_evidence")
         if not isinstance(evidence, Mapping):
             raise KernelError(
@@ -4327,6 +4337,7 @@ class PostgresPlanningExecutionPreparer:
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
                 serialization_contract=command.execution_contract_version in {"1.19.0", "1.21.0"},
+                operational_commitments=command.execution_contract_version == "1.21.0" and command.planning_scope.value == PlanContractType.CHAPTER.value,
             )
         )
         if (
@@ -4376,6 +4387,8 @@ class PostgresPlanningExecutionPreparer:
                 related_arc_ids=command.related_arc_plan_version_ids,
             )
             output_schema_ref += ":host-selectors-v2"
+        if provider_stage is None and command.repair_of_candidate_id and command.planning_scope.value == PlanContractType.CHAPTER.value:
+            output_schema_ref += ":operational-commitments-v1"
         if provider_stage is not None:
             output_schema = dict(provider_stage.output_schema)
             output_schema_ref = provider_stage.output_schema_ref
@@ -4626,6 +4639,7 @@ class PostgresPlanningExecutionPreparer:
                 ),
                 "arc_working_set": dict(command.arc_working_set or {}),
                 "narrative_search": command.narrative_search_snapshot,
+                **({"planning_empty_query_projection_version": context_document.content["planning_empty_query_projection_version"]} if context_document.content.get("planning_empty_query_projection_version") else {}),
                 "narrative_intelligence": context_document.content.get(
                     "narrative_intelligence", {}
                 ),
@@ -5693,10 +5707,15 @@ class PostgresPlanningExecutionPreparer:
                 from .runtime_continuation import require_binding
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if runtime.get("planning_reference_contract") and proof:
+                if proof and (runtime.get("planning_reference_contract") or proof.get("contract_version") == "typed-volume-context-projection.v1"):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
                         raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Original Context must retain exact frozen content")
+                    if proof.get("contract_version") == "typed-volume-context-projection.v1":
+                        original_order = {item["role"]:index for index,item in enumerate(original.content["input_versions"])}
+                        if len(original_order) != len(original.content["input_versions"]) or any(item["role"] not in original_order for item in selected):
+                            raise KernelError("PLANNING_CONTEXT_REVALIDATION_SOURCE_DRIFT", "Context successor role identities changed")
+                        selected = sorted(selected,key=lambda item:original_order[item["role"]])
                     self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected, context_policy_ref=context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
                     content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id)
@@ -5844,6 +5863,13 @@ class PostgresPlanningExecutionPreparer:
             "planning_scope": command.planning_scope.value,
             "logical_key": command.logical_key,
             "input_versions": selected,
+            **({"typed_window_projection_version": "typed-planning-window-projection.v1"}
+                if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id else {}),
+            **({"typed_volume_projection_version": "typed-volume-context-projection.v1"}
+                if command.generator_operation_name == "arc_plan.generate" else {}),
+            "planning_empty_query_projection_version": "planning-empty-query-projection.v1",
+            **({"planning_exact_reference_projection_version": "planning-exact-value-reference.v1"}
+                if command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} else {}),
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
             **(
@@ -5969,6 +5995,10 @@ class PostgresPlanningExecutionPreparer:
 
         content = deepcopy(dict(source))
         content["token_budget"] = task_tokens
+        if command.generator_operation_name == "arc_plan.generate":
+            content["typed_volume_projection_version"] = "typed-volume-context-projection.v1"
+        if command.generator_operation_name == "chapter_group_plan.generate" and command.narrative_search_id:
+            content["typed_window_projection_version"] = "typed-planning-window-projection.v1"
         if command.execution_contract_version == "1.21.0":
             content["planning_contract_version"] = "1.21.0"
         if operation_id and "realization_reference_contract" in content:

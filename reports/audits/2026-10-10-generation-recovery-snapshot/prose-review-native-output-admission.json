@@ -1,0 +1,202 @@
+{
+  "status": "PASS",
+  "code_sha": "f817fa236a356cf54dbaa58d696f7de271773f15",
+  "operation_id": "17cc82b2-36c4-44ae-93f3-3df9dde0fd76",
+  "provider_calls": 0,
+  "admission": {
+    "schema_version": "novelos.provider_request_admission.v1",
+    "provider_admission": {
+      "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+      "status": "ADMITTED",
+      "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+      "envelope_hash": "sha256:a6c438210473b9769b8f431a7387b57aa8ac551143c49ae0c71e54282f4184cf",
+      "total_reserved": 66838,
+      "component_usage": {
+        "safety_margin": 256,
+        "output_reserve": 32000,
+        "provider_input": 34566,
+        "request_framing": 16
+      },
+      "applicable_limit": 258400,
+      "contract_version": "provider-token-admission-v1",
+      "accounting_contract": {
+        "model": "gpt-6.1-sol",
+        "provider": "codex-cli",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+        "meter_version": "v1",
+        "safety_margin": 256,
+        "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+        "output_reserve": 32000,
+        "route_identity": "routing-decision:b0933270f5d7229ac4e9d329ae23c7e88835b5184425e897b433d5dd527bd902",
+        "contract_version": "provider-token-accounting-v3",
+        "framing_overhead": 16,
+        "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+        "model_context_limit": 258400,
+        "execution_token_limit": 258400,
+        "serialization_contract": "codex-cli-application-stdin-v1"
+      },
+      "context_bundle_status": "VALID",
+      "context_bundle_tokens": 0,
+      "input_component_hashes": {
+        "tool_policy": "sha256:72af8a45d9592e1169fabfaab23b2749045b622134dbd77ce9010d76e2477999",
+        "output_schema": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+        "governed_skill": "sha256:7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+        "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+        "provider_task_view": "sha256:1cbda9688b45e9bd6b0f70fb0839267d9c8465559ca06a1eddbb95755cb9983b",
+        "system_instruction": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+        "fully_rendered_prompt": "sha256:eae30a00f300f9c4ea66eb32879906877db4d397983183f3a05d535a3b0d18f0",
+        "provider_context_view": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+        "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+      },
+      "complete_request_coverage": [
+        "system_runtime_instructions",
+        "prompt_template",
+        "skill_instructions",
+        "tool_policy_and_schemas",
+        "structured_output_schema",
+        "context_bundle",
+        "knowledge_inputs",
+        "request_envelope_and_framing",
+        "output_reserve",
+        "safety_margin"
+      ]
+    },
+    "prompt_materialization": {
+      "skill": {
+        "ref": "quality-review",
+        "version": "quality-review-v3",
+        "content_hash": "sha256:6b3b1ee729018e17b9a3842008b2c35917e46f989209d11bb77aa471215dd759"
+      },
+      "allowed_tools": [
+        "model.provider.invoke"
+      ],
+      "provider_view": {
+        "component_hashes": {
+          "tool_policy": "sha256:72af8a45d9592e1169fabfaab23b2749045b622134dbd77ce9010d76e2477999",
+          "output_schema": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+          "governed_skill": "sha256:7c8959748c73f8293e19cd8f146a45808d02724f7cf76e0f184bd9c1538ac386",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:1cbda9688b45e9bd6b0f70fb0839267d9c8465559ca06a1eddbb95755cb9983b",
+          "system_instruction": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+          "fully_rendered_prompt": "sha256:eae30a00f300f9c4ea66eb32879906877db4d397983183f3a05d535a3b0d18f0",
+          "provider_context_view": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+          "stage_semantic_contract": "sha256:03b09a6baf10bd265cb6df7e5c5eebd0c83e7c88b4c1bc2b87c6673d81275f9e"
+        },
+        "component_estimator": "ConservativeTokenEstimator:utf8-third-ceiling.v1",
+        "component_characters": {
+          "tool_policy": 258,
+          "output_schema": 2713,
+          "governed_skill": 921,
+          "provider_knowledge": 559,
+          "provider_task_view": 254,
+          "system_instruction": 766,
+          "fully_rendered_prompt": 21018,
+          "provider_context_view": 14783,
+          "stage_semantic_contract": 65
+        },
+        "representation_policy": "authority-projection-task-provider-v1",
+        "selection_explanation": {
+          "policy": "accepted-boundary-only",
+          "omitted_count": 0,
+          "selected_count": 1
+        },
+        "task_contract_version": "provider-task-view-v1",
+        "context_contract_version": "provider-context-view-v3",
+        "context_projection_ratio": 9444.0,
+        "component_estimated_tokens": {
+          "tool_policy": 86,
+          "output_schema": 905,
+          "governed_skill": 307,
+          "provider_knowledge": 187,
+          "provider_task_view": 85,
+          "system_instruction": 256,
+          "fully_rendered_prompt": 11522,
+          "provider_context_view": 9444,
+          "stage_semantic_contract": 22
+        },
+        "component_accounting_precision": "OBSERVABILITY_ONLY_ESTIMATE",
+        "component_utf8_byte_upper_bounds": {
+          "tool_policy": 258,
+          "output_schema": 2713,
+          "governed_skill": 921,
+          "provider_knowledge": 559,
+          "provider_task_view": 254,
+          "system_instruction": 766,
+          "fully_rendered_prompt": 34566,
+          "provider_context_view": 28331,
+          "stage_semantic_contract": 65
+        },
+        "provider_context_estimated_tokens": 9444,
+        "authority_context_estimated_tokens": 0,
+        "rendered_prompt_to_semantic_input_ratio": 1.185879,
+        "provider_admission_uses_component_estimates": false
+      },
+      "prompt_template": {
+        "ref": "prompt-template:longform-prose-review-pack",
+        "version": "v2",
+        "content_hash": "sha256:45bc39f5d99ab454c3d494e395192e78fee09b968e8b7359a8a553ff2f4842a1"
+      },
+      "method_selection": {
+        "skill_sections": [
+          "Shared rules",
+          "Longform review"
+        ],
+        "system_sections": [],
+        "contract_version": "production-stage-methods.v1"
+      },
+      "output_schema_ref": "schema:chapter-provider-output:longform_prose_review:v1",
+      "output_schema_hash": "sha256:4c0a69768288aa96592d774ccab5dde9344e0e4f80ca07e9982c2a92bf2a53f0",
+      "system_instruction": {
+        "ref": "prompt-system:longform-prose-review-pack",
+        "version": "v1",
+        "content_hash": "sha256:c13f9ceb52df711fbfafed0337cac4c27f13ffc7d01752676f5905e91c36e215"
+      },
+      "materialization_hash": "sha256:bedbec9a1979966a2293870fb89dffd4b3ffbba2d98f33b2899d96d3585ff76e",
+      "rendered_prompt_bytes": 34566,
+      "reusable_prefix_bytes": 1767,
+      "knowledge_content_hashes": [
+        "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+      ],
+      "context_asset_version_ids": [
+        "c49acfb3-c261-494a-a86e-3bba829bc138"
+      ],
+      "embedding_output_contract": null,
+      "fully_rendered_prompt_hash": "sha256:eae30a00f300f9c4ea66eb32879906877db4d397983183f3a05d535a3b0d18f0",
+      "required_reader_facing_language": null,
+      "rendered_prompt_estimated_tokens": 11522,
+      "provider_prompt_projection_version": "authority-projection-stage-method-provider-v1"
+    },
+    "effective_context_policy": {
+      "compiler_version": "frozen-typed-context-physical-admission-v1",
+      "provider_view_hash": "sha256:25fa4771c05e10322babc843dd9c7569cdc9cc5f7a2c0268247cfca7603e7ad0",
+      "physical_denied_types": [
+        "raw_source_chunk",
+        "raw_source_document"
+      ],
+      "physical_allowed_types": [
+        "context_bundle",
+        "longform_prose_review_window"
+      ],
+      "selected_physical_types": [
+        "context_bundle"
+      ],
+      "context_contract_version": "novelos.longform_prose_review_context_bundle.v2",
+      "historical_compatibility": "FROZEN_TYPED_CONTEXT",
+      "current_policy_compiler_invoked": false
+    },
+    "provider_request_identity": {
+      "model": "gpt-6.1-sol",
+      "protocol": "codex-cli-application-stdin-v1",
+      "provider": "codex-cli",
+      "input_text_hash": "sha256:eae30a00f300f9c4ea66eb32879906877db4d397983183f3a05d535a3b0d18f0",
+      "timeout_seconds": 81,
+      "max_output_tokens": 32000,
+      "pricing_policy_json": "{\"accounting_basis\": \"ACCOUNT_ENTITLEMENT\", \"currency\": \"UNKNOWN\", \"effective_from\": \"2026-10-07T00:00:00+00:00\", \"effective_until\": \"2026-10-10T00:00:00+00:00\", \"input_hit_per_million\": \"0\", \"input_miss_per_million\": \"0\", \"output_per_million\": \"0\", \"source\": \"user:WP-QIDIAN-LEARNING-PROSE-01:20261008:current-request\", \"version\": \"sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021\"}",
+      "stable_idempotency_key": "17cc82b2-36c4-44ae-93f3-3df9dde0fd76:4ad11439-df64-418d-8774-9cb6a14c0359:longform_prose_review:attempt-v1"
+    },
+    "capability_materialization_content_hash": "sha256:aad3f0c78a5e19f7cc57b5b0017dafdd3219fea572c32803b79c8f5a59106f6a",
+    "capability_materialization_asset_version_id": "6cee9d7c-10fe-4ae0-9f5b-57da3e9d3eb6"
+  },
+  "scope": "Restored original Book; current native v3 literary window; controlled pre-launch boundary; no review outcome or manuscript change"
+}

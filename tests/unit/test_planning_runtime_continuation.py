@@ -83,6 +83,7 @@ def source_uow(
     }
     responses = [
         (status, 8, "workspace", frozen, "book", candidate),
+        None,
         ("FAILED_RETRYABLE", {"error_code": error}, {}),
         effects
         if effects is not None
@@ -486,6 +487,7 @@ def test_terminal_capacity_continuation_rejects_any_external_intent_or_frozen_co
     frozen = {"project_id": "project", "workspace_id": "workspace", "book_id": "book"}
     uow.cursor.fetchone.side_effect = [
         (status, 8, "workspace", frozen, "book", None),
+        None,
         (
             "FAILED_FINAL",
             {},
@@ -495,7 +497,7 @@ def test_terminal_capacity_continuation_rejects_any_external_intent_or_frozen_co
     ]
     with pytest.raises(KernelError, match="DISPATCH_UNSAFE"):
         require_source(uow, source_operation_id="source", project_id="project")
-    assert uow.cursor.execute.call_count == 3
+    assert uow.cursor.execute.call_count == 4
 
 
 def test_terminal_noncapacity_failure_cannot_borrow_cancelled_runtime_continuation():
@@ -572,3 +574,71 @@ def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch
     with pytest.raises(KernelError, match="BOOK_CREATION_CANCELLED"):
         app._terminal_generation_replay(_command("chapter_group_plan.generate"), principal=object(), execution_probe=cancelled)
     uow.assert_not_called()
+
+
+@pytest.mark.parametrize("required_bytes,expected_error", [(180_000, None), (300_000, "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED")])
+@pytest.mark.parametrize("retained_document", [False, True])
+def test_capacity_preflight_is_bounded_by_actual_model_window(monkeypatch, required_bytes, expected_error, retained_document):
+    from contextlib import nullcontext
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    allocations = []
+    def context_bundle(**kwargs):
+        allocated = kwargs["planning_task_token_budget"]
+        allocations.append(allocated)
+        assert kwargs["preflight_only"] is True
+        if allocated < required_bytes:
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "retained input exceeds allocation",
+                details={"required_serialized_bytes": required_bytes})
+        content = {"context_manifest": {"provider_context_view": {"retained_input": "same"}}}
+        return (SimpleNamespace(content=content) if retained_document else content), None
+    pack = SimpleNamespace(
+        require_attempt_snapshot=lambda **kwargs: "original-snapshot",
+        materialize_attempt_artifacts=lambda snapshot: SimpleNamespace(context_policy=SimpleNamespace(content={"planning_task_token_budget": 64_000})),
+    )
+    preparer = SimpleNamespace(pack_runtime=pack, _context_bundle=context_bundle,
+        planning_route=SimpleNamespace(model_context_limit=258_400, model_output_limit=32_000,
+            token_safety_margin=1_536, token_framing_overhead=256))
+    app = SimpleNamespace(database_url="unused", execution_binder=SimpleNamespace(resolver=SimpleNamespace(execution_preparer=preparer)))
+    source = {"attempt_id": "attempt", "snapshot_id": "snapshot", "snapshot_hash": "hash", "source_operation_id": "source",
+        "snapshot": {"context_policy_ref": "policy"}, "inputs": [], "command": {}, "failure": {"error_code": "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"}}
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda database: nullcontext(SimpleNamespace()))
+    monkeypatch.setattr(runtime, "_capacity_authorization", lambda *args, **kwargs: {"capacity_only": True})
+    if expected_error:
+        with pytest.raises(KernelError, match=expected_error) as caught:
+            runtime._capacity_target(app, source, SimpleNamespace(), SimpleNamespace(), {})
+        assert caught.value.details["required_serialized_bytes"] == required_bytes
+    else:
+        target, evidence = runtime._capacity_target(app, source, SimpleNamespace(), SimpleNamespace(), {})
+        assert target["planning_capacity"]["allocated_task_tokens"] == 224_608
+        assert target["planning_capacity"]["external_intents_at_source"] == 0
+    assert allocations == [128_000, 224_608]
+
+
+@pytest.mark.parametrize("change", ["version", "prompt", "foreign_pack", "corrupt_snapshot"])
+def test_capacity_pack_successor_preserves_contracts_and_native_hashes(monkeypatch, change):
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    from novel_forge.storage import capability_pack_authority_repositories as repositories
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    original = {"identity": {"pack_id": "pack", "version": "1.0.0"}, "prompt": {"contract": "original"}}
+    current = deepcopy(original)
+    current["identity"]["version"] = "1.0.1"
+    if change == "prompt":
+        current["prompt"]["contract"] = "changed"
+    versions = {"1.0.0": original, "1.0.1": current}
+    class Repository:
+        def __init__(self, cursor):pass
+        def require_version(self, pack, version, *, project_id):
+            assert project_id == "project"
+            return {"manifest": versions[version], "manifest_hash": canonical_hash(versions[version])}
+    monkeypatch.setattr(repositories, "CapabilityPackAuthorityRepository", Repository)
+    a = {"pack_id": "pack", "pack_version": "1.0.0", "manifest_hash": canonical_hash(original)}
+    b = {"pack_id": "foreign" if change == "foreign_pack" else "pack", "pack_version": "1.0.1",
+         "manifest_hash": "corrupt" if change == "corrupt_snapshot" else canonical_hash(current)}
+    if change != "version":
+        with pytest.raises(KernelError, match="MODEL_ROUTE_DRIFT"):
+            runtime._require_version_only_pack_successor(SimpleNamespace(cursor=None), project_id="project", original=a, target=b)
+    else:
+        evidence = runtime._require_version_only_pack_successor(SimpleNamespace(cursor=None), project_id="project", original=a, target=b)
+        assert evidence["contract_version"] == "version-only-pack-successor.v1"
+        assert original["identity"]["version"] == "1.0.0"
+        assert current["identity"]["version"] == "1.0.1"

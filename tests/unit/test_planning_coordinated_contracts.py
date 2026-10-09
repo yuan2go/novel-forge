@@ -86,7 +86,7 @@ def test_world_contract_successor_has_exact_version_reason_world_scope_and_count
 
 @pytest.mark.parametrize("source_status,attempt_status", [("FAILED_RETRYABLE", "FAILED_RETRYABLE"), ("FAILED_FINAL", "FAILED_RETRYABLE"), ("FAILED_FINAL", "UNKNOWN")])
 def test_world_contract_continuation_cannot_consume_retryable_or_unknown_attempt(source_status, attempt_status):
-    responses = [(source_status, 1, "workspace", {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "execution_contract_version": "1.19.0"}, "book", None), (attempt_status, {"error_code": "WORLD_PREPARATION_RESULT_INVALID"}, {})]
+    responses = [(source_status, 1, "workspace", {"project_id": "project", "workspace_id": "workspace", "book_id": "book", "execution_contract_version": "1.19.0"}, "book", None), None, (attempt_status, {"error_code": "WORLD_PREPARATION_RESULT_INVALID"}, {})]
 
     class Cursor:
         def execute(self, *_):

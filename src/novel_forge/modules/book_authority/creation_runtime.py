@@ -45,6 +45,16 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
             continuation_live=continuation_live, execution_probe=execution_probe, events=events)
     except _RecoveryCheckpoint as checkpoint:
         return checkpoint.reason
+    except KernelError as error:
+        if error.code != "GENERATION_RECOVERY_EXHAUSTED":
+            raise
+        book = composition.authority.require(book_run_id)
+        if book["state"] != "PAUSED" or book.get("paused_reason") != error.code:
+            composition.authority.pause(book_run_id, reason=error.code, principal=composition.principal)
+        events({"kind": "GENERATION_RECOVERY_STOPPED", "book_run_id": book_run_id,
+            "reason_code": error.code, "failure": error.details, "recovery_state": "EXHAUSTED",
+            "business_impact": "SAVED_MANUSCRIPT_RETAINED_NO_FURTHER_DISPATCH"})
+        return error.code
 
 
 def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
@@ -91,6 +101,10 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "CANCELLED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
+        from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+        from novel_forge.modules.chapter_authority.context_transport_recovery import recover_unsent_context_transport
+        recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal)
+        recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal)
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
             return "WAIT_EXTERNAL_RECONCILIATION"
         if not author_first(book):
@@ -162,7 +176,13 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                 try:
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
-                    events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code})
+                    events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code, "failure": error.details})
+                    if error.code.startswith("MODEL_EFFECT_OUTCOME_UNKNOWN") or error.code == "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED":
+                        from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
+                        if recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                            continue
+                    if error.code == "CHAPTER_ATTEMPT_EXHAUSTED" and recover_unsent_context_transport(composition.authority, book_run_id=book_run_id, principal=composition.principal):
+                        continue
                     if author_first(book):
                         return error.code
                     if recover(lambda: recover_derived_frontier(composition.authority, book_run_id=book_run_id, principal=composition.principal)):
@@ -286,6 +306,46 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         if opened["lifecycle"] == "ABORTED":
             return {"formation_run_id": formation_run_id, "opening_run_id": opening[0], "stop_reason": "CANCELLED"}
         with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+            uow.cursor.execute("SELECT lifecycle FROM authority_book_opening_execution WHERE opening_execution_id=%s", [opened["current_execution_id"]])
+            execution_lifecycle = uow.cursor.fetchone()
+        if opened["lifecycle"] in {"ADMITTED", "RUNNING"} and execution_lifecycle and execution_lifecycle[0] in {"BOUND", "RUNNING"}:
+            loss_key = (
+                opening[0]
+                + ":execution-loss:"
+                + str(opened["current_execution_generation"])
+            )
+            try:
+                loss = composition.opening.recovery.assess_execution_loss(
+                    opening[0],
+                    idempotency_key=loss_key,
+                    principal=composition.principal,
+                )
+            except KernelError as error:
+                if error.code != "BOOK_OPENING_EXECUTION_STILL_VALID":
+                    raise
+            else:
+                composition.opening.recovery.converge_execution_loss(
+                    loss.recovery_assessment_id,
+                    idempotency_key=loss_key + ":converge",
+                    principal=composition.principal,
+                    expected_opening_run_id=opening[0],
+                )
+                opened = composition.opening.require(opening[0])
+        if opened["lifecycle"] == "ABORTED":
+            return {
+                "formation_run_id": formation_run_id,
+                "opening_run_id": opening[0],
+                "stop_reason": "CANCELLED",
+            }
+        if opened["lifecycle"] == "FAILED":
+            from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
+            try:
+                recover_book_generations(composition.planning, project_id=project, book_id=book,
+                    principal=composition.principal)
+            except KernelError as error:
+                return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message,
+                    "failure": error.details, "checkpoint": opened}
+        with AuthorityUnitOfWork(composition.authority.database_url) as uow:
             uow.cursor.execute("SELECT policy_snapshot FROM authority_provider_budget_scope WHERE budget_scope_id=%s", [opened["budget_scope_id"]])
             scope_policy = uow.cursor.fetchone()
         if (opened["lifecycle"] != "COMPLETE" and scope_policy
@@ -299,10 +359,14 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
                 return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message, "checkpoint": opened}
         if opened["lifecycle"] == "FAILED":
             try:
+                with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+                    uow.cursor.execute("SELECT COUNT(*) FROM authority_generation_isolation WHERE project_id=%s AND book_id=%s", [project, book])
+                    recovery_revision = str(uow.cursor.fetchone()[0])
+                recovery_key = opening[0] + ":creation-recovery:" + str(opened["version"]) + ":disposition:" + recovery_revision
                 assessment = composition.opening.recovery.assess_recovery(opening[0],
-                    idempotency_key=opening[0] + ":creation-recovery:" + str(opened["version"]), principal=composition.principal)
+                    idempotency_key=recovery_key, principal=composition.principal)
                 composition.opening.recovery.recover(assessment.recovery_assessment_id,
-                    idempotency_key=opening[0] + ":creation-recover:" + str(opened["version"]),
+                    idempotency_key=recovery_key + ":apply",
                     reason="continue exact native creation checkpoint", principal=composition.principal)
             except KernelError as error:
                 return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message, "checkpoint": opened}
@@ -322,7 +386,19 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             try:
                 execute_book_opening_claim(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
             except KernelError as error:
+                from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
+                try:
+                    if recover_book_generations(composition.planning, project_id=project, book_id=book,
+                            principal=composition.principal):
+                        return {"opening_run_id": opening[0], "stop_reason": "YIELDED_CHECKPOINT",
+                            "recovery_action": "CONTINUE_REGISTERED_NATIVE_SUCCESSOR", "failure": error.details,
+                            "checkpoint": composition.opening.require(opening[0])}
+                except KernelError as recovery_error:
+                    return {"opening_run_id": opening[0], "stop_reason": recovery_error.code,
+                        "reason": recovery_error.message, "failure": recovery_error.details,
+                        "checkpoint": composition.opening.require(opening[0])}
                 return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message,
+                        "failure": error.details,
                         "checkpoint": composition.opening.require(opening[0])}
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] != "COMPLETE":
@@ -401,6 +477,7 @@ def _formation_resume_blocker(composition: Any, run: dict[str, Any], policy: dic
             return "FORMATION_NO_PROGRESS_LIMIT"
         uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect
             WHERE project_id=%s AND request_payload #>> '{_production_execution,book_id}'=%s
+              AND NOT authority_generation_isolated(external_effect_id)
               AND status IN ('DISPATCHING','UNKNOWN','RECONCILIATION_REQUIRED','FAILED_FINAL'))
             OR EXISTS(SELECT 1 FROM authority_runtime_job_lease lease
                 JOIN authority_runtime_job job USING(runtime_job_id)
@@ -432,6 +509,9 @@ _CREATION_PROGRESS_COLUMNS = """run.current_stage,run.lifecycle,run.version,
                 FROM authority_book_production production WHERE production.project_id=run.project_id
                   AND production.stable_idempotency_key=run.formation_run_id || ':production'),
             jsonb_build_object('cancel_requested',EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation WHERE cancellation.formation_run_id=run.formation_run_id),
+                'generation_recovery',jsonb_build_array(
+                    (SELECT count(*) FROM authority_generation_isolation WHERE project_id=run.project_id AND book_id=run.book_id),
+                    (SELECT count(*) FROM authority_story_planning_runtime_continuation WHERE project_id=run.project_id AND book_id=run.book_id)),
                 'opening',(SELECT jsonb_build_array(opening.lifecycle,opening.version) FROM authority_book_opening_run opening
                     WHERE opening.project_id=run.project_id AND opening.stable_idempotency_key=run.formation_run_id || ':opening'),
                 'chapter',(SELECT jsonb_build_array(operation.status,operation.version) FROM authority_book_production production
