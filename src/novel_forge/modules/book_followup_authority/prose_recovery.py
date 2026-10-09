@@ -11,6 +11,7 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
     from .prose_coordinator import load_review_run, load_review_sources
     principal.require('book.authority.execute', project_id)
     principal.require('external_effect.resolve', project_id)
+    principal.require('book.followup:longform.prose_review', project_id)
     followup = coordinator.followup
     binder = getattr(getattr(followup,'prose_model_port',None), 'capability_binder', None)
     if binder is None:
@@ -60,7 +61,7 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
         if not row or row[0] not in {'WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED','FAILED_FINAL','DEAD_LETTER'}:
             continue
         decisions.append(replace_stopped_generation_root(coordinator.database_url,source_id=source_id,project_id=project_id,
-            context=AdmissionContext(principal.principal_id,principal.permissions,followup.registry.available_handler_keys,
+            context=AdmissionContext(principal.principal_id,frozenset({'book.followup:longform.prose_review'}),followup.registry.available_handler_keys,
                 coordinator.application_build_id,coordinator.commit_sha),scope_guard=guard))
     return decisions
 
