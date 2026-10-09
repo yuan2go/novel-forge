@@ -819,7 +819,10 @@ An existing idle work can request `authority-manuscript adopt-author-workflow` w
 Project and Book run. This automatically selects the current authorized native template and
 appends Book policy evidence. Original profiles and receipts stay frozen; no paid cap is
 increased. Active writers and unisolated uncertain Effects block this switch. Native isolated
-generation history, including unknown usage, does not block it. Current manuscript
+generation history, including unknown usage, does not block it. Optional frozen prose
+review follows its native root-successor lineage in both directions: its read-only attempts
+do not become a prerequisite for independent later Chapter work; overlapping frozen
+Chapter inputs retain their conflict checks. Current manuscript
 reads/edits/exports remain independent. API clients bind the original adoption
 key and expected Book version; response recovery replays the native transaction receipt.
 

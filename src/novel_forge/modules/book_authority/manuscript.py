@@ -59,12 +59,17 @@ def blocking_working_cli_outcomes(cursor: Any, *, project_id: str, book_id: str,
     if not row and operation_id:
         cursor.execute("""SELECT to_jsonb(b),max((source->>'chapter_number')::integer)
             FROM authority_operation review
-            JOIN authority_book_prose_review_event event ON event.content->>'operation_id'=review.operation_id
+            JOIN authority_book_prose_review_event event ON authority_generation_current_operation(event.content->>'operation_id')=review.operation_id
               AND event.kind='WINDOW_ADMITTED'
             JOIN authority_book_prose_review_run run ON run.run_id=event.run_id
             JOIN authority_book_production b ON b.book_run_id=run.book_run_id
             CROSS JOIN LATERAL jsonb_array_elements(run.manifest->'sources') source
             WHERE review.project_id=%s AND review.operation_id=%s AND review.definition_name='longform.prose_review'
+              AND review.definition_snapshot#>>'{policy,body_mutation_allowed}'='false'
+              AND review.definition_snapshot#>>'{policy,plan_mutation_allowed}'='false'
+              AND review.definition_snapshot#>>'{irreversible_effect_policy,allowed}'='false'
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect risk
+                WHERE risk.operation_id=review.operation_id AND risk.effect_type<>'model.invoke')
               AND run.project_id=review.project_id AND run.workspace_id=review.workspace_id
               AND b.project_id=run.project_id AND b.workspace_id=run.workspace_id AND b.book_id=%s
               AND run.manifest->>'source_isolation'='AUTHOR_SELECTED_UNREVIEWED_PROSE'
@@ -86,12 +91,17 @@ def blocking_working_cli_outcomes(cursor: Any, *, project_id: str, book_id: str,
     if not row or not isinstance(row[0], dict) or effective_workflow(cursor, row[0]) != AUTHOR_WORKFLOW:
         return outcomes
     cursor.execute("""SELECT DISTINCT review.operation_id FROM authority_operation review
-        JOIN authority_book_prose_review_event event ON event.content->>'operation_id'=review.operation_id
+        JOIN authority_book_prose_review_event event ON authority_generation_current_operation(event.content->>'operation_id')=review.operation_id
           AND event.kind='WINDOW_ADMITTED'
         JOIN authority_book_prose_review_run run ON run.run_id=event.run_id
         JOIN authority_book_production b ON b.book_run_id=run.book_run_id
         WHERE review.project_id=%s AND review.definition_name='longform.prose_review'
-          AND run.project_id=review.project_id AND run.workspace_id=review.workspace_id
+          AND review.definition_snapshot#>>'{policy,body_mutation_allowed}'='false'
+              AND review.definition_snapshot#>>'{policy,plan_mutation_allowed}'='false'
+              AND review.definition_snapshot#>>'{irreversible_effect_policy,allowed}'='false'
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect risk
+                WHERE risk.operation_id=review.operation_id AND risk.effect_type<>'model.invoke')
+              AND run.project_id=review.project_id AND run.workspace_id=review.workspace_id
           AND b.project_id=run.project_id AND b.workspace_id=run.workspace_id AND b.book_id=%s
           AND run.manifest->>'source_isolation'='AUTHOR_SELECTED_UNREVIEWED_PROSE'
           AND review.operation_id=ANY(%s) AND review.operation_id<>%s""",
