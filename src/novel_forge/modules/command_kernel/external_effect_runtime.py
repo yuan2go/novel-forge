@@ -182,6 +182,8 @@ def read_completed_operation_success(database_url: str, context: EffectCommandCo
 
 
 def _read_verified_success(uow: Any, repository: Any, context: EffectCommandContext, effect_id: str) -> dict[str, Any] | None:
+    from .generation_isolation import require_not_isolated
+    require_not_isolated(uow.cursor, context.operation_id)
     effect = repository.get_for_update(effect_id)
     _require_project(effect, context.project_id)
     if effect["operation_id"] != context.operation_id:
@@ -2032,6 +2034,8 @@ def _read_effect(database_url: str, effect_id: str, project_id: str) -> dict[str
 def _require_context(repository: Any, context: EffectCommandContext) -> None:
     _validate_effect_context(context)
     repository.require_operation(context.operation_id, context.project_id)
+    from .generation_isolation import require_not_isolated
+    require_not_isolated(repository.cursor, context.operation_id)
 
 
 def _validate_effect_context(context: EffectCommandContext) -> None:

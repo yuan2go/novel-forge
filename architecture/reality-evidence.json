@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261009_0184_cli_original_reconciliation",
+  "migration_head": "20261009_0185_pure_generation_isolation",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9720,6 +9720,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261009_0184_cli_original_reconciliation.py",
           "id": "20261009_0184_cli_original_reconciliation",
           "locator": "MIGRATION_ID = \"20261009_0184_cli_original_reconciliation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261009_0185_pure_generation_isolation.py",
+          "id": "20261009_0185_pure_generation_isolation",
+          "locator": "MIGRATION_ID = \"20261009_0185_pure_generation_isolation\""
         }
       ],
       "external_effects": {
@@ -10006,7 +10011,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:f06e6afc580178e48203652b266ec29eec37a564d1a0de2f24dfa2c2bdd461a7"
+    "implementation_tree_sha": "sha256:3afd8fec02535e97c43224bc319d31115f301bf2b978fd21e8c0d5dcc918a951"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

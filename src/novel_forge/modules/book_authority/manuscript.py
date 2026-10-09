@@ -110,12 +110,13 @@ def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_versio
         WHERE op.project_id=%s AND (e.request_payload #>> '{_production_execution,book_id}'=%s
             OR op.root_operation_id=%s OR op.root_operation_id IN (
                 SELECT chapter_root_operation_id FROM authority_book_chapter_request WHERE book_run_id=%s))
+          AND NOT authority_generation_isolated(e.external_effect_id)
           AND e.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED') LIMIT 1""",
         [book["project_id"], book["book_id"], book["root_operation_id"], book["book_run_id"]])
     if uow.cursor.fetchone():
         raise KernelError("AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED", "Reconcile original unsettled effects before switching generation policy; existing manuscripts remain readable")
     from novel_forge.modules.production_execution.execution_template import BOOK_USAGE_SQL
-    uow.cursor.execute("SELECT 1 FROM authority_budget_reservation r LEFT JOIN authority_external_effect e USING(external_effect_id) WHERE r.project_id=%s AND r.status='HELD_UNKNOWN' AND " + BOOK_USAGE_SQL + " LIMIT 1",
+    uow.cursor.execute("SELECT 1 FROM authority_budget_reservation r LEFT JOIN authority_external_effect e USING(external_effect_id) WHERE r.project_id=%s AND r.status='HELD_UNKNOWN' AND NOT authority_generation_isolated(e.external_effect_id) AND " + BOOK_USAGE_SQL + " LIMIT 1",
         [book["project_id"], book["book_id"], book["book_id"], book["book_id"]])
     if uow.cursor.fetchone():
         raise KernelError("AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED", "Original unknown consumption remains reserved; reconcile its receipt before adopting a successor generation policy")

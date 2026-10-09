@@ -672,6 +672,23 @@ query-plan and Compose runtime gates. The eight-domain controlled prose corpus i
 fixture data; its scripted expectations are not calibrated semantic evaluation. Only a
 separately authorized real-Provider/editorial campaign can establish creative quality.
 
+### Unrecoverable pure Planning generation
+
+The existing manual Effect resolution command admits `ISOLATE_PURE_GENERATION` only
+for an owned terminal native Planning task with a stopped, identity-bound process,
+no complete recoverable result and frozen default-deny Tools allowing only Provider
+invocation. The immutable isolation journal preserves remote UNKNOWN, terminal Operation
+history and unknown usage. It revokes old commit and activation rights and binds one
+native Planning runtime continuation to the exact original Book, inputs and logical task.
+Opening recovery and budget lineage consume this same disposition; paid reservations
+remain conservative exposure. Two continuations bound one logical task. Exhaustion
+returns `GENERATION_RECOVERY_EXHAUSTED`; it does not impose a Book-wide membership quota.
+Schema/semantic-invalid or complete locally available results require native result
+validation/reuse, and irreversible Tool work retains its original reconciliation owner.
+Completed Codex turns without usage preserve UNKNOWN accounting; schema, identity and Tool
+validation still apply. The Router retains isolated history and evaluates observed
+transport availability using existing authorized candidates and task-capacity contracts.
+
 ## Creative validation resource operations
 
 Treat the campaign commands and quota examples below as historical/strict contracts.

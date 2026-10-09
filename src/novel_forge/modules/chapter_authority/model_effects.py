@@ -1773,7 +1773,8 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
         else None
     )
     failure = process_evidence if isinstance(process_evidence, dict) else evidence
-    failure_code = str(failure.get("failure_code") or "PROVIDER_FAILURE").upper()
+    detail = failure.get("failure") or (production_execution or {}).get("execution_result", {}).get("error") or {}
+    failure_code = str(detail.get("error_code") or failure.get("failure_code") or "PROVIDER_FAILURE").upper()
     failure_message = str(
         failure.get("failure_message")
         or failure.get("message")
@@ -1782,7 +1783,7 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
     if outcome in {"unknown", "ambiguous"}:
         raise KernelError(
             "MODEL_EFFECT_OUTCOME_UNKNOWN",
-            f"{failure_code}: {failure_message}",
+            f"{failure_code}: {failure_message}", details=detail,
         )
     if outcome in {"retryable_failure", "not_found"}:
         code = (
@@ -1790,11 +1791,11 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
             if failure_code == "PROCESS_TIMEOUT"
             else f"MODEL_EFFECT_RETRYABLE_{failure_code}"
         )
-        raise KernelError(code, failure_message)
+        raise KernelError(code, failure_message, details=detail)
     if outcome in {"final_failure", "failed_final", "cancelled"}:
         raise KernelError(
             f"MODEL_EFFECT_FINAL_{failure_code}",
-            failure_message,
+            failure_message, details=detail,
         )
     raise KernelError(
         "MODEL_EFFECT_OUTCOME_INVALID",

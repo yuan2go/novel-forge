@@ -312,13 +312,19 @@ def parse_codex_jsonl_evidence(
         None,
     )
     usage = terminal.get("usage") if isinstance(terminal, Mapping) else None
-    if not isinstance(usage, Mapping):
-        raise ValueError("Codex JSONL has no terminal measured usage")
+    if terminal is None:
+        raise ValueError("Codex JSONL has no completed terminal turn")
+    usage_missing = usage is None
+    if not usage_missing and not isinstance(usage, Mapping):
+        raise ValueError("Codex terminal usage is malformed")
+    usage = usage or {}
 
     if events[-1] is not terminal or sum(event.get("type") == "turn.completed" for event in events) != 1 or any(event.get("type") == "turn.failed" for event in events):
         raise ValueError("Codex JSONL has conflicting terminal evidence")
 
     def token(name: str) -> int:
+        if usage_missing:
+            return 0
         value = usage.get(name) if name in {"input_tokens", "output_tokens"} else usage.get(name, 0)
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise ValueError(f"Codex usage {name} must be a non-negative integer")
@@ -401,7 +407,7 @@ def parse_codex_jsonl_evidence(
             "estimated": True,
             "provider_billed": False,
         }
-        if pricing is not None
+        if pricing is not None and not usage_missing
         else {
             "availability": "UNAVAILABLE",
             "measurement": "UNKNOWN",
@@ -409,9 +415,9 @@ def parse_codex_jsonl_evidence(
             "currency": "UNKNOWN",
             "accounting_basis": "ACCOUNT_ENTITLEMENT",
             "reason": "monetary_cost_not_observable",
-            "authorization_ref": account_entitlement.authorization_ref,
-            "entitlement_snapshot_hash": account_entitlement.snapshot_hash,
-            "entitlement_snapshot": account_entitlement.to_dict(),
+            "authorization_ref": account_entitlement.authorization_ref if account_entitlement else None,
+            "entitlement_snapshot_hash": account_entitlement.snapshot_hash if account_entitlement else None,
+            "entitlement_snapshot": account_entitlement.to_dict() if account_entitlement else None,
             "provider_billed": "UNKNOWN",
         }
     )
@@ -426,6 +432,10 @@ def parse_codex_jsonl_evidence(
             "output_tokens": output_tokens,
             "reasoning_output_tokens": reasoning_output_tokens,
             "total_tokens": input_tokens + output_tokens,
+        } if not usage_missing else {
+            "availability": "UNAVAILABLE", "measurement": "UNKNOWN", "model": model_id,
+            "reason": "completed_turn_without_usage",
+            "input_tokens": None, "output_tokens": None, "total_tokens": None,
         },
         "cost": cost,
         "tools": {
@@ -718,6 +728,7 @@ class ResultValidator:
             started_at=record.started_at,
             completed_at=_utc_now(),
             external_receipt_ref=external_receipt_ref,
+            error=record.raw_evidence.get("failure"),
         )
 
 
@@ -774,6 +785,7 @@ class ExecutionReconciler:
             started_at=record.started_at,
             completed_at=_utc_now() if completed else None,
             external_receipt_ref=external_receipt_ref,
+            error=record.raw_evidence.get("failure"),
         )
 
 
@@ -1761,6 +1773,12 @@ class CodexCliExecutionBackend:
             try:
                 self._validate_successful_process(record, recovery.receipt)
             except _CodexResultFailure as failure:
+                from .provider_protocol_failure import observed_provider_failure
+                detail = observed_provider_failure("", status="RESULT_VALIDATION", request=record.request)
+                detail.update(error_code=failure.code, phase="RESULT_VALIDATION", retryable=failure.retryable,
+                    causes=[{"event": "result.validation", "message": str(failure)}],
+                    recovery_action="READ_OR_REPAIR_ORIGINAL_RESULT")
+                record.raw_evidence["failure"] = detail
                 record.raw_evidence.update(
                     {
                         "failure_code": failure.code,
@@ -1785,13 +1803,18 @@ class CodexCliExecutionBackend:
                     record, recovery.receipt, record.result
                 )
             else:
-                for key in ("failure_code", "failure_message", "failure_disposition"):
+                for key in ("failure_code", "failure_message", "failure_disposition", "failure"):
                     record.raw_evidence.pop(key, None)
                 record.result = ResultValidator(self.record_store).successful_result(
                     record, process_receipt_ref=receipt_ref
                 )
         else:
             failure_code, outcome = _codex_process_failure(recovery.receipt.status)
+            from .provider_protocol_failure import observed_provider_failure
+            failure = observed_provider_failure(Path(recovery.receipt.stdout_path).read_text(encoding="utf-8"),
+                status=recovery.receipt.status, request=record.request)
+            failure_code = failure["error_code"]
+            record.raw_evidence["failure"] = failure
             if recovery.receipt.status is ProcessReceiptStatus.FAILED:
                 with Path(recovery.receipt.stdout_path).open(encoding="utf-8") as stdout:
                     protocol_failure = codex_protocol_failure(stdout.read(262144))

@@ -20,6 +20,7 @@ DECISIONS = frozenset(
         "MARK_FAILED_FINAL",
         "MARK_CANCELLED",
         "RETRY_WITH_NEW_GENERATION",
+        "ISOLATE_PURE_GENERATION",
     }
 )
 
@@ -72,7 +73,11 @@ def resolve_external_effect_manually(
         from .cli_effect_reconciliation import historical_cli_dispatch, append_resolution
         original = historical_cli_dispatch(uow.cursor, effect)
         original_reconciled = original is not None
-        if original_reconciled:
+        if command.decision == "ISOLATE_PURE_GENERATION":
+            from .generation_isolation import append_isolation
+            append_isolation(uow, effect, command)
+            target_operation = str(operation["status"])
+        elif original_reconciled:
             append_resolution(uow, effect, original, command)
             target_operation = str(operation["status"])
         else:

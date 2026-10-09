@@ -555,8 +555,11 @@ class PostgresRoutingRegistry:
                    FROM authority_external_effect effect
                    JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
                    WHERE effect.project_id=%s AND effect.model_id=ANY(%s)
-                     AND dispatch.evidence #>> '{production_execution,process_evidence,failure_class}'
-                         IN ('RATE_LIMIT','PROVIDER_UNAVAILABLE','AUTHENTICATION_FAILED','PROVIDER_BUDGET_EXHAUSTED')
+                     AND COALESCE(dispatch.evidence #>> '{production_execution,process_evidence,failure_class}',
+                         dispatch.evidence #>> '{production_execution,process_evidence,failure_code}')
+                         IN ('RATE_LIMIT','PROVIDER_UNAVAILABLE','AUTHENTICATION_FAILED','PROVIDER_BUDGET_EXHAUSTED',
+                             'PROVIDER_STREAM_INTERRUPTED','PROVIDER_RESPONSE_TIMEOUT','PROVIDER_CONNECTION_FAILED',
+                             'PROVIDER_AUTH_FAILED','PROVIDER_RATE_LIMITED')
                      AND EXTRACT(EPOCH FROM (%s - COALESCE(dispatch.finished_at,dispatch.updated_at,dispatch.created_at)))
                          < CASE WHEN jsonb_typeof(dispatch.evidence #> '{production_execution,process_evidence,retry_after_seconds}')='number'
                            THEN (dispatch.evidence #>> '{production_execution,process_evidence,retry_after_seconds}')::numeric
@@ -570,7 +573,7 @@ class PostgresRoutingRegistry:
             for provider, model, occurred_at, evidence, effect_id in failures:
                 if provider != candidate.provider or model != candidate.model:
                     continue
-                failure = evidence["failure_class"]
+                failure = evidence.get("failure_class") or evidence["failure_code"]
                 delay = evidence.get("retry_after_seconds")
                 if (
                     not isinstance(delay, (int, float))
@@ -619,7 +622,7 @@ class PostgresRoutingRegistry:
                 """SELECT effect.external_effect_id, effect.status, dispatch.created_at,
                           effect.request_payload #> '{_production_execution,capability_runtime,routing_decision}',
                           dispatch.evidence,
-                          quality.content,effect.operation_id
+                          quality.content,effect.operation_id,authority_generation_isolated(effect.external_effect_id)
                    FROM authority_external_effect effect
                    LEFT JOIN LATERAL (
                        SELECT evidence,COALESCE(finished_at,updated_at,created_at) AS created_at FROM authority_external_effect_dispatch
@@ -659,6 +662,7 @@ class PostgresRoutingRegistry:
             evidence,
             quality,
             source_operation_id,
+            isolated_generation,
         ) in rows:
             if not decision:
                 continue
@@ -670,14 +674,14 @@ class PostgresRoutingRegistry:
             )
             failure = (
                 "UNKNOWN_EXTERNAL_OUTCOME"
-                if status
+                if not isolated_generation and status
                 in {
                     "UNKNOWN",
                     "UNKNOWN_AMBIGUOUS",
                     "SENT_UNKNOWN",
                     "RECONCILIATION_REQUIRED",
                 }
-                else process.get("failure_class", "")
+                else process.get("failure_class", "") or process.get("failure_code", "")
             )
             if not failure and (quality or {}).get("gate") == "FAILED":
                 failure = (
@@ -711,6 +715,7 @@ class PostgresRoutingRegistry:
                     "candidate_id": selected.get("candidate_id"),
                     "failure_class": failure,
                     "status": status,
+                    "generation_isolated": isolated_generation,
                     "escalation": selected.get("escalation_only", False),
                     "outcome_refs": gate.get("evidence_refs", []),
                 }

@@ -235,8 +235,8 @@ def test_codex_jsonl_records_and_denies_observed_cli_tools() -> None:
     assert evidence["unauthorized_tools"] == ["codex.command_execution"]
 
 
-def test_codex_jsonl_requires_terminal_measured_usage() -> None:
-    with pytest.raises(ValueError, match="terminal measured usage"):
+def test_codex_jsonl_requires_completed_terminal_turn() -> None:
+    with pytest.raises(ValueError, match="completed terminal turn"):
         parse_codex_jsonl_evidence(
             json.dumps({"type": "thread.started"}),
             model_id="codex-test",

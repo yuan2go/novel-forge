@@ -285,6 +285,14 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] == "ABORTED":
             return {"formation_run_id": formation_run_id, "opening_run_id": opening[0], "stop_reason": "CANCELLED"}
+        if opened["lifecycle"] == "FAILED":
+            from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
+            try:
+                recover_book_generations(composition.planning, project_id=project, book_id=book,
+                    principal=composition.principal)
+            except KernelError as error:
+                return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message,
+                    "failure": error.details, "checkpoint": opened}
         with AuthorityUnitOfWork(composition.authority.database_url) as uow:
             uow.cursor.execute("SELECT policy_snapshot FROM authority_provider_budget_scope WHERE budget_scope_id=%s", [opened["budget_scope_id"]])
             scope_policy = uow.cursor.fetchone()
@@ -299,10 +307,14 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
                 return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message, "checkpoint": opened}
         if opened["lifecycle"] == "FAILED":
             try:
+                with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+                    uow.cursor.execute("SELECT COUNT(*) FROM authority_generation_isolation WHERE project_id=%s AND book_id=%s", [project, book])
+                    recovery_revision = str(uow.cursor.fetchone()[0])
+                recovery_key = opening[0] + ":creation-recovery:" + str(opened["version"]) + ":disposition:" + recovery_revision
                 assessment = composition.opening.recovery.assess_recovery(opening[0],
-                    idempotency_key=opening[0] + ":creation-recovery:" + str(opened["version"]), principal=composition.principal)
+                    idempotency_key=recovery_key, principal=composition.principal)
                 composition.opening.recovery.recover(assessment.recovery_assessment_id,
-                    idempotency_key=opening[0] + ":creation-recover:" + str(opened["version"]),
+                    idempotency_key=recovery_key + ":apply",
                     reason="continue exact native creation checkpoint", principal=composition.principal)
             except KernelError as error:
                 return {"opening_run_id": opening[0], "stop_reason": error.code, "reason": error.message, "checkpoint": opened}

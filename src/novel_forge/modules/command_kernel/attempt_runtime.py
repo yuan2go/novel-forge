@@ -425,6 +425,7 @@ def submit_attempt_failure(
     error_code: str,
     error_message: str,
     failure_class: str,
+    failure_details: dict | None = None,
 ) -> None:
     with AuthorityUnitOfWork(database_url) as uow:
         operation = uow.repositories.attempt_runtime.operation_state(
@@ -442,6 +443,7 @@ def submit_attempt_failure(
             "error_code": error_code,
             "error_message": error_message,
             "failure_class": failure_class,
+            "failure_details": failure_details or {},
         },
     )
 

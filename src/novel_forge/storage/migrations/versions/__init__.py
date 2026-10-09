@@ -186,6 +186,7 @@ from . import (
     v20261008_0182_source_market_observations,
     v20261008_0183_source_observation_span_identity,
     v20261009_0184_cli_original_reconciliation,
+    v20261009_0185_pure_generation_isolation,
 )
 
 VERSION_MODULES = [
@@ -374,6 +375,7 @@ VERSION_MODULES = [
     v20261008_0182_source_market_observations,
     v20261008_0183_source_observation_span_identity,
     v20261009_0184_cli_original_reconciliation,
+    v20261009_0185_pure_generation_isolation,
 ]
 
 __all__ = ["VERSION_MODULES"]

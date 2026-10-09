@@ -3477,8 +3477,8 @@ def _enforce_routing_chain_budget(
     cursor.execute(
         f"""SELECT count(*), count(*) FILTER (
                     WHERE b.usage_accounted AND e.request_payload #>> '{{_production_execution,capability_runtime,routing_decision,selected,candidate,escalation_only}}'='true'),
-                  bool_or(b.status IN ('RESERVED','HELD_UNKNOWN')),
-                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED')
+                  bool_or(b.status IN ('RESERVED','HELD_UNKNOWN') AND NOT authority_generation_isolated(e.external_effect_id)),
+                  bool_or(e.status IN ('UNKNOWN','SENT_UNKNOWN','UNKNOWN_AMBIGUOUS','RECONCILIATION_REQUIRED') AND NOT authority_generation_isolated(e.external_effect_id)
                     AND NOT EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
                       WHERE r.external_effect_id=e.external_effect_id
                         AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
@@ -4248,6 +4248,7 @@ def unresolved_cli_outcomes(cursor: Any, project_id: str, *, root_operation_id: 
             NULLIF(root.command_payload->>'book_id',''),NULLIF(root.command_payload#>>'{payload,book_id}',''),
             NULLIF(b.evidence->>'work_id',''))=%s)
           AND d.evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
+          AND NOT authority_generation_isolated(e.external_effect_id)
           AND (d.evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
             OR (d.evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
               AND d.evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))

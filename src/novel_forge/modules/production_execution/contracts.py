@@ -1225,6 +1225,8 @@ class ExecutionResult(_Contract):
     completed_at: str | None
     external_receipt_ref: str | None = None
 
+    error: Mapping[str, Any] | None = None
+
     def __post_init__(self) -> None:
         _validate_attempt(self.operation_id, self.attempt_id, self.fencing_token)
         object.__setattr__(self, "outcome", _as_execution_outcome(self.outcome))

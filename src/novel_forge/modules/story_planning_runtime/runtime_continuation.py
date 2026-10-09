@@ -120,6 +120,20 @@ def require_source(
             "PLANNING_RUNTIME_CONTINUATION_SCOPE_INVALID",
             "source command differs from its native Book scope",
         )
+    uow.cursor.execute("SELECT proof FROM authority_generation_isolation WHERE operation_id=%s", [source_operation_id])
+    isolation_row = uow.cursor.fetchone()
+    if isolation_row:
+        proof = isolation_row[0]
+        uow.cursor.execute("SELECT chain_depth FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=%s", [source_operation_id])
+        prior = uow.cursor.fetchone()
+        depth = (int(prior[0]) if prior else 0) + 1
+        if depth > 2:
+            raise KernelError("GENERATION_RECOVERY_EXHAUSTED", "Two native continuations exhausted this logical generation; retain saved manuscript and inspect original path evidence", details=proof)
+        return {"mode": "ISOLATED_PURE_GENERATION", "source_operation_id": source_operation_id,
+            "command": frozen, "version": int(row[1]), "evidence_asset_version_id": proof["evidence_asset_version_id"],
+            "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,
+                asset_version_id=proof["evidence_asset_version_id"]).content_hash,
+            "snapshot": proof["pack_snapshot"], "depth": depth, "generation_isolation": proof}
     uow.cursor.execute(
         "SELECT status, error, result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
         [source_operation_id],
@@ -1195,6 +1209,7 @@ def register(
     original = _command_from_payload(source["command"])
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
+    isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
     contract_change = source.get("mode") in {"WORLD_AGENCY_CONTRACT", "PLANNING_REFERENCE_CONTRACT"}
     host_revalidation = source.get("mode") in {
         "WORLD_HOST_REVALIDATION",
@@ -1238,6 +1253,7 @@ def register(
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
     if (
         not capacity
+        and not isolated_generation
         and not contract_change
         and not host_revalidation
         and source["snapshot"]["release_sha"] == application.commit_sha
@@ -1248,6 +1264,7 @@ def register(
         )
     if (
         not capacity
+        and not isolated_generation
         and not contract_change
         and not host_revalidation
         and (
@@ -1268,7 +1285,11 @@ def register(
     if source.get("preflight_failure"):
         from .preflight_continuation import require_capacity_target
         capacity_decision = require_capacity_target(source, target)
-    if host_revalidation:
+    if isolated_generation:
+        target = {**target, "generation_isolation": source["generation_isolation"]}
+        route_evidence = {"recovery_kind": "ISOLATED_PURE_GENERATION", "remote_outcome": "UNKNOWN",
+            "usage": "UNKNOWN", "preserved_repair_number": original.repair_number}
+    elif host_revalidation:
         with AuthorityUnitOfWork(application.database_url) as uow:
             route_evidence = _capacity_authorization(
                 uow,
@@ -1418,6 +1439,7 @@ def register(
             )
             or (
                 not capacity
+                and not isolated_generation
                 and not contract_change
                 and not host_revalidation
                 and require_route_evidence(
@@ -1587,7 +1609,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation", "planning_reference_contract"}
+        if key not in {"planning_capacity", "world_host_revalidation", "planning_reference_contract", "generation_isolation"}
     }
     if (
         validate_runtime

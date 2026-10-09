@@ -3445,7 +3445,8 @@ def _planning_budget_settlement(
             "cost_status": "UNKNOWN",
             "usage": {
                 **dict(usage),
-                "total_tokens": total_tokens,
+                "total_tokens": measured_total if usage_authoritative else None,
+                "conservative_reserved_tokens": total_tokens,
                 "budget_settlement_basis": usage_basis,
             },
             "cost": {
@@ -3828,7 +3829,9 @@ class _PlanningPepPort:
                 if outcome in {"retryable_failure", "not_found"}
                 else "MODEL_EFFECT_FINAL_PLANNING"
             )
-            raise KernelError(code, f"Planning provider outcome was {outcome}")
+            production_failure = (dispatched.get("provider_evidence") or {}).get("production_execution") or {}
+            failure = (production_failure.get("execution_result") or {}).get("error") or (production_failure.get("process_evidence") or {}).get("failure") or {}
+            raise KernelError(code, f"Planning provider outcome was {outcome}; cause={failure.get('error_code', 'UNCLASSIFIED_PROVIDER_FAILURE')}", details=failure)
         evidence = dispatched.get("provider_evidence")
         if not isinstance(evidence, Mapping):
             raise KernelError(
