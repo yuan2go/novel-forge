@@ -160,7 +160,6 @@ def read_failed_operation_success(
 
 
 def read_retained_generation_stage_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
-    """SECURITY: Read completed World siblings without restoring an isolated owner's submission rights."""
     _validate_effect_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
         uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
