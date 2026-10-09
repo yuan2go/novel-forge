@@ -2562,6 +2562,7 @@ def planning_provider_output_schema(
     narrative_search_horizon: Mapping[str, Any] | None = None,
     narrative_realization: Mapping[str, Any] | None = None,
     chapter_schedule_row: Mapping[str, Any] | None = None,
+    arc_working_set: Mapping[str, Any] | None = None,
     work_requirements: bool = False,
     aligned_methods: bool = False,
     serialization_contract: bool = False,
@@ -3034,18 +3035,29 @@ def planning_provider_output_schema(
             properties[field] = _frozen_provider_value_schema(
                 [schedule_row[field]], work_requirements=work_requirements
             )
-        scheduled_arc_ids = sorted({item["arc_plan_version_id"] for item in schedule_row["required_arc_contributions"]})
+        scheduled_arc_ids = sorted({item["arc_plan_version_id"] for item in (arc_working_set or {}).get("selected_contributions", ())}) if arc_working_set else sorted({item["arc_plan_version_id"] for item in schedule_row["required_arc_contributions"]})
         scheduled_arc_reference = {"type": "string", **({"const": scheduled_arc_ids[0]} if len(scheduled_arc_ids) == 1 else {"enum": scheduled_arc_ids} if scheduled_arc_ids else {})}
         schedule_schema = properties["arc_schedule"]
-        schedule_schema["minItems"] = 1 if scheduled_arc_ids else 0
+        schedule_schema["minItems"] = len(scheduled_arc_ids) if arc_working_set else 1 if scheduled_arc_ids else 0
         schedule_schema["maxItems"] = len(scheduled_arc_ids)
         schedule_schema["items"]["properties"]["arc_plan_version_id"] = {
             **scheduled_arc_reference,
-            "description": "Use only frozen required Arc contributions from this Chapter row. Related Arc context does not require scheduling or movement.",
+            "description": "Cover each selected frozen Working Set Arc once when supplied; otherwise use only the Chapter row's required contributions. Unselected related context does not require scheduling or movement.",
         }
-        schedule_schema["items"]["properties"]["role"]["description"] = "Choose one dominant role per scheduled required Arc; never repeat one Arc. Related context alone is not a scheduled contribution."
+        schedule_schema["items"]["properties"]["role"]["description"] = "Preserve each selected Working Set Arc's frozen role exactly; otherwise choose one dominant role per Chapter row contribution; never repeat one Arc or promote unselected related context."
+        if arc_working_set:
+            selected = arc_working_set["selected_contributions"]
+            if not scheduled_arc_ids or not set(scheduled_arc_ids) <= set(arc_plan_version_ids) or len(selected) != len(scheduled_arc_ids):
+                raise KernelError("CHAPTER_ARC_WORKING_SET_SCOPE_INVALID", "Provider Arc scope must retain the selected unique frozen portfolio")
+            alternatives = []
+            for item in selected:
+                alternative = json.loads(json.dumps(schedule_schema["items"]))
+                alternative["properties"]["arc_plan_version_id"] = {"type": "string", "const": item["arc_plan_version_id"]}
+                alternative["properties"]["role"] = {"type": "string", "const": item["role"]}
+                alternatives.append(alternative)
+            schedule_schema["items"] = {"anyOf": alternatives}
         contributions = properties["required_arc_contributions"]
-        contributions["minItems"] = 1 if scheduled_arc_ids else 0
+        contributions["minItems"] = len(scheduled_arc_ids) if arc_working_set else 1 if scheduled_arc_ids else 0
         contributions["maxItems"] = len(scheduled_arc_ids)
         contributions["items"]["properties"]["arc_plan_version_id"] = dict(scheduled_arc_reference)
         progress = properties["scene_plan"]["items"]["properties"]["arc_progress"]
@@ -4351,6 +4363,7 @@ class PostgresPlanningExecutionPreparer:
                 narrative_search_horizon=(command.narrative_search_planning_horizon),
                 narrative_realization=command.narrative_realization,
                 chapter_schedule_row=chapter_schedule_row,
+                arc_working_set=command.arc_working_set,
                 work_requirements=command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
                 aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
                 serialization_contract=command.execution_contract_version in {"1.19.0", "1.21.0"},
