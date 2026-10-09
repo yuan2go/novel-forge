@@ -112,6 +112,7 @@ def retire_reference_failed_chapter(authority, *, book_run_id, proposal_id, plan
         current = uow.cursor.fetchone()[0]
         if current["version"] != book["version"]:
             raise KernelError("BOOK_PLAN_RECOVERY_CONFLICT", "Reload the unchanged recovery checkpoint")
+        current["author_workflow"] = book["author_workflow"]
         live_proposal = uow.repositories.plan_change.require(proposal_id)
         if any(live_proposal.get(k) != proposal.get(k) for k in ("status","project_id","book_id","target_asset_version_id","proposed_asset_version_id","activation_operation_id")):
             raise KernelError("BOOK_PLAN_RECOVERY_CONFLICT", "Retain the exact active PlanChange")
