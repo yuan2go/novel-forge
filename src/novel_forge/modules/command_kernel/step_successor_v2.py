@@ -125,6 +125,11 @@ def replace_failed_step(
             and target_version == "3.10.1" and expected_failure_code == "CHAPTER_MEMO_CHARACTER_DRIFT"
             and policy_evidence.get("character_reference_contract", {}).get("contract_version") == "frozen-character-references.v1"
         )
+        scene_contract_repair = bool(known_receipt_effects
+            and policy_evidence.get("contract_version") == "chapter-known-receipt.v2"
+            and policy_evidence.get("scene_evidence_union_revalidation") == "scene-evidence-union.v1"
+            and source["definition_name"] == "chapter.draft.generate" and source["definition_version"] == "3.10.0"
+            and target_version == "3.10.1" and expected_failure_code == "REALIZATION_EPISTEMIC_SCOPE_VIOLATION")
         memo_completion_repair = (source["definition_name"] == "chapter.memo.generate" and source["definition_version"] == "3.10.1" and target_version == "3.10.2" and policy_evidence.get("completion_revalidation") == "settled-memo-completion.v1")
         intent_contract_repair = (source["definition_name"] == "chapter.execution_intent.prepare"
             and source["definition_version"] == "3.10.0" and target_version == "3.10.1"
@@ -137,7 +142,7 @@ def replace_failed_step(
             not row
             or source["status"] not in ({"FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} if unsent_transport else {"FAILED_FINAL", "DEAD_LETTER"})
             or root["status"] != "WAITING_CHILDREN"
-            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memo_contract_repair or memo_completion_repair or intent_contract_repair else {"RUNNING", "MANUAL_INTERVENTION"})
+            or saga["status"] not in ({"RUNNING", "MANUAL_INTERVENTION", "FORWARD_RECOVERY"} if unsent_transport or memo_contract_repair or memo_completion_repair or intent_contract_repair or scene_contract_repair else {"RUNNING", "MANUAL_INTERVENTION"})
             or source["actor_id"] != context.actor_id
             or root["actor_id"] != context.actor_id
             or (source["definition_version"] == target_version and not known_isolated_effects and not unsent_transport)

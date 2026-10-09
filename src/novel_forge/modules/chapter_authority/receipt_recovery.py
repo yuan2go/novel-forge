@@ -265,7 +265,7 @@ def _cancelled(cursor, book):
 
 def is_known_receipt_revalidation(database_url, operation_id):
     with AuthorityUnitOfWork(database_url) as u:
-        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version='3.10.0' AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
+        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor s JOIN authority_operation o ON o.operation_id=s.successor_operation_id WHERE o.operation_id=%s AND o.project_id=s.project_id AND o.definition_version IN ('3.10.0','3.10.1') AND s.policy_evidence->>'contract_version'=%s)",[operation_id,CONTRACT])
         return u.cursor.fetchone()[0]
 
 

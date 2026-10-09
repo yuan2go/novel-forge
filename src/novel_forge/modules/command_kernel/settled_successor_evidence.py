@@ -17,8 +17,15 @@ PROOF_KEYS = ('contract_version', 'source_operation_id', 'source_effect_id', 'so
 
 
 def _require_binding(source, current, frozen, policy, *, predecessor_id=None):
+    allowed_versions = {"3.10.0"}
+    if source["definition_name"] == "chapter.memo.generate" and policy.get("character_reference_contract", {}).get("contract_version") == "frozen-character-references.v1":
+        allowed_versions.add("3.10.1")
+        if policy.get("completion_revalidation") == "settled-memo-completion.v1":
+            allowed_versions.add("3.10.2")
+    if source["definition_name"] == "chapter.draft.generate" and policy.get("scene_evidence_union_revalidation") == "scene-evidence-union.v1":
+        allowed_versions.add("3.10.1")
     if (source != frozen or source['status'] not in {'FAILED_FINAL', 'DEAD_LETTER'}
-        or current['status'] != 'SUCCEEDED' or current['definition_version'] not in {'3.10.0', '3.10.1', '3.10.2'}
+        or current['status'] != 'SUCCEEDED' or current['definition_version'] not in allowed_versions
         or source['definition_name'] not in CONTRACTS.get(policy.get('contract_version'), set())
         or current['causation_operation_id'] != (predecessor_id or source['operation_id'])
         or any(current.get(k) != source.get(k) for k in ('project_id', 'workspace_id', 'actor_id',
