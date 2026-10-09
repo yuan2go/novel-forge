@@ -1662,8 +1662,8 @@ approval remains pending; only its first admission resolves the approved active 
 New future tasks separately require the current Pack. Frontier alias normalization
 compares exact Canon/State identities and rejects missing or conflicting versions. Cached quality evidence requires matching policy and creative-baseline
 hashes before reuse. Semantic repair/replan appends explicit future-only lineage;
-accepted prose is never rewritten automatically. UNKNOWN external outcomes require
-reconciliation. Source methodology 1.1.0 prioritizes the current analysis purpose;
+accepted prose is never rewritten automatically. Unknown remote outcomes remain historical facts. Irreversible effects require
+reconciliation; an owned pure generation may revoke the old attempt and admit an authorized successor. Source methodology 1.1.0 prioritizes the current analysis purpose;
 version 1.0.0 retains its exact historical text and hash. These are code/runtime
 contracts; deployment, real Provider qualification and literary improvement require
 separate evidence.
@@ -2045,7 +2045,7 @@ the current head; canonical prose intentionally does not duplicate its identity.
 
 Provider and MinIO-compatible object-store calls use durable ExternalEffect intent,
 dispatch generation and receipt records. A request that may have started is reconciled
-before retry and is never blindly resent. Idempotency keys bind the request digest;
+before resending the same Effect. Pure generation can instead isolate its old attempt and continue through a linked native successor. Idempotency keys bind the request digest;
 Attempt leases and fencing reject stale workers. Safe database retries are restricted to
 classified SQL states, while an unknown commit result requires evidence-based
 reconciliation. Recovery appends attempt, receipt, checkpoint or replacement lineage and

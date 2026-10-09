@@ -1372,6 +1372,9 @@ def assert_provider_execution_authorized(
         from novel_forge.modules.command_kernel.routing_bootstrap import verify_routing_bootstrap_dispatch
         from novel_forge.modules.command_kernel.creative_budget_runtime import assert_creative_budget_dispatch
 
+        uow.cursor.execute("SELECT 1 FROM audit_log WHERE operation_id=%s AND action='authority.operation.execution_window_continued' AND payload->>'contract_version'='local-result-finalization-window.v1'", [operation_id])
+        if uow.cursor.fetchone():
+            raise KernelError("SAVED_RESULT_WINDOW_DISPATCH_FORBIDDEN", "Saved-result finalization grants local consumption only")
         require_known_cli_lineage(uow.cursor, project_id=project_id, operation_id=operation_id)
         assert_creative_budget_dispatch(uow.cursor, project_id=project_id,
                                        external_effect_id=external_effect_id,

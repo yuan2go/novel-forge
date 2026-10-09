@@ -158,6 +158,7 @@ def provider_invocation_failure(evidence, *, request):
     detail.update(
         error_code=code,
         phase=phase,
+        stage=phase,
         retryable=retryable,
         causes=[
             {

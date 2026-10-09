@@ -3831,6 +3831,8 @@ class _PlanningPepPort:
             )
             production_failure = (dispatched.get("provider_evidence") or {}).get("production_execution") or {}
             failure = (production_failure.get("execution_result") or {}).get("error") or (production_failure.get("process_evidence") or {}).get("failure") or {}
+            if outcome in {"unknown", "ambiguous"}:
+                code = "MODEL_EFFECT_OUTCOME_UNKNOWN_" + str(failure.get("cause_code") or failure.get("error_code") or "ORIGINAL_RESULT_UNRECOVERABLE")
             raise KernelError(code, f"Planning provider outcome was {outcome}; cause={failure.get('error_code', 'UNCLASSIFIED_PROVIDER_FAILURE')}", details=failure)
         evidence = dispatched.get("provider_evidence")
         if not isinstance(evidence, Mapping):

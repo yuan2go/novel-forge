@@ -165,7 +165,7 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                     result = scheduler.tick(project_id=book["project_id"], root_operation_id=active)
                 except KernelError as error:
                     events({"kind": "CHAPTER_CHECKPOINT", "operation_id": active, "reason_code": error.code, "failure": error.details})
-                    if error.code in {"MODEL_EFFECT_OUTCOME_UNKNOWN", "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED"}:
+                    if error.code.startswith("MODEL_EFFECT_OUTCOME_UNKNOWN") or error.code == "CONTENT_EXTERNAL_RECONCILIATION_REQUIRED":
                         from novel_forge.modules.command_kernel.generation_isolation import recover_chapter_generations
                         if recover_chapter_generations(composition.authority, book_run_id=book_run_id, principal=composition.principal):
                             continue
@@ -291,7 +291,10 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] == "ABORTED":
             return {"formation_run_id": formation_run_id, "opening_run_id": opening[0], "stop_reason": "CANCELLED"}
-        if opened["lifecycle"] in {"ADMITTED", "RUNNING"}:
+        with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+            uow.cursor.execute("SELECT lifecycle FROM authority_book_opening_execution WHERE opening_execution_id=%s", [opened["current_execution_id"]])
+            execution_lifecycle = uow.cursor.fetchone()
+        if opened["lifecycle"] in {"ADMITTED", "RUNNING"} and execution_lifecycle and execution_lifecycle[0] in {"BOUND", "RUNNING"}:
             loss_key = (
                 opening[0]
                 + ":execution-loss:"

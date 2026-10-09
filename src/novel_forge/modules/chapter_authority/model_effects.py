@@ -1782,7 +1782,7 @@ def _raise_model_effect_failure(dispatched: dict[str, Any]) -> None:
     )
     if outcome in {"unknown", "ambiguous"}:
         raise KernelError(
-            "MODEL_EFFECT_OUTCOME_UNKNOWN",
+            "MODEL_EFFECT_OUTCOME_UNKNOWN_" + str(detail.get("cause_code") or failure_code) if detail else "MODEL_EFFECT_OUTCOME_UNKNOWN",
             f"{failure_code}: {failure_message}", details=detail,
         )
     if outcome in {"retryable_failure", "not_found"}:

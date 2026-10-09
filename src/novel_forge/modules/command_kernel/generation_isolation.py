@@ -44,6 +44,9 @@ def recover_book_generations(application, *, project_id, book_id, principal):
 
     recover_saved_local_results(application.execution_binder.resolver.execution_preparer.execution_transport,
         database_url=application.database_url, project_id=project_id, book_id=book_id, principal=principal)
+    from .execution_window import continue_saved_result_finalization
+    continue_saved_result_finalization(application.database_url, project_id=project_id,
+        book_id=book_id, principal=principal)
     principal.require("external_effect.resolve", project_id)
     with AuthorityUnitOfWork(application.database_url) as uow:
         rows = unresolved_cli_outcomes(uow.cursor, project_id, book_id=book_id)

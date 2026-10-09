@@ -334,3 +334,61 @@ def _current_continued_attempt_limit(cursor, operation_id, project_id, original_
     from .derived_step_revalidation import _settled_graph
     _settled_graph(cursor, root_id)
     return original_limit + 1
+
+
+def continue_saved_result_finalization(database_url, *, project_id, book_id, principal):
+    principal.require("external_effect.resolve", project_id)
+    principal.require("story_planning.authority.execute", project_id)
+    with AuthorityUnitOfWork(database_url) as uow:
+        cursor = uow.cursor
+        cursor.execute("""SELECT to_jsonb(operation) FROM authority_operation operation
+            JOIN authority_story_planning_generation generation USING(operation_id)
+            WHERE operation.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
+              AND operation.definition_name='story_planning.generate' AND operation.status='FAILED_RETRYABLE'
+              AND operation.business_deadline_at<=clock_timestamp()
+              AND EXISTS(SELECT 1 FROM authority_attempt attempt WHERE attempt.operation_id=operation.operation_id
+                AND attempt.attempt_number=(SELECT max(attempt_number) FROM authority_attempt WHERE operation_id=operation.operation_id)
+                AND attempt.status='FAILED_RETRYABLE' AND attempt.result->>'error_code'='OPERATION_BUSINESS_TIMEOUT')
+            FOR UPDATE OF operation""", [project_id, book_id, principal.principal_id])
+        operations = [row[0] for row in cursor.fetchall()]
+        for operation in operations:
+            operation_id = operation['operation_id']
+            cursor.execute("""SELECT effect.external_effect_id,effect.request_hash FROM authority_external_effect effect
+                WHERE effect.operation_id=%s AND effect.effect_type='model.invoke' AND effect.status='SUCCEEDED'
+                  AND NOT authority_generation_isolated(effect.external_effect_id)
+                  AND effect.request_payload->>'stage'=%s
+                  AND EXISTS(SELECT 1 FROM authority_external_receipt receipt
+                    JOIN authority_external_effect_dispatch dispatch USING(dispatch_id)
+                    WHERE dispatch.external_effect_id=effect.external_effect_id AND dispatch.status='SUCCEEDED'
+                      AND receipt.status='VERIFIED' AND receipt.payload #>> '{evidence,recovery_action}'='LOCAL_SAVED_RESULT_REUSE')""",
+                [operation_id, operation['command_payload']['payload']['generator_operation_name']])
+            effects = cursor.fetchall()
+            cursor.execute("""SELECT count(*),bool_or(status<>'SUCCEEDED') FROM authority_external_effect WHERE operation_id=%s""", [operation_id])
+            count, unresolved = cursor.fetchone()
+            if len(effects) != 1 or count != 1 or unresolved:
+                continue
+            cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL),
+                EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+                  WHERE attempt.operation_id=%s AND lease.status='HELD' AND lease.expires_at>clock_timestamp()),
+                EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s AND role='primary')""", [operation_id]*3)
+            if any(cursor.fetchone()):
+                raise KernelError('SAVED_RESULT_FINALIZATION_CONFLICT', 'Cancellation, an active writer or an existing primary result prevents a finalization window')
+            cursor.execute("SELECT payload FROM audit_log WHERE operation_id=%s AND action=%s AND payload->>'contract_version'='local-result-finalization-window.v1'", [operation_id, EVENT])
+            if cursor.fetchone():
+                raise KernelError('SAVED_RESULT_FINALIZATION_EXHAUSTED', 'One bounded saved-result finalization window expired; retained output remains readable')
+            if any(key in operation['command_payload'] or key in operation['command_payload'].get('payload', {})
+                   for key in ('business_deadline_at', 'author_deadline_at')):
+                raise KernelError('EXECUTION_WINDOW_AUTHOR_DEADLINE', 'An explicit author deadline is not a technical finalization window')
+            duration = int(operation['definition_snapshot']['timeout_policy']['operation_timeout_seconds'])
+            if not 0 < duration <= 3600:
+                raise KernelError('EXECUTION_WINDOW_BOUND_INVALID', operation_id)
+            deadline = datetime.now(timezone.utc) + timedelta(seconds=duration)
+            cursor.execute("UPDATE authority_operation SET business_deadline_at=%s,version=version+1,updated_at=clock_timestamp() WHERE operation_id=%s AND version=%s", [deadline, operation_id, operation['version']])
+            _record(uow.repositories.operation_graph,
+                GraphCommandContext(project_id, principal.principal_id, operation['trace_id'], operation['correlation_id']),
+                operation_id, EVENT, {'contract_version':'local-result-finalization-window.v1',
+                    'original_deadline':operation['business_deadline_at'], 'new_deadline':deadline.isoformat(),
+                    'source_operation_version':operation['version'], 'known_effects':effects,
+                    'provider_dispatch_authorized':False,'authorization':{'actor_id':principal.principal_id,'permission':'external_effect.resolve','mode':'OWNED_NATIVE_SAVED_RESULT_FINALIZATION'}})
+        uow.commit()
+    return bool(operations)
