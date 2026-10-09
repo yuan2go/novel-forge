@@ -1112,7 +1112,7 @@ class PostgresChapterExecutionContractBinder:
             input_text=prompt,
             max_output_tokens=output_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
-                timeout_seconds, max_attempts=1 if stage == "longform_prose_review" and task_scoped else 2
+                timeout_seconds, max_attempts=1 if stage == "longform_prose_review" else 2
             ),
             stable_idempotency_key=stable_idempotency_key,
         )
@@ -2588,7 +2588,7 @@ class PostgresRetrievalProjectionExecutionContractBinder(
             input_text=prompt,
             max_output_tokens=output_reserve,
             timeout_seconds=_provider_process_timeout_seconds(
-                timeout_seconds, max_attempts=2
+                timeout_seconds, max_attempts=1 if stage == "longform_prose_review" else 2
             ),
             stable_idempotency_key=stable_idempotency_key,
         )

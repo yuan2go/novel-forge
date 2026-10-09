@@ -57,7 +57,7 @@ def replace_stopped_generation_root(database_url, *, source_id, project_id, cont
             trace_id=source['trace_id'],correlation_id=source['correlation_id']))
         retry = generation_retry_usage(cursor, operation_id=source_id)
         if retry['failure_attempts'] >= retry['maximum_failure_attempts']:
-            cursor.execute("SELECT 1 FROM authority_state_event WHERE operation_id=%s AND event_type='authority.generation.recovery_exhausted'",[source_id])
+            cursor.execute("SELECT 1 FROM state_event WHERE aggregate_type='authority_operation' AND aggregate_id=%s AND event_type='authority.generation.recovery_exhausted'",[source_id])
             previous = bool(cursor.fetchone())
             if not previous:
                 _record(uow.repositories.operation_graph,graph_context,source_id,'authority.generation.recovery_exhausted',
