@@ -1844,7 +1844,7 @@ class StoryPlanningGenerationApplication:
                     correlation_id=command.correlation_id,
                 )
                 return follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
-            if row[2] == "FAILED_FINAL":
+            if row[2] in {"FAILED_FINAL", "DEAD_LETTER"}:
                 from .gateway_result_recovery import recover
                 revalidated = recover(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)
                 if revalidated is not None:
@@ -1858,7 +1858,7 @@ class StoryPlanningGenerationApplication:
             stage_successor = follow_rejected(self, command=command, operation_id=str(row[0]), candidate_asset_version_id=str(row[4]), principal=principal, execution_probe=execution_probe)
             if stage_successor is not None:
                 return stage_successor
-        if row[2] == "FAILED_FINAL" and row[4]:
+        if row[2] in {"FAILED_FINAL", "DEAD_LETTER"} and row[4]:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_planning_result_admission r JOIN authority_operation o ON o.operation_id=r.recovery_operation_id WHERE r.source_operation_id=%s AND r.candidate_asset_version_id=%s AND o.status='SUCCEEDED')", [row[0], row[4]])
                 recovered = uow.cursor.fetchone()[0]

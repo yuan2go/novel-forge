@@ -189,6 +189,7 @@ from . import (
     v20261009_0185_pure_generation_isolation,
     v20261009_0186_generation_capacity_inheritance,
     v20261009_0187_chapter_generation_isolation,
+    v20261009_0188_saved_result_admission,
 )
 
 VERSION_MODULES = [
@@ -380,6 +381,7 @@ VERSION_MODULES = [
     v20261009_0185_pure_generation_isolation,
     v20261009_0186_generation_capacity_inheritance,
     v20261009_0187_chapter_generation_isolation,
+    v20261009_0188_saved_result_admission,
 ]
 
 __all__ = ["VERSION_MODULES"]

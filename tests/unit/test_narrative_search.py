@@ -123,3 +123,18 @@ def test_continuing_search_requires_exact_book_run_identity() -> None:
             accepted_through_chapter=1,
             parent_state_asset_version_id="story-state:v1",
         )
+
+
+def test_available_qualified_selection_records_incomplete_comparison_and_preserves_gate():
+    from novel_forge.modules.story_planning_runtime.narrative_search import select_available_qualified_future
+    evidence={"control_policy_version":"book-control-v2:available","control_policy_hash":"a"*64,
+        "comparison_status":"INCOMPLETE","author_decision":"NOT_RECORDED","expected_branch_keys":["future-1","future-2","future-3"]}
+    selected=select_available_qualified_future([_candidate("a","agency",0.72)],evidence=evidence)
+    assert selected.selected_candidate_asset_version_id=="a"
+    assert selected.to_dict()["selection_evidence"]["comparison_status"]=="INCOMPLETE"
+    assert selected.to_dict()["selection_evidence"]["author_decision"]=="NOT_RECORDED"
+    with pytest.raises(KernelError,match="NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED"):
+        from dataclasses import replace
+        select_available_qualified_future([replace(_candidate("a","agency",0.72),qualification_hash="")],evidence=evidence)
+    with pytest.raises(KernelError,match="NARRATIVE_SEARCH_SELECTION_POLICY_INVALID"):
+        select_available_qualified_future([_candidate("a","agency",0.72)],evidence={**evidence,"comparison_status":"COMPLETE"})

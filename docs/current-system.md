@@ -2357,3 +2357,11 @@ Authority worker and Kernel ExternalEffect lifecycle. Its immutable `public_cata
 is evidence only and ineligible for generation; research selection binds a work to its exact
 snapshot hash without granting prose rights. Official HTTP collection and authorized offline
 DOM excerpts retain distinct modes. Product filters read a chosen project snapshot.
+
+
+Book Control may select `AVAILABLE_QUALIFIED` as a versioned Planning selection policy.
+Search retains its frozen strategies and every qualification receipt, journals the actual
+qualified membership, and records the unfinished comparison and absent author decision.
+A later replay verifies that immutable decision; active branch writers block selection.
+Completed local output can be admitted through the existing local result revalidation
+command after a failed terminal owner, using its original snapshot and inputs.

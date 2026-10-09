@@ -1778,8 +1778,10 @@ class CodexCliExecutionBackend:
             except _CodexResultFailure as failure:
                 from .provider_protocol_failure import observed_provider_failure
                 detail = observed_provider_failure("", status="RESULT_VALIDATION", request=record.request)
-                detail.update(error_code=failure.code, phase="RESULT_VALIDATION", retryable=failure.retryable,
-                    causes=[{"event": "result.validation", "message": str(failure)}],
+                detail.update(error_code=failure.code, cause_code=(record.raw_evidence.get("structured_validation_error") or {}).get("code") or failure.code,
+                    stage="RESULT_VALIDATION", phase="RESULT_VALIDATION", retryable=failure.retryable,
+                    causes=[{"event": "result.validation", "message": str(failure)},
+                        *([{"event":"validation.cause", "message":str(failure.__cause__), "type":type(failure.__cause__).__name__}] if failure.__cause__ else [])],
                     recovery_action="READ_OR_REPAIR_ORIGINAL_RESULT")
                 record.raw_evidence["failure"] = detail
                 record.raw_evidence.update(

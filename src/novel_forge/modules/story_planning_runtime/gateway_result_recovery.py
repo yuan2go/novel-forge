@@ -16,7 +16,7 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.command_kernel.external_effect_runtime import (
     EffectCommandContext,
-    read_rejected_structured_completion,
+    read_rejected_structured_completion, read_failed_operation_success,
 )
 from novel_forge.modules.command_kernel.service import (
     AdmissionContext,
@@ -166,26 +166,27 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
 
         if (
             not source
-            or source[0] != "FAILED_FINAL"
+            or source[0] not in {"FAILED_FINAL", "DEAD_LETTER"}
             or source[4]
             or source[1] != _command_payload(command)
         ):
             return None
         uow.cursor.execute(
-            "SELECT e.external_effect_id,e.request_payload,e.last_error FROM authority_external_effect e WHERE e.operation_id=%s AND e.status='FAILED_FINAL' AND e.request_payload->>'stage'=%s",
+            "SELECT e.external_effect_id,e.request_payload,e.last_error,e.status FROM authority_external_effect e WHERE e.operation_id=%s AND e.status IN ('FAILED_FINAL','SUCCEEDED') AND e.request_payload->>'stage'=%s",
             [operation_id, command.generator_operation_name],
         )
         effects = uow.cursor.fetchall()
         if (
             len(effects) != 1
-            or effects[0][2]
+            or (effects[0][3] != "SUCCEEDED" and effects[0][2]
             .get("production_execution", {})
             .get("process_evidence", {})
             .get("failure_code")
-            != "OUTPUT_SCHEMA_FAILURE"
+            != "OUTPUT_SCHEMA_FAILURE")
         ):
             return None
-        effect_id, payload, _ = effects[0]
+        effect_id, payload, _, effect_status = effects[0]
+        completed_local = effect_status == "SUCCEEDED"
         runtime = payload["_production_execution"]["capability_runtime"]
         template = verify_template_provenance(uow.cursor, runtime["routing_decision"])
         if (
@@ -199,12 +200,13 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             [operation_id, command.generator_operation_name],
         )
         logs = uow.cursor.fetchall()
-        if len(logs) != 1:
+        if not completed_local and len(logs) != 1:
             raise KernelError(
                 "PLANNING_GATEWAY_RESULT_SOURCE_INVALID",
                 "Require the one original native model-call record",
             )
-    retained = read_rejected_structured_completion(
+    read_result = read_failed_operation_success if completed_local else read_rejected_structured_completion
+    retained = read_result(
         application.database_url,
         EffectCommandContext(
             operation_id=operation_id,
@@ -216,6 +218,8 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         effect_id=effect_id,
     )
     provider = retained["provider_evidence"]
+    if completed_local and provider.get("recovery_action") != "LOCAL_SAVED_RESULT_REUSE":
+        return None
     production = provider["production_execution"]
     request = production["execution_request"]
     if (
@@ -238,19 +242,29 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             "Retain the exact dispatched scope and runtime",
         )
     query = AuthorityAssetQuery(application.database_url)
-    model_log = query.require(
-        project_id=command.project_id, asset_version_id=logs[0][0]
-    )
-    if model_log.content_hash != logs[0][1] or any(
-        model_log.content.get(key) != value for key, value in provider.items()
-    ):
-        raise KernelError(
-            "PLANNING_GATEWAY_RESULT_EVIDENCE_DRIFT",
-            "Retain the immutable owned model-call evidence for the failed dispatch",
-        )
-    raw, null_paths, process_doc, raw_doc = retained_output(
-        query, project_id=command.project_id, provider=provider, request=request
-    )
+    if completed_local:
+        result = production["execution_result"]
+        if result["outcome"] != "SUCCEEDED" or not result["normalized_output_ref"].startswith("authority-asset-version:"):
+            raise KernelError("PLANNING_GATEWAY_RESULT_EVIDENCE_INVALID", "Require verified normalized original output")
+        raw_doc = query.require(project_id=command.project_id, asset_version_id=result["normalized_output_ref"].split(":",1)[1])
+        process_doc = query.require(project_id=command.project_id, asset_version_id=result["process_receipt_ref"].split(":",1)[1])
+        normalized = raw_doc.content
+        raw = provider["result"]
+        if (raw_doc.asset_type != "execution_evidence" or normalized.get("kind") != "normalized-output"
+                or normalized.get("execution_id") != request["execution_id"] or normalized.get("payload") != raw
+                or normalized.get("payload_hash") != canonical_hash(raw).removeprefix("sha256:")):
+            raise KernelError("PLANNING_GATEWAY_RESULT_EVIDENCE_DRIFT", "Retain the verified original normalized output and digest")
+        null_paths = []
+        logs = [(raw_doc.asset_version_id, raw_doc.content_hash)]
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            uow.cursor.execute("SELECT result->>'error_code' FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1", [operation_id])
+            original_failure = uow.cursor.fetchone()[0]
+    else:
+        model_log = query.require(project_id=command.project_id, asset_version_id=logs[0][0])
+        if model_log.content_hash != logs[0][1] or any(model_log.content.get(key) != value for key, value in provider.items()):
+            raise KernelError("PLANNING_GATEWAY_RESULT_EVIDENCE_DRIFT", "Retain the immutable owned model-call evidence for the failed dispatch")
+        raw, null_paths, process_doc, raw_doc = retained_output(query, project_id=command.project_id, provider=provider, request=request)
+        original_failure = "OUTPUT_SCHEMA_FAILURE"
     snapshot = CapabilityPackRuntimeResolver(
         application.database_url
     ).require_attempt_snapshot(
@@ -344,8 +358,8 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         "source_pack_snapshot_hash": snapshot.snapshot_hash,
         "source_context_asset_version_id": context_ref,
         "source_context_hash": context.content_hash,
-        "original_failure": "OUTPUT_SCHEMA_FAILURE",
-        "original_gateway_outcome": "FINAL_FAILURE",
+        "original_failure": original_failure,
+        "original_gateway_outcome": "SUCCEEDED" if completed_local else "FINAL_FAILURE",
         "current_result_validation": "VALID",
         "legacy_literal_null_paths": null_paths,
         "raw_output_receipt": {
@@ -358,7 +372,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         },
         "provider_invoked": False,
         "literary_qualification": "NOT_RUN",
-        "reason": "Correct known literal-null Schema engine rejection without resending the completed process",
+        "reason": "Reuse the verified completed original output after bounded execution failure" if completed_local else "Correct known literal-null Schema engine rejection without resending the completed process",
     }
     definition = gateway_result_revalidation_definition(application_build_id=application.application_build_id, commit_sha=application.commit_sha)
     with AuthorityUnitOfWork(application.database_url) as uow:
@@ -372,7 +386,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             "SELECT status FROM authority_operation WHERE operation_id=%s FOR UPDATE",
             [operation_id],
         )
-        if uow.cursor.fetchone() != ("FAILED_FINAL",):
+        if uow.cursor.fetchone() != (source[0],):
             raise KernelError(
                 "PLANNING_GATEWAY_RESULT_OWNER_DRIFT",
                 "Retain the failed-final original owner",
@@ -406,7 +420,7 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
                 category="runs",
                 output_key="story_planning.gateway_revalidation",
                 role="local_validation",
-                content={"evidence": provenance, "raw_result": raw},
+                content={"evidence": provenance, "raw_result": raw, "locally_bound_result": candidate_result},
                 qualification_policy="planning-local-schema-validation-not-certified-v1",
                 trace_id=command.trace_id,
                 correlation_id=command.correlation_id,
@@ -431,9 +445,9 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
             capability_runtime_binding_ref=snapshot.snapshot_id,
             capability_runtime_binding_hash=snapshot.snapshot_hash,
             commit_authority=frozen.commit_authority,
-            fixture_protocol_only=bool(provider["fixture_protocol_only"]),
+            fixture_protocol_only=bool(provider.get("fixture_protocol_only", False)),
             real_provider_proven=bool(
-                provider["real_model_call"] and not provider["fixture_protocol_only"]
+                provider["real_model_call"] and not provider.get("fixture_protocol_only", False)
             ),
             context_bundle_asset_version_id=context_ref,
             context_bundle_hash=context.content_hash,
@@ -623,3 +637,24 @@ def gateway_result_revalidation_definition(*, application_build_id: str, commit_
         },
     )
     return definition
+
+
+def recover_completed_planning_outputs(application, *, project_id, book_id, principal):
+    from .application import _command_from_payload
+    principal.require("story_planning.authority.execute", project_id)
+    with AuthorityUnitOfWork(application.database_url) as uow:
+        uow.cursor.execute("""SELECT operation.operation_id,operation.command_payload->'payload'
+            FROM authority_operation operation JOIN authority_story_planning_generation generation USING(operation_id)
+            WHERE operation.project_id=%s AND generation.book_id=%s
+              AND operation.status IN ('FAILED_FINAL','DEAD_LETTER') AND generation.candidate_asset_version_id IS NULL
+              AND EXISTS(SELECT 1 FROM authority_external_effect effect
+                JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
+                JOIN authority_external_receipt receipt USING(dispatch_id)
+                WHERE effect.operation_id=operation.operation_id AND effect.status='SUCCEEDED'
+                  AND effect.request_payload->>'stage'=generation.generator_operation_name
+                  AND dispatch.status='SUCCEEDED' AND receipt.status='VERIFIED'
+                  AND receipt.payload #>> '{evidence,recovery_action}'='LOCAL_SAVED_RESULT_REUSE')""",[project_id,book_id])
+        rows=uow.cursor.fetchall()
+    for operation_id,payload in rows:
+        recover(application, command=_command_from_payload(payload),operation_id=operation_id,principal=principal)
+    return bool(rows)

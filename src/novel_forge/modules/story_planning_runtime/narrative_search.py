@@ -514,3 +514,23 @@ __all__ = [
     "compare_narrative_futures",
     "narrative_search_projection_schema",
 ]
+
+
+def select_available_qualified_future(candidates, *, evidence):
+    if not candidates or len({item.branch_key for item in candidates}) != len(candidates):
+        raise KernelError("NARRATIVE_SEARCH_CANDIDATE_IDENTITY_INVALID", "Require distinct qualified native branches")
+    if any(not item.qualification_hash.startswith("sha256:") for item in candidates):
+        raise KernelError("NARRATIVE_SEARCH_CANDIDATE_NOT_QUALIFIED", "Available selection retains every qualification gate")
+    if (evidence.get("comparison_status") != "INCOMPLETE" or not evidence.get("control_policy_hash")
+            or not evidence.get("control_policy_version") or evidence.get("author_decision") != "NOT_RECORDED"):
+        raise KernelError("NARRATIVE_SEARCH_SELECTION_POLICY_INVALID", "Require a versioned native ControlPolicy and explicit incomplete comparison")
+    ranked = sorted(candidates, key=lambda item: (-item.score, item.candidate_asset_version_id))
+    return NarrativeSearchComparison(
+        selected_candidate_asset_version_id=ranked[0].candidate_asset_version_id,
+        ranked_candidates=tuple({"rank":index,"candidate_asset_version_id":item.candidate_asset_version_id,
+            "generation_operation_id":item.generation_operation_id,"branch_key":item.branch_key,
+            "qualification_hash":item.qualification_hash,"score":item.score} for index,item in enumerate(ranked,1)),
+        selection_reasons=("Versioned policy selects an available qualified candidate; frozen multi-future comparison remains incomplete",),
+        rejected_candidate_asset_version_ids=tuple(item.candidate_asset_version_id for item in ranked[1:]),
+        policy_version="available-qualified-selection.v1", selection_evidence=evidence,
+    )

@@ -3719,3 +3719,9 @@ reported environment; they cannot establish live access, text rights or prose be
 Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request.
 
 A recovered complete result whose original generation window expired may receive one native local-result finalization window. The Kernel journals its old and new deadlines, retains the frozen request and failed Attempt, rejects active writers and cancellation, and denies every new Provider dispatch from this window. Exhaustion is explicit.
+
+
+For authorized baseline delivery, a trusted operator can configure the existing Book
+Control policy with `planning_selection_mode=AVAILABLE_QUALIFIED`. Opening then formally
+selects an available qualified branch and retains the incomplete comparison evidence.
+This is an automatic Planning choice; it does not record an author decision or acceptance.

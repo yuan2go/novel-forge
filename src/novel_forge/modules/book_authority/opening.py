@@ -5880,13 +5880,8 @@ class PostgresBookOpeningApplication:
             search_id = str(checkpoint.get("evidence_id") or "")
             branches = self.narrative_search.require_qualified_branches(
                 search_id,
-                expected_branch_keys=tuple(
-                    f"future-{ordinal}"
-                    for ordinal in range(
-                        1,
-                        len(search_request.strategy_directives) + 1,
-                    )
-                ),
+                expected_branch_keys=self.narrative_search.selected_branch_keys(search_id,
+                    expected_branch_keys=tuple(f"future-{ordinal}" for ordinal in range(1,len(search_request.strategy_directives)+1))),
                 project_id=request.project_id,
             )
             for branch in branches:
