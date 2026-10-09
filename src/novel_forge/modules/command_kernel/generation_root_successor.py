@@ -77,11 +77,13 @@ def replace_stopped_generation_root(database_url, *, source_id, project_id, cont
         transition_operation_in_uow(uow, OperationTransitionCommand(successor, project_id, state['version'],
             'ADMITTED','READY',context.actor_id,'Linked native read-only generation successor',source['trace_id'],source['correlation_id'],source_id))
         new_saga = uow.repositories.operation_graph.start_saga(str(uuid4()),successor,project_id,source['trace_id'],source['correlation_id'])
+        cursor.execute('SELECT request_digest FROM authority_operation WHERE operation_id=%s',[successor])
+        request_digest = cursor.fetchone()[0]
         cursor.execute("""INSERT INTO authority_saga_step_successor(successor_id,project_id,saga_id,predecessor_operation_id,
             successor_operation_id,actor_id,contract_version,request_digest,source_saga_snapshot,source_step_snapshot,
             source_failure_snapshot,policy_evidence) VALUES (%s,%s,%s,%s,%s,%s,'kernel-failed-step-successor.v1',%s,%s,%s,%s,%s)""",
             [str(uuid4()),project_id,saga_id,source_id,successor,context.actor_id,
-                uow.repositories.operation_graph.operation(successor,project_id)['request_digest'],
+                request_digest,
                 Jsonb(saga),Jsonb({'operation_id':source_id,'role':'SAGA_ROOT'}),Jsonb({'operation':source}),
                 Jsonb({'contract_version':'pure-generation-root-successor.v1','isolation':proof,'retry':retry,'successor_saga_id':new_saga['saga_id']})])
         _record(uow.repositories.operation_graph,graph_context,source_id,'authority.generation.root_successor_registered',
