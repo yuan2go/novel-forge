@@ -40,6 +40,10 @@ def recover_book_generations(application, *, project_id, book_id, principal):
     )
     from .budget_runtime import unresolved_cli_outcomes
 
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+
+    recover_saved_local_results(application.execution_binder.execution_transport,
+        database_url=application.database_url, project_id=project_id, book_id=book_id, principal=principal)
     principal.require("external_effect.resolve", project_id)
     with AuthorityUnitOfWork(application.database_url) as uow:
         rows = unresolved_cli_outcomes(uow.cursor, project_id, book_id=book_id)

@@ -3715,3 +3715,5 @@ migration tests, current Source routing/Craft/editorial and Corpus-use isolation
 TypeScript, the author market-reference browser flow, and applicable migration/entry/
 worker/Skill/reality projections. These establish engineering behavior under their
 reported environment; they cannot establish live access, text rights or prose benefit.
+
+Original saved local outputs are reread through the configured Codex backend, checked against the frozen manifests, and ingested by the existing Kernel receipt path. The stopped Operation may append execution evidence for its existing session; this does not grant primary output rights. A replay preserves the original reservation and does not dispatch a new request.
