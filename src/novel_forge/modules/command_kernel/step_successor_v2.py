@@ -271,10 +271,12 @@ def replace_failed_step(
             source = cursor.fetchone()[0]
         window = None
         if window_successor:
-            window = _corrected_contract_window(cursor, root, source, target, deadline, window_successor)
+            window = _corrected_contract_window(cursor, root, source, target, deadline, window_successor, transport_policy=policy_evidence if unsent_transport else None)
             cursor.execute("UPDATE authority_operation SET business_deadline_at=%s WHERE operation_id=%s AND version=%s AND status='WAITING_CHILDREN'", [window["new_deadline"], root["operation_id"], root["version"]])
             if cursor.rowcount != 1:
                 raise KernelError("STEP_SUCCESSOR_ROOT_CHANGED", "The execution window fence changed")
+            if unsent_transport:
+                cursor.execute("UPDATE authority_saga SET root_deadline_at=%s WHERE saga_id=%s AND version=%s", [window["new_deadline"],saga["saga_id"],saga["version"]])
         graph_context = GraphCommandContext(
             project,
             context.actor_id,
@@ -383,12 +385,16 @@ def replace_failed_step(
     return {"operation_id": successor, "replayed": False}
 
 
-def _corrected_contract_window(cursor, root, source, target, deadline, policy):
+def _corrected_contract_window(cursor, root, source, target, deadline, policy, *, transport_policy=None):
     key, value = policy.get("policy_key"), policy.get("policy_value")
     duration = int(root["definition_snapshot"]["timeout_policy"]["operation_timeout_seconds"])
-    if (policy.get("contract_version") != "kernel-corrected-contract-window.v1"
-        or not key or not value or target["policy"].get(key) != value
-        or source["definition_snapshot"]["policy"].get(key) == value
+    transport = (transport_policy is not None and transport_policy.get("contract_version") == "chapter-unsent-context-transport.v1"
+        and policy == {"contract_version":"kernel-unsent-transport-window.v1",
+            "target_deployment_id":transport_policy.get("target_deployment_id"),"release_sha":transport_policy.get("release_sha")})
+    corrected = (policy.get("contract_version") == "kernel-corrected-contract-window.v1"
+        and key and value and target["policy"].get(key) == value
+        and source["definition_snapshot"]["policy"].get(key) != value)
+    if (not (transport or corrected)
         or not deadline or not 0 < duration <= 3600
         or any(k in root["command_payload"] for k in ("business_deadline_at", "author_deadline_at"))):
         raise KernelError("STEP_SUCCESSOR_WINDOW_INVALID", "Only a changed execution contract may continue a derived bounded window")

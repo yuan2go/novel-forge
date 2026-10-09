@@ -49,5 +49,7 @@ def recover_unsent_context_transport(authority, *, book_run_id, principal):
         require_unsent_context_transport(u.cursor, source, policy)
     replace_failed_step(authority.database_url, predecessor_id=source['operation_id'],target_version='3.10.0',
         context=AdmissionContext(principal.principal_id,principal.permissions,authority.chapter_port.application.registry.available_handler_keys,
-            authority.application_build_id,authority.commit_sha),policy_evidence=policy,expected_failure_code='PROVIDER_ROUTING_BLOCKED')
+            authority.application_build_id,authority.commit_sha),policy_evidence=policy,expected_failure_code='PROVIDER_ROUTING_BLOCKED',
+        window_successor={'contract_version':'kernel-unsent-transport-window.v1',
+            'target_deployment_id':policy['target_deployment_id'],'release_sha':policy['release_sha']})
     return True
