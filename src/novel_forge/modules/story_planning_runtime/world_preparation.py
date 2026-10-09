@@ -876,14 +876,19 @@ class PlanningWorldPreparation:
         except KernelError as error:
             if error.code != "AUTHORITY_ASSET_NOT_FOUND":
                 raise
+            action = None
+        binding = action.content["contract"] if action else None
+        if binding and binding["world_plan"]["disposition"] != "BLOCKED":
             return
-        binding = action.content["contract"]
-        if binding["world_plan"]["disposition"] != "BLOCKED":
+        try:
+            evaluation = query.require(
+                project_id=command.project_id,
+                logical_ref=f"world_preparation/{owner}/evaluation",
+            )
+        except KernelError as error:
+            if error.code != "AUTHORITY_ASSET_NOT_FOUND":
+                raise
             return
-        evaluation = query.require(
-            project_id=command.project_id,
-            logical_ref=f"world_preparation/{owner}/evaluation",
-        )
         expected_source = {
             "asset_version_id": source.asset_version_id,
             "content_hash": source.content_hash,
@@ -898,9 +903,11 @@ class PlanningWorldPreparation:
         }
         retained = evaluation.content["contract"]
         if (
-            binding["source"] != expected_source
-            or binding["generation"] != expected_generation
-            or binding["evaluation"] != expected_evaluation
+            (binding is not None and (
+                binding["source"] != expected_source
+                or binding["generation"] != expected_generation
+                or binding["evaluation"] != expected_evaluation
+            ))
             or retained["source"] != expected_source
             or retained["generation"] != expected_generation
         ):
@@ -950,6 +957,8 @@ class PlanningWorldPreparation:
                 for item in frozen.get("preparation_sources", [])
             ]
             plan = apply_preparation_decisions(fresh_plan=plan, decisions=decisions)
+        if binding is None:
+            return
         require_exact_blocked_plan(plan, binding["world_plan"])
         diagnostic = {
             "action": {

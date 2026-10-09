@@ -3206,6 +3206,11 @@ add accepted support or relax a causal predicate. The owning Planning result bec
 terminal with `WORLD_PREPARATION_RESULT_INVALID` and can create its diagnosed repair;
 older `WORLD_PREPARATION_BLOCKED` retry checkpoints retain their history and replay
 the original receipt before this classification, without another Provider request.
+A retained `WORLD_AGENCY_CLASSIFICATION_REJECTED` is a terminal proposal-contract
+failure, not a transport retry. Its bounded native result repair reproduces the
+classification against the exact generation and settled Director receipt even when
+compilation failed before an action asset existed. It cannot add accepted knowledge
+or substitute a host-authored NO_OP.
 A new World proposal can obtain its necessary Director evaluation within that same
 allowance only with the current generation's verified settled receipt, exact source
 and frozen knowledge selection. This dependent evaluation receipt cannot authorize
