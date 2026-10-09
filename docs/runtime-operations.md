@@ -841,6 +841,13 @@ run, or an edit whose originating draft is that source. A same-Book session from
 older run remains readable but cannot replace a newer run's delivered text or its
 continuation dependencies. Saving against a changed native base retains the old session
 versions and begins from the supplied current base without recording adoption.
+`authority-manuscript use-working-candidate` records delegated use of an exact saved
+assistant revision in one settled author-first Book run. Supply `--chapter`,
+`--candidate-version`, `--expected-version`, `--idempotency-key` and `--reason`.
+It preserves original delivery and candidate versions, requires the current base
+and its hash, and updates working continuation dependencies. It creates no author
+choice, review pass or formal acceptance; human input and an existing author choice
+retain their separate decision path. Repeating the exact command is idempotent.
 The UI also downloads a readable text manuscript with the same version/status provenance.
 An Editor link containing the Project and Book run opens the current manuscript directly.
 Provider-dependent API services assemble only for related execution operations; API restart

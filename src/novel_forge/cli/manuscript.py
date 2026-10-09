@@ -7,7 +7,7 @@ from typing import Any
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "use-working-candidate", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -39,7 +39,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
 
-    if args.action in {"adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
+    if args.action in {"use-working-candidate", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
         from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
         from novel_forge.modules.book_authority.manuscript import adopt_author_workflow
@@ -49,6 +49,13 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         book = authority.require(args.book_run_id)
         if book["project_id"] != args.project_id:
             raise PermissionError("Work is outside this Project")
+        if args.action == "use-working-candidate":
+            if args.expected_version is None or not args.chapter or not args.candidate_version or not args.idempotency_key or not args.reason:
+                raise ValueError("Working selection requires exact chapter, candidate, expected Book version, idempotency key and reason")
+            from novel_forge.modules.book_authority.manuscript import select_working_candidate
+            return select_working_candidate(authority, args.book_run_id, chapter=args.chapter,
+                candidate_asset_version_id=args.candidate_version, expected_version=args.expected_version,
+                idempotency_key=args.idempotency_key, reason=args.reason, principal=principal)
         if args.action == "extend-delivery-window":
             if args.expected_version is None or args.stop_after_chapter is None or not args.idempotency_key:
                 raise ValueError("Delivery extension requires --expected-version, --stop-after-chapter and --idempotency-key; retain them on retry")
