@@ -63,8 +63,8 @@ def test_obsolete_selection_is_closed(monkeypatch):
 
 
 @pytest.mark.parametrize('kind,active_change,allowed', [
-    ('chapter_draft', True, True), ('author_edit_candidate', True, True),
-    ('chapter_draft', False, False), ('chapter_execution_intent', True, False)])
+    ('draft_chapter', True, True), ('author_edit_candidate', True, True),
+    ('draft_chapter', False, False), ('chapter_execution_intent', True, False)])
 def test_only_active_plan_invalidation_of_verified_historical_prose_is_readable(kind, active_change, allowed):
     cursor = Mock()
     row = ('draft', kind, 'hash', {}, 'ACTIVE', 'ELIGIBLE', 'CLEAR', 'ELIGIBLE', 'policy')

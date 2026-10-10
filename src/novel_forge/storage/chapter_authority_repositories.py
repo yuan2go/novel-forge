@@ -105,7 +105,7 @@ class AuthorityHandlerRepository:
             )
             invalidation = self.cursor.fetchone()
             historical_plan_invalidation = False
-            if invalidation and asset_version_id in historical_working_asset_version_ids and row[1] in {"chapter_draft", "author_edit_candidate"}:
+            if invalidation and asset_version_id in historical_working_asset_version_ids and row[1] in {"draft_chapter", "author_edit_candidate"}:
                 self.cursor.execute("""SELECT NOT EXISTS (
                     SELECT 1 FROM authority_artifact_invalidation i
                     WHERE i.project_id=%s AND i.target_asset_version_id=%s AND i.status IN ('OPEN','REGENERATING')
