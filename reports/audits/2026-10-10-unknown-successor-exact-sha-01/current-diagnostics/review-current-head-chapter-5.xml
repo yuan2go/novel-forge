@@ -179,7 +179,7 @@ src/novel_forge/logging/execution.py:120: in observed
              ^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
 
-self = _PlanningPepPort(database_url='postgresql://novel_forge:novel_forge@127.0.0.1:55003/nf_wp_saved198_848aa181_test', wor...b-a7dc-b58c64b94f63:story_planning.candidate:v1', 'frozen_by_operation_id': '378c911e-d132-4836-8346-542aa3f1dfe4'}]}})
+self = _PlanningPepPort(database_url='postgresql://[REDACTED]@127.0.0.1:55003/nf_wp_saved198_848aa181_test', wor...b-a7dc-b58c64b94f63:story_planning.candidate:v1', 'frozen_by_operation_id': '378c911e-d132-4836-8346-542aa3f1dfe4'}]}})
 command = DomainExecutionCommand(capability='planning.chapter_group.generate', operation=&lt;DomainModelOperation.GENERATE: 'genera...-5c0f-ab09-12ba1e8365f5', 'logical_key': 'chapter-group:containing:1', 'planning_scope': 'CHAPTER_GROUP'}, review=None)
 
     @execution_step("story_planning_runtime._PlanningPepPort.execute")
