@@ -433,6 +433,46 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")
 
 
+def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str, frozenset[str]]:
+    name = operation["definition_name"]
+    payload = operation["command_payload"]
+    if name == "story_planning.generate":
+        request = payload.get("payload") or {}
+        working = (request.get("arc_working_set") or {}).get("working_manuscript")
+    elif name in {"chapter.execution_intent.prepare", "chapter.memo.generate", "chapter.context.retrieve", "chapter.draft.generate"}:
+        request = payload
+        working = (request.get("preparation_report") or {}).get("working_manuscript")
+    else:
+        return "", frozenset()
+    if not working:
+        return "", frozenset()
+    uow.cursor.execute("""SELECT to_jsonb(b) FROM authority_book_production b
+        WHERE b.book_run_id=%s AND b.project_id=%s AND b.workspace_id=%s AND b.book_id=%s""",
+        [working["book_run_id"], operation["project_id"], operation["workspace_id"], request.get("book_id")])
+    row = uow.cursor.fetchone()
+    if not row or effective_workflow(uow.cursor, row[0]) != AUTHOR_WORKFLOW:
+        raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Historical working inputs require the exact author-first Book")
+    book = {**row[0], "author_workflow": AUTHOR_WORKFLOW}
+    target = working["target_chapter"]
+    if (not isinstance(target, int) or target != writing_frontier(book) + 1
+            or any(not isinstance(source.get("chapter"), int) or not 0 < source["chapter"] < target for source in working["sources"])):
+        raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Only the selected preceding writing history can be read")
+    if name.startswith("chapter."):
+        uow.cursor.execute("""SELECT r.command_payload->'preparation_report'->'working_manuscript'
+            FROM authority_book_chapter_request r JOIN authority_operation o
+              ON o.root_operation_id=r.chapter_root_operation_id
+            WHERE o.operation_id=%s AND r.book_run_id=%s AND r.chapter_number=%s""",
+            [operation["operation_id"], book["book_run_id"], target])
+        reserved = uow.cursor.fetchone()
+        if not reserved or reserved[0] != working:
+            raise KernelError("AUTHOR_WORKFLOW_NOT_OWNED", "Historical sources require their exact Book reservation")
+    verify_working_context(uow, book, working)
+    refs = {item["asset_version_id"]: item["content_hash"] for item in operation["input_asset_snapshot"]}
+    if any(refs.get(item["asset_version_id"]) != item["content_hash"] for item in working["sources"]):
+        raise KernelError("MANUSCRIPT_INPUT_SNAPSHOT_MISSING", "Historical sources require exact frozen input hashes")
+    return book["book_id"], frozenset(item["asset_version_id"] for item in working["sources"])
+
+
 def deliver_manuscript(authority: Any, request_id: str, *, principal: Any) -> dict[str, Any]:
     request = authority.require_chapter_request(request_id)
     book = authority.require(request["book_run_id"])

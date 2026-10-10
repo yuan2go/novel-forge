@@ -4061,3 +4061,11 @@ Budget the final complete rendered request rather than summing stored Context as
 Optional older prose may be reallocated prospectively with explicit omissions, while required
 recent prose and causal dependencies remain intact. A pre-send failure uses its owning
 bounded continuation; it does not authorize a replacement request identity or a larger cap.
+
+A future Plan Change can leave invalidation records on unaccepted working drafts through
+parent lineage. Their historical use is distinct from current plan eligibility: the native
+handler verifies the author-first Book, next writing frontier, current selected versions,
+working snapshot and frozen hashes before reading preceding prose. Only invalidations from
+active same-Book Plan Change are readable under this rule; governance and qualification
+checks remain closed. Invalidation records are retained. Current plans, Intent and Memo
+receive no historical exception, and historical working prose is never accepted Canon.

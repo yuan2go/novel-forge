@@ -405,10 +405,14 @@ def _load_request(
             if operation["definition_name"] not in {"plan_change.propose","plan_change.activate"} or operation["definition_version"] != "1.0.6":
                 raise KernelError("PLAN_CHANGE_VALIDATION_INPUT_INVALID", "Pending input requires the exact current PlanChange owner contract")
             validation_plan_change_candidate_id = require_validation_plan_change_input(uow.cursor,project_id=operation["project_id"],payload=payload)
+        from novel_forge.modules.book_authority.manuscript import historical_working_inputs
+        history_book_id, history_versions = historical_working_inputs(uow, operation)
         frozen = uow.repositories.chapter_authority.frozen_inputs(
             command.project_id,
             list(operation["input_asset_snapshot"] or []),
             allow_approved_archival_migration=allow_archival,
+            historical_working_book_id=history_book_id,
+            historical_working_asset_version_ids=history_versions,
             evaluation_candidate_asset_version_id=evaluation_candidate_id,
             story_design_candidate_asset_version_id=story_design_candidate_id,
             repair_candidate_asset_version_id=repair_candidate_id,
