@@ -1,0 +1,250 @@
+{
+  "asset_version_id": "authority-output:6649dfd3-cd01-46ca-ab00-4a4dc139e0fb:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:03ff1624dec98ff9d4b6f8a2173becc882eae8e1ec8b5cfba1b7d52b27714a0f",
+  "content": {
+    "chapter_number": 26,
+    "chapter_intent": "承接沈砚在第24章辨认出的动作差别和第25章记下的疑问，由许庭在已有基础教学时段说明木片反馈的用途与限度；通过具体修正、休息及多次可见的主动起收，使沈砚获得固定条件下可重复的小本领。",
+    "scene_plan": [
+      {
+        "goal": "带着可比较的动作记录进入本次基础练习。",
+        "beats": [
+          {
+            "beat_id": "chapter26:scene1:beat1",
+            "ordinal": 1,
+            "function": "沈砚带着第25章记下的疑问和第24章的动作记录来到练习处；陆衡也按自己的安排开始练习。",
+            "expected_reader_effect": "感到每个人的练习时间都有实际用途。"
+          },
+          {
+            "beat_id": "chapter26:scene1:beat2",
+            "ordinal": 2,
+            "function": "两人简短招呼后各自行动，沈砚整理纸上的脚位、手位记录，准备在基础教学时段提出具体问题。",
+            "expected_reader_effect": "自然进入沈砚即将面对的木片练习。"
+          }
+        ],
+        "conflict": null,
+        "scene_id": "chapter26:scene1",
+        "exit_state": "沈砚来到基础练习处，已将第24章的脚位、手位记录备好；陆衡按自己的练习安排行动，沈砚尚未得到木片用途的说明。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter26:practice-day",
+          "start_ordinal": 1
+        },
+        "entry_state": "承接第25章工作正文：沈砚已亲见细土与自己送去的净水用于盘边修补，并把木片浅纹的用途与限度记成下一次基础指导要问的问题；他仍只知道第24章两次尝试的动作差别，尚不知浅纹所指。",
+        "location_id": "location:qinglan-basic-practice-area",
+        "arc_progress": [
+          "authority-output:7f027d4e-484b-440b-8ba8-d388bc1d9479:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:lu-heng"
+        ],
+        "reader_effect": "以具体记录和各自的日程进入一段安静、可操作的教学。",
+        "scene_version": 1,
+        "scene_group_id": "chapter26:basic-practice",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [],
+        "accessible_knowledge": [],
+        "realization_event_ids": [],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION",
+          "TRANSITION"
+        ]
+      },
+      {
+        "goal": "弄清浅纹提示什么，以及接下来应怎样练习。",
+        "beats": [
+          {
+            "beat_id": "chapter26:scene2:beat1",
+            "ordinal": 1,
+            "function": "沈砚出示两回木片尝试的记录，问淡纹在基础练习里能说明哪一步；许庭只从她实际见过的脚未定、手位偏高说起。",
+            "expected_reader_effect": "认出第24章仔细记录动作的努力终于有了用途。"
+          },
+          {
+            "beat_id": "chapter26:scene2:beat2",
+            "ordinal": 2,
+            "function": "许庭说明木片浅纹提示短时流转抵达掌前，练习目标是主动引出、短暂守住并收回；她指出亮纹不能证明正式课程资格或其他操作本领。",
+            "expected_reader_effect": "明白浅纹的教学意义与有限范围。"
+          },
+          {
+            "beat_id": "chapter26:scene2:beat3",
+            "ordinal": 3,
+            "function": "许庭示范脚位、肩臂放松与呼吸次序，沈砚在同一木片前准备按次序尝试。",
+            "expected_reader_effect": "期待沈砚把听来的次序实际做出来。"
+          }
+        ],
+        "conflict": "此前两次木片反应伴随不止一处动作差别，沈砚不能凭亮暗自行判断怎样主动引出流转。",
+        "scene_id": "chapter26:scene2",
+        "exit_state": "许庭已针对亲见的动作差别说明木片浅纹的反馈意义和起、守、收目标；沈砚知道其证明范围有限，尚未通过多次练习建立主动重复的本领。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 4,
+          "timeline_id": "chapter26:practice-day",
+          "start_ordinal": 3
+        },
+        "entry_state": "沈砚来到基础练习处，已将第24章的脚位、手位记录备好；陆衡按自己的练习安排行动，沈砚尚未得到木片用途的说明。",
+        "location_id": "location:qinglan-basic-practice-area",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "reader_effect": "从追看亮纹转入有明确动作目标的练习。",
+        "scene_version": 1,
+        "scene_group_id": "chapter26:basic-practice",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter26:wood-feedback-scope"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan:fact:chapter26:wood-feedback-scope"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg26-1"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "DIALOGUE",
+          "ACTION",
+          "INTERIOR",
+          "DESCRIPTION"
+        ]
+      },
+      {
+        "goal": "让短时起、守、收由自己主动完成并能够重复。",
+        "beats": [
+          {
+            "beat_id": "chapter26:scene3:beat1",
+            "ordinal": 1,
+            "function": "沈砚按脚位、肩臂和呼吸次序练习；一次急于追亮时手位与呼吸散乱，浅纹断开。",
+            "expected_reader_effect": "看到失手与具体动作之间的因果。"
+          },
+          {
+            "beat_id": "chapter26:scene3:beat2",
+            "ordinal": 2,
+            "function": "沈砚歇息后辨认刚才先乱的是哪一步，改为先站稳、放松，再按次序引出流转。",
+            "expected_reader_effect": "相信修正来自此前学到的观察方法。"
+          },
+          {
+            "beat_id": "chapter26:scene3:beat3",
+            "ordinal": 3,
+            "function": "在相同木片与站位条件下，沈砚间隔休息，数次主动引出浅纹、短暂守住，再按示范收手使反应退去。",
+            "expected_reader_effect": "获得专注后的踏实喜悦。"
+          },
+          {
+            "beat_id": "chapter26:scene3:beat4",
+            "ordinal": 4,
+            "function": "许庭只确认眼前多次重复的结果，到自己的修炼时段便结束指导；沈砚收好动作记录，知道离开木片与安静案前仍需以后练习。",
+            "expected_reader_effect": "认清这项成果的价值与边界，并期待下一次自行使用。"
+          }
+        ],
+        "conflict": "急于求亮和连续练习后的疲劳会扰乱手位与呼吸，沈砚须休息并具体修正才能重复。",
+        "scene_id": "chapter26:scene3",
+        "exit_state": "沈砚已在相同木片、安静站位和适当休息条件下数次主动完成短时起、守、收；许庭确认亲眼所见后结束指导，离开这些条件时能否照样使用仍未知。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 8,
+          "timeline_id": "chapter26:practice-day",
+          "start_ordinal": 5
+        },
+        "entry_state": "许庭已针对亲见的动作差别说明木片浅纹的反馈意义和起、守、收目标；沈砚知道其证明范围有限，尚未通过多次练习建立主动重复的本领。",
+        "location_id": "location:qinglan-basic-practice-area",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan",
+          "character:xu-ting"
+        ],
+        "reader_effect": "确认一项通过说明、修正和重复挣得的有限本领。",
+        "scene_version": 1,
+        "scene_group_id": "chapter26:basic-practice",
+        "obligation_refs": [],
+        "trajectory_refs": [
+          "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        ],
+        "information_gain": [
+          "fact:chapter26:repeatable-short-circulation"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "power:shen-yan:basic-short-circulation"
+        ],
+        "accessible_knowledge": [
+          "fact:chapter26:wood-feedback-scope"
+        ],
+        "realization_event_ids": [
+          "cg26-2"
+        ],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "INTERIOR",
+          "DESCRIPTION",
+          "TRANSITION"
+        ]
+      }
+    ],
+    "required_events": [
+      "许庭依据第24章亲眼所见的脚位与手位差别，说明木片浅纹的练习用途、起守收目标及其证明范围。",
+      "沈砚经一次追亮失手、休息与具体修正，在相同木片和站位条件下数次主动完成短时起、守、收；许庭确认所见并结束指导。"
+    ],
+    "forbidden_events": [
+      "改写第24章的两次木片尝试、淡纹及许庭已结束的有限答疑。",
+      "重做已经验收的三筐细土任务或重新领取已领过的热饭。",
+      "让许庭凭未见过的表现评价沈砚的天赋，或无限延长指导而挤掉她自己的修炼。",
+      "以未经现场说明的课位、器具权限或其他资源推动本章练习。"
+    ],
+    "hard_constraints": [
+      "第25—27章承接第24章已交付的木片练习；第25章须完成有用途的有限行动，第26章须产生教学与实践支持的具体进步，第27章须让所得改变行动或相处。",
+      "三筐细黏土在第21章工作正文中已验收，三人已各领一份当晚热饭；后续只能承接该结果。",
+      "许庭为女性，只依据实际见到的练习表现和她有权说明的基础材料指导，保留自己的修炼安排。",
+      "木片的意义、用途和限度须从有权的基础教学说明进入沈砚所知；短时重复与跨情境稳定分开。",
+      "正式课程录入与基础指导分开，课位及其他条件仍须由有权者核实。",
+      "程观只处理自己所知、所负责的事项；修盘具体操作由现场修盘者决定。",
+      "人物所知受实际接触限制；任务、物料、时间和任何承诺均按明确来源与用途处理。",
+      "使用以沈砚为主的第三人称限知视角，后续正文保持每章2500—3500中文字、段落不超过500中文字。"
+    ],
+    "reader_experience": {
+      "reward_mode": "经说明、修正与多次成功获得一个能够主动重复的小本领。",
+      "exit_question": "离开同一木片和安静案前，他还能把这次练成的起收用在什么地方？",
+      "entry_question": "木片上那道浅纹究竟能说明沈砚练到了哪一步？",
+      "target_emotion": "专注后的踏实喜悦"
+    },
+    "ending_hook": "沈砚已能在同一练习条件下主动起收短时流转；离开木片与安静案前，它还能否照样用，仍待以后练习。",
+    "canon_dependencies": [
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:7f027d4e-484b-440b-8ba8-d388bc1d9479:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-026-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY"
+}

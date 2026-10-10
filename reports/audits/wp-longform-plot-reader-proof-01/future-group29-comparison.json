@@ -1,0 +1,50 @@
+{
+  "scope": "ISOLATED_FUTURE_ONLY",
+  "preserved_through_chapter": 28,
+  "old_group": "authority-output:79d42e95-ce53-43a9-a628-cb8a8ededda3:story_planning.candidate:v1",
+  "new_group": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+  "proposal": "plan-change:fbfc51c5-f0ff-4510-939a-3c9068549f21",
+  "status": "ACTIVE",
+  "old": [
+    {
+      "chapter": 28,
+      "function": "移步试验，已交付保留"
+    },
+    {
+      "chapter": 29,
+      "function": "独练重复"
+    },
+    {
+      "chapter": 30,
+      "function": "等待许庭再次复核"
+    },
+    {
+      "chapter": 31,
+      "function": "自身再检和普通搬盘"
+    }
+  ],
+  "new": [
+    {
+      "chapter": 29,
+      "function": "实际有限教学，无木片短时起收，已有掌前细暖用于自身感受"
+    },
+    {
+      "chapter": 30,
+      "function": "实际搬盘完成，小用途影响握持/休息选择"
+    },
+    {
+      "chapter": 31,
+      "function": "唐穗亲见晾定盘边，双方兴趣与帮助有具体结果"
+    },
+    {
+      "chapter": 32,
+      "function": "主动选择后续山林任务，完成有用实物准备"
+    }
+  ],
+  "literary_review": "NOT_YET_PROVEN_REQUIRES_ACTUAL_PROSE",
+  "world_boundary": "No heat on external objects, quality detection, healing, new realm or course entitlement",
+  "author_adoption": "NOT_GRANTED",
+  "strategic_chapters": 240,
+  "delivery_window": 40,
+  "human_evidence": "NOT_RUN"
+}

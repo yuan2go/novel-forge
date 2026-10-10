@@ -1,0 +1,195 @@
+{
+  "asset_version_id": "authority-output:f832134b-abf6-4ecb-8124-f16283a34c6a:story_planning.candidate:v1",
+  "full_native_content_hash": "sha256:2dcc09b1db58d32c32fbab7b9f573722b6ef232935c2559e823cfdea7ff0a8ea",
+  "native_plan_binding": {
+    "parent_version_id": "authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+    "freshness": "CURRENT",
+    "execution_scope": "FROZEN",
+    "logical_key": "chapter:25"
+  },
+  "expected_group": "authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+  "exact_chapter_request_id": "chapter-request:02b4fb3307cea294b938ea955255600c898877899b4a54e3219648af0c8cb5a7",
+  "chapter_root_operation_id": "e67c5898-5903-4475-b11f-af56c0284c73",
+  "actual_predecessor_at_dispatch": [
+    {
+      "chapter": 24,
+      "asset_version_id": "f486eaa2-a22f-408c-98d3-871ea9cf5c25",
+      "content_hash": "sha256:c39326a0de6dc95ed2ab12058d174e530e33cbc98132204a105bdac8da04c963",
+      "text_hash": "sha256:b483ea573b336f79369cc708e8052f440632c6828cabfa8514af64e705fc94f1",
+      "omitted_ranges": []
+    }
+  ],
+  "content": {
+    "chapter_number": 25,
+    "chapter_intent": "以修盘现场的一小段完整行动收束共同采土任务：让沈砚与唐穗看见已交细土的具体用处，让沈砚完成修盘者明确需要的送水工作，并将他对木片亮纹的疑问自然带向下一次基础指导。",
+    "scene_plan": [
+      {
+        "goal": "看见已交细土的实际用途，并完成现场真正需要的一件小事。",
+        "beats": [
+          {
+            "beat_id": "chapter25:scene1:beat1",
+            "ordinal": 1,
+            "function": "程观指出细土已在附近修盘处使用；沈砚和唐穗循所指看见材料与正在处理的陶盘。",
+            "expected_reader_effect": "接上已经完成的交付，期待看见细土的具体用处。"
+          },
+          {
+            "beat_id": "chapter25:scene1:beat2",
+            "ordinal": 2,
+            "function": "唐穗留意薄边和另置样土，沈砚看见细土的用途后询问修盘者有没有眼下能帮的小事。",
+            "expected_reader_effect": "从两人各自的关注进入安静、具体的现场。"
+          },
+          {
+            "beat_id": "chapter25:scene1:beat3",
+            "ordinal": 3,
+            "function": "修盘者说明只需一盂净水并指明取水处；沈砚取水，避开样土，稳稳放到案旁便停。",
+            "expected_reader_effect": "感到沈砚的主动性落实为能力所及的动作。"
+          },
+          {
+            "beat_id": "chapter25:scene1:beat4",
+            "ordinal": 4,
+            "function": "修盘者以净水调细土、压合一处盘边；唐穗看清细黏土抹薄后怎样留边，沈砚看见自己送来的水已用上。",
+            "expected_reader_effect": "获得前次劳动进入真实用途的踏实回报。"
+          }
+        ],
+        "conflict": "修盘由现场修盘者负责；沈砚只能承担被明确提出且自己做得了的送水工作，并须避开另置样土。",
+        "scene_id": "chapter25:scene1",
+        "exit_state": "沈砚与唐穗已亲眼见到已交细土用于陶盘薄边；沈砚送达的一盂净水已被修盘者用于调土和压合一处盘边，唐穗看清薄边怎样留成。修补仍由修盘者负责，沈砚关于木片亮纹用途的疑问尚未得到教学说明。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 2,
+          "timeline_id": "chapter25:main",
+          "start_ordinal": 1
+        },
+        "entry_state": "第21章工作正文中三筐细土已验收，三人各领过当晚热饭；第24章沈砚已记下木片两次尝试的动作差别和一线淡纹，仍不知亮纹的练习用途。此刻沈砚与唐穗来到可见修盘处附近，程观能指出已收细土的去向。",
+        "location_id": "location:repair-worksite",
+        "arc_progress": [
+          "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:cheng-guan",
+          "character:shen-yan",
+          "character:tang-sui"
+        ],
+        "reader_effect": "安静地看见此前劳动的结果，并在有限帮手行动中感到踏实。",
+        "scene_version": 1,
+        "scene_group_id": "chapter25:repair",
+        "obligation_refs": [],
+        "trajectory_refs": [],
+        "information_gain": [
+          "fact:chapter25:clay-repair-use",
+          "fact:chapter25:water-thin-rim"
+        ],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [
+          "character:shen-yan"
+        ],
+        "accessible_knowledge": [],
+        "realization_event_ids": [
+          "cg25-1",
+          "cg25-2"
+        ],
+        "narrative_time_relation": "ESTABLISHES",
+        "realization_capabilities": [
+          "ACTION",
+          "DIALOGUE",
+          "DESCRIPTION",
+          "INTERIOR"
+        ]
+      },
+      {
+        "goal": "把亲见的用途与自己尚未弄懂的木片亮纹联系起来，留下下一次指导要问的具体问题。",
+        "beats": [
+          {
+            "beat_id": "chapter25:scene2:beat1",
+            "ordinal": 1,
+            "function": "沈砚回到练习处，想起修盘者按具体用途判断细土，也想到木片淡纹仍只有现象、尚无教学解释。",
+            "expected_reader_effect": "带着修盘现场的满足感进入下一段学习期待。"
+          },
+          {
+            "beat_id": "chapter25:scene2:beat2",
+            "ordinal": 2,
+            "function": "他决定下一次基础指导时问明木片亮纹究竟帮自己练什么、能说明到什么程度。",
+            "expected_reader_effect": "留下清楚而克制的章末好奇。"
+          }
+        ],
+        "conflict": null,
+        "scene_id": "chapter25:scene2",
+        "exit_state": "沈砚已从修盘现场回到练习处，带着亲眼所见的细土用途，准备在下一次基础指导中弄明白木片亮纹的用途与限度；一盂净水的现场交付及其使用已经完成。",
+        "story_time": {
+          "precision": "ORDERED",
+          "end_ordinal": 3,
+          "timeline_id": "chapter25:main",
+          "start_ordinal": 3
+        },
+        "entry_state": "沈砚与唐穗已亲眼见到已交细土用于陶盘薄边；沈砚送达的一盂净水已被修盘者用于调土和压合一处盘边，唐穗看清薄边怎样留成。修补仍由修盘者负责，沈砚关于木片亮纹用途的疑问尚未得到教学说明。",
+        "location_id": "location:practice-area",
+        "arc_progress": [
+          "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        ],
+        "focalization": "INTERNAL",
+        "participants": [
+          "character:shen-yan"
+        ],
+        "reader_effect": "在踏实之后生出对下一次教学的好奇，且本章行动已有完整结果。",
+        "scene_version": 1,
+        "scene_group_id": "chapter25:practice-bridge",
+        "obligation_refs": [],
+        "trajectory_refs": [],
+        "information_gain": [],
+        "pov_character_id": "character:shen-yan",
+        "state_transitions": [],
+        "accessible_knowledge": [
+          "fact:chapter25:clay-repair-use",
+          "fact:chapter25:water-thin-rim"
+        ],
+        "realization_event_ids": [],
+        "narrative_time_relation": "ADVANCES",
+        "realization_capabilities": [
+          "TRANSITION",
+          "INTERIOR"
+        ]
+      }
+    ],
+    "required_events": [
+      "程观指明已收细土正在附近修盘处使用；沈砚与唐穗到现场观察，沈砚询问修盘者眼下是否有能帮的事。",
+      "修盘者提出取一盂净水并指出来源；沈砚稳稳送至案旁、避开另置样土，修盘者当场调土压合盘边，唐穗看清薄边如何留成。"
+    ],
+    "forbidden_events": [
+      "重做第21章已经验收的三筐细土任务或重新领取热饭。",
+      "让沈砚自行碰用修盘材料、工具或操作盘边。",
+      "让旁白替修盘者说明未说出口的私下判断，或预先断言修补后的耐用程度。",
+      "在本章直接揭示木片亮纹的教学意义，或把短暂亮纹写成稳定本领。"
+    ],
+    "hard_constraints": [
+      "三筐细黏土在第21章工作正文中已经验收，三人也已各领一份当晚热饭；本章只能承接该结果。",
+      "第24章两次木片尝试、淡纹和许庭已经结束的有限答疑保持连续；亮纹用途仍待有来源的基础教学说明。",
+      "修盘操作由现场修盘者决定，程观仅说明自己所知的材料去向。",
+      "送水占用沈砚一小段实际可用时间，不挤占已答应事项和必要休息。",
+      "采用以沈砚为主的第三人称限知视角；只呈现他实际听见、看见或据此思考的内容。"
+    ],
+    "reader_experience": {
+      "reward_mode": "看见前次劳动进入真实用处，并得到一段温暖、安静的现场行动。",
+      "exit_question": "看见细土按用途发挥作用后，沈砚会怎样理解木片亮纹的用途？",
+      "entry_question": "已交付的三筐细土如今用到了哪里？",
+      "target_emotion": "踏实与好奇"
+    },
+    "ending_hook": "沈砚带着亲眼见到的细土用途回到练习处，想在下一次基础指导中弄明白木片的亮纹究竟帮他练什么。",
+    "canon_dependencies": [
+      "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+      "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1",
+      "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:7b8b3945-594f-4e22-b637-7985059c3ff8:story_planning.candidate:v1",
+      "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1",
+      "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+    ]
+  },
+  "full_raw_retained": "PostgreSQL immutable asset plus private chapter-025-consumed-plan.full.private.json",
+  "public_record": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT",
+  "scope": "ISOLATED_ONLY",
+  "original_author_adoption": "NOT_GRANTED"
+}

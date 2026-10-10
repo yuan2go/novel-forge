@@ -1,0 +1,10 @@
+{
+  "proposal_id": "plan-change:fbfc51c5-f0ff-4510-939a-3c9068549f21",
+  "status": "PENDING_APPROVAL",
+  "risk": "HIGH",
+  "target_asset_version_id": "authority-output:79d42e95-ce53-43a9-a628-cb8a8ededda3:story_planning.candidate:v1",
+  "proposed_asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1",
+  "source_kind": "ASSISTANT_ANALYSIS_ISOLATED_OPERATOR",
+  "original_author_decision": "NOT_GRANTED",
+  "hypothesis_count": 23
+}
