@@ -98,7 +98,10 @@ class ProviderCallbackAuthorityService:
         operation_id = str(binding["operation_id"])
         if binding["processing_status"] in {"FAILED_FINAL", "CONFLICTED"}:
             raise KernelError("PROVIDER_CALLBACK_TERMINAL", "Rejected callback requires a new versioned receipt")
-        if binding["effect_provider"] == "production_execution_gateway":
+        from novel_forge.modules.command_kernel.generation_isolation import isolation
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            isolated = isolation(uow.cursor, str(binding["external_effect_id"])) is not None
+        if binding["effect_provider"] == "production_execution_gateway" and not isolated:
             if binding["status"] in {"SUCCEEDED", "FAILED_FINAL", "CANCELLED"}:
                 attempt_id = str(uuid4())
                 with AuthorityUnitOfWork(self.database_url) as uow:
@@ -136,13 +139,14 @@ class ProviderCallbackAuthorityService:
                 outcome=outcome,
                 evidence=evidence,
             )
-            resolve_external_effect_receipt_budget(
-                self.database_url,
-                project_id=project_id,
-                effect_id=str(binding["external_effect_id"]),
-                outcome=outcome,
-                evidence=evidence,
-            )
+            if not accepted.get("evidence_only"):
+                resolve_external_effect_receipt_budget(
+                    self.database_url,
+                    project_id=project_id,
+                    effect_id=str(binding["external_effect_id"]),
+                    outcome=outcome,
+                    evidence=evidence,
+                )
         except KernelError as exc:
             self._finish(
                 callback_receipt_id,

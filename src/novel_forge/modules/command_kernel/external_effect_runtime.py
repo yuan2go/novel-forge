@@ -1218,6 +1218,19 @@ def accept_external_effect_receipt(
             raise KernelError(
                 "RECEIPT_PROVIDER_CONFLICT", "receipt provider is unexpected"
             )
+        effect = repository.get_for_update(dispatch["external_effect_id"])
+        if effect["operation_id"] != context.operation_id or generation != dispatch["generation"]:
+            raise KernelError("EFFECT_DISPATCH_CONFLICT", "Receipt must bind its original Operation and generation")
+        from .generation_isolation import isolation
+        if isolation(uow.cursor, effect["external_effect_id"]):
+            from .generation_receipt_reconciliation import append_callback_receipt
+            accepted = append_callback_receipt(uow, effect, context, dispatch_id=dispatch_id,
+                generation=generation, provider_request_id=provider_correlation_id, message_id=message_id,
+                payload_hash=payload_hash, outcome=outcome, evidence=evidence)
+            _record(repository, context, effect["external_effect_id"], "external_effect.isolated_receipt_recorded",
+                {"dispatch_id": dispatch_id, "receipt_id": receipt_id, "outcome": outcome, "replayed": accepted["replayed"]})
+            uow.commit()
+            return {**accepted, "external_effect_id": effect["external_effect_id"], "evidence_only": True}
         stored_outcome = {
             "dispatch_id": dispatch_id,
             "external_effect_id": dispatch["external_effect_id"],
@@ -1366,6 +1379,18 @@ def reconcile_external_effect(
         raise KernelError("EFFECT_OPERATION_CONFLICT", "Reconcile only the original owning Operation")
     with AuthorityUnitOfWork(database_url) as uow:
         effect = uow.repositories.external_effects.get_for_update(effect_id)
+        from .generation_isolation import isolation
+        from .generation_receipt_reconciliation import resolution as isolated_resolution
+        if isolation(uow.cursor, effect_id):
+            cli_original = historical_cli_dispatch(uow.cursor, effect)
+            cli_confirmed = confirmed_query_result(uow.cursor, effect, cli_original)
+            if cli_confirmed is not None:
+                return {**cli_confirmed, "evidence_only": True}
+            recorded = isolated_resolution(uow.cursor, effect_id)
+            if recorded is not None:
+                return {**recorded, "external_effect_id": effect_id, "replayed": True, "evidence_only": True}
+            raise KernelError("ISOLATED_ORIGINAL_RECEIPT_REQUIRED",
+                "Use the verified original callback or authorized original receipt resolution; isolated work cannot regain a recovery Attempt")
         historical = historical_cli_dispatch(uow.cursor, effect)
         confirmed = confirmed_query_result(uow.cursor, effect, historical)
         if confirmed is not None:

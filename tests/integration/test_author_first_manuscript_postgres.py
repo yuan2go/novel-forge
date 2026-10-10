@@ -16,6 +16,39 @@ from tests.integration.creative_validation_production_support import controlled_
 from tests.integration.synthesis_production_support import SynthesisTransport
 
 
+def prepare_context_model_stages(transport, monkeypatch):
+    from novel_forge.modules.chapter_authority import handlers
+    from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+    chapter_transport = transport.chapter
+    class ContextFixtureTransport:
+        def __setattr__(self, name, value):
+            setattr(chapter_transport, name, value)
+        def __getattr__(self, name):
+            return getattr(chapter_transport, name)
+        def __call__(self, stage, inputs):
+            if stage in {"context_compress", "context_fidelity"}:
+                return default_chapter_fixture_response(stage, inputs)
+            return chapter_transport(stage, inputs)
+    transport.chapter = ContextFixtureTransport()
+    build_context = handlers.build_context_bundle
+    def prepare_two_model_stages(**kwargs):
+        if kwargs["plan"]["chapter"] == 1:
+            memo = kwargs["chapter_memo"]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                source = uow.repositories.asset_documents.require(project_id=kwargs["project_id"],
+                    asset_version_id=kwargs["plan_asset_version_id"])
+            task = {"contract_version": "task-context-compression.v1", "policy_version": "task-scoped-context.v1",
+                "accepted_boundary": memo["accepted_boundary"], "memo_fingerprint": memo["memo_fingerprint"],
+                "task": {"stage": "draft", "chapter": 1, "goal": kwargs["plan"]["chapter_objective"]},
+                "target_tokens": 1024, "required_unit_ids": ["controlled-plan-goal"],
+                "units": [{"unit_id": "controlled-plan-goal", "text": kwargs["plan"]["chapter_objective"], "required": True}],
+                "source_binding": {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}}
+            selected = kwargs["context_model_call"]("context_compress", task)
+            kwargs["context_model_call"]("context_fidelity", {**task, "selected_unit_ids": selected["selected_unit_ids"]})
+        return build_context(**kwargs)
+    monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
+
+
 @pytest.mark.parametrize("completed_sibling", [False, True], ids=["single-interruption", "completed-sibling-interruption"])
 def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling):
     harness = CapabilityPackPostgresHarness("author-first")
@@ -57,36 +90,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
     if completed_sibling:
-        from novel_forge.modules.chapter_authority import handlers
-        from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
-        chapter_transport = transport.chapter
-        class ContextFixtureTransport:
-            def __setattr__(self, name, value):
-                setattr(chapter_transport, name, value)
-            def __getattr__(self, name):
-                return getattr(chapter_transport, name)
-            def __call__(self, stage, inputs):
-                if stage in {"context_compress", "context_fidelity"}:
-                    return default_chapter_fixture_response(stage, inputs)
-                return chapter_transport(stage, inputs)
-        transport.chapter = ContextFixtureTransport()
-        build_context = handlers.build_context_bundle
-        def prepare_two_model_stages(**kwargs):
-            if kwargs["plan"]["chapter"] == 1:
-                memo = kwargs["chapter_memo"]
-                with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                    source = uow.repositories.asset_documents.require(project_id=kwargs["project_id"],
-                        asset_version_id=kwargs["plan_asset_version_id"])
-                task = {"contract_version": "task-context-compression.v1", "policy_version": "task-scoped-context.v1",
-                    "accepted_boundary": memo["accepted_boundary"], "memo_fingerprint": memo["memo_fingerprint"],
-                    "task": {"stage": "draft", "chapter": 1, "goal": kwargs["plan"]["chapter_objective"]},
-                    "target_tokens": 1024, "required_unit_ids": ["controlled-plan-goal"],
-                    "units": [{"unit_id": "controlled-plan-goal", "text": kwargs["plan"]["chapter_objective"], "required": True}],
-                    "source_binding": {"asset_version_id": source.asset_version_id, "content_hash": source.content_hash}}
-                selected = kwargs["context_model_call"]("context_compress", task)
-                kwargs["context_model_call"]("context_fidelity", {**task, "selected_unit_ids": selected["selected_unit_ids"]})
-            return build_context(**kwargs)
-        monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
+        prepare_context_model_stages(transport, monkeypatch)
     env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
     env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
     for key, value in env.items():
@@ -334,7 +338,8 @@ def test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint():
         case.doCleanups()
 
 
-def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch):
+@pytest.mark.parametrize("failure_stage, definition", [("memo", "chapter.memo.generate"), ("context_fidelity", "chapter.context.build")])
+def test_native_generation_fault_allowance_survives_successors_and_stops_dispatch(tmp_path, monkeypatch, failure_stage, definition):
     harness = CapabilityPackPostgresHarness('bounded-generation-faults')
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
@@ -367,14 +372,16 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
     executions = set()
     def interrupt_every_memo(resolver, request, admission):
         payload = resolve(resolver, request, admission)
-        if request.stage == 'memo':
+        if request.stage == failure_stage:
             layout = PersistentExecutionDirectory(env['NOVEL_FORGE_CODEX_EXECUTION_ROOT']).prepare(request.execution_id)
             layout.result_path('interrupt-stream').write_text('controlled persistent stream failure')
             executions.add(request.execution_id)
         return payload
     monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, 'resolve', interrupt_every_memo)
+    if failure_stage == 'context_fidelity':
+        prepare_context_model_stages(transport, monkeypatch)
     source = tmp_path / 'request.json'
-    source.write_text(json.dumps({'version':'creation-request.v1','title':'Bounded generation','target_chapters':1,
+    source.write_text(json.dumps({'version':'creation-request.v1','title':'Bounded generation ' + failure_stage,'target_chapters':1,
         'language_contract':{'required_language':'zh-CN'},'chapter_length':{'minimum':800,'maximum':4000},
         'brief':{'creative_brief_contract_version':'creative-brief-v2','idea':'An archivist investigates a flood.',
             'genre':'social mystery','audience':'adult readers','constraints':['Original single chapter'],
@@ -389,8 +396,9 @@ def test_native_generation_fault_allowance_survives_successors_and_stops_dispatc
     from novel_forge.modules.command_kernel.generation_isolation import generation_retry_usage, require_generation_retry_budget, book_recovery_projection
     from novel_forge.modules.command_kernel.errors import KernelError
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
-        uow.cursor.execute("SELECT effect.operation_id FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.definition_name='chapter.memo.generate' ORDER BY effect.created_at", [result['project_id']])
+        uow.cursor.execute("SELECT effect.operation_id FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE effect.project_id=%s AND effect.effect_type='model.invoke' AND operation.definition_name=%s ORDER BY effect.created_at", [result['project_id'], definition])
         operations = [row[0] for row in uow.cursor.fetchall()]
+        operations = list(dict.fromkeys(operations))
         assert len(operations) == len(executions) == 2
         usage = generation_retry_usage(uow.cursor, operation_id=operations[-1])
         assert usage['failure_attempts'] == usage['maximum_failure_attempts'] == 2

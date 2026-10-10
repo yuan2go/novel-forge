@@ -2054,7 +2054,7 @@ the current head; canonical prose intentionally does not duplicate its identity.
 
 Provider and MinIO-compatible object-store calls use durable ExternalEffect intent,
 dispatch generation and receipt records. A request that may have started is reconciled
-before resending the same Effect. Pure generation can instead isolate its old attempt and continue through a linked native successor. Idempotency keys bind the request digest;
+before resending the same Effect. Pure generation can instead isolate its old attempt and continue through a linked native successor. Authenticated late API receipts append only Kernel reconciliation evidence and original-reservation accounting. Historical UNKNOWN and revoked business rights remain immutable; neither late results nor accounting can activate an old candidate or advance acceptance. Idempotency keys bind the request digest;
 Attempt leases and fencing reject stale workers. Safe database retries are restricted to
 classified SQL states, while an unknown commit result requires evidence-based
 reconciliation. Recovery appends attempt, receipt, checkpoint or replacement lineage and
