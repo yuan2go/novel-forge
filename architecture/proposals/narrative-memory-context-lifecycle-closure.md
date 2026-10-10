@@ -28,8 +28,8 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
   "reviewed_on": "2026-10-10",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "e53f2e91cc7020f186f49b522af7e9eb7bd79207",
-    "implementation_tree_sha": "sha256:4fc8fd6de7d19e685e59319099f3534dcb0d0a84b1ca36c7004f6f79457da40d"
+    "sha": "d387be86c0a76426b0682d77dfea0ed1c384bd2d",
+    "implementation_tree_sha": "sha256:171a15884733578f9231b1ed876379160a448e4730291da35e8fab5e174ff95a"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
