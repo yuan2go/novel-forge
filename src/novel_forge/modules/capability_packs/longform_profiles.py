@@ -99,6 +99,13 @@ def build_story_planning_pack_profile(
         raise ValueError("Unsupported Planning execution contract")
     operation_ref = f"story_planning.generate@{version}"
     root, manifest, artifacts = _base(repository_root, pack_id)
+    if version != "1.21.0":
+        artifacts = [item for item in artifacts if not (
+            item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review"
+            and item["version"] == "quality-review-v4")]
+        for item in artifacts:
+            if item["kind"] == ArtifactKind.SKILL.value and item["ref"] == "quality-review" and item["version"] == "quality-review-v3":
+                item["source_identity"] = "skills/quality-review/SKILL.md"
     if planning_task_token_budget is not None:
         if type(planning_task_token_budget) is not int or not 0 < planning_task_token_budget <= min(512000, manifest["context_sources"]["max_tokens"]):
             raise ValueError("Planning Context target must fit the system ceiling")

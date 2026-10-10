@@ -315,9 +315,9 @@ the input evidence additionally retains the exact PASS result, native APPROVE re
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace
 that chain.
 
-Current Chapter 3.10.0 and Pack 3.0.0/template v13 bind versioned scene-core,
+Current Chapter workflow 3.10.0 and candidate Pack 3.0.2/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
-corrections. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
+corrections. The Pack binds ExecutionIntent 3.10.1, Memo 3.10.2 and Draft 3.10.1 to their exact native definition hashes; the other coordinated nodes retain 3.10.0. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
 projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
 ExecutionIntent; frozen earlier projections, including 3.9.16, keep their original
 contracts. The Book-owned explicit-null Memo timeout reader remains compatibility

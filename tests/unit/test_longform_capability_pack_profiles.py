@@ -236,7 +236,9 @@ def test_creative_json_format_example_matches_native_schema_without_replacing_de
     ) == example
     profile = build_story_planning_pack_profile(ROOT, operation_definition_hash="sha256:" + "a" * 64)
     assert profile.manifest["prompt_binding"]["template_ref"] == "prompt-template:story-planning-pack"
-    assert profile.manifest["prompt_binding"]["template_version"] == "v1"
+    assert profile.manifest["prompt_binding"]["template_version"] == "v2"
+    bound = next(item for item in profile.artifact_catalog["artifacts"] if item["ref"] == "prompt-template:story-planning-pack" and item["version"] == "v2")
+    assert bound["content"]["text"] == (ROOT / "config/capability_packs/artifacts/story_planning_template_v2.md").read_text()
 
 
 def test_planning_context_target_is_frozen_in_manifest_and_resolved_policy():

@@ -456,7 +456,7 @@ For future Chapter work, author `book-chapter-context.v1` with
 `world-production-policy.v4` with independently chosen Context allocation. The v4
 Context profile was introduced in Chapter Generation Pack `2.7.0`; new work must
 deploy and select the current `config/capability_packs/chapter_generation_pack.json`
-(Pack `3.0.0`, Chapter workflow `3.10.0`) through the existing Pack Authority;
+(candidate Pack `3.0.2`, Chapter workflow `3.10.0`) through the existing Pack Authority;
 then verify its compiled snapshot and the Chapter preparation report's
 `stage_context_profile_versions.draft`. Its frozen Context policy explicitly sets
 the Planning task target to 64,000 tokens; this does not increase the authorized
@@ -2502,11 +2502,11 @@ configured capability profile disables callbacks.
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
-identities; current Chapter Pack 3.0.0 binds Chapter 3.10.0, Plan materialization 3.9.16 and
+identities; current candidate Chapter Pack 3.0.2 binds workflow 3.10.0, ExecutionIntent 3.10.1, Memo 3.10.2, Draft 3.10.1 and Plan materialization 3.10.0 with
 Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
-Current Planning Pack 2.12.0 binds Operation 1.20.0, System v10,
+Current Planning Pack 2.13.0 binds Operation 1.21.0, System v11 and Template v2,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
-retaining qualification-v2 identities. Planning 1.20.0 requires Mission/Scene v4,
+retaining qualification-v2 identities. Planning 1.21.0 requires Mission/Scene v4,
 activated-chapter-plan.v3 and runtime projection 3.0.0; its Provider output uses
 work-v4. Current Chapter Plan materialization preserves that serialization through
 authoritative-chapter-plan-v5 and draft-plan-view-v4 in the ExecutionIntent.
@@ -2514,7 +2514,7 @@ Frozen Planning 1.19.0 retains Pack 2.11.0 and System v9 with its v4 schema hash
 Frozen Planning 1.18.0 retains Pack 2.10.0, System v8, Mission/Scene v3
 and work-v3. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
-legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Screenplay requires prose-generation-v4 or quality-review-v3
+legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Current Screenplay requires prose-generation-v4 or quality-review-v4
 and its separate adaptation schema. Historical artifacts remain available for recovery.
 For current Chapter work, selected style must be foundation-style-projection.v4 with
 source-bound Book applicability. An explicit preparation asset override does not waive
@@ -3301,7 +3301,7 @@ four across the immutable lineage. Runtime continuation, deferred World work and
 result admission retain the global repair counter. Historical branch repair evidence
 is readable but cannot independently override routing rejections.
 
-Current Planning 1.19 Foundation dispatch uses `foundation-generation.v4`,
+Frozen Planning 1.19 Foundation dispatch uses `foundation-generation.v4`,
 role-specific `schema:foundation-provider-output:<role>:v4` and the exact v4 task
 in materialization and rendered Provider inputs. RFC 6901 pointers are allowed only
 under this new identity; historical 1.17/v2 and 1.18/v3 keep all six role schemas
