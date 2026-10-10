@@ -1147,6 +1147,15 @@ Provider execution receipts remain on the immutable Memo for audit. Its governed
 writing projection excludes those receipts; they are not narrative material and do
 not consume the chapter's writing Context budget.
 
+Native Book planning and Memo share `frozen-character-references.v1`, compiled from
+the exact Book input snapshot's cast, version and hash. Current planning contexts bind
+the legal stable IDs and typed locators in their realization catalogue; the generated
+schema constrains Scene participants, POV and character realization/participation to them.
+Names and unique aliases remain display and compatibility bindings. Anonymous background
+appearances do not create typed character identities. Adding a named recurring character
+uses Story Design and a new scoped input version. Historical contexts without this binding
+retain their original contract; Memo still checks their exact frozen participants.
+
 Current Provider reviews return located diagnoses, constraints, repair goals, preservation
 requirements and acceptance criteria. Revision consumes these diagnoses. Re-review records
 explicit checks; omission of an issue or a higher score does not establish resolution.

@@ -884,6 +884,7 @@ def _realization_reference_contract(
     frozen_by_operation_id: str,
     inputs: tuple[FrozenPlanningInput, ...],
     selectors_only: bool = False,
+    character_references=None,
 ) -> dict[str, Any]:
 
     references: dict[str, list[dict[str, str]]] = {}
@@ -915,7 +916,8 @@ def _realization_reference_contract(
             )
         references[domain_type] = eligible
     return {
-        "contract_version": "planning-realization-reference-contract-v1",
+        "contract_version": "planning-realization-reference-contract-v2" if character_references is not None else "planning-realization-reference-contract-v1",
+        **({"character_references": character_references} if character_references is not None else {}),
         "instruction": "Select only asset_version_id from the matching frozen domain list; host binds scope, type, hash and Operation identity." if selectors_only else (
             "Copy one complete reference object from the matching domain list; "
             "never invent or reinterpret authority_role, asset_type, identity, "
@@ -4417,6 +4419,8 @@ class PostgresPlanningExecutionPreparer:
                 related_arc_ids=command.related_arc_plan_version_ids,
             )
             output_schema_ref += ":host-selectors-v2"
+            if context_document.content["realization_reference_contract"].get("character_references") is not None:
+                output_schema_ref += ":frozen-character-references-v1"
         if provider_stage is None and command.repair_of_candidate_id and command.planning_scope.value == PlanContractType.CHAPTER.value:
             output_schema_ref += ":operational-commitments-v1"
         if provider_stage is not None:
@@ -5574,6 +5578,7 @@ class PostgresPlanningExecutionPreparer:
         planning_task_token_budget: int | None = None,
         preflight_only: bool = False,
     ) -> tuple[Any, tuple[AuthorityAssetDocument, ...]]:
+        from .character_references import require_planning_character_references
         documents: list[AuthorityAssetDocument] = []
         selected: list[dict[str, Any]] = []
         for item in inputs:
@@ -5949,6 +5954,10 @@ class PostgresPlanningExecutionPreparer:
                         frozen_by_operation_id=operation_id,
                         inputs=inputs,
                         selectors_only=command.execution_contract_version == "1.21.0",
+                        character_references=(
+                            require_planning_character_references(self.database_url, command)
+                            if command.execution_contract_version == "1.21.0" else None
+                        ),
                     )
                 }
             ),
@@ -6941,6 +6950,8 @@ def bind_realization_selector_schema(
     from copy import deepcopy
 
     value = deepcopy(schema)
+    from .character_references import bind_character_schema
+    bind_character_schema(value, catalog.get("character_references"))
     fields = {
         "world_realization": {
             "invariant_refs": "WORLD_INVARIANT",

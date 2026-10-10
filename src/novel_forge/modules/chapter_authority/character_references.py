@@ -24,6 +24,8 @@ def compile_character_references(*, project_id: str, workspace_id: str, book_id:
         bindings[identity] = {"character_id": identity, "display_name": name, "aliases": list(aliases)}
         for token in (identity, name, *aliases):
             tokens.setdefault(token, set()).add(identity)
+    if scenes is None:
+        scenes = [{"participants": [character_planning_locator(identity) for identity in bindings]}]
     participants: dict[str, str] = {}
     requested = {token for scene in scenes for token in scene.get("participants", [])}
     for identity in bindings:
