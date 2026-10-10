@@ -1,0 +1,44 @@
+{
+  "source_sha": "26c5b4c11899d8efabe3e445e640d6307b311416",
+  "checked_head": "ebbc2687d7cd4ff5353cfadfc0356d6455244a50",
+  "focused_unit": {
+    "status": "PASS",
+    "passed": 199,
+    "files": [
+      "test_book_plan_reference_recovery",
+      "test_historical_working_inputs",
+      "test_codex_execution_evidence",
+      "test_operator_plan_change_resume",
+      "test_step_successor_v2_guards",
+      "test_manuscript_native_continuation",
+      "test_creation_coordination",
+      "test_chapter_sample_contract_versions"
+    ]
+  },
+  "native_integration": {
+    "plan_change_and_author_first": {
+      "status": "PASS",
+      "passed": 13,
+      "tested_source_sha": "afd8679fa49a8063415dc26c64f72ab45c1c98f8",
+      "provider": "SCRIPTED"
+    },
+    "working_memory_interruption": {
+      "status": "PASS",
+      "passed": 1,
+      "tested_source_sha": "2843d74f",
+      "provider": "SCRIPTED",
+      "limitation": "Started before ContextBuild stage was added; later real Chapter19 exercised that correction"
+    }
+  },
+  "lint": {
+    "status": "PASS",
+    "changed_python_files": 16
+  },
+  "documentation_reality": {
+    "status": "PASS",
+    "canonical_docs": 5,
+    "tested_sha": "e4fb3b1309ce217c2deca9b8951e83d47d27e7cd"
+  },
+  "canonical_full_P0": "NOT_RUN_USER_SCOPED_MATRIX; historical NO_GO retained",
+  "evidence_ceiling": "EXECUTABLE; NOT_QUALIFIED_OR_PRODUCTION_PROVEN"
+}

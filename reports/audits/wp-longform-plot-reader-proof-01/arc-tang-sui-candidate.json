@@ -1,0 +1,172 @@
+{
+  "objective": "规划唐穗跨卷的材料学习与合作轨迹：让她以真实任务中的观察、说明、复查和反馈形成可用判断，既帮助共同目标，也保有自己的时间、收益诉求和后续方向。",
+  "hard_constraints": [
+    "本Arc仅是未来规划候选；accepted_through_chapter为0，不批准、激活或修改任何Authority状态。",
+    "保留第1—19章所选及冻结工作边界；只调整卷一第20—48章相关未来Arc段，卷二至五的功能及240章终局不变。",
+    "卷一第20—25章须有共同目标下的山林实际行动与结果；第26—32章允许经真实教学和多次成功取得有限可重复基础本领；第33—40章须完成改变后续选择的任务，第41—48章承接结果。",
+    "唐穗的欲望是将材料辨认练成可用于任务的本领，获得实际交付反馈和与分工相称的资源；她须及时说明判断的把握程度。",
+    "任务、资源、质量标准、时间和验收须有明确来源与权限；未知数量不得当作既得条件。",
+    "人物只能依据实际接触获取信息；唐穗的观察不能替代沈砚的修炼实践、路线核实或最终独行判断。",
+    "沈砚最终须在必要条件均经核实后实际独自御剑远行并落脚；唐穗的帮助有来源和范围，不替代这一兑现。"
+  ],
+  "forbidden_events": [
+    "改写第1—19章所选或冻结的工作内容，或把任何拟议段落写成已接受历史。",
+    "让唐穗凭普通劳作经验自动掌握灵气操作、全部药材辨认或未核实的山谷路线。",
+    "在未核实当前成熟份额时采收折露草，或为增加交付损伤芽根。",
+    "让唐穗只负责拒绝、审核、纠错、赞叹，或无条件替沈砚完成其已答应的工作。",
+    "给唐穗预授药房职位、秘密传承、未公开机构信息或超出本人接触范围的知识。",
+    "以突发背叛、永久关系损失或无因果的重大牺牲推动此Arc。"
+  ],
+  "required_events": [
+    "卷一第20—25章，唐穗围绕真实共同任务提出材料问题，参加山林现场行动，并说明至少一处判断的依据或不确定处。",
+    "卷一第33—40章，唐穗承担已协商的材料工作，实际交付及权限内反馈改变下一步选择。",
+    "后续任务中，唐穗至少一次把此前的质量复查方法用于新条件，并根据实际结果修正判断范围。",
+    "合作范围因唐穗或伙伴的真实日程与目标而重新协商，沈砚实际接手一项原由伙伴支持的核实或准备工作。",
+    "远行准备阶段，唐穗只处理自己确已接触且同意承担的事项；沈砚独自作出行程与飞行判断。"
+  ],
+  "arc_segments": [
+    {
+      "status": "PLANNED",
+      "objective": "让唐穗为共同目标实际辨认、采收或复查材料，并与沈砚、陆衡协商分工和回程余地；任务来源、当前可采份额及交付要求须在行动前明确。",
+      "segment_id": "arc:tang-sui:segment:20-25",
+      "entry_state_ref": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+      "exit_state_spec": {
+        "summary": "拟在第20—25章的共同山林任务中，让唐穗提出一个与交付直接相关的材料问题，说明自己的观察及尚不能确认之处；现场行动和结果为后续比较留下依据。第1—19章工作内容保持原有边界。"
+      },
+      "narrative_segment_id": "v1-20-25-common-task",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接共同任务的具体问题，让唐穗主动比较材料状况、整理可复核的判断依据，同时尊重沈砚经教学与多次成功取得的有限基础运用；不把唐穗的普通辨认经验写成灵气本领。",
+      "segment_id": "arc:tang-sui:segment:26-32",
+      "entry_state_ref": "arc:tang-sui:segment:20-25",
+      "exit_state_spec": {
+        "summary": "唐穗拟根据前段现场结果和可获得的交付反馈，区分自己能稳定辨认的特征与仍需请教的问题，并把这一区分用于下一次有限事务。"
+      },
+      "narrative_segment_id": "v1-26-32-repeatable-foundation",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让唐穗在沈砚主动承担的任务中负责自己同意的材料部分，及时说明不确定处，与伙伴共同处理质量和时间的取舍；交付后由有权者依已说明要求回应。",
+      "segment_id": "arc:tang-sui:segment:33-40",
+      "entry_state_ref": "arc:tang-sui:segment:26-32",
+      "exit_state_spec": {
+        "summary": "拟在完整任务交付中体现唐穗所提供的质量判断及实际操作；验收回应让她知道哪些依据可用、哪些仍有条件限制，并影响下一次合作选择。"
+      },
+      "narrative_segment_id": "v1-33-40-task-result",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接任务结果，以实际讨论或下一次相关行动落实唐穗得到的反馈，使她的材料学习目标和沈砚的修炼安排都拥有可继续的空间。",
+      "segment_id": "arc:tang-sui:segment:41-48",
+      "entry_state_ref": "arc:tang-sui:segment:33-40",
+      "exit_state_spec": {
+        "summary": "唐穗拟依据交付结果决定下一步要继续辨认的问题和能够承担的合作范围；她与沈砚保留已形成的互信，尚未得到的资源或机会不计为已有。"
+      },
+      "narrative_segment_id": "v1-41-48-settlement",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让唐穗依据自己的材料目标选择可承担的工作，与沈砚比较同一任务对各自学习的不同用途；她不代替沈砚完成已接的交付，也不只充当指出错误的人。",
+      "segment_id": "arc:tang-sui:segment:65-72",
+      "entry_state_ref": "arc:tang-sui:segment:41-48",
+      "exit_state_spec": {
+        "summary": "唐穗拟在后续有限任务中使用已形成的质量核对方法，并把实际用时、所得和未解问题一并纳入是否接取的判断。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:3",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让唐穗把前段的判断用于实际交付，说明自己愿意承担的复查与不能承担的额外工作，并在结果中获得与其贡献相称的承接。",
+      "segment_id": "arc:tang-sui:segment:89-96",
+      "entry_state_ref": "arc:tang-sui:segment:65-72",
+      "exit_state_spec": {
+        "summary": "拟在受控合作交付后明确唐穗负责的材料部分、她取得的反馈及下一次可合作的边界；沈砚保留练习时间的安排也经实际执行检验。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:6",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以真实日程和目标差别重新协商合作，让唐穗保有选择权，并使她说明依据及不确定处的方法成为伙伴可使用的信息。",
+      "segment_id": "arc:tang-sui:segment:121-128",
+      "entry_state_ref": "arc:tang-sui:segment:89-96",
+      "exit_state_spec": {
+        "summary": "唐穗拟因自己的学习目标或既有安排调整参与范围；她及时说明可提供的材料判断和仍待现场核实之处，沈砚开始接手原先依赖她支持的一项准备工作。"
+      },
+      "narrative_segment_id": "volume:3:segment:4",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让唐穗在现场继续探索与任务直接相关的材料问题，核实当次成熟可采份额并说明质量判断；她与沈砚共同承担各自约定的部分，不以伙伴退让消除真实取舍。",
+      "segment_id": "arc:tang-sui:segment:129-136",
+      "entry_state_ref": "arc:tang-sui:segment:121-128",
+      "exit_state_spec": {
+        "summary": "拟以实际采收、复查和交付结果检验重新商定的分工。唐穗的质量判断有可辨认作用；可选加量若与既定范围冲突，她的求知也服从已约定的回程和交付边界。"
+      },
+      "narrative_segment_id": "volume:3:segment:5",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接已验证的分工方法，让唐穗的个人日程影响她能否参与短程实践准备；她可以提供与其经验相称的信息，也可以因自身事务调整约定。",
+      "segment_id": "arc:tang-sui:segment:169-176",
+      "entry_state_ref": "arc:tang-sui:segment:129-136",
+      "exit_state_spec": {
+        "summary": "唐穗拟继续自己的材料学习和任务安排；若参与飞剑阶段的准备，她仅在亲自核实且愿意承担的材料或携行事项上提供有范围的帮助，沈砚仍负责操控与返回判断。"
+      },
+      "narrative_segment_id": "volume4-segment4",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使唐穗对实际接触到的携行材料或交付约定作出具体回应，同时让沈砚亲自复查器具、消耗和能力范围；两人的合作成果与各自职责保持清楚。",
+      "segment_id": "arc:tang-sui:segment:185-192",
+      "entry_state_ref": "arc:tang-sui:segment:169-176",
+      "exit_state_spec": {
+        "summary": "拟在受控短程实践的复查中，明确唐穗实际参与过的事项及后来仍能提供的有限帮助；她自己的学习方向继续，不因沈砚的飞剑进步而被搁置或替代。"
+      },
+      "narrative_segment_id": "volume4-segment6",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接首次采药以来的说明核实、质量复查和回程余地方法，让唐穗有意义地参与其能力范围内的准备，而不代替沈砚决定路线或飞行方案。",
+      "segment_id": "arc:tang-sui:segment:217-224",
+      "entry_state_ref": "arc:tang-sui:segment:185-192",
+      "exit_state_spec": {
+        "summary": "拟在远行准备中让唐穗依实际接触的资料说明与携行材料或补给有关的依据、时效和不确定处；沈砚据此自行核实所选行程的全部必要条件。"
+      },
+      "narrative_segment_id": "volume-5:segment-4",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让唐穗完成自己已明确承担的事项并说明其范围，保留关系的温度；最终独自御剑远行及落脚由沈砚亲自完成。",
+      "segment_id": "arc:tang-sui:segment:233-240",
+      "entry_state_ref": "arc:tang-sui:segment:217-224",
+      "exit_state_spec": {
+        "summary": "拟在出发前清楚处理唐穗与沈砚之间影响本次行程的具体约定。唐穗的判断曾实际帮助准备，但她不代控飞剑、不代定行程；沈砚独行落脚后，两人仍可各自继续生活与学习。"
+      },
+      "narrative_segment_id": "volume-5:segment-6",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "arc_relations": [],
+  "arc_contributions": [
+    {
+      "change": "唐穗把采药时的细致观察逐步变成能说明依据、把握程度和适用范围的判断，供共同任务实际使用。",
+      "subject": "材料辨认与共同交付"
+    },
+    {
+      "change": "唐穗保有自己的材料学习方向，与沈砚的合作从共同执行发展为可以重新商定范围、各自承担判断的关系。",
+      "subject": "唐穗与沈砚的合作"
+    }
+  ]
+}

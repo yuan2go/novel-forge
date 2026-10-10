@@ -1,0 +1,176 @@
+{
+  "objective": "沿五卷追踪程观如何坚持任务来源清楚、交付可靠，同时依据沈砚实际履约和完整信息调整协商方式；让这条关系支持沈砚从接取工作走向独立准备，而不替他决定学习或远行。",
+  "hard_constraints": [
+    "保留父Book的240章五卷结构、四项近期成长顺序与终局实际独行落脚；本Arc只提出程观的跨卷人物变化。",
+    "第1—19章保持所选或冻结工作连续性；卷一只规划第20—48章的未来相关段落。",
+    "卷一允许在真实教学、观察、调整及多次成功后形成范围有限的可重复本领，并在有限事务中使用；卷二继续扩展稳定性、时长和复杂条件。",
+    "程观的具体职位、权限和已有知识尚未明确；每次发布、交付或调整回应，都须以未来场景中可接触的任务来源与职责为条件。",
+    "正式课程录入与程观的任务处理分开；课位及其他条件须由有权者确认。",
+    "日程、资源、劳动额度、库存和任务要求均按实际来源、管理者、用途和限度处理；未定数值不预定。",
+    "采用以沈砚为主的第三人称限知视角；程观的私下想法须经沈砚可见的言行呈现。",
+    "相关人物保有各自目标、时间和拒绝或协商的权利；不得为维持程观出场而插入无用途事务。",
+    "候选段落与后续结果均为未来设计，不授予已接受事实或扩大当前正文执行范围。"
+  ],
+  "forbidden_events": [
+    "把未来Arc候选或第1—19章工作线索写成已接受历史。",
+    "让程观越过未明确权限批准课程、器具、库存、收益或远行资格。",
+    "让程观只负责拒绝、审核、纠错或赞叹，而没有自己的事务目标与实际选择。",
+    "用反复询问和等待替代卷一第20—25章共同山林行动、第33—40章完整任务交付及其结果。",
+    "把已练成的有限本领绝对延期到卷二，或在实践不足时直接授予稳定灵气运用、境界或御剑能力。",
+    "以调整请求抹去已答应的交付，或以未核实的资源和负余额维持安排。",
+    "为这条事务关系增加外敌、秘密派系、重大背叛或无因果的永久损失。"
+  ],
+  "required_events": [
+    "卷一第20—25章的共同山林任务中，程观在实际职责范围内提供与接取或交付有关的明确条件，行动及结果由参与者完成。",
+    "卷一第33—40章的完整任务交付得到职责范围内的明确回应，第41—48章承接对下一步安排的影响。",
+    "卷二沈砚完成已接任务后，凭实际用时和学习用途修正后续接取；程观对有依据的新范围作出清楚回应。",
+    "卷三更复杂的准备与交付中，程观依据已说明要求处理结果，放弃的额外工作与已完成部分分别承接。",
+    "卷四飞剑学习占用真实时段时，与程观有关的既有工作约定得到履行或明确协商。",
+    "卷五独行前，影响此次行程且属于这条工作关系的明确承诺得到处理。"
+  ],
+  "arc_segments": [
+    {
+      "status": "PLANNED",
+      "objective": "在共同山林任务开始前，使程观对条件的说明帮助众人形成可执行的分工；只呈现他实际掌握的信息，不预定任务数量、报酬或验收结果。",
+      "segment_id": "cheng-guan-arc-01",
+      "entry_state_ref": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "exit_state_spec": {
+        "summary": "若当期确有适合的任务，程观在自身实际职责范围内说明已发布要求、交付方式及可调整处；沈砚与同行者据此选择承担部分，现场行动和结果继续决定后续回应。"
+      },
+      "narrative_segment_id": "v1-20-25-common-task",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让完整任务的交付得到清楚承接，使程观重视来源与要求的做法产生实际用途，而不让他替教习判定本领或越权许诺课程资格。",
+      "segment_id": "cheng-guan-arc-02",
+      "entry_state_ref": "cheng-guan-arc-01",
+      "exit_state_spec": {
+        "summary": "程观对已完成的交付给出职责范围内的明确回应；他能够依据实际履约与信息完整程度，区分可继续承接的工作和仍须核实的条件。"
+      },
+      "narrative_segment_id": "v1-33-40-task-result",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "将此前交付的实际结果落实到下一步安排，使程观的回应有连续性，同时保留他当天事务与职责的限度。",
+      "segment_id": "cheng-guan-arc-03",
+      "entry_state_ref": "cheng-guan-arc-02",
+      "exit_state_spec": {
+        "summary": "卷一交付结果在后续安排中得到承接；程观与沈砚之间形成可以凭具体任务、已履行事项和可承担时段继续商量的工作关系。"
+      },
+      "narrative_segment_id": "v1-41-48-settlement",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让程观的交付处理为沈砚的任务价值判断提供可靠结果；程观无需替沈砚决定学习方向，也不因沈砚改变主意而抹去已经履行的工作。",
+      "segment_id": "cheng-guan-arc-04",
+      "entry_state_ref": "cheng-guan-arc-03",
+      "exit_state_spec": {
+        "summary": "沈砚按约完成所接任务并看清实际用时与学习用途的差别；程观按明确要求处理交付，不把任务完成等同于它适合沈砚继续接取。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:3",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让程观对有具体依据的调整请求作出可见回应，体现其减少任务错配的愿望与按时完成事务的需要。",
+      "segment_id": "cheng-guan-arc-05",
+      "entry_state_ref": "cheng-guan-arc-04",
+      "exit_state_spec": {
+        "summary": "沈砚说明新的可承担范围后，程观依据已有承诺、当期任务条件和自己掌握的信息回应；双方只将明确达成的部分纳入后续安排。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:4",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使第二卷的安排修正经过执行与交付检验；程观依据实际质量和已说明条件回应，不以赞许替代结果。",
+      "segment_id": "cheng-guan-arc-06",
+      "entry_state_ref": "cheng-guan-arc-05",
+      "exit_state_spec": {
+        "summary": "经修正的合作交付及预留练习得到实际检验；程观对自己负责的交付作出清楚处理，沈砚的工作范围与学习安排各有结果。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:6",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "将以往凭具体依据协商的工作关系带入第三卷准备责任，不预授程观未说明的职位、库存信息或批准权限。",
+      "segment_id": "cheng-guan-arc-07",
+      "entry_state_ref": "cheng-guan-arc-06",
+      "exit_state_spec": {
+        "summary": "随着沈砚承担更复杂的准备，程观在实际接触中能辨认其对工具、用时和交付条件提出的具体问题；双方明确哪些事项已经答应，哪些仍待核实。"
+      },
+      "narrative_segment_id": "volume:3:segment:1",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使职责取舍落实到交付与回应，保留程观对来源清楚、安排可追踪的原则，同时让实际质量决定结果。",
+      "segment_id": "cheng-guan-arc-08",
+      "entry_state_ref": "cheng-guan-arc-07",
+      "exit_state_spec": {
+        "summary": "沈砚缩减当次任务范围后，程观依据已明确的要求处理最终交付；放弃的额外工作不被算作完成，已完成的部分也不被无故取消。"
+      },
+      "narrative_segment_id": "volume:3:segment:5",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让程观的工作线为沈砚安排飞剑练习留下真实时间边界，不将程观设成飞剑器具或教学资格的当然管理者。",
+      "segment_id": "cheng-guan-arc-09",
+      "entry_state_ref": "cheng-guan-arc-08",
+      "exit_state_spec": {
+        "summary": "飞剑练习开始前，与程观实际职责有关的既有劳作约定被纳入日程；他对调整请求作出范围明确的回应，器具与教学条件仍由相应来源分别核实。"
+      },
+      "narrative_segment_id": "volume4-segment1",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接飞剑练习对日程和工作选择的实际影响，使程观与沈砚的协商关系随能力增长继续适用。",
+      "segment_id": "cheng-guan-arc-10",
+      "entry_state_ref": "cheng-guan-arc-09",
+      "exit_state_spec": {
+        "summary": "受控短程往返后，相关劳作履约及后续可承担范围得到清楚交代；程观按自己实际掌握的事务信息回应，不替沈砚评定飞剑能力。"
+      },
+      "narrative_segment_id": "volume4-segment6",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使程观的事务需要与沈砚的出行准备通过具体协商相容；不凭过去合作推定新任务、报酬或放行条件。",
+      "segment_id": "cheng-guan-arc-11",
+      "entry_state_ref": "cheng-guan-arc-10",
+      "exit_state_spec": {
+        "summary": "远行准备涉及的已答应劳作、交付和可拒绝的新任务得到区分；程观根据实际履约及当期条件回应沈砚提出的工作范围。"
+      },
+      "narrative_segment_id": "volume-5:segment-2",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在独行前结清或明确安排相关事务，让程观的可靠履约原则与沈砚的自主选择共同得到兑现。",
+      "segment_id": "cheng-guan-arc-12",
+      "entry_state_ref": "cheng-guan-arc-11",
+      "exit_state_spec": {
+        "summary": "影响此次行程且属于程观实际事务范围的明确承诺已履行或经双方清楚协商处理；沈砚可以在不抹去关系与工作结果的情况下继续完成其他准备。"
+      },
+      "narrative_segment_id": "volume-5:segment-5",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "arc_relations": [],
+  "arc_contributions": [
+    {
+      "change": "以有来源的任务条件、实际交付和清楚回应，支持沈砚判断劳作能否服务当前修行需要。",
+      "subject": "任务选择与学习"
+    },
+    {
+      "change": "让已答应事项与可协商的新安排各有边界，支持沈砚逐步承担自主准备和远行前的履约责任。",
+      "subject": "承诺与独立准备"
+    }
+  ]
+}

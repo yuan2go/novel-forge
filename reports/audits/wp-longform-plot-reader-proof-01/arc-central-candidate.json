@@ -1,0 +1,389 @@
+{
+  "objective": "规划沈砚贯穿五卷的成长Arc：从主动争取入门和基础学习，经过有结果的任务选择、双向合作、独立准备及飞剑实践，最终凭可辨认的积累完成独自御剑远行与落脚。",
+  "hard_constraints": [
+    "本候选仅规划未来Arc，不批准、激活或修改Authority状态；accepted_through_chapter为0，拟议事件不构成已接受历史。",
+    "第1—19章保持所选及冻结工作；仅卷一第20—48章按新Volume真实Narrative Segment身份重绑，卷二至五保持供应版本及原目的。",
+    "沈砚以十六岁普通山村少年为起点；近期四项成长单元顺序不变，终局在240章有界篇幅内实际独自御剑远行并落脚。",
+    "卷一第20—25章有共同山林目标及现场结果，第26—32章以教学和重复取得有限可用本领，第33—40章完成改变后续选择的任务，第41—48章承接结果。",
+    "基础吐纳说明、指定答疑和正式外门课程各有条件；正式录入须由有权者核实当期课位及全部其他明确条件。",
+    "资源有来源、管理者、用途和限度；内部额度依据实际核验取得，支出后不为负，余额充足也不保证库存。",
+    "日程使用同一计量单位，劳作、练习、赶路、休息及已有承诺不能重复占用或形成负余额。",
+    "折露草每次采收前核实当前成熟可采份额，只采成熟外叶并保留芽根；验收依已说明要求及实际质量。",
+    "普通手工采药不强制依赖术法；普通劳作经验不能替代引气、药材辨认或路线核实。",
+    "独立重复运用灵气须有稳定维持基础流转的实践支持；已有本领不因卷次变化自动消失。",
+    "教习、事务人员与同行者各守实际权限和信息边界；沈砚可主动选择与修改安排，同门也可拒绝或协商。",
+    "以沈砚为主采用第三人称限知视角，机构资料和他人私下动机须经实际接触才进入其所知。",
+    "独行前分别核实能力、器具、路线天气、补给和落脚，处理影响此次行程的任务、资源及明确承诺。",
+    "同时活跃Arc不超过3，单章主要状态变化不超过8、新增概念不超过4、开放义务不超过12、逾期义务为0、同章到期兑现不超过3。",
+    "后续章节细化须检查人物出场间隔不超过10章及休眠Arc年龄不超过30章，以真实相关行动承接。",
+    "正文主要使用简体中文，单章2500—3500中文字，段落不超过500中文字；当前正文执行窗口止于第3章。"
+  ],
+  "forbidden_events": [
+    "改写第1—17章所选工作正文或第18—19章冻结任务，或将工作稿方向伪装为已接受Canon。",
+    "取消、替换或倒置入门、初次引气、首次结伴山谷采药及争取正式外门修炼课。",
+    "把任何可用基础本领绝对延期到卷二，或未经教学、观察和多次成功便宣称稳定掌握。",
+    "让第20—25章只有询问、报名或空试，没有共同山林目标、现场行动及结果。",
+    "以隐藏血统、秘密传承、自动灌顶、无条件赠予或越权批准代替练习与选择。",
+    "让未知库存、报酬、余额、课位、器具条件、路线时长或飞剑门槛成为既得事实。",
+    "让同门只负责拒绝、审核、纠错、赞叹或无条件让步。",
+    "反复撤销已掌握能力、已完成交付或已处理承诺来延长成长。",
+    "为增加分量预置外敌、秘密派系、宏大阴谋、无因果重大牺牲或无关人物群。"
+  ],
+  "required_events": [
+    "保留第1—19章所选与冻结工作所形成的工作连续性，不补造接受历史。",
+    "卷一第20—25章拟有真实共同山林行动及结果，第26—32章拟经教学和多次成功取得有限可重复运用。",
+    "卷一第33—40章拟完成明确交付并改变后续选择，第41—48章拟落实结果。",
+    "卷二拟以已掌握本领为起点，经历任务价值判断修正，并以执行证明新安排可行。",
+    "卷三拟让沈砚承担准备职责，依据实际用时和伙伴安排修正范围，完成明确交付。",
+    "卷四拟依次验证局部操控、起降、持续控制、短程往返和失稳处置。",
+    "卷五拟分别核实独行必要条件，处理相关承诺，在第235—239章实际独自远行及落脚。"
+  ],
+  "arc_segments": [
+    {
+      "status": "HELD",
+      "objective": "守住入门、初次引气、首次结伴采药及争取正式课程的既定顺序，并为后续行动保留工作稿衔接。",
+      "segment_id": "arc-shen-yan-01",
+      "entry_state_ref": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1",
+      "exit_state_spec": {
+        "summary": "保留第1—17章所选工作正文和第18—19章冻结任务的连续性；本Arc不据此补造已接受历史。"
+      },
+      "narrative_segment_id": "v1-01-19-preserved",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让沈砚依据学习用途、时间和能力选择工作，与同伴协商并实际行动，而非只反复询问条件。",
+      "segment_id": "arc-shen-yan-02",
+      "entry_state_ref": "v1-01-19-preserved",
+      "exit_state_spec": {
+        "summary": "拟完成一项有明确来源和用途的共同山林行动；沈砚作出承担选择，现场结果进入后续交付与学习安排。"
+      },
+      "narrative_segment_id": "v1-20-25-common-task",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把初次引气的方法发展为有实践支持的小本领，同时辨认其适用范围。",
+      "segment_id": "arc-shen-yan-03",
+      "entry_state_ref": "v1-20-25-common-task",
+      "exit_state_spec": {
+        "summary": "拟经具体教学、观察调整和多次成功，形成范围有限、在已知条件下可重复的基础运用，并用于一项明确事务。"
+      },
+      "narrative_segment_id": "v1-26-32-repeatable-foundation",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让已有小本领、任务判断与同伴分工支持完整执行，并呈现交付的实际后果。",
+      "segment_id": "arc-shen-yan-04",
+      "entry_state_ref": "v1-26-32-repeatable-foundation",
+      "exit_state_spec": {
+        "summary": "拟完成主动选择的任务及明确交付；有权者依据已说明条件回应，结果改变下一步机会、资源或合作安排。"
+      },
+      "narrative_segment_id": "v1-33-40-task-result",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接任务结果，收束卷一近期成长，并为卷二更稳、更广的运用留下具体问题。",
+      "segment_id": "arc-shen-yan-05",
+      "entry_state_ref": "v1-33-40-task-result",
+      "exit_state_spec": {
+        "summary": "拟把交付结果落实到后续日程、资源或合作安排；沈砚保有已练成的有限本领，并明确下一步学习需要。"
+      },
+      "narrative_segment_id": "v1-41-48-settlement",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式承接卷一结果，区分已确认条件与未完成事项，不预认正式课程资格。",
+      "segment_id": "arc-shen-yan-06",
+      "entry_state_ref": "v1-41-48-settlement",
+      "exit_state_spec": {
+        "summary": "拟核实届时实际课程回应、交付承诺、资源和可用时段，形成可执行的下一轮练习安排。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:1",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "沿用卷一有限本领，扩展稳定性和适用条件，并提出任务所得是否支持当前练习的问题。",
+      "segment_id": "arc-shen-yan-07",
+      "entry_state_ref": "volume:2:future-1:segment:1",
+      "exit_state_spec": {
+        "summary": "拟通过重复实践和具体反馈，辨认基础流转的稳定程度及已验证的运用范围。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:2",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让一次任务价值判断在履约过程中接受检验，不以判断修正抹去已有能力。",
+      "segment_id": "arc-shen-yan-08",
+      "entry_state_ref": "volume:2:future-1:segment:2",
+      "exit_state_spec": {
+        "summary": "拟完成已接任务，保留实际所得与耗去的时间；沈砚辨认预期收益同练习用途、用时之间的差异。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:3",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把判断修正落实为可执行的任务和学习安排，让同伴有真实的接受、拒绝或调整空间。",
+      "segment_id": "arc-shen-yan-09",
+      "entry_state_ref": "volume:2:future-1:segment:3",
+      "exit_state_spec": {
+        "summary": "拟形成经时间、必要资源及伙伴安排核实的新接取范围，保留不与劳作和休息重叠的练习时段。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:4",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "通过练习与有限任务交替，检验沈砚能否守住自己选择的学习时间并提供双向帮助。",
+      "segment_id": "arc-shen-yan-10",
+      "entry_state_ref": "volume:2:future-1:segment:4",
+      "exit_state_spec": {
+        "summary": "拟以多次行动验证新安排支持连续学习；已掌握本领用于适合的事务，合作范围依据反馈修订。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:5",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以实际交付和随后完成的练习证明修正安排可行，为下一卷职责检验留下已有成果。",
+      "segment_id": "arc-shen-yan-11",
+      "entry_state_ref": "volume:2:future-1:segment:5",
+      "exit_state_spec": {
+        "summary": "拟完成一次范围受控的合作交付及预留练习；任务结果、资源变化与明确约定得到承接。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:6",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "条件式承接卷二，令沈砚从会使用本领，走向自己说明职责范围。",
+      "segment_id": "arc-shen-yan-12",
+      "entry_state_ref": "volume:2:future-1:segment:6",
+      "exit_state_spec": {
+        "summary": "拟核实届时实际技能、承诺和资源，明确可主动承担的准备职责及尚待确认的条件。"
+      },
+      "narrative_segment_id": "volume:3:segment:1",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让沈砚主动承担准备与交付前复查，并依据实际反馈判断安排是否足够。",
+      "segment_id": "arc-shen-yan-13",
+      "entry_state_ref": "volume:3:segment:1",
+      "exit_state_spec": {
+        "summary": "拟得到一次有限准备和执行的真实用时、工具与质量反馈，区分单项熟练和整体衔接缺口。"
+      },
+      "narrative_segment_id": "volume:3:segment:2",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让实际用时促使沈砚缩减当次任务范围，为自己选择的职责留下可行时间。",
+      "segment_id": "arc-shen-yan-14",
+      "entry_state_ref": "volume:3:segment:2",
+      "exit_state_spec": {
+        "summary": "拟放弃一项与准备时段互斥的当次额外机会，履行或明确协商原有约定；已有技能继续有效。"
+      },
+      "narrative_segment_id": "volume:3:segment:3",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让同伴各自的目标和日程改变分工，并使沈砚实际练习承担缺少的部分。",
+      "segment_id": "arc-shen-yan-15",
+      "entry_state_ref": "volume:3:segment:3",
+      "exit_state_spec": {
+        "summary": "拟形成各人确认的合作边界；沈砚接手至少一项过去依赖伙伴支持的核实或准备工作。"
+      },
+      "narrative_segment_id": "volume:3:segment:4",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "用一次完整执行检验沈砚的准备方法，现场由他决定守住已承诺的可承担范围。",
+      "segment_id": "arc-shen-yan-16",
+      "entry_state_ref": "volume:3:segment:4",
+      "exit_state_spec": {
+        "summary": "拟依修改后的分工完成任务与明确交付；当前可采范围、工具、回程余地和质量要求实际限制选择。"
+      },
+      "narrative_segment_id": "volume:3:segment:5",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使核实与准备成为沈砚可重复的方法，为飞剑学习提供行动基础。",
+      "segment_id": "arc-shen-yan-17",
+      "entry_state_ref": "volume:3:segment:5",
+      "exit_state_spec": {
+        "summary": "拟将交付结果用于下一轮选择，并再次使用修正后的准备方法；相关约定得到清楚处理。"
+      },
+      "narrative_segment_id": "volume:3:segment:6",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把沈砚的飞剑向往转成有来源、有准入和有消耗的具体操作目标。",
+      "segment_id": "arc-shen-yan-18",
+      "entry_state_ref": "volume:3:segment:6",
+      "exit_state_spec": {
+        "summary": "拟核实器具来源、学习条件、使用权限与日程；条件满足后取得初步局部操控结果。"
+      },
+      "narrative_segment_id": "volume4-segment1",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以观察、调整和重复建立起降能力，承接早期学习方法。",
+      "segment_id": "arc-shen-yan-19",
+      "entry_state_ref": "volume4-segment1",
+      "exit_state_spec": {
+        "summary": "拟在已核实条件下取得可重复辨认的起降进步，明确尚需指导与练习的部分。"
+      },
+      "narrative_segment_id": "volume4-segment2",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "扩展操控时长，同时让沈砚依据真实用时调整工作与练习。",
+      "segment_id": "arc-shen-yan-20",
+      "entry_state_ref": "volume4-segment2",
+      "exit_state_spec": {
+        "summary": "拟取得持续控制的重复证据，并发现练习、复查与休息的实际用时；履行旧约后少接新增事务。"
+      },
+      "narrative_segment_id": "volume4-segment3",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把已练成的起降和控制用于完整往返，并核实返回安排及必要余地。",
+      "segment_id": "arc-shen-yan-21",
+      "entry_state_ref": "volume4-segment3",
+      "exit_state_spec": {
+        "summary": "拟在受控范围内完成短程往返准备与实践；沈砚自行承担能胜任的核实部分，伙伴帮助有明确边界。"
+      },
+      "narrative_segment_id": "volume4-segment4",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让沈砚在允许的条件差别中练习判断，保留既有起降与控制能力。",
+      "segment_id": "arc-shen-yan-22",
+      "entry_state_ref": "volume4-segment4",
+      "exit_state_spec": {
+        "summary": "拟形成对已说明失稳情形的识别、处置和返回判断的实践证据，不扩大为任意条件下的保证。"
+      },
+      "narrative_segment_id": "volume4-segment5",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "汇合第四卷操作积累，以落地复查确认可重复的范围及尚未核实的远行条件。",
+      "segment_id": "arc-shen-yan-23",
+      "entry_state_ref": "volume4-segment5",
+      "exit_state_spec": {
+        "summary": "拟完成亲自准备、操控、判断和落地的受控短程往返，并分别交接已验证能力与完整远行缺项。"
+      },
+      "narrative_segment_id": "volume4-segment6",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "将独行愿望与可重复能力比较，选出值得继续核实的能力相称的行程方向。",
+      "segment_id": "arc-shen-yan-24",
+      "entry_state_ref": "volume4-segment6",
+      "exit_state_spec": {
+        "summary": "拟依据届时实际前卷结果，区分已有操控能力、相关承诺及器具、路线天气、补给和落脚缺项。"
+      },
+      "narrative_segment_id": "volume-5:segment-1",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "先处理已答应的事项，再为独行准备留下真实时间和资源。",
+      "segment_id": "arc-shen-yan-25",
+      "entry_state_ref": "volume-5:segment-1",
+      "exit_state_spec": {
+        "summary": "拟使相关交付、实际所得、准备支出与练习时间得到可追踪安排；新增工作范围经过协商。"
+      },
+      "narrative_segment_id": "volume-5:segment-2",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "检验单项操控与完整携行方案的差别，由沈砚依据可观察结果修改偏好方案。",
+      "segment_id": "arc-shen-yan-26",
+      "entry_state_ref": "volume-5:segment-2",
+      "exit_state_spec": {
+        "summary": "拟以受控携行结果修正载荷或行程范围；已有操控能力、已投入时间和资源继续有效。"
+      },
+      "narrative_segment_id": "volume-5:segment-3",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让沈砚实际核实信息时效与用途，沿用早期任务中的说明核实和回程余地方法。",
+      "segment_id": "arc-shen-yan-27",
+      "entry_state_ref": "volume-5:segment-3",
+      "exit_state_spec": {
+        "summary": "拟为修正方案取得路线、补给和落脚的具体信息，并标明临行仍须复核的条件。"
+      },
+      "narrative_segment_id": "volume-5:segment-4",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把分项准备汇合到同一日程，由沈砚自己限定可承担范围并选择行程。",
+      "segment_id": "arc-shen-yan-28",
+      "entry_state_ref": "volume-5:segment-4",
+      "exit_state_spec": {
+        "summary": "拟处理影响行程的剩余任务和明确承诺，整理已核验资源、器具状态及保留休息余地的可行方案。"
+      },
+      "narrative_segment_id": "volume-5:segment-5",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让沈砚独自起飞、越出熟悉山路、依据沿途信息操作和判断，完成能力相称的山外落脚。",
+      "segment_id": "arc-shen-yan-29",
+      "entry_state_ref": "volume-5:segment-5",
+      "exit_state_spec": {
+        "summary": "拟在第234章结束前核实全部必要条件，第235—239章实际完成独自御剑远行及落脚，第240章在愿望兑现后安静收束。"
+      },
+      "narrative_segment_id": "volume-5:segment-6",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "arc_relations": [],
+  "arc_contributions": [
+    {
+      "change": "拟使沈砚从争取入门的普通少年，逐步成长为能凭实际本领、判断和准备完成独自远行的修士。",
+      "subject": "沈砚的能力与自主选择"
+    },
+    {
+      "change": "拟让观察、调整和重复从初次引气延续到有限灵气运用、复杂任务及飞剑操控，已经掌握的部分持续有效。",
+      "subject": "学习方法的积累"
+    },
+    {
+      "change": "拟让任务所得、实际用时和当前技术需要共同影响接取选择，并以交付结果检验修正后的安排。",
+      "subject": "劳动与修行的协调"
+    },
+    {
+      "change": "拟让陆衡、唐穗与沈砚依据各自目标协商分工，合作逐渐双向，日程变化也能得到重新商定。",
+      "subject": "同门合作"
+    },
+    {
+      "change": "拟让沈砚逐步承担条件核实、资源安排、质量复查和承诺处理，形成可重复使用的准备方法。",
+      "subject": "独立准备能力"
+    },
+    {
+      "change": "拟将修为、飞剑操作、路线天气判断、补给和落脚条件汇合，最终以实际独行及落脚兑现愿望。",
+      "subject": "独自御剑远行"
+    }
+  ]
+}

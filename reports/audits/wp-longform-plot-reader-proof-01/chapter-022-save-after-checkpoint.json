@@ -1,0 +1,14 @@
+{
+  "operation_id": "ef972942-1df6-49e0-82c8-d8f0d9e8b10a",
+  "status": "SUCCEEDED",
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "chapter": 22,
+  "source_asset_version_id": "authority-output:5451d53a-967e-4aca-8b07-12086e75598c:chapter.draft:v1",
+  "source_content_hash": "sha256:fa2e80d4787c66dae6f2d8e62978836a0e6887e0ba6847a2e472ab3e55d5697d",
+  "manuscript_status": "SAVED",
+  "review_status": "NOT_RUN",
+  "quality_status": "NOT_VERIFIED",
+  "requirements_status": "NOT_EVALUATED",
+  "acceptance": "NOT_GRANTED",
+  "replayed": false
+}

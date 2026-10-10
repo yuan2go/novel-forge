@@ -1,0 +1,48 @@
+{
+  "predecessor_operation_id": "309e53e3-3020-4e54-928b-bb9e860bab2d",
+  "successor_operation_id": "8cfc7533-b6dd-4a57-978a-8da17aad48dc",
+  "policy_evidence": {
+    "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+    "domain_schema": "UNCHANGED",
+    "input_snapshot": [
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:04eb8c819ce3432bdb71886dd1edb1459e57eb548ed7ed7b0070b8e74fe4c07d",
+        "asset_version_id": "authority-output:7553ff7b-ad44-4672-beaa-2132f03ac350:chapter.plan:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:a67cd358669e28cd71b4633e7975d173c39ca2f65debf4735065708855cbefaa",
+        "asset_version_id": "authority-output:a786c94f-dc03-4367-be9f-5453de142bb8:chapter.execution_intent:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:67dbfabfcacf1e8a6d782e535b95e765f338ea8c5dcfbeb52c8a95ce92e085fc",
+        "asset_version_id": "authority-output:948b701f-a70d-4e08-bbb2-2dc749116e68:chapter.memo:v1"
+      },
+      {
+        "project_id": "qid-learning-prose-01",
+        "content_hash": "sha256:5bce7f441b237f842cd34bec8ee1bbe8805efa7fee4755c54ed1e3aa5de35a8b",
+        "asset_version_id": "authority-output:7b2c091c-e64e-4607-b135-e93da11df819:chapter.context:v1"
+      }
+    ],
+    "contract_version": "chapter-optional-memory-transport.v1",
+    "completion_checks": "UNCHANGED",
+    "chapter_request_id": "chapter-request:6112a301ffee1406e2bc619f3887602f2e1541d87b3cd5f892b4a96ac0898a64",
+    "transport_projection": "codex-optional-working-memory.v1",
+    "schema_rejection_receipts": [
+      {
+        "outcome": "PROVIDER_SCHEMA_REJECTED",
+        "consumption": "ORIGINAL_CONSERVATIVE_MEMBERSHIP_USAGE_PRESERVED",
+        "stdout_hash": "sha256:ade7944a502644ec6c7a17fcc589e9f1ef64ff0b2f4fa0417b49f11fa72a8cd4",
+        "request_hash": "sha256:ebe066fff63f4151a96e65274e56da48e02b6c3d6443fc18ec5403c3edfcba8c",
+        "effect_status": "FAILED_FINAL",
+        "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "external_effect_id": "a83fc800-f3d9-4565-9c83-ab9fe87ef64c",
+        "reservation_status": "SETTLED",
+        "process_receipt_hash": "sha256:51d4f44d1192c2d2d3d5d7a1fa07cb8c95db9bffffca8a265ff62a843fec68bf",
+        "process_receipt_asset_version_id": "035bdc36-e2c4-4951-9075-c966ea28338f"
+      }
+    ]
+  }
+}

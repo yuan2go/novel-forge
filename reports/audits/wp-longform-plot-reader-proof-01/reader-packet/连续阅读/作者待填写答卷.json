@@ -1,0 +1,45 @@
+{
+  "status": "UNFILLED_DRAFT_NOT_HUMAN_EVIDENCE",
+  "intended_identity_class": "AUTHOR",
+  "verified_reviewer_id": null,
+  "real_contact_authorization": null,
+  "submitted_at": null,
+  "actual_identity_class": null,
+  "questions": [
+    {
+      "key": "continue",
+      "question": "读完后，你愿意继续阅读吗？为什么？",
+      "answer": null
+    },
+    {
+      "key": "skip",
+      "question": "哪些段落想跳读？请引用开头几字或说明位置和原因。",
+      "answer": null
+    },
+    {
+      "key": "character",
+      "question": "哪个人物最吸引你或最让你在意？哪处选择使你形成这个看法？",
+      "answer": null
+    },
+    {
+      "key": "naturalness",
+      "question": "哪些话像人自然说出来的，哪些话显得生硬？请指出具体位置。",
+      "answer": null
+    },
+    {
+      "key": "change",
+      "question": "这几章中，有什么变化值得关心？哪段显得重复？",
+      "answer": null
+    },
+    {
+      "key": "consequence",
+      "question": "前一章做过的事，在后一章中有没有产生你能感到的影响？",
+      "answer": null
+    },
+    {
+      "key": "edit",
+      "question": "只改一处，你会改哪里？为什么？",
+      "answer": null
+    }
+  ]
+}

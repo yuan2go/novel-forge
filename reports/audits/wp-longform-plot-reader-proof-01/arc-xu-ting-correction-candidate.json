@@ -1,0 +1,155 @@
+{
+  "objective": "规划许庭跨五卷的有限教学轨迹：她依据弟子可观察的实践调整指导深度，使帮助逐渐成为沈砚能自行使用的方法，同时守住教学权限与自身修炼节奏。",
+  "hard_constraints": [
+    "保留冻结Book、Volume、人物组合及五卷章域的父条件；本Arc是未来候选，accepted_through_chapter为0，不生成已接受经历。",
+    "许庭为女性，使用“她”；保留她希望有限指导真正形成可重复本领、同时维持教学安排和自身修炼节奏的愿望。",
+    "许庭只依据实际接触到的表现与信息行动，不获授未明确的职位、课程录入权、器具权限或远行批准权。",
+    "沈砚的初次引气、有限可重复运用、后续稳定练习及飞剑实践须按冻结卷计划逐步建立；许庭不能以一句判断代替实践。",
+    "入门、初次引气、首次结伴采药和争取正式课程的既定顺序不得更改；基础指导与正式课程条件保持区别。",
+    "人物所知限于实际接触；资源、课位、器具、任务、时间和承诺的条件须分别有来源与核实过程。",
+    "许庭的出场与Arc承接须在后续章节安排中满足冻结叙事负载和人物出场间隔限制，使用与她本人目标相关的行动。",
+    "终局由沈砚在必要条件齐备后实际独自御剑远行并落脚；许庭的帮助不能代替其操控和关键判断。"
+  ],
+  "forbidden_events": [
+    "将许庭写为男性，或把女性指代的修正解释为人物性别变化。",
+    "凭许庭的好感、答疑或教学反馈自动授予正式课程资格、器具准入、库存或其他未明确权限内的条件。",
+    "预设许庭具有飞剑专门教习、事务管理者或远行批准者的身份。",
+    "让许庭无限接纳指导请求，省略她自己的修炼安排与已有教学时段。",
+    "让她只负责纠错、赞叹或替沈砚完成判断。",
+    "把卷级拟议成果写成已发生经历或已接受历史。"
+  ],
+  "required_events": [
+    "卷一拟安排许庭在实际教学中指出可观察的动作差别，沈砚经调整和重复取得有限成功。",
+    "卷一任务结果之后，拟以具体表现作为下一次答疑依据。",
+    "卷二、卷三拟使许庭按沈砚带来的实践结果调整指导深度，并明确自己的可用时段。",
+    "卷四拟在飞剑条件另行核实后，仅安排她对实际有把握的练习问题作有限反馈。",
+    "卷五拟处理双方确有的教学约定，使沈砚带着已内化的方法完成自己的远行准备与独行。"
+  ],
+  "arc_segments": [
+    {
+      "status": "PLANNED",
+      "objective": "让许庭的有限教学帮助弟子形成可重复的本领，同时呈现她以实际表现决定指导内容的原则。",
+      "segment_id": "xu-ting-arc-segment-01",
+      "entry_state_ref": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+      "exit_state_spec": {
+        "summary": "拟由许庭在权限内针对沈砚可观察的动作差别给予具体指导；沈砚经调整和多次成功，形成适用范围有限的基础运用。许庭尚未据一次表现判断其天赋或承诺课程资格。"
+      },
+      "narrative_segment_id": "v1-26-32-repeatable-foundation",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接卷一任务结果，让师生交流指向下一项可练的问题，不以赞许或含糊等待替代实际反馈。",
+      "segment_id": "xu-ting-arc-segment-02",
+      "entry_state_ref": "xu-ting-arc-segment-01",
+      "exit_state_spec": {
+        "summary": "拟使任务中的实际运用成为后续答疑的具体依据。许庭说明已见到的进步和仍需练习的条件，约定有范围的下一步指导，并继续安排自己的修炼时间。"
+      },
+      "narrative_segment_id": "v1-41-48-settlement",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让许庭的教学回应沈砚具体的练习结果，并使她的答疑时段保持有限、明确。",
+      "segment_id": "xu-ting-arc-segment-03",
+      "entry_state_ref": "xu-ting-arc-segment-02",
+      "exit_state_spec": {
+        "summary": "拟依据届时实际可用的学习安排和重复练习结果，调整指导深度；许庭指出观察方法能够继续使用的部分及尚未覆盖的操作条件，不预授稳定能力或课程资格。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:2",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把指导从逐次纠正推进到帮助弟子自行辨认条件差别，同时让许庭保有自己的修炼节奏。",
+      "segment_id": "xu-ting-arc-segment-04",
+      "entry_state_ref": "xu-ting-arc-segment-03",
+      "exit_state_spec": {
+        "summary": "拟使许庭看到沈砚在修正日程后带来的可比较结果，据此提出下一次由他自行检验的问题。她明确能够提供的反馈范围，沈砚以自己的练习与任务安排承担后续验证。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:5",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "检验许庭按实际表现调整指导深度的方式能否支持新职责，而不让她代替任务管理者或同行者。",
+      "segment_id": "xu-ting-arc-segment-05",
+      "entry_state_ref": "xu-ting-arc-segment-04",
+      "exit_state_spec": {
+        "summary": "拟在沈砚承担更复杂准备工作时，由许庭仅对她实际接触并有把握的练习问题给予反馈；工具、交付和同伴分工仍由相关人员分别核实。"
+      },
+      "narrative_segment_id": "volume:3:segment:2",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以实际结果承接教学关系，让弟子承担更多自查工作，也让许庭的有限指导继续有效。",
+      "segment_id": "xu-ting-arc-segment-06",
+      "entry_state_ref": "xu-ting-arc-segment-05",
+      "exit_state_spec": {
+        "summary": "拟使许庭根据沈砚交付后的实际运用，辨认他已能自行复查的部分与适合继续请教的部分；双方按各自时段安排下一步，不把关系变化写成指导中断。"
+      },
+      "narrative_segment_id": "volume:3:segment:6",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "延续许庭的教学原则和修炼日程，明确她在新操作领域的已知范围与职责边界。",
+      "segment_id": "xu-ting-arc-segment-07",
+      "entry_state_ref": "xu-ting-arc-segment-06",
+      "exit_state_spec": {
+        "summary": "拟在飞剑学习条件经有权者核实之后，许庭仅就她实际能够指导的基础流转、观察或练习安排作出回应；器具准入与飞剑教学权限不因她此前答疑而自动成立。"
+      },
+      "narrative_segment_id": "volume4-segment1",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让许庭多年持续的教学方法在受控实践中显出用途，同时由沈砚承担继续或返回的判断。",
+      "segment_id": "xu-ting-arc-segment-08",
+      "entry_state_ref": "xu-ting-arc-segment-07",
+      "exit_state_spec": {
+        "summary": "拟使沈砚用早期练成的观察和重复方法说明短程实践中的条件差别；许庭若参与反馈，只评价她实际见到且有能力判断的部分，并保留自己的修炼安排。"
+      },
+      "narrative_segment_id": "volume4-segment5",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让指导支持沈砚修正方案，却不替他完成完整远行的准备判断。",
+      "segment_id": "xu-ting-arc-segment-09",
+      "entry_state_ref": "xu-ting-arc-segment-08",
+      "exit_state_spec": {
+        "summary": "拟在携行方案修正时，让许庭提供与其实际知识和可用时间相称的练习反馈；载荷、路线、补给与落脚条件由沈砚从相应来源分别核实。"
+      },
+      "narrative_segment_id": "volume-5:segment-3",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以沈砚真实独行承接许庭教学的长期作用，并让师生关系在愿望兑现后仍有继续发展的空间。",
+      "segment_id": "xu-ting-arc-segment-10",
+      "entry_state_ref": "xu-ting-arc-segment-09",
+      "exit_state_spec": {
+        "summary": "拟在出发前处理双方确有的教学约定；许庭保有自己的教学与修炼生活。沈砚此后独自完成能力相称的飞行和落脚，证明她帮助建立的观察、调整与重复方法能够由弟子自行运用。"
+      },
+      "narrative_segment_id": "volume-5:segment-6",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "arc_relations": [],
+  "arc_contributions": [
+    {
+      "change": "通过具体教学、观察和重复练习，支持沈砚在卷一形成适用范围有限、能够辨认的小本领。",
+      "subject": "卷一基础能力积累"
+    },
+    {
+      "change": "依据实际表现调整指导深度，使反馈帮助沈砚辨认当前技术缺口，同时保留许庭自己的教学安排和修炼时段。",
+      "subject": "跨卷学习方法"
+    },
+    {
+      "change": "在飞剑实践与远行准备阶段，仅就她实际了解且能够指导的部分提供有边界的反馈；沈砚仍须亲自核实条件并作判断。",
+      "subject": "后期自主实践"
+    }
+  ]
+}

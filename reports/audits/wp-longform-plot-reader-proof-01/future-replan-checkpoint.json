@@ -1,0 +1,7 @@
+{
+  "state": "PAUSED",
+  "current_chapter": 18,
+  "active_chapter_number": 19,
+  "reason": "Native checkpoint after Chapter 19 for future Volume/Arc input binding; current Chapter continues, reader feedback is not a gate",
+  "human_feedback_gate": false
+}

@@ -1,0 +1,25 @@
+{
+  "root_operation_id": "ee9df89c-fb84-4374-9321-bdd9558c693d",
+  "proposal_id": "plan-change:6eb44d79-8c56-4d0c-af9a-5ee5d7ff781a",
+  "invalidated_input_versions": [
+    "authority-output:2d50281c-8865-46e6-8e14-49d89ddc7791:chapter.draft:v1",
+    "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+    "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1",
+    "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1",
+    "authority-output:fa218f23-8184-4c94-aa88-78e323158423:chapter.execution_intent:v1",
+    "authority-output:fa218f23-8184-4c94-aa88-78e323158423:chapter.execution_intent:v1",
+    "authority-output:fc4e9699-c1ab-41cd-b02d-db5a3dd08728:chapter.draft:v1"
+  ],
+  "failures": [
+    {
+      "operation_id": "90486729-c0c9-4589-9b51-9d325f855085",
+      "attempt_number": 1,
+      "result": {
+        "error_code": "AUTHORITY_INPUT_SEMANTICALLY_STALE",
+        "error_message": "AUTHORITY_INPUT_SEMANTICALLY_STALE: frozen authority input has unresolved semantic invalidation: authority-output:fa218f23-8184-4c94-aa88-78e323158423:chapter.execution_intent:v1 (approved PlanChange plan-change:6eb44d79-8c56-4d0c-af9a-5ee5d7ff781a)",
+        "failure_class": "retryable",
+        "failure_details": {}
+      }
+    }
+  ]
+}

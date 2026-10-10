@@ -1,0 +1,8 @@
+{
+  "operation_id": "23f721f2-1f8a-43d2-aa1e-0396be719492",
+  "status": "FAILED_RETRYABLE",
+  "external_effect_count": 0,
+  "attempt_pack_count": 0,
+  "same_frozen_command": true,
+  "current_runtime_sha": "dc1f950cca482dd50d54696700a5dee5970a19df"
+}

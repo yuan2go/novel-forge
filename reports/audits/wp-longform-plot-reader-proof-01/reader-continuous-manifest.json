@@ -1,0 +1,70 @@
+{
+  "schema_version": "continuous-reading-packet.v1",
+  "status": "PREPARED_PENDING_REAL_HUMANS",
+  "human_count": 0,
+  "scope": "ISOLATED_SELECTED_WORKING_PROSE",
+  "chapters": [
+    {
+      "chapter": 17,
+      "asset_version_id": "d7bbe8ac-0c58-4b62-a5fc-47903a247046",
+      "content_hash": "sha256:5d5950055a2be180d37af4261dd4bc0ea47fe670098f4032fc953bd9d6ba30c4",
+      "text_hash": "sha256:938e13cb6b7b4a383641e025c66f416f383a868dc509c17db24dc7f6da75de52",
+      "export_text_digest": "sha256:506ae346df0ad0ee5b4977ce046eec5e66da580e88ac4e3db99a6baf66592813",
+      "file_sha256": "506ae346df0ad0ee5b4977ce046eec5e66da580e88ac4e3db99a6baf66592813",
+      "file": "reader-packet/连续阅读/第17章.txt"
+    },
+    {
+      "chapter": 18,
+      "asset_version_id": "0bb59deb-956e-41d1-ae66-3c45055c8374",
+      "content_hash": "sha256:f582e697859bff80d0d1f3363e27c90ea7c8b499806af8fec0a9d55263f6773d",
+      "text_hash": "sha256:a167d08118833e58fdc71a49288fddc2f9ac69e1b511c9de8d79398ee5bc1028",
+      "export_text_digest": "sha256:b2ee921d77ef13e9eb4b1d8d7222666d87dc6806e369ad2c6ac1bf123c5bcd86",
+      "file_sha256": "b2ee921d77ef13e9eb4b1d8d7222666d87dc6806e369ad2c6ac1bf123c5bcd86",
+      "file": "reader-packet/连续阅读/第18章.txt"
+    },
+    {
+      "chapter": 19,
+      "asset_version_id": "375ebc41-3a41-4910-874d-0ff33ad4a0a7",
+      "content_hash": "sha256:722fb76830d42fd6356ba88c5e405b87dc737ddf469cc0f3bd768648b90c21b6",
+      "text_hash": "sha256:6b777ba2a22a58d8970b2afa2044956f91a449c7469193c45bc63bc34f73dbf3",
+      "export_text_digest": "sha256:587f44f8fc0c2c4c0be1f496ec143bc5a4bd3411af8d3085eae7619f6d31e089",
+      "file_sha256": "587f44f8fc0c2c4c0be1f496ec143bc5a4bd3411af8d3085eae7619f6d31e089",
+      "file": "reader-packet/连续阅读/第19章.txt"
+    },
+    {
+      "chapter": 20,
+      "asset_version_id": "0d8cd54d-1a52-4df9-aa98-5d1b3ba81a82",
+      "content_hash": "sha256:795fe1638d19316c34f1729b655fa5c43b6ef8ec5831f62f8305bc7300b7cc41",
+      "text_hash": "sha256:48e50b9bec30c72e0dd554739a0d14a8153389ff0c551681acd61ab4733eb151",
+      "export_text_digest": "sha256:ce638f9f15fb3c83462369f3921418732aceba5febc5935a8409f9cb0d8b5994",
+      "file_sha256": "ce638f9f15fb3c83462369f3921418732aceba5febc5935a8409f9cb0d8b5994",
+      "file": "reader-packet/连续阅读/第20章.txt"
+    },
+    {
+      "chapter": 21,
+      "asset_version_id": "8688a2c0-b8d0-4a44-bfbc-aa643e6e1953",
+      "content_hash": "sha256:f1092f95e90e3aeef895500a3bdd8793f4f7fd47a371bf36041905b051994732",
+      "text_hash": "sha256:ba3789bbdf88d6f4576098a9046bfefa7fb95a28b908020c358f034c5b64f1d5",
+      "export_text_digest": "sha256:f96b71de778ae11549220893985d030ed587fe90d46cbc3bab2a7022b424568e",
+      "file_sha256": "f96b71de778ae11549220893985d030ed587fe90d46cbc3bab2a7022b424568e",
+      "file": "reader-packet/连续阅读/第21章.txt"
+    },
+    {
+      "chapter": 22,
+      "asset_version_id": "772490bd-d5aa-4ecd-b0e2-7ee2f935fb45",
+      "content_hash": "sha256:a5c3eef02ea7c42ddddf0c66580fc930e10251b2c46b8db67cf69e3745241773",
+      "text_hash": "sha256:5fae53880cc58162444cff151aa8f2400ee1da9f3884e6bd1ccae1f7e0cff2bf",
+      "export_text_digest": "sha256:aacec2b42c8ccd7ef31a1d656ed8e900cf1e17508b5bd75217e4a1781131b22f",
+      "file_sha256": "aacec2b42c8ccd7ef31a1d656ed8e900cf1e17508b5bd75217e4a1781131b22f",
+      "file": "reader-packet/连续阅读/第22章.txt"
+    }
+  ],
+  "background": "Existing exact original selected chapters1–16",
+  "reader_material_excludes": [
+    "model_opinions",
+    "future_plan",
+    "group_identity"
+  ],
+  "formal_existing_blind_import": "NOT_RUN_REQUIRES_VERIFIED_REAL_REVIEWERS",
+  "adoption": "NO_HUMAN_DECISION; EXPERIMENTAL_DEFAULT_OFF"
+}

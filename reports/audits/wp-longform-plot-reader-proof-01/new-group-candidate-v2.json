@@ -1,0 +1,686 @@
+{
+  "asset_version_id": "authority-output:3a9860a9-5b2c-4cde-92de-ba68c62c8c1c:story_planning.candidate:v1",
+  "content_hash": "sha256:a95b8eda23c5f92ed80447388182e20b4efa6a05a1aa05a8d3906862a22fb541",
+  "content": {
+    "objective": "只规划第17—19章：承接第16章已选工作稿，让沈砚完成练习场新事务，在下一堂课获得可见的收势学习结果，再凭当日可见的宗门任务走一段山道并完成交回。",
+    "chapter_range": [
+      17,
+      19
+    ],
+    "required_events": [
+      "第17章在已知场边问题上完成一次范围明确的清理，并让陆衡的独立时间选择影响分工。",
+      "第18章进入新课堂练习，以木片反馈呈现短暂亮纹后的主动收势。",
+      "第19章从当日可见任务来源出发，亲历山道路况、取得有限材料并当章交回。"
+    ],
+    "forbidden_events": [
+      "改写或重演第16章稳手独练、第15章首次亮纹及第14章三根木桩搬运。",
+      "重新争取第7章工作稿已录入的课程，或把下一堂课写成首次上课。",
+      "让短暂亮纹与一次收势直接成为稳定独立运气。",
+      "让程观审批整批质量、报酬、课程或修行能力。",
+      "凭空给予飞剑、确定收益、无限可采资源或越权许可。"
+    ],
+    "hard_constraints": [
+      "第17—19章承接第16章已选工作稿的场边观察和此前实际经历，不倒退或重演既有进展。",
+      "沈砚已见木片近掌浅纹短暂亮起，并在无木片的场地练过稳手；他尚不能稳定独立运气。",
+      "陆衡有自己的木杆练习时间，可以拒绝新增劳动；沈砚须承担自己答应的部分。",
+      "程观只在劳动交回职责内接收、记录或转交，不确定整批质量、报酬及课程资格。",
+      "任务材料须来自当日可见的具体来源与允许范围；山道选择须照顾实际路况、负重和返程。",
+      "以沈砚为主的第三人称限知视角呈现，未接触的机构信息和他人私下动机不进入其既有知识。",
+      "第40章仍是卷一有限行动的交付窗口，第48章才收束卷一；飞剑远行仍属后续长期目标。"
+    ],
+    "chapter_function_matrix": [
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+          },
+          {
+            "action": "TOUCH",
+            "arc_plan_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "清出的场边能摆下矮案；沈砚知道下堂课终于可以拿木片检验第16章练出的稳手办法。",
+        "reward_action": "沈砚亲自走过清出的落脚处，看见矮案有了安稳位置。",
+        "chapter_number": 17,
+        "promise_action": "兑现第16章结尾对场边事务的关注，使询问通向当章完成的行动。",
+        "primary_function": "承接第16章所见场边问题，在一章内问清范围、选择承担并完成清理。",
+        "foreshadow_action": "让平整的场边在第18章成为新的课堂位置。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "看见一片真正可供上课使用的平地，以及各人守住自身安排后的合作余地。",
+          "target_emotion": "踏实、期待"
+        },
+        "obligation_actions": [
+          {
+            "action": "PAYOFF",
+            "due_chapter": 17,
+            "obligation_id": "field-edge-17"
+          }
+        ],
+        "prohibited_outcomes": [
+          "重演第14章三根木桩搬运。",
+          "将场地交回写成课程资格、报酬或修为提升。",
+          "让陆衡无条件放弃自己的练习。"
+        ],
+        "secondary_functions": [
+          "呈现陆衡独立的时间选择。",
+          "以职责内交回承接实际劳动。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "拟使场边一处枝条和凸土得到清理；沈砚完成所接范围，陆衡的练习时段得以保留。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "沈砚主动承担并完成能力范围内的任务，结果直接改变下一堂课可用的场地。",
+            "arc_plan_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "程观接收实际完成的清理范围，只记录自己能够接收的事实。",
+            "arc_plan_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "陆衡选择按原安排练木杆，促使沈砚把清理范围定在自己能完成的部分。",
+            "arc_plan_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "木片的近掌浅纹又亮过，却在沈砚主动收手时暗下；他想知道这种有意收势能否在不同环境里仍做得到。",
+        "reward_action": "亮纹出现后，沈砚按自己决定的时机收手，亲眼看见变化随之结束。",
+        "chapter_number": 18,
+        "promise_action": "兑现第16章等到木片课堂再检验手位的期待。",
+        "primary_function": "用新的课堂练习检验第15章的亮纹与第16章的稳手方法，并学习有意收势。",
+        "foreshadow_action": "以主动收手和手臂疲劳的区别，为第19章选择可承担的现场范围提供经验。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "看见沈砚把一次短暂亮纹推进为能辨认起势与收势差别的小步学习。",
+          "target_emotion": "专注后的欣喜"
+        },
+        "obligation_actions": [
+          {
+            "action": "PAYOFF",
+            "due_chapter": 18,
+            "obligation_id": "wood-slice-lesson-18"
+          }
+        ],
+        "prohibited_outcomes": [
+          "整章仅重复首次半息亮纹与结果未定。",
+          "把一次有意收势写成稳定独立运气。",
+          "让许庭或教习以赞许代替可见的动作结果。"
+        ],
+        "secondary_functions": [
+          "让许庭根据所见给出自己的教学判断。",
+          "保留短暂进步的清楚限度。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "拟使沈砚首次在木片练习里看见有意收手对应的亮纹消退；重复维持与更远引导仍未成立。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "沈砚在教习的新练习中主动收手，初步分清有意结束与疲劳失稳。",
+            "arc_plan_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+          }
+        ]
+      },
+      {
+        "arc_cadence": [
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+          },
+          {
+            "action": "ADVANCE",
+            "arc_plan_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+          },
+          {
+            "action": "DORMANT",
+            "arc_plan_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+          }
+        ],
+        "ending_hook": "一束合乎告示范围的落枝已交回，沈砚记住山道湿处迫使自己缩短行程；下一次练习须在离开安稳场地后再看本领的边界。",
+        "reward_action": "程观接过实物并记下来源与数量；沈砚空手走出交回处，知道这一趟确已完成。",
+        "chapter_number": 19,
+        "promise_action": "将第18章关于有意停下的经验带入一次有具体环境阻力的事务选择。",
+        "primary_function": "让沈砚根据当日可见的宗门告示走一段山道、取得有限材料并当章交回。",
+        "foreshadow_action": "让山道湿处与实际负重成为第19—25章跨场所检验的起点。",
+        "narrative_density": "MEDIUM",
+        "reader_experience": {
+          "reward_mode": "看见一趟真实完成的山道事务及其清楚边界。",
+          "target_emotion": "行走后的满足与对下一次尝试的好奇"
+        },
+        "obligation_actions": [
+          {
+            "action": "PAYOFF",
+            "due_chapter": 19,
+            "obligation_id": "path-branch-19"
+          }
+        ],
+        "prohibited_outcomes": [
+          "以接取任务代替实际出行与交回。",
+          "擅折活枝或把湿枝冒充可用材料。",
+          "凭交回记录虚构已到账报酬。",
+          "把课堂收势直接等同于山林中可稳定使用灵气。"
+        ],
+        "secondary_functions": [
+          "开启卷一下一段跨场所实践。",
+          "将第17章的有限承担与第18章的有意收势落实为现场取舍。"
+        ],
+        "required_state_delta": {
+          "status": "CHANGED",
+          "summary": "拟使一束按当日告示取得的落枝实际交回；沈砚获得山道湿处、负重和返程余地的亲历依据。"
+        },
+        "required_arc_contributions": [
+          {
+            "contribution": "沈砚面对湿滑路段和有限体力，选择一束可安全带回的落枝并完成交回。",
+            "arc_plan_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+          },
+          {
+            "contribution": "程观按实际收到的材料与说明办理交回，不预定后续核验或收益。",
+            "arc_plan_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+          }
+        ]
+      }
+    ],
+    "narrative_event_chain": [
+      {
+        "action": "沈砚沿第16章所见的场边查看枯枝与凸土，读到现场清理要求后问清可接的部分。陆衡说明自己要按原安排练木杆，不接这段新增清理；沈砚据此只承担能在课前完成的一处。",
+        "causes": [],
+        "decision": "沈砚接下场边一处可完成的清理；陆衡保留自己的练习时间。",
+        "event_id": "cg17-e1",
+        "required": true,
+        "slice_id": "chapter-17-field",
+        "actor_ref": "沈砚",
+        "motivation": "沈砚想让下一堂木片课有稳当的落脚处，也想在上课前做成自己能承担的事。",
+        "resistance": "散枝压在木架旁，凸土妨碍矮案放稳；陆衡不参与新增清理。",
+        "consequence": "清理范围和各自安排当场定下，沈砚开始实际动手。",
+        "disclosures": [
+          "场边待清的是散枝与一小段凸起土面，不是第14章搬过的三根木桩。",
+          "陆衡选择先履行自己的木杆练习安排。"
+        ],
+        "state_deltas": [],
+        "preconditions": [
+          "第16章工作稿已让沈砚看见场边未清之处。",
+          "第14章的三根木桩已经搬妥。"
+        ],
+        "chapter_number": 17,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "两人的时间选择决定了谁承担这处清理。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "场边不平与可用时间有限，构成具体劳动阻力。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "此时只确定当次分工，尚未形成不可逆结果。"
+          }
+        },
+        "next_event_ids": [
+          "cg17-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+          "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚亲眼见过场边散枝与不平处。",
+            "陆衡亲口说明自己的木杆练习安排。"
+          ],
+          "reader_may_learn": [
+            "场边待清的是散枝与一小段凸起土面，不是第14章搬过的三根木桩。",
+            "陆衡选择先履行自己的木杆练习安排。"
+          ],
+          "forbidden_disclosures": [
+            "尚未核定的劳动报酬。",
+            "陆衡未说出的私下动机。"
+          ]
+        },
+        "obligation_actions": [
+          "field-edge-17:ADVANCE"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚移走散枝、削平凸土并亲自踏过落脚处；程观接收他说明的清理范围，记录已交回的事项，未替其他环节核定收益。",
+        "causes": [
+          "cg17-e1"
+        ],
+        "decision": "沈砚做完约定范围便停手，不再临时加接整片场地。",
+        "event_id": "cg17-e2",
+        "required": true,
+        "slice_id": "chapter-17-field",
+        "actor_ref": "沈砚",
+        "motivation": "沈砚想做成眼前劳动，同时留住课堂上稳手所需的余力。",
+        "resistance": "土面须修到能让矮案放稳；沈砚的手臂已经用过一阵。",
+        "consequence": "场边能放稳矮案，清理工作有了职责内的交回结果；沈砚为次日课堂留下体力余地。",
+        "disclosures": [
+          "沈砚所接的场边清理已实际完成，矮案能够在该处放稳。",
+          "程观接收的是交回事实，未核定报酬。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "沈砚承担的一处已清理，可放稳矮案",
+            "entity_id": "练习场边",
+            "from_state": "散枝与凸土妨碍摆放矮案",
+            "state_kind": "WORLD_STATE"
+          }
+        ],
+        "preconditions": [
+          "cg17-e1所定清理范围已经明确。"
+        ],
+        "chapter_number": 17,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚决定在已完成的范围收工，保护下一堂课所需的体力。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "散枝与凸土须靠实际劳动处理，且手臂会疲劳。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "场地已被实际清理，但本章无须设置重大不可逆代价。"
+          }
+        },
+        "next_event_ids": [
+          "cg18-e1"
+        ],
+        "arc_contributions": [
+          "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+          "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚亲自清理并试过落脚处。",
+            "程观只接触沈砚交回时说明的范围。"
+          ],
+          "reader_may_learn": [
+            "沈砚所接的场边清理已实际完成，矮案能够在该处放稳。",
+            "程观接收的是交回事实，未核定报酬。"
+          ],
+          "forbidden_disclosures": [
+            "有权核验者尚未作出的质量或收益结论。"
+          ]
+        },
+        "obligation_actions": [
+          "field-edge-17:PAYOFF"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "下一堂课在清出的场边摆开矮案。教习示范木片亮起后如何缓缓收手，让学员辨认有意结束与手臂撑不住时的散乱；许庭提醒沈砚先守住第16章练过的手位，再尝试收势。",
+        "causes": [
+          "cg17-e2"
+        ],
+        "decision": "教习让学员练收势；沈砚选择先以短时、手位稳定的方式尝试。",
+        "event_id": "cg18-e1",
+        "required": true,
+        "slice_id": "chapter-18-lesson",
+        "actor_ref": "教习",
+        "motivation": "教习要学员辨认动作起止；沈砚想把独练得来的稳手办法放到木片前检验。",
+        "resistance": "亮纹未必每次出现，悬臂过久又会使手位失稳。",
+        "consequence": "沈砚获得一个不同于单纯等待亮纹的新练习目标，并能立即用木片尝试。",
+        "disclosures": [
+          "这堂课的新练习是亮纹出现后的缓缓收手，不只求它亮得更久。",
+          "第17章清出的场边已用于摆放课堂矮案。"
+        ],
+        "state_deltas": [],
+        "preconditions": [
+          "第17章已清出可摆矮案的场边。",
+          "第15章短暂亮纹与第16章稳手练习提供尝试基础。"
+        ],
+        "chapter_number": 18,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "教习给出新动作，沈砚选择适合自己当前能力的尝试方式。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚此前只见过短暂亮纹，须在有限时机内辨认收势。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "示范本身尚未改变沈砚的能力状态。"
+          }
+        },
+        "next_event_ids": [
+          "cg18-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "教习知道本堂示范与练习要求。",
+            "沈砚已在第15章见过自己的木片近掌浅纹短暂亮起，在第16章练过稳手。"
+          ],
+          "reader_may_learn": [
+            "这堂课的新练习是亮纹出现后的缓缓收手，不只求它亮得更久。",
+            "第17章清出的场边已用于摆放课堂矮案。"
+          ],
+          "forbidden_disclosures": [
+            "沈砚尚未亲历的稳定独立运气方法或门槛。"
+          ]
+        },
+        "obligation_actions": [
+          "wood-slice-lesson-18:ADVANCE"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚先使手位安稳，再依课堂所学引动掌边浅纹。亮纹短暂出现时，他没有追着延长，而是按练习缓缓收手，看见光随动作退去。许庭根据所见指出这次收势与先前手臂发酸后的乱收不同，同时提醒他仍须再练。",
+        "causes": [
+          "cg18-e1"
+        ],
+        "decision": "在手臂尚稳时主动收手，保留这次可辨认的结果。",
+        "event_id": "cg18-e2",
+        "required": true,
+        "slice_id": "chapter-18-lesson",
+        "actor_ref": "沈砚",
+        "motivation": "沈砚希望能自己决定动作何时结束，而非每次等到手酸或气散。",
+        "resistance": "近掌浅纹仅短暂亮起，沈砚须在它消失前稳住并收回手。",
+        "consequence": "沈砚取得一次有动作与木片反馈对应的小进步；尚不能据此声称可稳定重复或把气机引向更远处。",
+        "disclosures": [
+          "沈砚见到近掌浅纹再次短暂亮起，并在主动收手时暗下。",
+          "这一次结果只支持有意收势的初步辨认，不支持稳定独立运气。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "有一次木片反馈支持的短暂有意收势经验，仍不能稳定重复运气",
+            "entity_id": "沈砚",
+            "from_state": "见过短暂亮纹，能在无木片时练稳手，尚未辨出课堂中的有意收势",
+            "state_kind": "CHARACTER_ABILITY"
+          }
+        ],
+        "preconditions": [
+          "cg18-e1已给出收势示范与练习。"
+        ],
+        "chapter_number": 18,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚放弃追求更长亮纹，主动选择收手时机。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "亮纹仍短，手臂疲劳会干扰动作；结果只能在有限范围内成立。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "这是一项有限学习结果，无须制造不可逆损失。"
+          }
+        },
+        "next_event_ids": [
+          "cg19-e1"
+        ],
+        "arc_contributions": [
+          "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚亲眼见到本次亮纹及其随收手消退。",
+            "许庭只依据她在课堂看见的手位与木片变化判断。"
+          ],
+          "reader_may_learn": [
+            "沈砚见到近掌浅纹再次短暂亮起，并在主动收手时暗下。",
+            "这一次结果只支持有意收势的初步辨认，不支持稳定独立运气。"
+          ],
+          "forbidden_disclosures": [
+            "未经多次验证的稳定重复能力。",
+            "木片亮纹背后尚未教过的完整机理。"
+          ]
+        },
+        "obligation_actions": [
+          "wood-slice-lesson-18:PAYOFF"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚在当日告示上看见山道边拾取已落直枝供练习场矮案支撑的有限事务，知晓不得折活枝、须实际交回。他带着第18章手臂疲劳与主动收势的经验，选择只走自己留有返程余地的一段山道。",
+        "causes": [
+          "cg18-e2"
+        ],
+        "decision": "接下当日告示中的有限事务，只取可带回的一束已落直枝。",
+        "event_id": "cg19-e1",
+        "required": true,
+        "slice_id": "chapter-19-path",
+        "actor_ref": "沈砚",
+        "motivation": "沈砚希望课堂之外也能做成一件对练习场有用的事，并亲自试一段山路。",
+        "resistance": "现场可用材料与路况尚不确定。",
+        "consequence": "沈砚实际出发，任务来源、用途及可取范围在行动前可见。",
+        "disclosures": [
+          "当日告示明确落枝的用途与不得折取活枝的范围。",
+          "沈砚选择留有返程余地的山道范围。"
+        ],
+        "state_deltas": [],
+        "preconditions": [
+          "当日告示在沈砚可见处出现。",
+          "第18章课堂结果使他更注意何时主动结束一次尝试。"
+        ],
+        "chapter_number": 19,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚依据可见用途、路程和自身余力决定接取范围。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "山道天气与负重会限制实际可取数量，须到现场判断。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "接取尚未完成交付，也没有需要预置的不可逆代价。"
+          }
+        },
+        "next_event_ids": [
+          "cg19-e2"
+        ],
+        "arc_contributions": [
+          "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚亲自读到当日告示的用途和可取范围。",
+            "沈砚知道自己前一堂课的收势经验仍很有限。"
+          ],
+          "reader_may_learn": [
+            "当日告示明确落枝的用途与不得折取活枝的范围。",
+            "沈砚选择留有返程余地的山道范围。"
+          ],
+          "forbidden_disclosures": [
+            "尚未到达处的山道路况。",
+            "未经核验的任务报酬。"
+          ]
+        },
+        "obligation_actions": [
+          "path-branch-19:ADVANCE"
+        ],
+        "irreversible_change": null
+      },
+      {
+        "action": "沈砚走到告示所指山道，发现较远处路面潮湿，便在可安全折返的近段挑出一束干直落枝，留下湿枝与活枝。他带着实物返回，向程观说明取材位置及数量；程观接收并记录交回，不预定后续质量或报酬。",
+        "causes": [
+          "cg19-e1"
+        ],
+        "decision": "不为多取材料踏入更湿的路段，带回自己能稳妥交付的一束。",
+        "event_id": "cg19-e2",
+        "required": true,
+        "slice_id": "chapter-19-path",
+        "actor_ref": "沈砚",
+        "motivation": "沈砚要完成已接事务，也要凭实际路况决定何处该停。",
+        "resistance": "更远路段湿滑，湿枝不合当日用途，负重会挤占返程余地。",
+        "consequence": "山道任务有了实物交回；沈砚亲历湿处、负重和返程余地如何改变可承担范围，为后续跨场所练习留下依据。",
+        "disclosures": [
+          "沈砚在较近山道取得一束干直落枝，并避开湿滑的更远路段。",
+          "程观接收了实物与来源说明，质量和报酬尚未由有权者确定。"
+        ],
+        "state_deltas": [
+          {
+            "to_state": "沈砚从允许范围带回一束干直落枝并完成职责内交回；质量与报酬未定",
+            "entity_id": "山道落枝事务",
+            "from_state": "当日告示已出现，沈砚尚未取得或交回材料",
+            "state_kind": "TASK_STATE"
+          }
+        ],
+        "preconditions": [
+          "cg19-e1所见告示已明确用途与可取范围。"
+        ],
+        "chapter_number": 19,
+        "feature_status": {
+          "decision": {
+            "status": "APPLICABLE",
+            "rationale": "沈砚在现场缩小采集范围，并据此完成返程与交回。"
+          },
+          "resistance": {
+            "status": "APPLICABLE",
+            "rationale": "湿滑路段、材料干湿差异与负重限制实际所得。"
+          },
+          "irreversible_change": {
+            "status": "NOT_APPLICABLE",
+            "rationale": "时间与体力已经实际耗用，材料已交回；本组不要求重大不可逆损失。"
+          }
+        },
+        "next_event_ids": [],
+        "arc_contributions": [
+          "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+          "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+        ],
+        "knowledge_boundary": {
+          "actor_knows": [
+            "沈砚亲眼看见所走山道的湿处，并亲手挑选和带回落枝。",
+            "程观只知道沈砚交回时说明的来源与眼前收到的实物。"
+          ],
+          "reader_may_learn": [
+            "沈砚在较近山道取得一束干直落枝，并避开湿滑的更远路段。",
+            "程观接收了实物与来源说明，质量和报酬尚未由有权者确定。"
+          ],
+          "forbidden_disclosures": [
+            "沈砚未走到的更远山路详情。",
+            "有权者尚未作出的质量与报酬结论。"
+          ]
+        },
+        "obligation_actions": [
+          "path-branch-19:PAYOFF"
+        ],
+        "irreversible_change": null
+      }
+    ],
+    "character_deltas": [
+      {
+        "change": "拟从独自练稳手，走向完成场地事务、在课堂辨认收势，并按山道实际情况限缩采集范围。",
+        "subject": "沈砚"
+      },
+      {
+        "change": "拟在第17章明确保留木杆练习时间，未答应的清理工作不落到他身上。",
+        "subject": "陆衡"
+      },
+      {
+        "change": "拟依据两次真实交回形成对沈砚说明范围是否清楚的具体工作印象。",
+        "subject": "程观"
+      }
+    ],
+    "canon_dependencies": [
+      "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+      "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+      "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1",
+      "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1",
+      "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1",
+      "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+    ],
+    "narrative_segment_ref": {
+      "segment_id": "volume1-segment-02",
+      "volume_plan_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+    },
+    "generator_operation_name": "chapter_group_plan.generate",
+    "logical_key": "chapter-group:containing:16",
+    "frozen_inputs": [
+      {
+        "role": "arc_plans",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:485dbcadd121176df0155fc040c55e9a99791def228d182ee3d779f55dff496c",
+        "asset_version_id": "authority-output:2ff734ec-3e44-472d-9362-ed636819c6d9:story_planning.candidate:v1"
+      },
+      {
+        "role": "book_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+        "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+      },
+      {
+        "role": "story_state",
+        "asset_type": "story_state_snapshot",
+        "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+        "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+      },
+      {
+        "role": "volume_plan",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:a51651ad115bc6cb50233429ceea4c1048e095a10799da7a218a287a1188bf61",
+        "asset_version_id": "authority-output:122d2286-b0a3-4047-9cff-cf0c985b8e0a:story_planning.candidate:v1"
+      },
+      {
+        "role": "reader_state",
+        "asset_type": "reader_state",
+        "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+        "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+      },
+      {
+        "role": "quality_trend",
+        "asset_type": "quality_trend",
+        "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+        "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+      },
+      {
+        "role": "canon_snapshot",
+        "asset_type": "canon_snapshot",
+        "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+        "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+      },
+      {
+        "role": "previous_chapter_group_outcome",
+        "asset_type": "previous_chapter_group_outcome",
+        "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+        "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+      },
+      {
+        "role": "related_arc:1",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:859bf567e58148388d09cebba861a12025ae1681c5ac9ab0e8cbc2db1e76f4c1",
+        "asset_version_id": "authority-output:377bc408-90de-4c70-9bc3-198f54e9992b:story_planning.candidate:v1"
+      },
+      {
+        "role": "related_arc:2",
+        "asset_type": "planning_generation_candidate",
+        "content_hash": "sha256:6558d6ef5c24b4467d2bff73dc2e546d40faf8906ea29b73d6633b1a86d21ef6",
+        "asset_version_id": "authority-output:617bf277-d99b-48b8-888a-7f44ed7b59ff:story_planning.candidate:v1"
+      }
+    ]
+  },
+  "full_content_ref": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/new-group-candidate-v2.full.private.json"
+}

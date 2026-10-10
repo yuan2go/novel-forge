@@ -1,0 +1,375 @@
+{
+  "objective": "规划陆衡从守住固定练习与公平回报出发，经过真实合作和任务结果，学会在可靠履约的同时为确有价值的学习协商有限变化；让他与沈砚各自选择方向而保留合作所得。",
+  "hard_constraints": [
+    "保留冻结Book、Volume与人物portfolio条件；本Arc为未来候选，不授予已接受事实或改变Authority状态。",
+    "第1—19章所选或冻结工作保持；卷一第20—48章仅使用新VolumePlan所给Narrative Segment身份，并按共同山林行动、有限可重复运用、完整交付、结果承接的顺序推进。",
+    "陆衡的身份、愿望和经验边界保持：他追求与可靠劳动相称的可用修炼条件，并要留住固定练习时间。",
+    "卷一范围有限的基础本领必须有教学、观察、调整和多次成功支持；卷二继续拓展稳定性、时长与复杂用途，不授予新境界或御剑能力。",
+    "任务、报酬和资源须有实际来源、管理者、用途与限度；日程用同一单位核算，已有承诺、赶路、劳作、练习和休息不能互相重占。",
+    "陆衡可接受、拒绝或重新协商；沈砚和唐穗也各有目标与权限，任何人的善意不能绕过既定条件。",
+    "以沈砚为主的第三人称限知视角呈现陆衡的选择；人物只知经实际接触取得的信息。",
+    "不改变五卷功能、240章终局和沈砚实际独自御剑远行并落脚的承诺；战略规划不扩大当前正文执行窗口。",
+    "后续排程遵守同时活跃Arc不超过3、单章主要状态变化不超过8、新增概念不超过4、开放义务不超过12、逾期义务为0、同章到期兑现不超过3，以及人物出场间隔和Arc休眠限制。"
+  ],
+  "forbidden_events": [
+    "改写第1—19章所选或冻结的工作，或把未接受的卷与Arc候选当作已经发生的历史。",
+    "把陆衡写成只会拒绝、核验、纠错或赞叹的人；也不让他无条件让出自己的时间和收益。",
+    "以一次偶然成功授予可重复灵气运用，或把卷一任何可用小本领一概延期到卷二。",
+    "以未知库存、报酬、余额、课位、器具或未明确权限完成合作和学习安排。",
+    "让普通劳作经验替代引气、药材辨认、路线核实或飞剑教学。",
+    "凭未公开信息推定陆衡知道他人的私下动机、机构条件或沈砚尚未告知的实践结果。",
+    "为推动陆衡成长制造无因果的背叛、废功、永久断交或强制重大牺牲。"
+  ],
+  "required_events": [
+    "卷一第20—25章，陆衡在真实共同山林任务中说明自己的时间和收益诉求，参与行动并承接结果。",
+    "卷一第26—32章，他对经教学与多次成功形成的有限可重复本领作出基于实际用途的回应，同时保留自己的练习安排。",
+    "卷一第33—40章，他完成商定分工，完整任务的交付结果改变后续可选合作；第41—48章据此落实下一步。",
+    "卷二至三至少有一次因实际任务用时或准备条件而重新协商工作范围，并在后续行动中检验新安排。",
+    "卷四至五，他在本人能力与权限内提供有限帮助，同时继续自己的练习；沈砚的飞剑判断与最终独行由沈砚承担。",
+    "沈砚出发前，双方处理影响此次行程的明确约定，陆衡作出符合自己目标的后续选择。"
+  ],
+  "arc_segments": [
+    {
+      "status": "PLANNED",
+      "objective": "保留既定工作连续性，为陆衡后续选择留下准确入口。",
+      "segment_id": "lu-heng-01",
+      "entry_state_ref": "4f94123b-a129-4975-aae7-c2fa7182b42d",
+      "exit_state_spec": {
+        "summary": "沿用第1—19章所选或冻结工作的实际呈现；后续仅承接其中已经建立的时间、收益与合作边界，不补造陆衡的经历。"
+      },
+      "narrative_segment_id": "v1-01-19-preserved",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让他的时间边界参与真实分工、山林行动和结果处理，而非只停在事前审核。",
+      "segment_id": "lu-heng-02",
+      "entry_state_ref": "v1-01-19-preserved",
+      "exit_state_spec": {
+        "summary": "陆衡在有来源的共同山林任务中说明可用时间和期望收益，承担商定的现场工作；实际结果成为下一次协商的依据。"
+      },
+      "narrative_segment_id": "v1-20-25-common-task",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让他依据可观察的用途调整共同任务的一小部分分工，同时保留自身目标。",
+      "segment_id": "lu-heng-03",
+      "entry_state_ref": "v1-20-25-common-task",
+      "exit_state_spec": {
+        "summary": "陆衡看见经教学和多次成功取得的有限基础本领在适当事务中可用，也明确它不能替代所有普通方法；自己的练习时段得到实际安排。"
+      },
+      "narrative_segment_id": "v1-26-32-repeatable-foundation",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使可靠履约成为实际贡献，并让交付反馈改变后续选择。",
+      "segment_id": "lu-heng-04",
+      "entry_state_ref": "v1-26-32-repeatable-foundation",
+      "exit_state_spec": {
+        "summary": "陆衡完成自己答应的部分；完整任务按已说明要求交付，结果具体影响下一次可承担的工作或合作安排。"
+      },
+      "narrative_segment_id": "v1-33-40-task-result",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "承接卷一结果，使他既可靠又有自己的修炼方向。",
+      "segment_id": "lu-heng-05",
+      "entry_state_ref": "v1-33-40-task-result",
+      "exit_state_spec": {
+        "summary": "陆衡根据真实交付与用时决定下一轮合作范围，保住可执行的练习安排；未达成的邀请不算承诺。"
+      },
+      "narrative_segment_id": "v1-41-48-settlement",
+      "volume_plan_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以条件式衔接建立卷二自己的劳作与练习安排。",
+      "segment_id": "lu-heng-06",
+      "entry_state_ref": "v1-41-48-settlement",
+      "exit_state_spec": {
+        "summary": "在前卷实际结果明确后，陆衡核对已有承诺、可用时段和练习需要，不把拟议交付当作既成事实。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:1",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "呈现他的固定时段为何有价值，以及何种具体收益值得协商变动。",
+      "segment_id": "lu-heng-07",
+      "entry_state_ref": "volume:2:future-1:segment:1",
+      "exit_state_spec": {
+        "summary": "陆衡按可行日程重复自己的练习，并从实际合作中辨认哪些调整确有学习用途；一次顺利不被当作稳定掌握。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:2",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让两人对任务价值有各自的判断和责任。",
+      "segment_id": "lu-heng-08",
+      "entry_state_ref": "volume:2:future-1:segment:2",
+      "exit_state_spec": {
+        "summary": "沈砚所接任务的实际用时显露后，陆衡说明自己的可承担范围，履行本人已答应的部分，不替沈砚承担全部判断或交付。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:3",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使协商允许有价值的变化，同时保护各自已确认的时间。",
+      "segment_id": "lu-heng-09",
+      "entry_state_ref": "volume:2:future-1:segment:3",
+      "exit_state_spec": {
+        "summary": "陆衡依据明确的工作范围与练习用途，接受、拒绝或提出有边界的替代分工；双方只承担实际达成的约定。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:4",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "用行动验证合作是否兼顾履约和连续学习。",
+      "segment_id": "lu-heng-10",
+      "entry_state_ref": "volume:2:future-1:segment:4",
+      "exit_state_spec": {
+        "summary": "经调整的分工在有限任务和练习中受到检验；陆衡提供自己能承担的帮助，也得到与其工作相称的实际回应。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:5",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让他亲身验证经协商的安排，而非只发表赞成或反对意见。",
+      "segment_id": "lu-heng-11",
+      "entry_state_ref": "volume:2:future-1:segment:5",
+      "exit_state_spec": {
+        "summary": "受控合作交付后，陆衡的工作、所得和预留练习各有结果；下一卷的合作范围以这些结果为条件。"
+      },
+      "narrative_segment_id": "volume:2:future-1:segment:6",
+      "volume_plan_version_id": "authority-output:83e7ee5d-ed16-4b34-80a8-104f02adb452:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "为更复杂的职责建立他自己的选择依据。",
+      "segment_id": "lu-heng-12",
+      "entry_state_ref": "volume:2:future-1:segment:6",
+      "exit_state_spec": {
+        "summary": "在前卷结果实际成立的条件下，陆衡明确自己已答应的事项、可用于新准备的时段及不能承担的部分。"
+      },
+      "narrative_segment_id": "volume:3:segment:1",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让他的履约能力成为共同任务的实用部分。",
+      "segment_id": "lu-heng-13",
+      "entry_state_ref": "volume:3:segment:1",
+      "exit_state_spec": {
+        "summary": "陆衡在商定范围内完成一项准备工作，实际用时和质量反馈显示其可靠之处及还需协调之处。"
+      },
+      "narrative_segment_id": "volume:3:segment:2",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让他也面对可靠做事带来的时间压力，而不把他写成永远正确的提醒者。",
+      "segment_id": "lu-heng-14",
+      "entry_state_ref": "volume:3:segment:2",
+      "exit_state_spec": {
+        "summary": "面对整体准备比单项工作更费时的结果，陆衡先履行既有承诺，再重新衡量可选额外工作与自己的练习。"
+      },
+      "narrative_segment_id": "volume:3:segment:3",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "把日程差异写成可协商的选择，使关系变化有实际作用。",
+      "segment_id": "lu-heng-15",
+      "entry_state_ref": "volume:3:segment:3",
+      "exit_state_spec": {
+        "summary": "陆衡因自己的目标调整参与时段，与沈砚、唐穗明确重新分工；他愿意承担的部分和拒绝的部分都进入可执行方案。"
+      },
+      "narrative_segment_id": "volume:3:segment:4",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "用真实执行检验协商后的分工。",
+      "segment_id": "lu-heng-16",
+      "entry_state_ref": "volume:3:segment:4",
+      "exit_state_spec": {
+        "summary": "陆衡按重新商定的边界参与执行，交付结果辨得出他的贡献，也保留沈砚自行承担的核实责任。"
+      },
+      "narrative_segment_id": "volume:3:segment:5",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使边界明确的合作成为可重复的方法。",
+      "segment_id": "lu-heng-17",
+      "entry_state_ref": "volume:3:segment:5",
+      "exit_state_spec": {
+        "summary": "他根据交付反馈继续使用有效的安排，选择下一轮可承担的工作；与沈砚的合作不以每次同行为条件。"
+      },
+      "narrative_segment_id": "volume:3:segment:6",
+      "volume_plan_version_id": "authority-output:4cb8385c-a309-422f-925b-76ee5c4c6762:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "将已有合作方式带入新阶段，不赋予他器具管理或教学权限。",
+      "segment_id": "lu-heng-18",
+      "entry_state_ref": "volume:3:segment:6",
+      "exit_state_spec": {
+        "summary": "陆衡继续自己的劳作和练习，仅在实际接触与商定范围内协助沈砚安排飞剑学习的时间；器具与教学条件仍由相应来源核实。"
+      },
+      "narrative_segment_id": "volume4-segment1",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让帮助有来源和限度，不把同行者写成飞剑导师。",
+      "segment_id": "lu-heng-19",
+      "entry_state_ref": "volume4-segment1",
+      "exit_state_spec": {
+        "summary": "陆衡按自身日程提供有限的普通准备帮助，沈砚的起降进步仍来自有条件的教学与重复实践。"
+      },
+      "narrative_segment_id": "volume4-segment2",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使双方都对自己的时间负责，避免练习压力转嫁给伙伴。",
+      "segment_id": "lu-heng-20",
+      "entry_state_ref": "volume4-segment2",
+      "exit_state_spec": {
+        "summary": "沈砚因持续控制练习调整接取范围时，陆衡说明自己不能默认补位，并就确有价值的有限合作提出可行时段。"
+      },
+      "narrative_segment_id": "volume4-segment3",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "HELD",
+      "objective": "保留他与沈砚不同的日程，不为飞剑实践制造无用途的到场。",
+      "segment_id": "lu-heng-21",
+      "entry_state_ref": "volume4-segment3",
+      "exit_state_spec": {
+        "summary": "陆衡既定的练习与劳作安排继续有效；此段不要求他参与短程往返的每项技术判断。"
+      },
+      "narrative_segment_id": "volume4-segment4",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让关系承接实践结果，同时保持知识与能力边界。",
+      "segment_id": "lu-heng-22",
+      "entry_state_ref": "volume4-segment4",
+      "exit_state_spec": {
+        "summary": "陆衡通过实际接触了解短程实践的可见结果，在自己能判断的普通准备与用时问题上回应，不声称掌握飞剑处置。"
+      },
+      "narrative_segment_id": "volume4-segment5",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "以具体约定承接飞剑阶段，不把短程成功当作完整远行。",
+      "segment_id": "lu-heng-23",
+      "entry_state_ref": "volume4-segment5",
+      "exit_state_spec": {
+        "summary": "受控往返后，陆衡与沈砚核对双方实际约定及后续可合作的范围；两人的各自练习方向继续存在。"
+      },
+      "narrative_segment_id": "volume4-segment6",
+      "volume_plan_version_id": "authority-output:36343317-7ac2-49a0-8479-ef169c3d5490:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "使他的最终选择从自身愿望和已形成的边界出发。",
+      "segment_id": "lu-heng-24",
+      "entry_state_ref": "volume4-segment6",
+      "exit_state_spec": {
+        "summary": "陆衡在实际前卷结果明确后，说明自己对沈砚远行准备能承担的事项及自己的既有安排；是否同行或协助均不预设。"
+      },
+      "narrative_segment_id": "volume-5:segment-1",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让可靠履约与有价值的临时调整在终局准备中共同发挥作用。",
+      "segment_id": "lu-heng-25",
+      "entry_state_ref": "volume-5:segment-1",
+      "exit_state_spec": {
+        "summary": "陆衡先处理本人已答应的工作，再就一项范围明确、确实需要的准备事务与沈砚协商；未确认的报酬和资源不算所得。"
+      },
+      "narrative_segment_id": "volume-5:segment-2",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "保持合作的实际用途与独立判断的归属。",
+      "segment_id": "lu-heng-26",
+      "entry_state_ref": "volume-5:segment-2",
+      "exit_state_spec": {
+        "summary": "若陆衡参与携行实践，他只承担已商定且力所能及的普通准备或记录工作；沈砚依据可观察结果自行修正载荷或行程。"
+      },
+      "narrative_segment_id": "volume-5:segment-3",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "HELD",
+      "objective": "保持各自事务的连续性，不凭陆衡的可靠性授予他未知路线信息。",
+      "segment_id": "lu-heng-27",
+      "entry_state_ref": "volume-5:segment-3",
+      "exit_state_spec": {
+        "summary": "陆衡已明确的个人日程与合作边界继续有效；路线、天气和落脚信息须由沈砚通过实际可接触的来源核实。"
+      },
+      "narrative_segment_id": "volume-5:segment-4",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "在出发前完成陆衡自己的选择与关系结算。",
+      "segment_id": "lu-heng-28",
+      "entry_state_ref": "volume-5:segment-4",
+      "exit_state_spec": {
+        "summary": "陆衡与此次出行有关的明确约定得到履行或清楚协商；他选定自己下一阶段的练习与劳作安排，不因沈砚独行而失去两人的信任。"
+      },
+      "narrative_segment_id": "volume-5:segment-5",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    },
+    {
+      "status": "PLANNED",
+      "objective": "让不同道路与持续联系并存，不以同行或断交证明任何一方成长。",
+      "segment_id": "lu-heng-29",
+      "entry_state_ref": "volume-5:segment-5",
+      "exit_state_spec": {
+        "summary": "陆衡在临行前按实际关系作出有范围的回应，随后继续自己的生活与练习；沈砚独自完成飞行和落脚，两人的合作所得不因此消失。"
+      },
+      "narrative_segment_id": "volume-5:segment-6",
+      "volume_plan_version_id": "authority-output:8307f4b0-2986-457f-a74c-cf77cb28259c:story_planning.candidate:v1"
+    }
+  ],
+  "arc_relations": [],
+  "arc_contributions": [
+    {
+      "change": "陆衡在共同山林任务中明确自己的时间与收益边界，实际承担分工，并依据交付结果决定后续合作。",
+      "subject": "卷一"
+    },
+    {
+      "change": "他保留固定练习，也在看见具体学习用途时协商有限调整，使可靠履约与有效练习能够并行。",
+      "subject": "卷二"
+    },
+    {
+      "change": "面对更复杂的准备工作，他区分已答应事项与可选工作，按自己和伙伴的日程重新分工。",
+      "subject": "卷三"
+    },
+    {
+      "change": "他在自己的能力与时间范围内支持沈砚的飞剑实践，同时继续经营自己的练习，不代替技术指导。",
+      "subject": "卷四"
+    },
+    {
+      "change": "他处理与沈砚此次出行有关的明确约定，选择自己的后续安排；两人可以不同行而保有合作所得。",
+      "subject": "卷五"
+    }
+  ]
+}

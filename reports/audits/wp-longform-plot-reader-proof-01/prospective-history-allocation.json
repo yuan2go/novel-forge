@@ -1,0 +1,42 @@
+{
+  "schema_version": "plot-reader-prospective-allocation.v1",
+  "scope": "ISOLATED_FUTURE_CHAPTER_REQUESTS_FROM_21",
+  "previous_policy": {
+    "version": "working-prose-projection.v3",
+    "history_chapters": 32,
+    "recent_complete_chapters": 3,
+    "max_characters": 18000,
+    "queries": [
+      "沈砚初次引气与木片亮纹",
+      "唐穗药叶和共同用饭",
+      "陆衡搬桩与自己练习时间",
+      "许庭课堂手势",
+      "程教习课程与劳动"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "selected_policy": {
+    "version": "working-prose-projection.v3",
+    "history_chapters": 32,
+    "recent_complete_chapters": 3,
+    "max_characters": 14000,
+    "queries": [
+      "沈砚初次引气与木片亮纹",
+      "唐穗药叶和共同用饭",
+      "陆衡搬桩与自己练习时间",
+      "许庭课堂手势",
+      "程教习课程与劳动"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "reason": "Chapter20 rendered upper bound246898 leaves11502; allocate optional old excerpts prospectively while required3recentcomplete sources remain mandatory",
+  "unchanged": {
+    "provider_hard_cap": 258400,
+    "output_reserve": 32000,
+    "model": "codex-cli:gpt-6-sol:high",
+    "recent_complete_chapters": 3
+  },
+  "omissions": "Exact Unicode ranges frozen per request; insufficient required coverage fails closed",
+  "frozen_requests_rewritten": false,
+  "original_instance_mutations": 0
+}

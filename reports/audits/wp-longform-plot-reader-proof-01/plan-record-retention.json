@@ -1,0 +1,58 @@
+[
+  {
+    "file": "proposal.json",
+    "sha256": "24ebb31a20e2eac6aa54e1a0677214459d2452953bb7acdd9cff1abfc0cea0e5",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/proposal.json",
+    "native_proposal_id": "plan-change:55605103-5968-41a5-b044-b9cf898db682",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "decision.json",
+    "sha256": "533ccd366d90009255a016d269022f9651d78a184e56b0e31122aafbe70cce04",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/decision.json",
+    "native_proposal_id": "plan-change:55605103-5968-41a5-b044-b9cf898db682",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "activation.json",
+    "sha256": "273e215df78c48754b2913b68da798ad74da04bee8cbb1b10a830016b96c2884",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/activation.json",
+    "native_proposal_id": "plan-change:55605103-5968-41a5-b044-b9cf898db682",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "proposal-v2.json",
+    "sha256": "8956c8e057b9c5586633d5728e8bf257160585aa59fd5ce13ede09a563f04eb0",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/proposal-v2.json",
+    "native_proposal_id": "plan-change:598b6761-70f6-4ada-acf6-1a749186cbe0",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "decision-v2.json",
+    "sha256": "ba5cb68b30ae9efa499d655db457e26beba8092f532584ffb3608683644a1455",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/decision-v2.json",
+    "native_proposal_id": "plan-change:598b6761-70f6-4ada-acf6-1a749186cbe0",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "activation-v2.json",
+    "sha256": "1557238f0eca313e30c77c9618f0bd01348a1f4f5dbbe857f2f731925b88a2c0",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/activation-v2.json",
+    "native_proposal_id": "plan-change:598b6761-70f6-4ada-acf6-1a749186cbe0",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "volume-decision.json",
+    "sha256": "9307cfca5e712d6ca3964f40b58b4856f0e21aab8d2f118ae16eaf86ff1c64e0",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/volume-decision.json",
+    "native_proposal_id": "plan-change:6eb44d79-8c56-4d0c-af9a-5ee5d7ff781a",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  },
+  {
+    "file": "volume-activation.json",
+    "sha256": "d2ef25151d6c7dc291be57d48c5f71c7a6938af264923cad53c6b3e9c9eee303",
+    "private_retained_path": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/full-native-plan-records/volume-activation.json",
+    "native_proposal_id": "plan-change:6eb44d79-8c56-4d0c-af9a-5ee5d7ff781a",
+    "projection": "REVIEW_METADATA_EXCLUDES_DUPLICATE_FROZEN_DEPENDENCY_SNAPSHOTS"
+  }
+]

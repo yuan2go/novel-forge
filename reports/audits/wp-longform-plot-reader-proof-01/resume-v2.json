@@ -1,0 +1,10 @@
+{
+  "proposal_id": "plan-change:598b6761-70f6-4ada-acf6-1a749186cbe0",
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "source_evidence_version_id": "authority-output:e1972503-2c96-4b55-908a-390cc95e59f4:planning.change_request:v1",
+  "proposed_asset_version_id": "authority-output:3a9860a9-5b2c-4cde-92de-ba68c62c8c1c:story_planning.candidate:v1",
+  "accepted_through_chapter": 0,
+  "snapshot_id": "sha256:9ab1c852186d70e4aed6a8688a76353ecf31b71d5b3a7489c608bc225cd3811e",
+  "state": "READY",
+  "replayed": false
+}

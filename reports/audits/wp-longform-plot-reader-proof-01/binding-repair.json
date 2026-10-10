@@ -1,0 +1,10 @@
+{
+  "snapshot_id": "sha256:9ab1c852186d70e4aed6a8688a76353ecf31b71d5b3a7489c608bc225cd3811e",
+  "source_snapshot_id": "sha256:f20f1e968d479b5e6bae97722b41ccdf1626c8287a1eea0cfb5d8d0abad40dab",
+  "initial_story_state_version": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1",
+  "initial_canon_snapshot_version": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1",
+  "state": "READY",
+  "book_version": 119,
+  "original_binding_preserved": true,
+  "repair_kind": "KNOWN_COMMIT_INPUT_OMISSION_NATIVE_SUCCESSOR"
+}
