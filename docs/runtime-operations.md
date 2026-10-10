@@ -4109,3 +4109,13 @@ correction once in the original step lineage. The Kernel retains the original
 Attempts and terminal state. Capacity, completion checks, Provider authorization
 and the final rendered-request admission remain authoritative; admitting a
 successor does not prove that its Context or Writer will fit.
+
+For a v13 Chapter Writer using a frozen working-prose v2/v3 projection, final
+request materialization uses `provider-structured-exact-reference.v1` inside the
+existing exact-reference compiler. Canonical JSON summaries retain all original
+bytes after decoding; repeated objects may refer to an earlier complete object
+with explicit field replacements and removals. The host verifies full source
+reconstruction and records source/encoded hashes and reference counts. The
+rendered stage contract explains these encodings to the Provider. Other Planning
+and legacy transports retain whole-value references. This removes repeated
+serialization without changing the frozen source window or admission limits.

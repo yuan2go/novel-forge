@@ -170,3 +170,37 @@ def test_planning_capacity_recovery_uses_authorized_candidate_failures(reasons, 
     else:
         with pytest.raises(KernelError, match='PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED'):
             require_capacity_route_candidates(decision, frozen=frozen, source_operation_id='operation')
+
+
+def test_structured_exact_transport_reconstructs_full_json_and_object_deltas_after_canonical_ordering():
+    import json
+    shared = {'experience': '实际经历不能遗漏。' * 120, 'constraints': ['完整保留作品约束。' * 50]}
+    scene = {**shared, 'action': '实际执行而非核验。' * 50}
+    source = {'context_bundle': {'segments': [{'safe_summary': json.dumps(shared,ensure_ascii=False,sort_keys=True,separators=(',',':'))}],
+              'mission': scene}, 'input_manifest': {'plan': {**scene, 'scene_plan': [shared], 'scene_sequence': [shared]}}}
+    legacy, _ = compile_exact_context_references(source)
+    encoded, proof = compile_exact_context_references(source, structured_transport=True)
+    restored = expand_exact_context_references(json.loads(json.dumps(encoded,sort_keys=True)))
+    assert restored == source
+    assert proof['decoded_equal'] and proof['canonical_json_string_count'] == 1 and proof['delta_reference_count'] > 0
+    assert len(json.dumps(encoded,ensure_ascii=False).encode()) < len(json.dumps(legacy,ensure_ascii=False).encode())
+    assert compile_exact_context_references(source)[0] == legacy
+
+
+@pytest.mark.parametrize('invalid', [
+    {'__exact_value_ref__': '/future', '__exact_value_overrides__': {}},
+    {'__exact_value_ref__': '/source', '__exact_value_removed_keys__': ['absent']},
+    {'__exact_value_ref__': '/source', '__exact_value_overrides__': []},
+    {'__canonical_json_string__': []},
+    {'__canonical_json_string__': {}, 'unexpected': True},
+    {'__exact_value_overrides__': {}},
+])
+def test_structured_exact_transport_rejects_invalid_or_forward_data(invalid):
+    with pytest.raises(KernelError, match='PROVIDER_EXACT_REFERENCE_INVALID'):
+        expand_exact_context_references({'source': {'required': 'retained'}, 'target': invalid})
+
+
+@pytest.mark.parametrize('marker', ['__exact_value_overrides__', '__exact_value_removed_keys__', '__canonical_json_string__'])
+def test_structured_transport_cannot_confuse_source_text_with_host_markers(marker):
+    with pytest.raises(KernelError, match='PROVIDER_EXACT_REFERENCE_COLLISION'):
+        compile_exact_context_references({'safe_summary': {marker: 'author data'}},structured_transport=True)

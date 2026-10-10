@@ -40,7 +40,6 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
         working = intent.get("working_manuscript") if isinstance(intent, dict) else None
         if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
             and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3"}):
-            # WHY: Writer parses this Intent into structured fields; escaped storage JSON is never its Provider representation.
             return max(1, serialized_token_upper_bound({**payload, "safe_summary": intent}) + 64), "STRUCTURED_WORKING_INTENT"
     return max(1, serialized_token_upper_bound(payload)), "SERIALIZED_SUMMARY"
 
