@@ -227,7 +227,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.api.authority_app import create_authority_app
     client = TestClient(create_authority_app(settings))
     extension = {"project_id": project, "book_run_id": book["book_run_id"],
-        "expected_version": book["version"], "stop_after_chapter": 8, "idempotency_key": "extend-native-to-eight"}
+        "expected_version": book["version"], "stop_after_chapter": 8, "idempotency_key": f"{project}:extend-native-to-eight"}
     outside = client.post("/product/editor/manuscripts/extend-delivery-window", json={**extension, "project_id": "another-project"})
     assert outside.status_code == 403
     extended = client.post("/product/editor/manuscripts/extend-delivery-window", json=extension)
@@ -258,7 +258,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     review_scope = dict(project_id=project, workspace_id=book["workspace_id"], book_run_id=book["book_run_id"], principal=principal)
     review = coordinator.start(**review_scope, policy={"policy_version": "author-prose-review.v1", "window_codepoints": 4000,
         "overlap_codepoints": 200, "context_token_budget": 16000, "maximum_windows": 8},
-        idempotency_key="optional-review", trace_id="trace-optional", correlation_id="correlation-optional")
+        idempotency_key=f"{project}:optional-review", trace_id="trace-optional", correlation_id="correlation-optional")
     report = coordinator.report(**review_scope, run_id=review["run_id"])
     assert report["source_current"] is True
     assert report["review_complete"] is False
@@ -269,7 +269,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         assert all(source["acceptance_id"] == "" for source in frozen_review["sources"])
     with pytest.raises(KernelError, match="CONTROLLED_OPTIONAL_SERVICE_UNAVAILABLE"):
         coordinator.advance(**review_scope, run_id=review["run_id"], expected_version=report["expected_version"],
-            idempotency_key="optional-outage", trace_id="trace-outage", correlation_id="correlation-outage")
+            idempotency_key=f"{project}:optional-outage", trace_id="trace-outage", correlation_id="correlation-outage")
     from novel_forge.modules.book_authority.manuscript import blocking_working_cli_outcomes
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT content->>'operation_id' FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED'", [review["run_id"]])
