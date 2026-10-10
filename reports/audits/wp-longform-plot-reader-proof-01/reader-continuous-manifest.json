@@ -129,6 +129,24 @@
       "export_text_digest": "sha256:c1f849ef8a5c228b59795550ebbf87d7b5de61352c6944aae8680633d204256b",
       "file_sha256": "c1f849ef8a5c228b59795550ebbf87d7b5de61352c6944aae8680633d204256b",
       "file": "reader-packet/连续阅读/第30章.txt"
+    },
+    {
+      "chapter": 31,
+      "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41",
+      "content_hash": "sha256:cf0f9ad4c9c1a4d90d5243fb942e9140923caffd029519d6089c3c56d04ce6c0",
+      "text_hash": "sha256:c3e30dcfc867034b805cde9a79236519c19572a6991c02d3001fae16a9638191",
+      "export_text_digest": "sha256:57779c6b85c9d721716e1f6535a9c16c49ee165e22bdfc68aa20f742b02ccc6d",
+      "file_sha256": "57779c6b85c9d721716e1f6535a9c16c49ee165e22bdfc68aa20f742b02ccc6d",
+      "file": "reader-packet/连续阅读/第31章.txt"
+    },
+    {
+      "chapter": 32,
+      "asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+      "content_hash": "sha256:ed6f9447462202209be083b0332066ac2bb649170458e9c6bc9543241c734989",
+      "text_hash": "sha256:58b7daaa674aba9b21c47e9252378106cf770c5eb3894ad388d912cf02b4b510",
+      "export_text_digest": "sha256:796e625f6e8be94edb9022cf4504641d4b7a406503877b3f653cbe1619ed90c9",
+      "file_sha256": "796e625f6e8be94edb9022cf4504641d4b7a406503877b3f653cbe1619ed90c9",
+      "file": "reader-packet/连续阅读/第32章.txt"
     }
   ],
   "background": "Existing exact original selected chapters1–16",
@@ -138,5 +156,34 @@
     "group_identity"
   ],
   "formal_existing_blind_import": "NOT_RUN_REQUIRES_VERIFIED_REAL_REVIEWERS",
-  "adoption": "NO_HUMAN_DECISION; EXPERIMENTAL_DEFAULT_OFF"
+  "adoption": "NO_HUMAN_DECISION; EXPERIMENTAL_DEFAULT_OFF",
+  "reading_compilation": {
+    "file": "reader-packet/连续阅读/连续阅读合订.txt",
+    "file_sha256": "f53ca49084806450d9e60b52fb4cfa46dec214fdba57f4cdfb99c5efe964dd49",
+    "kind": "READING_COMPILATION_OF_EXACT_CHAPTER_TEXTS",
+    "background_chapters": [
+      14,
+      15,
+      16
+    ],
+    "continuous_chapters": [
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32
+    ],
+    "individual_exports_remain_authoritative": true
+  }
 }

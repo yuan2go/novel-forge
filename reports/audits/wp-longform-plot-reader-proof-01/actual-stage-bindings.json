@@ -13099,12 +13099,12 @@
       "operation_id": "465423f9-9686-47ae-85d6-47e754b7cf4c",
       "definition_name": "chapter.draft.generate",
       "definition_version": "3.10.0",
-      "operation_status": "EXECUTING",
+      "operation_status": "SUCCEEDED",
       "root_operation_id": "55fe9150-997c-4013-b864-bdd89f41a427",
       "chapter": 30,
       "stage": null,
       "effect_id": "6956c8bc-be54-406e-8221-ba2eff873ea3",
-      "effect_status": "DISPATCHING",
+      "effect_status": "SUCCEEDED",
       "provider": "production_execution_gateway",
       "model_id": "gpt-6-sol",
       "pack_ref": "chapter_generation_pack.plot_reader_01@3.0.1113",
@@ -13187,6 +13187,1426 @@
           "project_id": "qid-learning-prose-01",
           "content_hash": "sha256:343ec147768208ef857f57814421d38a8efde37fa8c735c8da94bbe2b1fa6a74",
           "asset_version_id": "authority-output:6b993b90-aafe-4964-b986-688ef55423d8:chapter.context:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "ca24a5e2-6d8e-4ba2-98a0-b21066a5831a",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "ca24a5e2-6d8e-4ba2-98a0-b21066a5831a",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "dabeecc3-176f-4532-b7a9-79712c5e8b84",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "782dd192-160a-4d39-b7af-6d72d4721a07",
+      "materialization_hash": "sha256:473665f079b961b89593027e6ca2e9d9baccb32215f2fca8fe80c4d9d3b5541c",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v4",
+          "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+          "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:309a89d185e52927f514e466c7e09f7165eac2f95ee2a29bef54bd3b7f018257",
+          "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:74ffed6a7dc9865a59f4eca50bfd23c243a58022e65cfe2d76ec24ffbefb6f13",
+          "asset_version_id": "authority-output:3f745181-cd7c-4674-bde4-1438519b53fe:story_design.transition.receipt:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "ca24a5e2-6d8e-4ba2-98a0-b21066a5831a",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "ca24a5e2-6d8e-4ba2-98a0-b21066a5831a",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "060845d1-064b-406a-9d08-b6dd73e1d1a9",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "86926b3e-7f9f-470b-9a17-181209f6b317",
+      "materialization_hash": "sha256:8ef93de2572b24076be839ad7320cb36a2748785d25bbeb1efeec0efe32b986e",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v4",
+          "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+          "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:309a89d185e52927f514e466c7e09f7165eac2f95ee2a29bef54bd3b7f018257",
+          "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:74ffed6a7dc9865a59f4eca50bfd23c243a58022e65cfe2d76ec24ffbefb6f13",
+          "asset_version_id": "authority-output:3f745181-cd7c-4674-bde4-1438519b53fe:story_design.transition.receipt:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "ca24a5e2-6d8e-4ba2-98a0-b21066a5831a",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "ca24a5e2-6d8e-4ba2-98a0-b21066a5831a",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "8b3406f3-4a61-4003-b0e9-76b0ba342796",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "8b66934a-4aca-4618-9800-0fdf281a40bb",
+      "materialization_hash": "sha256:3c18de7e2c23cbdfaec7584c178be4fa424b44a85fd2e813cb412dcb4152ec1b",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v4",
+          "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+          "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:309a89d185e52927f514e466c7e09f7165eac2f95ee2a29bef54bd3b7f018257",
+          "asset_version_id": "c7ba4c48-6542-407c-93b8-d25ae3216ab0"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:74ffed6a7dc9865a59f4eca50bfd23c243a58022e65cfe2d76ec24ffbefb6f13",
+          "asset_version_id": "authority-output:3f745181-cd7c-4674-bde4-1438519b53fe:story_design.transition.receipt:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "bb68bf65-88ee-4b94-9cc0-43d131e8162d",
+      "definition_name": "chapter.memo.generate",
+      "definition_version": "3.10.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "ec6de12e-b06f-4dee-b453-bb4b4083f67f",
+      "chapter": 31,
+      "stage": null,
+      "effect_id": "c80861be-6784-4193-9445-8dbf837a131d",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": "chapter_generation_pack.plot_reader_01@3.0.1113",
+      "materialization_asset_version_id": "731c3905-2cef-410e-836d-34707e1e622f",
+      "materialization_hash": "sha256:1f90a8aff88d3980f6f428b6c8dc8c981670aa95d43b34497caf62b6e74e644a",
+      "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-plan-skill-v3",
+          "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+        },
+        "pack_id": "chapter_generation_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:7417d46036b2eb779927bee36e3296b82536ea2089659ae8f78e6e6a6668cfee"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-chapter-memo:v1",
+          "version": "v1",
+          "content_hash": "sha256:0e0021b570bd8f3f1103cb944d2fc1008bb720a334be2b06ffed16fa9b1178d4"
+        },
+        "pack_version": "3.0.1113",
+        "manifest_hash": "sha256:7aab2fd6a65115cf300d3d90ceb5ad285bb19f211aa360b5a939b6c42414d530",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-chapter-memo:v1",
+          "version": "v1",
+          "content_hash": "sha256:99cd1db74b0e87be9c60f5920ff71e686a4e33303a17221b4119d1663c0d2c12"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:35f19f6c48487dfa5c10e6831ba82fbae0c9f33c16c894a09e3866fae68e4003"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:chapter-generation-pack",
+          "version": "v13",
+          "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:chapter-generation-pack",
+          "version": "v3",
+          "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "artifact_catalog_hash": "sha256:9a5a84097e2642be72ce18c274595cfa0c3d6e0e327a7a247502b24c589cb366"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:212f45252e1cd1a31ea3affd943a78b1499d9ce0b0a669370ea1aabc0aad0576",
+          "asset_version_id": "authority-output:ade1550b-709f-4887-a0e0-e6b920c7f93a:chapter.plan:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7912cff21796bbde5e63a9db144e821bf068299afbc0c788671121c92003c171",
+          "asset_version_id": "authority-output:5526f365-3f32-49a5-bfd8-c475e19b849a:chapter.execution_intent:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "278528c3-5b68-4d31-8322-490b44f6d84b",
+      "definition_name": "chapter.draft.generate",
+      "definition_version": "3.10.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "ec6de12e-b06f-4dee-b453-bb4b4083f67f",
+      "chapter": 31,
+      "stage": null,
+      "effect_id": "f7b53423-d406-46d7-a074-3098cbcefb5b",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": "chapter_generation_pack.plot_reader_01@3.0.1113",
+      "materialization_asset_version_id": "b6d2a9a6-e183-4c50-ae49-1ada4cac02e8",
+      "materialization_hash": "sha256:905400ac0f7427395cb712f1940406510873a2de457978b5b6a7017b8b11cd6d",
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "prose-generation",
+          "version": "prose-generation-v5",
+          "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+        },
+        "pack_id": "chapter_generation_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:7417d46036b2eb779927bee36e3296b82536ea2089659ae8f78e6e6a6668cfee"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:prose-chapter-draft:v1",
+          "version": "v1",
+          "content_hash": "sha256:1f7d9743e42a87e983c63b4c82cd0e9873154b3dfad0e4524fa6541ad89ef1c8"
+        },
+        "pack_version": "3.0.1113",
+        "manifest_hash": "sha256:7aab2fd6a65115cf300d3d90ceb5ad285bb19f211aa360b5a939b6c42414d530",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:prose-chapter-draft:v1",
+          "version": "v1",
+          "content_hash": "sha256:54b9f64c4dbbc03929e6b90a9224fe99ffae9fbda6c358c72f95ca417fa444f2"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:35f19f6c48487dfa5c10e6831ba82fbae0c9f33c16c894a09e3866fae68e4003"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:chapter-generation-pack",
+          "version": "v13",
+          "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:chapter-generation-pack",
+          "version": "v3",
+          "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "artifact_catalog_hash": "sha256:9a5a84097e2642be72ce18c274595cfa0c3d6e0e327a7a247502b24c589cb366"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:212f45252e1cd1a31ea3affd943a78b1499d9ce0b0a669370ea1aabc0aad0576",
+          "asset_version_id": "authority-output:ade1550b-709f-4887-a0e0-e6b920c7f93a:chapter.plan:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7912cff21796bbde5e63a9db144e821bf068299afbc0c788671121c92003c171",
+          "asset_version_id": "authority-output:5526f365-3f32-49a5-bfd8-c475e19b849a:chapter.execution_intent:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:457533cf59d542c4583b694e6ec9f9838bdf8f98dff3e82e0e3687c0a691317f",
+          "asset_version_id": "authority-output:bb68bf65-88ee-4b94-9cc0-43d131e8162d:chapter.memo:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7def80a1ecda61693bbb350e633ad792b833740e8e1709238ed93c098bf4ea7b",
+          "asset_version_id": "authority-output:177c101d-6778-4878-9be4-0e01e7fec86a:chapter.context:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "cfc52316-c16a-4971-9430-8c00286bf68d",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "cfc52316-c16a-4971-9430-8c00286bf68d",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "e4313802-eaac-47b4-8051-fb1afcee1387",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "671ac633-34b3-4ac9-8cb0-340b726e335d",
+      "materialization_hash": "sha256:0e67d5e70bc08196618a9cfe75c83b670227c657ee528790f101cee5182ab8e4",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v4",
+          "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+          "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f992a3778907880295fa2cc2dd0b81330fca74f5cdb19b73901a41b27ea5b027",
+          "asset_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d975dd22cb4cd4f31d7f5e5649e032e88b4aa6a855364105f16b642f0cc2e3ba",
+          "asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:74ffed6a7dc9865a59f4eca50bfd23c243a58022e65cfe2d76ec24ffbefb6f13",
+          "asset_version_id": "authority-output:3f745181-cd7c-4674-bde4-1438519b53fe:story_design.transition.receipt:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "cfc52316-c16a-4971-9430-8c00286bf68d",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "cfc52316-c16a-4971-9430-8c00286bf68d",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "4203de4c-116b-4e44-9303-8481056a7743",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "627d2d6a-e31b-4237-be38-cb75682b2000",
+      "materialization_hash": "sha256:d222846d940820cc83b076af49097b81af9d225b9d372b938fda25234d1f39dd",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v4",
+          "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+          "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f992a3778907880295fa2cc2dd0b81330fca74f5cdb19b73901a41b27ea5b027",
+          "asset_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d975dd22cb4cd4f31d7f5e5649e032e88b4aa6a855364105f16b642f0cc2e3ba",
+          "asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:74ffed6a7dc9865a59f4eca50bfd23c243a58022e65cfe2d76ec24ffbefb6f13",
+          "asset_version_id": "authority-output:3f745181-cd7c-4674-bde4-1438519b53fe:story_design.transition.receipt:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "cfc52316-c16a-4971-9430-8c00286bf68d",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "cfc52316-c16a-4971-9430-8c00286bf68d",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "8b927d85-dc87-4217-bca5-1b787f668782",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "839f5cd3-a0c7-4a7a-bdda-fd1283057563",
+      "materialization_hash": "sha256:7820bbb653708746c0a8049eb7c5bf46b6f4440c6241ea2ae26fe6ddf1c3bf94",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-outline-qualification-v4",
+          "content_hash": "sha256:f5b3ae88aa06997a4a7d867c6d8db95620602539b10cc9cb69b2f68d9fa5d49f"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-story_chapter-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:9eb858dcfa3483101e3a9e5a729756eeaff1fd32c1aa27aaa320eef9c4aa180c",
+          "asset_version_id": "authority-output:6d8a1f8c-3522-4de3-9b9b-8117b95b666f:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:2dcbddbc501c84455ac6cc136e718c3a3b50c34b23560ade03905e007c929b99",
+          "asset_version_id": "authority-output:85ff0fd5-1348-4ac7-aeac-cfe3ea8133ea:book.bootstrap.previous_chapter_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f992a3778907880295fa2cc2dd0b81330fca74f5cdb19b73901a41b27ea5b027",
+          "asset_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f0a22987dac082fb7ff62cbd621103e54b6ebb600c1fb90c1ad128a8b9aefddb",
+          "asset_version_id": "651c5a5d-41df-4bb7-a949-3698f627490c"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d975dd22cb4cd4f31d7f5e5649e032e88b4aa6a855364105f16b642f0cc2e3ba",
+          "asset_version_id": "authority-output:278528c3-5b68-4d31-8322-490b44f6d84b:chapter.draft:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:74ffed6a7dc9865a59f4eca50bfd23c243a58022e65cfe2d76ec24ffbefb6f13",
+          "asset_version_id": "authority-output:3f745181-cd7c-4674-bde4-1438519b53fe:story_design.transition.receipt:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "b7edb824-128f-4b7f-9398-fa4b97d7c832",
+      "definition_name": "chapter.memo.generate",
+      "definition_version": "3.10.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "992a9df8-f1cf-4125-89bd-09b85daea5bb",
+      "chapter": 32,
+      "stage": null,
+      "effect_id": "76bd49d1-232c-4ed4-be75-4bae2bd6a2f3",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": "chapter_generation_pack.plot_reader_01@3.0.1113",
+      "materialization_asset_version_id": "3b15c0d6-ffa3-4668-8b55-09ecdef633ee",
+      "materialization_hash": "sha256:b9b01e771c75552efaf3723dbd8eb238d5082b10fdc559f8d7585e3def851777",
+      "output_schema_ref": "schema:chapter-provider-output:memo:v3",
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "chapter-outline",
+          "version": "chapter-plan-skill-v3",
+          "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39"
+        },
+        "pack_id": "chapter_generation_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:7417d46036b2eb779927bee36e3296b82536ea2089659ae8f78e6e6a6668cfee"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-chapter-memo:v1",
+          "version": "v1",
+          "content_hash": "sha256:0e0021b570bd8f3f1103cb944d2fc1008bb720a334be2b06ffed16fa9b1178d4"
+        },
+        "pack_version": "3.0.1113",
+        "manifest_hash": "sha256:7aab2fd6a65115cf300d3d90ceb5ad285bb19f211aa360b5a939b6c42414d530",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-chapter-memo:v1",
+          "version": "v1",
+          "content_hash": "sha256:99cd1db74b0e87be9c60f5920ff71e686a4e33303a17221b4119d1663c0d2c12"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:35f19f6c48487dfa5c10e6831ba82fbae0c9f33c16c894a09e3866fae68e4003"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:chapter-generation-pack",
+          "version": "v13",
+          "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:chapter-generation-pack",
+          "version": "v3",
+          "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "artifact_catalog_hash": "sha256:9a5a84097e2642be72ce18c274595cfa0c3d6e0e327a7a247502b24c589cb366"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:24260dede186fef7c71b428021c929435bf114c75a6fe1c2e63082e203610f91",
+          "asset_version_id": "authority-output:c4e1faa1-d448-451c-b74f-4be38bb24d8b:chapter.plan:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:795fe272580d8297a850f9a48166686cf3482a074ffabba44ca02e5a700d75c5",
+          "asset_version_id": "authority-output:555e74e7-fb22-441d-8e18-bf042a50a341:chapter.execution_intent:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "f814df3f-c1c0-4862-af97-fe15fc711145",
+      "definition_name": "chapter.draft.generate",
+      "definition_version": "3.10.0",
+      "operation_status": "SUCCEEDED",
+      "root_operation_id": "992a9df8-f1cf-4125-89bd-09b85daea5bb",
+      "chapter": 32,
+      "stage": null,
+      "effect_id": "0f083065-497b-49cf-b99c-d070d4c38193",
+      "effect_status": "SUCCEEDED",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": "chapter_generation_pack.plot_reader_01@3.0.1113",
+      "materialization_asset_version_id": "f1116db5-d9c3-4152-b957-da03e0f1a8a6",
+      "materialization_hash": "sha256:4a0fd29a7ac7eaa4aa8aa30d8d6261337789640723399fadeb948d25a56bf772",
+      "output_schema_ref": "schema:chapter-provider-output:draft:v4:working-memory-v1",
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "prose-generation",
+          "version": "prose-generation-v5",
+          "content_hash": "sha256:f760b6d396ec34c94618cb9733ab8945638f043f05942ddf4eb11113e7ae8596"
+        },
+        "pack_id": "chapter_generation_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:7417d46036b2eb779927bee36e3296b82536ea2089659ae8f78e6e6a6668cfee"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:prose-chapter-draft:v1",
+          "version": "v1",
+          "content_hash": "sha256:1f7d9743e42a87e983c63b4c82cd0e9873154b3dfad0e4524fa6541ad89ef1c8"
+        },
+        "pack_version": "3.0.1113",
+        "manifest_hash": "sha256:7aab2fd6a65115cf300d3d90ceb5ad285bb19f211aa360b5a939b6c42414d530",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:prose-chapter-draft:v1",
+          "version": "v1",
+          "content_hash": "sha256:54b9f64c4dbbc03929e6b90a9224fe99ffae9fbda6c358c72f95ca417fa444f2"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:35f19f6c48487dfa5c10e6831ba82fbae0c9f33c16c894a09e3866fae68e4003"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:chapter-generation-pack",
+          "version": "v13",
+          "content_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:chapter-generation-pack",
+          "version": "v3",
+          "content_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e"
+        },
+        "artifact_catalog_hash": "sha256:9a5a84097e2642be72ce18c274595cfa0c3d6e0e327a7a247502b24c589cb366"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:24260dede186fef7c71b428021c929435bf114c75a6fe1c2e63082e203610f91",
+          "asset_version_id": "authority-output:c4e1faa1-d448-451c-b74f-4be38bb24d8b:chapter.plan:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:795fe272580d8297a850f9a48166686cf3482a074ffabba44ca02e5a700d75c5",
+          "asset_version_id": "authority-output:555e74e7-fb22-441d-8e18-bf042a50a341:chapter.execution_intent:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:09ce40bc186c70c80d8015dba174b99744975222b2da471ee9352779286aff06",
+          "asset_version_id": "authority-output:b7edb824-128f-4b7f-9398-fa4b97d7c832:chapter.memo:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:25f08996f1c616880e3629b359ab9dc4f3722a9b832b7e0334641786aa8cb2ed",
+          "asset_version_id": "authority-output:a6bdbfcf-37ab-4741-88bb-db36243f1bb5:chapter.context:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6",
+      "definition_name": "story_planning.generate",
+      "definition_version": "1.21.0",
+      "operation_status": "EXECUTING",
+      "root_operation_id": "e93dc206-5bc4-4a4b-a2ec-40cf6cf5dfa6",
+      "chapter": null,
+      "stage": null,
+      "effect_id": "de6e5dac-7d43-475b-a7f2-28a5ad993c35",
+      "effect_status": "DISPATCHING",
+      "provider": "production_execution_gateway",
+      "model_id": "gpt-6-sol",
+      "pack_ref": null,
+      "materialization_asset_version_id": "aa06b1fb-3957-4a50-a2c7-15593558491e",
+      "materialization_hash": "sha256:a9e60de05feeec76f7242594e27bf990c7a6860827c081af8ce78236b018fbe4",
+      "output_schema_ref": null,
+      "pack_artifacts": {
+        "skill": {
+          "kind": "SKILL",
+          "ref": "long-outline",
+          "version": "long-outline-v4",
+          "content_hash": "sha256:687c4217ce8108496eaf6c4b012b2231269ecd732f2ff56e305d183a54cdbf34"
+        },
+        "pack_id": "story_planning_pack.plot_reader_01",
+        "tool_policy": {
+          "kind": "TOOL_POLICY",
+          "ref": "tools:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:b09e28f5c1a575848e315e6d82818fd1ed50e4e35364ee9a0d97a089b378a2f8"
+        },
+        "input_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-input:planning-chapter_group-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "pack_version": "2.14.1114",
+        "manifest_hash": "sha256:b0c3a671eae225588d7f568b49284765c2776e0f8f07f0a73affd5b9417edcd5",
+        "output_schema": {
+          "kind": "SCHEMA",
+          "ref": "schema:execution-output:planning-chapter_group-generate:v1",
+          "version": "v1",
+          "content_hash": "sha256:54e5431ce455b8c4ec940d12700ed1be5be44d3cdd576f093f0ba301d5dbf423"
+        },
+        "context_policy": {
+          "kind": "CONTEXT_POLICY",
+          "ref": "context-policy:chapter-generation-pack:v2",
+          "version": "v2",
+          "content_hash": "sha256:36fbd60b845e5db10e4fdc1896acf8d9616f011f6337f65b94c54892f64d5cbe"
+        },
+        "prompt_template": {
+          "kind": "PROMPT_TEMPLATE",
+          "ref": "prompt-template:story-planning-pack",
+          "version": "v3",
+          "content_hash": "sha256:6709985d4ad0ea03e2540bf7d54b1f0f88494e7095207948d5cc700bc0309c9c"
+        },
+        "required_knowledge": [
+          {
+            "kind": "KNOWLEDGE",
+            "ref": "knowledge:chapter-causal-cost:v2",
+            "version": "v2",
+            "content_hash": "sha256:32b20acabcbc2f0c498f9611738c6369ed635484ac4c3852f320c5a5ce0cb62e"
+          }
+        ],
+        "system_instruction": {
+          "kind": "PROMPT_SYSTEM_INSTRUCTION",
+          "ref": "prompt-system:story-planning-pack",
+          "version": "v12",
+          "content_hash": "sha256:48f75ef4fc068268aa8372c9e7a689fbefe3c18fc041373c1dc09b58607fdebe"
+        },
+        "artifact_catalog_hash": "sha256:8c0fd3eea950c10f16a0585478a2ff15704cca7d0b8409b8081465357e8eea1f"
+      },
+      "input_snapshot": [
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ba575bee40c26c2a75a7a711d754684b515979faeff62068fedf39b65d0d0cd2",
+          "asset_version_id": "authority-output:d74c587d-7dc2-468f-8e11-34f9db4a0195:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d04d122aa126b18d46619a7180542437116f68b0c1a401fc5261404c1801f705",
+          "asset_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a747a5bb2a86dda07d29a1afd8ddbc310ab7de2afd13c9b6120fcaff5d3625f3",
+          "asset_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d8b0ee2269bee6a486805888da0d7103311ad891d922a14fdb4eb40b0fcb0209",
+          "asset_version_id": "authority-output:7348ab08-90ec-4f36-96b6-684bb23c28ca:book.bootstrap.initial_story_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:d02000df2c1840cc18335e6da254bd366e7683ee30fb9d1f247727a6b157c552",
+          "asset_version_id": "authority-output:6dfd62fe-738c-4218-aedd-e29243064bdf:book.bootstrap.initial_canon:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:a16fafcd3ae61f06b76c43ff961f35d9cca9d56bc495f33f57a580fdb1815676",
+          "asset_version_id": "authority-output:92c736d4-8ca5-41a0-b673-700092f7b221:book.bootstrap.previous_chapter_group_outcome:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:7e6394cbcb864ee9b1b8372e569b0e1a7033301f1c8b43421d320d8862ecca0a",
+          "asset_version_id": "authority-output:ffb57b2a-0cc9-4d27-86d8-3bada6865f59:book.bootstrap.quality_trend:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:39d7ed9d135c43cc432013b1e8085a0a55f31cdcfa1ff1914b92d78c19405c57",
+          "asset_version_id": "authority-output:827d27d9-0a30-4066-9545-0faa66472cb7:book.bootstrap.reader_state:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:0231465557987403ddf85d1723fdd59227c14ec7176ce3debd63fe71683c2156",
+          "asset_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:f992a3778907880295fa2cc2dd0b81330fca74f5cdb19b73901a41b27ea5b027",
+          "asset_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:5c9947d45b4a2368eab0c6ed8bc9fb39d61199e9b387cc10b9efc01f8c81ef03",
+          "asset_version_id": "8a228ef2-c3ae-4420-8b43-f0ee017f60c4"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:582d28dbdbcf354ea21e76fccc6abe5061db5f38323eab9a32904e1cf6133f34",
+          "asset_version_id": "cd596c20-baf9-4050-967d-c9eb8fd986f6"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:cf0f9ad4c9c1a4d90d5243fb942e9140923caffd029519d6089c3c56d04ce6c0",
+          "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41"
+        },
+        {
+          "project_id": "qid-learning-prose-01",
+          "content_hash": "sha256:ed6f9447462202209be083b0332066ac2bb649170458e9c6bc9543241c734989",
+          "asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1"
         }
       ]
     }

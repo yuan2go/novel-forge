@@ -3,7 +3,7 @@
   "method": "Native HAN_CHARACTERS_V1 and export paragraph count; literary judgment separate",
   "chapter_range": [
     17,
-    30
+    32
   ],
   "requirements": {
     "chapter_han": [
@@ -136,6 +136,24 @@
       "text_hash": "sha256:98fd5ebd440d0bd2ba79609e973948ae846223201769d6fa93f8c7137cf6b445",
       "han_characters": 2501,
       "maximum_paragraph_han": 153,
+      "chapter_requirement": "PASS",
+      "paragraph_requirement": "PASS"
+    },
+    {
+      "chapter": 31,
+      "asset_version_id": "c14312fd-943c-4f5d-b5a2-44776de63e41",
+      "text_hash": "sha256:c3e30dcfc867034b805cde9a79236519c19572a6991c02d3001fae16a9638191",
+      "han_characters": 2883,
+      "maximum_paragraph_han": 134,
+      "chapter_requirement": "PASS",
+      "paragraph_requirement": "PASS"
+    },
+    {
+      "chapter": 32,
+      "asset_version_id": "authority-output:f814df3f-c1c0-4862-af97-fe15fc711145:chapter.draft:v1",
+      "text_hash": "sha256:58b7daaa674aba9b21c47e9252378106cf770c5eb3894ad388d912cf02b4b510",
+      "han_characters": 2560,
+      "maximum_paragraph_han": 173,
       "chapter_requirement": "PASS",
       "paragraph_requirement": "PASS"
     }
