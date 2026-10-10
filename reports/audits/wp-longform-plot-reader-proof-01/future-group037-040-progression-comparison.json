@@ -1,0 +1,33 @@
+{
+  "source_group": "authority-output:7643460d-85ba-4dd8-a3cf-3ea582756123:story_planning.candidate:v1",
+  "new_group": "authority-output:16edc1d4-4c9b-4d9e-b022-8fdc97541e28:story_planning.candidate:v1",
+  "proposal_id": "plan-change:1be276d8-18a0-4d46-93c1-cdabf881e298",
+  "activation": "ACTIVE_ISOLATED_ONLY",
+  "original_author_decision": "NOT_GRANTED",
+  "range": [
+    37,
+    40
+  ],
+  "past_1_36": "PRESERVED",
+  "before": [
+    "37 repeats36 finished handoff",
+    "38 independent same practice",
+    "39 rechecks same practice then same next question",
+    "40 only future scheduling, no new task"
+  ],
+  "after": [
+    "37 independent repeated movement and explicit own choice",
+    "38 actual limited turning/return teaching with repeated success",
+    "39 duty-bound sourced ordinary light-object work actually received and begun",
+    "40 actual completion/handoff changes available choices, independently chosen practice"
+  ],
+  "parent_support": [
+    "Volume1 explicitly allows finite repeatable ability from real teaching and task outcomes changing cooperation/learning conditions",
+    "Selected Shen/Xu/Cheng Arcs permit finite teaching, independent use and duty-bound work",
+    "No new realm, sword flight, external/object power, automatic resources or course qualification"
+  ],
+  "classification": "GENERATED_GROUP_DESIGN_RESTRICTIONS_NOT_AUTHOR_INVARIANTS",
+  "actual_prose_consumption": "PENDING",
+  "reader_willingness": "NOT_RUN",
+  "combination_effect_only": true
+}

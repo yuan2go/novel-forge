@@ -1,0 +1,189 @@
+{
+  "scope": "ISOLATED_ONLY",
+  "engineering_releases": [
+    "b40f743f3f841cc381a56faa3a3d3b55267a4a8c",
+    "630f5c0151f2a44f55b03989ca075565608e0e1a",
+    "9a4482cbdcdef8a255738c16b256ffe8f41b196a",
+    "30647e4dc0b9df6450308da845d7b52909d44615"
+  ],
+  "frozen_request_id": "chapter-request:6a3d48ee1e03b3c881d6e9c89dd96191f069b9617dbc10113889ca5233f8e53d",
+  "frozen_window_max_characters": 14000,
+  "required_recent_complete_chapters": 3,
+  "hard_limit": 258400,
+  "output_reserve": 32000,
+  "original_unsent_writer_estimated_total_tokens": 277490,
+  "source_inputs_unchanged": true,
+  "source_data_bytes_before": 233627,
+  "source_data_bytes_after": 213395,
+  "structured_reference_proof": {
+    "contract_version": "planning-exact-value-reference.v1",
+    "source_context_hash": "sha256:9e80262b3f2e5c90197b89f21f74c4036d78e2a2a06b0f6d0b0ee3d6903a95b7",
+    "encoded_context_hash": "sha256:6212c0203ec4fc2e22d368d8a3278a27b15d19e8ec98f6a16d7f95a236fdcf51",
+    "reference_count": 58,
+    "decoded_equal": true,
+    "transport_version": "provider-structured-exact-reference.v1",
+    "delta_reference_count": 46,
+    "canonical_json_string_count": 2
+  },
+  "operation_attempts": [
+    [
+      "5413df0e-a7e1-4efb-8fa6-8d354671c63b",
+      "DEAD_LETTER",
+      1,
+      {
+        "error_code": "TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED",
+        "error_message": "TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED: necessary exact task content requires conservative 230374 tokens; target=226400",
+        "failure_class": "retryable",
+        "failure_details": {}
+      }
+    ],
+    [
+      "5413df0e-a7e1-4efb-8fa6-8d354671c63b",
+      "DEAD_LETTER",
+      2,
+      {
+        "error_code": "TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED",
+        "error_message": "TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED: overflow requires a qualified controlled compressor route or a revised authorized task budget",
+        "failure_class": "retryable",
+        "failure_details": {}
+      }
+    ],
+    [
+      "94555e0e-2afa-4ef8-afe6-8049cdef30b8",
+      "SUCCEEDED",
+      1,
+      {
+        "content_hash": "sha256:a4276c78719a932912b3f2c34abecd5e878469c857be63abe687dcca18c17efc",
+        "recovery_mode": "fresh_attempt",
+        "asset_version_id": "authority-output:94555e0e-2afa-4ef8-afe6-8049cdef30b8:chapter.context:v1"
+      }
+    ],
+    [
+      "c86b2bfe-356c-41b6-8fd1-88832128e3d0",
+      "SUCCEEDED",
+      1,
+      {
+        "error_code": "PROVIDER_ROUTING_BLOCKED",
+        "error_message": "PROVIDER_ROUTING_BLOCKED: routing-decision:59347f85f5a0ac0cceb99c28bfe29b66baec8286cdfe58c3bdd56bf4ea38191a",
+        "failure_class": "retryable",
+        "failure_details": {
+          "cause": "ROUTE_CANDIDATES_REJECTED",
+          "stage": "PROVIDER_ROUTE_ADMISSION",
+          "error_code": "PROVIDER_ROUTING_BLOCKED",
+          "task_stage": "draft",
+          "decision_id": "routing-decision:59347f85f5a0ac0cceb99c28bfe29b66baec8286cdfe58c3bdd56bf4ea38191a",
+          "retryability": "CHANGED_ADMISSION_REQUIRED",
+          "recovery_state": "NOT_SENT",
+          "business_impact": "NO_GENERATED_CANDIDATE",
+          "recovery_action": "INSPECT_ROUTE_ADMISSION",
+          "provider_invoked": false,
+          "execution_identity": {
+            "work_id": "book:qinglan-wendao-20261008",
+            "chain_id": "sha256:70bbb011b9ceee32c3436ddf462ae22d5c5cbbc8a51c01bf8ebba6eee8ade1ea",
+            "attempt_id": "446f3564-5807-4120-99bf-6d7d15a399c6",
+            "project_id": "qid-learning-prose-01",
+            "operation_id": "c86b2bfe-356c-41b6-8fd1-88832128e3d0"
+          },
+          "candidate_rejections": [
+            {
+              "candidate_id": "codex-cli:gpt-6.1-sol:high",
+              "rejected_reasons": [
+                "CONTEXT_CAPACITY_EXCEEDED",
+                "BUDGET_HARD_LIMIT",
+                "TEMPLATE_MODEL_UNAUTHORIZED"
+              ],
+              "estimated_total_tokens": 277490
+            },
+            {
+              "candidate_id": "codex-cli:gpt-6-sol:high",
+              "rejected_reasons": [
+                "CONTEXT_CAPACITY_EXCEEDED",
+                "BUDGET_HARD_LIMIT"
+              ],
+              "estimated_total_tokens": 277490
+            }
+          ]
+        }
+      }
+    ],
+    [
+      "c86b2bfe-356c-41b6-8fd1-88832128e3d0",
+      "SUCCEEDED",
+      2,
+      {
+        "content_hash": "sha256:f80b745cf476e76ad45f2630e349828e2cb8c4faf44e7bcceda76aeff0e17467",
+        "recovery_mode": "retry_attempt",
+        "asset_version_id": "authority-output:c86b2bfe-356c-41b6-8fd1-88832128e3d0:chapter.draft:v1"
+      }
+    ]
+  ],
+  "effects": [
+    [
+      "6b87f606-e170-4dbf-ba2e-c75c29091fd9",
+      "SUCCEEDED",
+      {
+        "reason": "ADMITTED_APPLICATION_VISIBLE_ONLY",
+        "status": "ADMITTED",
+        "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+        "envelope_hash": "sha256:d1e33025b8159b693767fb1e65e92f27ceaabcc2ceec815c0748384d1abd2bd5",
+        "total_reserved": 257678,
+        "component_usage": {
+          "safety_margin": 256,
+          "output_reserve": 32000,
+          "provider_input": 225406,
+          "request_framing": 16
+        },
+        "applicable_limit": 258400,
+        "contract_version": "provider-token-admission-v1",
+        "accounting_contract": {
+          "model": "gpt-6-sol",
+          "provider": "codex-cli",
+          "precision": "APPLICATION_VISIBLE_UPPER_BOUND",
+          "evidence_ref": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+          "meter_version": "v1",
+          "safety_margin": 256,
+          "meter_identity": "codex-cli-application-stdin-byte-upper-bound",
+          "output_reserve": 32000,
+          "route_identity": "routing-decision:7329055ee9d6f0b057a8f284ddf64f5c37edbe1dfd739bb249bdfbac3948002d",
+          "contract_version": "provider-token-accounting-v3",
+          "framing_overhead": 16,
+          "accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+          "model_context_limit": 258400,
+          "execution_token_limit": 258400,
+          "serialization_contract": "codex-cli-application-stdin-v1"
+        },
+        "context_bundle_status": "VALID",
+        "context_bundle_tokens": 218382,
+        "input_component_hashes": {
+          "tool_policy": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "output_schema": "sha256:e746a8a3b3457bb8f503ee297850a817a580f737317ca356d14d83d63c72b755",
+          "governed_skill": "sha256:52de62925de2680ae823fefc4ecd102b0eb651e2c0656c7c8cc1201b57341f99",
+          "provider_knowledge": "sha256:71ca5913d6f6a7ca3ac1904a1aca08036d02044bf783f8ee7ea642cb3d148feb",
+          "provider_task_view": "sha256:e1cb817c09f2be85b75d2b740ee3f82b47ba7f78ab64b001320595c64dd9f671",
+          "system_instruction": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+          "fully_rendered_prompt": "sha256:a1194503e6fe1fdfc86d39c161180f5ce67a1dcb94980440d9145b95b910dccf",
+          "provider_context_view": "sha256:6d9ac5831979db2d048cd16c806fdc49ad9c0245bb6eb205f39fd09c87b605ea",
+          "stage_semantic_contract": "sha256:3a20cb184361c752ea42621cb35caa352f0e5feb9504b588625328cd93c6c6d8"
+        },
+        "complete_request_coverage": [
+          "system_runtime_instructions",
+          "prompt_template",
+          "skill_instructions",
+          "tool_policy_and_schemas",
+          "structured_output_schema",
+          "context_bundle",
+          "knowledge_inputs",
+          "request_envelope_and_framing",
+          "output_reserve",
+          "safety_margin"
+        ]
+      }
+    ]
+  ],
+  "native_materialization_proofs": [
+    null
+  ],
+  "required_information_truncated": false,
+  "unknown_retry": false,
+  "original_mutations": 0
+}

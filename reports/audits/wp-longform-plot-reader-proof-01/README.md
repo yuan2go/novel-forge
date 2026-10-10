@@ -8,6 +8,8 @@
 - [实际阶段Pack/Prompt/Skill/Schema绑定](actual-stage-bindings.json)
 - [完整Writer容量与计费证据](final-writer-capacity.json)
 - [相关验证及源码边界](focused-verification-manifest.json)
+- [第36章完整输入容量修复](chapter-036-capacity-repair.json)、[原步骤后继与同ID重放](chapter-036-context-accounting-recovery.json)
+- [未来37—40重复计划对照](future-group037-040-before-progression.json)
 - [未来36容量对账](future-group36-capacity-reconciliation.json)、[新输入分配](future-group36-budget-allocation.json)、[兼容迁移](plan-change-capacity-migration.json)
 - [真人待评状态](reader-pending.json)、[连续阅读精确版本](reader-continuous-manifest.json)
 - [原书只读核验](original-final-readonly.json)

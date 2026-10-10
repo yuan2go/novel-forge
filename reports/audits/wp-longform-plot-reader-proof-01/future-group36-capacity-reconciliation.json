@@ -50,11 +50,11 @@
     ],
     [
       "eabaf5a9-db0b-4d93-8d86-a916bfb047b6",
-      "EXECUTING",
-      2,
+      "SUCCEEDED",
+      3,
       "wp-plot-reader:future-group36-budget:generate:v4:runtime-continuation:1",
-      0,
-      0
+      1,
+      1
     ]
   ],
   "scope": "ISOLATED_ONLY",
@@ -62,5 +62,23 @@
   "replan_basis": "Known zero external intents and reservations before dispatch; new explicit compact request and prospective optional-history allocation. Original registrations, Attempts, routing decisions and frozen snapshots retained.",
   "compatibility_migration": "20261011_0199_plan_change_capacity",
   "history_not_rewritten": true,
-  "required_recent_allocation_rejection": "8000 FAILED_CLOSED before generation admission; 9131 chars required. New 10000-char exact snapshot preserves all three complete selected sources."
+  "required_recent_allocation_rejection": "8000 FAILED_CLOSED before generation admission; 9131 chars required. New 10000-char exact snapshot preserves all three complete selected sources.",
+  "helper_failures_retained": [
+    "Kernel wrapper decoder rejected before dispatch; native frozen command decoder used on same registration replay.",
+    "Compact helper pointed to nonexistent candidate v2; request retained unactivated, lookup rejected before generation; correct v1 source bound thereafter.",
+    "8000 below mandatory9131 chars rejected before generation admission; unadmitted task legally prepared at10000."
+  ],
+  "actual_compact_budget_request": {
+    "operation_id": "eabaf5a9-db0b-4d93-8d86-a916bfb047b6",
+    "candidate_asset_version_id": "authority-output:eabaf5a9-db0b-4d93-8d86-a916bfb047b6:story_planning.candidate:v1",
+    "provider_dispatch": "SUCCEEDED",
+    "total_reserved": 244266,
+    "limit": 258400,
+    "output_reserve": 32000,
+    "native_plan_change": "plan-change:9c421579-214c-401c-89db-e93c16320a34",
+    "activation": "ACTIVE_ISOLATED_ONLY",
+    "Book_resume": "READY",
+    "input_policy_max_characters": 10000,
+    "required_recent_33_35_complete_characters": 9131
+  }
 }

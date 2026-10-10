@@ -1,0 +1,22 @@
+{
+  "sha": "26c5b4c11899d8efabe3e445e640d6307b311416",
+  "build": "plot-reader-26c5b4c11899",
+  "planning": {
+    "pack_id": "story_planning_pack.plot_reader_01",
+    "pack_version": "2.14.1114",
+    "compilation_id": "compilation:quality:story_planning_pack.plot_reader_01:809eb1de3664388c7178",
+    "deployment_id": "deployment:quality:story_planning_pack.plot_reader_01:809eb1de3664388c7178"
+  },
+  "chapter": {
+    "pack_id": "chapter_generation_pack.plot_reader_01",
+    "pack_version": "3.0.1113",
+    "compilation_id": "compilation:quality:chapter_generation_pack.plot_reader_01:c5525be21f0dc134ff64",
+    "deployment_id": "deployment:quality:chapter_generation_pack.plot_reader_01:c5525be21f0dc134ff64"
+  },
+  "prose_skill_version": "prose-generation-v5",
+  "evidence_ceiling": "EXECUTABLE",
+  "scope": "ISOLATED_AUTHOR_FIRST_VALIDATION",
+  "human_pack_approval": "NOT_RUN",
+  "production_certification": "NOT_RUN",
+  "original_mutations": 0
+}

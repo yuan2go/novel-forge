@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "build_head": "83f01e0d",
+  "source_migration_sha": "899d4279",
+  "registered_head": "20261011_0199_plan_change_capacity",
+  "entrypoint": "/Volumes/DevSSD/Development/Workspace/evidence/wp-longform-plot-reader-proof-01/wheel-0199/site/bin/novel-forge",
+  "wheel_sha256": "3705040ae9c4cc810b9a18203a1d700cb91a16c9b71af0622dea1b49b7cca532",
+  "read_only_status": true,
+  "Provider_dispatch": "NONE",
+  "original_mutations": 0,
+  "scope": "ISOLATED_ONLY"
+}

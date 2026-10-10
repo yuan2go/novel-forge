@@ -1,0 +1,508 @@
+{
+  "schema_version": "story_design.authority.v1",
+  "book_id": "book:qinglan-wendao-20261008",
+  "logical_key": "chapter-group:containing:33",
+  "chapter_range": [
+    36,
+    36
+  ],
+  "objective": "只为第36章提出未来设计：把第35章完成的三清一留交回处理，并让许庭在有限时段内教成有多次成功支撑的移动中自身控制，使任务与学习结果共同改变沈砚的下一步选择。",
+  "exit_state_spec": {
+    "summary": "本候选拟使第35章末带回的三清一留记录在第36章得到经办人职责内的明确处理；靠坡石仍未动，未说明的收益和资格不成立。沈砚保有此前空掌及停步持枝起收的本领，并经许庭当场教学与多次实练，在普通轻负荷缓步时短暂保持自身掌中感受、主动收住。唐穗继续有自己的材料兴趣；许庭结束有限答疑后继续修炼。沈砚据此选择后续练习起点，第37—40章可从已完成的交付和新增但有界的能力继续展开。以上均为未来工作设计，不构成已接受经历。"
+  },
+  "chapter_function_matrix": [
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": null,
+      "reward_action": "以原路确已清出的三处和新动作的多次成功呈现成果。",
+      "chapter_number": 36,
+      "promise_action": "以当场明确的任务处理和眼前多次成功的练习，兑现工作有结果、学习能积累的卷一承诺。",
+      "primary_function": "完成石湾谷清路的三清一留交回，再通过许庭的实际教学取得一项区别于停步持枝起收的有限新进步。",
+      "foreshadow_action": "沈砚把缓步时能主动收住的短暂感受，选作下一次自行练习的具体起点；唐穗继续留意自己感兴趣的材料，不预定共同任务。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "看见三清一留得到明确回应，随后看见有限新动作被练成。",
+        "target_emotion": "踏实、亲近而有继续练习的兴致"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把停步持枝时起暖并收住重新写成首次成功。",
+        "把移动中掌中感受写成增力、辨物、治疗、外放或新的境界与术名。",
+        "凭本章交回或答疑生成未说明的报酬、课位、资格及额外任务。",
+        "让唐穗只负责记录或赞叹，省去她自己的材料兴趣。"
+      ],
+      "secondary_functions": [
+        "让唐穗的侧面观察与材料兴趣同时保有用途。",
+        "让程观和许庭分别在自身职责及可用时段内回应。",
+        "为第37—40章保留有来源的可选行动，不预支任务或资格。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "清路任务得到当场明确处理；沈砚在已有停步起收基础上，经过实练形成缓步轻负荷时短暂保持并主动收住自身掌中感受的有限新能力，下一步练习选择随之改变。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭根据可接触的实践缩短旧动作复习，实际教授移动中短暂维持与收住，并保留自己的修炼时段。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚保留已有能力，经多次成功扩展到普通轻负荷缓步中的有限自身控制，决定下一步如何练。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观依据眼前交回的逐处说明，在职责内明确处理三清一留。",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ]
+    }
+  ],
+  "narrative_event_chain": [
+    {
+      "action": "沈砚和唐穗按折纸逐处交代谷口近坡步道：首处落枝、扁石、弯前短枝已移开，靠坡石缘仍连着土且未动；沈砚说清自己动手的部分，唐穗补足侧面所见。",
+      "causes": [],
+      "decision": "沈砚只申报亲手清过和两人实际看见的范围。",
+      "event_id": "c36-e1",
+      "required": true,
+      "slice_id": "c36-delivery",
+      "actor_ref": "沈砚",
+      "motivation": "让已做工作有准确结果，也不给未动处虚报结论。",
+      "resistance": "清过的枝石和未动的靠坡石不能用一句“路已清”概括。",
+      "consequence": "交回的内容与第35章现场动作相合，已清和未动没有混记，程观可以针对这次任务作出回应。",
+      "disclosures": [
+        "三处已清、一处靠坡石未动，是两人此行实际能够交代的范围。"
+      ],
+      "state_deltas": [],
+      "preconditions": [
+        "第35章末两人带着三清一留的折纸进入事务房。"
+      ],
+      "chapter_number": 36,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "第35章已明确四处次序和未动原因；本章由沈砚决定如实交代。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "四处状态不同，需要逐处说清；阻力来自真实任务内容。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "本事件完成说明，交回是否得到明确处理由下一事件承接。"
+        }
+      },
+      "next_event_ids": [
+        "c36-e2"
+      ],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+        "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚和唐穗亲手清过三处，靠坡石未动。",
+          "两人于午前带着折纸回到事务房。"
+        ],
+        "reader_may_learn": [
+          "三处已清、一处靠坡石未动，是两人此行实际能够交代的范围。"
+        ],
+        "forbidden_disclosures": [
+          "弯后路段已被他们清完。",
+          "靠坡石已经试搬或清掉。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "程观对照自己经办的任务范围与两人的逐处说明，在任务纸上分别记明三处已清、靠坡石未动待后续判断，明确表示本次交回已按所做范围处理；他不替未见的路段、报酬或课程作承诺。",
+      "causes": [
+        "c36-e1"
+      ],
+      "decision": "程观只处理眼前由他经办、能够核对的清路交回。",
+      "event_id": "c36-e2",
+      "required": true,
+      "slice_id": "c36-delivery",
+      "actor_ref": "程观",
+      "motivation": "把实际完成的工作和仍待处理的地方分开，便于自己的事务继续进行。",
+      "resistance": "未动处不能并入已清结果；未说明的条件不能靠他的好意补足。",
+      "consequence": "本次清路任务有明确交付结果；未动的靠坡石保留其真实状态，第37—40章无需把本次交回悬置成反复询问。",
+      "disclosures": [
+        "程观当场确认三处清理与一处未动的交回范围，并把未动处另行记明。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "经办人当场明确处理三处已清、一处未动的交回",
+          "entity_id": "石湾谷近坡步道清理任务",
+          "from_state": "两人完成现场行动并带回三清一留，尚待经办人回应",
+          "state_kind": "TASK_RESULT"
+        }
+      ],
+      "preconditions": [
+        "c36-e1已提供逐处说明。",
+        "程观在本次交回场景中负责核对清路任务。"
+      ],
+      "chapter_number": 36,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "程观此前已说明回房核对办法；本章选择按实际报告作范围明确的回应。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "任务要求区分已清和未动；程观须在自己掌握的范围内处理。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "三处劳动及其明确交回成为后续行动的既成结果，不能无因抹去。"
+        }
+      },
+      "next_event_ids": [
+        "c36-e3"
+      ],
+      "arc_contributions": [
+        "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1",
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "程观知道自己经办的清路范围和回房核对办法。",
+          "他听到两人逐处说明并看见折纸。"
+        ],
+        "reader_may_learn": [
+          "程观当场确认三处清理与一处未动的交回范围，并把未动处另行记明。"
+        ],
+        "forbidden_disclosures": [
+          "未核实的报酬、课程资格或新任务已经给予两人。",
+          "程观亲眼见过山路上的每一步动作。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "三处清路工作及本次明确交回已完成。"
+    },
+    {
+      "action": "交回之后，唐穗说起自己在石土接处换角度观察时，又想到盘边那处尚未看明白的粗影；沈砚回应她今日的侧面观察确实帮自己找到托石和停手的时机，两人各自保留接下来的打算。",
+      "causes": [
+        "c36-e2"
+      ],
+      "decision": null,
+      "event_id": "c36-e3",
+      "required": true,
+      "slice_id": "c36-aftermath",
+      "actor_ref": "唐穗",
+      "motivation": "唐穗愿意说出今日观察怎样接上她自己的材料兴趣；沈砚愿意承认伙伴贡献。",
+      "resistance": null,
+      "consequence": "合作所得具体可见，唐穗的材料兴趣也继续属于她自己；两人没有凭一次同行预订下一次共同任务。",
+      "disclosures": [
+        "唐穗在完成清路协作后，仍想继续辨认自己感兴趣的材料细节。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "明确承认本次协作的具体帮助，彼此保留各自兴趣与日程",
+          "entity_id": "沈砚与唐穗",
+          "from_state": "已共同完成清路，但各自下一步尚未商定",
+          "state_kind": "RELATIONSHIP"
+        }
+      ],
+      "preconditions": [
+        "本次清路交回已有明确处理。",
+        "第35章回程时唐穗已说过盘边粗影仍未看明白。"
+      ],
+      "chapter_number": 36,
+      "feature_status": {
+        "decision": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "这一小段以交回后的交流呈现各自兴趣，无须设置新的取舍。"
+        },
+        "resistance": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "此处是有根据的安静交流，不需额外冲突。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "关系得到承接，但不强制发生不可逆变化。"
+        }
+      },
+      "next_event_ids": [
+        "c36-e4"
+      ],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "唐穗知道自己从侧面看见的石土接处及先前提过的盘边粗影。",
+          "沈砚知道她的观察如何影响自己搬石和停手。"
+        ],
+        "reader_may_learn": [
+          "唐穗在完成清路协作后，仍想继续辨认自己感兴趣的材料细节。"
+        ],
+        "forbidden_disclosures": [
+          "唐穗已经解开盘边粗影的材料问题。",
+          "两人已经接取尚未公布的下一项任务。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "在双方实际可用的有限答疑时段，沈砚向许庭简述停步托枝时怎样起暖、收住再搬。许庭把这段口述与自己此前亲见的练习区别对待，简短看他完成已会的静立空掌起收，随即示范如何持一件普通轻物缓步时只留意自身掌中感受；物件始终靠手正常握持。",
+      "causes": [
+        "c36-e3"
+      ],
+      "decision": "许庭依据可接触的表现，把有限时间用于移动中自身控制。",
+      "event_id": "c36-e4",
+      "required": true,
+      "slice_id": "c36-teaching",
+      "actor_ref": "许庭",
+      "motivation": "让已有起收方法在弟子下一项可承担的动作中真正有用，同时按时回到自己的修炼。",
+      "resistance": "已会的停步动作不自动等于走动中也能短暂保持并主动收住。",
+      "consequence": "教学从旧动作迅速转向新增的缓步条件；沈砚知道许庭将观察什么，也知道她没有亲见山路上的全部动作。",
+      "disclosures": [
+        "许庭听到山路口述后，以自己亲见及眼前表现选择教学内容；旧静立起收只作简短衔接。"
+      ],
+      "state_deltas": [],
+      "preconditions": [
+        "沈砚此前已能完成空掌及停步持枝的短时起收。",
+        "任务交回后双方留有真实休息与有限答疑时间。"
+      ],
+      "chapter_number": 36,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "许庭Arc要求她按实际接触的表现调整指导，且保留有限时段。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "移动时手、步子和气息的协调尚未练成；教学时间有限。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "本事件建立练习条件，能力变化须由下一事件的多次成功支持。"
+        }
+      },
+      "next_event_ids": [
+        "c36-e5"
+      ],
+      "arc_contributions": [
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭听到沈砚亲历的山路口述。",
+          "她只亲见过自己在场的旧练习和眼前的静立动作。",
+          "她知道自己本次可用的答疑时段有限。"
+        ],
+        "reader_may_learn": [
+          "许庭听到山路口述后，以自己亲见及眼前表现选择教学内容；旧静立起收只作简短衔接。"
+        ],
+        "forbidden_disclosures": [
+          "许庭亲眼见过第35章全部清路过程。",
+          "她能据口述评定正式课程资格。",
+          "掌中感受能减轻物件重量或辨认物性。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "沈砚先在静立持轻物时起收，再迈一步试着留住掌中细暖；起初步子一急，感受便散。他按许庭指出的步幅和气息变化调整，停下休息后，分几轮以一步、几步的缓步重复练习，数次短暂保持住自身感受，并在还走着时主动收住。许庭只评价她眼前看见的动作，时段结束便去做自己的修炼。",
+      "causes": [
+        "c36-e4"
+      ],
+      "decision": "沈砚不靠加快脚步求长久维持，而按眼前反馈缩小步幅、休息后再练。",
+      "event_id": "c36-e5",
+      "required": true,
+      "slice_id": "c36-teaching",
+      "actor_ref": "沈砚",
+      "motivation": "把已会的短时起收真正带进自己走动时可用的范围。",
+      "resistance": "初试时步子带乱气息，感受短暂散去；此前停步成功不能替代此处练习。",
+      "consequence": "沈砚获得有多次成功支持的有限新控制；普通轻物仍由手承重，他也能说清本章练到的范围。",
+      "disclosures": [
+        "沈砚经调整与休息后，多次在普通轻负荷缓步中短暂保持自身掌中感受并主动收住；物件没有因此变轻。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "经多次实练，能在普通轻负荷缓步时短暂保持自身掌中感受并主动收住",
+          "entity_id": "沈砚",
+          "from_state": "能在已练过的静立及停步持枝条件下短时起收，移动中尚无多次成功",
+          "state_kind": "CAPABILITY"
+        }
+      ],
+      "preconditions": [
+        "c36-e4已交代练习条件和许庭的示范。",
+        "有安全平地、普通轻物及实际休息时间。"
+      ],
+      "chapter_number": 36,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "沈砚根据移动时实际失去感受的原因调整步幅和节奏。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "步子急时感受散去，须经过具体调整和休息。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "多次成功构成这一条件下的新学习结果，后续不能无因抹去。"
+        }
+      },
+      "next_event_ids": [
+        "c36-e6"
+      ],
+      "arc_contributions": [
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚感觉到自身掌中细暖及步幅变化。",
+          "许庭看见本次练习动作和多次结果。"
+        ],
+        "reader_may_learn": [
+          "沈砚经调整与休息后，多次在普通轻负荷缓步中短暂保持自身掌中感受并主动收住；物件没有因此变轻。"
+        ],
+        "forbidden_disclosures": [
+          "新控制能够外放、增力、辨物或治疗。",
+          "沈砚已经能在任意负荷与速度下稳定维持。",
+          "许庭保证正式课程资格。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "普通轻负荷缓步中的短暂自身控制，成为沈砚已经实际练成的有限新本领。"
+    },
+    {
+      "action": "答疑结束后，沈砚回想已交回的清路工作和刚练成的缓步动作，决定下一次可用练习时段先在安全平地自行重复这一条件下的短程缓步；若第37—40章遇到有来源、与日程相容的轻物事务，再按真实要求判断能否把它用进去。他不要求唐穗放下材料兴趣陪练，也不把未发布的任务算作已有机会。",
+      "causes": [
+        "c36-e5"
+      ],
+      "decision": "沈砚主动选定下一次自行练习的条件，并将可能的新事务留待有来源时判断。",
+      "event_id": "c36-e6",
+      "required": true,
+      "slice_id": "c36-choice",
+      "actor_ref": "沈砚",
+      "motivation": "让已完成的劳动和新学到的动作各自成为下一步选择的依据。",
+      "resistance": null,
+      "consequence": "第37—40章的可选行动从重复清路交回，转为在已完成任务和有限新能力的基础上安排实际练习与选择。",
+      "disclosures": [
+        "沈砚决定先自行重复已练成的缓步条件，再依据实际出现的任务和日程选择用途。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "选定先自行重复安全平地的轻负荷缓步，再按真实任务来源判断实际用途",
+          "entity_id": "沈砚",
+          "from_state": "清路后的下一步尚未依新学习结果安排",
+          "state_kind": "NEXT_STEP_CHOICE"
+        }
+      ],
+      "preconditions": [
+        "清路交回得到明确处理。",
+        "c36-e5已形成有界的移动中自身控制。"
+      ],
+      "chapter_number": 36,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "本章交付和新学习结果已足以改变沈砚的下一步安排。"
+        },
+        "resistance": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "结尾无需新增阻碍；未来任务是否出现仍待实际来源。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "此处是未来安排的选择，可随真实条件调整；已交付工作和已练成本领仍分别保留。"
+        }
+      },
+      "next_event_ids": [],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚知道任务已按三清一留处理。",
+          "他知道自己本章练成的条件和许庭有限的教学时段。",
+          "他知道唐穗想继续看材料。"
+        ],
+        "reader_may_learn": [
+          "沈砚决定先自行重复已练成的缓步条件，再依据实际出现的任务和日程选择用途。"
+        ],
+        "forbidden_disclosures": [
+          "第37—40章必有某项具体新任务。",
+          "新能力自动取得课程、报酬或任意工作资格。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    }
+  ],
+  "hard_constraints": [
+    "章域严格为[36,36]；保留第1—35章所选工作连续性和accepted_through_chapter为0的正式边界。",
+    "第35章已形成三清一留，沈砚已在停步持枝时起暖并收住后搬；本章不得撤销或重复授予。",
+    "三清一留须实际交回；经办人当场在自己职责内明确处理，未动处仍按所见说明。",
+    "许庭为女性，依据沈砚亲历口述、她过去亲见及眼前表现教学；压缩旧空掌起收复习，教成普通轻负荷缓步中短暂保持自身掌中感受并主动收住。",
+    "新动作须经历由静到一步、几步的实际调整与休息后多次成功；物件仍凭普通握持和物性处理。",
+    "沈砚的掌中感受只关乎自身手、气息与短暂控制，不外放、不增力、不辨物、不治疗。",
+    "唐穗的观察贡献和材料兴趣须表达；许庭的有限时段与自身修炼须真实承接。",
+    "结尾由沈砚主动决定下一步练习方向，使本章交付和进步改变第37—40章可选行动，不预定尚无来源的任务或资源。",
+    "日程容纳交回、饮食休息、有限答疑和许庭修炼；不让互斥活动重复占时。"
+  ],
+  "required_events": [
+    "三清一留逐处交回，经办人当场在职责范围内明确处理。",
+    "唐穗的侧面观察与她自己的材料兴趣在交回后的交流中得到承接。",
+    "许庭根据口述、此前亲见与眼前表现，简短衔接旧动作后实际教授移动中有限控制。",
+    "沈砚经历静立、一步、几步、调整与休息后多次成功，并主动选择后续练习起点。"
+  ],
+  "character_deltas": [
+    {
+      "change": "从已能停步持枝短时起收，推进到在普通轻负荷缓步中短暂保持自身掌中感受并主动收住；他知道这一结果只适用于本章练过的条件。",
+      "subject": "沈砚"
+    },
+    {
+      "change": "依据听来的山路动作、自己此前亲见和眼前表现，选择教授一个可当场练成的小变化，结束后回到自己的修炼安排。",
+      "subject": "许庭"
+    },
+    {
+      "change": "除协助说明清路各处，她表达想继续辨认盘边粗影等材料细节的兴趣；是否同行做下一件事仍由双方日程决定。",
+      "subject": "唐穗"
+    },
+    {
+      "change": "处理本次清路交回，对已清三处与未动一处作出范围明确的回应。",
+      "subject": "程观"
+    }
+  ],
+  "relationship_deltas": [
+    {
+      "change": "沈砚明确承认唐穗在看石土接处与清路记录上的贡献；两人各自保有后续兴趣与时间。",
+      "subject": "沈砚与唐穗"
+    },
+    {
+      "change": "许庭依据她实际可知的表现推进一次有限教学，沈砚以自己练成的动作承接，而不以赞许索取额外承诺。",
+      "subject": "沈砚与许庭"
+    },
+    {
+      "change": "清路结果经当场处理，双方今后可依据已履行工作和实际可承担范围继续商量。",
+      "subject": "沈砚与程观"
+    }
+  ],
+  "projection_retention": {
+    "native_full_content_hash": "See future-group36-budget-generation.json",
+    "full_retained": "PostgreSQL immutable candidate and private full candidate copies",
+    "kind": "SEMANTIC_REVIEW_PROJECTION_NOT_REHASHED_NATIVE_CONTENT"
+  }
+}

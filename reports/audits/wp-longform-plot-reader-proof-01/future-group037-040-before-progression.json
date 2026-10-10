@@ -1,0 +1,517 @@
+{
+  "schema_version": "story_design.authority.v1",
+  "logical_key": "chapter-group:containing:37",
+  "chapter_range": [
+    37,
+    40
+  ],
+  "parent_version_id": "authority-output:dfd1d575-7219-45ed-b427-81b131bb3951:story_planning.candidate:v1",
+  "objective": "为第37—40章提出可承接所选工作正文的战术计划：完成山路任务结果的分项回应，使沈砚在有限条件下独自重复练习，令许庭依据实际结果调整指导，并让任务反馈进入下一步工作与学习安排。",
+  "required_events": [
+    "本次山路任务的分项交付获得有权者明确回应，三处已清与靠坡石未动不相混淆。",
+    "沈砚在安全平地独自分轮重复第36章有限条件下的缓步、轻物与收束练习。",
+    "许庭依据多轮可比较结果调整指导，并在约定时段结束后继续自身修炼。",
+    "沈砚依据交付结果和练习需要，与程观讨论未来可承担工作的范围。"
+  ],
+  "forbidden_events": [
+    "重做第33—36章已在所选工作正文中实际完成的清路、记录和许庭当场教学，只因其尚未正式接受就令人物遗忘。",
+    "把未动的靠坡石写成已清，或把唐穗尚不能判定的盘边粗影写成已知材质。",
+    "以许庭反馈或程观协商授予正式课程、器具、库存、收益或未明确的任务资格。",
+    "为完成本组结果预置外敌、阴谋、重大背叛或无因果的永久损失。"
+  ],
+  "hard_constraints": [
+    "本组仅规划第37—40章，承接第33—36章所选工作正文中的山路行动、分项记录与第36章许庭的缓步练习。",
+    "三处已清与一处靠坡石未动须分别说明；验收或处理回应以本次实际任务标准和有权者当面说明为准。",
+    "灵气运用仅在实际教学、观察、调整及多次可观察成功支持的条件内表述；劳作和普通搬运不被写成术法效果。",
+    "许庭为女性，只在自身可用答疑时段指导，并保留她的修炼安排；程观仅处理职责范围内的工作协商。",
+    "休息、劳作、赶路、答疑和独练按同一时段安排，不重叠占用；未出现的新任务、报酬、库存和课位不得预支。",
+    "采用沈砚为主的第三人称限知；唐穗未解的盘边粗影、机构未公开条件和旁人私下动机均不得变成沈砚已知事实。"
+  ],
+  "narrative_event_chain": [
+    {
+      "action": "在事务房承接此前交上的分项记录。经办人按当时实际任务标准说明三处已清与靠坡石未动各自的处理结果；程观只就自己负责的后续工作范围，与沈砚谈已完成事项和可调整事项。",
+      "causes": [],
+      "decision": "程观决定依据实际交付谈可承担范围，不把未动之处算成已做，也不预许尚未出现的任务。",
+      "event_id": "cg37-e1",
+      "required": true,
+      "slice_id": "chapter-37-task-result",
+      "actor_ref": "character:cheng-guan",
+      "motivation": "程观希望交付情况和下一次可承担的工作范围说得清楚，沈砚希望劳动结果能进入自己的学习安排。",
+      "resistance": "未处理的靠坡石不能混入已完成的部分；清楚交付也不自动产生下一项任务。",
+      "consequence": "本次交付有了明确处理；三处已清、靠坡石未动及后续可商量的工作被分开，沈砚能据此安排练习与下一次协商。",
+      "disclosures": [
+        "经办人当面说明的本次交付处理结果。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "有权者当面说明处理结果，已清与未动分别成为后续安排的依据",
+          "entity_id": "山路任务交付",
+          "from_state": "已有分项记录与所选工作正文中的交付经历，处理结果尚待本组清楚承接",
+          "state_kind": "TASK"
+        }
+      ],
+      "preconditions": [
+        "第33—35章所选工作正文中，二人已清三处并记录靠坡石未动。",
+        "第36章所选工作正文中，沈砚已完成有限条件下的缓步练习；本组不重演那次教学。"
+      ],
+      "chapter_number": 37,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "程观须对本次可见交付与后续可谈范围作出具体选择。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "靠坡石未动，且任务处理与后续工作供应属于不同条件。"
+        },
+        "irreversible_change": {
+          "status": "APPLICABLE",
+          "rationale": "已完成的山路工作和当面给出的交付回应成为后续安排的既成依据。"
+        }
+      },
+      "next_event_ids": [
+        "cg38-e1"
+      ],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+        "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚与唐穗实际清出三处，并把靠坡石记为未动。",
+          "经办人的当面回应属于人物在场可听到的信息。"
+        ],
+        "reader_may_learn": [
+          "经办人当面说明的本次交付处理结果。"
+        ],
+        "forbidden_disclosures": [
+          "尚未公布的新任务供应、报酬或课位。",
+          "唐穗盘边粗影的真实材质。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": "本次交付的明确回应已给出；后续可以调整安排，不能无因抹去已做的三处和未动的一处。"
+    },
+    {
+      "action": "沈砚在留足休息的一段安全平地时间里，持普通轻物从一步开始分轮独练；每轮记下步幅、掌中感觉何时散去，以及能否在脚仍走着时主动收住。",
+      "causes": [
+        "cg37-e1"
+      ],
+      "decision": "沈砚决定以短步、轻物和分轮休息继续比较，不为多走几步硬撑。",
+      "event_id": "cg38-e1",
+      "required": true,
+      "slice_id": "chapter-38-solo-practice",
+      "actor_ref": "character:shen-yan",
+      "motivation": "沈砚想知道没有许庭替他指出第二只脚时，自己能否辨出气息追上脚步的那一刻。",
+      "resistance": "步子一急，掌中感觉容易散；增加轮次也会占用休息。",
+      "consequence": "他得到多轮可比较的结果：赶第二步时易散，缩短步幅后有几次能短时留住并在行步中收束；适用范围仍窄。",
+      "disclosures": [
+        "沈砚独练中赶步易散、短步较易收束的多轮可观察差别。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "能独自完成并比较数轮有限条件练习，仍未证明更广条件下的稳定性",
+          "entity_id": "character:shen-yan",
+          "from_state": "能在许庭当场提示下于有限条件中数次缓步收束",
+          "state_kind": "PRACTICE"
+        }
+      ],
+      "preconditions": [
+        "第36章已建立缓步、轻物、短时收束的有限练习条件。",
+        "本次练习时段扣除必要休息与已有事务后仍可用。"
+      ],
+      "chapter_number": 38,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "他须自行选择步幅、轮次与何时停下，承接第36章许庭教给他的观察方法。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "赶步会使短暂暖意散去，前次劳作后的体力也限制练习量。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "这次练习增加可比较经验，但不要求一次独练造成不可逆的能力跃迁。"
+        }
+      },
+      "next_event_ids": [
+        "cg39-e1"
+      ],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "第36章许庭当场见过他在缓步、轻物条件下的几次表现。",
+          "他能感到并记录自己这次各轮练习的差别。"
+        ],
+        "reader_may_learn": [
+          "沈砚独练中赶步易散、短步较易收束的多轮可观察差别。"
+        ],
+        "forbidden_disclosures": [
+          "不同负重、快步或山路条件下尚未试出的能力。",
+          "许庭不在场时对这些结果的私下判断。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "在原定答疑时段，沈砚把第38章各轮成功与失稳的条件说清，并当场做一小轮供许庭观察。许庭比较眼见动作与他的记录，指出下一次由他自己留意气息何时开始追步，随后结束答疑去做自己的修炼。",
+      "causes": [
+        "cg38-e1"
+      ],
+      "decision": "许庭决定只依据可比较的练习结果调整这一时段的指导，不扩大到尚未试过的条件。",
+      "event_id": "cg39-e1",
+      "required": true,
+      "slice_id": "chapter-39-teaching-feedback",
+      "actor_ref": "character:xu-ting",
+      "motivation": "许庭希望有限指导真正帮助沈砚形成可重复使用的观察方法，同时维持自己的修炼安排。",
+      "resistance": "一小轮当场表现不足以证明所有条件；许庭的答疑时间已经有限。",
+      "consequence": "指导重点从当场替他数步，转为给他一个下一次能自行检验的问题；沈砚带走具体方法，许庭保有自己的修炼时间。",
+      "disclosures": [
+        "许庭依据可比较练习结果提出的下一次自查办法。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "依据多轮可比较结果，提出沈砚可自行检验的下一步问题",
+          "entity_id": "character:xu-ting",
+          "from_state": "依据当场动作指出缓步与收束的具体问题",
+          "state_kind": "TEACHING"
+        }
+      ],
+      "preconditions": [
+        "沈砚已有第38章的多轮可比较结果。",
+        "本次会面发生在双方实际可用的答疑时段。"
+      ],
+      "chapter_number": 39,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "她须在有限时段里选择对已见差别最有用的反馈。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "她只见到这一小轮，其他结果来自沈砚的描述与记录；可用时段有限。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "教学方法有具体推进，但这一次答疑不构成资格授予或不可逆能力跃迁。"
+        }
+      },
+      "next_event_ids": [
+        "cg40-e1"
+      ],
+      "arc_contributions": [
+        "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1",
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "许庭亲眼见过第36章的有限练习和本次当场的一小轮。",
+          "第38章的其余结果由沈砚当面叙述，她没有亲眼看见。"
+        ],
+        "reader_may_learn": [
+          "许庭依据可比较练习结果提出的下一次自查办法。"
+        ],
+        "forbidden_disclosures": [
+          "许庭未见的独练细节被写成她亲眼所知。",
+          "正式课程课位或其他未公布条件。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    },
+    {
+      "action": "沈砚把本次交付的分项结果、独练所需时段和已知的体力限度带给程观，说明今后若有适合的工作，自己能商量的范围；程观区分已完成的交付与尚未出现的新任务，回应可以如何据实际条件再谈。",
+      "causes": [
+        "cg39-e1"
+      ],
+      "decision": "沈砚决定先守住可持续的练习时间，再按出现的具体工作判断是否接取。",
+      "event_id": "cg40-e1",
+      "required": true,
+      "slice_id": "chapter-40-next-range",
+      "actor_ref": "character:shen-yan",
+      "motivation": "沈砚想让已完成的劳动支持下一步学习，同时不把日程排到无法履行；程观希望工作范围与承诺清楚。",
+      "resistance": "可用时间有限，而下一项工作的来源、要求和收益尚未出现。",
+      "consequence": "沈砚保留可执行的练习和休息时段；双方形成依据真实任务条件商量下一次范围的办法，未取得新任务或预定收益。",
+      "disclosures": [
+        "沈砚与程观当面谈定的后续协商办法。"
+      ],
+      "state_deltas": [
+        {
+          "to_state": "保留练习与休息时段，说明未来可商量的工作范围；尚无新任务",
+          "entity_id": "character:shen-yan",
+          "from_state": "已知本次交付结果并需要继续练习，下一步工作范围未说明",
+          "state_kind": "SCHEDULE"
+        }
+      ],
+      "preconditions": [
+        "第37章已有本次交付的明确回应。",
+        "第38—39章形成了需要持续练习的具体问题。",
+        "双方只谈实际可用时段与将来如何协商，不预定未知任务。"
+      ],
+      "chapter_number": 40,
+      "feature_status": {
+        "decision": {
+          "status": "APPLICABLE",
+          "rationale": "沈砚须在想继续争取工作与保持连续练习之间确定实际可用时段。"
+        },
+        "resistance": {
+          "status": "APPLICABLE",
+          "rationale": "工作供应未知，既有劳作、休息和练习不能占用同一时段。"
+        },
+        "irreversible_change": {
+          "status": "NOT_APPLICABLE",
+          "rationale": "他可以随未来真实任务重新安排时间；本场不需制造不可逆损失。"
+        }
+      },
+      "next_event_ids": [],
+      "arc_contributions": [
+        "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1",
+        "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+      ],
+      "knowledge_boundary": {
+        "actor_knows": [
+          "沈砚已听到本次交付处理结果，亲自经历第38章独练及第39章答疑。",
+          "程观只知自己接触到的交付与沈砚当面说明的时段。"
+        ],
+        "reader_may_learn": [
+          "沈砚与程观当面谈定的后续协商办法。"
+        ],
+        "forbidden_disclosures": [
+          "未来尚未发布的任务、库存、收益或课位。",
+          "程观未说出的私下打算。"
+        ]
+      },
+      "obligation_actions": [],
+      "irreversible_change": null
+    }
+  ],
+  "chapter_function_matrix": [
+    {
+      "arc_cadence": [
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚带着明确的交付回应离开事务房，开始考虑怎样给独自练习留出一段真实可用的时间。",
+      "reward_action": "经办人对实际交付作出明确回应。",
+      "chapter_number": 37,
+      "promise_action": "让读者看见共同劳动如何成为可辨认的交付结果，并改变下一次协商所依据的信息。",
+      "primary_function": "承接第33—36章的山路行动与交付，给出本次任务权限内的明确结果。",
+      "foreshadow_action": "把三处已清与靠坡石未动分别承接，为以后按实际条件选择工作范围留下依据。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "清楚的交付回应",
+        "target_emotion": "踏实"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把未动的靠坡石写成已清除。",
+        "把交付记录自动换成课位、库存或新任务资格。"
+      ],
+      "secondary_functions": [
+        "承接唐穗的分项记录与她对未见之处不作推断的做法。",
+        "为第40章的日程协商提供具体依据。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "本次山路工作的交付处理结果得到当面说明；已清、未动和后续可商量的事项被区分。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚承接亲手完成与尚未处理的不同结果，不以含糊的成功感替代交付说明。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观依据可见的履约记录讨论后续可承担范围，不代替有权者验收或许诺资源。",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "他记下哪几次在迈步中收住，哪几次因赶步而散，准备将可比较的结果带到下一次答疑。",
+      "reward_action": "在无人逐步提醒时完成数次有限条件下的收束。",
+      "chapter_number": 38,
+      "promise_action": "把观察、调整和重复落实为沈砚自己可执行的方法。",
+      "primary_function": "让沈砚在不靠许庭当场提示的情况下，按第36章已学的条件独自重复缓步、轻物与收束。",
+      "foreshadow_action": "独练记录让许庭日后能依据多次结果，而非一句自述，调整指导。",
+      "narrative_density": "LOW",
+      "reader_experience": {
+        "reward_mode": "有限但可辨认的独立重复",
+        "target_emotion": "安静的喜悦"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "把几轮安全平地练习写成不限步速、负重和场地的稳定本领。",
+        "让一次失手抹去第36章已经可观察的有限进步。"
+      ],
+      "secondary_functions": [
+        "以休息和练习时段承接前日山路劳作的真实体力消耗。",
+        "在任务回应之后留出节奏较缓的一章。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "沈砚获得数轮可比较的独练结果；能力仍限于缓步、轻物、短时收束等已试条件。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚自己辨出赶步造成的差别，调整步幅并比较多轮结果。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "沈砚带走一个下次能自己检验的问题；许庭按原定时段回到自己的修炼。",
+      "reward_action": "许庭给出与多次练习结果相符的具体反馈。",
+      "chapter_number": 39,
+      "promise_action": "让指导的效果由沈砚的实际重复和下一步问题体现。",
+      "primary_function": "许庭依据第38章的可比较结果，调整有限答疑的重点。",
+      "foreshadow_action": "从逐步纠正转向自查，为后续更复杂条件下的练习建立方法。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "有依据的教学反馈",
+        "target_emotion": "被理解后的笃定"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "以许庭一句评价宣告沈砚已稳定掌握更广泛的灵气运用。",
+        "让许庭无限延长答疑或代替沈砚完成自查。"
+      ],
+      "secondary_functions": [
+        "显示许庭自身修炼安排继续占用真实时间。",
+        "保留能力适用范围，避免把教学反馈当成资格或权限。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "指导重点从当场纠正步子，转为沈砚在下一次练习中自行辨认何时气息追上脚步。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "许庭比较沈砚几轮练习的条件与结果，只针对可见差别给出下一次自查办法，并守住自己的时段。",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "沈砚把失稳和成功都作为信息，承担下一轮练习的观察任务。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        }
+      ]
+    },
+    {
+      "arc_cadence": [
+        {
+          "action": "DORMANT",
+          "arc_plan_version_id": "authority-output:00e504d1-3452-4c05-b47d-bb85f2302549:story_planning.candidate:v1"
+        },
+        {
+          "action": "ADVANCE",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "action": "TOUCH",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ],
+      "ending_hook": "下次能否接到合适的事仍须看届时实际任务；眼下沈砚已为练习留出时段，也知道怎样说明自己能承担的范围。",
+      "reward_action": "沈砚主动说清自己能承担的时段与工作条件，程观在职责范围内给予回应。",
+      "chapter_number": 40,
+      "promise_action": "让一次完成的任务真实改变沈砚选择下一件事的方式。",
+      "primary_function": "沈砚依据交付回应、独练结果和已有日程，与程观商量下一步工作范围。",
+      "foreshadow_action": "把共同任务的分项交付和本次独练方法带入后续任务比较，不预定供应或收益。",
+      "narrative_density": "MEDIUM",
+      "reader_experience": {
+        "reward_mode": "可执行的下一步安排",
+        "target_emotion": "稳妥的期待"
+      },
+      "obligation_actions": [],
+      "prohibited_outcomes": [
+        "预定尚未出现的任务、报酬、库存或可用课位。",
+        "用新安排抹去靠坡石未处理的记录，或挤占已安排的休息与练习。"
+      ],
+      "secondary_functions": [
+        "承接第37章的交付结果。",
+        "为第41—48章的学习和任务比较留下开放但具体的起点。"
+      ],
+      "required_state_delta": {
+        "status": "CHANGED",
+        "summary": "沈砚明确保留练习与休息时段；双方就将来出现合适任务时如何说明范围形成清楚的协商办法，尚无新任务或收益。"
+      },
+      "required_arc_contributions": [
+        {
+          "contribution": "沈砚据实际用时和技术缺口限定可接工作的时段，不因想多得机会而重叠安排。",
+          "arc_plan_version_id": "authority-output:0b855823-bafd-4e7e-b364-d912b3002969:story_planning.candidate:v1"
+        },
+        {
+          "contribution": "程观凭本次交付记录回应沈砚提出的范围，并说明后续仍取决于实际任务条件。",
+          "arc_plan_version_id": "authority-output:562329e0-b4b7-4f3b-b451-e543be4cbe62:story_planning.candidate:v1"
+        }
+      ]
+    }
+  ],
+  "commitment_contract": [
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "第33—36章工作正文中已清的三处与未动的靠坡石须分开承接；本组给出交付处理结果及其对后续安排的实际影响。",
+      "commitment_id": "cg37-task-result"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "第36章的缓步、轻物、短时收束只在实际练习支持的范围内继续发展，不被写成广泛稳定的灵气运用。",
+      "commitment_id": "cg37-practice-scope"
+    },
+    {
+      "level": "HARD_CONSTRAINT",
+      "statement": "许庭依据亲眼所见或沈砚带来的可比较练习结果指导，守住有限答疑和自身修炼安排。",
+      "commitment_id": "cg37-teaching"
+    },
+    {
+      "level": "SOFT_INTENT",
+      "statement": "沈砚在任务结果之后主动说明可用时段和技术缺口，使下一阶段的工作选择更具体。",
+      "commitment_id": "cg37-next-work"
+    },
+    {
+      "level": "OPEN_DESIGN_SPACE",
+      "statement": "后续是否出现适合沈砚的任务、其条件和收益，留待第41章以后由实际来源与当时情况决定。",
+      "commitment_id": "cg37-open-supply"
+    }
+  ]
+}

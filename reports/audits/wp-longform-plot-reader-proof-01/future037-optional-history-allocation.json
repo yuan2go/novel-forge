@@ -1,0 +1,13 @@
+{
+  "scope": "PROSPECTIVE_CHAPTER037_ONWARD",
+  "before_max_characters": 14000,
+  "after_max_characters": 12000,
+  "required_recent_complete_chapters": 3,
+  "history_chapters": 32,
+  "required_information_omitted": false,
+  "omissions_recorded_per_frozen_snapshot": true,
+  "hard_limit": 258400,
+  "output_reserve": 32000,
+  "chapter036_frozen_window": "UNCHANGED_14000",
+  "reason": "为增长的未来规划保留余量，仅分配可选旧文；必需近三章不足会在派发前明确拒绝，而非静默截断。"
+}

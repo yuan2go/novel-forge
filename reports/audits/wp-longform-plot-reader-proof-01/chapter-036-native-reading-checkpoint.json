@@ -1,0 +1,6 @@
+{
+  "state": "PAUSED",
+  "current_chapter": 36,
+  "reason": "Short native idle checkpoint to read Chapter36 actual result and select only needed expression revision before freezing37; continue40 without waiting human feedback.",
+  "human_feedback_gate": false
+}

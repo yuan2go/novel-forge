@@ -75,6 +75,54 @@
     "migration_manifest": "PASS",
     "documentation_reality": "PASS after checked inventory refresh",
     "isolated_native_successor_database_gate": "PASS; downstream routing capacity rejection remains preserved",
-    "original_deployment": "NOT_RUN"
+    "original_deployment": "NOT_RUN",
+    "installed_wheel_readonly_status": "PASS; exact0199 registered head through installed entrypoint, no Provider dispatch"
+  },
+  "memo_realization_reference": {
+    "source_sha": "b40f743f3f841cc381a56faa3a3d3b55267a4a8c",
+    "focused_tests": {
+      "status": "PASS",
+      "passed": 123,
+      "files": [
+        "tests/unit/test_chapter_authority_domain_handlers.py",
+        "tests/unit/test_working_prose_projection.py",
+        "tests/unit/test_production_instruction_cleanup.py",
+        "tests/unit/test_task_scoped_context.py"
+      ]
+    },
+    "ruff": "PASS",
+    "required_info_truncation": false,
+    "native_context_retry_and_writer": "PASS: Context successor 94555e0e SUCCEEDED, Writer36 c86b2bfe SUCCEEDED on original request/second Attempt; 257678/258400 admission, measured87362 tokens",
+    "original_deployment": "NOT_RUN",
+    "representation": "Identical Memo Realization referenced by exact protected Intent version/pointer/hash; old unreferenced Contexts preserved"
+  },
+  "context_accounting_and_transport": {
+    "source_sha": "30647e4dc0b9df6450308da845d7b52909d44615",
+    "focused_tests": {
+      "status": "PASS",
+      "passed": 183,
+      "deselected": 1,
+      "files": [
+        "test_completed_generation_recovery",
+        "test_chapter_authority_domain_handlers",
+        "test_working_prose_projection",
+        "test_production_instruction_cleanup",
+        "test_task_scoped_context",
+        "test_step_successor_v2_guards"
+      ]
+    },
+    "historical_failure": {
+      "status": "FAIL",
+      "test": "test_current_planning_template_binds_whole_envelope_and_retains_historical_template",
+      "reason": "expects v2 although current main uses v3",
+      "first_run": "49 PASS, 1 FAIL; failure retained privately; scoped rerun excludes unrelated assertion"
+    },
+    "ruff": "PASS",
+    "documentation_reality": "PASS",
+    "native_same_id_successor_replay": "PASS",
+    "frozen_context_sources": "UNCHANGED",
+    "hard_limit_and_output_reserve": "UNCHANGED",
+    "original_deployment": "NOT_RUN",
+    "native_writer36": "PASS; frozen inputs unchanged, 32000 output reserve, paid/entitlement reconciliation separate"
   }
 }
