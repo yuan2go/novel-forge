@@ -446,6 +446,10 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
         return "", frozenset()
     if not working:
         return "", frozenset()
+    refs = {item["asset_version_id"]: item["content_hash"] for item in operation["input_asset_snapshot"]}
+    direct_sources = [item for item in working["sources"] if item["asset_version_id"] in refs]
+    if not direct_sources:
+        return "", frozenset()
     uow.cursor.execute("""SELECT to_jsonb(b) FROM authority_book_production b
         WHERE b.book_run_id=%s AND b.project_id=%s AND b.workspace_id=%s AND b.book_id=%s""",
         [working["book_run_id"], operation["project_id"], operation["workspace_id"], request.get("book_id")])
@@ -467,10 +471,9 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
         if not reserved or reserved[0] != working:
             raise KernelError("AUTHOR_WORKFLOW_NOT_OWNED", "Historical sources require their exact Book reservation")
     verify_working_context(uow, book, working)
-    refs = {item["asset_version_id"]: item["content_hash"] for item in operation["input_asset_snapshot"]}
-    if any(refs.get(item["asset_version_id"]) != item["content_hash"] for item in working["sources"]):
+    if any(refs[item["asset_version_id"]] != item["content_hash"] for item in direct_sources):
         raise KernelError("MANUSCRIPT_INPUT_SNAPSHOT_MISSING", "Historical sources require exact frozen input hashes")
-    return book["book_id"], frozenset(item["asset_version_id"] for item in working["sources"])
+    return book["book_id"], frozenset(item["asset_version_id"] for item in direct_sources)
 
 
 def deliver_manuscript(authority: Any, request_id: str, *, principal: Any) -> dict[str, Any]:

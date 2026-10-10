@@ -98,3 +98,15 @@ def test_post_delivery_review_gets_no_historical_exception(monkeypatch):
     op['definition_name'] = 'chapter.quality.evaluate'
     assert m.historical_working_inputs(uow, op) == ('', frozenset())
     uow.cursor.execute.assert_not_called()
+
+
+def test_memo_indirect_history_keeps_only_its_own_frozen_inputs(monkeypatch):
+    uow, verify = fixture(monkeypatch)
+    op = operation()
+    op['definition_name'] = 'chapter.memo.generate'
+    payload = op['command_payload']['payload']
+    op['command_payload'] = {'book_id': 'book', 'preparation_report': payload['arc_working_set']}
+    op['input_asset_snapshot'] = [{'asset_version_id': 'current-intent', 'content_hash': 'intent-hash'}]
+    assert m.historical_working_inputs(uow, op) == ('', frozenset())
+    uow.cursor.execute.assert_not_called()
+    verify.assert_not_called()
