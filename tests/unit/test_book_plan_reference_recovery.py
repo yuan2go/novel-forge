@@ -133,3 +133,32 @@ def test_upstream_recovery_cli_requires_current_corrected_plan_identity():
     args = _authority_parser().parse_args(["authority-manuscript","recover-upstream-plan","--book-run-id","run",
         "--proposal-id","change","--corrected-plan-version","plan"])
     assert args.proposal_id == "change" and args.corrected_plan_version == "plan"
+
+
+@pytest.mark.parametrize('actor,plan,expected', [('actor', 'new', True), ('foreign', 'new', False), ('actor', 'changed', False)])
+def test_upstream_retirement_replay_reads_exact_kernel_payload(monkeypatch, actor, plan, expected):
+    from types import SimpleNamespace
+    from novel_forge.modules.book_authority import plan_recovery as recovery
+    book, _, _, _, proposal = upstream_source()
+    book['active_chapter_request_id'] = None
+    proposal.update(status='ACTIVE', target_contract_type='VOLUME', project_id='p', book_id='b')
+    principal = SimpleNamespace(principal_id='actor', require=lambda *a: None)
+    payload = {'payload': {'action': 'chapter_plan_recover', 'book_run_id': 'run', 'proposal_id': 'change', 'corrected_plan_version_id': plan}}
+    uow = SimpleNamespace(cursor=Cursor([('original-mutation', actor, payload)]),
+        repositories=SimpleNamespace(operations=SimpleNamespace(transaction_result=lambda *a: {'status': 'SUCCEEDED', 'result': {'recovery_asset_version_id': 'original-journal'}})))
+    class UowContext:
+        def __enter__(self):
+            return uow
+        def __exit__(self, *args):
+            return False
+    monkeypatch.setattr(recovery, 'AuthorityUnitOfWork', lambda *a: UowContext())
+    authority = SimpleNamespace(require=lambda *a: book, database_url='offline')
+    change = SimpleNamespace(require=lambda *a: proposal)
+    if expected:
+        result = recovery.retire_upstream_stale_chapter(authority, book_run_id='run', proposal_id='change',
+            corrected_plan_version_id='new', plan_change=change, principal=principal)
+        assert result == {'recovery_asset_version_id': 'original-journal', 'replayed': True}
+    else:
+        with pytest.raises(KernelError, match='original actor'):
+            recovery.retire_upstream_stale_chapter(authority, book_run_id='run', proposal_id='change',
+                corrected_plan_version_id='new', plan_change=change, principal=principal)

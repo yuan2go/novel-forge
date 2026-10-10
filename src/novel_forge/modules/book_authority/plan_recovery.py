@@ -132,7 +132,10 @@ def _retire_failed_chapter(authority, *, book_run_id, proposal_id, plan_change, 
         u.cursor.execute("SELECT operation_id,actor_id,command_payload FROM authority_operation WHERE project_id=%s AND idempotency_scope='book:authority-mutation' AND idempotency_key=%s", [book["project_id"],stable])
         prior = u.cursor.fetchone()
         if prior:
-            if prior[1] != principal.principal_id or (prior[2] or {}).get("corrected_plan_version_id", "") != corrected_plan_version_id:
+            retained = (prior[2] or {}).get("payload") or {}
+            if (prior[1] != principal.principal_id or retained.get("corrected_plan_version_id", "") != corrected_plan_version_id
+                    or retained.get("action") != "chapter_plan_recover" or retained.get("book_run_id") != book_run_id
+                    or retained.get("proposal_id") != proposal_id):
                 raise KernelError("BOOK_PLAN_RECOVERY_CONFLICT", "Replay retains its original actor")
             replay = u.repositories.operations.transaction_result(prior[0],book["project_id"])
             if replay["status"] != "SUCCEEDED":
