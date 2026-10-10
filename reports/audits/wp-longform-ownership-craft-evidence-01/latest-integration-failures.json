@@ -1,0 +1,46 @@
+[
+  {
+    "operation_id": "8ec42585-28a0-4ee3-a135-0c2bab2a215c",
+    "stage": "chapter.memo.generate",
+    "error": {
+      "phase": "RESULT_VALIDATION",
+      "scope": "ORIGINAL_LOGICAL_TASK",
+      "stage": "RESULT_VALIDATION",
+      "causes": [
+        {
+          "event": "result.validation",
+          "message": "structured output failed OUTPUT_SCHEMA_FAILURE"
+        },
+        {
+          "type": "KernelError",
+          "event": "validation.cause",
+          "message": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID: stage memo: $.creative_guidance.character_choices[0].character_id is not one of the allowed values"
+        }
+      ],
+      "identity": {
+        "book_id": "book:author:89ea2ccc10f5be10dcbec980fff1af747c3e3ec8b6ea6c60e6eb0433ffc01884",
+        "attempt_id": "5b33728b-b5fe-4108-bfda-95667ba1a078",
+        "project_id": "project:author:89ea2ccc10f5be10dcbec980fff1af747c3e3ec8b6ea6c60e6eb0433ffc01884",
+        "execution_id": "chapter-execution:e54eaaf3-1411-4d67-90b2-d8dabd24dc77",
+        "operation_id": "8ec42585-28a0-4ee3-a135-0c2bab2a215c",
+        "fencing_token": 1
+      },
+      "retryable": false,
+      "cause_code": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
+      "error_code": "OUTPUT_SCHEMA_FAILURE",
+      "exit_condition": "TRUSTED_RESULT_OR_DURABLE_ISOLATION_AND_SUCCESSOR",
+      "recovery_state": "REQUIRED",
+      "remote_outcome": "UNESTABLISHED",
+      "business_impact": "CURRENT_TASK_BLOCKED",
+      "recovery_action": "READ_OR_REPAIR_ORIGINAL_RESULT",
+      "contract_version": "provider-failure.v1",
+      "provider_error_code": "GENERATION_PROCESS_EXITED"
+    },
+    "structured_validation_error": {
+      "code": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",
+      "message": "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID: stage memo: $.creative_guidance.character_choices[0].character_id is not one of the allowed values",
+      "contract_version": "structured-validation-error.v1"
+    },
+    "execution_class": "SCRIPTED_TEST_TRANSPORT_NOT_REAL_PROVIDER"
+  }
+]

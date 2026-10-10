@@ -1,0 +1,481 @@
+{
+  "policy": {
+    "version": "working-prose-projection.v2",
+    "history_chapters": 16,
+    "recent_complete_chapters": 4,
+    "max_characters": 22000,
+    "queries": [
+      "陆衡",
+      "唐穗",
+      "许庭",
+      "程管事",
+      "木块",
+      "热饭",
+      "时辰"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "snapshot_hash": "sha256:1c06e3e42672fbeb6e8b0b56f29661198d3840b47f46cbb4ed6b5fa0f61c0a75",
+  "characters": 21999,
+  "selected_coverage": {
+    "included": 28,
+    "denominator": 64
+  },
+  "recent_complete_chapters": [
+    13,
+    14,
+    15,
+    16
+  ],
+  "rows": [
+    {
+      "sample_id": "Q01-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q01-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q01-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q01-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q02-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q02-2",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q02-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q02-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q03-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q03-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q03-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q03-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q04-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q04-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q04-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q04-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q05-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q05-2",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q05-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q05-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q06-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q06-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q06-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q06-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q07-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q07-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q07-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q07-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q08-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q08-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q08-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q08-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q09-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q09-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q09-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q09-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q10-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q10-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q10-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q10-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q11-1",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q11-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q11-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q11-4",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q12-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q12-2",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q12-3",
+      "coverage": "OMITTED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q12-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q13-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q13-2",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q13-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q13-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q14-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q14-2",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q14-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q14-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q15-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q15-2",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q15-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q15-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q16-1",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q16-2",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q16-3",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    },
+    {
+      "sample_id": "Q16-4",
+      "coverage": "INCLUDED",
+      "promotion": "NOT_GRANTED",
+      "character_knowledge": "NOT_VERIFIED",
+      "writer_semantic_ownership": "NOT_RUN"
+    }
+  ],
+  "semantic_error_rate": "NOT_EVALUATED"
+}

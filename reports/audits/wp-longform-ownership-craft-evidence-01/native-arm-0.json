@@ -1,0 +1,161 @@
+{
+  "version": "longform-native-arm.v1",
+  "arm": 0,
+  "mode": "LEGACY",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "database": "nf_longform_f19e9b2191e6_arm0_test",
+  "database_oid": 124066,
+  "policy": null,
+  "events": [
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 0,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "evidence_ref": "chapter-request:9dd894e00d13fd0fea981cca0f42a2c68096b6d3f98dea3f79a500cc8a89b910"
+      }
+    },
+    {
+      "phase": "FROZEN_REQUEST",
+      "chapter_request_id": "chapter-request:9dd894e00d13fd0fea981cca0f42a2c68096b6d3f98dea3f79a500cc8a89b910",
+      "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+      "plan_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+      "working_snapshot_hash": "sha256:5f3b639ddf410b3589f45556987a4e3171bdf9c77746505840a532b7f5ce1eb3"
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 0,
+      "result": {
+        "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "saga_id": "a4caf61e-0814-4300-bb8e-13a8e302666c",
+        "saga_status": "RUNNING",
+        "operation_id": "ed93b1c2-6f7a-41c9-8bcd-a4d915bce603",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 1,
+      "result": {
+        "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "saga_id": "a4caf61e-0814-4300-bb8e-13a8e302666c",
+        "saga_status": "RUNNING",
+        "operation_id": "15e0504f-96ab-42b7-aa47-42f7416ffa14",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 2,
+      "result": {
+        "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "saga_id": "a4caf61e-0814-4300-bb8e-13a8e302666c",
+        "saga_status": "RUNNING",
+        "operation_id": "61b589c5-ce96-4ca9-8a9e-78ae008c840f",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 3,
+      "result": {
+        "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "saga_id": "a4caf61e-0814-4300-bb8e-13a8e302666c",
+        "saga_status": "RUNNING",
+        "operation_id": "ef05fd0a-a429-44a4-8568-7d1e2958f6e1",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 4,
+      "result": {
+        "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "saga_id": "a4caf61e-0814-4300-bb8e-13a8e302666c",
+        "saga_status": "RUNNING",
+        "operation_id": "547c4f1d-5d6d-454b-825c-2977a718962e",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 5,
+      "result": {
+        "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54",
+        "saga_id": "a4caf61e-0814-4300-bb8e-13a8e302666c",
+        "saga_status": "SUCCEEDED",
+        "operation_id": "b7de0a2f-06b9-4761-b1eb-d0c7bc70ad3e",
+        "node": "draft",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "DRAFT_DELIVERY",
+      "receipt": {
+        "operation_id": "986e4531-27a4-430d-b337-880a41320e16",
+        "status": "SUCCEEDED",
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "chapter": 17,
+        "source_asset_version_id": "authority-output:b7de0a2f-06b9-4761-b1eb-d0c7bc70ad3e:chapter.draft:v1",
+        "source_content_hash": "sha256:fefa1917831fa2f84ba304ab39ccf75ca6b00044488c2517bb1c8da18825f86d",
+        "manuscript_status": "SAVED",
+        "review_status": "NOT_RUN",
+        "quality_status": "NOT_VERIFIED",
+        "requirements_status": "NOT_EVALUATED",
+        "acceptance": "NOT_GRANTED",
+        "replayed": false
+      },
+      "characters": 2289,
+      "output": "candidate-arm-0.txt",
+      "review_status": "NOT_RUN",
+      "accepted_through_chapter": 0
+    }
+  ],
+  "status": "SAVED_READ_BACK_EXPORTED",
+  "literary_evidence": "NOT_PROVEN",
+  "human_evidence": "NOT_READY",
+  "previous_harness_run": {
+    "version": "longform-native-arm.v1",
+    "arm": 0,
+    "mode": "LEGACY",
+    "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+    "database": "nf_longform_f19e9b2191e6_arm0_test",
+    "database_oid": 124066,
+    "policy": null,
+    "events": [
+      {
+        "phase": "NATIVE_SUBMIT",
+        "result": {
+          "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+          "previous_state": "READY",
+          "state": "READY",
+          "action": "FREEZE_CHAPTER_PLAN",
+          "operation_id": "be40ab51-1341-46df-b4c1-ee8d52852eb9",
+          "evidence_ref": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1"
+        }
+      },
+      {
+        "phase": "STOPPED",
+        "code": "NO_NATIVE_CHAPTER_REQUEST"
+      }
+    ],
+    "status": "BLOCKED",
+    "literary_evidence": "NOT_PROVEN",
+    "human_evidence": "NOT_READY"
+  }
+}

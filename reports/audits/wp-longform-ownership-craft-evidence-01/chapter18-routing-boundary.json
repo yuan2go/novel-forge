@@ -1,0 +1,31 @@
+{
+  "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+  "routing_asset_version_id": "c4a60a84-fecd-467c-9e5b-afbfb1d62eb5",
+  "routing_content_hash": "sha256:2cc79d1605699f4c171d0a8e62dce878443357217e9156479f2dea40e653b1d3",
+  "status": "BLOCKED",
+  "task_type": "draft",
+  "input_tokens_upper_bound": 227839,
+  "output_token_allowance": 32000,
+  "task_token_limit": 258400,
+  "candidates": [
+    {
+      "rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "BUDGET_HARD_LIMIT",
+        "TEMPLATE_MODEL_UNAUTHORIZED"
+      ]
+    },
+    {
+      "rejected_reasons": [
+        "CONTEXT_CAPACITY_EXCEEDED",
+        "BUDGET_HARD_LIMIT"
+      ]
+    }
+  ],
+  "effects": [
+    [
+      "SUCCEEDED",
+      1
+    ]
+  ]
+}

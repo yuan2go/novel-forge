@@ -1,0 +1,16 @@
+{
+  "version": "working-prose-projection.v2",
+  "history_chapters": 16,
+  "recent_complete_chapters": 4,
+  "max_characters": 32000,
+  "queries": [
+    "陆衡",
+    "唐穗",
+    "许庭",
+    "程管事",
+    "木块",
+    "热饭",
+    "时辰"
+  ],
+  "guidance_mode": "COMBINED"
+}

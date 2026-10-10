@@ -1,0 +1,52 @@
+{
+  "version": "longform-authority-inventory.v1",
+  "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+  "role": "CHECKED_PROJECTION_NOT_RUNTIME_AUTHORITY",
+  "original_preimplementation_inventory_retained": true,
+  "preimplementation_missing_guess_corrected": "production-entry-manifest.yaml is the actual manifest; production-path-manifest.yaml was only a missing-path observation",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "sha256:70625877c9804584f1aa91e358c78ace073559d9aa1a91336bb22a6ea458ecfa"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "sha256:010f0109ec815d6c7c96b97f32cbec919dc4caef80c17be332f3cf1e72d49740"
+    },
+    {
+      "path": "docs/current-system.md",
+      "sha256": "sha256:9d1cd21211fc41819951e3cf6958d7f538b450062f763348fd105ae08f449a5f"
+    },
+    {
+      "path": "docs/runtime-operations.md",
+      "sha256": "sha256:0a3eb54346d3de3c7d4dd171675135eeaa0aa492e371a886ba976b63e23e7945"
+    },
+    {
+      "path": "architecture/reality-evidence.json",
+      "sha256": "sha256:129b12704f6601822ccf0d0c6a0adb6cfc4bcfc012f1a80c598ac18268c349be"
+    },
+    {
+      "path": "architecture/manifests/production-entry-manifest.yaml",
+      "sha256": "sha256:6166985ac7017fc0d2310ed7996924a5948c1768e38270c20ca39f4ca28af37a"
+    },
+    {
+      "path": "architecture/manifests/worker-manifest.yaml",
+      "sha256": "sha256:29bcdd78b2db97ba0c1d66939d590ca8d7b9504675fa99cfc41627aadddd0e6b"
+    },
+    {
+      "path": "architecture/manifests/migration-manifest.yaml",
+      "sha256": "sha256:3e53817de2e6d5908daf8146240347e2b826910b691a8a5b378157637289ff26"
+    },
+    {
+      "path": "architecture/manifests/migration-surface-manifest.yaml",
+      "sha256": "sha256:10cb8d490500ff2d885240790423af249f42cd0a1b096f13013a7c38b2ae94fe"
+    },
+    {
+      "path": "architecture/manifests/ai-instruction-manifest.yaml",
+      "sha256": "sha256:bd43d70abd639222fbc54e4b96625abf96816691379c368b23275e189896790e"
+    }
+  ],
+  "new_authorities": 0,
+  "new_migrations": 0,
+  "root_skills_only": true
+}

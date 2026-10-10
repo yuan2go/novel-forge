@@ -1,0 +1,55 @@
+{
+  "version": "longform-prose-observations.v1",
+  "method": "Read actual exported prose; exact quote locators; no added scoring weight or statistical claim",
+  "observations": [
+    {
+      "arm": 0,
+      "dimension": "VOICE_EXPRESSION",
+      "claim": "工程式表达仍进入小说",
+      "quote": "接收记录",
+      "start": 643,
+      "end": 647,
+      "text_hash": "sha256:b79257f5fbe639ac31d5f7fc47732410c331d8bd51d9738933ffbf10fdd4965f",
+      "source_asset_version_id": "authority-output:b7de0a2f-06b9-4761-b1eb-d0c7bc70ad3e:chapter.draft:v1",
+      "assessment": "ASSISTANT_MODEL_OBSERVATION_NOT_HUMAN_OR_NATIVE_GATE"
+    },
+    {
+      "arm": 1,
+      "dimension": "VOICE_EXPRESSION",
+      "claim": "工程式表达仍进入小说",
+      "quote": "进一步的质量和收益，要等相应核验",
+      "start": 761,
+      "end": 777,
+      "text_hash": "sha256:788f3af05d2dfda6c991bb5d470a7eaee96e3fda4be70907235957203e4291a1",
+      "source_asset_version_id": "authority-output:da54b446-1ec1-4d2f-9609-00994eee3088:chapter.draft:v1",
+      "assessment": "ASSISTANT_MODEL_OBSERVATION_NOT_HUMAN_OR_NATIVE_GATE"
+    },
+    {
+      "arm": 2,
+      "dimension": "CHARACTER_REACTION",
+      "claim": "人物经历被具体承接，但篇幅和问答增多",
+      "quote": "沈砚想起先前同陆衡、唐穗交回药叶时",
+      "start": 881,
+      "end": 898,
+      "text_hash": "sha256:61e83567b242d6106ac81c69bd104a94b9797402c7c39626d44814151f8a3ed7",
+      "source_asset_version_id": "authority-output:7d4f1cfb-3dd8-4d9b-b1d3-bd1504e2162d:chapter.draft:v1",
+      "assessment": "ASSISTANT_MODEL_OBSERVATION_NOT_HUMAN_OR_NATIVE_GATE"
+    },
+    {
+      "arm": 3,
+      "dimension": "ACTION_CONSEQUENCES",
+      "claim": "以前搬桩的行动与后续收枝的处境产生联系",
+      "quote": "若把枝条堆到桩上，场中央虽清了，墙边却又添了碍事的东西",
+      "start": 1622,
+      "end": 1649,
+      "text_hash": "sha256:8f76c1f7f33895e99dcb4755071e81cfe0251410bca4bfb995fd840f627f715f",
+      "source_asset_version_id": "authority-output:ecdf7eaf-7841-4909-91ce-b0d131ae27cd:chapter.draft:v1",
+      "assessment": "ASSISTANT_MODEL_OBSERVATION_NOT_HUMAN_OR_NATIVE_GATE"
+    }
+  ],
+  "causal_inference": "NOT_PROVEN_ONE_STOCHASTIC_SAMPLE_PER_ARM",
+  "literary_decision": "NOT_READY_KEEP_OFF",
+  "shared_limitation": "All four Chapter 17 drafts chiefly negotiate and schedule work; the actual labour is still future. New inputs do not by themselves resolve repeated procedural dialogue.",
+  "chapter18_continuity": "BLOCKED_PRE_DISPATCH_BUDGET_NO_PROSE",
+  "human_evidence": "NOT_READY"
+}

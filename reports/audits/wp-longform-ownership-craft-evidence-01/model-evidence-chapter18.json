@@ -1,0 +1,97 @@
+{
+  "root_operation_ids": [
+    "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+    "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0"
+  ],
+  "record_count": 4,
+  "records": [
+    {
+      "operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+      "root_operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+      "asset_version_id": "52301b86-c33b-4352-976f-07c28d50da2f",
+      "content_hash": "sha256:6bcc60316ddba127a3bc09e66b614fabcf4d44148147be920d576e229b37a5db",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v12",
+      "skill_version": "chapter-outline@chapter-outline-qualification-v4",
+      "real_model_call": true,
+      "fixture_protocol_only": false,
+      "production_verified": false,
+      "usage_fields": {
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 63842,
+        "total_tokens": 75571,
+        "output_tokens": 11729,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": 1756
+      }
+    },
+    {
+      "operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+      "root_operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+      "asset_version_id": "83d7f200-388f-474d-8665-82bbbc5d05e5",
+      "content_hash": "sha256:70d5e9668facf5bf9955a91aaedda47bb47104c686d4f196217d3f3461ed237f",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v12",
+      "skill_version": "chapter-outline@chapter-outline-qualification-v4",
+      "real_model_call": true,
+      "fixture_protocol_only": false,
+      "production_verified": false,
+      "usage_fields": {
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 49323,
+        "total_tokens": 49358,
+        "output_tokens": 35,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": 13
+      }
+    },
+    {
+      "operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+      "root_operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+      "asset_version_id": "66a7fcc5-2f95-4250-b2a4-e79cd60bf48f",
+      "content_hash": "sha256:4aa76125b64bac30a04102f1b5e8a62791c8f9082fa76c94ca92a22718e7001e",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:story-planning-pack@v12",
+      "skill_version": "chapter-outline@chapter-outline-qualification-v4",
+      "real_model_call": true,
+      "fixture_protocol_only": false,
+      "production_verified": false,
+      "usage_fields": {
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 56489,
+        "total_tokens": 57700,
+        "output_tokens": 1211,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": 1064
+      }
+    },
+    {
+      "operation_id": "5e66e385-5c3a-4ee0-8f74-700a5fd62296",
+      "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+      "asset_version_id": "48f57311-0951-4cf7-ad56-7082c923451e",
+      "content_hash": "sha256:8926c4b77f00faf2d4a2f407fcf73fe433c0eb6ba9907017c3fbb7e94e88d06c",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "skill_version": "chapter-plan-skill-v3",
+      "real_model_call": true,
+      "usage_fields": {
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 62476,
+        "total_tokens": 64882,
+        "output_tokens": 2406,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": 411
+      }
+    }
+  ],
+  "raw_records_retained": true,
+  "classification": "REAL_PROVIDER_EVIDENCE_NOT_PRODUCTION_OR_LITERARY_QUALIFICATION"
+}

@@ -1,0 +1,47 @@
+{
+  "version": "longform-native-exact-release.v1",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "events": [
+    {
+      "phase": "PLANNING_PACK",
+      "status": "AUTHOR_FIRST_VALIDATION_ADMITTED",
+      "pack_id": "story_planning_pack.wp_longform_01",
+      "identity": {
+        "pack_id": "story_planning_pack.wp_longform_01",
+        "pack_version": "2.14.1001",
+        "compilation_id": "compilation:quality:story_planning_pack.wp_longform_01:5775e6d52215ffaa369e",
+        "deployment_id": "deployment:quality:story_planning_pack.wp_longform_01:5775e6d52215ffaa369e"
+      },
+      "production_certification": "NOT_RUN",
+      "human_pack_approval": "NOT_RUN"
+    },
+    {
+      "phase": "CHAPTER_PACK",
+      "status": "AUTHOR_FIRST_VALIDATION_ADMITTED",
+      "pack_id": "chapter_generation_pack.wp_longform_01",
+      "identity": {
+        "pack_id": "chapter_generation_pack.wp_longform_01",
+        "pack_version": "2.0.1001",
+        "compilation_id": "compilation:quality:chapter_generation_pack.wp_longform_01:5e2e7fcbde10a3a80a88",
+        "deployment_id": "deployment:quality:chapter_generation_pack.wp_longform_01:5e2e7fcbde10a3a80a88"
+      },
+      "production_certification": "NOT_RUN",
+      "human_pack_approval": "NOT_RUN"
+    },
+    {
+      "phase": "NATIVE_TICK",
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "e025d04a-aafb-411b-8fa6-dd0549fb7d2f",
+        "evidence_ref": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1"
+      },
+      "scope": "ONE_NATIVE_TICK_NO_RECOVERY_LOOP"
+    }
+  ],
+  "original_runtime_mutations": 0,
+  "literary_evidence": "NOT_READY",
+  "human_evidence": "NOT_READY"
+}

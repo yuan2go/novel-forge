@@ -1,0 +1,76 @@
+{
+  "version": "longform-model-human-correspondence.v1",
+  "status": "NOT_READY",
+  "model_reference": {
+    "combined_review_run": "05fba6c2-103f-49f1-ae18-fc0300f68d81",
+    "operation_id": "21b3a6b4-e107-4aae-949a-87e4dd57f7d6",
+    "scope": [
+      16,
+      17
+    ],
+    "report_file": "native-model-review-arm-1.json",
+    "paired_baseline_review": "UNKNOWN_NO_REPORT",
+    "baseline_effect_id": "cd748001-0138-42fa-88d4-b6664ed80dbc",
+    "model_score": "NOT_PRODUCED",
+    "whole_manuscript_review": "NOT_RUN"
+  },
+  "human_reference": {
+    "reviewers": 0,
+    "decisions": 0,
+    "native_import": "NOT_RUN",
+    "draft_packet": "qinglan-reader-blind-draft.zip",
+    "formal_blind_export": "NOT_RUN_REQUIRES_ACTUAL_INDEPENDENT_EVALUATOR_IDENTITIES"
+  },
+  "requested_dimensions": [
+    {
+      "dimension": "人物自然度",
+      "existing_reader_dimensions": [
+        "character_credibility"
+      ],
+      "model_dimensions": [
+        "goals_relationships",
+        "motivation_cost"
+      ]
+    },
+    {
+      "dimension": "语言自然度",
+      "existing_reader_dimensions": [
+        "prose_quality",
+        "readability"
+      ],
+      "model_dimensions": [
+        "voice_expression"
+      ]
+    },
+    {
+      "dimension": "叙事推进",
+      "existing_reader_dimensions": [
+        "scene_effectiveness",
+        "tension_momentum",
+        "continuity"
+      ],
+      "model_dimensions": [
+        "structure_conflict_repetition",
+        "setup_progress_payoff",
+        "arc_pacing"
+      ]
+    },
+    {
+      "dimension": "阅读兴趣",
+      "existing_reader_dimensions": [
+        "overall_preference"
+      ],
+      "model_dimensions": []
+    },
+    {
+      "dimension": "继续阅读意愿",
+      "existing_reader_dimensions": [
+        "desire_to_continue"
+      ],
+      "model_dimensions": []
+    }
+  ],
+  "calibration_result": "NOT_EVALUATED_NO_HUMAN_OR_PAIRED_BASELINE_REPORT",
+  "rollout": "DEFAULT_OFF",
+  "diversity_scoring_change": false
+}

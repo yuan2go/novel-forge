@@ -1,0 +1,13 @@
+{
+  "observed_at": "2026-10-10T14:23:08.612017+00:00",
+  "database": "nf_qidian_learning_20261008_test",
+  "oid": 16384,
+  "cluster_identifier": "7694308142111706022",
+  "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "current_chapter": 16,
+  "accepted_through_chapter": 0,
+  "state": "PAUSED",
+  "version": 114,
+  "original_mutations_by_this_wp": 0,
+  "original_provider_recovery_by_this_wp": 0
+}

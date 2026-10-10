@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "native_identity_and_public_redacted_representation_separate": true,
+  "rows": [
+    {
+      "arm": 0,
+      "asset_version_id": "authority-output:b7de0a2f-06b9-4761-b1eb-d0c7bc70ad3e:chapter.draft:v1",
+      "native_content_hash": "sha256:fefa1917831fa2f84ba304ab39ccf75ca6b00044488c2517bb1c8da18825f86d",
+      "text_hash": "sha256:b79257f5fbe639ac31d5f7fc47732410c331d8bd51d9738933ffbf10fdd4965f",
+      "characters": 2289,
+      "text_readback": "PASS",
+      "raw_provider_export_retained": true
+    },
+    {
+      "arm": 1,
+      "asset_version_id": "authority-output:da54b446-1ec1-4d2f-9609-00994eee3088:chapter.draft:v1",
+      "native_content_hash": "sha256:71ec2247362baaaf8ab0069df16279c6ed11cb0407c43bdf6b98f4eae81018d7",
+      "text_hash": "sha256:788f3af05d2dfda6c991bb5d470a7eaee96e3fda4be70907235957203e4291a1",
+      "characters": 2242,
+      "text_readback": "PASS",
+      "raw_provider_export_retained": true
+    },
+    {
+      "arm": 2,
+      "asset_version_id": "authority-output:7d4f1cfb-3dd8-4d9b-b1d3-bd1504e2162d:chapter.draft:v1",
+      "native_content_hash": "sha256:89a0fb5bf624cf99139e4e214b3040cc32d50df6298eb333c4e7f553261ed448",
+      "text_hash": "sha256:61e83567b242d6106ac81c69bd104a94b9797402c7c39626d44814151f8a3ed7",
+      "characters": 2649,
+      "text_readback": "PASS",
+      "raw_provider_export_retained": true
+    },
+    {
+      "arm": 3,
+      "asset_version_id": "authority-output:ecdf7eaf-7841-4909-91ce-b0d131ae27cd:chapter.draft:v1",
+      "native_content_hash": "sha256:b6cc6831754104e8961328a05fc82128d5f381fd5ef4b5220e4b26bfbb0de81b",
+      "text_hash": "sha256:8f76c1f7f33895e99dcb4755071e81cfe0251410bca4bfb995fd840f627f715f",
+      "characters": 2359,
+      "text_readback": "PASS",
+      "raw_provider_export_retained": true
+    }
+  ]
+}

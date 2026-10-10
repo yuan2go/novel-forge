@@ -1,0 +1,46 @@
+{
+  "version": "longform-blind-material.v1",
+  "status": "MATERIALS_READY_HUMAN_NOT_READY",
+  "human_reviewers": 0,
+  "human_decisions": 0,
+  "native_blind_export": "NOT_RUN_REAL_EVALUATOR_IDENTITIES_UNAVAILABLE",
+  "native_human_import": "NOT_RUN",
+  "source_scope": [
+    1,
+    17
+  ],
+  "comparison_scope": [
+    17,
+    17
+  ],
+  "pairs": [
+    {
+      "pair_token": "P01",
+      "files": [
+        "P01/A.txt",
+        "P01/B.txt",
+        "P01/答卷草案.json"
+      ]
+    },
+    {
+      "pair_token": "P02",
+      "files": [
+        "P02/A.txt",
+        "P02/B.txt",
+        "P02/答卷草案.json"
+      ]
+    },
+    {
+      "pair_token": "P03",
+      "files": [
+        "P03/A.txt",
+        "P03/B.txt",
+        "P03/答卷草案.json"
+      ]
+    }
+  ],
+  "archive_sha256": "sha256:6d3405aac456b9536e2f87910d93caa6a1ff830dbefb39e89d93d461d6f462bb",
+  "archive_bytes": 98823,
+  "identity_mapping": "PRIVATE_RETAINED_OUTSIDE_READER_PACKET",
+  "formal_rollout": "NOT_READY"
+}

@@ -1,0 +1,57 @@
+{
+  "status": "UNFILLED_DRAFT_NOT_HUMAN_EVIDENCE",
+  "pair_token": "P01",
+  "reviewer_id": null,
+  "evaluator_identity_class": null,
+  "protocol_version": "DRAFT_FOR_EXISTING_BLIND_PROTOCOL",
+  "evaluation_version": "longform-reader-draft.v1",
+  "scope_type": "CHAPTER",
+  "chapter_start": 17,
+  "chapter_end": 17,
+  "choice": null,
+  "dimension_scores": {
+    "overall_preference": {
+      "a": null,
+      "b": null
+    },
+    "readability": {
+      "a": null,
+      "b": null
+    },
+    "character_credibility": {
+      "a": null,
+      "b": null
+    },
+    "scene_effectiveness": {
+      "a": null,
+      "b": null
+    },
+    "tension_momentum": {
+      "a": null,
+      "b": null
+    },
+    "emotional_impact": {
+      "a": null,
+      "b": null
+    },
+    "prose_quality": {
+      "a": null,
+      "b": null
+    },
+    "continuity": {
+      "a": null,
+      "b": null
+    },
+    "payoff_satisfaction": {
+      "a": null,
+      "b": null
+    },
+    "desire_to_continue": {
+      "a": null,
+      "b": null
+    }
+  },
+  "confidence": null,
+  "rationale": null,
+  "evidence_spans": []
+}

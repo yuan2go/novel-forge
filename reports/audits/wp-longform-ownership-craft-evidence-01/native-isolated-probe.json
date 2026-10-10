@@ -1,0 +1,61 @@
+{
+  "version": "longform-isolated-probe.v1",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "database": "nf_longform_f19e9b2191e6_test",
+  "source_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "original_runtime_mutations": 0,
+  "events": [
+    {
+      "phase": "MIGRATIONS",
+      "head": "20261010_0198_recovery_reference_indexes",
+      "status": null
+    },
+    {
+      "phase": "SOURCE_FREEZE",
+      "book_version": 114,
+      "current_chapter": 16,
+      "accepted_through_chapter": 0,
+      "state": "PAUSED",
+      "plan_version_id": "authority-output:9bd6978c-a121-42e0-84b7-4414ed8b1dac:story_planning.candidate:v1",
+      "plan_hash": "sha256:c8717ab34fb3a7b20391dd77cd31f1f8fbb92a7174e4c266622d9c42efc0ce5c"
+    },
+    {
+      "phase": "PLAN_CHANGE_REQUEST",
+      "status": "SAVED_FUTURE_PROPOSAL_ONLY",
+      "result": {
+        "operation_id": "8fe46b0a-980d-4a05-97fc-ebafded10e93",
+        "asset_id": "authority-output:8fe46b0a-980d-4a05-97fc-ebafded10e93:planning.change_request",
+        "asset_version_id": "authority-output:8fe46b0a-980d-4a05-97fc-ebafded10e93:planning.change_request:v1",
+        "content_hash": "sha256:afd4cac4679c3ab48a7596a5ea4d30941d157c7e52137bb37161aad4e6695404",
+        "output_key": "planning.change_request",
+        "replayed": false,
+        "materialized_outputs": [
+          {
+            "asset_id": "authority-output:8fe46b0a-980d-4a05-97fc-ebafded10e93:planning.change_request",
+            "asset_version_id": "authority-output:8fe46b0a-980d-4a05-97fc-ebafded10e93:planning.change_request:v1",
+            "asset_type": "replan_request",
+            "output_key": "planning.change_request",
+            "role": "primary",
+            "content_hash": "sha256:afd4cac4679c3ab48a7596a5ea4d30941d157c7e52137bb37161aad4e6695404",
+            "replayed": false
+          }
+        ]
+      },
+      "active_plan_mutation": false
+    },
+    {
+      "phase": "ISOLATED_RESUME",
+      "state": "READY",
+      "version": 115
+    },
+    {
+      "phase": "STOPPED",
+      "status": "BLOCKED",
+      "error_type": "KernelError",
+      "error_code": "CAPABILITY_PACK_DEPLOYMENT_COMPATIBILITY_DRIFT",
+      "message": "CAPABILITY_PACK_DEPLOYMENT_COMPATIBILITY_DRIFT: Pack Deployment is incompatible with runtime: release_sha"
+    }
+  ],
+  "literary_evidence": "NOT_READY",
+  "human_evidence": "NOT_READY"
+}

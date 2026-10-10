@@ -1,0 +1,22 @@
+{
+  "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+  "record_count": 1,
+  "records": [
+    {
+      "asset_version_id": "db32afdd-6cd8-4b0e-8ee5-78ec1de5b9ed",
+      "content_hash": "sha256:117e1d04b635985d6b15ed7ac76469b32d0117ebf405204c029b908b4a991f29",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "skill_version": "chapter-plan-skill-v3",
+      "real_model_call": true,
+      "usage_fields": {
+        "input_tokens": 64334,
+        "total_tokens": 66553,
+        "output_tokens": 2219
+      }
+    }
+  ],
+  "original_cold_records_retained": true,
+  "classification": "REAL_PROVIDER_CANDIDATE_NOT_PRODUCTION_OR_LITERARY_QUALIFICATION"
+}

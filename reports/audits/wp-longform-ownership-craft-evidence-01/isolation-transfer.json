@@ -1,0 +1,11 @@
+{
+  "version": "longform-isolation-transfer.v1",
+  "reason": "DEVSSD_DISK_FULL",
+  "source_database_oid": 512079,
+  "target_database_oid": 16384,
+  "target_cluster_system_identifier": "7695026994287073315",
+  "source_snapshot_bytes": 320786292,
+  "original_runtime_mutations": 0,
+  "copy_preserves_prepared_chapter_17_plan": true,
+  "comparison_strategy": "SEQUENTIAL_ARM_THEN_COLD_ARCHIVE_AND_DROP_OWNED_ARM_ONLY"
+}

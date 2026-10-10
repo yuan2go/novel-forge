@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "public_json_files_parsed": 57,
+  "credentials_detected": 0,
+  "reader_archive_integrity": "PASS",
+  "raw_candidate_and_log_evidence": "PRIVATE_RETAINED_NOT_PUBLISHED",
+  "secret_values_never_printed": true
+}

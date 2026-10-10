@@ -1,0 +1,21 @@
+{
+  "routing_asset_version_id": "12e94618-db3d-4f4b-87cb-d3c67dabec8a",
+  "routing_hash": "sha256:db0771dfcc43f0187bea87b8ddfd25c3dbf54e86978791b9ae1d65c4368cdff3",
+  "status": "BLOCKED",
+  "input_tokens": 54379,
+  "output_tokens": 32000,
+  "task_token_limit": 258400,
+  "operation_id": "6b57eca4-4434-42c3-819d-05582bb00e26",
+  "candidates": [
+    {
+      "rejected_reasons": [
+        "TEMPLATE_MODEL_UNAUTHORIZED"
+      ]
+    },
+    {
+      "rejected_reasons": [
+        "PROVIDER_UNAVAILABLE:PROVIDER_RESPONSE_TIMEOUT:cd748001-0138-42fa-88d4-b6664ed80dbc:until:2026-10-10T14:11:04.365557+00:00"
+      ]
+    }
+  ]
+}

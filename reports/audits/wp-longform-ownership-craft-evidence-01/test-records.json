@@ -1,0 +1,97 @@
+{
+  "version": "longform-focused-test-records.v2",
+  "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+  "scope": "DIRECT_CHANGE_FOCUSED_CHECKS_NOT_GLOBAL_RELEASE_QUALIFICATION",
+  "checks": [
+    {
+      "kind": "unit",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "summary": "270 passed in 2.82s",
+      "log_sha256": "sha256:4ee3f8a302dedc21f1ca976321947e8cdcd46123c17c7f359cdc708c2d14cc87",
+      "transport": "NO_REAL_PROVIDER"
+    },
+    {
+      "kind": "postgres_native",
+      "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+      "status": "PASS",
+      "summary": "2 passed, 8 warnings in 528.10s",
+      "log_sha256": "sha256:ba49ed8f2f5ecdd3beb5a7f44fa1c2a1aba1efbe0bf39ea80fa46d695370bdd3",
+      "transport": "SCRIPTED_TEST_TRANSPORT_NO_REAL_PROVIDER",
+      "cases": [
+        "test_native_author_first_cross_chapter_edit_and_export[enhanced-working-interruption]",
+        "test_native_author_first_cross_chapter_edit_and_export[single-interruption]"
+      ]
+    },
+    {
+      "kind": "documentation_reality",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "errors": [],
+      "report_sha256": "sha256:28ca6387504237cdd4237f9c3d79f88cc1b0e643a0eb1137d851145c0a6ebb4a"
+    },
+    {
+      "kind": "instruction_surface",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "errors": [],
+      "report_sha256": "sha256:5037461b0fecb0a7de32a36cf014d9c58a9f4221cb60175e3665cb0cf20ea781"
+    },
+    {
+      "kind": "test_reality",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "errors": [],
+      "report_sha256": "sha256:8c2f439ccddd6a26c3cd95647f711a588165f6c96aeb831c1d9a405020456519"
+    },
+    {
+      "kind": "architecture_fitness",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "errors": [],
+      "report_sha256": "sha256:f5bd0f60252cab45ee5153d4488f4e0872d93f86a2d8c0d8807ea84d4eb8526f"
+    },
+    {
+      "kind": "historical_planning_catalog",
+      "status": "FAIL_PREEXISTING_ON_FROZEN_MAIN",
+      "summary": "Full historical module 4 FAIL / 52 PASS; three historical catalog byte expectations fail independently on immutable main; current-version assertion expects 2.13 where main is 2.14. Frozen identities and golden expectations retained."
+    },
+    {
+      "kind": "historical_prose_review_postgres_fixture",
+      "status": "FAIL_PREEXISTING_ON_FROZEN_MAIN",
+      "summary": "Two attempted cases stopped at REALIZATION_SOURCE_BINDING_REQUIRED before changed Review owner; immutable main original case also fails there. Parameterization restored; no gate weakened.",
+      "evidence_file": "review-integration-failures.json"
+    },
+    {
+      "kind": "complete_release_matrix",
+      "status": "NOT_RUN",
+      "summary": "Scoped changes only. No claim of global release qualification, deployment, production or literary quality."
+    },
+    {
+      "kind": "ruff_changed_surfaces",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "summary": "Selected changed production/projection/Review/tests/case-verifier files; All checks passed."
+    },
+    {
+      "kind": "generated_skills",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "summary": "make sync-skills and make check-skills; generated copies not hand-edited."
+    },
+    {
+      "kind": "git_diff_check",
+      "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+      "status": "PASS",
+      "scope": "Business/code changes before raw source exports were staged"
+    },
+    {
+      "kind": "staged_raw_source_whitespace",
+      "status": "FAIL",
+      "summary": "Two trailing spaces in exact original Chapter 1 / 15 reader-background prose retained to preserve source bytes; no production/code whitespace failure."
+    }
+  ],
+  "engineering_evidence_ceiling": "EXECUTABLE",
+  "literary_improvement": "NOT_PROVEN",
+  "human_validation": "NOT_READY"
+}
