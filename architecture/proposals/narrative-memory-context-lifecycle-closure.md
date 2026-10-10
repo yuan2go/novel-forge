@@ -9,9 +9,9 @@
 > **REMAINING DESIGN SCOPE — NO RUNTIME AUTHORITY**
 
 Status: `PARTIALLY_IMPLEMENTED`
-Reality baseline: `f544970def34613d0bbc1b43b322cc9bf0611020`
+Reality baseline: `7556474f753bb84fa4548462222c7c79634c6fca`
 Baseline implementation identity:
-`sha256:92e6355be5d9c9032af9ffce36364531feb7c16578c3f4ed9c035086cc35ceea`
+`sha256:703cd3a1fcf29bf74eb71651d20abf665593d515f0c7bcbaa14f03533bf798ee`
 
 2026-10-07 scope review: Task Context and Provider recovery retain exact frozen identities and fail closed on unknown outcomes. New recovery journals preserve protected evidence; they do not implement Digest freshness, diagnostic GC, active read generations or destructive representation cutover. Gates B–E remain unresolved.
 This checkpoint review is implementation evidence, not final backend qualification,
@@ -28,8 +28,8 @@ Source baseline refreshed for the coordinated forward-contract integration. Test
   "reviewed_on": "2026-10-10",
   "review_due": "2026-10-30",
   "reality_baseline": {
-    "sha": "f544970def34613d0bbc1b43b322cc9bf0611020",
-    "implementation_tree_sha": "sha256:92e6355be5d9c9032af9ffce36364531feb7c16578c3f4ed9c035086cc35ceea"
+    "sha": "7556474f753bb84fa4548462222c7c79634c6fca",
+    "implementation_tree_sha": "sha256:703cd3a1fcf29bf74eb71651d20abf665593d515f0c7bcbaa14f03533bf798ee"
   },
   "scope": [
     "src/novel_forge/modules/context_builder",
