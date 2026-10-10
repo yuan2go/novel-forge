@@ -328,8 +328,8 @@ of `test_author_first_manuscript_postgres.py`. Record source coverage separately
 Writer semantic attribution. An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
 Per-Chapter opt-in requires the local author/operator and freezes policy plus exact sources
-in the native request; omitted policy keeps the profile/default path. Original suspended
-Provider work and UNKNOWN histories must not be resumed to perform a literary comparison.
+in the native request; omitted policy keeps the profile/default path. A literary comparison requires its own scoped input and existing runtime authorization.
+Do not resume paused original work or unresolved UNKNOWN effects as a comparison shortcut.
 
 A focused pass does not substitute for release qualification below. Before rollout of
 work contracts, run migration clean-install/upgrade and the applicable same-release

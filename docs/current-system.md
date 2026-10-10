@@ -94,8 +94,8 @@ character reaction, action consequences or their combination without prescribing
 emotional endpoints or mandatory costs. These inputs cannot advance Canon or the accepted
 cursor. Absent policy retains v1 tails; frozen v1 requests reconstruct exactly, independently
 of later policy choices. Overflow of required recent prose closes admission rather than
-silently truncating it. The enhancement remains opt-in; literary rollout is NOT_READY until
-independent human feedback. Profile selection affects future work; it does not upgrade an
+silently truncating it. The enhancement remains opt-in. Independent human feedback has not established
+literary effectiveness; that evidence ceiling is not an additional manuscript delivery gate. Profile selection affects future work; it does not upgrade an
 existing frozen run. These coverage limits do not require characters to repeat earlier
 actions or forget experiences in the selected working version.
 Author adoption uses the existing
@@ -1830,8 +1830,8 @@ Narrative Authority; the machine projection owns the exact migration identity.
 
 ## Executable novel-production chain
 
-The current production-reachable chain is a set of Authority transitions, not one
-all-owning command:
+The strict acceptance workflow below is a set of Authority transitions. Ordinary
+author-first delivery uses the shorter chain described at the start of this document:
 
 ```text
 Project scope
