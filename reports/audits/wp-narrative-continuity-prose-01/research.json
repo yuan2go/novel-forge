@@ -1,0 +1,23 @@
+{
+  "authority": "EVIDENCE_ONLY",
+  "mechanisms": [
+    {
+      "paper": "NstAgent",
+      "url": "https://arxiv.org/html/2609.35759v1",
+      "adoption": "Carry source-bound working observations plus exact historical lookup through the existing author chain; do not replace Book acceptance with generated state."
+    },
+    {
+      "paper": "MUSE",
+      "url": "https://arxiv.org/html/2609.15188v1",
+      "adoption": "Keep design intent in generation and distinguish prose, scene, chapter, trajectory and upper-plot causes before choosing a repair owner."
+    },
+    {
+      "paper": "Auditable Long-Term Memory",
+      "url": "https://arxiv.org/html/2609.38021v1",
+      "adoption": "Retain source versions and distinguish missing memories, retrieval omissions, packet selection and output realization.",
+      "limit": "Its scoring setup, variance and absence of independent human/held-out evidence do not prove Novel Forge literary quality."
+    }
+  ],
+  "copied_implementation": false,
+  "literary_claim": "NOT_PROVEN"
+}

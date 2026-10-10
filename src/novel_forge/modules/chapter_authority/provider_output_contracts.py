@@ -1098,8 +1098,11 @@ def validate_chapter_provider_output_against_schema(
     value: object,
 ) -> dict[str, Any]:
 
+    checked = value
+    if stage == "draft" and "working_memory_json" in schema.get("properties", {}) and isinstance(value, dict):
+        checked = {k: v for k, v in value.items() if k != "working_memory_json"}
     try:
-        _validate(inline_shared_canon_schema(schema), value, path="$", enforce_dialect=True)
+        _validate(inline_shared_canon_schema(schema), checked, path="$", enforce_dialect=True)
     except ValueError as exc:
         raise KernelError(
             "CHAPTER_PROVIDER_OUTPUT_SCHEMA_INVALID",

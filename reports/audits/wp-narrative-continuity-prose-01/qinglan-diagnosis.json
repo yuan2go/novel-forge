@@ -1,0 +1,94 @@
+{
+  "authority": "ASSISTANT_ANALYSIS_NOT_AUTHOR_DECISION",
+  "source_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "source_bindings": [
+    {
+      "chapter": 1,
+      "source_asset_version_id": "64c825b9-6296-4058-9ee3-4132222e2fa2",
+      "content_hash": "sha256:44246b62fccfbb45a80f6a37c928620cf018ef52e0d472aaa7e4aab878c03e4a",
+      "claim": "沈砚答应次日天亮后到棚下做搬整；程观并未答应入门。",
+      "quote": "“我明日来。”沈砚说，“天亮后，在这棚下找你。”",
+      "evidence_class": "ASSISTANT_ANALYSIS",
+      "semantic_support": "NOT_VERIFIED"
+    },
+    {
+      "chapter": 6,
+      "source_asset_version_id": "fd426812-e534-4975-a358-258da2832beb",
+      "content_hash": "sha256:8c52ffc0ae8dfc492466be963107a44062a52568b3ead8c32ff9af6feba3e785",
+      "claim": "请求被受理，课位和条件尚待核定；受理不等于入课。",
+      "quote": "“请求先接下。”案后的人将纸往内挪了挪，“当期课位和入课条件，还须照负责核定的安排查明。这份反馈可以说明你的经历，不能替那些条件作答。”",
+      "evidence_class": "ASSISTANT_ANALYSIS",
+      "semantic_support": "NOT_VERIFIED"
+    },
+    {
+      "chapter": 12,
+      "source_asset_version_id": "fc49eb7a-f91c-4fd2-8f9d-c25e57bb2a03",
+      "content_hash": "sha256:393e8b2a059edd90bfa4f4090d81f86f94efbf8629ec83df5840770455f282d1",
+      "claim": "双方未约下次碰头，也没有把可能的活预先分给陆衡。",
+      "quote": "沈砚应了。两人没有约下一次碰头的时刻，也没有把可能的活预先分到谁头上。陆衡往自己的方向走，沈砚则沿廊道继续前行。经过转角，他还没见到交回处的案桌，自然也不知道核验会给出怎样的答复；脚步却比方才遇见陆衡时稳些。回话若不好，他便再跑一趟；若叫他补做，那也得先看是哪一处。这样想时，心里仍悬着，脚下却不必原地打转。前面一名同门端着空碗穿过廊道，碗底磕在指骨上，笃的一声。沈砚让开半步，想起自己还没吃东西，忽然盼着药叶的事早些了结。这盼望比方才更实在：不是等谁夸他一句，是忙过的那一阵终于能落到日子里。",
+      "evidence_class": "ASSISTANT_ANALYSIS",
+      "semantic_support": "NOT_VERIFIED"
+    },
+    {
+      "chapter": 16,
+      "source_asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1",
+      "content_hash": "sha256:83bf0525b42b76b4e2f3907b5ce6ba835e7693bdc1d6a7e968dc8c765338754f",
+      "claim": "沈砚能辨认手位、呼吸和疲劳，不能据掌热判断气机是否接续。",
+      "quote": "至于掌心那一点感觉，他仍想再遇见。只是这里没有木片，他能看见的是指尖与地上小石的相对位置，能感到的是胸口起伏和悬臂的酸意。掌中偶尔有些热，也可能只是手举久了；他无法据此判断气机有没有接续，更不能知道浅纹下次会不会亮。等课堂上获准再用木片，他要按今日试出的办法先把手放稳，再看结果。若仍不亮，至少能把手位、呼吸和疲劳各自说清，不必只说一句“这回也没成”。",
+      "evidence_class": "ASSISTANT_ANALYSIS",
+      "semantic_support": "NOT_VERIFIED"
+    }
+  ],
+  "plan_binding": {
+    "asset_version_id": "718cf34e-d06d-44af-9bab-1bff0db13e6e",
+    "content_hash": "sha256:87764137423cec6422a0587f0d0ddcc58108a095eb3386b152d75c84fe1c6108",
+    "active_candidate_asset_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+    "active_candidate_content_hash": "sha256:d1af34efa6a6b4301cd5686662af999eeb634905ca7f6071acc6a26e6146a238",
+    "active_execution_scope": "PLANNED",
+    "owner_chain": "Native active_plan_covering_chapter -> require_chapter_execution_plan"
+  },
+  "findings": [
+    {
+      "root_cause": "UPPER_PLOT",
+      "problem_owner": "PLAN",
+      "repair_scope": "FUTURE_REPLAN",
+      "evidence": "Chapter 17 premise/objective and first Scene exit_state explicitly postpone labor; the selected prior prose repeatedly finishes at a future check or future practice.",
+      "diagnosis": "A plausible local choice is present, but meaningful action and its result remain deferred. Rewriting dialogue alone cannot implement an event forbidden by the frozen exit state.",
+      "proposal": "Within the original future-only ChapterGroup, let an actual bounded task encounter a concrete obstacle, require a character choice, produce an observable result and change a later opportunity. This is a work-specific proposal, not a universal escalation formula.",
+      "preserve": [
+        "Chapters 1–16 selected source versions",
+        "Chapter 16 progress does not prove stable qi control",
+        "Lu Heng chooses whether to help",
+        "No retroactive formal acceptance or silent draft replacement"
+      ],
+      "activation": "NOT_RUN"
+    },
+    {
+      "root_cause": "LANGUAGE",
+      "problem_owner": "PROSE",
+      "repair_scope": "LOCAL_PROSE",
+      "diagnosis": "Process vocabulary and repeated qualification clauses can dominate dialogue and character voice. Preserve necessary story uncertainty but express it through specific actions, ordinary speech and differing character priorities.",
+      "semantic_evidence": "ASSISTANT_READING",
+      "author_decision": "NOT_GRANTED"
+    }
+  ],
+  "prior_comparison": {
+    "manifest": "reports/audits/wp-longform-ownership-craft-evidence-01/comparison-manifest.json",
+    "manifest_sha256": "sha256:24c54e94c1ca7e20d84d34b4256d9c25f364fa35bd4e3a2556dfac524621247c",
+    "arms": 4,
+    "samples_per_arm": 1,
+    "scope": "PRIOR_RUN_EVIDENCE_REUSED_NOT_A_NEW_TRIAL",
+    "finding": "Prior chapter-17 candidates share the fixed plan that postpones labor. This bounds what prose guidance alone can change.",
+    "human_preferences": "NOT_RUN",
+    "new_same_model_comparison": "NOT_RUN"
+  },
+  "new_prose_delivery": "NOT_RUN",
+  "native_replan_activation": "NOT_RUN",
+  "literary_improvement": "NOT_PROVEN",
+  "blockers": [
+    "Original Book is paused at its delivered window, dispatch disabled; original UNKNOWN effects are retained.",
+    "New implementation has not undergone coherent Pack release qualification/deployment.",
+    "No independent authorized human reading evidence."
+  ],
+  "next_step": "Qualify/deploy the new coherent Pack, review a prospective original-book plan change, then produce an exact-version chapter candidate under a frozen model/budget and existing blind-reading protocol."
+}

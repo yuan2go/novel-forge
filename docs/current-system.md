@@ -1791,6 +1791,38 @@ path. Source isolation, actor knowledge, accepted boundaries, final Context admi
 and the complete rendered Prompt/Skill/Schema/output reserve remain enforced. This
 optimization does not replace Context composition or prove narrative coherence.
 
+Working manuscript memory is an opt-in `working-prose-projection.v3` extension to the
+existing author-first chain. Book owns source selection and authenticated annotations;
+Narrative State supplies pure observation validation and projection, without accepted
+state mutation. The selected immutable Draft may carry optional `working_memory_json`;
+invalid or missing metadata records an explicit gap while complete prose remains usable.
+Existing manuscripts can receive source-bound `manuscript_memory` AssetVersion annotations
+through the Book mutation Kernel. Their actor and AUTHOR_ANNOTATION or ASSISTANT_ANALYSIS
+provenance cannot claim a Provider receipt or formal acceptance.
+
+The frozen packet distinguishes character state, attributed knowledge, relationship,
+event, consequence and promise observations. Subjective belief, hearsay and reader-only
+knowledge remain separate; latest observation is not proof of truth. Located historical
+paragraphs back every supplied observation. Source coverage, memory-budget omissions and
+retrieval omissions remain in the hashed packet through Intent, Memo, Context and Writer
+Provider projection. A selected source replacement or changed predecessor invalidates
+its dependent observations; rebuilding creates new annotations. Frozen requests retain
+immutable annotation versions even when later notes change. v1/v2 frozen behavior remains
+unchanged. History depth, recent complete chapters and passage/annotation budgets are
+configurable policy, not literary invariants; complete-request admission still applies.
+The annotation allowance is at most one third of the declared passage-character budget,
+in addition to passages and provenance; it is not a total Provider-input limit.
+
+Optional long-form review `diagnosis_contract: prose-root-cause.v1` requests exact-source
+findings with language, scene organization, chapter structure, character trajectory or
+upper-plot root causes, repair goals, protected facts and resolution criteria. Prose-owned
+repairs use exact-version candidates; plan-owned findings route as proposals to existing
+Plan Change/Book Replan. Uncertain or conflicting causes require author diagnosis. Author-edit candidates retain the
+repair proposal; saving or selecting prose does not assert that a plan defect is resolved. Review, Replan and
+annotations do not overwrite chosen manuscripts or accepted history. Rereview records its
+original issue denominator, verified resolved issues, remaining issues and new regressions;
+MODEL_REREVIEW remains distinct from human preference and does not establish improvement.
+
 ## Context governance and Provider admission
 
 Context assembly has one governed seam. A ContextBundle compiles ContextProfile,

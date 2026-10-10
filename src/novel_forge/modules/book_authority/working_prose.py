@@ -7,6 +7,7 @@ from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 POLICY_VERSION = "working-prose-projection.v2"
+MEMORY_POLICY_VERSION = "working-prose-projection.v3"
 CONTEXT_VERSION = "working-manuscript-context.v1"
 LEGACY_GUIDANCE = {
     "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty."
@@ -48,6 +49,20 @@ INSTRUCTION = (
 
 def working_instruction(policy: Mapping[str, Any]) -> str:
     focus = policy["guidance_mode"]
+    memory = (
+        "Working observations are fallible source-bound navigation, never Canon or verified knowledge. "
+        "Use their exact historical passages to assess current character states, attributed knowledge, "
+        "relationships, actions, consequences and outstanding promises. Latest means latest observed "
+        "statement, not proven truth. Missing or stale memory remains unknown; retain subjective and reader scopes. "
+        "If the declared output schema permits working_memory_json, you may return a separate JSON-string "
+        "array of observations grounded only in the prose you just wrote; omission must not impair prose. "
+        "Each object has kind (CHARACTER_STATE, KNOWLEDGE, RELATIONSHIP, EVENT, CONSEQUENCE, PROMISE), "
+        "subject, state_key, claim, perspective (OBSERVED, BELIEF, HEARSAY, READER_ONLY), knowledge_owner "
+        "(empty for unattributed world observations or reader-only disclosures), an unambiguous literal quote, "
+        "and causes (only observation_ids present in the frozen working memory, or []). Do not turn future "
+        "plans into past events or return this metadata inside Scene prose. "
+        if policy["version"] == MEMORY_POLICY_VERSION else ""
+    )
     return (
         CONTINUITY_INSTRUCTION
         + (REACTION_INSTRUCTION if focus in {"CHARACTER_REACTION", "COMBINED"} else "")
@@ -57,6 +72,7 @@ def working_instruction(policy: Mapping[str, Any]) -> str:
             else ""
         )
         + EXPRESSION_INSTRUCTION
+        + memory
     )
 
 
@@ -75,7 +91,7 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
     if (
         not isinstance(value, Mapping)
         or set(value) != keys
-        or value.get("version") != POLICY_VERSION
+        or value.get("version") not in {POLICY_VERSION, MEMORY_POLICY_VERSION}
         or not isinstance(value.get("guidance_mode"), str)
         or value.get("guidance_mode")
         not in {
@@ -85,7 +101,7 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
             "COMBINED",
         }
         or type(value.get("history_chapters")) is not int
-        or not 1 <= value["history_chapters"] <= 32
+        or not 1 <= value["history_chapters"] <= (10000 if value["version"] == MEMORY_POLICY_VERSION else 32)
         or type(value.get("recent_complete_chapters")) is not int
         or not 1 <= value["recent_complete_chapters"] <= value["history_chapters"]
         or type(value.get("max_characters")) is not int
@@ -110,7 +126,8 @@ def _paragraph_ranges(text: str) -> list[tuple[int, int]]:
 
 
 def project_working_sources(
-    sources: list[dict[str, Any]], *, target_chapter: int, policy: Mapping[str, Any]
+    sources: list[dict[str, Any]], *, target_chapter: int, policy: Mapping[str, Any],
+    memory: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     policy = working_prose_policy({"working_prose_policy": policy})
     units = [
@@ -138,8 +155,13 @@ def project_working_sources(
         for number, start, end, text in units
         if number < recent_start
     ]
+    evidence = {(row["source"]["chapter"], row["location"]["start"], row["location"]["end"])
+                for row in (memory or {}).get("entries", [])}
+    def evidence_priority(unit):
+        _, number, start, end, _ = unit
+        return int(any(n == number and start <= low < high <= end for n, low, high in evidence))
     for score, number, start, end, text in sorted(
-        scored, key=lambda row: (-row[0], -row[1], row[2])
+        scored, key=lambda row: (-evidence_priority(row), -row[0], -row[1], row[2])
     ):
         if len(text) <= remaining:
             chosen.add((number, start, end))
@@ -164,7 +186,7 @@ def project_working_sources(
                 omitted.append({"start": start, "end": end})
         projected.append(
             {
-                **{k: deepcopy(v) for k, v in source.items() if k != "text"},
+                **{k: deepcopy(v) for k, v in source.items() if k not in {"text", "observations", "memory_provenance"}},
                 "source_characters": len(text),
                 "passages": passages,
                 "omitted_ranges": omitted,
@@ -317,6 +339,11 @@ def validate_working_projection(
             snapshot["target_chapter"],
         )
     )
+    if policy["version"] == MEMORY_POLICY_VERSION or snapshot.get("working_memory") is not None:
+        from novel_forge.modules.narrative_state.working_memory import validate_memory_packet
+        validate_memory_packet(snapshot["working_memory"], snapshot["sources"])
+        if policy["version"] != MEMORY_POLICY_VERSION:
+            raise KernelError("WORKING_MEMORY_POLICY_INVALID", "Frozen older projections cannot acquire observations")
     if numbers != expected or characters > policy["max_characters"]:
         raise KernelError(
             "WORKING_PROSE_PROJECTION_INVALID",

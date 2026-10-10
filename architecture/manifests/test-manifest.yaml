@@ -10,12 +10,25 @@
     {
       "id": "working-prose-source-projection",
       "patterns": [
-        "tests/unit/test_working_prose_projection.py"
+        "tests/unit/test_working_prose_projection.py",
+        "tests/unit/test_working_memory.py"
       ],
       "classification": "CURRENT_RUNTIME_CONTRACT",
       "owner": "book-authority",
       "capability": "author-manuscript-delivery",
       "production_target": "src/novel_forge/modules/book_authority/working_prose.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "prose-root-cause-routing",
+      "patterns": [
+        "tests/unit/test_prose_repair_scope.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-followup-authority",
+      "capability": "longform-prose-review",
+      "production_target": "src/novel_forge/modules/book_followup_authority/prose_review.py",
       "qualification_role": "CURRENT_BUSINESS_SUPPORT",
       "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
     },

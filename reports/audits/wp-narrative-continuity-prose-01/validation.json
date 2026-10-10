@@ -1,0 +1,84 @@
+{
+  "work_package": "WP-NARRATIVE-CONTINUITY-AND-PROSE-QUALITY-01",
+  "main_sha": "9a8fa7cfafc44da54c5c2b495390da66ac5f2453",
+  "document_baseline_commit": "ca96ddedb0d4c99bc7c7a6688839d080610f6245",
+  "implementation_tree_sha": "sha256:8785df101bf910ca9d6f940871fdd40927639883d2eb8191602f623394032e5b",
+  "evidence_state": "EXECUTABLE",
+  "checks": [
+    {
+      "scope": "Core working-source memory, contracts, review, resolution and legacy compatibility",
+      "result": "PASS",
+      "passed": 237,
+      "real_provider": false
+    },
+    {
+      "scope": "Focused architecture and memory/review checks",
+      "result": "PASS",
+      "passed": 38,
+      "overlaps_core_suite": true
+    },
+    {
+      "scope": "Manifests/instruction/test reality",
+      "result": "PASS",
+      "passed": 34,
+      "subtests": 6
+    },
+    {
+      "scope": "Native PostgreSQL author-first eight-chapter interruption and memory/review/edit/export",
+      "result": "PASS",
+      "passed": 1,
+      "seconds": 242.28,
+      "provider": "SCRIPTED",
+      "assertions": [
+        "First chapter self-observation enters chapter-7 frozen Intent",
+        "Invalid chapter-2 memory retains complete prose",
+        "Located v2 root-cause review routes to existing Plan Change/Book Replan consumer",
+        "Optional failed review remains while a later completed review is displayed",
+        "Exact annotation replay/checkpoint rejection",
+        "Late annotation does not invalidate frozen prose dependencies",
+        "Selected historical edit invalidates inherited memory and stale annotation inputs",
+        "Current selected eight chapters remain readable/exportable; accepted cursor zero"
+      ]
+    },
+    {
+      "scope": "Original selected Qinglan 1/6/12/16 sources and active chapter-17 plan/execution projection",
+      "result": "PASS",
+      "memory_entries": 4,
+      "missing_historical_chapter_observations": 12,
+      "mode": "ISOLATED_DATABASE_NATIVE_ANNOTATIONS_AND_OFFLINE_MEMO_INPUT",
+      "provider_calls": 0
+    }
+  ],
+  "full_release_qualification": "NOT_RUN",
+  "new_real_provider": "NOT_RUN",
+  "new_same_model_literary_comparison": "NOT_RUN",
+  "human_preference": "NOT_RUN",
+  "literary_improvement": "NOT_PROVEN",
+  "original_book_mutations": 0,
+  "original_book_delivery": "UNCHANGED_CHAPTER_16",
+  "original_formal_acceptance": 0,
+  "failure_evidence": "preserved-attempts.json",
+  "raw_final_logs": [
+    {
+      "file": "nf-continuity-unit-final2.log",
+      "sha256": "sha256:fdcb3aa0e6fcfb61e3734838d199f7f09f0bfae7a8e87e5eaa7ac468d1389bf4"
+    },
+    {
+      "file": "nf-continuity-checks.log",
+      "sha256": "sha256:68dd2dd3af670795a46c6ef97abd3d01be22415f47e2bad763fa66229b36f277"
+    },
+    {
+      "file": "nf-continuity-static.log",
+      "sha256": "sha256:281ab44087dc7fb41ce46bbde2df6b34dc7129d40c7a27ac118860a5a828ed53"
+    },
+    {
+      "file": "nf-continuity-integration5.log",
+      "sha256": "sha256:69c463187ad6dc1819eff9962c531a5c55c4942379947b14286e9fd6e940f178"
+    },
+    {
+      "file": "nf-continuity-boundaries-final.log",
+      "sha256": "sha256:e0388033e47bcc351cd70413fa2dc3a658bc9749abb123dcc6bd9bcb938d6533"
+    }
+  ],
+  "result_boundary": "Engineering implementation and original-source recall are executable. The original story-quality success criterion remains unverified and new production rollout is not qualified."
+}

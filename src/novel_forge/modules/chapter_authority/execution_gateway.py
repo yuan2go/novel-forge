@@ -1281,6 +1281,10 @@ class PostgresChapterExecutionContractBinder:
             work_requirements=prompt_contract_version in {"v8", "v9", "v10", "v11", "v12", "v13"},
             allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11", "v12", "v13"} and not bool(inputs.get("quality_edit_contract")),
         )
+        if stage == "longform_prose_review" and inputs.get("prose_diagnosis_contract") == "prose-root-cause.v1":
+            from novel_forge.modules.book_followup_authority.prose_review import prose_review_output_schema
+            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True)}
+            schema_ref = "schema:chapter-provider-output:longform_prose_review:v2"
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -1327,6 +1331,10 @@ class PostgresChapterExecutionContractBinder:
             from .realization_composition import scoped_realization_schema
             schema = scoped_realization_schema(schema, inputs["realization_contract"])
             schema_ref = "schema:chapter-provider-output:draft:v4"
+        working = inputs.get("working_manuscript") or (inputs.get("frozen_intent") or {}).get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or {}
+        if stage == "draft" and (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v3":
+            schema["properties"]["working_memory_json"] = {"type": "string", "maxLength": 100000}
+            schema_ref += ":working-memory-v1"
         if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
             from .realization_composition import scoped_realization_schema
             schema = scoped_realization_schema(schema, inputs["draft"]["realization_contract"])

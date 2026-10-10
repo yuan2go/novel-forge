@@ -1866,6 +1866,7 @@ def _normalize_model_output(
         return {
             **({"text": text} if "text" in raw else {}),
             "scene_artifacts": artifacts if isinstance(artifacts, list) else [],
+            **({"working_memory_json": raw["working_memory_json"]} if "working_memory_json" in raw else {}),
         }
     if stage == "agent_session":
         message = str(raw.get("message") or "").strip()

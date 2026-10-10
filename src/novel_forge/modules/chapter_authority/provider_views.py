@@ -1037,7 +1037,8 @@ def build_provider_task_view(
         return _task(stage, source_digest=inputs.get("source_digest"), candidate_digest=inputs.get("candidate_digest", ""),
                      **({"screenplay_source_contract": inputs["screenplay_source_contract"]} if inputs.get("screenplay_source_contract") else {}))
     if stage == "longform_prose_review":
-        return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"))
+        return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"),
+                     **({"prose_diagnosis_contract": inputs["prose_diagnosis_contract"]} if inputs.get("prose_diagnosis_contract") else {}))
     if stage == "reader_outcome":
         return _task(
             stage,
@@ -3312,9 +3313,16 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     if projection["schema_version"] == "longform-prose-window.v1":
         # COMPATIBILITY: queued v1 windows retain their original frozen request semantics.
         return {"contract_version": "provider-context-view-v2", "stage": "longform_prose_review", "frozen_prose": inputs[0]["projection"], "instruction": "审读实际提供的中文玄幻/武侠正文。逐项检查结构与冲突模式重复、人物目标和关系停滞、铺垫推进兑现、声线表达、弧级节奏、动机与代价。合理变化、有意重复、未到兑现期和证据不足必须区分。只引用给定原文 Unicode code-point 坐标和精确 quote；不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。若窗口含 relation_hypothesis，它只是文本锚点检索得到的未核验关系假设；ISSUE 或 INTENTIONAL 关系判断必须分别引用两个给定片段，区分因果、人物认知、承诺、伏笔与偶然重词，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见。不得修改正文、Canon 或计划。"}
+    diagnosis_instruction = ("Distinguish language, Scene organization, Chapter structure, character trajectory and upper plot root causes. "
+        "Attribute a problem to prose, frozen plan commitments, or UNKNOWN. A plan defect requires FUTURE_REPLAN through native "
+        "Plan Change/Book Replan, never rewriting delivered prose or inventing facts. Prose defects select the smallest justified "
+        "local, Scene or Chapter repair. Uncertain causes require INVESTIGATE. State a concrete revision goal, preserve strengths "
+        "and give observable resolution criteria; no universal conflict or genre formula. "
+        if projection["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else "")
     return {
         "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
         "frozen_prose": projection,
+        **({"diagnosis_instruction": diagnosis_instruction} if diagnosis_instruction else {}),
         "instruction": "审读实际提供的原书正文，按每个来源章节冻结的 creative_baseline 检查题材、风格、受众、人物、结构与已选技法。作者有意的稳定、观察、开放结尾或重复不是默认缺陷；选择了变化、压力、伏笔或兑现时才检查相应承诺。UNKNOWN_LEGACY_BASELINE 表示作品目标未知，只判断可由原文证明的客观问题，不能推定玄幻、武侠、转化或商业节奏。逐项区分客观错误、作品目标偏差与审美建议；未到兑现期、合理变化及证据不足不能要求补写。只引用给定原文 Unicode code-point 坐标和精确 quote，不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。relation_hypothesis 是未核验关系假设，ISSUE 或 INTENTIONAL 判断必须分别引用两个给定片段，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见，不得修改正文、Canon 或计划。",
     }
 

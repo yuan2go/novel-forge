@@ -49,12 +49,30 @@ def prepare_context_model_stages(transport, monkeypatch):
     monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
 
 
-@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True)], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption"])
+@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption"])
 def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, completed_sibling, recoverable_result, enhanced_working):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
     transport = SynthesisTransport()
+    if enhanced_working == "memory":
+        parent_transport = transport.chapter
+        class MemoryTransport:
+            def __getattr__(self, name):
+                return getattr(parent_transport, name)
+            def __setattr__(self, name, value):
+                setattr(parent_transport, name, value)
+            def __call__(self, stage, inputs):
+                output = parent_transport(stage, inputs)
+                if stage == "draft":
+                    number = inputs["plan"]["chapter"]
+                    quote = output["scene_artifacts"][0]["text"][:200]
+                    output["working_memory_json"] = (json.dumps([{"kind": "EVENT", "subject": "archivist",
+                        "state_key": "controlled-opening", "claim": "The selected opening is available for later source lookup.",
+                        "perspective": "OBSERVED", "knowledge_owner": "", "quote": quote, "causes": []}])
+                        if number == 1 else {"invalid": "optional metadata"} if number == 2 else "[]")
+                return output
+        transport.chapter = MemoryTransport()
     env = controlled_member_environment(tmp_path, {
         "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
         "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
@@ -161,7 +179,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     if enhanced_working:
         creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
         creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
-            "version": "working-prose-projection.v2", "history_chapters": 8,
+            "version": "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
             "recent_complete_chapters": 2, "max_characters": 32000,
             "queries": ["flood"], "guidance_mode": "COMBINED"}
         args.creation_policy_file = tmp_path / "working-creation-policy.json"
@@ -276,7 +294,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         frozen_working = uow.cursor.fetchone()[0]
         sources = frozen_working["sources"]
         if enhanced_working:
-            assert frozen_working["projection_policy"]["version"] == "working-prose-projection.v2"
+            assert frozen_working["projection_policy"]["version"] == ("working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2")
             assert len(sources) == 6 and sources[-1]["omitted_ranges"] == []
             uow.cursor.execute("""SELECT content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
                 WHERE a.project_id=%s AND a.asset_type='chapter_execution_intent'
@@ -285,6 +303,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             assert frozen_intent["working_manuscript"] == frozen_working
             assert frozen_intent["accepted_boundary"]["accepted_through_chapter"] == 0
             assert frozen_intent["working_manuscript"]["structured_facts"] == []
+            if enhanced_working == "memory":
+                assert frozen_working["working_memory"]["entries"][0]["source"]["chapter"] == 1
+                assert next(row for row in frozen_working["working_memory"]["source_coverage"] if row["chapter"] == 2)["status"] == "UNAVAILABLE"
+                second = uow.repositories.asset_documents.require(project_id=project, asset_version_id=prefix_versions[1])
+                assert second.content["working_memory"]["prose_preserved"]
         assert any(source["chapter"] == 6 and source["asset_version_id"] == prefix_versions[5] for source in sources)
     from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
     from novel_forge.modules.book_followup_authority.prose_coordinator import BookProseReviewCoordinator
@@ -303,6 +326,40 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     report = coordinator.report(**review_scope, run_id=review["run_id"])
     assert report["source_current"] is True
     assert report["review_complete"] is False
+    if enhanced_working == "memory":
+        from novel_forge.modules.book_followup_authority.prose_review import PROSE_DIMENSIONS
+        from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
+        class RootCauseReview(UnavailableReview):
+            def invoke(self, request, *, stage, payload, **options):
+                window = request.require_input("longform_prose_review_window").content
+                assert payload["prose_diagnosis_contract"] == "prose-root-cause.v1"
+                span = window["window"]["spans"][0]
+                return ModelProviderResult(output={"schema_version": "longform-prose-review.v2",
+                    "manifest_digest": window["manifest_digest"], "window_id": window["window"]["window_id"],
+                    "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": [{
+                        "lineage_id": "controlled-future-plot:" + window["window"]["window_id"], "dimension": "motivation_cost", "judgment": "ISSUE",
+                        "severity": "MAJOR", "confidence": 0.8, "claim": "Controlled future-plot diagnosis.",
+                        "rationale": "Test source binding and native repair routing only.",
+                        "evidence": [{"asset_version_id": span["asset_version_id"], "text_hash": span["text_hash"],
+                            "start": span["start"], "end": span["start"]+2, "quote": span["text"][:2]}],
+                        "repair": {"root_cause": "UPPER_PLOT", "problem_owner": "PLAN", "repair_scope": "FUTURE_REPLAN",
+                            "revision_goal": "Review future plot intent.", "preserve": ["Selected manuscripts."],
+                            "resolution_criteria": ["Bind an exact future plan candidate."]}}]},
+                    provider_id="fixture", model_id="fixture", prompt_version="fixture.v1", skill_version="fixture.v1",
+                    input_tokens=1, output_tokens=1, cost_amount="0", currency="USD", real_model_call=False)
+        diagnostic = BookProseReviewCoordinator(BookFollowupAuthorityApplication(DATABASE_URL,
+            application_build_id=harness.application_build_id, commit_sha=harness.release_sha, prose_model_port=RootCauseReview()))
+        diagnosed = diagnostic.start(**review_scope, policy={"policy_version": "author-root-cause.v1", "window_codepoints": 4000,
+            "overlap_codepoints": 200, "context_token_budget": 16000, "maximum_windows": 8,
+            "diagnosis_contract": "prose-root-cause.v1"}, idempotency_key=f"{project}:root-cause", trace_id="trace-root", correlation_id="correlation-root")
+        diagnosed = diagnostic.report(**review_scope, run_id=diagnosed["run_id"])
+        for turn in range(10):
+            if diagnosed["review_complete"]:
+                break
+            diagnosed = diagnostic.advance(**review_scope, run_id=diagnosed["run_id"], expected_version=diagnosed["expected_version"],
+                idempotency_key=f"{project}:root-cause:{turn}", trace_id="trace-root", correlation_id="correlation-root")
+        assert diagnosed["review_complete"] and diagnosed["independent_human_review"] == "NOT_RUN"
+        assert diagnosed["findings"][0]["repair_route"]["consumer"] == "NATIVE_PLAN_CHANGE_OR_BOOK_REPLAN"
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT manifest FROM authority_book_prose_review_run WHERE run_id=%s", [review["run_id"]])
         frozen_review = uow.cursor.fetchone()[0]
@@ -329,9 +386,32 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             book_run_id=book["book_run_id"], outcomes=required_unknown) == required_unknown
     usable = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert len(usable["units"]) == 8
-    assert usable["units"][0]["review_status"] == "FAILED"
+    assert usable["units"][0]["review_status"] == ("COMPLETED" if enhanced_working == "memory" else "FAILED")
     assert usable["units"][0]["asset_version_id"] == manifest["units"][0]["asset_version_id"]
     unit = manifest["units"][0]
+    if enhanced_working == "memory":
+        from novel_forge.modules.book_authority.manuscript_memory import save_manuscript_memory
+        from novel_forge.modules.book_authority.production import PostgresBookAuthority
+        from novel_forge.modules.book_authority.manuscript import freeze_working_context, verify_working_context
+        authority = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=None,
+            application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
+        current = authority.require(book["book_run_id"])
+        memory_args = dict(chapter=1, source_asset_version_id=unit["asset_version_id"], expected_version=current["version"],
+            observations=[{"kind": "EVENT", "subject": "scene", "state_key": "opening", "claim": "The opening event occurred in the selected working version.",
+                "perspective": "OBSERVED", "knowledge_owner": "", "quote": unit["text"], "causes": []}],
+            idempotency_key=project+":working-memory", source_kind="ASSISTANT_ANALYSIS", principal=principal)
+        receipt = save_manuscript_memory(authority, book["book_run_id"], **memory_args)
+        assert receipt["formal_acceptance"] == "NOT_GRANTED"
+        assert save_manuscript_memory(authority, book["book_run_id"], **memory_args)["replayed"]
+        memory_response = client.get("/product/editor/manuscripts/memory", params={"project_id": project, "book_run_id": book["book_run_id"], "max_characters": 32000})
+        assert memory_response.status_code == 200, memory_response.json()
+        assert memory_response.json()["working_memory"]["candidate_count"] == 1
+        with pytest.raises(KernelError, match="checkpoint"):
+            save_manuscript_memory(authority, book["book_run_id"], **{**memory_args, "idempotency_key": project+":stale-memory"})
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            current = authority.require(book["book_run_id"])
+            verify_working_context(uow, current, frozen_working, require_current=False)
+        book = current
     editor = ChapterAuthorEditingApplication(DATABASE_URL, application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
     scope = {key: book[key] for key in ("project_id", "workspace_id", "book_id")}
     scope.update(chapter=1, base_asset_version_id=unit["asset_version_id"])
@@ -354,6 +434,14 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert accepted["decision_asset_version_id"]
     updated = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert updated["units"][0]["text"].endswith(" 作者增补。")
+    if enhanced_working == "memory":
+        memory_response = client.get("/product/editor/manuscripts/memory", params={"project_id": project, "book_run_id": book["book_run_id"], "max_characters": 32000})
+        assert memory_response.status_code == 200
+        assert memory_response.json()["working_memory"]["candidate_count"] == 0
+        with pytest.raises(KernelError, match="unselected"):
+            save_manuscript_memory(authority, book["book_run_id"], **{**memory_args,
+                "expected_version": authority.require(book["book_run_id"])["version"], "idempotency_key": project+":old-source-memory"})
+
     assert updated["units"][1]["asset_version_id"] == manifest["units"][1]["asset_version_id"]
     assert updated["units"][1]["dependency_changes"]
     assert any(change["chapter"] == 1 and (enhanced_working or "via_chapter" in change)

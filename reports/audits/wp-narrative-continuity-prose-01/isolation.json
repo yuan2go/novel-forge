@@ -1,0 +1,18 @@
+{
+  "databases": [
+    {
+      "purpose": "integration",
+      "database": "nf_continuity_3c3d8f13daa6_test",
+      "oid": 232532,
+      "cluster": "7695026994287073315"
+    },
+    {
+      "purpose": "manuscript",
+      "database": "nf_continuity_cdc59ba5ca17_test",
+      "oid": 232533,
+      "cluster": "7695026994287073315"
+    }
+  ],
+  "original_mutations": 0,
+  "provider_calls": 0
+}

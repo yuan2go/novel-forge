@@ -352,6 +352,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     projection_policy = working_prose_policy({"working_prose_policy": projection_policy})
     _, changes = working_dependency_changes(uow, book)
     rows = []
+    memory_enabled = bool(projection_policy and projection_policy["version"] == "working-prose-projection.v3")
     history = projection_policy["history_chapters"] if projection_policy else 4
     for number in range(max(1, chapter - history), chapter):
         source = selected_source(uow, book, number)
@@ -360,15 +361,27 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
             "content_hash": source.content_hash, "text_hash": text_hash(text),
             **({"text": text} if projection_policy else {"excerpt": text[-2400:] if number == chapter - 1 else text[-600:]}),
             "status": "UNREVIEWED_WORKING_PROSE", "character_knowledge": "NOT_VERIFIED"})
+        if memory_enabled:
+            from .manuscript_memory import source_memory
+            memory, provenance = source_memory(uow, book, source)
+            rows[-1].update(observations=memory, memory_provenance=provenance)
         if changes.get(number):
             rows[-1]["dependency_changes"] = changes[number]
+    memory_packet = None
+    if memory_enabled:
+        from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
+        memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
+                                               max_characters=projection_policy["max_characters"] // 3)
     if projection_policy:
-        rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy)
+        rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)
+    if memory_packet is not None:
+        memory_packet = bind_packet_coverage(memory_packet, rows)
     result = {"version": CONTEXT_VERSION if projection_policy else "working-manuscript-context.v1", "book_run_id": book["book_run_id"],
         "project_id": book["project_id"], "book_id": book["book_id"], "target_chapter": chapter,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
         "authority": "AUTHOR_WORKING_PROSE_ONLY", "structured_facts": [],
         **({"projection_policy": projection_policy} if projection_policy else {}),
+        **({"working_memory": memory_packet} if memory_packet is not None else {}),
         "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
     return {**result, "snapshot_hash": canonical_hash(result)}
 
@@ -383,13 +396,38 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             or snapshot.get("snapshot_hash") != canonical_hash(plain)
             or any(snapshot.get(key) != book[key] for key in ("project_id", "book_id", "book_run_id"))):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Working context must bind its exact Book and immutable sources")
-    if require_current and snapshot != freeze_working_context(uow, book, snapshot["target_chapter"],
-            projection_policy=snapshot.get("projection_policy") if enhanced else None):
-        raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
+    if require_current:
+        if enhanced and snapshot["projection_policy"]["version"] == "working-prose-projection.v3":
+            _, changes = working_dependency_changes(uow, book)
+            current = snapshot["accepted_through_chapter"] == int(book["accepted_through_chapter"]) and all(selected_source(uow, book, row["chapter"]).asset_version_id == row["asset_version_id"]
+                          and changes.get(row["chapter"], []) == row.get("dependency_changes", []) for row in snapshot["sources"])
+        else:
+            current = snapshot == freeze_working_context(uow, book, snapshot["target_chapter"],
+                projection_policy=snapshot.get("projection_policy") if enhanced else None)
+        if not current:
+            raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     for item in snapshot["sources"]:
         source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=item["asset_version_id"])
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
+        if snapshot.get("working_memory"):
+            for entry in snapshot["working_memory"]["entries"]:
+                if entry["source"]["asset_version_id"] != source.asset_version_id:
+                    continue
+                provenance = entry["provenance"]
+                if provenance.get("kind") == "WRITER_SELF_OBSERVATION":
+                    memory = source_draft_content(source).get("working_memory", {}).get("observations")
+                else:
+                    annotation = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=provenance.get("asset_version_id"))
+                    if (annotation.asset_type != "manuscript_memory" or annotation.content_hash != provenance.get("content_hash")
+                            or annotation.content.get("source_asset_version_id") != source.asset_version_id
+                            or annotation.content.get("source_content_hash") != source.content_hash
+                            or annotation.content.get("book_run_id") != book["book_run_id"]):
+                        raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen observation provenance differs from its exact Book source")
+                    memory = annotation.content["observations"]
+                expected = {k: v for k, v in entry.items() if k not in {"source", "provenance", "state_role"}}
+                if not memory or expected not in memory["entries"]:
+                    raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen observations do not belong to the located source")
         if enhanced and (len(source_draft_content(source)["text"]) != item["source_characters"]
                 or any(source_draft_content(source)["text"][p["start"]:p["end"]] != p["text"] for p in item["passages"])):
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")

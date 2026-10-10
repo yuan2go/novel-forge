@@ -36,6 +36,18 @@ class AuthorEditRequest(BaseModel):
     source_lineage_id: str = ""
 
 
+class ManuscriptMemoryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    chapter: int = Field(ge=1, strict=True)
+    source_asset_version_id: str = Field(min_length=1)
+    expected_version: int = Field(ge=0, strict=True)
+    observations: list[dict[str, Any]] = Field(max_length=64)
+    source_kind: Literal["AUTHOR_ANNOTATION", "ASSISTANT_ANALYSIS"]
+    idempotency_key: str = Field(min_length=1)
+
+
 class AuthorWorkflowRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: str = Field(min_length=1)
@@ -156,6 +168,37 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 expected_version=request.expected_version, stop_after_chapter=request.stop_after_chapter,
                 idempotency_key=request.idempotency_key)
         return execute(extend)
+
+    @router.get("/manuscripts/memory")
+    def read_manuscript_memory(project_id: str, book_run_id: str, max_characters: int = Query(default=16000, ge=1, le=200000)):
+        from novel_forge.modules.book_authority.manuscript import freeze_working_context
+        def read(principal):
+            principal.require("book.authority.execute", project_id)
+            with AuthorityUnitOfWork(ctx.services.chapter_query.database_url) as uow:
+                uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s AND project_id=%s", [book_run_id, project_id])
+                row = uow.cursor.fetchone()
+                if not row:
+                    raise KernelError("BOOK_PRODUCTION_NOT_FOUND", "No Book exists in this Project")
+                book = row[0]
+                uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR SHARE", [book["book_id"]])
+                uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [book_run_id])
+                book = uow.cursor.fetchone()[0]
+                return freeze_working_context(uow, book, book["current_chapter"]+1, projection_policy={
+                    "version": "working-prose-projection.v3", "history_chapters": max(1, book["current_chapter"]),
+                    "recent_complete_chapters": min(2, max(1, book["current_chapter"])), "max_characters": max_characters,
+                    "queries": [], "guidance_mode": "COMBINED"})
+        return execute(read)
+
+    @router.post("/manuscripts/memory")
+    def manuscript_memory(request: ManuscriptMemoryRequest):
+        from novel_forge.modules.book_authority.manuscript_memory import save_manuscript_memory
+        def save(principal):
+            authority = ctx.services.book_authority_application
+            if authority.require(request.book_run_id)["project_id"] != request.project_id:
+                raise PermissionError("Work is outside this Project")
+            return save_manuscript_memory(authority, principal=principal,
+                **request.model_dump(exclude={"project_id"}))
+        return execute(save)
 
     @router.get("/manuscripts")
     def manuscript(project_id: str, book_run_id: str):

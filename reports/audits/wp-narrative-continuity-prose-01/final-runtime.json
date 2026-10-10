@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-10-10T16:14:09.327617+00:00",
+  "database": "nf_qidian_learning_20261008_test",
+  "oid": 16384,
+  "cluster": "7694308142111706022",
+  "book": {
+    "current_chapter": 16,
+    "accepted_through_chapter": 0,
+    "state": "PAUSED",
+    "version": 114,
+    "active_chapter_request_id": null,
+    "paused_reason": "Requested manuscript round reached chapter 16; frozen delivery window retained"
+  },
+  "configured_no_model_dispatch": "1",
+  "configured_sha": "d13e13b2b240d44da7c2864a16a5c7311d971629",
+  "original_mutations": 0,
+  "read_only": true
+}

@@ -636,8 +636,15 @@ def normalize_draft_result(
         text=text,
         separators=result.get("scene_separators"),
     )
+    memory = None
+    working = (context_content or {}).get("working_manuscript") or {}
+    if (working.get("projection_policy") or {}).get("version") == "working-prose-projection.v3":
+        from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
+        memory = optional_draft_memory(result.get("working_memory_json"), text,
+            available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})
     return {
         **composition,
+        **({"working_memory": memory} if memory is not None else {}),
         "chapter": plan["chapter"],
         "title": plan["title"],
         "text": text,

@@ -10076,7 +10076,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:9266236ff78f8ac878de3049828bb779f521cf1e09e1ec6bb67ff00330a6df3d"
+    "implementation_tree_sha": "sha256:8785df101bf910ca9d6f940871fdd40927639883d2eb8191602f623394032e5b"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",
@@ -10594,13 +10594,21 @@
     },
     {
       "id": "bounded-author-working-source-window",
-      "classification": "CURRENT_RUNTIME_FACT",
-      "statement": "Working continuation binds the most recent four selected chapters with bounded exact prose excerpts, source hashes and explicit unreviewed status. This window is an implementation bound, not a proof of long-form continuity or a second formal fact authority.",
+      "classification": "CONFIGURABLE_POLICY",
+      "statement": "Historical default continuation retains four selected chapters as bounded tails. Opt-in v2 supplies located passages through 32 chapters; v3 permits a bounded configured long-history window with immutable unreviewed observations, exact sources and explicit missing/stale or omitted evidence. It grants no accepted facts and proves no literary quality.",
       "design_review_required": false,
       "evidence": [
         {
           "path": "src/novel_forge/modules/book_authority/manuscript.py",
           "symbol": "freeze_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_prose.py",
+          "symbol": "working_prose_policy"
+        },
+        {
+          "path": "src/novel_forge/modules/narrative_state/working_memory.py",
+          "symbol": "compile_working_memory"
         }
       ]
     }

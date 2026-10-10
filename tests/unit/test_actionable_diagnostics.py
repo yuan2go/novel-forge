@@ -117,6 +117,8 @@ def test_omitted_blocker_survives_three_rereviews_and_reaches_revision_input():
                     "issues": [], "resolution_checks": []}, provider_evidence={}, project_id="p")
         assert result["blocking_issue_count"] == 1
         assert result["remaining_issue_codes"] == ["COST"]
+        assert result["resolution_summary"]["denominator_issue_codes"] == ["COST"]
+        assert result["resolution_summary"]["resolved_issue_codes"] == []
         assert result["unresolved_issues"][0]["review_issue_id"] == issue_id
         task = build_provider_task_view("revision", {"draft": {"text": "她作出了选择。"}, "review": result})
         assert task["review_issues"][0]["code"] == "COST"
