@@ -2515,7 +2515,7 @@ Frozen Planning 1.18.0 retains Pack 2.10.0, System v8, Mission/Scene v3
 and work-v3. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
 legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Current Screenplay requires prose-generation-v4 or quality-review-v4
-and its separate adaptation schema. Historical artifacts remain available for recovery.
+and its separate adaptation schema. Historical artifacts remain available for recovery. Historical Planning catalogs retain the original v3 source identity and exclude later v4 entries; the resolver reads the preserved v3 bytes from its legacy snapshot, while current profiles resolve v4 from the current Skill.
 For current Chapter work, selected style must be foundation-style-projection.v4 with
 source-bound Book applicability. An explicit preparation asset override does not waive
 this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer;
