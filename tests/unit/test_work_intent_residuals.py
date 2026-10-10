@@ -147,6 +147,7 @@ def test_current_chapter_manifest_binds_exact_definition_hashes():
     import json
 
     from novel_forge.modules.chapter_authority.definitions import (
+        CHAPTER_COORDINATED_DEFINITION_VERSION,
         chapter_operation_definitions,
     )
     from novel_forge.storage.authority_repositories import definition_hash
@@ -159,6 +160,7 @@ def test_current_chapter_manifest_binds_exact_definition_hashes():
             model_effects_required=True,
             coordinated_contract=True,
         )
+        if item["definition_version"] == CHAPTER_COORDINATED_DEFINITION_VERSION
     }
     manifest = json.loads(
         (ROOT / "config/capability_packs/chapter_generation_pack.json").read_text()

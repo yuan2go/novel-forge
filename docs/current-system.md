@@ -317,7 +317,7 @@ that chain.
 
 Current Chapter workflow 3.10.0 and candidate Pack 3.0.2/template v13 bind versioned scene-core,
 information-flow, delivered-card review, measured length, Canon support and Quality
-corrections. The Pack binds ExecutionIntent 3.10.1, Memo 3.10.2 and Draft 3.10.1 to their exact native definition hashes; the other coordinated nodes retain 3.10.0. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
+corrections. The Pack binds ordinary coordinated nodes to their exact 3.10.0 definition hashes. ExecutionIntent 3.10.1, Memo 3.10.1/3.10.2 and Draft 3.10.1 remain separately journal-bound recovery definitions. Current Plan materialization 3.10.0 consumes activated-chapter-plan.v3 and
 projects authoritative-chapter-plan-v5 and draft-plan-view-v4 through the native
 ExecutionIntent; frozen earlier projections, including 3.9.16, keep their original
 contracts. The Book-owned explicit-null Memo timeout reader remains compatibility

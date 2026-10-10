@@ -222,8 +222,8 @@
       {
         "node_id": "execution_intent",
         "operation_name": "chapter.execution_intent.prepare",
-        "operation_definition_ref": "chapter.execution_intent.prepare@3.10.1",
-        "operation_definition_hash": "sha256:a846150064a0a7d45328b03788e3bcfcd8a252bd48e5129cc1b6ebf9c4031743",
+        "operation_definition_ref": "chapter.execution_intent.prepare@3.10.0",
+        "operation_definition_hash": "sha256:2d67941c7c0673f0b71058a0e51b79057268eeee5ce7408171f23ed9e4eed6d5",
         "handler_key": "novel_forge.chapter_authority.execution_intent",
         "stage": "execution_intent",
         "capability_id": "planning.chapter.generate",
@@ -254,8 +254,8 @@
       {
         "node_id": "memo",
         "operation_name": "chapter.memo.generate",
-        "operation_definition_ref": "chapter.memo.generate@3.10.2",
-        "operation_definition_hash": "sha256:95f68ad762bc248929f81191b9e2b0d2d84c4442528879d3684512027c45f51b",
+        "operation_definition_ref": "chapter.memo.generate@3.10.0",
+        "operation_definition_hash": "sha256:4eb64c872f07509915d8dbe24f10a426e41a13315e315a06dacc6b4771c49d65",
         "handler_key": "novel_forge.chapter_authority.memo",
         "stage": "memo",
         "capability_id": "planning.chapter.memo",
@@ -357,8 +357,8 @@
       {
         "node_id": "draft",
         "operation_name": "chapter.draft.generate",
-        "operation_definition_ref": "chapter.draft.generate@3.10.1",
-        "operation_definition_hash": "sha256:fd58b982935e91193bb0f6fbb75d5308e99150c748914899c9252473163a6600",
+        "operation_definition_ref": "chapter.draft.generate@3.10.0",
+        "operation_definition_hash": "sha256:761215f648394a4aff76fe5735230d7d52abcac95a07ec4429b011c7783006d9",
         "handler_key": "novel_forge.chapter_authority.draft",
         "stage": "draft",
         "capability_id": "prose.chapter.draft",

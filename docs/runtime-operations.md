@@ -2502,7 +2502,7 @@ configured capability profile disables callbacks.
 Changing repository Pack, Prompt or Skill files does not activate them in an existing
 database or change an old request. Inspect the actual deployment, activation and frozen
 materialization before an authorized run. Frozen Chapter Pack 2.12.0 retains System v3, Template v9 and prose-generation-v4
-identities; current candidate Chapter Pack 3.0.2 binds workflow 3.10.0, ExecutionIntent 3.10.1, Memo 3.10.2, Draft 3.10.1 and Plan materialization 3.10.0 with
+identities; current candidate Chapter Pack 3.0.2 binds workflow and ordinary coordinated nodes 3.10.0, including Plan materialization, with
 Template v13 with lossless joint input transport. Frozen v12 Attempts retain their original manifests. Chapter Pack 2.26.0 retains its original Chapter 3.9 and Template v11 bindings.
 Current Planning Pack 2.13.0 binds Operation 1.21.0, System v11 and Template v2,
 long-outline-v3 and narrative-beat-design-qualification-v3, with unchanged stage methods
