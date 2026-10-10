@@ -110,3 +110,34 @@ def test_memo_indirect_history_keeps_only_its_own_frozen_inputs(monkeypatch):
     assert m.historical_working_inputs(uow, op) == ('', frozenset())
     uow.cursor.execute.assert_not_called()
     verify.assert_not_called()
+
+
+@pytest.mark.parametrize('facts', [(False,)*4, (True, False, False, False), (False, True, False, False),
+                                  (False, False, True, False), (False, False, False, True)])
+def test_indirect_memo_scope_successor_preserves_effects_outputs_and_retry_bound(facts):
+    source = operation()
+    source.update(definition_name='chapter.memo.generate', definition_version='3.10.0')
+    payload = source['command_payload']['payload']
+    source['command_payload'] = {'book_id': 'book', 'preparation_report': payload['arc_working_set']}
+    source['input_asset_snapshot'] = [{'asset_version_id': 'intent', 'content_hash': 'intent-hash'}]
+    policy = {'contract_version': 'chapter-historical-input-scope-repair.v1', 'input_snapshot': source['input_asset_snapshot'],
+              'target_deployment_id': 'pack', 'release_sha': 'sha'}
+    cursor = Mock()
+    cursor.fetchall.return_value = [('MANUSCRIPT_INPUT_SNAPSHOT_MISSING', 'Historical sources require exact frozen input hashes')]
+    cursor.fetchone.side_effect = [facts, ('pack',)]
+    if any(facts):
+        with pytest.raises(KernelError, match='Preserve dispatched'):
+            m.require_historical_input_scope_repair(cursor, source, policy, '3.10.0')
+    else:
+        assert m.require_historical_input_scope_repair(cursor, source, policy, '3.10.0')
+    assert all('UPDATE' not in call.args[0] for call in cursor.execute.call_args_list)
+
+
+def test_direct_history_cannot_use_indirect_memo_repair():
+    source = operation()
+    source.update(definition_name='chapter.memo.generate', definition_version='3.10.0')
+    payload = source['command_payload']['payload']
+    source['command_payload'] = {'book_id': 'book', 'preparation_report': payload['arc_working_set']}
+    with pytest.raises(KernelError, match='exact indirect Memo'):
+        m.require_historical_input_scope_repair(Mock(), source,
+            {'contract_version': 'chapter-historical-input-scope-repair.v1', 'input_snapshot': source['input_asset_snapshot']}, '3.10.0')

@@ -476,6 +476,39 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
     return book["book_id"], frozenset(item["asset_version_id"] for item in direct_sources)
 
 
+def require_historical_input_scope_repair(cursor: Any, source: dict[str, Any], policy: dict[str, Any], target_version: str) -> bool:
+    if policy.get("contract_version") != "chapter-historical-input-scope-repair.v1":
+        return False
+    working = (source["command_payload"].get("preparation_report") or {}).get("working_manuscript")
+    refs = {item["asset_version_id"] for item in source["input_asset_snapshot"]}
+    if (source["definition_name"] != "chapter.memo.generate" or source["definition_version"] != "3.10.0"
+            or target_version != "3.10.0" or not working
+            or any(item["asset_version_id"] in refs for item in working["sources"])
+            or policy.get("input_snapshot") != source["input_asset_snapshot"]):
+        raise KernelError("HISTORICAL_INPUT_SCOPE_REPAIR_INVALID", "Only the exact indirect Memo input shape can continue")
+    cursor.execute("""SELECT result->>'error_code',result->>'error_message' FROM authority_attempt
+        WHERE operation_id=%s ORDER BY attempt_number""", [source["operation_id"]])
+    if cursor.fetchall() != [("MANUSCRIPT_INPUT_SNAPSHOT_MISSING", "Historical sources require exact frozen input hashes")]:
+        raise KernelError("HISTORICAL_INPUT_SCOPE_REPAIR_INVALID", "Retain the exact preflight interpreter failure")
+    cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_saga_step_successor WHERE successor_operation_id=%s)""", [source["operation_id"]] * 4)
+    if any(cursor.fetchone()):
+        raise KernelError("HISTORICAL_INPUT_SCOPE_REPAIR_INVALID", "Preserve dispatched, produced and previously repaired work")
+    cursor.execute("""SELECT d.deployment_id FROM authority_capability_pack_activation a
+        JOIN authority_capability_pack_deployment d ON d.deployment_id=a.active_deployment_id
+        JOIN authority_capability_pack_compilation c USING(compilation_id)
+        WHERE a.project_id=%s AND a.workspace_id=%s AND a.book_id=%s
+          AND a.workflow_definition_ref='chapter_authority_slice@3.10.0'
+          AND d.deployment_id=%s AND d.deployment_status='ACTIVE' AND c.release_sha=%s""",
+        [source["project_id"], source["workspace_id"], source["command_payload"]["book_id"],
+         policy.get("target_deployment_id"), policy.get("release_sha")])
+    if cursor.fetchone() != (policy.get("target_deployment_id"),):
+        raise KernelError("HISTORICAL_INPUT_SCOPE_REPAIR_INVALID", "Require the exact same-Book deployed correction")
+    return True
+
+
 def deliver_manuscript(authority: Any, request_id: str, *, principal: Any) -> dict[str, Any]:
     request = authority.require_chapter_request(request_id)
     book = authority.require(request["book_run_id"])
