@@ -266,7 +266,7 @@ commands and focused matrix in `docs/runtime-operations.md`.
 
 ### Bounded creative recovery contracts
 
-Creative template v11 is the current coordinated policy; v2–v10 remain explicit
+Creative template v12 is the current author-first policy; v2–v11 remain explicit
 historical contracts. They retain authenticated
 membership identity, independent-review requirements, source isolation and strict
 production gates. New Planning dispatch uses the single native `governed_repair`
