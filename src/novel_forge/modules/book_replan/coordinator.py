@@ -2254,6 +2254,11 @@ class BookReplanCoordinator:
     ) -> tuple[tuple[str, str], ...]:
         previous = self._snapshot(book["input_snapshot_id"])
         overrides = {role: str(previous[role]) for role in _SNAPSHOT_ROLE_FIELDS}
+        # WHY: Author-first writing can advance while acceptance remains at zero;
+        # replanning must retain the original paired narrative bootstrap inputs.
+        for role in ("initial_story_state_version", "initial_canon_snapshot_version"):
+            if previous.get(role):
+                overrides[role] = str(previous[role])
         return tuple(sorted(overrides.items()))
 
     def _snapshot(self, snapshot_id: str) -> dict[str, Any]:
