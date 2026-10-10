@@ -4421,6 +4421,10 @@ class PostgresPlanningExecutionPreparer:
             output_schema_ref += ":host-selectors-v2"
             if context_document.content["realization_reference_contract"].get("character_references") is not None:
                 output_schema_ref += ":frozen-character-references-v1"
+            if context_document.content.get("planning_semantic_fields_version") == "planning-semantic-fields.v1":
+                from .semantic_fields import bind_semantic_fields
+                output_schema = bind_semantic_fields(output_schema, command.planning_scope)
+                output_schema_ref += ":planning-semantic-fields-v1"
         if provider_stage is None and command.repair_of_candidate_id and command.planning_scope.value == PlanContractType.CHAPTER.value:
             output_schema_ref += ":operational-commitments-v1"
         if provider_stage is not None:
@@ -5914,7 +5918,10 @@ class PostgresPlanningExecutionPreparer:
                 if command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} else {}),
             "arc_working_set": dict(command.arc_working_set or {}),
             "narrative_search": command.narrative_search_snapshot,
-            **({"working_continuity_projection_version": "planning-working-continuity.v1"}
+            **({"planning_semantic_fields_version": "planning-semantic-fields.v1"}
+                if command.execution_contract_version == "1.21.0"
+                and command.generator_operation_name not in FOUNDATION_GENERATORS else {}),
+            **({"working_continuity_projection_version": "planning-working-continuity.v2"}
                 if command.execution_contract_version == "1.21.0"
                 and (command.arc_working_set or {}).get("working_manuscript") is not None else {}),
             **(

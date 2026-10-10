@@ -3341,6 +3341,14 @@ author input and independent human review are distinct; no human feedback means
 NOT_REVIEWED. The work-specific, relative-path command sequence is linked from the
 current novel entry above.
 
+For working-manuscript continuation, verify the exact frozen working projection and
+the sent schema separately from accepted knowledge. An exhausted planning candidate
+does not authorize another identical repair: retain its outputs and validation reports,
+then use a scoped author change request after correcting the diagnosed generation
+contract. That new work retains the original world preparation when its exact frozen
+inputs remain valid. Planning approval authorizes a working plan, not author prose
+choice or Book acceptance.
+
 ## Knowledge-grounded six-chapter comparison
 
 For the retained six-chapter A/B experiment, use

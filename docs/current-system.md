@@ -61,6 +61,12 @@ may be carried into its next scene without repeating them for formal acceptance.
 no accepted fact IDs or verified Character Knowledge; inferred beliefs, reader-only disclosures,
 future plans and unresolved dependency changes retain their own uncertainty. New Planning
 contexts explicitly freeze this distinction; older contexts keep their original projection.
+The selected working experiences belong in scene entry, action and causal descriptions;
+they are not strings or invented IDs in `known_fact_ids` or `accessible_knowledge`.
+Those fields retain accepted knowledge and explicitly disclosed earlier-scene gains.
+New Planning schemas bind CURRENT realization to the scope's owned realization level
+and describe timeline relations relative to scenes in the returned plan. Establishing
+its first scene's timeline does not repeat an earlier chapter's events.
 Native realization contract v3 retains this working
 snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
 inventing accepted history. The source window is a bounded implementation policy; it does

@@ -159,3 +159,18 @@ def test_historical_projection_keeps_its_original_view():
     assert (
         task["arc_working_set"]["working_manuscript"]["accepted_through_chapter"] == 0
     )
+
+
+def test_v2_continues_working_experiences_without_changing_v1_contract():
+    raw, context = inputs()
+    legacy=build_provider_task_view('chapter_group_plan.generate', raw)['working_continuity']
+    for item in (raw,context):
+        item['working_continuity_projection_version']='planning-working-continuity.v2'
+    task=build_provider_task_view('chapter_group_plan.generate', raw)
+    view=build_provider_context_view('chapter_group_plan.generate', context,task)
+    assert task['working_continuity']==view['working_continuity']
+    assert task['working_continuity']['snapshot_hash']==legacy['snapshot_hash']
+    assert task['working_continuity']['instruction'].startswith(legacy['instruction'])
+    assert 'entry_state' not in legacy['instruction']
+    assert 'accessible_knowledge' in task['working_continuity']['instruction']
+    assert view['accepted_state_boundary']=={'accepted_through_chapter':0}

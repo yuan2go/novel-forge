@@ -2526,7 +2526,7 @@ def _planning_working_continuity(source: Mapping[str, Any], scope: Mapping[str, 
     if version is None:
         return None
     working = (source.get("arc_working_set") or {}).get("working_manuscript")
-    if (version != "planning-working-continuity.v1"
+    if (version not in {"planning-working-continuity.v1", "planning-working-continuity.v2"}
             or not isinstance(working, Mapping)
             or working.get("version") != "working-manuscript-context.v1"
             or working.get("book_id") != scope.get("book_id")
@@ -2568,6 +2568,10 @@ def _planning_working_continuity(source: Mapping[str, Any], scope: Mapping[str, 
             "information is not character knowledge, and plans are not past events. Introduce subsequent events "
             "that use the progress already realized. This projection grants no accepted fact IDs, verified Character "
             "Knowledge, Canon mutation, author choice or formal acceptance. Keep accepted-state fields unchanged."
+            + (" Describe selected working experiences in entry_state, causal_trigger, beats and actions. "
+               "Do not turn their prose summaries into known_fact_ids or accessible_knowledge: those fields "
+               "accept only eligible fact IDs under the unchanged accepted and earlier-scene disclosure rules."
+               if version == "planning-working-continuity.v2" else "")
         ),
     }
 
