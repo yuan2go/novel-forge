@@ -25,9 +25,11 @@ def fixtures():
     return command, docs, plan
 
 
+@pytest.mark.parametrize('disposition', ['ELIGIBLE', 'DEFER'])
 @pytest.mark.parametrize('failure', ['none', 'book', 'actor', 'workspace', 'frontier', 'stale', 'hash', 'director-binding', 'unsettled', 'receipt-output', 'recompile', 'ambiguous'])
-def test_selected_action_reuses_only_exact_current_settled_world_result(failure):
+def test_selected_action_reuses_only_exact_current_settled_world_result(failure, disposition):
     command, docs, plan = fixtures()
+    plan.update(disposition=disposition, fact_mutation_allowed=False)
     if failure in {'book', 'actor'}:
         docs['action'].content['contract'][failure+'_id'] = 'other'
     if failure == 'frontier':
@@ -64,3 +66,18 @@ def test_unselected_action_keeps_existing_generation_path():
     command, docs, _ = fixtures()
     command.governance_action_version_ids = ()
     assert require_selected_world_action(SimpleNamespace(), command=command) is None
+
+
+@pytest.mark.parametrize('dependency', ['selected_candidate_id', 'selected_path_id', 'candidate_futures', 'preparation_schedule', 'causal_debts', 'actor_proposals', 'actor_experiment', 'preparation_sources', 'fact_mutation_allowed'])
+def test_deferred_reuse_cannot_discard_a_dependency_or_certify_a_future(dependency):
+    command, docs, plan = fixtures()
+    plan.update(disposition='DEFER', fact_mutation_allowed=False)
+    target = docs['source'].content['contract'] if dependency in {'actor_experiment', 'preparation_sources'} else docs['action'].content['contract'] if dependency == 'actor_proposals' else plan
+    target[dependency] = True
+    query = SimpleNamespace(database_url='db', require=lambda **kw: docs[kw['asset_version_id']])
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.return_value = ('workspace', 'actor', 'book')
+    with patch(MODULE+'.AuthorityUnitOfWork', return_value=uow), patch(MODULE+'.PlanningWorldPreparation._source_operation', return_value='owner'):
+        with pytest.raises(KernelError):
+            require_selected_world_action(query, command=command)

@@ -284,7 +284,13 @@ the frozen template. Governed optional deferral records `DEFER` / `NOT_RUN`; it 
 no accepted World fact. Strict production, accepted preparation commitments and
 independent actor experiments retain their required dependencies. Typed transitions,
 exact Arc/obligation references, causal rejection reproduction, settled Director
-receipts and reuse of the original selected action remain mandatory. Longform Quality
+receipts and reuse of the original selected action remain mandatory. A new planning
+revision may also reuse an exact settled `DEFER` action when it contains no selected
+future, candidate futures, preparation schedule, causal debts or actor proposals, and
+its source has no accepted preparation commitments or independent actor experiment.
+The unchanged deferral remains a proposal and supplies no story fact; the source,
+frontier, owner, receipts and deterministic compilation are revalidated on every reuse.
+Longform Quality
 binds the frozen World Foundation. When its qualification is an independent evaluation,
 the input evidence additionally retains the exact PASS result, native APPROVE receipt
 and successful ACTIVATE identity; an advisory result or foreign identity cannot replace

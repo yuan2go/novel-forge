@@ -216,7 +216,7 @@ def require_selected_world_action(query: Any, *, command: Any) -> Any:
         != (command.project_id, command.book_id, command.actor_id)
         or bound.get("fact_mutation_allowed") is not False
         or bound.get("authority") != "PLANNING_PROPOSAL"
-        or bound["world_plan"]["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED"}
+        or bound["world_plan"]["disposition"] not in {"ELIGIBLE", "PREPARATION_REQUIRED", "DEFER"}
     ):
         raise KernelError("WORLD_SELECTED_ACTION_SCOPE_INVALID", "Reuse requires the same Book and actor and an eligible proposal; it cannot create facts")
     owner = PlanningWorldPreparation._source_operation(query.database_url, command.project_id, action.asset_version_id)
@@ -226,6 +226,13 @@ def require_selected_world_action(query: Any, *, command: Any) -> Any:
             raise KernelError("WORLD_SELECTED_ACTION_SCOPE_INVALID", "World action must retain its original workspace, Book and actor owner")
     documents = {key: query.require(project_id=command.project_id, asset_version_id=bound[key]["asset_version_id"]) for key in ("source", "generation", "evaluation")}
     source, generation, evaluation = (documents[key].content["contract"] for key in ("source", "generation", "evaluation"))
+    if bound["world_plan"]["disposition"] == "DEFER":
+        from .world_optional import require_optional_source
+        require_optional_source(source)
+        plan = bound["world_plan"]
+        if (any(plan.get(key) for key in ("selected_candidate_id", "selected_path_id", "candidate_futures", "preparation_schedule", "causal_debts"))
+                or bound.get("actor_proposals") or plan.get("fact_mutation_allowed") is not False):
+            raise KernelError("WORLD_SELECTED_ACTION_SCOPE_INVALID", "Deferred reuse cannot select futures, discard dependencies or supply facts")
     if any(documents[key].content_hash != bound[key]["content_hash"] for key in documents) or evaluation["generation"] != bound["generation"] or evaluation["source"] != bound["source"]:
         raise KernelError("WORLD_SELECTED_ACTION_DRIFT", "Source, generation and Director bindings must retain their exact hashes")
     if source["request"] != dict(command.world_preparation_request):

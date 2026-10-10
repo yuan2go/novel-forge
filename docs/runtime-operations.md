@@ -150,7 +150,7 @@ forward-only, backup and downgrade properties. Run clean-install and upgrade tes
 using a new migration outside an isolated test database.
 
 The published chain through 0184 is immutable. The current forward segment is
-0185–0195, ending at native prose-review sidecar isolation. Resolve each full
+0185–0197, ending at authorized native planning capacity. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration
