@@ -99,3 +99,22 @@ def test_optional_memory_recovery_binds_exact_failure_family(version, failures, 
             require_optional_memory_transport(cursor, source, policy, '3.10.0')
     with pytest.raises(KernelError, match='CHAPTER_MEMORY_TRANSPORT_INVALID'):
         require_optional_memory_transport(cursor, source, {**policy, 'input_snapshot': ['foreign']}, '3.10.0')
+
+
+@pytest.mark.parametrize('boundary', ['valid', 'effect', 'reservation', 'output', 'foreign_release', 'changed_input', 'changed_hash', 'provider_failure', 'missing_attempt'])
+def test_local_context_accounting_successor_preserves_frozen_and_unsent_boundaries(boundary):
+    from novel_forge.modules.command_kernel.context_transport_recovery import _require_local_context_accounting_source
+    cursor = Mock()
+    flags = tuple(boundary == key for key in ('effect', 'reservation', 'output'))
+    cursor.fetchone.side_effect = [flags, ('changed' if boundary == 'changed_hash' else 'hash',)]
+    failures = [] if boundary == 'missing_attempt' else ['PROVIDER_ROUTING_BLOCKED'] if boundary == 'provider_failure' else ['TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED', 'TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED']
+    cursor.fetchall.return_value = [(code,) for code in failures]
+    source = {'operation_id': 'source', 'definition_name': 'chapter.context.build', 'definition_version': '3.10.0',
+              'input_asset_snapshot': [{'asset_version_id': 'input', 'content_hash': 'hash'}]}
+    policy = {'release_sha': 'foreign' if boundary == 'foreign_release' else 'sha',
+              'input_snapshot': [] if boundary == 'changed_input' else source['input_asset_snapshot'], 'completion_checks': 'UNCHANGED'}
+    if boundary == 'valid':
+        _require_local_context_accounting_source(cursor, source, policy, 'sha')
+    else:
+        with pytest.raises(KernelError, match='CHAPTER_UNSENT_TRANSPORT_SOURCE_UNSAFE'):
+            _require_local_context_accounting_source(cursor, source, policy, 'sha')

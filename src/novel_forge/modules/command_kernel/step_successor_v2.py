@@ -118,7 +118,7 @@ def replace_failed_step(
         )
         row = cursor.fetchone()
         from .context_transport_recovery import require_unsent_context_transport
-        unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence)
+        unsent_transport = require_unsent_context_transport(cursor, source, policy_evidence, execution_sha=context.commit_sha)
         from novel_forge.modules.chapter_authority.context_transport_recovery import require_optional_memory_transport
         memory_transport = require_optional_memory_transport(cursor, source, policy_evidence, target_version)
         from novel_forge.modules.book_authority.manuscript import require_historical_input_scope_repair
@@ -301,7 +301,7 @@ def replace_failed_step(
             from .attempt_runtime import _cas_operation
             _cas_operation(uow, operation_id=source["operation_id"], project_id=project,
                 expected_status=source["status"], expected_version=source["version"], target_status="DEAD_LETTER",
-                actor_id=context.actor_id, reason="Exhausted unsent v12 attempts retained before one native v13 transport successor",
+                actor_id=context.actor_id, reason="Exhausted unsent attempts retained before one native transport correction successor",
                 trace_id=source["trace_id"], correlation_id=source["correlation_id"])
             cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [predecessor_id])
             source = cursor.fetchone()[0]

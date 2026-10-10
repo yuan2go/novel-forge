@@ -4097,3 +4097,15 @@ Budget the final complete rendered request rather than summing stored Context as
 Optional older prose may be reallocated prospectively with explicit omissions, while required
 recent prose and causal dependencies remain intact. A pre-send failure uses its owning
 bounded continuation; it does not authorize a replacement request identity or a larger cap.
+
+A `chapter.context.build@3.10.0` step that exhausted only local
+`TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED` or
+`TASK_CONTEXT_COMPRESSION_NOT_AUTHORIZED` checks may use the existing failed-step
+successor with `chapter-unsent-context-transport.v1` and
+`provider-working-intent-accounting.v1`. It binds every unchanged input hash to
+an active compiled v13 Chapter Pack at the executing release, requires zero
+ExternalEffects, reservations and output assets, and permits this transport
+correction once in the original step lineage. The Kernel retains the original
+Attempts and terminal state. Capacity, completion checks, Provider authorization
+and the final rendered-request admission remain authoritative; admitting a
+successor does not prove that its Context or Writer will fit.
