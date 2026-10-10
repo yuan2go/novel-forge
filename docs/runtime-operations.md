@@ -152,7 +152,12 @@ using a new migration outside an isolated test database.
 The published chain through 0197 is immutable. The original audit boundary is
 0194; published 0196 and 0197 retain stopped CLI isolation and authorized Planning capacity.
 The current head additionally includes 0198, which adds missing foreign-key reference indexes
-without rewriting facts or admission rules. Resolve each full
+without rewriting facts or admission rules. Migration 0199 permits an unsent ChapterGroup
+capacity successor from an exact native Plan Change request as well as Narrative Search.
+It retains the frozen context and input hashes, original executor and author entitlement,
+zero external intents/reservations, released leases, and unchanged model capacity. An
+ordinary Plan Change uses exact value references without dropping future content as though
+it had a Narrative Search horizon. Resolve each full
 identity from the migration manifest and runtime registry. Supported upgrade histories are
 exact prefixes of the registered main chain. Extra IDs or missing predecessors stop
 before pending migration DDL. Preserve a foreign branch database and its migration

@@ -200,6 +200,7 @@ from . import (
     v20261010_0196_stopped_cli_timeout_isolation,
     v20261010_0197_authorized_planning_capacity,
     v20261010_0198_recovery_reference_indexes,
+    v20261011_0199_plan_change_capacity,
 )
 
 VERSION_MODULES = [
@@ -402,6 +403,7 @@ VERSION_MODULES = [
     v20261010_0196_stopped_cli_timeout_isolation,
     v20261010_0197_authorized_planning_capacity,
     v20261010_0198_recovery_reference_indexes,
+    v20261011_0199_plan_change_capacity,
 ]
 
 __all__ = ["VERSION_MODULES"]
