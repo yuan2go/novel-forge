@@ -393,3 +393,56 @@ def test_planning_v3_carries_same_working_sources_without_fact_or_actor_promotio
     assert task["working_continuity"] == view["working_continuity"]
     assert task["arc_working_set"]["working_manuscript"]["structured_facts"] == []
     assert view["accepted_state_boundary"] == {"accepted_through_chapter": 0}
+
+
+def _writer_context_with_working_intent():
+    import json
+    from tests.unit.test_provider_task_views import _context
+
+    context = _context(0)
+    working = snapshot()
+    context['project_id'] = 'p'
+    context['context_manifest']['narrative_position'] = {'book_id': 'b', 'chapter': 5}
+    context['context_manifest']['authority_state_boundary'] = {'accepted_through_chapter': 0}
+    context['working_manuscript'] = working
+    intent = {'working_manuscript': deepcopy(working), 'chapter_objective': 'Keep the old promise.',
+              'character_situation': {'authority': 'FUTURE_INTENT_NOT_OBSERVED', 'goal': 'leave safely'}}
+    context['context_segments'].append({'asset_version_id': 'intent', 'asset_type': 'chapter_execution_intent',
+        'safe_summary': json.dumps(intent), 'structured_facts': [], 'allowed_use': 'generation'})
+    return context, intent
+
+
+def test_writer_renders_selected_prose_once_and_keeps_structured_intent_losslessly():
+    import json
+
+    context, intent = _writer_context_with_working_intent()
+    before = deepcopy(context)
+    view = build_provider_context_view('draft', context, {}, writer_projection_version='accepted-writer-history.v2')
+    assert view['contract_version'] == 'provider-context-view-v7'
+    assert view['working_manuscript'] == intent['working_manuscript']
+    assert view['frozen_intent'] == {key: value for key, value in intent.items() if key != 'working_manuscript'}
+    assert not any(row['asset_type'] == 'chapter_execution_intent' for row in view['segments'])
+    assert json.dumps(view).count('Only the reader saw the broken wire.') == 1
+    assert context == before
+
+
+def test_writer_rejects_rehashed_foreign_working_source_in_intent():
+    import json
+
+    context, intent = _writer_context_with_working_intent()
+    intent['working_manuscript']['sources'][0]['asset_version_id'] = 'unselected:old'
+    rehash(intent['working_manuscript'])
+    context['context_segments'][-1]['safe_summary'] = json.dumps(intent)
+    with pytest.raises(KernelError, match='WORKING_PROSE_INTENT_DRIFT'):
+        build_provider_context_view('draft', context, {})
+
+
+def test_legacy_writer_view_keeps_its_original_intent_summary():
+    import json
+
+    context, intent = _writer_context_with_working_intent()
+    context.pop('working_manuscript')
+    context['context_segments'][-1]['safe_summary'] = json.dumps({'chapter_objective': intent['chapter_objective']})
+    view = build_provider_context_view('draft', context, {})
+    assert 'frozen_intent' not in view
+    assert any(row['asset_type'] == 'chapter_execution_intent' for row in view['segments'])

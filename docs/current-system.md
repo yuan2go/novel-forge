@@ -85,7 +85,11 @@ in a new Chapter request's preparation report, freezes a bounded source window w
 complete recent chapters, attributed earlier paragraphs, Unicode locations and explicit
 omissions. That same snapshot enters Planning continuity v3, ExecutionIntent/Memo and
 Draft Context. Its literal hashes and selected versions are checked before use; lexical
-ranking establishes neither facts nor character knowledge. Guidance can select continuity,
+ranking establishes neither facts nor character knowledge. Writer Context v7 carries the
+enhanced Intent as structured future-intent data and the identical selected prose once,
+so existing exact-value transport can deduplicate its remaining shared values. A differing
+embedded working snapshot fails closed; stored Intent and Context assets remain intact.
+Guidance can select continuity,
 character reaction, action consequences or their combination without prescribing genre,
 emotional endpoints or mandatory costs. These inputs cannot advance Canon or the accepted
 cursor. Absent policy retains v1 tails; frozen v1 requests reconstruct exactly, independently
