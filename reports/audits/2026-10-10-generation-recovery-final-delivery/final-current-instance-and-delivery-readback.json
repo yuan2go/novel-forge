@@ -1,0 +1,22 @@
+{
+  "status": "PASS_DEPLOYMENT_READBACK",
+  "deployed_sha": "06f1a77931dd5795cf94653d71bc09abf131579f",
+  "api_health": {
+    "provider_dispatch_suspended": false,
+    "status": "alive",
+    "storage_authority": "postgresql"
+  },
+  "book_worker_pid": 73763,
+  "book_worker_running": true,
+  "global_dispatch_suspended": false,
+  "current_book_state": "PAUSED",
+  "current_book_failure": "CHAPTER_MEMO_CHARACTER_DRIFT",
+  "current_book_retry": "EXHAUSTED_2_OF_2",
+  "saved_chapters": 4,
+  "formal_accepted_chapters": 0,
+  "target_delivery_chapters": 40,
+  "full_book_design_chapters": 240,
+  "text_digest": "sha256:5b2f293c1b4ea17a32fb33ed0e07273491423601c6511df6c152a1f95d4ad94c",
+  "engineering_package_complete": false,
+  "forty_chapters_delivered": false
+}

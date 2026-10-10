@@ -1,0 +1,54 @@
+{
+  "schema": "publication-index.v1",
+  "baseline_main": "70ac89b1fedb304e10422d78e4bd231ebfc52831",
+  "deployed_source_head": "06f1a77931dd5795cf94653d71bc09abf131579f",
+  "scope": "Final existing delivery artifacts supplementing PR149; no new production code",
+  "saved_chapters": 4,
+  "delivery_target": 40,
+  "formal_accepted_chapters": 0,
+  "author_revision_selection": "NOT_RECORDED",
+  "chapter5_blocker": "CHAPTER_MEMO_CHARACTER_DRIFT / CHAPTER_ATTEMPT_EXHAUSTED 2/2",
+  "historical_original_unknown_retained": true,
+  "tests_this_publication": "NOT_RUN",
+  "hooks_this_publication": "NOT_RUN",
+  "new_provider_calls_this_publication": 0,
+  "deployments_and_migrations_this_publication": "NOT_RUN",
+  "files": [
+    {
+      "path": "final-current-instance-and-delivery-readback.json",
+      "source_sha256": "a67e1a1a08cd0c8bf7a5709dc387ee298c245e32a0a97fc14135ae361dca1fbb",
+      "published_sha256": "a67e1a1a08cd0c8bf7a5709dc387ee298c245e32a0a97fc14135ae361dca1fbb",
+      "bytes": 760,
+      "redactions": 0
+    },
+    {
+      "path": "original-chapter5-memo-exhausted-checkpoint.json",
+      "source_sha256": "093f42a368f240acc38344b49861a466a2ca7b96e324fb9dce3f26194974e5de",
+      "published_sha256": "093f42a368f240acc38344b49861a466a2ca7b96e324fb9dce3f26194974e5de",
+      "bytes": 3628,
+      "redactions": 0
+    },
+    {
+      "path": "qinglan-wendao-001-004-387d37d6a1df.json",
+      "source_sha256": "6297f3e48b3aa440cc017765ba94b8e514d8dbe7820fa747ba7e07cc03d4ac51",
+      "published_sha256": "6297f3e48b3aa440cc017765ba94b8e514d8dbe7820fa747ba7e07cc03d4ac51",
+      "bytes": 93089,
+      "redactions": 0
+    },
+    {
+      "path": "qinglan-wendao-001-004-387d37d6a1df.md",
+      "source_sha256": "f840753ad46f2e79cb1f06cbb15d7be6ca99939179e71cacc2cfc5e6274c1fd6",
+      "published_sha256": "f840753ad46f2e79cb1f06cbb15d7be6ca99939179e71cacc2cfc5e6274c1fd6",
+      "bytes": 37661,
+      "redactions": 0
+    },
+    {
+      "path": "qinglan-wendao-001-004-literary-revision-candidates.md",
+      "source_sha256": "95df2961f8cbb6d3f4e4727a8e7d209f1715de81bfce01c426a09b02ebee1cf6",
+      "published_sha256": "95df2961f8cbb6d3f4e4727a8e7d209f1715de81bfce01c426a09b02ebee1cf6",
+      "bytes": 38006,
+      "redactions": 0
+    }
+  ],
+  "private_state_and_other_source_files_unchanged": true
+}
