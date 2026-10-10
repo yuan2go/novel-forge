@@ -1,0 +1,143 @@
+{
+  "version": "longform-native-arm.v1",
+  "arm": 1,
+  "mode": "COMBINED",
+  "tested_sha": "04e199c181ac74bc10ca59daf693df027d9588ec",
+  "database": "nf_longform_f19e9b2191e6_arm1c_test",
+  "database_oid": 124297,
+  "policy": {
+    "version": "working-prose-projection.v2",
+    "history_chapters": 16,
+    "recent_complete_chapters": 4,
+    "max_characters": 22000,
+    "queries": [
+      "陆衡",
+      "唐穗",
+      "许庭",
+      "程管事",
+      "木块",
+      "热饭",
+      "时辰"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "events": [
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 0,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "GENERATE_CHAPTER_PLAN",
+        "operation_id": "c35f4185-3d4c-4af6-a9ef-dd9d282cffb0",
+        "evidence_ref": "authority-output:c35f4185-3d4c-4af6-a9ef-dd9d282cffb0:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 1,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "ff18d400-f8e1-4283-86b2-28e5fa285521",
+        "evidence_ref": "authority-output:c35f4185-3d4c-4af6-a9ef-dd9d282cffb0:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 2,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+        "evidence_ref": "chapter-request:11de0d0e8abab6fa8fb8023ebe029facc029af0dfba78e4651d2019591d67bc3"
+      }
+    },
+    {
+      "phase": "FROZEN_REQUEST",
+      "chapter_request_id": "chapter-request:11de0d0e8abab6fa8fb8023ebe029facc029af0dfba78e4651d2019591d67bc3",
+      "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+      "plan_version_id": "authority-output:c35f4185-3d4c-4af6-a9ef-dd9d282cffb0:story_planning.candidate:v1",
+      "working_snapshot_hash": "sha256:ab5bb079b32f6b92c147fe12c5c1fd1fe6ca7a7693961679d04870840b4603f5"
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 0,
+      "result": {
+        "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+        "saga_id": "48d235dc-9dcd-4a32-9d43-e50e6b34e97c",
+        "saga_status": "RUNNING",
+        "operation_id": "896d7310-8fe9-4d21-8bfa-bbb1ce5874ec",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 1,
+      "result": {
+        "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+        "saga_id": "48d235dc-9dcd-4a32-9d43-e50e6b34e97c",
+        "saga_status": "RUNNING",
+        "operation_id": "f5e443e9-2042-4882-a011-cf75ff71d0eb",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 2,
+      "result": {
+        "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+        "saga_id": "48d235dc-9dcd-4a32-9d43-e50e6b34e97c",
+        "saga_status": "RUNNING",
+        "operation_id": "5e66e385-5c3a-4ee0-8f74-700a5fd62296",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 3,
+      "result": {
+        "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+        "saga_id": "48d235dc-9dcd-4a32-9d43-e50e6b34e97c",
+        "saga_status": "RUNNING",
+        "operation_id": "003417f6-846a-4687-a55a-09417231661b",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 4,
+      "result": {
+        "root_operation_id": "4909a6e3-47cc-438e-9d14-1dcb439cfdc4",
+        "saga_id": "48d235dc-9dcd-4a32-9d43-e50e6b34e97c",
+        "saga_status": "RUNNING",
+        "operation_id": "54f9cfaf-c1da-4b03-b17c-a12804f882bd",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "STOPPED",
+      "error_type": "KernelError",
+      "code": "PROVIDER_ROUTING_BLOCKED",
+      "message": "PROVIDER_ROUTING_BLOCKED: routing-decision:b6052914f969d7ca644866b0ad07666a038e3cc1cb811eb97fc105e890fdf8c6"
+    }
+  ],
+  "status": "BLOCKED",
+  "literary_evidence": "NOT_PROVEN",
+  "human_evidence": "NOT_READY"
+}

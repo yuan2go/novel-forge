@@ -160,6 +160,12 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
         from copy import deepcopy
 
         result = super().__call__(stage, inputs)
+        if stage == "memo":
+            references = inputs["execution_intent"].get("character_reference_contract")
+            if references:
+                for choice in result["creative_guidance"]["character_choices"]:
+                    choice["character_id"] = references["participant_bindings"][choice["character_id"]]
+                self.calls[-1]["output"] = deepcopy(result)
         table = inputs.get("source_span_table") or {}
         current_canon = stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1"
         current_quality = stage.startswith("quality_") and inputs.get("quality_span_contract") == "literal-source-spans.v1"

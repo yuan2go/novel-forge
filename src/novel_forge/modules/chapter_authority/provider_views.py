@@ -677,6 +677,8 @@ def build_provider_task_view(
                 "scene_plans",
                 "chapter_mission",
                 "character_reference_contract",
+                "working_manuscript",
+                "character_situation",
                 "required_beats",
                 "craft_strategy",
                 *(["creative_requirements"] if work_requirements else []),
@@ -1340,6 +1342,13 @@ def build_provider_context_view(
         intent = task_view.get("frozen_intent") or {}
         if intent.get("intent_fingerprint") != context_bundle.get("intent_fingerprint"):
             raise KernelError("CHAPTER_MEMO_INTENT_DRIFT", "Memo Context differs from frozen Intent")
+        if context_bundle.get("working_manuscript") is not None:
+            from novel_forge.modules.book_authority.working_prose import validate_working_projection
+            validate_working_projection(context_bundle["working_manuscript"], project_id=context_bundle["project_id"],
+                book_id=context_bundle.get("book_id"), target_chapter=context_bundle["chapter"],
+                accepted_through_chapter=context_bundle["accepted_boundary"]["accepted_through_chapter"])
+            if intent.get("working_manuscript") != context_bundle["working_manuscript"] or intent.get("character_situation") != context_bundle.get("character_situation"):
+                raise KernelError("CHAPTER_MEMO_INTENT_DRIFT", "Memo must consume the exact working projection and character situation")
         return {"contract_version": "provider-context-view-v2", "stage": stage,
                 "accepted_boundary": deepcopy(context_bundle.get("accepted_boundary")),
                 "source_isolation": "FROZEN_INTENT_ONLY", "protected": True}
@@ -1609,6 +1618,7 @@ def build_provider_context_view(
     omitted_facts = 0
     omitted_segments = 0
     duplicate_state_summaries = 0
+    working_intent = None
     for raw in segments:
         if not isinstance(raw, Mapping) or raw.get("allowed_use") == "evidence_only":
             omitted_segments += 1
@@ -1694,6 +1704,17 @@ def build_provider_context_view(
         if clean_writer_context:
             from novel_forge.modules.context_builder.writer_projection import project_writer_context_summary
             summary = project_writer_context_summary(raw, context_bundle.get("context_manifest") or {})
+        if (stage in {"draft", "revision"} and asset_type == "chapter_execution_intent"
+            and (context_bundle.get("working_manuscript") or {}).get("projection_policy") is not None):
+            try:
+                intent_data = json.loads(summary)
+            except (ValueError, TypeError) as exc:
+                raise KernelError("WORKING_PROSE_INTENT_DRIFT", "Working Intent must retain its structured source") from exc
+            if (not isinstance(intent_data, dict) or working_intent is not None or selected_facts
+                or intent_data.get("working_manuscript") != context_bundle["working_manuscript"]):
+                raise KernelError("WORKING_PROSE_INTENT_DRIFT", "Writer must consume one exactly bound working Intent")
+            working_intent = {key: value for key, value in intent_data.items() if key != "working_manuscript"}
+            continue
         if (
             asset_type in _STATE_ASSET_TYPES
             and "disclosure_field_projections" in projection
@@ -1778,7 +1799,16 @@ def build_provider_context_view(
         ),
     }
     if context_bundle.get("working_manuscript") is not None and stage in {"draft", "memo", "revision"}:
+        if context_bundle["working_manuscript"].get("projection_policy") is not None:
+            from novel_forge.modules.book_authority.working_prose import validate_working_projection
+            validate_working_projection(context_bundle["working_manuscript"],
+                project_id=context_bundle["project_id"], book_id=position.get("book_id"),
+                target_chapter=position.get("chapter"),
+                accepted_through_chapter=view["accepted_state_boundary"]["accepted_through_chapter"])
         view["working_manuscript"] = deepcopy(context_bundle["working_manuscript"])
+    if working_intent is not None:
+        view["contract_version"] = "provider-context-view-v7"
+        view["frozen_intent"] = working_intent
     serialized_size = len(json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")) if task_scoped_context else _serialized_character_count(view)
     serialization_limit = 8_388_608 if task_scoped_context else maximum_characters
     if serialized_size > serialization_limit:
@@ -2602,6 +2632,16 @@ def _planning_working_continuity(source: Mapping[str, Any], scope: Mapping[str, 
     if version is None:
         return None
     working = (source.get("arc_working_set") or {}).get("working_manuscript")
+    if version == "planning-working-continuity.v3":
+        from novel_forge.modules.book_authority.working_prose import validate_working_projection
+        if not isinstance(working, Mapping):
+            raise KernelError("PLANNING_WORKING_CONTINUITY_DRIFT", "Working continuity requires its frozen projection")
+        validate_working_projection(working, project_id=scope["project_id"], book_id=scope["book_id"])
+        return {"version": version, "book_run_id": working["book_run_id"],
+            "snapshot_hash": working["snapshot_hash"], "target_chapter": working["target_chapter"],
+            "accepted_through_chapter": working["accepted_through_chapter"],
+            "source_location": "/arc_working_set/working_manuscript",
+            "authority": "SELECTED_WORKING_VERSION_CONTINUITY_ONLY", "instruction": working["instruction"]}
     if (version not in {"planning-working-continuity.v1", "planning-working-continuity.v2"}
             or not isinstance(working, Mapping)
             or working.get("version") != "working-manuscript-context.v1"

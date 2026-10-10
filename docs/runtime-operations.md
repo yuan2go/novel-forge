@@ -322,6 +322,15 @@ UNKNOWN reconciliation. Independent author-supervision approval tests must retai
 `NOT_PROVEN` literary ceiling. Record synthetic inputs as `SYNTHETIC`, reconstructed
 inputs as `RECONSTRUCTED`, and keep failed attempts with the final focused results.
 
+Working-prose policy changes additionally check `test_working_prose_projection.py`, exact
+Skill/Pack materialization, Planning working continuity and the enhanced-working variant
+of `test_author_first_manuscript_postgres.py`. Record source coverage separately from
+Writer semantic attribution. An offline located-case PASS, a scripted PostgreSQL execution
+or model evaluation cannot establish literary improvement or independent human validation.
+Per-Chapter opt-in requires the local author/operator and freezes policy plus exact sources
+in the native request; omitted policy keeps the profile/default path. Original suspended
+Provider work and UNKNOWN histories must not be resumed to perform a literary comparison.
+
 A focused pass does not substitute for release qualification below. Before rollout of
 work contracts, run migration clean-install/upgrade and the applicable same-release
 matrix, register/compile/approve/deploy the coherent Pack and routing profiles, and

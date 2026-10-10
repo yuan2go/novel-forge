@@ -816,8 +816,15 @@ class PostgresBookAuthority:
             )
         from .manuscript import author_first, freeze_working_context
         if author_first(book):
+            from .working_prose import working_prose_policy
+            selected_policy = working_prose_policy(command.preparation_report or {})
+            if selected_policy is not None:
+                from novel_forge.modules.authority_security import PrincipalType
+                if principal.principal_type is not PrincipalType.LOCAL_OPERATOR:
+                    raise KernelError("WORKING_PROSE_AUTHOR_SELECTION_REQUIRED", "A prospective per-Chapter policy requires its authenticated author/operator")
             with AuthorityUnitOfWork(self.database_url) as uow:
-                working = freeze_working_context(uow, book, command.chapter_number)
+                working = freeze_working_context(uow, book, command.chapter_number,
+                    projection_policy=selected_policy if selected_policy is not None else "FROM_PROFILE")
             command = replace(command, preparation_report={**dict(command.preparation_report or {}),
                 "author_workflow": book["author_workflow"], "working_manuscript": working})
         self._require_chapter_production_admission(book, command)

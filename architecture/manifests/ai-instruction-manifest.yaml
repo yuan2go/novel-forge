@@ -67,7 +67,9 @@
         "skills/narrative-beat-design/legacy-narrative-intent-20261010.md",
         "skills/topic-development/legacy-narrative-intent-20261010.md",
         "skills/worldbuilding/legacy-narrative-intent-20261010.md",
-        "skills/quality-review/legacy-v3.md"
+        "skills/quality-review/legacy-v3.md",
+        "skills/prose-generation/legacy-v4.md",
+        "skills/quality-review/legacy-v4.md"
       ],
       "kind": "RUNTIME_SKILL_SOURCE",
       "owner": "skill-governance",
@@ -164,7 +166,7 @@
         "src/novel_forge/modules/chapter_authority/current_quote_recovery.py",
         "src/novel_forge/modules/chapter_authority/current_semantic_recovery.py",
         "src/novel_forge/modules/chapter_authority/canon_support_coverage.py",
-        "src/novel_forge/modules/book_authority/manuscript.py"
+        "src/novel_forge/modules/book_authority/working_prose.py"
       ],
       "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
       "owner": "runtime-authorities",

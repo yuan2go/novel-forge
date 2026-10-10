@@ -513,3 +513,27 @@ def test_dismissal_needs_named_reviewer_and_complete_located_counterevidence():
     counter["findings"][0]["judgment"] = "INSUFFICIENT_EVIDENCE"
     with pytest.raises(KernelError):
         validate_finding_disposition(**command, counter_reports=[counter])
+
+
+def test_manual_range_selection_reviews_only_requested_spans_without_hiding_source_manifest():
+    from novel_forge.modules.book_followup_authority.prose_coordinator import BookProseReviewCoordinator
+
+    frozen = manifest()
+    original_sources = deepcopy(frozen['sources'])
+    frozen['policy']['window_selection'] = 'EXPLICIT_RANGES_ONLY'
+    text = '剑锋停在门外。她没有追击，因为桥下还有孩子。'
+    ranges = [{'asset_version_id': 'draft', 'start': 0, 'end': 5},
+              {'asset_version_id': 'draft', 'start': 14, 'end': 20}]
+    BookProseReviewCoordinator._append_evidence_window(frozen, [{'asset_version_id': 'draft', 'text': text}], ranges)
+    assert len(frozen['windows']) == 1
+    assert frozen['sources'] == original_sources
+    assert [(span['start'], span['end'], span['text']) for span in frozen['windows'][0]['spans']] == [(0, 5, text[:5]), (14, 20, text[14:20])]
+    assert aggregate_reports(frozen, [])['coverage_complete'] is False
+
+
+def test_automatic_review_cannot_use_manual_selected_range_policy():
+    frozen = manifest()
+    with pytest.raises(KernelError, match='LONGFORM_PROSE_POLICY_INVALID'):
+        freeze_manifest(project_id='p', workspace_id='w', book_run_id='run',
+            sources=[{'chapter_number': 1, 'acceptance_id': '', 'asset_version_id': 'draft', 'asset_hash': 'hash', 'text': '正文'}],
+            policy={**frozen['policy'], 'execution_mode': 'AUTOMATIC', 'window_selection': 'EXPLICIT_RANGES_ONLY'})

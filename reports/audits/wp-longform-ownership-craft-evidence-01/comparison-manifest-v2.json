@@ -1,0 +1,105 @@
+{
+  "version": "longform-native-comparison.v2",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "source_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "source_current_chapter": 16,
+  "accepted_through_chapter": 0,
+  "chapter": 17,
+  "plan_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+  "design": "Four native database-isolated continuations of the same frozen Plan and selected manuscripts; combined vs consequence-only isolates reaction instructions; combined vs reaction-only isolates consequence instructions. One sample per arm; exploratory, no human outcome.",
+  "selection_input": "Per-Chapter authenticated LOCAL_OPERATOR SubmitBookChapterCommand.preparation_report working_prose_policy; thin input adapter calls the unchanged Authority method, all native gates apply.",
+  "arms": [
+    {
+      "arm": 0,
+      "mode": "LEGACY",
+      "database": "nf_longform_f19e9b2191e6_arm0_test",
+      "database_oid": 124066,
+      "policy": null,
+      "status": "SAVED_READ_BACK_EXPORTED",
+      "cold_archive": {
+        "bytes": 322083335,
+        "sha256": "sha256:d06d9e7a4988c5ea879447f1076685852314fc6da9d9892e077430a6ca915a3c",
+        "state": "COLD_BACKUP_PRESERVED_LIVE_OWNED_ARM_RECYCLED"
+      }
+    },
+    {
+      "arm": 1,
+      "mode": "COMBINED",
+      "database": "nf_longform_f19e9b2191e6_arm1b_test",
+      "database_oid": 124185,
+      "policy": {
+        "version": "working-prose-projection.v2",
+        "history_chapters": 16,
+        "recent_complete_chapters": 4,
+        "max_characters": 24000,
+        "queries": [
+          "陆衡",
+          "唐穗",
+          "许庭",
+          "程管事",
+          "木块",
+          "热饭",
+          "时辰"
+        ],
+        "guidance_mode": "COMBINED"
+      },
+      "status": "BLOCKED",
+      "cold_archive": {
+        "bytes": 323003419,
+        "sha256": "sha256:57b68968dc135f2ebdf8f992ec3221bdb1087e67973bbb41b680a453feb112a5",
+        "state": "COLD_BACKUP_PRESERVED_LIVE_OWNED_ARM_RECYCLED"
+      }
+    },
+    {
+      "arm": 2,
+      "mode": "CHARACTER_REACTION",
+      "database": "nf_longform_f19e9b2191e6_arm2b_test",
+      "database_oid": null,
+      "policy": {
+        "version": "working-prose-projection.v2",
+        "history_chapters": 16,
+        "recent_complete_chapters": 4,
+        "max_characters": 24000,
+        "queries": [
+          "陆衡",
+          "唐穗",
+          "许庭",
+          "程管事",
+          "木块",
+          "热饭",
+          "时辰"
+        ],
+        "guidance_mode": "CHARACTER_REACTION"
+      },
+      "status": "NOT_RUN"
+    },
+    {
+      "arm": 3,
+      "mode": "ACTION_CONSEQUENCES",
+      "database": "nf_longform_f19e9b2191e6_arm3b_test",
+      "database_oid": null,
+      "policy": {
+        "version": "working-prose-projection.v2",
+        "history_chapters": 16,
+        "recent_complete_chapters": 4,
+        "max_characters": 24000,
+        "queries": [
+          "陆衡",
+          "唐穗",
+          "许庭",
+          "程管事",
+          "木块",
+          "热饭",
+          "时辰"
+        ],
+        "guidance_mode": "ACTION_CONSEQUENCES"
+      },
+      "status": "NOT_RUN"
+    }
+  ],
+  "human_evaluation": "NOT_READY",
+  "rollout": "DEFAULT_OFF",
+  "predecessor_manifest": "comparison-manifest-v1.json",
+  "predecessor_sha256": "sha256:9b3c2fa1ff69087b96ed9302d4c868ccbde7bfa574cb8b623ec92d3ab1ad93f6",
+  "change_reason": "Original 32000-character allocation exceeded the unchanged frozen task Context budget; new prospective optional historical allocation 24000, four recent complete chapters unchanged. No budget/gate increase, no old Operation reset, no query tuning to the sample cases."
+}

@@ -1,0 +1,127 @@
+{
+  "version": "longform-native-comparison.v3",
+  "tested_sha": "04e199c181ac74bc10ca59daf693df027d9588ec",
+  "source_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "source_current_chapter": 16,
+  "accepted_through_chapter": 0,
+  "chapter": 17,
+  "plan_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+  "design": "Four native database-isolated continuations of the same frozen Plan and selected manuscripts; combined vs consequence-only isolates reaction instructions; combined vs reaction-only isolates consequence instructions. One sample per arm; exploratory, no human outcome.",
+  "selection_input": "Per-Chapter authenticated LOCAL_OPERATOR SubmitBookChapterCommand.preparation_report working_prose_policy; thin input adapter calls the unchanged Authority method, all native gates apply.",
+  "arms": [
+    {
+      "arm": 0,
+      "mode": "LEGACY",
+      "database": "nf_longform_f19e9b2191e6_arm0_test",
+      "database_oid": 124066,
+      "policy": null,
+      "status": "SAVED_READ_BACK_EXPORTED",
+      "cold_archive": {
+        "bytes": 322083335,
+        "sha256": "sha256:d06d9e7a4988c5ea879447f1076685852314fc6da9d9892e077430a6ca915a3c",
+        "state": "COLD_BACKUP_PRESERVED_LIVE_OWNED_ARM_RECYCLED"
+      },
+      "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+      "reuse_basis": "Legacy projection unchanged; dedicated legacy view regression passes. Same immutable plan/selected sources; enhanced-only code change, not a rerun.",
+      "characters": 2289,
+      "root_operation_id": "d73ec13f-44da-4254-a32c-1ba787a0bb54"
+    },
+    {
+      "arm": 1,
+      "mode": "COMBINED",
+      "database": "nf_longform_f19e9b2191e6_arm1c_test",
+      "database_oid": 124297,
+      "policy": {
+        "version": "working-prose-projection.v2",
+        "history_chapters": 16,
+        "recent_complete_chapters": 4,
+        "max_characters": 22000,
+        "queries": [
+          "陆衡",
+          "唐穗",
+          "许庭",
+          "程管事",
+          "木块",
+          "热饭",
+          "时辰"
+        ],
+        "guidance_mode": "COMBINED"
+      },
+      "status": "SAVED_READ_BACK_EXPORTED",
+      "tested_sha": "04e199c181ac74bc10ca59daf693df027d9588ec",
+      "characters": 2242,
+      "root_operation_id": "e3af52fc-2707-4b0d-a610-1c51b68eac3a"
+    },
+    {
+      "arm": 2,
+      "mode": "CHARACTER_REACTION",
+      "database": "nf_longform_f19e9b2191e6_arm2c_test",
+      "database_oid": 124387,
+      "policy": {
+        "version": "working-prose-projection.v2",
+        "history_chapters": 16,
+        "recent_complete_chapters": 4,
+        "max_characters": 22000,
+        "queries": [
+          "陆衡",
+          "唐穗",
+          "许庭",
+          "程管事",
+          "木块",
+          "热饭",
+          "时辰"
+        ],
+        "guidance_mode": "CHARACTER_REACTION"
+      },
+      "status": "SAVED_READ_BACK_EXPORTED",
+      "tested_sha": "04e199c181ac74bc10ca59daf693df027d9588ec",
+      "cold_archive": {
+        "bytes": 323952476,
+        "sha256": "sha256:8206f3460c506d1a9d3db47b99cc42a9892b56f237b77e2a25991c56da690aea",
+        "state": "COLD_BACKUP_PRESERVED_LIVE_OWNED_ARM_RECYCLED"
+      },
+      "characters": 2649,
+      "root_operation_id": "936ca949-e5cc-4fd2-96f8-91c15f3ec5bb"
+    },
+    {
+      "arm": 3,
+      "mode": "ACTION_CONSEQUENCES",
+      "database": "nf_longform_f19e9b2191e6_arm3c_test",
+      "database_oid": 124566,
+      "policy": {
+        "version": "working-prose-projection.v2",
+        "history_chapters": 16,
+        "recent_complete_chapters": 4,
+        "max_characters": 22000,
+        "queries": [
+          "陆衡",
+          "唐穗",
+          "许庭",
+          "程管事",
+          "木块",
+          "热饭",
+          "时辰"
+        ],
+        "guidance_mode": "ACTION_CONSEQUENCES"
+      },
+      "status": "SAVED_READ_BACK_EXPORTED",
+      "tested_sha": "04e199c181ac74bc10ca59daf693df027d9588ec",
+      "cold_archive": {
+        "bytes": 323933159,
+        "sha256": "sha256:d603c19d09d2a5031a73f14b5c24edff6c627a978e26128b5fc157b56673ad4a",
+        "state": "COLD_BACKUP_PRESERVED_LIVE_OWNED_ARM_RECYCLED"
+      },
+      "characters": 2359,
+      "root_operation_id": "02405035-aa7c-4226-99f1-65b83e4555d6"
+    }
+  ],
+  "human_evaluation": "NOT_READY",
+  "rollout": "DEFAULT_OFF",
+  "predecessor_manifest": "comparison-manifest-v2.json",
+  "predecessor_sha256": "sha256:fdbf5b26daa1e9d20614f5002c676940c9e3295c0f7d27c72c4f56493b79dda7",
+  "change_reason": "Original 32000-character allocation exceeded the unchanged frozen task Context budget; new prospective optional historical allocation 24000, four recent complete chapters unchanged. No budget/gate increase, no old Operation reset, no query tuning to the sample cases.",
+  "revision_reason": "Known pre-dispatch failures retained; Writer v7 removes identical JSON-string working duplication; optional older prose allocation 22000 characters leaves headroom without changing mandatory complete recent four chapters, queries or frozen task budget.",
+  "cluster_system_identifier": "7695026994287073315",
+  "known_live_arm": 1,
+  "followup_chapter18": "BLOCKED_PRE_DRAFT_DISPATCH"
+}

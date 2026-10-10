@@ -1,0 +1,146 @@
+{
+  "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+  "arm": 1,
+  "source_scope": [
+    16,
+    17
+  ],
+  "human_evidence": "NOT_READY",
+  "literary_evidence": "NOT_PROVEN",
+  "status": "SAVED_READ_BACK_EXPORTED",
+  "run_id": "05fba6c2-103f-49f1-ae18-fc0300f68d81",
+  "manifest_digest": "sha256:5df51c4b5384e5bdf7e84c475113ab1f159b1f95b80ba87e8ccfa0c360a25667",
+  "policy": {
+    "policy_version": "wp-longform-selected16-17.v1",
+    "window_codepoints": 8000,
+    "overlap_codepoints": 0,
+    "context_token_budget": 226400,
+    "maximum_windows": 1,
+    "execution_mode": "MANUAL",
+    "window_selection": "EXPLICIT_RANGES_ONLY"
+  },
+  "selected_ranges": [
+    {
+      "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1",
+      "start": 0,
+      "end": 2479
+    },
+    {
+      "asset_version_id": "authority-output:da54b446-1ec1-4d2f-9609-00994eee3088:chapter.draft:v1",
+      "start": 0,
+      "end": 2242
+    }
+  ],
+  "operation_id": "21b3a6b4-e107-4aae-949a-87e4dd57f7d6",
+  "operation_status": "SUCCEEDED",
+  "coverage_complete": false,
+  "whole_manuscript_review": "NOT_RUN",
+  "outputs": [
+    {
+      "asset_type": "longform_prose_review_report",
+      "asset_version_id": "authority-output:21b3a6b4-e107-4aae-949a-87e4dd57f7d6:longform.prose_review.report:v1",
+      "content_hash": "sha256:203e1ed476785ab00c4a07179935b3115b1b17d6137dfbc6c0cbdd2bd88ff702",
+      "content": {
+        "findings": [
+          {
+            "claim": "第16、17章均未达到每章2500中文字的明确篇幅下限。",
+            "evidence": [
+              {
+                "end": 22,
+                "quote": "沈砚走进练习场时，墙边那三根木桩还并在一处。",
+                "start": 0,
+                "text_hash": "sha256:86fb9cac9ece8f9f6579c05dfcd70fe52e5d0c5313c37e0b3091d3c3efecbbfb",
+                "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1"
+              },
+              {
+                "end": 19,
+                "quote": "沈砚走到练习场边，又回头望了一眼木架。",
+                "start": 0,
+                "text_hash": "sha256:788f3af05d2dfda6c991bb5d470a7eaee96e3fda4be70907235957203e4291a1",
+                "asset_version_id": "authority-output:da54b446-1ec1-4d2f-9609-00994eee3088:chapter.draft:v1"
+              }
+            ],
+            "judgment": "ISSUE",
+            "severity": "MINOR",
+            "dimension": "arc_pacing",
+            "rationale": "所给正文跨度分别为2479和2242个Unicode码点，连标点与换行一并计算都少于2500，因此中文字数必然低于两章各自基线的下限。这是篇幅约束偏差，不能单凭字数推断情节缺失。若扩写，应增加有实际作用的行动或交流；增改事件与动机须另作规划确认。",
+            "confidence": 0.99,
+            "lineage_id": "window-16-17-chapter-length"
+          },
+          {
+            "claim": "第16章保留木片结果待验证，同时给出手位练习的阶段性收获。",
+            "evidence": [
+              {
+                "end": 2449,
+                "quote": "他知道下次该在什么时候落手，也知道那道亮纹的答案仍在课堂的木片上。",
+                "start": 2416,
+                "text_hash": "sha256:86fb9cac9ece8f9f6579c05dfcd70fe52e5d0c5313c37e0b3091d3c3efecbbfb",
+                "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1"
+              }
+            ],
+            "judgment": "INTENTIONAL",
+            "severity": "NONE",
+            "dimension": "setup_progress_payoff",
+            "rationale": "正文把能及时落手的动作所得与尚未复验的亮纹分开，符合本章限定的阶段回报；木片验证尚未到期，无须在此宣告引气成功。",
+            "confidence": 0.94,
+            "lineage_id": "ch16-hand-position-payoff-open-wood-test"
+          },
+          {
+            "claim": "第17章结尾让陆衡的同行决定保持开放。",
+            "evidence": [
+              {
+                "end": 2242,
+                "quote": "至于陆衡会不会走到那里，他现在还不知道。",
+                "start": 2222,
+                "text_hash": "sha256:788f3af05d2dfda6c991bb5d470a7eaee96e3fda4be70907235957203e4291a1",
+                "asset_version_id": "authority-output:da54b446-1ec1-4d2f-9609-00994eee3088:chapter.draft:v1"
+              }
+            ],
+            "judgment": "INTENTIONAL",
+            "severity": "NONE",
+            "dimension": "goals_relationships",
+            "rationale": "结尾明确沈砚尚不知道陆衡是否同行，与本章预设的开放结尾一致；此处没有证据表明陆衡已经答应，不能要求提前兑现。",
+            "confidence": 0.96,
+            "lineage_id": "ch17-lu-heng-unanswered-invitation"
+          }
+        ],
+        "window_id": "sha256:c779f297ead0afbc55d3214ce544e868f7fd9afbe42726609ed3f2cfb0dfad80",
+        "schema_version": "longform-prose-review.v1",
+        "manifest_digest": "sha256:5df51c4b5384e5bdf7e84c475113ab1f159b1f95b80ba87e8ccfa0c360a25667",
+        "reviewed_dimensions": [
+          "structure_conflict_repetition",
+          "goals_relationships",
+          "setup_progress_payoff",
+          "voice_expression",
+          "arc_pacing",
+          "motivation_cost"
+        ]
+      }
+    },
+    {
+      "asset_type": "model_call_log",
+      "asset_version_id": "4539d473-7162-46c4-a69c-fa84b093d575",
+      "content_hash": "sha256:de960c546f1bd875ba69dd66794ef4e8b2cbf1a22f3a514f30d7ed030677c85f",
+      "content": {
+        "provider_evidence": {
+          "provider_id": "codex-cli",
+          "model_id": "gpt-6-sol",
+          "prompt_version": "prompt-system:longform-prose-review-pack@v1",
+          "skill_version": "quality-review-v5",
+          "real_model_call": true
+        },
+        "usage": {
+          "model": "gpt-6-sol",
+          "measurement": "MEASURED",
+          "availability": "AVAILABLE",
+          "input_tokens": 27709,
+          "total_tokens": 32197,
+          "output_tokens": 4488,
+          "cached_input_tokens": 0,
+          "uncached_input_tokens": 27709,
+          "reasoning_output_tokens": 3491
+        }
+      }
+    }
+  ]
+}

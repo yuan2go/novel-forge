@@ -1,0 +1,131 @@
+{
+  "version": "longform-native-arm.v1",
+  "arm": 1,
+  "mode": "COMBINED",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "database": "nf_longform_f19e9b2191e6_arm1b_test",
+  "database_oid": 124185,
+  "policy": {
+    "version": "working-prose-projection.v2",
+    "history_chapters": 16,
+    "recent_complete_chapters": 4,
+    "max_characters": 24000,
+    "queries": [
+      "陆衡",
+      "唐穗",
+      "许庭",
+      "程管事",
+      "木块",
+      "热饭",
+      "时辰"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "events": [
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 0,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "8ab987ea-9b61-4aa2-a7c7-63da96147007",
+        "evidence_ref": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 1,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+        "evidence_ref": "chapter-request:9dd894e00d13fd0fea981cca0f42a2c68096b6d3f98dea3f79a500cc8a89b910"
+      }
+    },
+    {
+      "phase": "FROZEN_REQUEST",
+      "chapter_request_id": "chapter-request:9dd894e00d13fd0fea981cca0f42a2c68096b6d3f98dea3f79a500cc8a89b910",
+      "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+      "plan_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+      "working_snapshot_hash": "sha256:8ba9474dc2e7bd272517345c5c064d02b05418e94f083d5f0408ac1473abcbce"
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 0,
+      "result": {
+        "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+        "saga_id": "01a8c564-6f34-44ef-bd87-4d473d6d6fe8",
+        "saga_status": "RUNNING",
+        "operation_id": "dba2e904-c2ef-4ec3-ae17-3ee74db0634c",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 1,
+      "result": {
+        "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+        "saga_id": "01a8c564-6f34-44ef-bd87-4d473d6d6fe8",
+        "saga_status": "RUNNING",
+        "operation_id": "28d31ef8-857e-41d7-9642-77fd69a39dc6",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 2,
+      "result": {
+        "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+        "saga_id": "01a8c564-6f34-44ef-bd87-4d473d6d6fe8",
+        "saga_status": "RUNNING",
+        "operation_id": "522e2574-1339-445e-ac60-b09d7cfe0bd0",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 3,
+      "result": {
+        "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+        "saga_id": "01a8c564-6f34-44ef-bd87-4d473d6d6fe8",
+        "saga_status": "RUNNING",
+        "operation_id": "52ad1d2a-a681-4756-ba11-e4b39e068017",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 4,
+      "result": {
+        "root_operation_id": "e46c55bb-430b-4af1-97da-3ebb9f1dc9ac",
+        "saga_id": "01a8c564-6f34-44ef-bd87-4d473d6d6fe8",
+        "saga_status": "RUNNING",
+        "operation_id": "51d5cf38-95b1-45fc-9510-86c3c10a420c",
+        "node": "context",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "STOPPED",
+      "error_type": "KernelError",
+      "code": "PROVIDER_ROUTING_BLOCKED",
+      "message": "PROVIDER_ROUTING_BLOCKED: routing-decision:efa435dc31ea60df2081cdd092b26936c11f4692cd32e57ce9a0b4b87c36a966"
+    }
+  ],
+  "status": "BLOCKED",
+  "literary_evidence": "NOT_PROVEN",
+  "human_evidence": "NOT_READY"
+}

@@ -1,0 +1,32 @@
+{
+  "version": "longform-isolated-probe.v1",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "database": "nf_longform_f19e9b2191e6_test",
+  "source_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "original_runtime_mutations": 0,
+  "events": [
+    {
+      "phase": "MIGRATIONS",
+      "head": "20261010_0198_recovery_reference_indexes",
+      "status": null
+    },
+    {
+      "phase": "SOURCE_FREEZE",
+      "book_version": 114,
+      "current_chapter": 16,
+      "accepted_through_chapter": 0,
+      "state": "PAUSED",
+      "plan_version_id": "authority-output:9bd6978c-a121-42e0-84b7-4414ed8b1dac:story_planning.candidate:v1",
+      "plan_hash": "sha256:c8717ab34fb3a7b20391dd77cd31f1f8fbb92a7174e4c266622d9c42efc0ce5c"
+    },
+    {
+      "phase": "STOPPED",
+      "status": "BLOCKED",
+      "error_type": "KernelError",
+      "error_code": "CONTENT_CODEC_INPUT_INVALID",
+      "message": "CONTENT_CODEC_INPUT_INVALID: planning.change_request.author input binding failed: operator-authored production inputs cannot inherit assets"
+    }
+  ],
+  "literary_evidence": "NOT_READY",
+  "human_evidence": "NOT_READY"
+}

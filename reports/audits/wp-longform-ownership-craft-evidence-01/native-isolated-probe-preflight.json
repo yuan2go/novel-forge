@@ -1,0 +1,23 @@
+{
+  "version": "longform-isolated-probe.v1",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "database": "nf_longform_f19e9b2191e6_test",
+  "source_book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+  "original_runtime_mutations": 0,
+  "events": [
+    {
+      "phase": "MIGRATIONS",
+      "head": "20261010_0198_recovery_reference_indexes",
+      "status": null
+    },
+    {
+      "phase": "STOPPED",
+      "status": "BLOCKED",
+      "error_type": "AssertionError",
+      "error_code": "UNCLASSIFIED",
+      "message": "See private exception record; no blind retry"
+    }
+  ],
+  "literary_evidence": "NOT_READY",
+  "human_evidence": "NOT_READY"
+}

@@ -1,0 +1,47 @@
+{
+  "tested_sha": "4cad6c6f097c658f99b164d0ebc09e9242f7cd27",
+  "arm": 0,
+  "source_scope": [
+    16,
+    17
+  ],
+  "human_evidence": "NOT_READY",
+  "literary_evidence": "NOT_PROVEN",
+  "status": "BLOCKED_ORIGINAL_UNKNOWN_SUCCESSOR_UNSENT_PROVIDER_UNAVAILABLE",
+  "run_id": "baf0faa6-0195-4f1a-ae02-da5304270e91",
+  "manifest_digest": "sha256:9de6c1c52513157d97964c0827647bcb4529fbb6f43813c6b5916947eb29afbe",
+  "policy": {
+    "policy_version": "wp-longform-selected16-17.v1",
+    "window_codepoints": 8000,
+    "overlap_codepoints": 0,
+    "context_token_budget": 226400,
+    "maximum_windows": 1,
+    "execution_mode": "MANUAL",
+    "window_selection": "EXPLICIT_RANGES_ONLY"
+  },
+  "selected_ranges": [
+    {
+      "asset_version_id": "authority-output:c7d04ba5-7dff-4f71-9441-c1f7d790078b:chapter.draft:v1",
+      "start": 0,
+      "end": 2479
+    },
+    {
+      "asset_version_id": "authority-output:b7de0a2f-06b9-4761-b1eb-d0c7bc70ad3e:chapter.draft:v1",
+      "start": 0,
+      "end": 2289
+    }
+  ],
+  "error_type": "KernelError",
+  "error_code": "PROVIDER_ROUTING_BLOCKED",
+  "message": "PROVIDER_ROUTING_BLOCKED: routing-decision:50da438dbe963e5de232608919a0cff3abc2866b7917124fa7f5da6b3fc6102a",
+  "original_operation_id": "d5d63f95-dd88-42b7-a712-2d942ab3019f",
+  "original_external_effect_id": "cd748001-0138-42fa-88d4-b6664ed80dbc",
+  "original_receipt_id": "process-receipt:e53dd386edde1713c94525a5",
+  "local_receipt_status": "TIMED_OUT",
+  "result_integrity": "MISSING",
+  "usage": "UNAVAILABLE",
+  "cost": "UNAVAILABLE",
+  "successor_operation_id": "6b57eca4-4434-42c3-819d-05582bb00e26",
+  "further_dispatch": "STOPPED",
+  "recovery_implementation_changes": 0
+}

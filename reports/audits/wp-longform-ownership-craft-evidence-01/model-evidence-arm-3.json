@@ -1,0 +1,36 @@
+{
+  "root_operation_id": "02405035-aa7c-4226-99f1-65b83e4555d6",
+  "record_count": 2,
+  "records": [
+    {
+      "asset_version_id": "d0fcd931-20a5-4f5b-a23c-35dab754dbbb",
+      "content_hash": "sha256:7d1c8150efa7503f4c5fd10702c019d63772716db1cb29489bea3afc5d745c3f",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "skill_version": "chapter-plan-skill-v3",
+      "real_model_call": true,
+      "usage_fields": {
+        "input_tokens": 60941,
+        "total_tokens": 63623,
+        "output_tokens": 2682
+      }
+    },
+    {
+      "asset_version_id": "6996d10a-86bf-44b9-8436-5e98b8022d9e",
+      "content_hash": "sha256:8a82d0d3062045d99c9a4369846f376beb5bff1d2c2ed38b581ec8e041d8c415",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "skill_version": "prose-generation-v4",
+      "real_model_call": true,
+      "usage_fields": {
+        "input_tokens": 79955,
+        "total_tokens": 83332,
+        "output_tokens": 3377
+      }
+    }
+  ],
+  "original_cold_records_retained": true,
+  "classification": "REAL_PROVIDER_CANDIDATE_NOT_PRODUCTION_OR_LITERARY_QUALIFICATION"
+}

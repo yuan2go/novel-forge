@@ -56,6 +56,12 @@ def validate_chapter_execution_intent(
             "CHAPTER_EXECUTION_INTENT_FINGERPRINT_INVALID",
             "ExecutionIntent content differs from its immutable fingerprint",
         )
+    if normalized.get("working_manuscript") is not None:
+        from novel_forge.modules.book_authority.working_prose import validate_working_projection
+        validate_working_projection(normalized["working_manuscript"],
+            project_id=normalized["project_id"], book_id=normalized.get("book_id"),
+            target_chapter=normalized["chapter"],
+            accepted_through_chapter=normalized["accepted_boundary"]["accepted_through_chapter"])
     if expected_plan_asset_version_id and (
         source_plan.get("asset_version_id") != expected_plan_asset_version_id
     ):
@@ -218,6 +224,7 @@ def build_chapter_execution_intent(
     style_view: Mapping[str, Any] | None = None,
     accepted_through_chapter: int | None = None,
     character_references: Mapping[str, Any] | None = None,
+    working_manuscript: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     current_contract = None
     if chapter_plan.get("chapter_contract_schema_version"):
@@ -599,6 +606,19 @@ def build_chapter_execution_intent(
         intent["book_id"] = chapter_plan["book_id"]
     if character_references is not None:
         intent["character_reference_contract"] = dict(character_references)
+    if working_manuscript is not None:
+        from copy import deepcopy
+        from novel_forge.modules.book_authority.working_prose import validate_working_projection
+        validate_working_projection(working_manuscript, project_id=project_id,
+            book_id=chapter_plan.get("book_id"), target_chapter=chapter,
+            accepted_through_chapter=expected_boundary)
+        intent["working_manuscript"] = deepcopy(dict(working_manuscript))
+        intent["character_situation"] = {
+            "version": "chapter-character-situation.v1",
+            "source_plan": deepcopy(intent["source_chapter_plan"]),
+            "participants": deepcopy(chapter_plan.get("character_participation") or []),
+            "interpretation": "Goals, prior triggers and relationship/resource intentions are planning inputs. Entry/exit emotions suggest a direction; motivate each response through experience and circumstances instead of acting an emotional endpoint. Required outcomes remain binding; optional anticipated changes do not become observed history.",
+        }
     intent["intent_fingerprint"] = _hash(intent)
     return intent
 

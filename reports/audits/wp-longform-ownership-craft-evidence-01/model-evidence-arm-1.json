@@ -1,0 +1,50 @@
+{
+  "root_operation_ids": [
+    "e3af52fc-2707-4b0d-a610-1c51b68eac3a"
+  ],
+  "record_count": 2,
+  "records": [
+    {
+      "operation_id": "2aedabd5-6d65-438d-9717-ef364c4eabfc",
+      "root_operation_id": "e3af52fc-2707-4b0d-a610-1c51b68eac3a",
+      "asset_version_id": "3a4195ae-5227-4f1d-bf41-4471ffa40525",
+      "content_hash": "sha256:49c1db78d1e37c0ca9fe675cbc9ad3d3b63fa8f4d5a3042cddfe208afcbe9c48",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "skill_version": "chapter-plan-skill-v3",
+      "real_model_call": true,
+      "usage_fields": {
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 60973,
+        "total_tokens": 63324,
+        "output_tokens": 2351,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": 516
+      }
+    },
+    {
+      "operation_id": "da54b446-1ec1-4d2f-9609-00994eee3088",
+      "root_operation_id": "e3af52fc-2707-4b0d-a610-1c51b68eac3a",
+      "asset_version_id": "41525d65-26ad-4120-8dc8-0238c8d7b434",
+      "content_hash": "sha256:85dbb725e3f93e804aae816c6387088c1ea17de57873a6c9a3eb53fc8d7e4f4e",
+      "provider_id": "codex-cli",
+      "model_id": "gpt-6-sol",
+      "prompt_version": "prompt-system:chapter-generation-pack@v3",
+      "skill_version": "prose-generation-v4",
+      "real_model_call": true,
+      "usage_fields": {
+        "measurement": "MEASURED",
+        "availability": "AVAILABLE",
+        "input_tokens": 79934,
+        "total_tokens": 83153,
+        "output_tokens": 3219,
+        "cached_input_tokens": 0,
+        "reasoning_output_tokens": 1006
+      }
+    }
+  ],
+  "raw_records_retained": true,
+  "classification": "REAL_PROVIDER_EVIDENCE_NOT_PRODUCTION_OR_LITERARY_QUALIFICATION"
+}

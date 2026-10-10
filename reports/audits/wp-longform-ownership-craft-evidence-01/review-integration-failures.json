@@ -1,0 +1,13 @@
+{
+  "status": "FAIL_PRE_REVIEW_FIXTURE_ADMISSION",
+  "cases": 2,
+  "error_code": "REALIZATION_SOURCE_BINDING_REQUIRED",
+  "location": "existing scripted Book fixture Chapter Draft accepted-State binding, before selected-window start",
+  "log_sha256": "sha256:286b3d9491775d548e1c082e53c62c6f49302859900ac45dee5d1e2de8c20e51",
+  "constraints_relaxed": false,
+  "native_selected_window_review": "SEPARATE_REAL_PROVIDER_PASS",
+  "baseline_verification": "FAIL_SAME_GATE_ON_IMMUTABLE_MAIN",
+  "baseline_sha": "e763d5fc959fb2fa3e03faff839de1e0d9c6ee64",
+  "baseline_log_sha256": "sha256:48e70125e4e846bf838b3a3b22863d3b7b9d5e603d47b38fa3d5446947045273",
+  "final_test_delta": "Removed optional parameterization because this historical setup fails before the changed Review owner; raw failed logs retained. No Source gate weakened."
+}

@@ -1,0 +1,23 @@
+{
+  "tested_sha": "04e199c181ac74bc10ca59daf693df027d9588ec",
+  "admission": "EXISTING_AUTHOR_FIRST_VALIDATION_PACK_PATH",
+  "production_certification": "NOT_RUN",
+  "human_approval": "NOT_RUN",
+  "book_cursor": 16,
+  "accepted_through_chapter": 0,
+  "generation_ticks": 0,
+  "packs": [
+    {
+      "pack_id": "story_planning_pack.wp_longform_02",
+      "pack_version": "2.14.1002",
+      "compilation_id": "compilation:quality:story_planning_pack.wp_longform_02:2b811e3867275c890271",
+      "deployment_id": "deployment:quality:story_planning_pack.wp_longform_02:2b811e3867275c890271"
+    },
+    {
+      "pack_id": "chapter_generation_pack.wp_longform_02",
+      "pack_version": "2.0.1002",
+      "compilation_id": "compilation:quality:chapter_generation_pack.wp_longform_02:c9cb3a3b120adf877ea7",
+      "deployment_id": "deployment:quality:chapter_generation_pack.wp_longform_02:c9cb3a3b120adf877ea7"
+    }
+  ]
+}

@@ -341,38 +341,58 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
     return [(number, dependencies) for number, _, dependencies in deliveries], changes
 
 
-def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int) -> dict[str, Any]:
+def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
+                           projection_policy: Any = "FROM_PROFILE") -> dict[str, Any]:
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, project_working_sources, working_instruction, working_prose_policy
+
+    if projection_policy == "FROM_PROFILE":
+        profile_id = book.get("production_profile_version")
+        profile = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=profile_id) if profile_id else None
+        projection_policy = working_prose_policy(profile.content) if profile else None
+    projection_policy = working_prose_policy({"working_prose_policy": projection_policy})
     _, changes = working_dependency_changes(uow, book)
     rows = []
-    for number in range(max(1, chapter - 4), chapter):
+    history = projection_policy["history_chapters"] if projection_policy else 4
+    for number in range(max(1, chapter - history), chapter):
         source = selected_source(uow, book, number)
         text = source_draft_content(source)["text"]
         rows.append({"chapter": number, "asset_version_id": source.asset_version_id,
             "content_hash": source.content_hash, "text_hash": text_hash(text),
-            "excerpt": text[-2400:] if number == chapter - 1 else text[-600:],
+            **({"text": text} if projection_policy else {"excerpt": text[-2400:] if number == chapter - 1 else text[-600:]}),
             "status": "UNREVIEWED_WORKING_PROSE", "character_knowledge": "NOT_VERIFIED"})
         if changes.get(number):
             rows[-1]["dependency_changes"] = changes[number]
-    result = {"version": "working-manuscript-context.v1", "book_run_id": book["book_run_id"],
+    if projection_policy:
+        rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy)
+    result = {"version": CONTEXT_VERSION if projection_policy else "working-manuscript-context.v1", "book_run_id": book["book_run_id"],
         "project_id": book["project_id"], "book_id": book["book_id"], "target_chapter": chapter,
         "accepted_through_chapter": int(book["accepted_through_chapter"]), "sources": rows,
         "authority": "AUTHOR_WORKING_PROSE_ONLY", "structured_facts": [],
-        "instruction": "Continue the selected working prose. Excerpts are unreviewed observations, not verified Canon. Plans and possible futures are intent, not past experience. Do not infer character knowledge from reader knowledge; retain uncertainty."}
+        **({"projection_policy": projection_policy} if projection_policy else {}),
+        "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
     return {**result, "snapshot_hash": canonical_hash(result)}
 
 
 def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, Any], *, require_current: bool = True) -> None:
+    from .working_prose import CONTEXT_VERSION, validate_working_projection
+    enhanced = snapshot.get("projection_policy") is not None
+    if enhanced:
+        validate_working_projection(snapshot, project_id=book["project_id"], book_id=book["book_id"])
     plain = {key: value for key, value in snapshot.items() if key != "snapshot_hash"}
-    if (snapshot.get("version") != "working-manuscript-context.v1"
+    if (snapshot.get("version") not in {"working-manuscript-context.v1", CONTEXT_VERSION}
             or snapshot.get("snapshot_hash") != canonical_hash(plain)
             or any(snapshot.get(key) != book[key] for key in ("project_id", "book_id", "book_run_id"))):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Working context must bind its exact Book and immutable sources")
-    if require_current and snapshot != freeze_working_context(uow, book, snapshot["target_chapter"]):
+    if require_current and snapshot != freeze_working_context(uow, book, snapshot["target_chapter"],
+            projection_policy=snapshot.get("projection_policy") if enhanced else None):
         raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     for item in snapshot["sources"]:
         source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=item["asset_version_id"])
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
+        if enhanced and (len(source_draft_content(source)["text"]) != item["source_characters"]
+                or any(source_draft_content(source)["text"][p["start"]:p["end"]] != p["text"] for p in item["passages"])):
+            raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")
 
 
 def deliver_manuscript(authority: Any, request_id: str, *, principal: Any) -> dict[str, Any]:

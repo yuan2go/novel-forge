@@ -1,0 +1,23 @@
+{
+  "sha": "e763d5fc959fb2fa3e03faff839de1e0d9c6ee64",
+  "contracts": [
+    {
+      "version": "1.17.0",
+      "baseline_catalog": "e41d45bc82f88954bea8e461614ffc030de0c7404c970f80d8834aad16b5a4ec",
+      "frozen_catalog": "2bcc60c7eae712014b5421e505d09962afd07bbbcd3d71af9e0c27eeaaecc897",
+      "baseline_pass": false
+    },
+    {
+      "version": "1.18.0",
+      "baseline_catalog": "e0854d8a8d1d32bb10a67da841e3e053b5ab6f409bf339438c72f20e5df5ab69",
+      "frozen_catalog": "a59e26a12721c6af8c88742e978b64fb33d6a10dea3c3c3d1bd796804d2f7624",
+      "baseline_pass": false
+    },
+    {
+      "version": "1.19.0",
+      "baseline_catalog": "139651dc49b9da8f2e106c765e94c8bd9a513ae3a72338334ab835d6619db98c",
+      "frozen_catalog": "2ba44ac971f1899d5d49e644b2c0420f0b7e675aa8f7c1dbeb9adfe101881d3f",
+      "baseline_pass": false
+    }
+  ]
+}

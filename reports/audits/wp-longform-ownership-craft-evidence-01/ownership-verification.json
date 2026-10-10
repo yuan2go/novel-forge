@@ -1,0 +1,588 @@
+{
+  "status": "PASS",
+  "evidence_state": "EXECUTABLE",
+  "source_locator_errors": {
+    "errors": 0,
+    "denominator": 76
+  },
+  "coverage": {
+    "baseline": {
+      "included": 3,
+      "denominator": 64
+    },
+    "enhanced": {
+      "included": 43,
+      "denominator": 64
+    }
+  },
+  "boundary_probes": [
+    {
+      "probe": "foreign_book",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    },
+    {
+      "probe": "future_source",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    },
+    {
+      "probe": "selected_version_missing",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    },
+    {
+      "probe": "character_knowledge_promotion",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    },
+    {
+      "probe": "canon_promotion",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    },
+    {
+      "probe": "nested_promotion",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    },
+    {
+      "probe": "range_overlap",
+      "result": "REJECTED",
+      "error_code": "WORKING_PROSE_PROJECTION_INVALID"
+    }
+  ],
+  "writer_semantic_ownership_error_rate": "NOT_EVALUATED",
+  "literary_improvement": "NOT_PROVEN",
+  "human_validation": "NOT_READY",
+  "rows": [
+    {
+      "sample_id": "Q01-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q01-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q01-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q01-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q02-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q02-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q02-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q02-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q03-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q03-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q03-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q03-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q04-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q04-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q04-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q04-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q05-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q05-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q05-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q05-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q06-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q06-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q06-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q06-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q07-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q07-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q07-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q07-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q08-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q08-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q08-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q08-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q09-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q09-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q09-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q09-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "OMITTED"
+    },
+    {
+      "sample_id": "Q10-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q10-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q10-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q10-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q11-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q11-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q11-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q11-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q12-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q12-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q12-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q12-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q13-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q13-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q13-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q13-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q14-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q14-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q14-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q14-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q15-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q15-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q15-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q15-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q16-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "OMITTED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q16-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "INCLUDED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q16-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "INCLUDED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "Q16-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS",
+      "baseline_coverage": "INCLUDED",
+      "enhanced_coverage": "INCLUDED"
+    },
+    {
+      "sample_id": "FUTURE-1",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-2",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-3",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-4",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-5",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-6",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-7",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "FUTURE-8",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "VERSION-7",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "VERSION-11",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "VERSION-12",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "VERSION-13",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "PASS"
+    },
+    {
+      "sample_id": "CONTROL-RUMOR",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "NOT_APPLICABLE_SYNTHETIC"
+    },
+    {
+      "sample_id": "CONTROL-READER_ONLY",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "NOT_APPLICABLE_SYNTHETIC"
+    },
+    {
+      "sample_id": "CONTROL-ACCEPTED_WORLD",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "NOT_APPLICABLE_SYNTHETIC"
+    },
+    {
+      "sample_id": "CONTROL-DISCARDED_VERSION",
+      "semantic_ownership": "NOT_RUN",
+      "locator": "NOT_APPLICABLE_SYNTHETIC"
+    }
+  ]
+}

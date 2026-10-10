@@ -1,0 +1,118 @@
+{
+  "version": "longform-native-arm.v1",
+  "arm": 1,
+  "mode": "COMBINED",
+  "tested_sha": "67af07a6b66b4a9d3b19a80f5958b704a3427fa1",
+  "database": "nf_longform_f19e9b2191e6_arm1_test",
+  "database_oid": 124137,
+  "policy": {
+    "version": "working-prose-projection.v2",
+    "history_chapters": 16,
+    "recent_complete_chapters": 4,
+    "max_characters": 32000,
+    "queries": [
+      "陆衡",
+      "唐穗",
+      "许庭",
+      "程管事",
+      "木块",
+      "热饭",
+      "时辰"
+    ],
+    "guidance_mode": "COMBINED"
+  },
+  "events": [
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 0,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "READY",
+        "action": "FREEZE_CHAPTER_PLAN",
+        "operation_id": "e0d7d10c-77fc-4f94-8f72-da694cffc77d",
+        "evidence_ref": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1"
+      }
+    },
+    {
+      "phase": "NATIVE_SUBMIT",
+      "turn": 1,
+      "result": {
+        "book_run_id": "book-run:c14fec92-6d9a-4cbf-932f-aa85b7257a71",
+        "previous_state": "READY",
+        "state": "CHAPTER_SUBMITTED",
+        "action": "DISPATCH_CHAPTER",
+        "operation_id": "5d7b89c6-d22f-416a-ae1b-c9d03532a242",
+        "evidence_ref": "chapter-request:9dd894e00d13fd0fea981cca0f42a2c68096b6d3f98dea3f79a500cc8a89b910"
+      }
+    },
+    {
+      "phase": "FROZEN_REQUEST",
+      "chapter_request_id": "chapter-request:9dd894e00d13fd0fea981cca0f42a2c68096b6d3f98dea3f79a500cc8a89b910",
+      "root_operation_id": "5d7b89c6-d22f-416a-ae1b-c9d03532a242",
+      "plan_version_id": "authority-output:e025d04a-aafb-411b-8fa6-dd0549fb7d2f:story_planning.candidate:v1",
+      "working_snapshot_hash": "sha256:828d3ddab85625673156d71e1b9de24d62a512780f27665d96a8913bd60baeda"
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 0,
+      "result": {
+        "root_operation_id": "5d7b89c6-d22f-416a-ae1b-c9d03532a242",
+        "saga_id": "1851dae7-ac4f-40e0-88d4-612a6b6d37f2",
+        "saga_status": "RUNNING",
+        "operation_id": "5fa6cbeb-1c73-4697-b41f-e7c6a70e6702",
+        "node": "plan",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 1,
+      "result": {
+        "root_operation_id": "5d7b89c6-d22f-416a-ae1b-c9d03532a242",
+        "saga_id": "1851dae7-ac4f-40e0-88d4-612a6b6d37f2",
+        "saga_status": "RUNNING",
+        "operation_id": "438ff3e0-272b-4fd3-921b-dbf1db01a0b2",
+        "node": "execution_intent",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 2,
+      "result": {
+        "root_operation_id": "5d7b89c6-d22f-416a-ae1b-c9d03532a242",
+        "saga_id": "1851dae7-ac4f-40e0-88d4-612a6b6d37f2",
+        "saga_status": "RUNNING",
+        "operation_id": "6bfd11d0-9f22-4210-bf11-9d779948b5dc",
+        "node": "memo",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "NATIVE_CHAPTER_TICK",
+      "turn": 3,
+      "result": {
+        "root_operation_id": "5d7b89c6-d22f-416a-ae1b-c9d03532a242",
+        "saga_id": "1851dae7-ac4f-40e0-88d4-612a6b6d37f2",
+        "saga_status": "RUNNING",
+        "operation_id": "dee34e7c-c1c0-4738-b656-676493ad9b1c",
+        "node": "retrieval",
+        "operation_status": "SUCCEEDED",
+        "recovery_mode": "fresh_attempt"
+      }
+    },
+    {
+      "phase": "STOPPED",
+      "error_type": "KernelError",
+      "code": "TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED",
+      "message": "TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED: necessary exact task content requires conservative 236140 tokens; target=226400"
+    }
+  ],
+  "status": "BLOCKED",
+  "literary_evidence": "NOT_PROVEN",
+  "human_evidence": "NOT_READY"
+}

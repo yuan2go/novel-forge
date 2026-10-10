@@ -1,0 +1,11 @@
+{
+  "external_effect_id": "cd748001-0138-42fa-88d4-b6664ed80dbc",
+  "operation_id": "d5d63f95-dd88-42b7-a712-2d942ab3019f",
+  "status": "UNKNOWN",
+  "created_at": "2026-10-10T22:09:07.375985+08:00",
+  "error_code": null,
+  "external_state_unknown": true,
+  "usage_availability": "UNAVAILABLE",
+  "cost_availability": "UNAVAILABLE",
+  "recovery_instruction": "Reconcile the original receipt; local termination does not confirm remote cancellation"
+}
