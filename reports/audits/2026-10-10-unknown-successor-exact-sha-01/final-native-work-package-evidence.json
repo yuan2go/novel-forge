@@ -1,0 +1,589 @@
+{
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "run_id": "p0-30862295395c4081aaa32c160d75b1e6",
+  "capability_evidence_state": "EXECUTABLE",
+  "canonical_p0_status": "FAIL",
+  "junit_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/postgresql-pytest.xml",
+  "case_count": 144,
+  "cases": {
+    "tests.integration.test_author_first_manuscript_postgres::test_native_author_first_cross_chapter_edit_and_export[single-interruption]": {
+      "status": "PASS",
+      "duration_seconds": "284.748"
+    },
+    "tests.integration.test_author_first_manuscript_postgres::test_native_author_first_cross_chapter_edit_and_export[completed-sibling-interruption]": {
+      "status": "PASS",
+      "duration_seconds": "275.244"
+    },
+    "tests.integration.test_author_first_manuscript_postgres::test_native_author_first_cross_chapter_edit_and_export[saved-complete-result]": {
+      "status": "PASS",
+      "duration_seconds": "250.092"
+    },
+    "tests.integration.test_author_first_manuscript_postgres::test_legacy_workflow_adoption_keeps_frozen_profile_and_replays_checkpoint": {
+      "status": "PASS",
+      "duration_seconds": "0.200"
+    },
+    "tests.integration.test_author_first_manuscript_postgres::test_native_generation_fault_allowance_survives_successors_and_stops_dispatch[memo]": {
+      "status": "PASS",
+      "duration_seconds": "104.857"
+    },
+    "tests.integration.test_author_first_manuscript_postgres::test_native_generation_fault_allowance_survives_successors_and_stops_dispatch[context_compress]": {
+      "status": "PASS",
+      "duration_seconds": "109.151"
+    },
+    "tests.integration.test_author_first_manuscript_postgres::test_native_generation_fault_allowance_survives_successors_and_stops_dispatch[context_fidelity]": {
+      "status": "PASS",
+      "duration_seconds": "119.741"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_historical_generation_enters_query_without_rewriting_dispatch": {
+      "status": "PASS",
+      "duration_seconds": "0.339"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_original_confirmation_corrects_usage_without_changing_old_ledgers": {
+      "status": "PASS",
+      "duration_seconds": "0.157"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes0]": {
+      "status": "PASS",
+      "duration_seconds": "0.119"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes1]": {
+      "status": "PASS",
+      "duration_seconds": "0.104"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes2]": {
+      "status": "PASS",
+      "duration_seconds": "0.099"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes3]": {
+      "status": "PASS",
+      "duration_seconds": "0.102"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes4]": {
+      "status": "PASS",
+      "duration_seconds": "0.091"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes5]": {
+      "status": "PASS",
+      "duration_seconds": "0.091"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes6]": {
+      "status": "PASS",
+      "duration_seconds": "0.093"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_confirmation_rejects_changed_original_identity[changes7]": {
+      "status": "PASS",
+      "duration_seconds": "0.102"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_terminal_owner_is_preserved_and_requires_linked_successor[FAILED_FINAL]": {
+      "status": "PASS",
+      "duration_seconds": "0.130"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_terminal_owner_is_preserved_and_requires_linked_successor[DEAD_LETTER]": {
+      "status": "PASS",
+      "duration_seconds": "0.115"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_terminal_owner_is_preserved_and_requires_linked_successor[CANCELLED]": {
+      "status": "PASS",
+      "duration_seconds": "0.121"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_reconciled_success_cannot_prepare_another_dispatch": {
+      "status": "PASS",
+      "duration_seconds": "0.115"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_correction_is_append_only_and_conflicting_resolution_is_rejected": {
+      "status": "PASS",
+      "duration_seconds": "0.136"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_production_result_without_original_manifests_is_not_consumable": {
+      "status": "PASS",
+      "duration_seconds": "0.108"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_exact_corrected_usage_replay_preserves_settled_reservation": {
+      "status": "PASS",
+      "duration_seconds": "0.115"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_unpersisted_remote_source_cannot_clear_unknown": {
+      "status": "PASS",
+      "duration_seconds": "0.087"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_planning_consumes_original_result_without_dispatch_or_resettlement": {
+      "status": "PASS",
+      "duration_seconds": "0.223"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_planning_cannot_consume_under_stale_fence_or_changed_input[True-False]": {
+      "status": "PASS",
+      "duration_seconds": "0.198"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_planning_cannot_consume_under_stale_fence_or_changed_input[False-True]": {
+      "status": "PASS",
+      "duration_seconds": "0.229"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_usage_overrun_is_recorded_but_cannot_expand_dispatch_budget": {
+      "status": "PASS",
+      "duration_seconds": "0.117"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_cli_journal_forward_migration_preserves_previous_head[20260625_0001_initial_industrial_schema]": {
+      "status": "PASS",
+      "duration_seconds": "1.921"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_cli_journal_forward_migration_preserves_previous_head[20261008_0181_author_manuscript_delivery]": {
+      "status": "PASS",
+      "duration_seconds": "1.660"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_cli_journal_forward_migration_preserves_previous_head[20261008_0183_source_observation_span_identity]": {
+      "status": "PASS",
+      "duration_seconds": "1.686"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_historical_exception_does_not_admit_adjacent_failure_generations[change0]": {
+      "status": "PASS",
+      "duration_seconds": "0.105"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_historical_exception_does_not_admit_adjacent_failure_generations[change1]": {
+      "status": "PASS",
+      "duration_seconds": "0.084"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_historical_exception_does_not_admit_adjacent_failure_generations[change2]": {
+      "status": "PASS",
+      "duration_seconds": "0.091"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_reconciled_query_returns_existing_conclusion_without_provider_query": {
+      "status": "PASS",
+      "duration_seconds": "0.119"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_concurrent_same_confirmation_is_one_append_and_idempotent_replays[False]": {
+      "status": "PASS",
+      "duration_seconds": "0.141"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_concurrent_same_confirmation_is_one_append_and_idempotent_replays[True]": {
+      "status": "PASS",
+      "duration_seconds": "0.127"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_query_does_not_override_confirmation_committed_while_it_reads": {
+      "status": "PASS",
+      "duration_seconds": "0.131"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_receipt_intake_cannot_replace_original_provider_or_promote_qualification": {
+      "status": "PASS",
+      "duration_seconds": "0.178"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_unknown_terminal_original_settles_held_usage_once_and_preserves_history": {
+      "status": "PASS",
+      "duration_seconds": "0.129"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_unknown_without_authenticated_original_record_cannot_be_manually_cleared": {
+      "status": "PASS",
+      "duration_seconds": "0.095"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_opening_classifies_verified_original_resolution_and_retains_unknown_history": {
+      "status": "PASS",
+      "duration_seconds": "0.112"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_database_lineage_guard_requires_verified_original_resolution": {
+      "status": "PASS",
+      "duration_seconds": "0.156"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_legacy_retryable_cli_uncertainty_queries_original_identity[TIMED_OUT]": {
+      "status": "PASS",
+      "duration_seconds": "0.108"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_legacy_retryable_cli_uncertainty_queries_original_identity[UNKNOWN]": {
+      "status": "PASS",
+      "duration_seconds": "0.128"
+    },
+    "tests.integration.test_cli_effect_reconciliation_postgres::test_legacy_retryable_cli_uncertainty_queries_original_identity[ORPHANED]": {
+      "status": "PASS",
+      "duration_seconds": "0.106"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_attempt_runs_through_fenced_checkpoint_and_success": {
+      "status": "PASS",
+      "duration_seconds": "0.267"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_concurrent_stale_and_current_results_accept_only_current_fence": {
+      "status": "PASS",
+      "duration_seconds": "0.079"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_forward_recovery_ready_exhaustion_dead_letters_without_new_attempt": {
+      "status": "PASS",
+      "duration_seconds": "0.029"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_heartbeat_loss_marks_attempt_lease_lost": {
+      "status": "PASS",
+      "duration_seconds": "1.125"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_kernel_can_timeout_cancel_and_supersede_attempts": {
+      "status": "PASS",
+      "duration_seconds": "0.119"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_retry_creates_a_new_attempt_and_moves_operation_back_to_ready": {
+      "status": "PASS",
+      "duration_seconds": "0.057"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_retry_exhaustion_dead_letters_operation_without_new_attempt": {
+      "status": "PASS",
+      "duration_seconds": "0.030"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_stale_checkpoint_does_not_stop_takeover_worker": {
+      "status": "PASS",
+      "duration_seconds": "0.096"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_stale_result_does_not_stop_takeover_worker": {
+      "status": "PASS",
+      "duration_seconds": "0.085"
+    },
+    "tests.integration.test_command_kernel_attempt_runtime_postgres.CommandKernelAttemptRuntimePostgresTests::test_two_workers_compete_for_one_lease": {
+      "status": "PASS",
+      "duration_seconds": "0.029"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_cancel_resolution_distinguishes_cancelled_and_reconciliation": {
+      "status": "PASS",
+      "duration_seconds": "0.257"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_cancelled_root_cannot_close_live_descendant": {
+      "status": "PASS",
+      "duration_seconds": "0.067"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_cancelled_root_closes_terminal_reference_failure_without_rewriting_child": {
+      "status": "PASS",
+      "duration_seconds": "0.034"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_compensation_child_success_and_failure_have_distinct_parent_terminals": {
+      "status": "PASS",
+      "duration_seconds": "0.075"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_compensation_child_uses_standard_admission_and_replays": {
+      "status": "PASS",
+      "duration_seconds": "0.027"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_compensation_definition_and_parent_cas_fail_closed": {
+      "status": "PASS",
+      "duration_seconds": "0.045"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_compensation_idempotency_key_rejects_different_content": {
+      "status": "PASS",
+      "duration_seconds": "0.019"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_concurrent_compensation_creation_has_one_child": {
+      "status": "PASS",
+      "duration_seconds": "0.024"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_control_cancel_settles_unreserved_ready_effect_and_replays": {
+      "status": "PASS",
+      "duration_seconds": "0.049"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_control_cancel_without_effects_settles_but_active_attempt_waits": {
+      "status": "PASS",
+      "duration_seconds": "0.043"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_no_effect_resolution_rejects_verified_external_effect": {
+      "status": "PASS",
+      "duration_seconds": "0.079"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_root_cancel_prevents_unstarted_children_and_signals_active_child": {
+      "status": "PASS",
+      "duration_seconds": "0.039"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_stale_cancel_acknowledgement_preserves_takeover_worker": {
+      "status": "PASS",
+      "duration_seconds": "0.077"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_two_concurrent_cancel_commands_are_idempotent_and_signal_worker": {
+      "status": "PASS",
+      "duration_seconds": "0.032"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_worker_cancel_acknowledgement_requires_current_fencing_token": {
+      "status": "PASS",
+      "duration_seconds": "0.055"
+    },
+    "tests.integration.test_command_kernel_cancellation_postgres.CommandKernelCancellationPostgresTests::test_worker_result_and_cancel_use_the_same_operation_cas": {
+      "status": "PASS",
+      "duration_seconds": "0.057"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_adapter_exception_is_recorded_and_releases_lease": {
+      "status": "PASS",
+      "duration_seconds": "0.326"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_callback_policy_keeps_ack_distinct_from_business_success": {
+      "status": "PASS",
+      "duration_seconds": "0.060"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_cancel_before_dispatch_and_after_dispatch_have_distinct_outcomes": {
+      "status": "PASS",
+      "duration_seconds": "0.044"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_compensation_is_a_linked_idempotent_external_effect": {
+      "status": "PASS",
+      "duration_seconds": "0.093"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_completed_effect_recovery_resumes_waiting_owner_and_rejects_unknown_or_foreign_effect": {
+      "status": "PASS",
+      "duration_seconds": "0.120"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_dispatch_success_and_prepared_dispatch_replay": {
+      "status": "PASS",
+      "duration_seconds": "0.052"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_expired_post_request_lease_requires_query_without_duplicate_execute": {
+      "status": "PASS",
+      "duration_seconds": "1.165"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_local_file_adapter_executes_outside_transaction_and_is_idempotent": {
+      "status": "PASS",
+      "duration_seconds": "0.044"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_permanent_budget_assertion_denial_is_terminal_before_send": {
+      "status": "PASS",
+      "duration_seconds": "0.038"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_permanent_pre_send_denial_blocks_provider_and_terminalizes_effect": {
+      "status": "PASS",
+      "duration_seconds": "0.039"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_provider_v2_capability_drift_fails_before_dispatch": {
+      "status": "PASS",
+      "duration_seconds": "0.014"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_provider_v2_profile_and_request_id_are_frozen_and_persisted": {
+      "status": "PASS",
+      "duration_seconds": "0.057"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_receipt_inbox_replay_conflict_and_generation_binding": {
+      "status": "PASS",
+      "duration_seconds": "0.033"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_reconciliation_not_found_allows_retry_and_ambiguous_stays_blocked": {
+      "status": "PASS",
+      "duration_seconds": "0.113"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_reconciliation_not_found_terminalizes_checkpointed_attempt_for_retry": {
+      "status": "PASS",
+      "duration_seconds": "0.101"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_slow_provider_dispatch_renews_effect_lease": {
+      "status": "PASS",
+      "duration_seconds": "1.266"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_stable_effect_key_is_scoped_by_project": {
+      "status": "PASS",
+      "duration_seconds": "0.024"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_timeout_after_effect_requires_provider_reconciliation": {
+      "status": "PASS",
+      "duration_seconds": "0.068"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_timeout_before_effect_retries_and_exhaustion_dead_letters": {
+      "status": "PASS",
+      "duration_seconds": "0.067"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_two_dispatchers_compete_and_expired_lease_takeover_fences_old": {
+      "status": "PASS",
+      "duration_seconds": "0.069"
+    },
+    "tests.integration.test_external_effect_runtime_postgres.ExternalEffectRuntimePostgresTests::test_typed_provider_failures_preserve_send_boundary_and_fail_closed": {
+      "status": "PASS",
+      "duration_seconds": "0.135"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_original_api_receipt_records_and_settles_once_without_old_business_rights": {
+      "status": "PASS",
+      "duration_seconds": "3.641"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[project_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.150"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[book_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.129"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[operation_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.124"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[external_effect_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.125"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[dispatch_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.122"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[generation]": {
+      "status": "PASS",
+      "duration_seconds": "0.124"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[request_hash]": {
+      "status": "PASS",
+      "duration_seconds": "0.132"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[execution_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.127"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[attempt_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.127"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[fencing_token]": {
+      "status": "PASS",
+      "duration_seconds": "0.127"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[input_manifest_hash]": {
+      "status": "PASS",
+      "duration_seconds": "0.127"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[execution_request_hash]": {
+      "status": "PASS",
+      "duration_seconds": "0.123"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[model_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.133"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[provider_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.124"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_foreign_or_changed_original_api_identity_cannot_settle[provider_request_id]": {
+      "status": "PASS",
+      "duration_seconds": "0.127"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_missing_usage_is_evidence_only_then_measured_version_settles": {
+      "status": "PASS",
+      "duration_seconds": "0.188"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_unsigned_receipt_and_reconciliation_cannot_update_isolated_effect": {
+      "status": "PASS",
+      "duration_seconds": "0.133"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge[GATEWAY]": {
+      "status": "PASS",
+      "duration_seconds": "0.199"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge[MULTI_GATEWAY]": {
+      "status": "PASS",
+      "duration_seconds": "0.249"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[0.25-PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.142"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[1.50-PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.146"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_concurrent_original_receipt_resolutions_share_one_settlement": {
+      "status": "PASS",
+      "duration_seconds": "0.163"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_missing_paid_cost_keeps_exposure_until_matching_cost_version[PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.169"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_all_original_generations_account_independently_without_reopening[False-MULTI_ACCOUNT_ENTITLEMENT]": {
+      "status": "PASS",
+      "duration_seconds": "0.332"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_all_original_generations_account_independently_without_reopening[False-MULTI_PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.322"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_all_original_generations_account_independently_without_reopening[True-MULTI_ACCOUNT_ENTITLEMENT]": {
+      "status": "PASS",
+      "duration_seconds": "0.341"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_all_original_generations_account_independently_without_reopening[True-MULTI_PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.322"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate[success-MARK_SUCCEEDED]": {
+      "status": "PASS",
+      "duration_seconds": "0.136"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate[final_failure-MARK_FAILED_FINAL]": {
+      "status": "PASS",
+      "duration_seconds": "0.144"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_trusted_measured_zero_usage_does_not_become_reserved_token_estimate[cancelled-MARK_CANCELLED]": {
+      "status": "PASS",
+      "duration_seconds": "0.137"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[PRICED-ESTIMATED-provider_receipt]": {
+      "status": "PASS",
+      "duration_seconds": "0.170"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[PRICED-UNKNOWN-provider_receipt]": {
+      "status": "PASS",
+      "duration_seconds": "0.178"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[PRICED-PROVIDER_REPORTED-usage_pricing]": {
+      "status": "PASS",
+      "duration_seconds": "0.186"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[PRICED-PROVIDER_REPORTED-usage_pricing_upper_bound]": {
+      "status": "PASS",
+      "duration_seconds": "0.175"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-ESTIMATED-provider_receipt]": {
+      "status": "PASS",
+      "duration_seconds": "0.222"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-UNKNOWN-provider_receipt]": {
+      "status": "PASS",
+      "duration_seconds": "0.230"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-PROVIDER_REPORTED-usage_pricing]": {
+      "status": "PASS",
+      "duration_seconds": "0.217"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_dispatch_cost_estimates_cannot_become_measured_by_aggregation[MULTI_PRICED-PROVIDER_REPORTED-usage_pricing_upper_bound]": {
+      "status": "PASS",
+      "duration_seconds": "0.262"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_affirmative_original_nonexecution_can_settle_without_fabricating_billing[ACCOUNT_ENTITLEMENT]": {
+      "status": "PASS",
+      "duration_seconds": "0.161"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_affirmative_original_nonexecution_can_settle_without_fabricating_billing[PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.162"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_affirmative_original_nonexecution_can_settle_without_fabricating_billing[MULTI_ACCOUNT_ENTITLEMENT]": {
+      "status": "PASS",
+      "duration_seconds": "0.201"
+    },
+    "tests.integration.test_isolated_api_receipt_postgres::test_affirmative_original_nonexecution_can_settle_without_fabricating_billing[MULTI_PRICED]": {
+      "status": "PASS",
+      "duration_seconds": "0.210"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_restored_migration_status_is_read_only_and_preserves_partial_history": {
+      "status": "PASS",
+      "duration_seconds": "1.734"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_missing_migration_ledger_is_reported_without_bootstrapping": {
+      "status": "PASS",
+      "duration_seconds": "0.067"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger[20261007_0159_planning_dead_letter_result_recovery]": {
+      "status": "PASS",
+      "duration_seconds": "1.679"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger[20260928_0148_author_supervised_design]": {
+      "status": "PASS",
+      "duration_seconds": "1.676"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_fixed_main_upgrade_preserves_unknown_receipt_and_frozen_ledger[20261009_0184_cli_original_reconciliation]": {
+      "status": "PASS",
+      "duration_seconds": "1.662"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_invalid_ledger_blocks_all_pending_business_ddl_and_preserves_history[foreign]": {
+      "status": "PASS",
+      "duration_seconds": "1.527"
+    },
+    "tests.integration.test_migration_history_admission_postgres::test_invalid_ledger_blocks_all_pending_business_ddl_and_preserves_history[hole]": {
+      "status": "PASS",
+      "duration_seconds": "1.484"
+    }
+  },
+  "real_provider": "NOT_RUN",
+  "production": "NOT_RUN",
+  "literary_quality": "NOT_RUN"
+}

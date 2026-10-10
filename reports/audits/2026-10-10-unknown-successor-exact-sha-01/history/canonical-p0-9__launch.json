@@ -1,0 +1,22 @@
+{
+  "tested_sha": "e89aaf882d262834f1b12351ff71fa7a474da5ca",
+  "command": [
+    "make",
+    "p0-backend-qualification"
+  ],
+  "env_keys": [
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "LOGNAME",
+    "NOVEL_FORGE_MODEL_PROVIDER",
+    "P0_EVIDENCE_DIR",
+    "P0_PROFILE",
+    "PATH",
+    "SSH_AUTH_SOCK",
+    "TMPDIR",
+    "USER"
+  ],
+  "profile": "local",
+  "provider": "scripted"
+}

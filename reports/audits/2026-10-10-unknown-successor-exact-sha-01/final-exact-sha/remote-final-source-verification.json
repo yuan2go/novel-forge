@@ -1,0 +1,40 @@
+{
+  "main": {
+    "command": [
+      "gh",
+      "api",
+      "repos/yuan2go/novel-forge/git/ref/heads/main",
+      "--jq",
+      "{sha:.object.sha}"
+    ],
+    "exit_code": 0,
+    "data": {
+      "sha": "f067d189a63f644a3a49f78abda557035b5fa59a"
+    },
+    "stderr": ""
+  },
+  "pr152": {
+    "command": [
+      "gh",
+      "pr",
+      "view",
+      "152",
+      "--repo",
+      "yuan2go/novel-forge",
+      "--json",
+      "state,isDraft,headRefOid,url,statusCheckRollup,mergeStateStatus"
+    ],
+    "exit_code": 0,
+    "data": {
+      "headRefOid": "ea83597df52322a48114a9e7f64450668ab0e5be",
+      "isDraft": true,
+      "mergeStateStatus": "CLEAN",
+      "state": "OPEN",
+      "statusCheckRollup": [],
+      "url": "https://github.com/yuan2go/novel-forge/pull/152"
+    },
+    "stderr": ""
+  },
+  "observed_at": "2026-10-10T08:06:19.760976+00:00",
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be"
+}

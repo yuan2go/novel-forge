@@ -1,0 +1,553 @@
+[
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "1",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "1",
+      "time": "0.707",
+      "timestamp": "2026-10-10T08:29:42.604566+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-api-2.xml",
+        "archive": "development-failures/development-api-2.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "fd96494b7e03f6afdbc71c45f0a395832b8c677d3809117195bc19920a625020",
+        "archive_sha256": "4c6b6761f23ec5a28c9803945fcfdc91a310ddbcafadf12f1c579c18d25a77bf"
+      },
+      {
+        "source": "development-api-2.log",
+        "archive": "development-failures/development-api-2.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "e7643d76a28aabc276ac41fb089b378c76b8d2c97c2cff0955e9d78bba484cf8",
+        "archive_sha256": "355891b0fcf54f31f2d98c2c0148e20703cf1db843958431edfe19170405e0d2"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "1",
+      "time": "0.843",
+      "timestamp": "2026-10-10T08:30:00.201386+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-api-3.xml",
+        "archive": "development-failures/development-api-3.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "40cbc25e7c244b4cd342685e8e3845d829a2d863435e6c188801e3525ca44117",
+        "archive_sha256": "408edb64db8939344cb37a24d88571eb6e67a3f9bac2d41ed43c587abe95917d"
+      },
+      {
+        "source": "development-api-3.log",
+        "archive": "development-failures/development-api-3.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "f7da7b9cfb32fef07cdac63a0ce46aedecfcd47b60e4a28dea2d56c0426e2e66",
+        "archive_sha256": "05d24c06bc47af5b242ce99bf4243d26621e0a069514c250b396a3f7dfe4d670"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "21",
+      "time": "6.084",
+      "timestamp": "2026-10-10T08:36:23.239071+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-api-native-2.xml",
+        "archive": "development-failures/development-api-native-2.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "9c75a2c9570cc5bdaac84d1cc967ee46abe6bb8a373ebd5bf15f00002c9e87ad",
+        "archive_sha256": "6ae9ceabf58f5481e283cb7dd872fbe6a6c8e99f1a938717ce8c02455c0379a2"
+      },
+      {
+        "source": "development-api-native-2.log",
+        "archive": "development-failures/development-api-native-2.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "462d80b2b225d9013a0e81fbf9327bc0e103a71afa9fbc3141c0ba962d965d75",
+        "archive_sha256": "dd2025b65defb0eeb38e86d8491d7e572b6f3df97fbf1f96997207e987d81000"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "10",
+      "time": "3.807",
+      "timestamp": "2026-10-10T08:33:57.533709+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-api-native.xml",
+        "archive": "development-failures/development-api-native.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "6c9989090071ca8873b53a75ecfc8c21b9d02d00966dd6e679c1d2021bc64f34",
+        "archive_sha256": "488eecd7d2b388de4743e1e0ed734728fec0f0f5b5d66fd3a51ff32b0df0cf6b"
+      },
+      {
+        "source": "development-api-native.log",
+        "archive": "development-failures/development-api-native.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "1c34c3cc5d57f49f9be768a4e16aecfaf71b43af0e34787df8567a2c615a1e6d",
+        "archive_sha256": "3a0ff9cafae86a64abc665f72794b80701797b9b9c01678971d82f7ed8b6528d"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "14",
+      "failures": "2",
+      "skipped": "0",
+      "tests": "16",
+      "time": "0.354",
+      "timestamp": "2026-10-10T09:14:26.520034+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-api-request-identity.xml",
+        "archive": "development-failures/development-api-request-identity.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "555482a88ca76b4ba3fd5d0a0584cc62188c91eab1d2d82b123399e08978e90b",
+        "archive_sha256": "80983de075275297843de33786f4cb55d1517497910873a7679b1ffd8337b0c4"
+      },
+      {
+        "source": "development-api-request-identity.log",
+        "archive": "development-failures/development-api-request-identity.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "0cc1ad39c19251482e6a3d8b2f578df8d4ef8a62893122731e6f33bbc05af181",
+        "archive_sha256": "2bf4371f9f6fc5909f13e24f0412f4995e8aff9b884309ef6d198346a413f4e3"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "1",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "1",
+      "time": "0.785",
+      "timestamp": "2026-10-10T08:29:16.611634+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-api.xml",
+        "archive": "development-failures/development-api.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "3f1c525324389b6e44dfa4e3e4d6e44869f356121a90f548d4ca0e0281615b3b",
+        "archive_sha256": "f91c690acee0407f6075557b1152e860473162f80730ad50ae98a8677634f138"
+      },
+      {
+        "source": "development-api.log",
+        "archive": "development-failures/development-api.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "b7a5a0c15aa829754cb0eb2f647d647a1f3011c69df539a2f35ceae95fefb961",
+        "archive_sha256": "22bf8304d17baeaa4bd1a13a8bba512e71132ed3977aed35036f9f6fef72e76d"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "2",
+      "skipped": "0",
+      "tests": "89",
+      "time": "8.782",
+      "timestamp": "2026-10-10T09:01:26.437078+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-baseline-repairs.xml",
+        "archive": "development-failures/development-baseline-repairs.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "cbc68fe0794c0cb69fe3376e0614cf89de4d49c99cb6496f487fa3ecf40d7492",
+        "archive_sha256": "0b4b740d47e6d9a863565868e73936a42ad786fdc46af68db632bdd465a86172"
+      },
+      {
+        "source": "development-baseline-repairs.log",
+        "archive": "development-failures/development-baseline-repairs.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "aa2b9f5002bd8e56959b10192758c02a7148adaf38b1d9827aa7ba2a6b0ae058",
+        "archive_sha256": "32a007fffbe600d4e5369e098f69fcc05401b95f0c3f6b9d4322e9be0e09aae5"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "3",
+      "time": "389.477",
+      "timestamp": "2026-10-10T08:51:17.119453+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-context-final.xml",
+        "archive": "development-failures/development-context-final.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "5082f1d32a50eed30407eb0e25c542203b6d15f956ddfe6141a5f4aa4c8b00c0",
+        "archive_sha256": "ff70884d2b46bd72ae80bb90aee047635da3c6c7f4b6ee3ba78ec2bfd2b37ce5"
+      },
+      {
+        "source": "development-context-final.log",
+        "archive": "development-failures/development-context-final.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "f0a74b8eb21170003310fe281c4eca5de6b422fd54e491a16d7c38a81b32fe23",
+        "archive_sha256": "da628b88a514fd575ee24a85027e13de64b53c27fa11115a67b21f5030325499"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "2",
+      "time": "89.364",
+      "timestamp": "2026-10-10T08:36:24.345176+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-context.xml",
+        "archive": "development-failures/development-context.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "7d62ccbb285e6824d02f8dafc3fafb6e373adb3f3ed40d039f6680407488c024",
+        "archive_sha256": "5c551bfa51d6741e944cb4b6da150bd509455af8e2eb901cab7e7dd167c48f62"
+      },
+      {
+        "source": "development-context.log",
+        "archive": "development-failures/development-context.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "317c14c4b4005b09532de2f7c1e679cca38192f9e3c67c88cd159f603e18383f",
+        "archive_sha256": "1ae69d18a48eeada17cbb21f6299fd2bc9458bbda08633670982da203e64c5a1"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "7",
+      "skipped": "0",
+      "tests": "9",
+      "time": "15.033",
+      "timestamp": "2026-10-10T10:01:33.223094+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-corpus-historical-facts.xml",
+        "archive": "development-failures/development-corpus-historical-facts.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "90f6121c1aea8584a2648dfc17552b77fc3ad10656de85a2bf8b18eafde3dafe",
+        "archive_sha256": "8ac4ffef7e03e4d09319db1a717f5b17593d9050c29dae6e0894ff51b63d1778"
+      },
+      {
+        "source": "development-corpus-historical-facts.log",
+        "archive": "development-failures/development-corpus-historical-facts.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "674a5b9a352f57591bef25090fc54c6c1051b76442fd7db4b61229e82af87baa",
+        "archive_sha256": "3dafe94bcfa018e1c7c2d1cd49199a8ebd33c046b3ef5c3af7ebe3a171d9a710"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "24",
+      "time": "42.533",
+      "timestamp": "2026-10-10T10:02:35.364979+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-historical-fixtures-3.xml",
+        "archive": "development-failures/development-historical-fixtures-3.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "3785072c49b32219d38f841e2e64fb6b8047c62a198ec4eaaab9f28aad74de44",
+        "archive_sha256": "3f3c68287c75e999df228d45441eeee558a6fdcce00a11d425dfc52f109f41fa"
+      },
+      {
+        "source": "development-historical-fixtures-3.log",
+        "archive": "development-failures/development-historical-fixtures-3.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "09f0b1f59dbbc810f58bc7fafff6c58f5cdda0c52f1ffc0933f6db252cf40550",
+        "archive_sha256": "ce0c7668227d8a017131f5fa723cfc59232767d0129d019fa81cdfd0420ced36"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "15",
+      "skipped": "0",
+      "tests": "66",
+      "time": "128.121",
+      "timestamp": "2026-10-10T10:00:07.378168+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-migration-family.xml",
+        "archive": "development-failures/development-migration-family.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "ca8465e801d033a82e25cb7eb56d034b815cbf5eef9992cbf8e85a217de87e16",
+        "archive_sha256": "027e635c606331e4c1333212cab9c0ce05a72140fa53d149b7c628fd98158330"
+      },
+      {
+        "source": "development-migration-family.log",
+        "archive": "development-failures/development-migration-family.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "a949677138065fdb866ac3cedcfc96e9645ae218d53683909f09a746fd9b79a8",
+        "archive_sha256": "6be5175b5619004ac7f88dd7858531bb6a3351b2f3e5549bab9bac61a69f105d"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "3",
+      "skipped": "0",
+      "tests": "8",
+      "time": "15.692",
+      "timestamp": "2026-10-10T09:57:53.377498+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-migration-groups.xml",
+        "archive": "development-failures/development-migration-groups.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "7ca9c2e39501eec6fc6b3444377bf93fccd1818cc881ba79841eea52ab8a8cf0",
+        "archive_sha256": "e77639f68500d5b3b1889a574f74adb01300792bdbb6af5aaf70895ef7d40611"
+      },
+      {
+        "source": "development-migration-groups.log",
+        "archive": "development-failures/development-migration-groups.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "e4c082875a405eb657afd8cf6bb6f313617a20b996e22ac55fa01c7e1cbef1d2",
+        "archive_sha256": "61bab67773dc7d37100f6e86a8580300f8bfe498e7adc780ec13a2cadefcee1e"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "5",
+      "skipped": "0",
+      "tests": "39",
+      "time": "2.772",
+      "timestamp": "2026-10-10T09:14:25.341732+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-next-failures-2.xml",
+        "archive": "development-failures/development-next-failures-2.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "7f36219b3651c81c712ae1cd351593a456da12fa26bf2649bf574eca1b02f04f",
+        "archive_sha256": "5de21eb2c3bb482d609b010971e331391a6bcb1780ee63876514d1688b61fec6"
+      },
+      {
+        "source": "development-next-failures-2.log",
+        "archive": "development-failures/development-next-failures-2.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "62f455dccb6d16eae21140da030d736953e4827130fdd9fe7b86cd58f06307ef",
+        "archive_sha256": "493aece02b5086b31886cab9a8106ae87569cd2f8e1e0b34bc68854f60a9dbd6"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "8",
+      "skipped": "0",
+      "tests": "171",
+      "time": "2.287",
+      "timestamp": "2026-10-10T09:14:04.802768+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-next-failures.xml",
+        "archive": "development-failures/development-next-failures.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "2e1b6a4b59af49372f5898eac4b73dc35621ee05b82ff2b11efaf4dc7292057f",
+        "archive_sha256": "1bb7538fd22fde99f4b053cd640c7f23f646a48b9762003585b671373d4ad652"
+      },
+      {
+        "source": "development-next-failures.log",
+        "archive": "development-failures/development-next-failures.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "03e1e6274d4dd21d875cde96d3d15983068dcaf93b6eb4262c2103491f2d7c10",
+        "archive_sha256": "588d19a7aa21671ef8c812cb1016a3c8c39e5006798783acb96a43d7c65f4743"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "2",
+      "skipped": "0",
+      "tests": "3",
+      "time": "128.947",
+      "timestamp": "2026-10-10T08:26:53.667780+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-owners-2.xml",
+        "archive": "development-failures/development-owners-2.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "dc83db71b670c894ab01188dffd815c96b14da9da4176ac774fbfbf1187d26a2",
+        "archive_sha256": "0ac62b52541f591589c603d8076f7700ee303b9965c2260395430bc877b904e2"
+      },
+      {
+        "source": "development-owners-2.log",
+        "archive": "development-failures/development-owners-2.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "96361ec871381f0d1f8bbe01059a238ec2b0bcf2c3c3137319c62559f93b5f44",
+        "archive_sha256": "6106cdb6a5196b41307e9b88d7f4c97619ebe90fc8c35259a6a13a8348ce1880"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "2",
+      "time": "299.241",
+      "timestamp": "2026-10-10T08:30:47.649690+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-owners-3.xml",
+        "archive": "development-failures/development-owners-3.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "149f8c9be3e17ec4ec5461b68de3a8dc5367d56ea4d5d4dadbf3a72e65eb9209",
+        "archive_sha256": "2af3ed8944f4847718d9e0d17f76925cee3c81bd50bba83a5347131f662067b8"
+      },
+      {
+        "source": "development-owners-3.log",
+        "archive": "development-failures/development-owners-3.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "2e06d994fbd484aebf9e7f8493abf7f5562a53e81efa0d93f83208e31cb22a68",
+        "archive_sha256": "27eafb47936763cc675719fdcd2fbbaec044b5141b6fed430696f18a4fbdd2e7"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "2",
+      "time": "387.028",
+      "timestamp": "2026-10-10T08:38:20.716245+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-owners-4.xml",
+        "archive": "development-failures/development-owners-4.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "e0ab409a21592b4b6ab44a56c898e2a50d6771cf196c5e3a52ecbbac456ae78a",
+        "archive_sha256": "26440beb6fae673bc1fc157ecd04734d1634246b90ee4b8724a31192f960a1c2"
+      },
+      {
+        "source": "development-owners-4.log",
+        "archive": "development-failures/development-owners-4.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "3fe780bb328598b2b8ea3d8ce200e4f78522cdc97c6a12ad2240cf4f452fbda3",
+        "archive_sha256": "ae47e70e205018946503309b2d714603e12addf692f0b25b015ba032adc95eea"
+      }
+    ]
+  },
+  {
+    "identity": "UNCOMMITTED_DEVELOPMENT_NOT_QUALIFICATION",
+    "junit": {
+      "name": "pytest",
+      "errors": "41",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "41",
+      "time": "0.991",
+      "timestamp": "2026-10-10T08:25:56.764224+08:00",
+      "hostname": "chenjiangfengdeMac-mini.local"
+    },
+    "files": [
+      {
+        "source": "development-owners.xml",
+        "archive": "development-failures/development-owners.xml.gz",
+        "encoding": "gzip",
+        "source_sha256": "9876679db7a2f836f464a8df2cd37ed65e61fd5c30d7ad96522d0ca78c05c535",
+        "archive_sha256": "255dd91cf4ff59e77764815742da7394171e2dff34154d85f5c81c28dad579ca"
+      },
+      {
+        "source": "development-owners.log",
+        "archive": "development-failures/development-owners.log.gz",
+        "encoding": "gzip",
+        "source_sha256": "dc17e16c4a7acd17a8611af5ee775498840eb14f92b0a0c518835d24580f9c0c",
+        "archive_sha256": "8a8ef1960edba9ad5834b44b211647130c4085e2441ef267d54f944b27b9aa38"
+      }
+    ]
+  }
+]

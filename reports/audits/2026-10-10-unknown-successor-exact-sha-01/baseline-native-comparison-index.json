@@ -1,0 +1,42 @@
+{
+  "baseline_sha": "4c0f8e9ea19221a19112070a4a0c57840a3da8b4",
+  "candidate_sha": "e89aaf882d262834f1b12351ff71fa7a474da5ca",
+  "selected_nodes": 233,
+  "baseline_failures": 221,
+  "baseline_errors": 11,
+  "baseline_passes": 1,
+  "same_error_category": 232,
+  "remaining_comparison": "Await final clean SHA native full matrix; no P0 upgrade from baseline diagnosis",
+  "records": [
+    {
+      "artifact": "history/baseline-native-failed-set.xml.gz",
+      "original_sha256": "40c49ca2fe99ea5de49ab7888adc131de46833317ba88129ecc3ff0a9a392e9c",
+      "archive_sha256": "ea253257b8eb382088aca50fdc4f4e89cf7ea5762ac5fffcc67e168041d422bd",
+      "compression": "gzip"
+    },
+    {
+      "artifact": "history/baseline-native-failed-set.log.gz",
+      "original_sha256": "43b7ba51fb06c0e179f932089c50a6e6a8bc780fc45f4928b9b43cc0e262d67e",
+      "archive_sha256": "185b95b33a0e1a406aea0cb76a582d7c1e0f432167443a5cd2095a8bf2cce3c5",
+      "compression": "gzip"
+    },
+    {
+      "artifact": "history/baseline-native-failed-set-command.json",
+      "original_sha256": "18ad7df5c2d7b2cade7721f63b90ba364db6d1e8f2e1b67a3fe7700fe64a16f7",
+      "archive_sha256": "18ad7df5c2d7b2cade7721f63b90ba364db6d1e8f2e1b67a3fe7700fe64a16f7",
+      "compression": "none"
+    },
+    {
+      "artifact": "history/baseline-native-failed-set-attribution.json.gz",
+      "original_sha256": "3a2b31f2c0a1d197ba78f425e82b64fb3dd6c0a046774c491b84529d1b954f5f",
+      "archive_sha256": "f5c9fde47a9465339cf78ea4f44427f79b36283682e0a1d2faa970363f786972",
+      "compression": "gzip"
+    },
+    {
+      "artifact": "history/baseline-native-failure-collection.log.gz",
+      "original_sha256": "114eda7d3d51c2b4bea068f3269a70f9d9c5dc30320d1077f8ef8ed62725fc08",
+      "archive_sha256": "a648af60550525be3d6175b726d1d11f47e62a19ba5f854fdee57ce21161a2f8",
+      "compression": "gzip"
+    }
+  ]
+}

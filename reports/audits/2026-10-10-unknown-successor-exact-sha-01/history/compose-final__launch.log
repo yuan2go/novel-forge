@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/verify_authority_compose.py", line 763, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/verify_authority_compose.py", line 408, in main
+    identity = QualificationRunIdentity.bind(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification_resources.py", line 101, in bind
+    raise ValueError(
+ValueError: qualification Compose project is not bound to the run-scoped identity

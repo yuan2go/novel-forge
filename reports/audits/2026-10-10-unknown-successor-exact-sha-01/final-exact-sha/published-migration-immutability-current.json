@@ -1,0 +1,1204 @@
+{
+  "baseline_sha": "f067d189a63f644a3a49f78abda557035b5fa59a",
+  "head": "20261010_0198_recovery_reference_indexes",
+  "registry_count": 199,
+  "published_body_changes": [],
+  "records": [
+    {
+      "path": "src/novel_forge/storage/migrations/versions/__init__.py",
+      "baseline_sha256": "23a77b9822157a33b9d2426e9db3c8f0b201fe1af1234491f83cfd41ddbad872",
+      "current_sha256": "c81da201dd133095c5cd305a654bb2e10ba6357173ed7054d5c64338ec43b3e3",
+      "identical": false
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260625_0001_initial_industrial_schema.py",
+      "baseline_sha256": "44eaf4b5f461be756b0d606ff5adb4d8b07d2158d5b42b4b578dd77788627d45",
+      "current_sha256": "44eaf4b5f461be756b0d606ff5adb4d8b07d2158d5b42b4b578dd77788627d45",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260628_0002_query_and_release_indexes.py",
+      "baseline_sha256": "cbcc8357b0d6ee892997744af1a264a1bd808e1dc069e15694f3090c157099c7",
+      "current_sha256": "cbcc8357b0d6ee892997744af1a264a1bd808e1dc069e15694f3090c157099c7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260702_0003_mkaos_p0.py",
+      "baseline_sha256": "1fde08fa6587605951282d3d8146e84c2649e3f761725dd46b7708499ce3cefa",
+      "current_sha256": "1fde08fa6587605951282d3d8146e84c2649e3f761725dd46b7708499ce3cefa",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260703_0004_review_issue.py",
+      "baseline_sha256": "afd98243aa1d59eb0130f6c20ec2d1595296fcab0a7572856c3ea57e2ccd1ba7",
+      "current_sha256": "afd98243aa1d59eb0130f6c20ec2d1595296fcab0a7572856c3ea57e2ccd1ba7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260712_0005_core_os_runtime.py",
+      "baseline_sha256": "d99c44453a65e83e49670659ed6bdf1656a68a30e0837c89c0d814d8f47f29e1",
+      "current_sha256": "d99c44453a65e83e49670659ed6bdf1656a68a30e0837c89c0d814d8f47f29e1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260712_0006_core_os_outbox_delivery.py",
+      "baseline_sha256": "3099c31b94d2a768e12c151a20da5e9f1ce70cbcc87ffabf000dec98287d811a",
+      "current_sha256": "3099c31b94d2a768e12c151a20da5e9f1ce70cbcc87ffabf000dec98287d811a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260712_0007_postgres_command_kernel_authority.py",
+      "baseline_sha256": "e6a0d9489a4c3148ff0fe472371e427b30a8110ab699fd52407350bdbb32a1e2",
+      "current_sha256": "e6a0d9489a4c3148ff0fe472371e427b30a8110ab699fd52407350bdbb32a1e2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0008_authority_schema_recovery.py",
+      "baseline_sha256": "e6b603da3dc50dd9c7415c3713746fb1f445aa83fdeacf76eb824d6b2dcd36d8",
+      "current_sha256": "e6b603da3dc50dd9c7415c3713746fb1f445aa83fdeacf76eb824d6b2dcd36d8",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0009_attempt_lease_invariants.py",
+      "baseline_sha256": "5db98d90fcd11c465e4bb916374b10f01aac6b75ec576019b1dc603abacb2c14",
+      "current_sha256": "5db98d90fcd11c465e4bb916374b10f01aac6b75ec576019b1dc603abacb2c14",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0010_asset_blob_invariants.py",
+      "baseline_sha256": "86c8324996c8e2053658e8d5acb9428479c350f45a354ac2d25cfd79aa18dfd2",
+      "current_sha256": "86c8324996c8e2053658e8d5acb9428479c350f45a354ac2d25cfd79aa18dfd2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0011_effect_inbox_invariants.py",
+      "baseline_sha256": "f8f2cd5d1619076af2269bcbd1d1ab546f7eac31190b0849be71bce5443939b3",
+      "current_sha256": "f8f2cd5d1619076af2269bcbd1d1ab546f7eac31190b0849be71bce5443939b3",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0012_admission_contract.py",
+      "baseline_sha256": "ff47a3bba9090ea9158e130ee61a99bf26dd22f49efa08757564d8a8961cfaf1",
+      "current_sha256": "ff47a3bba9090ea9158e130ee61a99bf26dd22f49efa08757564d8a8961cfaf1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0013_attempt_runtime.py",
+      "baseline_sha256": "4f84966bb126a5ebdab46a464b4f64a9691497ff3938e0daf507d0b4f4d1644b",
+      "current_sha256": "4f84966bb126a5ebdab46a464b4f64a9691497ff3938e0daf507d0b4f4d1644b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0014_cancellation_compensation.py",
+      "baseline_sha256": "898037807f7492f8144af8c00abead8a203794c7cbfd814942e44d6a0cdbeb1b",
+      "current_sha256": "898037807f7492f8144af8c00abead8a203794c7cbfd814942e44d6a0cdbeb1b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0015_stale_command_evidence.py",
+      "baseline_sha256": "2b5785e0a92f4d84f70daa7ae064b5cfbb62ac6bd4dd2b11cc64b7336a2be64e",
+      "current_sha256": "2b5785e0a92f4d84f70daa7ae064b5cfbb62ac6bd4dd2b11cc64b7336a2be64e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0016_asset_blob_protocol.py",
+      "baseline_sha256": "d3e310e912ffce6dcffc4dd9f51251e6c17e0fb0b26f40be2d07724e36f9ca11",
+      "current_sha256": "d3e310e912ffce6dcffc4dd9f51251e6c17e0fb0b26f40be2d07724e36f9ca11",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0017_external_effect_runtime.py",
+      "baseline_sha256": "0e6334dd8904d0221be3a7bc04a7ecbc3bce837db8d1517a479332cdcd9e67d0",
+      "current_sha256": "0e6334dd8904d0221be3a7bc04a7ecbc3bce837db8d1517a479332cdcd9e67d0",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260713_0018_operation_graph_completion.py",
+      "baseline_sha256": "3b8e4f123ce3d3840bc9ea25a020280be1198627b66a95f81b84088b5a94115a",
+      "current_sha256": "3b8e4f123ce3d3840bc9ea25a020280be1198627b66a95f81b84088b5a94115a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260716_0019_external_effect_protocol.py",
+      "baseline_sha256": "41083cbbd6f55c49adabf7b5e2eaa7388fa3a5274734e40559c5c39cce9ab309",
+      "current_sha256": "41083cbbd6f55c49adabf7b5e2eaa7388fa3a5274734e40559c5c39cce9ab309",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260716_0020_operation_output_evidence.py",
+      "baseline_sha256": "b495ba77c506d89119c9b71f76621b210f9038359b22b286ee007d191a609fde",
+      "current_sha256": "b495ba77c506d89119c9b71f76621b210f9038359b22b286ee007d191a609fde",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260716_0021_saga_coordination.py",
+      "baseline_sha256": "96b97475cd1de43dc2167deef6381711075b813d6dd545fc7b74af27c7a90d9a",
+      "current_sha256": "96b97475cd1de43dc2167deef6381711075b813d6dd545fc7b74af27c7a90d9a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260716_0022_authority_asset_locator.py",
+      "baseline_sha256": "408d2b3ddc0a49de1f3ab2f3f265c08b174dc7fcc5923e06880bfc614bfe4997",
+      "current_sha256": "408d2b3ddc0a49de1f3ab2f3f265c08b174dc7fcc5923e06880bfc614bfe4997",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0023_provider_budget_lifecycle.py",
+      "baseline_sha256": "f072a4df1de349225c4c43de2f717bc2e47d6b0aecd6cc235a9797d88cba34a6",
+      "current_sha256": "f072a4df1de349225c4c43de2f717bc2e47d6b0aecd6cc235a9797d88cba34a6",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0024_pre_provider_runtime_hardening.py",
+      "baseline_sha256": "f786bcfbd402f111ccb79330963e74f6a9fc5bcbb1dd70442489421d5d3a5d40",
+      "current_sha256": "f786bcfbd402f111ccb79330963e74f6a9fc5bcbb1dd70442489421d5d3a5d40",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0025_canon_approval_authority.py",
+      "baseline_sha256": "48eccf9cd1d3f992f52acfb86e40e5ba402771fa8ee03b006e2feacc99bb4562",
+      "current_sha256": "48eccf9cd1d3f992f52acfb86e40e5ba402771fa8ee03b006e2feacc99bb4562",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0026_canon_saga_gate.py",
+      "baseline_sha256": "e79ab64b743fcff540c5560d00cd71e1c19bbd8e2831dd5c11950bf140217356",
+      "current_sha256": "e79ab64b743fcff540c5560d00cd71e1c19bbd8e2831dd5c11950bf140217356",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0027_canon_approval_operation.py",
+      "baseline_sha256": "fec2f8c829633a47bf56d262d890cfba8da3fa6d425b02e7ac51b7b93657a4b3",
+      "current_sha256": "fec2f8c829633a47bf56d262d890cfba8da3fa6d425b02e7ac51b7b93657a4b3",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0028_provider_adapter_v2.py",
+      "baseline_sha256": "594fbf5f7b6e928a807b9d48bb0ddd52317cbc8e63026b158c10ee89ec70fedc",
+      "current_sha256": "594fbf5f7b6e928a807b9d48bb0ddd52317cbc8e63026b158c10ee89ec70fedc",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0029_canon_reextraction_authority.py",
+      "baseline_sha256": "700705443714a0ed6b6e1016609ab8423a5b7a1562af41629a93704c6298449c",
+      "current_sha256": "700705443714a0ed6b6e1016609ab8423a5b7a1562af41629a93704c6298449c",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0030_provider_callback_authority.py",
+      "baseline_sha256": "213b7da208dc9ecf953831ccab540891e5f34302f155eae2bc110dcb2fc4b5a9",
+      "current_sha256": "213b7da208dc9ecf953831ccab540891e5f34302f155eae2bc110dcb2fc4b5a9",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0031_canon_reextraction_governance.py",
+      "baseline_sha256": "e78a6aef95c9346d4f013a935c5126952b210481432045c1f49872c0c9d972b2",
+      "current_sha256": "e78a6aef95c9346d4f013a935c5126952b210481432045c1f49872c0c9d972b2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260718_0032_provider_callback_dispatch_index.py",
+      "baseline_sha256": "148150ac0cb7f2de9272bb7f691a353f588eeb3c289a59670da197192c932953",
+      "current_sha256": "148150ac0cb7f2de9272bb7f691a353f588eeb3c289a59670da197192c932953",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260728_0033_agent_collaboration_v1.py",
+      "baseline_sha256": "692376f98e40f48fe37bdcae430b11803dde76a395ab687eb2861a2be6e31d34",
+      "current_sha256": "692376f98e40f48fe37bdcae430b11803dde76a395ab687eb2861a2be6e31d34",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260729_0034_unified_business_authority.py",
+      "baseline_sha256": "016837a19da02f55e34886bb6bd906f9f42e88be67a1e3f559b79e72c94a212e",
+      "current_sha256": "016837a19da02f55e34886bb6bd906f9f42e88be67a1e3f559b79e72c94a212e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0035_book_child_delegation.py",
+      "baseline_sha256": "a29de3c12d74644fc7b591f880b1c99313569d3d2a11970156d7bd7ca4cbb7c7",
+      "current_sha256": "a29de3c12d74644fc7b591f880b1c99313569d3d2a11970156d7bd7ca4cbb7c7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0036_book_canon_checkpoint.py",
+      "baseline_sha256": "6c618ce16ffeee99f2c34101d8ec7db2d45a03827123d55cf61420b4e155eea0",
+      "current_sha256": "6c618ce16ffeee99f2c34101d8ec7db2d45a03827123d55cf61420b4e155eea0",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0037_story_state_reducer_registry.py",
+      "baseline_sha256": "88b5c65d6080d37c847e867363c67ba480f09d9c8bee3652660cf72e21639c77",
+      "current_sha256": "88b5c65d6080d37c847e867363c67ba480f09d9c8bee3652660cf72e21639c77",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0038_story_design_authority.py",
+      "baseline_sha256": "2596c487a7b8c7c7d0169cfb6dc5ee176734e83083c71f93a83883158ad9ed0d",
+      "current_sha256": "2596c487a7b8c7c7d0169cfb6dc5ee176734e83083c71f93a83883158ad9ed0d",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0039_hierarchical_planning.py",
+      "baseline_sha256": "9c8b4fa5949e7ec199e6848d9b48bdf035a8a957ab616b74eaf7c8909ba10a26",
+      "current_sha256": "9c8b4fa5949e7ec199e6848d9b48bdf035a8a957ab616b74eaf7c8909ba10a26",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0040_chapter_group_authority.py",
+      "baseline_sha256": "a9565124595cc18b9742ed099993e9eed1d8b1533c08475e8f359b6514cdf78b",
+      "current_sha256": "a9565124595cc18b9742ed099993e9eed1d8b1533c08475e8f359b6514cdf78b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0041_plan_change_authority.py",
+      "baseline_sha256": "7588c156928fc4bbfc333bd57c51bd4fe548439dc5707bf7910ffbf24f57255e",
+      "current_sha256": "7588c156928fc4bbfc333bd57c51bd4fe548439dc5707bf7910ffbf24f57255e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260730_0042_reader_calibration.py",
+      "baseline_sha256": "260c1a4b38f09e99a45f809e5c5554dbe754e6c3b761063e6cd0599598a45556",
+      "current_sha256": "260c1a4b38f09e99a45f809e5c5554dbe754e6c3b761063e6cd0599598a45556",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0043_project_workspace_and_legacy_migration_authority.py",
+      "baseline_sha256": "5e637e7f8fb8fb47ca21232d98a6918a648daff0e511b937c9c1493ef544d1cd",
+      "current_sha256": "5e637e7f8fb8fb47ca21232d98a6918a648daff0e511b937c9c1493ef544d1cd",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0044_project_binding_authority.py",
+      "baseline_sha256": "11d4681b33aa55238d51264c3405e660f423c46254daad3f87ff8bef5f99fb4b",
+      "current_sha256": "11d4681b33aa55238d51264c3405e660f423c46254daad3f87ff8bef5f99fb4b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0045_task_recovery_authority.py",
+      "baseline_sha256": "ce855c7d0e541aa79726bf8c5816387730465e994b7b72398beb47e3239493b5",
+      "current_sha256": "ce855c7d0e541aa79726bf8c5816387730465e994b7b72398beb47e3239493b5",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0046_source_document_authority.py",
+      "baseline_sha256": "61792b3a91f1598f58327651aa7293798a7469d7a0b6327cac99b2bece158a94",
+      "current_sha256": "61792b3a91f1598f58327651aa7293798a7469d7a0b6327cac99b2bece158a94",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0047_candidate_asset_lifecycle.py",
+      "baseline_sha256": "89d92f678fd39ea4260aa7731193ff392fdd579157f0f86acd7636b681052d48",
+      "current_sha256": "89d92f678fd39ea4260aa7731193ff392fdd579157f0f86acd7636b681052d48",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0048_source_transform_authority.py",
+      "baseline_sha256": "de1da184384c2945fef53fad2684a8fd39398dbb46aefa710f897d43f04cdce2",
+      "current_sha256": "de1da184384c2945fef53fad2684a8fd39398dbb46aefa710f897d43f04cdce2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0049_source_transform_fk_indexes.py",
+      "baseline_sha256": "08046c32926d354dd88c1f5dd3571bc7fb74ff7b2bf9c585b109ae1c39536ed6",
+      "current_sha256": "08046c32926d354dd88c1f5dd3571bc7fb74ff7b2bf9c585b109ae1c39536ed6",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260801_0050_mkaos_authority.py",
+      "baseline_sha256": "8f7d43222b0ae148f5ccc3e538ebf653bfeb3ecbd23afb3565c0af7d117bb666",
+      "current_sha256": "8f7d43222b0ae148f5ccc3e538ebf653bfeb3ecbd23afb3565c0af7d117bb666",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260803_0051_book_design_authority_slice.py",
+      "baseline_sha256": "fcb17d2c443cfae36f3c2213ceecfe279e600a674ab2d642b6eea362195c2738",
+      "current_sha256": "fcb17d2c443cfae36f3c2213ceecfe279e600a674ab2d642b6eea362195c2738",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0052_asset_schema_and_scope_integrity.py",
+      "baseline_sha256": "e0355a5c29ae5f5c5dc23b9426b6475d107e8cd02ab103b7ab8daa9c90b2c68d",
+      "current_sha256": "e0355a5c29ae5f5c5dc23b9426b6475d107e8cd02ab103b7ab8daa9c90b2c68d",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0053_d0_provider_qualification_authority.py",
+      "baseline_sha256": "797fc9ae597af930b7fe1c576f10ffe737acd346e907a2669095350985ef016f",
+      "current_sha256": "797fc9ae597af930b7fe1c576f10ffe737acd346e907a2669095350985ef016f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0054_scope_foreign_key_indexes.py",
+      "baseline_sha256": "75d3750dfda93d7920c23485fc2d6d25d8436bac34868e9a4a77edb49a69a125",
+      "current_sha256": "75d3750dfda93d7920c23485fc2d6d25d8436bac34868e9a4a77edb49a69a125",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0055_legacy_native_conversion.py",
+      "baseline_sha256": "dd5e6ad24e62f9c6c869cbb3615ca1aff5138942e29ff3bcd5b5c73f092d0ad1",
+      "current_sha256": "dd5e6ad24e62f9c6c869cbb3615ca1aff5138942e29ff3bcd5b5c73f092d0ad1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0056_database_runtime_governance.py",
+      "baseline_sha256": "29af1b36adff9291adcc6e47443b72efe26e4d88b26447917ec0eecd177bbc14",
+      "current_sha256": "29af1b36adff9291adcc6e47443b72efe26e4d88b26447917ec0eecd177bbc14",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0057_hot_query_governance.py",
+      "baseline_sha256": "cc6e08b723ea7d35fa3fcc4c780a51e6e45aa048a5720162300c73650967b6bd",
+      "current_sha256": "cc6e08b723ea7d35fa3fcc4c780a51e6e45aa048a5720162300c73650967b6bd",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0058_authority_cutover_release_qualification.py",
+      "baseline_sha256": "bd8f32155f23876b4d1090acaf2559ada2c1379739fb49a840b54f93661dd5d2",
+      "current_sha256": "bd8f32155f23876b4d1090acaf2559ada2c1379739fb49a840b54f93661dd5d2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0059_migration_validation_authority.py",
+      "baseline_sha256": "49ea517a38e300aa051298b39f9533eb6df2ac11cada0605f1133e0729f6fc4e",
+      "current_sha256": "49ea517a38e300aa051298b39f9533eb6df2ac11cada0605f1133e0729f6fc4e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0060_migration_completion_semantics.py",
+      "baseline_sha256": "f1996be014bc256825b86c81c44a80c792364a49327c9fcb151ca58935038fed",
+      "current_sha256": "f1996be014bc256825b86c81c44a80c792364a49327c9fcb151ca58935038fed",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0061_structured_migration_references.py",
+      "baseline_sha256": "85d2a719f6d4448bbbc35a5de16bd6cc35ddbdf4d1566fb15f9476209c21707b",
+      "current_sha256": "85d2a719f6d4448bbbc35a5de16bd6cc35ddbdf4d1566fb15f9476209c21707b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0062_runtime_job_execution_plane.py",
+      "baseline_sha256": "fd605c3264ba32995af3a0ac55d1bea92ec6d6c093162e47c8e112b728a993dc",
+      "current_sha256": "fd605c3264ba32995af3a0ac55d1bea92ec6d6c093162e47c8e112b728a993dc",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0063_worker_fleet_operational_governance.py",
+      "baseline_sha256": "a82b0f5dc26ae87dc44529f85b4deb65d891c4a929ef056c9c9606bf3c453dc8",
+      "current_sha256": "a82b0f5dc26ae87dc44529f85b4deb65d891c4a929ef056c9c9606bf3c453dc8",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0064_runtime_job_integrity_hardening.py",
+      "baseline_sha256": "cd77224a68be46a606e108662fcc7b226ccf0def828b07184eed018ae994d9aa",
+      "current_sha256": "cd77224a68be46a606e108662fcc7b226ccf0def828b07184eed018ae994d9aa",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0065_runtime_job_lease_identity.py",
+      "baseline_sha256": "47303f112a921c76a28375abc5209aefe8b1477e219997fa8ed37182f6aee29e",
+      "current_sha256": "47303f112a921c76a28375abc5209aefe8b1477e219997fa8ed37182f6aee29e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0066_runtime_job_attempt_lease_existence.py",
+      "baseline_sha256": "ef60e339b86a5d4bde3df8ac3f704ca78d651fa9387e3afa1d546356fd05160f",
+      "current_sha256": "ef60e339b86a5d4bde3df8ac3f704ca78d651fa9387e3afa1d546356fd05160f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260804_0067_activated_migration_archival_binding.py",
+      "baseline_sha256": "8ca84cd7e1d47e840c1fe5d5423832ebc81a01345d4bc9b4155a8002e6e203bc",
+      "current_sha256": "8ca84cd7e1d47e840c1fe5d5423832ebc81a01345d4bc9b4155a8002e6e203bc",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260805_0068_unified_agent_runtime.py",
+      "baseline_sha256": "762f0ba8fb02f867a0ed7c990ec29f4ccf58bec2217c606cf72462206f18ed87",
+      "current_sha256": "762f0ba8fb02f867a0ed7c990ec29f4ccf58bec2217c606cf72462206f18ed87",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260805_0069_agent_runtime_domain_commit_closure.py",
+      "baseline_sha256": "2fb0752da2bdcf26e544d923e9500f77aa345ac75d9dc2aef7d2cb0de472372e",
+      "current_sha256": "2fb0752da2bdcf26e544d923e9500f77aa345ac75d9dc2aef7d2cb0de472372e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260805_0070_agent_runtime_recovery_protocol.py",
+      "baseline_sha256": "4d9b9bc12100a2f0a8fbf6b71e289df9129ea032a7c6266e3bca50a589b2b736",
+      "current_sha256": "4d9b9bc12100a2f0a8fbf6b71e289df9129ea032a7c6266e3bca50a589b2b736",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260805_0071_capability_pack_authority.py",
+      "baseline_sha256": "6bf80ca73095c25401ec40927b5f6733183b789f2e0c44c9ee91b47af77dfa73",
+      "current_sha256": "6bf80ca73095c25401ec40927b5f6733183b789f2e0c44c9ee91b47af77dfa73",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260806_0072_capability_pack_integrity_hardening.py",
+      "baseline_sha256": "5c8e0841b70ece45628740112f3e7a5904516c950221b7d52f6f7f8a94ab7831",
+      "current_sha256": "5c8e0841b70ece45628740112f3e7a5904516c950221b7d52f6f7f8a94ab7831",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260806_0073_core_functional_loops.py",
+      "baseline_sha256": "9294e2cd82bd598644c52f19e12b823dde4bd7f5c8f60e3b60c5c8084a42f2b1",
+      "current_sha256": "9294e2cd82bd598644c52f19e12b823dde4bd7f5c8f60e3b60c5c8084a42f2b1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0074_longform_native_intelligence.py",
+      "baseline_sha256": "43a85c59003bdcef0ef312a0554df5bc5d5b895ec1063f27c3d4acc556f380c2",
+      "current_sha256": "43a85c59003bdcef0ef312a0554df5bc5d5b895ec1063f27c3d4acc556f380c2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0075_source_deconstruction_intelligence.py",
+      "baseline_sha256": "9d6aa67b496d162c4e48276b88f5ed8088f7c30f3e0169e097ea26a98c541a2f",
+      "current_sha256": "9d6aa67b496d162c4e48276b88f5ed8088f7c30f3e0169e097ea26a98c541a2f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0076_source_import_runtime.py",
+      "baseline_sha256": "a57463fa350d8b813fb4836b9fd443b7732b2892016fa3e607fd57f138eae183",
+      "current_sha256": "a57463fa350d8b813fb4836b9fd443b7732b2892016fa3e607fd57f138eae183",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0077_source_reprocessing_execution.py",
+      "baseline_sha256": "a1e99ad2357249907d7430a890460f5351cae0aaa02a91c83a8d109d42317103",
+      "current_sha256": "a1e99ad2357249907d7430a890460f5351cae0aaa02a91c83a8d109d42317103",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0078_reprocessing_action_expansion.py",
+      "baseline_sha256": "1e93c3d9c629d60667abf9ef24f0af622b0bd63882bbf7adae12046d7ca1c5c2",
+      "current_sha256": "1e93c3d9c629d60667abf9ef24f0af622b0bd63882bbf7adae12046d7ca1c5c2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0079_source_import_scope_closure.py",
+      "baseline_sha256": "262efa75fbb8a80b8c448697bdd2ef6f561d37a61e0625b090c74f60ce14aca0",
+      "current_sha256": "262efa75fbb8a80b8c448697bdd2ef6f561d37a61e0625b090c74f60ce14aca0",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0080_source_snapshot_governance_identity.py",
+      "baseline_sha256": "583f35446f59b89d5fc8544fcb1e5d20bc135c089590b638196bc8f9767584d7",
+      "current_sha256": "583f35446f59b89d5fc8544fcb1e5d20bc135c089590b638196bc8f9767584d7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260811_0081_source_intelligence_router.py",
+      "baseline_sha256": "9f1ca282d07b45f8e7b4e78f9495435780f98ee403c32ac068cd5cbb45864709",
+      "current_sha256": "9f1ca282d07b45f8e7b4e78f9495435780f98ee403c32ac068cd5cbb45864709",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260812_0082_narrative_state_contract_v2.py",
+      "baseline_sha256": "a89d47353c5613eb4279f578e8c658a183548b5a8d26178e52e4fbf82e675ba4",
+      "current_sha256": "a89d47353c5613eb4279f578e8c658a183548b5a8d26178e52e4fbf82e675ba4",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260812_0083_narrative_runtime_convergence.py",
+      "baseline_sha256": "5a8f90bcd606d5e1fa0b7658ea13240bcbf56c03285007094235745c0af72e9a",
+      "current_sha256": "5a8f90bcd606d5e1fa0b7658ea13240bcbf56c03285007094235745c0af72e9a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260812_0084_development_gap_final_convergence.py",
+      "baseline_sha256": "aaddf0bd53f3a4648995fdb46f0456d10d4d3c8586b774d32d98080d8b9ff85a",
+      "current_sha256": "aaddf0bd53f3a4648995fdb46f0456d10d4d3c8586b774d32d98080d8b9ff85a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260812_0085_corrective_action_terminal_lineage.py",
+      "baseline_sha256": "52bda0055121f66382276ddd06d110ee0d08a0c14400ce5f428050a75ee33a8c",
+      "current_sha256": "52bda0055121f66382276ddd06d110ee0d08a0c14400ce5f428050a75ee33a8c",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260812_0086_corrective_generation_terminal_lineage.py",
+      "baseline_sha256": "c07288bbd2ae22a4b4fc6a5e9f2a5984b6b359e1374b61693b83cd425c92adf7",
+      "current_sha256": "c07288bbd2ae22a4b4fc6a5e9f2a5984b6b359e1374b61693b83cd425c92adf7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260813_0087_book_initial_narrative_state_binding.py",
+      "baseline_sha256": "52c01c22964cd56e7078993cf2a1b662e36e2d1b6eb6a9b4a9d80b40bfa41826",
+      "current_sha256": "52c01c22964cd56e7078993cf2a1b662e36e2d1b6eb6a9b4a9d80b40bfa41826",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260814_0088_canonical_narrative_architecture.py",
+      "baseline_sha256": "8a42017d8edf4e46b2bce6c6132a770a4f3979c357b67f61b3b555a34b4ad1d6",
+      "current_sha256": "8a42017d8edf4e46b2bce6c6132a770a4f3979c357b67f61b3b555a34b4ad1d6",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260814_0089_progressive_narrative_design.py",
+      "baseline_sha256": "2bb78468a86082674c24b1e415ef40d231935f7fdc750d389dfa8134bfdf1797",
+      "current_sha256": "2bb78468a86082674c24b1e415ef40d231935f7fdc750d389dfa8134bfdf1797",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260814_0090_progressive_replan_scopes.py",
+      "baseline_sha256": "dbcf8336b83ebf697b1d05ae0b4924987689919a1dbe1b5e403dd7c78f2f302e",
+      "current_sha256": "dbcf8336b83ebf697b1d05ae0b4924987689919a1dbe1b5e403dd7c78f2f302e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260814_0091_canonical_longform_runtime_completion.py",
+      "baseline_sha256": "3d2c8f54cf6c069d38723948bd133713b8c36e323e2eb9c97c06ce8034739cd1",
+      "current_sha256": "3d2c8f54cf6c069d38723948bd133713b8c36e323e2eb9c97c06ce8034739cd1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260814_0092_longform_correctness_closure.py",
+      "baseline_sha256": "b6f9bc516530b94034effe5248c2b139a06769e7f0edebc43c230268a4cc3954",
+      "current_sha256": "b6f9bc516530b94034effe5248c2b139a06769e7f0edebc43c230268a4cc3954",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260820_0093_book_liveness_critical_path_closure.py",
+      "baseline_sha256": "aedf216f5ff951be8ad05e5e5735980c1560bca7c28f1cf0a92e2186b34c4d8d",
+      "current_sha256": "aedf216f5ff951be8ad05e5e5735980c1560bca7c28f1cf0a92e2186b34c4d8d",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260820_0094_industrial_autonomous_novel_os.py",
+      "baseline_sha256": "1499f57ec948e87659663fe224e165744a2a5917b573209173fef1b9f964ec1e",
+      "current_sha256": "1499f57ec948e87659663fe224e165744a2a5917b573209173fef1b9f964ec1e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260821_0095_post_merge_correctness_repair.py",
+      "baseline_sha256": "b364ea41bbbaab3111b4b8f7e01c7544a8a65097747bc2e0cd3a656642b4c263",
+      "current_sha256": "b364ea41bbbaab3111b4b8f7e01c7544a8a65097747bc2e0cd3a656642b4c263",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260821_0096_runtime_hardening.py",
+      "baseline_sha256": "94ea778210291b94e55de575330dc0f506a41950a8773632680c0543c32fd38f",
+      "current_sha256": "94ea778210291b94e55de575330dc0f506a41950a8773632680c0543c32fd38f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260824_0097_narrative_evaluator_codex_lineage.py",
+      "baseline_sha256": "be8a10fa6aafd1657b3f7deffec9be0e5f379c15baa8bb98811582a571f6600b",
+      "current_sha256": "be8a10fa6aafd1657b3f7deffec9be0e5f379c15baa8bb98811582a571f6600b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260825_0098_narrative_evolution_engine.py",
+      "baseline_sha256": "bc0def0c9632a0d9954004297d641850582ae3c570db04383846b28efcb1762f",
+      "current_sha256": "bc0def0c9632a0d9954004297d641850582ae3c570db04383846b28efcb1762f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260825_0099_creative_engineering_convergence.py",
+      "baseline_sha256": "1ba73100422a44eead859d6b930cabd7b234a2288909261ced8313daa9c73f43",
+      "current_sha256": "1ba73100422a44eead859d6b930cabd7b234a2288909261ced8313daa9c73f43",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260825_0100_hierarchy_closure.py",
+      "baseline_sha256": "ac98c7e36c9cbf36f13d9d587ce5fe62a9d6e3736321469a899d77bbd3423b8a",
+      "current_sha256": "ac98c7e36c9cbf36f13d9d587ce5fe62a9d6e3736321469a899d77bbd3423b8a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260826_0101_quality_qualification.py",
+      "baseline_sha256": "0d43f9483c26dc4624c46a72bc2971c600424d5b7f596b60819e79b66276576b",
+      "current_sha256": "0d43f9483c26dc4624c46a72bc2971c600424d5b7f596b60819e79b66276576b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260828_0102_book_opening_recovery_closure.py",
+      "baseline_sha256": "d994bb271e23af7eb6e4c244101e85dc554e3f481f2702578a852a762432f291",
+      "current_sha256": "d994bb271e23af7eb6e4c244101e85dc554e3f481f2702578a852a762432f291",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260829_0103_book_opening_semantic_runtime_hardening.py",
+      "baseline_sha256": "7617bcfcf5effbbd155e7dafd29c72aba7ef14b31c203513c07f1420b662d8a3",
+      "current_sha256": "7617bcfcf5effbbd155e7dafd29c72aba7ef14b31c203513c07f1420b662d8a3",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260829_0104_book_opening_workflow_nodes.py",
+      "baseline_sha256": "cb17c841fca56afb38e82448a69c68ba3f500aed6d1ed77290ca3ef7368d53e7",
+      "current_sha256": "cb17c841fca56afb38e82448a69c68ba3f500aed6d1ed77290ca3ef7368d53e7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260830_0105_p0_backend_qualification_repairs.py",
+      "baseline_sha256": "96aae03ce0c1b7ee9cc8389b872406f3d0046146d71a98e7cd3677c6e621dd17",
+      "current_sha256": "96aae03ce0c1b7ee9cc8389b872406f3d0046146d71a98e7cd3677c6e621dd17",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260902_0106_quality_qualification_scope_generalization.py",
+      "baseline_sha256": "fc4a963f6c7ff6002237d7c905b18d8d73c1dd89c3f78931bf9f56083e95e4c2",
+      "current_sha256": "fc4a963f6c7ff6002237d7c905b18d8d73c1dd89c3f78931bf9f56083e95e4c2",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260903_0107_retrieval_campaign_runtime.py",
+      "baseline_sha256": "83d3a52c1561ffbe689dfdf946a8e0857d3747b0f2e8266a38b442b854d06f0f",
+      "current_sha256": "83d3a52c1561ffbe689dfdf946a8e0857d3747b0f2e8266a38b442b854d06f0f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260903_0108_context_governance_projection.py",
+      "baseline_sha256": "c4234f7ca41d5cfd05180f41524eee72ea44574afeae6de5506b71e68b621c0c",
+      "current_sha256": "c4234f7ca41d5cfd05180f41524eee72ea44574afeae6de5506b71e68b621c0c",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0109_industrial_execution_policies.py",
+      "baseline_sha256": "295f5c3d6f4b77d8440bf314f3f61f54bd078d41d0bdf271a6769b7d165c2077",
+      "current_sha256": "295f5c3d6f4b77d8440bf314f3f61f54bd078d41d0bdf271a6769b7d165c2077",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0110_chapter_mission_scene_contract.py",
+      "baseline_sha256": "0acf6413b154fdb0f159605f2d5e2906dc01e917e0da08a02ff5ee987a2a480f",
+      "current_sha256": "0acf6413b154fdb0f159605f2d5e2906dc01e917e0da08a02ff5ee987a2a480f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0111_whole_book_completion.py",
+      "baseline_sha256": "ce461e3978e99aa9057325eba38d855fb4bdedaac034d791e25b77413a034b43",
+      "current_sha256": "ce461e3978e99aa9057325eba38d855fb4bdedaac034d791e25b77413a034b43",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0112_realization_execution_policy.py",
+      "baseline_sha256": "77b454e3d7aa135e4f3e3a27a1301d7c701655df1f3095f1c0a9213115b58391",
+      "current_sha256": "77b454e3d7aa135e4f3e3a27a1301d7c701655df1f3095f1c0a9213115b58391",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260905_0113_policy_completion_fk_indexes.py",
+      "baseline_sha256": "5b0c344675e614431e80a509588173e740add2e2a1ebafd5126313534618df57",
+      "current_sha256": "5b0c344675e614431e80a509588173e740add2e2a1ebafd5126313534618df57",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260906_0114_narrative_reality.py",
+      "baseline_sha256": "67795ec18d0f02344d15bb17faec86916e7107503baceecda058e4d2b37fa995",
+      "current_sha256": "67795ec18d0f02344d15bb17faec86916e7107503baceecda058e4d2b37fa995",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260906_0115_reality_event_index.py",
+      "baseline_sha256": "5300e4d8d27592fdb2d84f466cd5734319aec92488dab6fbff8cd3d26ac14625",
+      "current_sha256": "5300e4d8d27592fdb2d84f466cd5734319aec92488dab6fbff8cd3d26ac14625",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260906_0116_book_control_policy.py",
+      "baseline_sha256": "55132b93b05135e769cb2dd0512526a872870f20558bd1aacdf64c2fc672f0a0",
+      "current_sha256": "55132b93b05135e769cb2dd0512526a872870f20558bd1aacdf64c2fc672f0a0",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260906_0117_world_causal_event_locators.py",
+      "baseline_sha256": "302523ff7d7bdf7af9020b4c81c7cda9ce2100a969a1bfdcb178c47b293c6674",
+      "current_sha256": "302523ff7d7bdf7af9020b4c81c7cda9ce2100a969a1bfdcb178c47b293c6674",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260907_0118_preparation_event_lineage.py",
+      "baseline_sha256": "f79124fb360a93f5cc5253e52e1cea38e70953889efed44496b1371a0eb5bcdb",
+      "current_sha256": "f79124fb360a93f5cc5253e52e1cea38e70953889efed44496b1371a0eb5bcdb",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260907_0119_grounded_chapter_acceptance.py",
+      "baseline_sha256": "e38d2b040e51d5abff711bbfb30bcb39bb845bf4a63a791ffc2fbd2fa13467a7",
+      "current_sha256": "e38d2b040e51d5abff711bbfb30bcb39bb845bf4a63a791ffc2fbd2fa13467a7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260907_0120_foundation_generation.py",
+      "baseline_sha256": "acb213e3d031371532cd0dd4426af44495fa58f30d597f6a9bba38eab69abbd3",
+      "current_sha256": "acb213e3d031371532cd0dd4426af44495fa58f30d597f6a9bba38eab69abbd3",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_account_entitlement_budget.py",
+      "baseline_sha256": "cab0d01b1c6f0a9cb6550a9814149b39ce3399cb63db6727c298e39c926ac953",
+      "current_sha256": "cab0d01b1c6f0a9cb6550a9814149b39ce3399cb63db6727c298e39c926ac953",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py",
+      "baseline_sha256": "bd8e4a1624f00f504116e4ecb2377a673570f8b4804fa607090408fbde3f81fd",
+      "current_sha256": "bd8e4a1624f00f504116e4ecb2377a673570f8b4804fa607090408fbde3f81fd",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260908_0122_source_work_manifest.py",
+      "baseline_sha256": "6ddce8bcf390e0577a57e77f6672a6fd98b55587149891927c40dbf612a13507",
+      "current_sha256": "6ddce8bcf390e0577a57e77f6672a6fd98b55587149891927c40dbf612a13507",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260908_0123_source_analysis_dimensions.py",
+      "baseline_sha256": "35630fa88474592896dba694fd9a0906f4f1830c42bf77ad2a75b3bf23b3e574",
+      "current_sha256": "35630fa88474592896dba694fd9a0906f4f1830c42bf77ad2a75b3bf23b3e574",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260909_0124_corpus_fk_indexes.py",
+      "baseline_sha256": "0ee78b2781ec53a6a496627c1ce1b8dbd73babdf735433a457689a2815928fcd",
+      "current_sha256": "0ee78b2781ec53a6a496627c1ce1b8dbd73babdf735433a457689a2815928fcd",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260909_0125_corpus_ingestion_bridge.py",
+      "baseline_sha256": "ad7e68de555a66833c5f197b548f65552f340fbb7cdc8186a5cf1c676601bb44",
+      "current_sha256": "ad7e68de555a66833c5f197b548f65552f340fbb7cdc8186a5cf1c676601bb44",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260909_0126_corpus_processing.py",
+      "baseline_sha256": "bd0a65e63a68bf786a46fa0261d464d634fdbe6f8d5a457702ae3697163d7647",
+      "current_sha256": "bd0a65e63a68bf786a46fa0261d464d634fdbe6f8d5a457702ae3697163d7647",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260909_0127_corpus_curation.py",
+      "baseline_sha256": "cbe488b25734ef018f9ec286ed56717126b7e5db1f76d6ee2da0a62390279a1c",
+      "current_sha256": "cbe488b25734ef018f9ec286ed56717126b7e5db1f76d6ee2da0a62390279a1c",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260910_0128_corpus_operations.py",
+      "baseline_sha256": "ce93a6b0c37159fc38d45be8d4614a69bc52fcd3879a3e5284271c1e030cc2e5",
+      "current_sha256": "ce93a6b0c37159fc38d45be8d4614a69bc52fcd3879a3e5284271c1e030cc2e5",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260912_0129_corpus_member_fk_indexes.py",
+      "baseline_sha256": "803080ca680900abf82f4713674d7655439eb5a149a51ebaf4860a18126fbb9d",
+      "current_sha256": "803080ca680900abf82f4713674d7655439eb5a149a51ebaf4860a18126fbb9d",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260912_0130_creative_experiment_budget.py",
+      "baseline_sha256": "e8a39ae7d1d993cbd1a5bbcdf7766959f2582ca2f4d2731471ed9c12e8ada7db",
+      "current_sha256": "e8a39ae7d1d993cbd1a5bbcdf7766959f2582ca2f4d2731471ed9c12e8ada7db",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260913_0131_planning_result_recovery.py",
+      "baseline_sha256": "2a791afd1436c0b0e4334496f5c309a6e7fd7ca74f8a5435792f423955b6fe3b",
+      "current_sha256": "2a791afd1436c0b0e4334496f5c309a6e7fd7ca74f8a5435792f423955b6fe3b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260914_0132_planning_runtime_continuation.py",
+      "baseline_sha256": "83b1d73d27cac757abf861ecdfafb2955cefba1ef4527594c4597982dca2e967",
+      "current_sha256": "83b1d73d27cac757abf861ecdfafb2955cefba1ef4527594c4597982dca2e967",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260914_0133_formation_evaluation_recovery.py",
+      "baseline_sha256": "010c86435c02db698ec5f47b2298563c4f65cfd4f03438bbfc7cf3c9d9058d32",
+      "current_sha256": "010c86435c02db698ec5f47b2298563c4f65cfd4f03438bbfc7cf3c9d9058d32",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260914_0134_opening_capacity_continuation.py",
+      "baseline_sha256": "32cc4126b66cb35f530376638e117b06646d1cb58871ad0929991fdb8e5e3585",
+      "current_sha256": "32cc4126b66cb35f530376638e117b06646d1cb58871ad0929991fdb8e5e3585",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260914_0135_cost_routing_indexes.py",
+      "baseline_sha256": "2507c0598bf1062ad9852463473d4a20b76a316c4b1927d6b0fc015681cdd3b6",
+      "current_sha256": "2507c0598bf1062ad9852463473d4a20b76a316c4b1927d6b0fc015681cdd3b6",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260916_0136_provider_routing_policy.py",
+      "baseline_sha256": "dc87eff08197c6ff7abeeed5afca4df888e5e16f7644358b90c330d39aed12dc",
+      "current_sha256": "dc87eff08197c6ff7abeeed5afca4df888e5e16f7644358b90c330d39aed12dc",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260920_0137_opening_delete_fence.py",
+      "baseline_sha256": "b6f193cad3e8217424cad405af83e1c82c3a440dfd505256c73b55d492ee03bb",
+      "current_sha256": "b6f193cad3e8217424cad405af83e1c82c3a440dfd505256c73b55d492ee03bb",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260920_0138_narrative_craft_origin.py",
+      "baseline_sha256": "6aac9305751762c0566065d4d9fd98333db337debb3e786b8a6dcc7f402d2f92",
+      "current_sha256": "6aac9305751762c0566065d4d9fd98333db337debb3e786b8a6dcc7f402d2f92",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260920_0139_narrative_reference_sampling.py",
+      "baseline_sha256": "a28c659ab2fc8e401a708beea98fbb5ce8b98e9af18a9da0869578ac02e45ed4",
+      "current_sha256": "a28c659ab2fc8e401a708beea98fbb5ce8b98e9af18a9da0869578ac02e45ed4",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260921_0140_prose_editorial_closure.py",
+      "baseline_sha256": "7e600565bb65421b856551c3bb7c061af3066b8fe3012de3b2db172f087c55ae",
+      "current_sha256": "7e600565bb65421b856551c3bb7c061af3066b8fe3012de3b2db172f087c55ae",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260921_0141_author_chapter_replacement.py",
+      "baseline_sha256": "8d5746d7d9865bfdfe1746c731c0ed8d9ddaa5f169239a928586a875dbadcdcd",
+      "current_sha256": "8d5746d7d9865bfdfe1746c731c0ed8d9ddaa5f169239a928586a875dbadcdcd",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260921_0142_prose_editorial_foreign_key_indexes.py",
+      "baseline_sha256": "7e52b654c5facf833c2532db6e10e558b3b07141f1b8b21c61c14138185c6ac9",
+      "current_sha256": "7e52b654c5facf833c2532db6e10e558b3b07141f1b8b21c61c14138185c6ac9",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260927_0143_runtime_dispatch_control.py",
+      "baseline_sha256": "b7c776b169ccec3d5ec28783d007c7090ce496e8049a469ea69eebdf97c98b28",
+      "current_sha256": "b7c776b169ccec3d5ec28783d007c7090ce496e8049a469ea69eebdf97c98b28",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260927_0144_book_editions.py",
+      "baseline_sha256": "dd3cdd79529c764128ec42279232024a5ddc2c9af114f492c6a928daad0e3a20",
+      "current_sha256": "dd3cdd79529c764128ec42279232024a5ddc2c9af114f492c6a928daad0e3a20",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260927_0145_edition_execution_windows.py",
+      "baseline_sha256": "c92b6bbb1fb0112593e4974dee59d794b9f5b4c19b0033b756f08916838d22e1",
+      "current_sha256": "c92b6bbb1fb0112593e4974dee59d794b9f5b4c19b0033b756f08916838d22e1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260927_0146_edition_prefix_inheritance.py",
+      "baseline_sha256": "f3eb405850745433c45e0641969fd81804356d3cdc44122b09eb21ae4aa265c9",
+      "current_sha256": "f3eb405850745433c45e0641969fd81804356d3cdc44122b09eb21ae4aa265c9",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260927_0147_runtime_job_dispatch_pause.py",
+      "baseline_sha256": "9093365804e15a9834dce37660e3428dbadad134c5c67f49cf5a59f5c2879c30",
+      "current_sha256": "9093365804e15a9834dce37660e3428dbadad134c5c67f49cf5a59f5c2879c30",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20260928_0148_author_supervised_design.py",
+      "baseline_sha256": "4e70a858658988ad2c20fab26d68e8dcb1e4edf392a8d13f9bda0d9232c3d2c4",
+      "current_sha256": "4e70a858658988ad2c20fab26d68e8dcb1e4edf392a8d13f9bda0d9232c3d2c4",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261005_0149_zero_increment_chapter_outcome.py",
+      "baseline_sha256": "60a11ad4aab67fa8b5fd9a541f903c627c517846d6b0f52f630ec5e838a6e4be",
+      "current_sha256": "60a11ad4aab67fa8b5fd9a541f903c627c517846d6b0f52f630ec5e838a6e4be",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0150_creative_pack_admission.py",
+      "baseline_sha256": "88601eb83f9b77ab22a2510eb293fee3f4575bd14c96d92c5247ab3ffec8548b",
+      "current_sha256": "88601eb83f9b77ab22a2510eb293fee3f4575bd14c96d92c5247ab3ffec8548b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0151_creative_design_admission.py",
+      "baseline_sha256": "671dbe5a38b4976e0195ed7201b6ea36ea356c058d83ca18095f564ae40ca603",
+      "current_sha256": "671dbe5a38b4976e0195ed7201b6ea36ea356c058d83ca18095f564ae40ca603",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0152_validation_realization_admission.py",
+      "baseline_sha256": "0dc933b7c6ae5fdf72ad9f3e8c661f2c8f5073a3cab578687255c65cd655567c",
+      "current_sha256": "0dc933b7c6ae5fdf72ad9f3e8c661f2c8f5073a3cab578687255c65cd655567c",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0153_resource_opening_successor.py",
+      "baseline_sha256": "bffee0f0dc90e1934d66ece55b77f63a5d95817ff1ab8de2cc788bf1b90cbdf9",
+      "current_sha256": "bffee0f0dc90e1934d66ece55b77f63a5d95817ff1ab8de2cc788bf1b90cbdf9",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0154_opening_resource_policy_succession.py",
+      "baseline_sha256": "f628ec42b7874f00e31b54479241e3d52cc64d42c02cb943e942079ff1078b55",
+      "current_sha256": "f628ec42b7874f00e31b54479241e3d52cc64d42c02cb943e942079ff1078b55",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0155_unsent_resource_route_succession.py",
+      "baseline_sha256": "85d7d7152aca965c7c41ae21ebac3f44d785fab26f42f3bc13b698c972056bbe",
+      "current_sha256": "85d7d7152aca965c7c41ae21ebac3f44d785fab26f42f3bc13b698c972056bbe",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0156_resource_journal_indexes.py",
+      "baseline_sha256": "fa89d1530389c6b263bce24bae1216255be9b5c7c2bcbf5054fb00c73d401d31",
+      "current_sha256": "fa89d1530389c6b263bce24bae1216255be9b5c7c2bcbf5054fb00c73d401d31",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0157_creation_continuation_control.py",
+      "baseline_sha256": "fa76a60b853bdf638e0b2c33d408379d9c83fb1c01b492e2d4b1301d93c4c722",
+      "current_sha256": "fa76a60b853bdf638e0b2c33d408379d9c83fb1c01b492e2d4b1301d93c4c722",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261006_0158_planning_capacity_causation.py",
+      "baseline_sha256": "e3fe58c55339ee39824776a341c42b7e30fd42758774c68c3b449bc26fdaf5d4",
+      "current_sha256": "e3fe58c55339ee39824776a341c42b7e30fd42758774c68c3b449bc26fdaf5d4",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0159_planning_dead_letter_result_recovery.py",
+      "baseline_sha256": "ed6b8be3e8bc9fe70a3a68d16bd81675144b1b3dafb54e8af79b36b3ec9b1e77",
+      "current_sha256": "ed6b8be3e8bc9fe70a3a68d16bd81675144b1b3dafb54e8af79b36b3ec9b1e77",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0160_planning_result_admission.py",
+      "baseline_sha256": "3d8438bed44fcc571a2de8ce480cc2dc2cec24e20d23671840d330bb6740c7c9",
+      "current_sha256": "3d8438bed44fcc571a2de8ce480cc2dc2cec24e20d23671840d330bb6740c7c9",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0161_planning_capacity_lineage.py",
+      "baseline_sha256": "a841e1483663a813279f634e0a818bc68e21cf77aff38854ddf29e381c9cb883",
+      "current_sha256": "a841e1483663a813279f634e0a818bc68e21cf77aff38854ddf29e381c9cb883",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0162_planning_input_order_recovery.py",
+      "baseline_sha256": "fa9c2e2d67821a74ab712c3a30ea320f9f5140b5f01a529d4b5c185fd5eef8a5",
+      "current_sha256": "fa9c2e2d67821a74ab712c3a30ea320f9f5140b5f01a529d4b5c185fd5eef8a5",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0163_optional_world_continuation.py",
+      "baseline_sha256": "91c3eb6e1b920f63607e5d5339484bba77bb3d08e89bc74af335c513bce09b64",
+      "current_sha256": "91c3eb6e1b920f63607e5d5339484bba77bb3d08e89bc74af335c513bce09b64",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0164_gateway_result_revalidation.py",
+      "baseline_sha256": "f6302ade8351e36c06d703666fc895080af551d1cc1318b65ac69e00ae406800",
+      "current_sha256": "f6302ade8351e36c06d703666fc895080af551d1cc1318b65ac69e00ae406800",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0165_stage_repair_policy.py",
+      "baseline_sha256": "1ac967edd79392fdcb3a98b3b2d7ef06f0238d0bedd046ded660ad7cdcacde1a",
+      "current_sha256": "1ac967edd79392fdcb3a98b3b2d7ef06f0238d0bedd046ded660ad7cdcacde1a",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0166_failed_step_successor.py",
+      "baseline_sha256": "723a5e4d82b204844ae7e5aa1cb9446b16681b5b33ce54457c975d323a163b44",
+      "current_sha256": "723a5e4d82b204844ae7e5aa1cb9446b16681b5b33ce54457c975d323a163b44",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0167_execution_contract_continuation.py",
+      "baseline_sha256": "22eef73645660fb65acb77c670eb312efc94839ec8d5434402cabee77436f2d7",
+      "current_sha256": "22eef73645660fb65acb77c670eb312efc94839ec8d5434402cabee77436f2d7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0168_derived_step_revalidation.py",
+      "baseline_sha256": "09778e4741ff4cd84ad1685d431e2fd5c9049f36e6798634f029b52852adf5a7",
+      "current_sha256": "09778e4741ff4cd84ad1685d431e2fd5c9049f36e6798634f029b52852adf5a7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0169_world_agency_contract_successor.py",
+      "baseline_sha256": "e07cf9bdfd3e2d06fbc4b8250fe3a32fc772e4361c758edba2a8e6b3ecbc9a6e",
+      "current_sha256": "e07cf9bdfd3e2d06fbc4b8250fe3a32fc772e4361c758edba2a8e6b3ecbc9a6e",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0170_world_host_revalidation.py",
+      "baseline_sha256": "2d1fc710b122e98d2017f67cfee65be015ccf25f8bafba99b9bde4693d3a0db8",
+      "current_sha256": "2d1fc710b122e98d2017f67cfee65be015ccf25f8bafba99b9bde4693d3a0db8",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0171_world_projection_successor.py",
+      "baseline_sha256": "350b584526153cacaa3da23ddb18d7567c21f8c64d5467221818d15f5dcf5e94",
+      "current_sha256": "350b584526153cacaa3da23ddb18d7567c21f8c64d5467221818d15f5dcf5e94",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0172_failed_step_successor_v2.py",
+      "baseline_sha256": "42b40be5502a8d03d687c4dffaa4bda48d8b06c5089a56f551e5ef31c3ea312f",
+      "current_sha256": "42b40be5502a8d03d687c4dffaa4bda48d8b06c5089a56f551e5ef31c3ea312f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0173_retained_graph_continuation.py",
+      "baseline_sha256": "c6d3400d546ef575a89c635ef13b2514fa45bb81c35b62c0febeefedd0266273",
+      "current_sha256": "c6d3400d546ef575a89c635ef13b2514fa45bb81c35b62c0febeefedd0266273",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0174_quality_review_namespace.py",
+      "baseline_sha256": "2c98c23d0fef38a00b0810f6001168b314b002f063131a08d0c2074639cc91f5",
+      "current_sha256": "2c98c23d0fef38a00b0810f6001168b314b002f063131a08d0c2074639cc91f5",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0175_canon_output_repair.py",
+      "baseline_sha256": "1cc8acf6d7296e41ada0ad9fede67d4b3864b312df7097608a0ce495ff939b27",
+      "current_sha256": "1cc8acf6d7296e41ada0ad9fede67d4b3864b312df7097608a0ce495ff939b27",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0176_quality_correction_control.py",
+      "baseline_sha256": "82305b4468c42d0d4f2c1f6ce477a530f6f5e4afa345908416a238ec38971029",
+      "current_sha256": "82305b4468c42d0d4f2c1f6ce477a530f6f5e4afa345908416a238ec38971029",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0177_realization_comparison_uncertainty.py",
+      "baseline_sha256": "70e1351d093fff9cc38262601130311f6ede56878362ad7e6477354aa55b16bb",
+      "current_sha256": "70e1351d093fff9cc38262601130311f6ede56878362ad7e6477354aa55b16bb",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0178_planning_reference_contract_successor.py",
+      "baseline_sha256": "083742cb03c2e4b3303045fe337cfe43f702d8b63b3a0dd1ea6e9bacb59178d1",
+      "current_sha256": "083742cb03c2e4b3303045fe337cfe43f702d8b63b3a0dd1ea6e9bacb59178d1",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0179_planning_arc_scope_revalidation.py",
+      "baseline_sha256": "87add9e9d8a5488ded7a4506c72fd82a02646f4ef99e2e1cb5a0eebad82ea6a3",
+      "current_sha256": "87add9e9d8a5488ded7a4506c72fd82a02646f4ef99e2e1cb5a0eebad82ea6a3",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261007_0180_foundation_direction_search.py",
+      "baseline_sha256": "b2bcaf21aef006953d8904254d61627c9b398c84d554abd6abe5ed79e099c740",
+      "current_sha256": "b2bcaf21aef006953d8904254d61627c9b398c84d554abd6abe5ed79e099c740",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261008_0181_author_manuscript_delivery.py",
+      "baseline_sha256": "1649811d2b6b83c593b6f79fb5d8d6956610bb806b4d73ae4f9c0cee0e800423",
+      "current_sha256": "1649811d2b6b83c593b6f79fb5d8d6956610bb806b4d73ae4f9c0cee0e800423",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261008_0182_source_market_observations.py",
+      "baseline_sha256": "d6715fd2fc4f9cef8226029e41e7c14de5981a1a3511a441888e745c5ffaa97f",
+      "current_sha256": "d6715fd2fc4f9cef8226029e41e7c14de5981a1a3511a441888e745c5ffaa97f",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261008_0183_source_observation_span_identity.py",
+      "baseline_sha256": "89f67a4b49b95c1c3ec1750cba88bea9ce79b0960eb7d63077850e4a0cd871ce",
+      "current_sha256": "89f67a4b49b95c1c3ec1750cba88bea9ce79b0960eb7d63077850e4a0cd871ce",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0184_cli_original_reconciliation.py",
+      "baseline_sha256": "b514460d7ad7657da2de81dc7576d87e2ea16f2721febe609ea2612bbdb832a4",
+      "current_sha256": "b514460d7ad7657da2de81dc7576d87e2ea16f2721febe609ea2612bbdb832a4",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0185_pure_generation_isolation.py",
+      "baseline_sha256": "2ad7f23875d1d75bb92c1e1506c733e88624c1bf57504da3408a96736a421a3b",
+      "current_sha256": "2ad7f23875d1d75bb92c1e1506c733e88624c1bf57504da3408a96736a421a3b",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0186_generation_capacity_inheritance.py",
+      "baseline_sha256": "7b45844f1a7598c77f71df9907ef209272d44873e7155c5cadd48181e8dbaa1d",
+      "current_sha256": "7b45844f1a7598c77f71df9907ef209272d44873e7155c5cadd48181e8dbaa1d",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0187_chapter_generation_isolation.py",
+      "baseline_sha256": "40f4c4e0e523544ce015bbd5bcbcbe4380ae1963472b6aa0d997b844b6f6be90",
+      "current_sha256": "40f4c4e0e523544ce015bbd5bcbcbe4380ae1963472b6aa0d997b844b6f6be90",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0188_saved_result_admission.py",
+      "baseline_sha256": "afaaadb57afdcce3141bc7560fb9bb20e076c9cf1f3bf6f8bd7736b633911cdd",
+      "current_sha256": "afaaadb57afdcce3141bc7560fb9bb20e076c9cf1f3bf6f8bd7736b633911cdd",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0189_unsent_context_successor.py",
+      "baseline_sha256": "63497ce2af06596b418c01ec8e1e6ed0c53b42a25dce912dfd6f1b8b2429c119",
+      "current_sha256": "63497ce2af06596b418c01ec8e1e6ed0c53b42a25dce912dfd6f1b8b2429c119",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0190_group_window_successor.py",
+      "baseline_sha256": "2c08c02933d632e438915022bdede19cfa768d3dc381c0b6de9f2aa72b8e0888",
+      "current_sha256": "2c08c02933d632e438915022bdede19cfa768d3dc381c0b6de9f2aa72b8e0888",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0191_provider_schema_successor.py",
+      "baseline_sha256": "ab1fdb65531c65f0f8eb63947328dccce9c3efed6b392731179127a62b8b3df7",
+      "current_sha256": "ab1fdb65531c65f0f8eb63947328dccce9c3efed6b392731179127a62b8b3df7",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0192_generation_retry_lineage.py",
+      "baseline_sha256": "c50ae27e257b0883ceba4382cd3c2b60dcb9c38432505684f53e8a2582512b70",
+      "current_sha256": "c50ae27e257b0883ceba4382cd3c2b60dcb9c38432505684f53e8a2582512b70",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0193_completed_planning_admission.py",
+      "baseline_sha256": "cc2edab35887cb5fbad3e5234871054322f1b675d9c7086faeb090267e174795",
+      "current_sha256": "cc2edab35887cb5fbad3e5234871054322f1b675d9c7086faeb090267e174795",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0194_multi_model_generation_isolation.py",
+      "baseline_sha256": "c6e974e30bbaecb8f580f65f46b3a39d3676392cde7cb0819e04844c4012c726",
+      "current_sha256": "c6e974e30bbaecb8f580f65f46b3a39d3676392cde7cb0819e04844c4012c726",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261009_0195_prose_review_generation_isolation.py",
+      "baseline_sha256": "4e665a244be20bb7cb294d99e5b4e4cdd53ece6347e22fd66eda66c7c0db4864",
+      "current_sha256": "4e665a244be20bb7cb294d99e5b4e4cdd53ece6347e22fd66eda66c7c0db4864",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261010_0196_stopped_cli_timeout_isolation.py",
+      "baseline_sha256": "e402bd1035b3690d6b8086522f922d72427c0327db23fb3ccb3cf187c4a57b3c",
+      "current_sha256": "e402bd1035b3690d6b8086522f922d72427c0327db23fb3ccb3cf187c4a57b3c",
+      "identical": true
+    },
+    {
+      "path": "src/novel_forge/storage/migrations/versions/v20261010_0197_authorized_planning_capacity.py",
+      "baseline_sha256": "b1fe0b0aac437a7f1b42acd099fca0c68ffcef230f7dfafd170e5158d623d8e4",
+      "current_sha256": "b1fe0b0aac437a7f1b42acd099fca0c68ffcef230f7dfafd170e5158d623d8e4",
+      "identical": true
+    }
+  ],
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "implementation_tree_sha": "sha256:9bf26a9e8147e1afc03882524c56f0c9997cff61c5295b74f703615b77598b89"
+}

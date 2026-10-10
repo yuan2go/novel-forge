@@ -1,0 +1,26 @@
+PYTHONPATH=src .venv/bin/python scripts/run_p0_backend_qualification.py --profile local --output "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-3/p0-backend-qualification-$(git rev-parse HEAD).json"
+Traceback (most recent call last):
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/run_p0_backend_qualification.py", line 6, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification.py", line 1506, in main
+    return run_qualification()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification.py", line 1490, in run_qualification
+    return _run_qualification(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification.py", line 801, in _run_qualification
+    backend_process = _run_process(
+                      ^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification.py", line 208, in _run_process
+    return runner.run(
+           ^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification.py", line 158, in run
+    process.wait(timeout=timeout)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 2045, in _wait
+    time.sleep(delay)
+KeyboardInterrupt
+make: *** [p0-backend-qualification] Interrupt: 2

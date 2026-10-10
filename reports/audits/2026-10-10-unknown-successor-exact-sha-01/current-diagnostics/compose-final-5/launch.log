@@ -1,0 +1,28 @@
+Traceback (most recent call last):
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/verify_authority_compose.py", line 763, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/verify_authority_compose.py", line 460, in main
+    _compose(
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/verify_authority_compose.py", line 98, in _compose
+    return client.run_compose(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification_resources.py", line 340, in run_compose
+    return self._run(
+           ^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/src/novel_forge/tools/backend_qualification_resources.py", line 228, in _run
+    completed = self.runner(
+                ^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py", line 2113, in _communicate
+    ready = selector.select(timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

@@ -1,0 +1,125 @@
+{
+  "tested_sha": "ea83597df52322a48114a9e7f64450668ab0e5be",
+  "status": "PARTIAL_FINAL_RUN_SNAPSHOT_NOT_COMPLETE_QUALIFICATION",
+  "files": [
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/documentation-reality.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/documentation-reality.json",
+      "original_sha256": "56824b7ec71895d8e99c8b374c71c18b46e7c72941cdc9429e5e7fc188d6e468",
+      "archived_sha256": "56824b7ec71895d8e99c8b374c71c18b46e7c72941cdc9429e5e7fc188d6e468",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-compatibility-pytest.xml",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-compatibility-pytest.xml.gz",
+      "original_sha256": "6922d940b050215b671281fb9e7c05a5b2773f7978db58747ae19c10097f81d7",
+      "archived_sha256": "6c62f46f05d7764789ee2abc0cc858a62c8af723251545bcc72885306003f051",
+      "compression": "gzip"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest-process.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest-process.json",
+      "original_sha256": "e7ada439e75a06339c919cd2a955bca3699fe550b9a68e0233cd3802f9fb690c",
+      "archived_sha256": "e7ada439e75a06339c919cd2a955bca3699fe550b9a68e0233cd3802f9fb690c",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/static-and-manifests.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/static-and-manifests.json.gz",
+      "original_sha256": "5a0e5511a1ef1ca9d5b501bab29271d542f6bf0c1f05a8b2ed30180a3e92c589",
+      "archived_sha256": "c5a3a8b534fbafdccb272a9ccc79d7acba72842f377fc88057320209780284b2",
+      "compression": "gzip"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-compatibility-collection.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-compatibility-collection.json.gz",
+      "original_sha256": "d2962a8e06d9e54a955d61a4779b9bb3d7aa6f80282f80372869df45a299bb0b",
+      "archived_sha256": "bf8e3c163a4984d6615ff56b198ac6af711416fef2f89423a39ef6504aa63002",
+      "compression": "gzip"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest-collection.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest-collection.json.gz",
+      "original_sha256": "8862c8b6ccf5b4d960d9db3c6d63736fca5e403a8075f4b49b43660441c084d8",
+      "archived_sha256": "bbaef68e929c51c7a1418e5cdca286f1efe5261e4d1e98498497b0e38021a9c3",
+      "compression": "gzip"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/documentation-reality-process.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/documentation-reality-process.json",
+      "original_sha256": "229944d8d2e0623484929ef39271c0ea472e34121d306f7c69fe2e2b5dc3d02e",
+      "archived_sha256": "229944d8d2e0623484929ef39271c0ea472e34121d306f7c69fe2e2b5dc3d02e",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/compose-resource-ownership-nf-p0-30862295395c4081aaa32c160d75b1e6.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/compose-resource-ownership-nf-p0-30862295395c4081aaa32c160d75b1e6.json",
+      "original_sha256": "489f6ac2b06b54949dbc852c4c076c080971286f1793e769d21264f0beb58090",
+      "archived_sha256": "489f6ac2b06b54949dbc852c4c076c080971286f1793e769d21264f0beb58090",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-compatibility-process.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-compatibility-process.json",
+      "original_sha256": "1a7d6152cd6a62b611d306ccdf6c305a7a578d45cae5ea34de864d86dc715178",
+      "archived_sha256": "1a7d6152cd6a62b611d306ccdf6c305a7a578d45cae5ea34de864d86dc715178",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-fresh-process.json",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/migration-fresh-process.json",
+      "original_sha256": "2f65ef52034bc10cab9b696eb5ecb3c74741de10a6c9f659c5af9e1d0710f34d",
+      "archived_sha256": "2f65ef52034bc10cab9b696eb5ecb3c74741de10a6c9f659c5af9e1d0710f34d",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest.xml",
+      "archived_relative_path": "canonical-p0-18/novel-forge-p0-ea83597df523-30862295395c4081aaa32c160d75b1e6/backend-pytest.xml.gz",
+      "original_sha256": "816fa28ed9785f15bfbc5edfb781451f935de5508af6894408ec6b7f05166387",
+      "archived_sha256": "fe0a4d03c6ee1e3dbd472004aebf5e2f6bba39a4e6c6b88cefde933e43b23e89",
+      "compression": "gzip"
+    },
+    {
+      "original_relative_path": "canonical-p0-18-command.json",
+      "archived_relative_path": "canonical-p0-18-command.json",
+      "original_sha256": "2d54f7f2082baeaadb597ab0f115da265cf0814b0657510e7d0e9c5356aed2c9",
+      "archived_sha256": "2d54f7f2082baeaadb597ab0f115da265cf0814b0657510e7d0e9c5356aed2c9",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "source-identity.json",
+      "archived_relative_path": "source-identity.json.gz",
+      "original_sha256": "27478000c8c05d5af65ddf4ccdacb743d4f9d2c478c32f03b7b91827d583302a",
+      "archived_sha256": "afb8bdb202336963cba112b4dea3c2807d29dbb70b9265d4e4c555c3018c4bc9",
+      "compression": "gzip"
+    },
+    {
+      "original_relative_path": "dependency-identity-final.json",
+      "archived_relative_path": "dependency-identity-final.json",
+      "original_sha256": "91675f7c57004e0d55add4e010d0fe3e958eba2c9b9678c3a71dbbfc60457a75",
+      "archived_sha256": "91675f7c57004e0d55add4e010d0fe3e958eba2c9b9678c3a71dbbfc60457a75",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "published-migration-immutability-current.json",
+      "archived_relative_path": "published-migration-immutability-current.json",
+      "original_sha256": "ccf849baebc9956c8dca90aa4c8ddc473ba350926efbb14b0154d016893e2cfc",
+      "archived_sha256": "ccf849baebc9956c8dca90aa4c8ddc473ba350926efbb14b0154d016893e2cfc",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "final-code-review.json",
+      "archived_relative_path": "final-code-review.json",
+      "original_sha256": "f374cc73e86fb3e7ad3213e4531a03d190c25af15c975da87fd79c1bb062def9",
+      "archived_sha256": "f374cc73e86fb3e7ad3213e4531a03d190c25af15c975da87fd79c1bb062def9",
+      "compression": "none"
+    },
+    {
+      "original_relative_path": "remote-main-during-final-p0.json",
+      "archived_relative_path": "remote-main-during-final-p0.json",
+      "original_sha256": "74949c2e8e023de78476b2dd6e3589a9a65cbefedae8a17b0936a359af5d5be3",
+      "archived_sha256": "74949c2e8e023de78476b2dd6e3589a9a65cbefedae8a17b0936a359af5d5be3",
+      "compression": "none"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-10T05:46:49.891497+00:00",
+  "projects": [
+    {
+      "project_name": "nf-p0-130dc0463c4f45e8ac0e2a509fd1c488",
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    },
+    {
+      "project_name": "nf-p0-9d373398011f4d9e93577fe3ecc91858-runtime",
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    }
+  ],
+  "original_resources_touched": false
+}

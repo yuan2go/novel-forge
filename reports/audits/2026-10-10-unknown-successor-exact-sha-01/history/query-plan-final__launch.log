@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/qualify_authority_query_plans.py", line 500, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/qualify_authority_query_plans.py", line 481, in main
+    result = qualify(args.database_url)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge/scripts/qualify_authority_query_plans.py", line 155, in qualify
+    raise RuntimeError(
+RuntimeError: release query qualification requires the current migration head

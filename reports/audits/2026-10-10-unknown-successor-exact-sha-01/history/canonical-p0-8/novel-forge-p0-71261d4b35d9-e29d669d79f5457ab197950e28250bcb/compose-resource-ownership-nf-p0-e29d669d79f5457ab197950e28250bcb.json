@@ -1,0 +1,19 @@
+{
+  "compose_project": "nf-p0-e29d669d79f5457ab197950e28250bcb",
+  "resources": [
+    {
+      "kind": "container",
+      "project_name": "nf-p0-e29d669d79f5457ab197950e28250bcb",
+      "resource_id": "5b8a322a55d64c68d6da1deb1cb44c5efa18f142b0cd97534101922fb79a95b7",
+      "run_id": "p0-e29d669d79f5457ab197950e28250bcb"
+    },
+    {
+      "kind": "network",
+      "project_name": "nf-p0-e29d669d79f5457ab197950e28250bcb",
+      "resource_id": "50c47a73b262855fafeb80818c1d496b501a0593156712715fc7c9c0dddc6148",
+      "run_id": "p0-e29d669d79f5457ab197950e28250bcb"
+    }
+  ],
+  "run_id": "p0-e29d669d79f5457ab197950e28250bcb",
+  "schema_version": "novel-forge.compose-resource-ownership.v1"
+}

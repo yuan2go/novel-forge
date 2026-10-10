@@ -1,0 +1,29 @@
+{
+  "tested_sha": "db3328dea933876d3b060eec5214746cfc0277da",
+  "canonical_p0_status": "PENDING",
+  "compose_status": "PASS",
+  "query_plan_status": "PASS",
+  "proof_ceiling": "EXACT_SHA_INDEPENDENT_DIAGNOSTICS_NOT_P0_PASS",
+  "records": [
+    {
+      "artifact": "current-diagnostics/compose-final-4__compose-resource-ownership-nf-p0-e5239f4cf3164e22a7fb718961292fea-runtime.json",
+      "sha256": "708fd37281ee505c8ce42204f7e5674e404d7f3b4477e3930476758481e52f0c"
+    },
+    {
+      "artifact": "current-diagnostics/compose-final-4__compose-runtime.json",
+      "sha256": "b4277573aff1b5c81e1a950147b5d5a2607886eae684bb3b4f33f30151020ae3"
+    },
+    {
+      "artifact": "current-diagnostics/compose-final-4__command.json",
+      "sha256": "026ad636b8f4edd4e88f39ce0a709abcec3707788dadc7015f6902d1322cfaff"
+    },
+    {
+      "artifact": "current-diagnostics/query-plan-final-3__query-plan.json",
+      "sha256": "b01fc8cde66b88753632422baa1c25372a72fe0876281381d4f5f290a44343b0"
+    },
+    {
+      "artifact": "current-diagnostics/query-plan-final-3__command.json",
+      "sha256": "4ab66daaf76db21ce26d66d7c92e36d765d85863cce330fda46936995badf02f"
+    }
+  ]
+}

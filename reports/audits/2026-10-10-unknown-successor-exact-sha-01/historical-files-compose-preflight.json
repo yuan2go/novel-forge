@@ -1,0 +1,97 @@
+{
+  "records": [
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-10/novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a/documentation-reality.json",
+      "archive": "history/canonical-p0-10__novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a__documentation-reality.json",
+      "original_sha256": "29c9c5f448dbbbc2f14aa16b1b31f31e88f0ce1080b59ecc4f8b78593e58768b",
+      "archive_sha256": "29c9c5f448dbbbc2f14aa16b1b31f31e88f0ce1080b59ecc4f8b78593e58768b",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-10/novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a/static-and-manifests.json",
+      "archive": "history/canonical-p0-10__novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a__static-and-manifests.json.gz",
+      "original_sha256": "aa7d79d381d5eb47d48288960fc340c03e4223f7035587f7911050afd63e1d42",
+      "archive_sha256": "dbfbfbfd20e5c9234d51651116f7e9c3f5033b499345fe4b718de361d9e5b429",
+      "compression": "gzip"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-10/novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a/backend-pytest-collection.json",
+      "archive": "history/canonical-p0-10__novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a__backend-pytest-collection.json.gz",
+      "original_sha256": "f19a25f9c42194b02dfb91e2f1e0b306b8f4eeae61a083681f90d3ebf1fae5e7",
+      "archive_sha256": "0468192e5dd2381ac36c654df8b3d536171836737c4b6f71d8fac1931c05ede7",
+      "compression": "gzip"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-10/novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a/documentation-reality-process.json",
+      "archive": "history/canonical-p0-10__novel-forge-p0-81142a01d01c-16de42ea105442e58d2f58e3edfce93a__documentation-reality-process.json",
+      "original_sha256": "f2940c71bae875adbb85139d77eb2d75a6ffb8dcc53bddf635ab3a5ae2b4e934",
+      "archive_sha256": "f2940c71bae875adbb85139d77eb2d75a6ffb8dcc53bddf635ab3a5ae2b4e934",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-10-command.json",
+      "archive": "history/canonical-p0-10-command.json",
+      "original_sha256": "33b89ec02e8e14516f224f71678a5ac1c7217cab1ed0898b82675fae24829869",
+      "archive_sha256": "33b89ec02e8e14516f224f71678a5ac1c7217cab1ed0898b82675fae24829869",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-10-launch.log",
+      "archive": "history/canonical-p0-10-launch.log",
+      "original_sha256": "d70d2f41b0125213e6b19efb63cc1dcdc53cbedcafc32a9ac313911067c866ef",
+      "archive_sha256": "d70d2f41b0125213e6b19efb63cc1dcdc53cbedcafc32a9ac313911067c866ef",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final/command.json",
+      "archive": "history/compose-final__command.json",
+      "original_sha256": "b0adbdbbaa5cd7fd02992fd5c7d1e94c62714f7aa16c8df1f9b511a25761c867",
+      "archive_sha256": "b0adbdbbaa5cd7fd02992fd5c7d1e94c62714f7aa16c8df1f9b511a25761c867",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final/launch.log",
+      "archive": "history/compose-final__launch.log",
+      "original_sha256": "6f7117bc7e30dff3470ec1044448eb7963274d2760c382b93fc12afbb053b6b0",
+      "archive_sha256": "6f7117bc7e30dff3470ec1044448eb7963274d2760c382b93fc12afbb053b6b0",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-2/compose-runtime-logs.json",
+      "archive": "history/compose-final-2__compose-runtime-logs.json",
+      "original_sha256": "2606a88fbc2ac6034b9f499ea14ec4991eae1570ef1c74a93aa7900491a395db",
+      "archive_sha256": "2606a88fbc2ac6034b9f499ea14ec4991eae1570ef1c74a93aa7900491a395db",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-2/compose-runtime.json",
+      "archive": "history/compose-final-2__compose-runtime.json",
+      "original_sha256": "3817fb41fab86e351374338d1826340f21630cc138bb7a761c62726a6b35adf5",
+      "archive_sha256": "3817fb41fab86e351374338d1826340f21630cc138bb7a761c62726a6b35adf5",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-2/command.json",
+      "archive": "history/compose-final-2__command.json",
+      "original_sha256": "ff9a1af5c1937184b0710b39dac76ea21cc126c8da055232ec01228144db6486",
+      "archive_sha256": "ff9a1af5c1937184b0710b39dac76ea21cc126c8da055232ec01228144db6486",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-2/compose-resource-ownership-nf-p0-76aa02daa5bf45839a793c328843b02e-runtime.json",
+      "archive": "history/compose-final-2__compose-resource-ownership-nf-p0-76aa02daa5bf45839a793c328843b02e-runtime.json",
+      "original_sha256": "84abf475c4fd696788bbd758b2bfd2eb0fe71ae4e663bd6b406dfb6320e6e123",
+      "archive_sha256": "84abf475c4fd696788bbd758b2bfd2eb0fe71ae4e663bd6b406dfb6320e6e123",
+      "compression": "none"
+    },
+    {
+      "original": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/compose-final-2/launch.log",
+      "archive": "history/compose-final-2__launch.log",
+      "original_sha256": "14572ec972b182a9b293853ba07ccaee0228becfc48c58558f1ab13decca25eb",
+      "archive_sha256": "14572ec972b182a9b293853ba07ccaee0228becfc48c58558f1ab13decca25eb",
+      "compression": "none"
+    }
+  ],
+  "p0_10_disposition": "INCOMPLETE_INTERRUPTED_FOR_COMPOSE_SCOPE_FIX_NOT_A_PASS",
+  "compose_2_disposition": "FAIL_CREATIVE_INPUT_BOOK_MISMATCH_CLEANUP_PASS_0_RESOURCES"
+}

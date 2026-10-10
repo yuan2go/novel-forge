@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="6" failures="0" skipped="0" tests="6" time="0.987" timestamp="2026-10-10T11:51:14.251949+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_author_reading_checkpoints_postgres" name="test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history" time="0.033"><error message="failed on setup with &quot;ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+&gt;       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -&gt; list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+&gt;           raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+E           ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes
+
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:62: ValueError</error></testcase><testcase classname="tests.integration.test_book_to_chapter_authority_vertical_postgres.BookToChapterAuthorityVerticalPostgresTests" name="test_book_to_chapter_two_chapter_vertical_postgres" time="0.021"><error message="failed on setup with &quot;ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+&gt;       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -&gt; list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+&gt;           raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+E           ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes
+
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:62: ValueError</error></testcase><testcase classname="tests.integration.test_author_book_replacement_postgres" name="test_native_book_author_replacement_recovers_unlinked_admission_then_accepts_exact_new_run" time="0.012"><error message="failed on setup with &quot;ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+&gt;       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -&gt; list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+&gt;           raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+E           ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes
+
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:62: ValueError</error></testcase><testcase classname="tests.integration.test_author_editor_postgres.AuthorEditorPostgresTests" name="test_authored_draft_flows_through_native_review_revision_canon_and_export" time="0.011"><error message="failed on setup with &quot;ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+&gt;       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -&gt; list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+&gt;           raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+E           ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes
+
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:62: ValueError</error></testcase><testcase classname="tests.integration.test_synthesis_formation_postgres" name="test_native_formation_generates_foundation_from_author_brief[current-production]" time="0.011"><error message="failed on setup with &quot;ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+&gt;       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -&gt; list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+&gt;           raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+E           ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes
+
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:62: ValueError</error></testcase><testcase classname="tests.integration.test_narrative_evaluation_durable_replay_postgres" name="test_verified_receipt_before_output_recovers_same_generation_without_replay" time="0.012"><error message="failed on setup with &quot;ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes&quot;">@pytest.fixture(scope="module", autouse=True)
+    def isolate_postgresql_integration_module() -&gt; Iterator[None]:
+        """Keep global Authority registries from leaking across test modules."""
+        database_url = os.environ.get("NOVEL_FORGE_DATABASE_URL", "")
+        if not database_url:
+            yield
+            return
+    
+        preflight_database_name = preflight_integration_database(database_url)
+&gt;       status = run_migrations(database_url)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/conftest.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:86: in run_migrations
+    for migration in pending_migrations(applied_ids):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+applied_ids = {'20260625_0001_initial_industrial_schema', '20260628_0002_query_and_release_indexes', '20260702_0003_mkaos_p0', '20260703_0004_review_issue', '20260712_0005_core_os_runtime', '20260712_0006_core_os_outbox_delivery', ...}
+migrations = (Migration(migration_id='20260625_0001_initial_industrial_schema', down_revision=None, upgrade_statements=('\n    CREA...atements=(), strategy='REVERSIBLE_WHEN_DECLARED', preflight_statements=(), forward_fix='', backup_required=False), ...)
+
+    def pending_migrations(applied_ids: set[str], migrations: tuple[Migration, ...] = MIGRATIONS) -&gt; list[Migration]:
+        validate_migration_chain(migrations)
+        known = [migration.migration_id for migration in migrations]
+        extra = sorted(applied_ids - set(known))
+        if extra:
+&gt;           raise ValueError(f"MIGRATION_HISTORY_FOREIGN: {', '.join(extra)}")
+E           ValueError: MIGRATION_HISTORY_FOREIGN: 20261010_0196_recovery_reference_indexes
+
+/tmp/nf-wp-unknown-baseline-848aa181/src/novel_forge/storage/migrations/runner.py:62: ValueError</error></testcase></testsuite></testsuites>

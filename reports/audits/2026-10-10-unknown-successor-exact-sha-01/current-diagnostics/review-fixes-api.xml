@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="27" time="8.699" timestamp="2026-10-10T13:12:41.583964+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_original_api_receipt_records_and_settles_once_without_old_business_rights" time="4.143" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[project_id]" time="0.136" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[book_id]" time="0.139" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[operation_id]" time="0.125" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[external_effect_id]" time="0.138" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[dispatch_id]" time="0.131" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[generation]" time="0.125" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[request_hash]" time="0.121" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[execution_id]" time="0.132" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[attempt_id]" time="0.134" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[fencing_token]" time="0.130" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[input_manifest_hash]" time="0.130" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[execution_request_hash]" time="0.135" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[model_id]" time="0.140" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[provider_id]" time="0.121" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_foreign_or_changed_original_api_identity_cannot_settle[provider_request_id]" time="0.122" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_missing_usage_is_evidence_only_then_measured_version_settles" time="0.186" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_unsigned_receipt_and_reconciliation_cannot_update_isolated_effect" time="0.134" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_signed_native_gateway_callback_is_evidence_only_and_replay_does_not_charge[GATEWAY]" time="0.200" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[0.25-PRICED]" time="0.144" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_late_paid_receipt_uses_original_reservation_and_preserves_overrun[1.50-PRICED]" time="0.137" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_concurrent_original_receipt_resolutions_share_one_settlement" time="0.151" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_missing_paid_cost_keeps_exposure_until_matching_cost_version[PRICED]" time="0.170" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[False-MULTI_ACCOUNT_ENTITLEMENT]" time="0.352" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[False-MULTI_PRICED]" time="0.298"><failure message="AssertionError: assert ('HELD_UNKNOW...cimal('0E-8')) == ('SETTLED', 3...cimal('0.30'))&#10;  &#10;  At index 0 diff: 'HELD_UNKNOWN' != 'SETTLED'&#10;  Use -v to get more diff">isolated_api = (EffectCommandContext(operation_id='operation-666700ce-0afd-4e60-8252-2ad51a4d246a', project_id='project-11b6ed33-b484...al_effect_id': '30acd4b2-0fc9-4dee-9d70-b180f5f73ddb', 'book_id': 'book-db20834d-fcbf-4a27-b4e4-5d9c59a9f18e', ...}, 0)
+latest_first = False
+
+    @pytest.mark.parametrize("isolated_api", ["MULTI_ACCOUNT_ENTITLEMENT", "MULTI_PRICED"], indirect=True)
+    @pytest.mark.parametrize("latest_first", [False, True])
+    def test_all_original_generations_account_independently_without_reopening(isolated_api, latest_first):
+        context, effect, latest, receipt, _ = isolated_api
+        before = history(isolated_api)
+        with transaction() as c:
+            first = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation LIMIT 1", [effect]).fetchone()[0]
+            basis = c.execute("SELECT accounting_basis FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone()[0]
+        older = deepcopy(receipt)
+        production = first["evidence"]["production_execution"]
+        older.update(dispatch_id=first["dispatch_id"], generation=first["generation"],
+            execution_request_hash=_hash(production["execution_request"]),
+            provider_request_id=production["execution_handle"]["provider_request_id"],
+            outcome="final_failure", result=None,
+            **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")})
+        if basis == "PRICED":
+            receipt = {**receipt, "cost": {"availability": "AVAILABLE", "amount": "0.20", "currency": "USD"}}
+            older["cost"] = {"availability": "AVAILABLE", "amount": "0.10", "currency": "USD"}
+        records = [receipt, older] if latest_first else [older, receipt]
+        def command(item):
+            return replace(command_for(isolated_api, item), decision="MARK_FAILED_FINAL" if item["outcome"] == "final_failure" else "MARK_SUCCEEDED")
+        resolve_external_effect_manually(DATABASE_URL, command(records[0]))
+        with transaction() as c:
+            assert c.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("HELD_UNKNOWN",)
+        resolve_external_effect_manually(DATABASE_URL, command(records[0]))
+        resolve_external_effect_manually(DATABASE_URL, command(records[1]))
+        for item in records:
+            resolve_external_effect_manually(DATABASE_URL, command(item))
+            conflict = deepcopy(item)
+            conflict["usage"]["output_tokens"] += 1
+            conflict["usage"]["total_tokens"] += 1
+            with pytest.raises(KernelError, match="ISOLATED_API_RECEIPT_CONFLICT"):
+                resolve_external_effect_manually(DATABASE_URL, command(conflict))
+        with transaction() as c:
+            from decimal import Decimal
+&gt;           assert c.execute("SELECT status,actual_tokens,settled_amount FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 300, Decimal("0.30") if basis == "PRICED" else None)
+E           AssertionError: assert ('HELD_UNKNOW...cimal('0E-8')) == ('SETTLED', 3...cimal('0.30'))
+E             
+E             At index 0 diff: 'HELD_UNKNOWN' != 'SETTLED'
+E             Use -v to get more diff
+
+tests/integration/test_isolated_api_receipt_postgres.py:798: AssertionError</failure></testcase><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[True-MULTI_ACCOUNT_ENTITLEMENT]" time="0.311" /><testcase classname="tests.integration.test_isolated_api_receipt_postgres" name="test_all_original_generations_account_independently_without_reopening[True-MULTI_PRICED]" time="0.311"><failure message="AssertionError: assert ('HELD_UNKNOW...cimal('0E-8')) == ('SETTLED', 3...cimal('0.30'))&#10;  &#10;  At index 0 diff: 'HELD_UNKNOWN' != 'SETTLED'&#10;  Use -v to get more diff">isolated_api = (EffectCommandContext(operation_id='operation-597dc96d-7437-40a8-b939-3865a693a51f', project_id='project-b67d0e31-c9ff...al_effect_id': '807f6528-f276-4b68-8f09-474bc7de680d', 'book_id': 'book-1c5cee53-830a-40f1-9eca-04f202a4672c', ...}, 0)
+latest_first = True
+
+    @pytest.mark.parametrize("isolated_api", ["MULTI_ACCOUNT_ENTITLEMENT", "MULTI_PRICED"], indirect=True)
+    @pytest.mark.parametrize("latest_first", [False, True])
+    def test_all_original_generations_account_independently_without_reopening(isolated_api, latest_first):
+        context, effect, latest, receipt, _ = isolated_api
+        before = history(isolated_api)
+        with transaction() as c:
+            first = c.execute("SELECT to_jsonb(d) FROM authority_external_effect_dispatch d WHERE external_effect_id=%s ORDER BY generation LIMIT 1", [effect]).fetchone()[0]
+            basis = c.execute("SELECT accounting_basis FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone()[0]
+        older = deepcopy(receipt)
+        production = first["evidence"]["production_execution"]
+        older.update(dispatch_id=first["dispatch_id"], generation=first["generation"],
+            execution_request_hash=_hash(production["execution_request"]),
+            provider_request_id=production["execution_handle"]["provider_request_id"],
+            outcome="final_failure", result=None,
+            **{key: production["execution_request"][key] for key in ("execution_id", "attempt_id", "fencing_token")})
+        if basis == "PRICED":
+            receipt = {**receipt, "cost": {"availability": "AVAILABLE", "amount": "0.20", "currency": "USD"}}
+            older["cost"] = {"availability": "AVAILABLE", "amount": "0.10", "currency": "USD"}
+        records = [receipt, older] if latest_first else [older, receipt]
+        def command(item):
+            return replace(command_for(isolated_api, item), decision="MARK_FAILED_FINAL" if item["outcome"] == "final_failure" else "MARK_SUCCEEDED")
+        resolve_external_effect_manually(DATABASE_URL, command(records[0]))
+        with transaction() as c:
+            assert c.execute("SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("HELD_UNKNOWN",)
+        resolve_external_effect_manually(DATABASE_URL, command(records[0]))
+        resolve_external_effect_manually(DATABASE_URL, command(records[1]))
+        for item in records:
+            resolve_external_effect_manually(DATABASE_URL, command(item))
+            conflict = deepcopy(item)
+            conflict["usage"]["output_tokens"] += 1
+            conflict["usage"]["total_tokens"] += 1
+            with pytest.raises(KernelError, match="ISOLATED_API_RECEIPT_CONFLICT"):
+                resolve_external_effect_manually(DATABASE_URL, command(conflict))
+        with transaction() as c:
+            from decimal import Decimal
+&gt;           assert c.execute("SELECT status,actual_tokens,settled_amount FROM authority_budget_reservation WHERE external_effect_id=%s", [effect]).fetchone() == ("SETTLED", 300, Decimal("0.30") if basis == "PRICED" else None)
+E           AssertionError: assert ('HELD_UNKNOW...cimal('0E-8')) == ('SETTLED', 3...cimal('0.30'))
+E             
+E             At index 0 diff: 'HELD_UNKNOWN' != 'SETTLED'
+E             Use -v to get more diff
+
+tests/integration/test_isolated_api_receipt_postgres.py:798: AssertionError</failure></testcase></testsuite></testsuites>

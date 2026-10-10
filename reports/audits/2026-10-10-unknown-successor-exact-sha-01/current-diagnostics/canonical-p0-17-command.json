@@ -1,0 +1,14 @@
+{
+  "tested_sha": "a65a56d41af4b090cd147db1c031cd4c7378160d",
+  "command": [
+    "make",
+    "p0-backend-qualification"
+  ],
+  "cwd": "/Users/yuan/.codex/worktrees/unknown-successor-exact-sha/novel-forge",
+  "started_at": "2026-10-10T06:05:53.270948+00:00",
+  "profile": "local",
+  "evidence_dir": "/tmp/wp-unknown-successor-848aa181-9f94-4f6a-a7e9-704a6c6c07a7/canonical-p0-17",
+  "provider": "scripted",
+  "exit_code": 2,
+  "completed_at": "2026-10-10T06:08:55.984979+00:00"
+}

@@ -1,0 +1,432 @@
+{
+  "purpose": "Retain failed and interrupted candidate records; none qualifies the final source",
+  "files": [
+    {
+      "source": "canonical-p0-2/novel-forge-p0-6aaff6bbb279-c3b198f5534c403aaf521af0a26a2d5e/documentation-reality-process.json",
+      "archive": "history/canonical-p0-2/novel-forge-p0-6aaff6bbb279-c3b198f5534c403aaf521af0a26a2d5e/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "2e9455520920058cd42606309a7cb0a75ba0ac6266c16e71a10e5cdcf715d849",
+      "archive_sha256": "2e9455520920058cd42606309a7cb0a75ba0ac6266c16e71a10e5cdcf715d849"
+    },
+    {
+      "source": "canonical-p0-2/novel-forge-p0-6aaff6bbb279-c3b198f5534c403aaf521af0a26a2d5e/documentation-reality.json",
+      "archive": "history/canonical-p0-2/novel-forge-p0-6aaff6bbb279-c3b198f5534c403aaf521af0a26a2d5e/documentation-reality.json",
+      "encoding": "identity",
+      "source_sha256": "17ae75da3f6a5011e418b07bf2f47295203b41e51d9e16bd94e607ac0e94b5de",
+      "archive_sha256": "17ae75da3f6a5011e418b07bf2f47295203b41e51d9e16bd94e607ac0e94b5de"
+    },
+    {
+      "source": "canonical-p0-2/novel-forge-p0-6aaff6bbb279-c3b198f5534c403aaf521af0a26a2d5e/static-and-manifests.json",
+      "archive": "history/canonical-p0-2/novel-forge-p0-6aaff6bbb279-c3b198f5534c403aaf521af0a26a2d5e/static-and-manifests.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "911ff7e319232aa9fc17b7d19e0b76f83f7ed196eb913cb2b070017180c133ef",
+      "archive_sha256": "96552cbf384ecedd795cdebecd3eccaa315589a5772949cc2eae13b44b8269e7"
+    },
+    {
+      "source": "canonical-p0-2/p0-backend-qualification-6aaff6bbb279d22ee50dbeb67f1749f4e2300c21.json",
+      "archive": "history/canonical-p0-2/p0-backend-qualification-6aaff6bbb279d22ee50dbeb67f1749f4e2300c21.json",
+      "encoding": "identity",
+      "source_sha256": "31ce1780149578a760528e2d272b3e28a0e62d26389657ea70261631dd9a6491",
+      "archive_sha256": "31ce1780149578a760528e2d272b3e28a0e62d26389657ea70261631dd9a6491"
+    },
+    {
+      "source": "canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/backend-pytest-collection.json",
+      "archive": "history/canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/backend-pytest-collection.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "5e22a4ccd2be4145c8099559b3d25aba428d95a2737729268ae7fcbb664f0809",
+      "archive_sha256": "4d4f4b5e57955c0a2a09e21c55b21b7049426c70ba61204f88878e50f68b74ef"
+    },
+    {
+      "source": "canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/backend-pytest.xml",
+      "archive": "history/canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/backend-pytest.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "9fa2ed1f255628378f633eef6b264d5b1d7023460eb132e81555528727f37f95",
+      "archive_sha256": "3b641996573325213594b92a3a71ac4053f57c9c0c11f3a6361bab526c6c569f"
+    },
+    {
+      "source": "canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/documentation-reality-process.json",
+      "archive": "history/canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "9188625e8afaac7b16b2b143cbfd312b46ec6ffb40e60616f9dd65e60e7d8234",
+      "archive_sha256": "9188625e8afaac7b16b2b143cbfd312b46ec6ffb40e60616f9dd65e60e7d8234"
+    },
+    {
+      "source": "canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/documentation-reality.json",
+      "archive": "history/canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/documentation-reality.json",
+      "encoding": "identity",
+      "source_sha256": "13c668f01b34546f889bd3afe938d66e9dccff4a60d9e7d48e36a3a3cdd99ebd",
+      "archive_sha256": "13c668f01b34546f889bd3afe938d66e9dccff4a60d9e7d48e36a3a3cdd99ebd"
+    },
+    {
+      "source": "canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/static-and-manifests.json",
+      "archive": "history/canonical-p0-3/novel-forge-p0-60255c852674-39fdb36d73ed4a919ca79f1ff97c03c9/static-and-manifests.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "3a6098a91194aa446453940a692b701729d3993e22558f06ddc1b461e09f8226",
+      "archive_sha256": "f21bddfc13f538c3ad60efa539e50975ca69ee6fb716fb5158d3d6917ca7cf96"
+    },
+    {
+      "source": "canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest-collection.json",
+      "archive": "history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest-collection.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "283735d45198ee02ff9b693f769b84a1ec808d98f2f15d15fcdf781a5398a916",
+      "archive_sha256": "6cc95bbe6804a10124f78be0e827449bfc70d1171371f7dc68670c27e596f190"
+    },
+    {
+      "source": "canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest-process.json",
+      "archive": "history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest-process.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "f94833230f9f5e16d66b6731114f839d7d9ccd4f373dee7ec0b319c0067b1f02",
+      "archive_sha256": "246c0e5d34227d45dee24bef8ddb615ba4d085bd63f5f9e117f7443ff9c03376"
+    },
+    {
+      "source": "canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest.xml",
+      "archive": "history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/backend-pytest.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "3858e3134e62654fa02aa65bff0bc13f59a59c7579afc92ee9bd29a10cd4a50b",
+      "archive_sha256": "cefdae8d5fe22153acbba7feb9543383b2567575be42f3f17184996be8507672"
+    },
+    {
+      "source": "canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/documentation-reality-process.json",
+      "archive": "history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "a60d047968db0859353d49ad28351850c719cbb9cdd866e54a46a06a04fd9ccc",
+      "archive_sha256": "a60d047968db0859353d49ad28351850c719cbb9cdd866e54a46a06a04fd9ccc"
+    },
+    {
+      "source": "canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/documentation-reality.json",
+      "archive": "history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/documentation-reality.json",
+      "encoding": "identity",
+      "source_sha256": "49790660702bd998b7da3eb53397ed62a2ac39a0d644672b0ed918660479a996",
+      "archive_sha256": "49790660702bd998b7da3eb53397ed62a2ac39a0d644672b0ed918660479a996"
+    },
+    {
+      "source": "canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/static-and-manifests.json",
+      "archive": "history/canonical-p0-4/novel-forge-p0-1310ad091ffa-a886ac1ea1ae4690b66a81caebb2ce56/static-and-manifests.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "26f1f82104c15134aea1cb8cceab1965fe5ab76aa4c19c06f8958dddfb1c7b62",
+      "archive_sha256": "d4fc4dc3f4684eabb3b923563934110bcad82e95b7b71562e6490e3259a64527"
+    },
+    {
+      "source": "canonical-p0-4/p0-backend-qualification-1310ad091ffaf553066339bb8df77ffa562b48ff.json",
+      "archive": "history/canonical-p0-4/p0-backend-qualification-1310ad091ffaf553066339bb8df77ffa562b48ff.json",
+      "encoding": "identity",
+      "source_sha256": "5cbfefe51c9d441e250531b59d99034b013af155a6f5ce404cfe29e42fcddec0",
+      "archive_sha256": "5cbfefe51c9d441e250531b59d99034b013af155a6f5ce404cfe29e42fcddec0"
+    },
+    {
+      "source": "canonical-p0-5/novel-forge-p0-4607162cf096-70ef6a58324c43c29dd7d2bff2fcc2dd/documentation-reality-process.json",
+      "archive": "history/canonical-p0-5/novel-forge-p0-4607162cf096-70ef6a58324c43c29dd7d2bff2fcc2dd/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "414275e0575a2abc08a0cda314beaa4cfa0e487873365c02b098e084a994eb00",
+      "archive_sha256": "414275e0575a2abc08a0cda314beaa4cfa0e487873365c02b098e084a994eb00"
+    },
+    {
+      "source": "canonical-p0-5/p0-backend-qualification-4607162cf0968f3bba935d88390b2e1753b51e11.json",
+      "archive": "history/canonical-p0-5/p0-backend-qualification-4607162cf0968f3bba935d88390b2e1753b51e11.json",
+      "encoding": "identity",
+      "source_sha256": "f6e834851985828011cc4d2bae7e7b30a06fe1cf79c8f422fcca9d3c8578ff99",
+      "archive_sha256": "f6e834851985828011cc4d2bae7e7b30a06fe1cf79c8f422fcca9d3c8578ff99"
+    },
+    {
+      "source": "canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/backend-pytest-collection.json",
+      "archive": "history/canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/backend-pytest-collection.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "5dea98b5a1527abb448a95d7fdd32e475bee24ea204a5d67a27bcb6a1a9a1bd8",
+      "archive_sha256": "c62394d3adc6b2dd596aa09165f2927e1244afe5e42a06a79d0d859be9fe205c"
+    },
+    {
+      "source": "canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/backend-pytest.xml",
+      "archive": "history/canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/backend-pytest.xml",
+      "encoding": "identity",
+      "source_sha256": "ee4ef2856655184dbc9ffd1589c4267c4e4123e3c5adc915bdf6860c40bfa5ae",
+      "archive_sha256": "ee4ef2856655184dbc9ffd1589c4267c4e4123e3c5adc915bdf6860c40bfa5ae"
+    },
+    {
+      "source": "canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/documentation-reality-process.json",
+      "archive": "history/canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "ffb2d69ba36c88c65ecdb1499ccb09d5802ba796c5d94335f5bf993b60050776",
+      "archive_sha256": "ffb2d69ba36c88c65ecdb1499ccb09d5802ba796c5d94335f5bf993b60050776"
+    },
+    {
+      "source": "canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/documentation-reality.json",
+      "archive": "history/canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/documentation-reality.json",
+      "encoding": "identity",
+      "source_sha256": "0135f52de21fbdf6e9646b8d644aefc4d08bef3b17672c7d61066bf6dcff87d7",
+      "archive_sha256": "0135f52de21fbdf6e9646b8d644aefc4d08bef3b17672c7d61066bf6dcff87d7"
+    },
+    {
+      "source": "canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/static-and-manifests.json",
+      "archive": "history/canonical-p0-6/novel-forge-p0-04340883173b-55b3f4ec2948412faa2023fa6b490c99/static-and-manifests.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "bf3610b83de96e88d9a694b7b63876428da32ef5e3b93e8e03e5bdf0638695be",
+      "archive_sha256": "09a3e0c21f2dcfce0c8df1448343bbfa70b90a0e30623417380e2534292df8e3"
+    },
+    {
+      "source": "canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest-collection.json",
+      "archive": "history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest-collection.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "86ca0bf5aa44ddc37a4e13b1f0bf04a533da9696c500d8f1b9551a47be5318e7",
+      "archive_sha256": "76b4c1876c5d06e3bbe4a01d364540689186f77807512e12b10aec966f57cb11"
+    },
+    {
+      "source": "canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest-process.json",
+      "archive": "history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest-process.json",
+      "encoding": "identity",
+      "source_sha256": "dca25676f3a78dd5fe67a044c1973d0612ade8c25c0266304f547764b64f9c78",
+      "archive_sha256": "dca25676f3a78dd5fe67a044c1973d0612ade8c25c0266304f547764b64f9c78"
+    },
+    {
+      "source": "canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest.xml",
+      "archive": "history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/backend-pytest.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "4fd55696f51a920c72b44c263d693fa00f9eef3caeee44c7e0662cc117a2171c",
+      "archive_sha256": "4950009609d3bd5a6176efae33a238e8540f28651ea80813ff185d0b74f290fc"
+    },
+    {
+      "source": "canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/documentation-reality-process.json",
+      "archive": "history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "d115418feec423aa5ac29213f1e7f9f1c7f1fc379fcd89a1f291076ce8abde2c",
+      "archive_sha256": "d115418feec423aa5ac29213f1e7f9f1c7f1fc379fcd89a1f291076ce8abde2c"
+    },
+    {
+      "source": "canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/documentation-reality.json",
+      "archive": "history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/documentation-reality.json",
+      "encoding": "identity",
+      "source_sha256": "494929b5e2da86f20c148319aee9fbd53709908be3ab929e681c5358fb1fb7d9",
+      "archive_sha256": "494929b5e2da86f20c148319aee9fbd53709908be3ab929e681c5358fb1fb7d9"
+    },
+    {
+      "source": "canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/static-and-manifests.json",
+      "archive": "history/canonical-p0-7/novel-forge-p0-08db68ee37c2-d470ffd7abd34246b52b23c1e1c6c727/static-and-manifests.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "4b33106964eff54bc22796d7a2e69266a6d145f28a43ceb50db9a02c3338df65",
+      "archive_sha256": "cd15b9edc18920ab2635c85e6c08acaa870e83b6a12328903a03d199965e2084"
+    },
+    {
+      "source": "canonical-p0-7/p0-backend-qualification-08db68ee37c2243e2c5470dbe887742fa578bba1.json",
+      "archive": "history/canonical-p0-7/p0-backend-qualification-08db68ee37c2243e2c5470dbe887742fa578bba1.json",
+      "encoding": "identity",
+      "source_sha256": "947420ba00ac0096dd20423c303c76581c9a1faedb89a02951ee5e033abf017d",
+      "archive_sha256": "947420ba00ac0096dd20423c303c76581c9a1faedb89a02951ee5e033abf017d"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest-collection.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest-collection.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "19b56c86170c332b0be8bc4c142f43dbfd42455fb2fcaa1ea4a12baf557b1f34",
+      "archive_sha256": "692a49b09dab024932e15a8c27a815d468eb4bd9df7c368f34112acb97e4851a"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest-process.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest-process.json",
+      "encoding": "identity",
+      "source_sha256": "5ccdb3d5b4a62815cbf635d87444ed4074d753228cc43d65d69ae91ade1d1a4a",
+      "archive_sha256": "5ccdb3d5b4a62815cbf635d87444ed4074d753228cc43d65d69ae91ade1d1a4a"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest.xml",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/backend-pytest.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "1293f57e0b6862742fa0b6199943569507537a019b6a4671259e7c5e81387359",
+      "archive_sha256": "e7876a64a934900d1a21167024f1b5be94215b02caa7b3ce6b348d647f0231aa"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/compose-resource-ownership-nf-p0-e29d669d79f5457ab197950e28250bcb.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/compose-resource-ownership-nf-p0-e29d669d79f5457ab197950e28250bcb.json",
+      "encoding": "identity",
+      "source_sha256": "1c16994fd8b68e9aec7a666f853a45414c1cea30ebcee5846b54eac22dfb8aca",
+      "archive_sha256": "1c16994fd8b68e9aec7a666f853a45414c1cea30ebcee5846b54eac22dfb8aca"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/documentation-reality-process.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/documentation-reality-process.json",
+      "encoding": "identity",
+      "source_sha256": "e132876fd47c6955f25d7409ee7dd751930a975489aa1aa678af14afa617d55d",
+      "archive_sha256": "e132876fd47c6955f25d7409ee7dd751930a975489aa1aa678af14afa617d55d"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/documentation-reality.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/documentation-reality.json",
+      "encoding": "identity",
+      "source_sha256": "b6f2c23d74477d3cd0a63a96ee1bebd20146159bfd30dcbed43a2b8c73f75981",
+      "archive_sha256": "b6f2c23d74477d3cd0a63a96ee1bebd20146159bfd30dcbed43a2b8c73f75981"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-compatibility-collection.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-compatibility-collection.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "9796989b0f4ae6b811881823bc14475d82e4694b94b2a3bea27d499c24be1cf1",
+      "archive_sha256": "6a53c244dd09abad18362e37cf031e8b3b4888faae323ded0d20d32187085418"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-compatibility-process.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-compatibility-process.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "918b3462c332900d62d07e9ef24f963aaeccaba82b5d48fdfa5f1e8cfada9e9a",
+      "archive_sha256": "1a649481b7007007d6aa2d5ef34390fa2e08fe60e5fb38152f6918a31b96f656"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-compatibility-pytest.xml",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-compatibility-pytest.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "af7065708f9b98994cffb80dba5405e85514219a7f9e7dfe712357b5eaf602a3",
+      "archive_sha256": "5dac942a555e8530f67e4e4a4b7cfa2d04aa83d028b050694be28575ea2f9370"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-fresh-process.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/migration-fresh-process.json",
+      "encoding": "identity",
+      "source_sha256": "74f09af13f11a88e822b542ccad380df169d5ac5e9033e27ad0e068e9ef719a7",
+      "archive_sha256": "74f09af13f11a88e822b542ccad380df169d5ac5e9033e27ad0e068e9ef719a7"
+    },
+    {
+      "source": "canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/static-and-manifests.json",
+      "archive": "history/canonical-p0-8/novel-forge-p0-71261d4b35d9-e29d669d79f5457ab197950e28250bcb/static-and-manifests.json.gz",
+      "encoding": "gzip",
+      "source_sha256": "a575f3c02332514b076861306c51bdf1d4222221cac309fb506f91f88f519a01",
+      "archive_sha256": "2d49e9acc80942219d4c627d3d06cf42dc9e86a9a2a59b42142f038012c5b3db"
+    },
+    {
+      "source": "canonical-p0-8/p0-backend-qualification-71261d4b35d983452305c9cd6a08f5372be7d87a.json",
+      "archive": "history/canonical-p0-8/p0-backend-qualification-71261d4b35d983452305c9cd6a08f5372be7d87a.json",
+      "encoding": "identity",
+      "source_sha256": "30bc08439693f33c29d12c8b0aa07b42a1fb8f9760c96b13343f7eb3787d5245",
+      "archive_sha256": "30bc08439693f33c29d12c8b0aa07b42a1fb8f9760c96b13343f7eb3787d5245"
+    },
+    {
+      "source": "baseline-eight-failures.log",
+      "archive": "history/baseline-eight-failures.log.gz",
+      "encoding": "gzip",
+      "source_sha256": "308be60a36557a46d62aec1a3c9315bcbebdfba2a1e5353277f7361eb6f27392",
+      "archive_sha256": "47abe41f022871b30560da2c3c7be9c0e18891e7e9e290544be7594d776e45d6"
+    },
+    {
+      "source": "baseline-eight-failures.xml",
+      "archive": "history/baseline-eight-failures.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "e1396cf5490c82e5be2c10b5644c5ae53189a0866fe140e81d38774c689207a1",
+      "archive_sha256": "1451c87bc71947cbb87c1300cb6d177d221ccabf8b7a5ac031b15aef0cbe0df8"
+    },
+    {
+      "source": "baseline-migration-groups-2.log",
+      "archive": "history/baseline-migration-groups-2.log.gz",
+      "encoding": "gzip",
+      "source_sha256": "253a415b2e073617dfcb67530dbee7a99592acdbf40bb590ebee188170ed36b8",
+      "archive_sha256": "45c3d4831e0f99c28c1b5e285dad59f95aa2309b509099c4cf81628f95b13731"
+    },
+    {
+      "source": "baseline-migration-groups-2.xml",
+      "archive": "history/baseline-migration-groups-2.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "c1d736febaad1149171a2aa82dc59f3b24816facf9baac5da2d240d1e42e744a",
+      "archive_sha256": "43df56b5f939248c2901891a2aa48a94ecd605247038efc929aee212b60add8e"
+    },
+    {
+      "source": "baseline-migration-groups-command.json",
+      "archive": "history/baseline-migration-groups-command.json",
+      "encoding": "identity",
+      "source_sha256": "55f5977a0384d502b18c39253c0381a8d1a4f9e5609bf43cd1821a41fcae9088",
+      "archive_sha256": "55f5977a0384d502b18c39253c0381a8d1a4f9e5609bf43cd1821a41fcae9088"
+    },
+    {
+      "source": "baseline-migration-groups.log",
+      "archive": "history/baseline-migration-groups.log",
+      "encoding": "identity",
+      "source_sha256": "0bdb9ab61c898a059933a6031557136dc3f3a382e5b9c475958baaeda9bcf996",
+      "archive_sha256": "0bdb9ab61c898a059933a6031557136dc3f3a382e5b9c475958baaeda9bcf996"
+    },
+    {
+      "source": "baseline-next-failures.log",
+      "archive": "history/baseline-next-failures.log.gz",
+      "encoding": "gzip",
+      "source_sha256": "627e8fbba47f433e0831e70bfa062314fce79af896cd1bd12a47905335d30e81",
+      "archive_sha256": "9c9978485525f79d47f00afbcd245724c452c06b880b7c638546c5ded5c6259a"
+    },
+    {
+      "source": "baseline-next-failures.xml",
+      "archive": "history/baseline-next-failures.xml.gz",
+      "encoding": "gzip",
+      "source_sha256": "e6b92c24b784a1ec59cd751df029d1d318963552e04f5f2dbe9d1b61a0b190a7",
+      "archive_sha256": "02bd4a9e19065688d14f2aea39747cd1f06e524020d2b40ce12bf671ab60e9f2"
+    },
+    {
+      "source": "baseline-proposal-lifecycle.log",
+      "archive": "history/baseline-proposal-lifecycle.log",
+      "encoding": "identity",
+      "source_sha256": "f13987e1d95366406ee43122fc93f7d7a0f8e1fb06b8aa17e0826a38a3b2d16b",
+      "archive_sha256": "f13987e1d95366406ee43122fc93f7d7a0f8e1fb06b8aa17e0826a38a3b2d16b"
+    },
+    {
+      "source": "baseline-sibling.log",
+      "archive": "history/baseline-sibling.log",
+      "encoding": "identity",
+      "source_sha256": "fb6492a0171a43d05209d2f0796240e11a58d2bab4fd91110472a97e4e5f7acf",
+      "archive_sha256": "fb6492a0171a43d05209d2f0796240e11a58d2bab4fd91110472a97e4e5f7acf"
+    },
+    {
+      "source": "baseline-sibling.xml",
+      "archive": "history/baseline-sibling.xml",
+      "encoding": "identity",
+      "source_sha256": "0c76b9c374aa7484bced9a647c9406bb11226bd609214a19692e05cf65ced678",
+      "archive_sha256": "0c76b9c374aa7484bced9a647c9406bb11226bd609214a19692e05cf65ced678"
+    },
+    {
+      "source": "canonical-p0-launch-2.log",
+      "archive": "history/canonical-p0-launch-2.log",
+      "encoding": "identity",
+      "source_sha256": "b2c2af9c68b181d275222bf71da410ecbea5133b2f5837e0a97c8cef72f38f21",
+      "archive_sha256": "b2c2af9c68b181d275222bf71da410ecbea5133b2f5837e0a97c8cef72f38f21"
+    },
+    {
+      "source": "canonical-p0-launch-3.log",
+      "archive": "history/canonical-p0-launch-3.log",
+      "encoding": "identity",
+      "source_sha256": "1e3125bd87f5e78f60c4ffa71239b8f82b7b403631159e8ec8f23ed6d219b48f",
+      "archive_sha256": "1e3125bd87f5e78f60c4ffa71239b8f82b7b403631159e8ec8f23ed6d219b48f"
+    },
+    {
+      "source": "canonical-p0-launch-4.log",
+      "archive": "history/canonical-p0-launch-4.log",
+      "encoding": "identity",
+      "source_sha256": "4d46fcdf2a67b09204ba58b8e3d055b42e6fb301ba8dd57cf450729c1fc9a6c5",
+      "archive_sha256": "4d46fcdf2a67b09204ba58b8e3d055b42e6fb301ba8dd57cf450729c1fc9a6c5"
+    },
+    {
+      "source": "canonical-p0-launch-5.log",
+      "archive": "history/canonical-p0-launch-5.log",
+      "encoding": "identity",
+      "source_sha256": "6367c536339826c5aaa73271ae37db6ae7d30c72fbbb40ccc8ed246c12b9612b",
+      "archive_sha256": "6367c536339826c5aaa73271ae37db6ae7d30c72fbbb40ccc8ed246c12b9612b"
+    },
+    {
+      "source": "canonical-p0-launch-6.log",
+      "archive": "history/canonical-p0-launch-6.log",
+      "encoding": "identity",
+      "source_sha256": "ed49401868f06ea8dea7680bb32be213e07ea7e4e9b68c74016b380fc6db6404",
+      "archive_sha256": "ed49401868f06ea8dea7680bb32be213e07ea7e4e9b68c74016b380fc6db6404"
+    },
+    {
+      "source": "canonical-p0-launch-7.log",
+      "archive": "history/canonical-p0-launch-7.log",
+      "encoding": "identity",
+      "source_sha256": "29baa22b7e383308e29103e27a901f3a017047e84579648ba84a1204129b5d86",
+      "archive_sha256": "29baa22b7e383308e29103e27a901f3a017047e84579648ba84a1204129b5d86"
+    },
+    {
+      "source": "canonical-p0-launch-8.log",
+      "archive": "history/canonical-p0-launch-8.log",
+      "encoding": "identity",
+      "source_sha256": "10011b5a0af95de3a32abb6ec5a0979d52e2cf4b03e7aef7737bd7eb96e79ab4",
+      "archive_sha256": "10011b5a0af95de3a32abb6ec5a0979d52e2cf4b03e7aef7737bd7eb96e79ab4"
+    },
+    {
+      "source": "canonical-p0-launch.log",
+      "archive": "history/canonical-p0-launch.log",
+      "encoding": "identity",
+      "source_sha256": "4452f58c4b5c0626abeb3fb5bb9d71d6a41e69326c98f433f76d8e5aa52d1ba8",
+      "archive_sha256": "4452f58c4b5c0626abeb3fb5bb9d71d6a41e69326c98f433f76d8e5aa52d1ba8"
+    }
+  ]
+}
