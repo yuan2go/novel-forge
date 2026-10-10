@@ -67,6 +67,9 @@ Those fields retain accepted knowledge and explicitly disclosed earlier-scene ga
 New Planning schemas bind CURRENT realization to the scope's owned realization level
 and describe timeline relations relative to scenes in the returned plan. Establishing
 its first scene's timeline does not repeat an earlier chapter's events.
+Formal entry-state references in new Planning schemas with a Story State input are bound to the
+exact frozen Story State input, including segment entries. Working prose is described
+in its separate continuity input; a prose AssetVersion is not a formal State reference.
 Native realization contract v3 retains this working
 snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups without
 inventing accepted history. The source window is a bounded implementation policy; it does

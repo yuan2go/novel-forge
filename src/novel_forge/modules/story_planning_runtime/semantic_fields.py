@@ -8,9 +8,17 @@ from novel_forge.modules.hierarchical_planning.domain import (
 )
 
 
-def bind_semantic_fields(schema: dict, scope: PlanContractType) -> dict:
+def bind_semantic_fields(schema: dict, scope: PlanContractType, *, story_state_version: str | None = None) -> dict:
     value = deepcopy(schema)
     level = PLAN_REALIZATION[scope]
+    if story_state_version is not None:
+        if not isinstance(story_state_version, str) or not story_state_version.strip():
+            raise ValueError("Formal entry state requires the exact frozen Story State")
+        reference = {"type": "string", "const": story_state_version,
+            "description": "Host-bound formal Story State input. Describe working continuity and future segment changes in their prose fields; never construct State IDs from draft versions."}
+        value["properties"]["entry_state_ref"] = deepcopy(reference)
+        if "narrative_segments" in value["properties"]:
+            value["properties"]["narrative_segments"]["items"]["properties"]["entry_state_ref"] = deepcopy(reference)
     value["properties"]["realization_level"] = {"type": "string", "const": level.value}
     for manifest in ("world_realization", "character_realization"):
         item = value["properties"][manifest]["items"]
